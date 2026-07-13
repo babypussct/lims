@@ -198,17 +198,15 @@ export class PrintService {
   }
 
 
-  // Được gọi từ nút "Xác thực & Tải lại" trong modal.
-  // QUAN TRỌNG: caller phải mở popup TRƯỚC khi gọi hàm này (ngay trong click handler)
-  // để không bị trình duyệt chặn do mất user gesture context.
-  async retryLoadPdfBlob(authPopup: WindowProxy): Promise<void> {
+  // Được gọi trực tiếp từ nút "Xác thực & Tải lại" để GIS giữ user activation.
+  async retryLoadPdfBlob(authPopup: WindowProxy | null = null): Promise<void> {
       const pdfUrl = this.pdfUrl();
       if (!pdfUrl) return;
       const id = this.getFileId(pdfUrl);
       if (!id) return;
 
       try {
-          authPopup.document.write(
+          authPopup?.document.write(
               '<html><head><title>Kết nối Google...</title></head>' +
               '<body style="display:flex;align-items:center;justify-content:center;' +
               'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +

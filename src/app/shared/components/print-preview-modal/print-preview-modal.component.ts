@@ -231,7 +231,7 @@ import { ToastService } from '../../../core/services/toast.service';
                             <div class="text-center">
                                 <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Cần xác thực Google Drive</p>
                                 <p class="text-xs text-slate-500 max-w-xs leading-relaxed">
-                                    Phiên xác thực đã hết hạn. Nhấn nút bên dưới để đăng nhập lại (một cửa sổ nhỏ sẽ xuất hiện).
+                                    Phiên xác thực đã hết hạn. Nhấn nút bên dưới để đăng nhập lại.
                                 </p>
                             </div>
                             <button (click)="retryLoadBlob()"
@@ -437,14 +437,9 @@ export class PrintPreviewModalComponent {
   }
 
   retryLoadBlob() {
-      // Mở popup NGAY trong click handler — trước bất kỳ await hay async nào
-      // để trình duyệt không mất user gesture context và không chặn popup.
-      const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-      if (!authPopup || authPopup.closed) {
-          this.toast.show('Popup bị chặn. Vui lòng cho phép popup từ trang này rồi thử lại.', 'error');
-          return;
-      }
-      this.printService.retryLoadPdfBlob(authPopup);
+      // GIS mở popup OAuth của chính Google ngay trong click handler.
+      // Không mở popup "giữ chỗ" vì nó làm Chrome/Edge chặn cửa sổ GIS.
+      this.printService.retryLoadPdfBlob(null);
   }
 
   async copyPdfLink() {

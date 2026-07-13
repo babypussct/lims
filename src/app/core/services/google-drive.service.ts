@@ -352,6 +352,16 @@ export class GoogleDriveService {
           return;
       }
 
+      // Let Google Identity Services create its own popup.  This must be
+      // called directly from the button click handler: pre-opening a blank
+      // window and overriding window.open makes Chrome/Edge treat the GIS
+      // navigation as an unsolicited popup, even when this site's popup
+      // permission is set to Allow.
+      if (existingPopup === null) {
+          this.requestNativePopup(onSuccess, onError);
+          return;
+      }
+
       // ── 1. Try popup ──
       const authPopup = existingPopup !== undefined ? existingPopup : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
 
@@ -437,6 +447,55 @@ export class GoogleDriveService {
           safeClosePopup();
           console.error('[GoogleDrive] requestAccessToken threw:', e);
           onError('Không thể khởi tạo đăng nhập Google. Hãy thử lại.');
+      }
+  }
+
+  /** Starts the official GIS popup without opening or hijacking a placeholder. */
+  private requestNativePopup(
+      onSuccess: (token: string) => void,
+      onError: (message: string) => void
+  ): void {
+      const timeout = setTimeout(() => {
+          cleanup();
+          onError('Đăng nhập Google quá thời gian (60s). Hãy thử lại.');
+      }, 60000);
+      const cleanup = () => {
+          clearTimeout(timeout);
+          this.currentCallback = null;
+          this.currentErrorCallback = null;
+      };
+
+      this.currentCallback = (response: any) => {
+          cleanup();
+          if (response.error) {
+              onError(response.error_description || response.error);
+              return;
+          }
+          this.accessToken = response.access_token;
+          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+          this.isAuthenticated.set(true);
+          sessionStorage.setItem('__gd_token', this.accessToken);
+          sessionStorage.setItem('__gd_expiry', this.tokenExpiry.toString());
+          onSuccess(this.accessToken);
+      };
+
+      this.currentErrorCallback = (error: any) => {
+          cleanup();
+          if (error?.type === 'popup_closed') {
+              onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
+          } else if (error?.type === 'popup_failed_to_open') {
+              onError('Google không thể mở cửa sổ đăng nhập. Hãy kiểm tra trình duyệt không chạy trong iframe bị hạn chế.');
+          } else {
+              onError(error?.type || error?.message || 'Lỗi đăng nhập không xác định');
+          }
+      };
+
+      try {
+          this.tokenClient.requestAccessToken({ prompt: '' });
+      } catch (error) {
+          cleanup();
+          console.error('[GoogleDrive] Native GIS popup could not start:', error);
+          onError('Không thể khởi tạo cửa sổ đăng nhập Google. Hãy thử lại.');
       }
   }
 
