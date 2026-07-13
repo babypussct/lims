@@ -25,7 +25,7 @@ Configure these variables for Production (and Preview only if its callback URI
 is also registered in Google Cloud):
 
 ```text
-GOOGLE_OAUTH_CLIENT_ID=659051444640-bcal7vcjb9dd5m9aim5to7su4nk9kdtg.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_ID=498845778988-loivmvvd0k0bh7pis4p50d8a0qsglc8j.apps.googleusercontent.com
 GOOGLE_OAUTH_CLIENT_SECRET=<Google Cloud web client secret>
 GOOGLE_OAUTH_REDIRECT_URI=https://nafiqpm6.vercel.app/api/oauth/google/callback
 APP_ORIGIN=https://nafiqpm6.vercel.app

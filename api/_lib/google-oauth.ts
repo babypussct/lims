@@ -29,8 +29,7 @@ function requiredEnv(name: string): string {
 }
 
 export function oauthClientId(): string {
-  const configured = process.env['GOOGLE_OAUTH_CLIENT_ID'] ||
-    '659051444640-bcal7vcjb9dd5m9aim5to7su4nk9kdtg.apps.googleusercontent.com';
+  const configured = requiredEnv('GOOGLE_OAUTH_CLIENT_ID');
   const clientId = configured.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
   if (!/^[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(clientId)) {
     throw new Error('GOOGLE_OAUTH_CLIENT_ID is invalid');

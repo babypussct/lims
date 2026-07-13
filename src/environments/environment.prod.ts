@@ -13,9 +13,9 @@ export const environment = {
   },
   googleDrive: {
     apiKey: 'AIzaSyDYLmYAso4LXf392Y__EGj7EEu4F4G_giE',
-    clientId: '659051444640-bcal7vcjb9dd5m9aim5to7su4nk9kdtg.apps.googleusercontent.com',
+    clientId: '498845778988-loivmvvd0k0bh7pis4p50d8a0qsglc8j.apps.googleusercontent.com',
     folderId: '1Lf9E9Hn8300oveEH0LKVj_iibftodzU8',
-    appId: '659051444640'
+    appId: '498845778988'
   },
   // URL Google Apps Script Web App
   gasReportUrl: 'https://script.google.com/macros/s/AKfycbyDK7_HWTaFS3eEdwQDNVPQdQaJ56NnTXi2ew3GUl2XnCe5zAAVUXGbCBQFkKruTTgr/exec'
