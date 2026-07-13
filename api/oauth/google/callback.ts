@@ -3,7 +3,7 @@ import {
   callbackUrl, clearCookieHeader, decryptCookie, GOOGLE_STATE_COOKIE,
   OAuthState, oauthClientId, oauthClientSecret, readCookie, requestOrigin,
   readGoogleSession, safeReturnTo, setGoogleSession
-} from '../../_lib/google-oauth';
+} from '../../_lib/google-oauth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });

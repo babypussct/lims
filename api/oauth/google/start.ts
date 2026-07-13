@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   callbackUrl, codeChallenge, cookieHeader, DRIVE_SCOPES, encryptCookie,
   GOOGLE_STATE_COOKIE, OAuthState, oauthClientId, safeReturnTo
-} from '../../_lib/google-oauth';
+} from '../../_lib/google-oauth.js';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
