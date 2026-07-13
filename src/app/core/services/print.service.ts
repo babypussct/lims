@@ -36,6 +36,11 @@ export class PrintService {
   // Loading state
   isProcessing = signal<boolean>(false);
 
+  constructor() {
+      // Preload Google Drive SDK to make it ready for quick print/download
+      this.googleDriveService.ensureInitialized().catch(e => console.warn('PrintService: GIS preload deferred:', e));
+  }
+
   // PREVIEW STATE (Used by Modal)
   isPreviewOpen = signal<boolean>(false);
   previewJobs = signal<PrintJob[]>([]);
@@ -131,6 +136,10 @@ export class PrintService {
       // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
       if (!this.googleDriveService.hasValidToken) {
           try {
+              if (!this.googleDriveService.canAuthSync) {
+                  this.toast.show('Đang chuẩn bị dịch vụ Google Drive...', 'info');
+                  await this.googleDriveService.ensureInitialized();
+              }
               await new Promise<void>((resolve, reject) => {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
@@ -185,6 +194,10 @@ export class PrintService {
       // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
       if (!this.googleDriveService.hasValidToken) {
           try {
+              if (!this.googleDriveService.canAuthSync) {
+                  this.toast.show('Đang chuẩn bị dịch vụ Google Drive...', 'info');
+                  await this.googleDriveService.ensureInitialized();
+              }
               await new Promise<void>((resolve, reject) => {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
