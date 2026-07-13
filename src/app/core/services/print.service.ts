@@ -139,6 +139,9 @@ export class PrintService {
   }
 
   // --- FETCH BLOB FOR PREVIEW (Bypass CSP) ---
+  // NOTE: This runs OUTSIDE a user-gesture context (called automatically when modal opens).
+  // GIS requestAccessToken ALWAYS needs a popup — even with prompt:'none' — so we MUST NOT
+  // call tryAuthSilent() here. We only proceed if we already have a valid cached token.
   private async loadPdfBlobForPreview(pdfUrl: string) {
       const id = this.getFileId(pdfUrl);
       if (!id) {
@@ -148,27 +151,18 @@ export class PrintService {
 
       this.isPdfBlobLoading.set(true);
       try {
-          // 1. Đảm bảo GIS đã khởi tạo
+          // 1. Đảm bảo GIS đã khởi tạo (không mở popup)
           await this.googleDriveService.ensureInitialized();
 
-          // 2. Đảm bảo có token hợp lệ (silent — không cần popup)
-          //    Luôn thử silent auth trước để làm mới token (tránh token cũ từ redirect bị thu hồi)
-          try {
-              console.log('[Preview] Refreshing Drive token (silent)...');
-              await this.googleDriveService.tryAuthSilent();
-              console.log('[Preview] Drive token OK.');
-          } catch (silentErr: any) {
-              if (!this.googleDriveService.hasValidToken) {
-                  // Không có token nào cả → cần user tương tác
-                  console.warn('[Preview] No valid token, need user interaction:', silentErr.message);
-                  this.isPdfBlobLoading.set(false);
-                  return; // pdfBlobUrl = null → UI hiện nút "Xác thực & Tải lại"
-              }
-              // Có token trong cache nhưng silent refresh lỗi → thử với token hiện tại trước
-              console.warn('[Preview] Silent refresh failed, trying with cached token...');
+          // 2. Kiểm tra token trong cache — KHÔNG gọi bất kỳ hàm auth nào ở đây
+          //    vì GIS luôn cần popup để trả kết quả, sẽ bị trình duyệt chặn.
+          if (!this.googleDriveService.hasValidToken) {
+              console.log('[Preview] No cached token — waiting for user to click "Xác thực & Tải lại".');
+              this.isPdfBlobLoading.set(false);
+              return; // pdfBlobUrl = null → UI hiện nút "Xác thực & Tải lại"
           }
 
-          // 3. Tải file, xử lý 401 bằng cách xóa token cũ và thử lại
+          // 3. Tải file. Nếu 401 (token hết hạn / bị thu hồi) → xóa và hiện nút retry
           let rawBlob: Blob;
           try {
               rawBlob = await this.googleDriveService.downloadFile(id);
@@ -176,25 +170,15 @@ export class PrintService {
               const is401 = downloadErr.message?.includes('401') ||
                             downloadErr.message?.toLowerCase().includes('invalid authentication') ||
                             downloadErr.message?.toLowerCase().includes('invalid credential');
-              
+
               if (is401) {
-                  // Token cũ không hợp lệ (có thể do thiếu Drive scopes từ redirect)
-                  console.warn('[Preview] 401 from Drive — clearing stale token, retrying silent auth...');
+                  // Token hết hạn hoặc bị thu hồi → xóa cache, yêu cầu user xác thực lại
+                  console.warn('[Preview] 401 — stale token cleared. User must re-authenticate.');
                   this.googleDriveService.clearSession();
-                  
-                  try {
-                      await this.googleDriveService.tryAuthSilent();
-                      rawBlob = await this.googleDriveService.downloadFile(id);
-                  } catch (retryErr: any) {
-                      // Cả retry cũng thất bại → hiện nút "Xác thực & Tải lại"
-                      // Dùng console.info thay vì error để không làm rối log, vì đây là luồng expected
-                      console.info('[Preview] Requires user interaction (silent auth blocked):', retryErr.message);
-                      this.isPdfBlobLoading.set(false);
-                      return;
-                  }
-              } else {
-                  throw downloadErr;
+                  this.isPdfBlobLoading.set(false);
+                  return; // UI hiện nút "Xác thực & Tải lại"
               }
+              throw downloadErr;
           }
 
           const blob = new Blob([rawBlob!], { type: 'application/pdf' });
@@ -212,6 +196,7 @@ export class PrintService {
           this.isPdfBlobLoading.set(false);
       }
   }
+
 
   // Được gọi từ nút "Thử lại" trong modal — phải nằm trong user gesture context
   async retryLoadPdfBlob(): Promise<void> {
