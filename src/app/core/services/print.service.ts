@@ -48,6 +48,8 @@ export class PrintService {
   // NEW PDF VIEWING STATE
   isPreviewPdfOpen = signal<boolean>(false);
   pdfUrl = signal<string | null>(null);
+  pdfBlobUrl = signal<string | null>(null);
+  isPdfBlobLoading = signal<boolean>(false);
   docsUrl = signal<string | null>(null);
   pdfTitle = signal<string>('');
   pdfVersion = signal<number>(1);
@@ -94,6 +96,13 @@ export class PrintService {
           this.onRepublishCallback.set(null);
       }
       this.isPreviewPdfOpen.set(true);
+      
+      // Load Blob URL for iframe to avoid Google Drive CSP frame restrictions
+      if (previewType === 'iframe') {
+          this.loadPdfBlobForPreview(url);
+      } else {
+          this.pdfBlobUrl.set(url); // For images, standard URL is usually fine
+      }
   }
 
   // --- 3. ENTRY POINT: OPEN COA PREVIEW ---
@@ -115,8 +124,87 @@ export class PrintService {
   closePdfPreview() {
       this.isPreviewPdfOpen.set(false);
       this.pdfUrl.set(null);
+      
+      // Cleanup Blob URL
+      const currentBlob = this.pdfBlobUrl();
+      if (currentBlob && currentBlob.startsWith('blob:')) {
+          URL.revokeObjectURL(currentBlob);
+      }
+      this.pdfBlobUrl.set(null);
+      this.isPdfBlobLoading.set(false);
+      
       this.docsUrl.set(null);
       this.onRepublishCallback.set(null);
+  }
+
+  // --- FETCH BLOB FOR PREVIEW (Bypass CSP) ---
+  private async loadPdfBlobForPreview(pdfUrl: string) {
+      const id = this.getFileId(pdfUrl);
+      if (!id) {
+          this.pdfBlobUrl.set(pdfUrl);
+          return;
+      }
+
+      // Synchronous popup check before async fetch
+      let authPopup: WindowProxy | null = null;
+      if (!this.googleDriveService.hasValidToken) {
+          authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+          if (authPopup && !authPopup.closed) {
+              try {
+                  authPopup.document.write(
+                      '<html><head><title>Kết nối Google...</title></head>' +
+                      '<body style="display:flex;align-items:center;justify-content:center;' +
+                      'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
+                      '<div style="text-align:center">' +
+                      '<p style="font-size:15px;color:#64748b;font-weight:600">Đang tải tài liệu xem trước...</p>' +
+                      '</div></body></html>'
+                  );
+              } catch (_) {}
+          } else {
+              // Popup blocked. We can't fetch the blob. Fallback to normal URL and let user deal with it.
+              this.pdfBlobUrl.set(pdfUrl);
+              return;
+          }
+      }
+
+      this.isPdfBlobLoading.set(true);
+      try {
+          if (!this.googleDriveService.hasValidToken) {
+              if (!this.googleDriveService.canAuthSync) {
+                  await this.googleDriveService.ensureInitialized();
+              }
+              await new Promise<void>((resolve, reject) => {
+                  this.googleDriveService.authenticateSync(
+                      () => resolve(),
+                      (err) => reject(new Error(err)),
+                      authPopup,
+                      false // disable redirect
+                  );
+              });
+          } else {
+              await this.googleDriveService.ensureAuthenticated();
+          }
+
+          const rawBlob = await this.googleDriveService.downloadFile(id);
+          const blob = new Blob([rawBlob], { type: 'application/pdf' });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          // Double check if preview is still open and matches this URL
+          if (this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
+              this.pdfBlobUrl.set(blobUrl);
+          } else {
+              URL.revokeObjectURL(blobUrl);
+          }
+      } catch (err: any) {
+          console.error('[Preview] Failed to load PDF blob:', err);
+          if (authPopup && !authPopup.closed) {
+              try { authPopup.close(); } catch (_) {}
+          }
+          // Fallback
+          this.pdfBlobUrl.set(pdfUrl);
+      } finally {
+          this.isPdfBlobLoading.set(false);
+      }
   }
 
   // --- 4. QUICK PRINT (No modal required) ---
@@ -130,6 +218,12 @@ export class PrintService {
       const id = this.getFileId(pdfUrl);
       if (!id) {
           window.open(pdfUrl, '_blank');
+          return;
+      }
+      
+      // If we already loaded the blob for preview, reuse it!
+      if (this.pdfUrl() === pdfUrl && this.pdfBlobUrl()?.startsWith('blob:')) {
+          this.printBlobUrl(this.pdfBlobUrl()!);
           return;
       }
 
@@ -184,19 +278,7 @@ export class PrintService {
           const blob = new Blob([rawBlob], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
 
-          const iframe = document.createElement('iframe');
-          iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-          iframe.src = blobUrl;
-          document.body.appendChild(iframe);
-
-          iframe.onload = () => {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              setTimeout(() => {
-                  if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                  URL.revokeObjectURL(blobUrl);
-              }, 60000);
-          };
+          this.printBlobUrl(blobUrl, true);
       } catch (err: any) {
           window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
           this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
@@ -205,11 +287,33 @@ export class PrintService {
       }
   }
 
+  private printBlobUrl(blobUrl: string, autoRevoke: boolean = false) {
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          setTimeout(() => {
+              if (document.body.contains(iframe)) document.body.removeChild(iframe);
+              if (autoRevoke) URL.revokeObjectURL(blobUrl);
+          }, 60000);
+      };
+  }
+
   // --- 5. QUICK DOWNLOAD (Silent background download) ---
   async quickDownload(pdfUrl: string, fileName: string = 'document.pdf'): Promise<void> {
       const id = this.getFileId(pdfUrl);
       if (!id) {
           window.open(pdfUrl, '_blank');
+          return;
+      }
+      
+      // If we already loaded the blob for preview, reuse it!
+      if (this.pdfUrl() === pdfUrl && this.pdfBlobUrl()?.startsWith('blob:')) {
+          this.downloadBlobUrl(this.pdfBlobUrl()!, fileName);
           return;
       }
 
@@ -264,20 +368,7 @@ export class PrintService {
           const blob = await this.googleDriveService.downloadFile(id);
           const blobUrl = URL.createObjectURL(blob);
           
-          // Tạo thẻ <a> ảo để trigger download
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = blobUrl;
-          a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-          
-          document.body.appendChild(a);
-          a.click();
-          
-          // Cleanup
-          setTimeout(() => {
-              if (document.body.contains(a)) document.body.removeChild(a);
-              URL.revokeObjectURL(blobUrl);
-          }, 1000);
+          this.downloadBlobUrl(blobUrl, fileName, true);
           
       } catch (err: any) {
           console.error('[Download] Failed to download silently:', err);
@@ -286,6 +377,21 @@ export class PrintService {
       } finally {
           this.isDownloading.set(false);
       }
+  }
+
+  private downloadBlobUrl(blobUrl: string, fileName: string, autoRevoke: boolean = false) {
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = blobUrl;
+      a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+          if (document.body.contains(a)) document.body.removeChild(a);
+          if (autoRevoke) URL.revokeObjectURL(blobUrl);
+      }, 1000);
   }
 
   // NOTE: Actual printing/PDF generation logic is now handled by

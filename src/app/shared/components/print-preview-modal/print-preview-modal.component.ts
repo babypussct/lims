@@ -210,7 +210,12 @@ import { ToastService } from '../../../core/services/toast.service';
                         </div>
                     }
 
-                    @if (pdfModalSafeUrl()) {
+                    @if (printService.isPdfBlobLoading()) {
+                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
+                            <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-500"></i>
+                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải tài liệu từ Drive...</span>
+                        </div>
+                    } @else if (pdfModalSafeUrl()) {
                         @if (printService.pdfPreviewType() === 'image') {
                             <div class="w-full h-full flex items-center justify-center overflow-auto bg-slate-950 p-4">
                                 <img [src]="rawPdfUrl()" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg animate-in zoom-in-95 duration-200">
@@ -220,11 +225,11 @@ import { ToastService } from '../../../core/services/toast.service';
                         }
                     } @else {
                         <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
-                            <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-500"></i>
-                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải tài liệu...</span>
+                            <i class="fa-solid fa-triangle-exclamation text-4xl text-amber-500"></i>
+                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Không thể hiển thị tài liệu</span>
                             <p class="text-xs text-slate-500 text-center max-w-md leading-relaxed">
-                                Nếu tài liệu không hiển thị, vui lòng nhấn nút
-                                <strong class="text-indigo-500">GOOGLE DOCS</strong> ở góc trên để xem trực tiếp.
+                                Tài liệu bị lỗi hiển thị hoặc bị chặn bởi trình duyệt. Vui lòng nhấn nút
+                                <strong class="text-indigo-500">TẢI TÀI LIỆU</strong> hoặc <strong class="text-indigo-500">GOOGLE DOCS</strong> ở góc trên để xem.
                             </p>
                         </div>
                     }
@@ -252,7 +257,7 @@ export class PrintPreviewModalComponent {
 
   // Safe resource computed URL
   pdfModalSafeUrl = computed(() => {
-    const url = this.printService.pdfUrl();
+    const url = this.printService.pdfBlobUrl(); // Use Blob URL to bypass CSP
     if (!url) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
