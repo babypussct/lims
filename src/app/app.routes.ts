@@ -179,6 +179,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/forbidden.component').then(m => m.ForbiddenComponent)
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () => import('./features/public/privacy-policy.component').then(m => m.PrivacyPolicyComponent)
+  },
+  {
+    path: 'terms-of-service',
+    loadComponent: () => import('./features/public/terms-of-service.component').then(m => m.TermsOfServiceComponent)
+  },
+  {
     path: '**',
     redirectTo: 'dashboard'
   }

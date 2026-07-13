@@ -247,7 +247,15 @@ import { filter } from 'rxjs/operators';
              </div>
           }
         } 
-        @else { <app-login class="no-print"></app-login> }
+        @else {
+          @if (isPublicRoute()) {
+            <div class="min-h-screen h-[100dvh] bg-slate-50 overflow-y-auto">
+              <router-outlet></router-outlet>
+            </div>
+          } @else {
+            <app-login class="no-print"></app-login>
+          }
+        }
       }
     }
   `
@@ -264,6 +272,10 @@ export class AppComponent implements OnDestroy {
 
   // Reactive URL signal for computed dependencies
   currentUrl = signal<string>('');
+  isPublicRoute = computed(() => {
+    const url = this.currentUrl();
+    return url.startsWith('/privacy-policy') || url.startsWith('/terms-of-service');
+  });
   year = new Date().getFullYear();
 
   constructor() {

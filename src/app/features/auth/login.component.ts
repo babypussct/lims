@@ -2,6 +2,7 @@
 import { Component, inject, signal, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Unsubscribe } from 'firebase/firestore';
@@ -14,7 +15,7 @@ declare let QRious: any;
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, PwaInstallPromptComponent, LogoComponent],
+  imports: [CommonModule, FormsModule, PwaInstallPromptComponent, LogoComponent, RouterLink],
   template: `
     @if (!auth.currentUser()) {
       <div class="min-h-screen w-full flex items-center justify-center overflow-hidden relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc] dark:bg-slate-950">
@@ -375,6 +376,11 @@ declare let QRious: any;
             
             <!-- Footer -->
             <div class="text-center mt-6 text-[11px] font-medium text-gray-400 mb-8 select-none">
+                <div class="mb-2 flex items-center justify-center gap-3 no-print">
+                    <a routerLink="/privacy-policy" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Chính sách bảo mật</a>
+                    <span class="text-gray-300 dark:text-slate-700">&bull;</span>
+                    <a routerLink="/terms-of-service" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Điều khoản sử dụng</a>
+                </div>
                 &copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
                 <span class="text-gray-400/80 dark:text-gray-500">NAFIQPM6 Laboratory Information Management System Cloud &bull; {{state.systemVersion()}}</span>
             </div>
