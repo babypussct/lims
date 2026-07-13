@@ -80,6 +80,7 @@
         [getAllReportsForPrefixFn]="getAllReportsForPrefix.bind(this)"
         [draftStatus]="draft()?.status || 'draft'"
         [progress]="samplePublishProgress()"
+        [sampleList]="run()?.sampleList || []"
         (openPdf)="openPdfPreview($event.pdfUrl, $event.docsUrl)">
       </app-result-active-reports-panel>
 
