@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { PrintService } from '../../../core/services/print.service';
 
 @Component({
   selector: 'app-report-hub-modal',
@@ -114,6 +115,12 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                 <i class="fa-solid fa-file-word text-xs"></i>
                               </a>
                             }
+                            @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
+                              <button (click)="quickPrint(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl)"
+                                 class="w-8 h-8 rounded-xl bg-white hover:bg-slate-100 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer" title="In nhanh">
+                                <i class="fa-solid fa-print text-xs"></i>
+                              </button>
+                            }
                           </div>
                         </div>
 
@@ -208,6 +215,12 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                        class="w-8 h-8 rounded-xl bg-white hover:bg-blue-50 text-blue-500 dark:bg-slate-800 dark:hover:bg-blue-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 shadow-sm" title="Mở Docs">
                                       <i class="fa-solid fa-file-word text-xs"></i>
                                     </a>
+                                  }
+                                  @if (rep.pdfViewUrl || rep.pdfUrl) {
+                                    <button (click)="quickPrint(rep.pdfViewUrl || rep.pdfUrl)"
+                                       class="w-8 h-8 rounded-xl bg-white hover:bg-slate-100 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer" title="In nhanh">
+                                      <i class="fa-solid fa-print text-xs"></i>
+                                    </button>
                                   }
                                 </div>
                               </div>
@@ -327,6 +340,12 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                               <i class="fa-solid fa-file-word text-[10px]"></i>
                             </a>
                           }
+                          @if (hist.pdfViewUrl || hist.pdfUrl) {
+                            <button (click)="quickPrint(hist.pdfViewUrl || hist.pdfUrl)"
+                               class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-90 border-0 cursor-pointer" title="In nhanh bản này">
+                              <i class="fa-solid fa-print text-[10px]"></i>
+                            </button>
+                          }
                         </div>
                       </div>
                       @if (hist.includedSamples?.length > 0) {
@@ -399,6 +418,7 @@ export class ReportHubModalComponent {
   @Output() previewPdf = new EventEmitter<{pdfUrl: string, docsUrl?: string, prefix: string, version?: number, publishedBy?: string, publishedAt?: string}>();
 
   private sanitizer = inject(DomSanitizer);
+  private printService = inject(PrintService);
   activeTab = signal<'general' | 'prefix'>('general');
   expandedChipKeys = signal<Record<string, boolean>>({});
 
@@ -417,7 +437,12 @@ export class ReportHubModalComponent {
   }
 
   getSafeGoogleUrl(docsUrl: string): SafeUrl {
-    return this.sanitizer.bypassSecurityTrustUrl(docsUrl);
+    // Chỉ mở chế độ xem để không đưa người dùng vào trang chỉnh sửa Docs.
+    return this.sanitizer.bypassSecurityTrustUrl(docsUrl.replace(/\/edit.*$/, '/preview'));
+  }
+
+  quickPrint(pdfUrl: string): void {
+    this.printService.quickPrint(pdfUrl, null);
   }
 
   toggleChipExpand(key: string) {

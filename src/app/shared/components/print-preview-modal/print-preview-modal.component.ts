@@ -99,104 +99,110 @@ import { ToastService } from '../../../core/services/toast.service';
                 (click)="$event.stopPropagation()">
                 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-6 py-4 flex flex-col shrink-0 border-b border-indigo-500/20 shadow-md">
-                    <div class="flex justify-between items-center w-full gap-4 flex-wrap sm:flex-nowrap">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
-                                <i class="fa-solid fa-file-pdf text-lg text-red-400"></i>
-                            </div>
-                            <div>
-                                <span class="text-[10px] font-bold uppercase text-indigo-300 tracking-widest block mb-0.5">
-                                    {{ printService.pdfVersion() === 0 ? 'Chứng chỉ chất lượng (CoA)' : 'LIMS Báo cáo Kết quả' }}
-                                </span>
-                                <h4 class="text-sm sm:text-base font-extrabold m-0 tracking-tight text-white">{{ printService.pdfTitle() }}</h4>
-                            </div>
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between shrink-0 border-b border-indigo-500/20 shadow-md gap-3">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
+                            <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i>
                         </div>
-                        
-                        <!-- Right Side Actions -->
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <!-- Google Docs Button -->
-                            @if (printService.docsUrl()) {
-                                <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer"
-                                   class="px-3.5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer border border-slate-700">
-                                    <i class="fa-solid fa-file-word text-blue-400"></i>
-                                    <span>GOOGLE DOCS</span>
-                                </a>
+                        <div class="min-w-0 flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 flex-wrap min-w-0">
+                                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider shrink-0">
+                                    {{ printService.pdfVersion() === 0 ? 'CoA' : 'Báo cáo' }}
+                                </span>
+                                <h4 class="text-xs sm:text-sm font-extrabold m-0 tracking-tight text-white truncate max-w-[200px] sm:max-w-[300px] md:max-w-[450px]" [title]="printService.pdfTitle()">
+                                    {{ printService.pdfTitle() }}
+                                </h4>
+                            </div>
+                            
+                            @if (printService.pdfVersion() > 0) {
+                                <div class="flex items-center gap-2 text-[10px] text-slate-455 flex-wrap">
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-code-branch text-fuchsia-400"></i>
+                                        <span class="text-slate-350">v{{ printService.pdfVersion() }}</span>
+                                    </span>
+                                    <span class="text-slate-650 font-bold hidden sm:inline">•</span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-user text-indigo-350"></i>
+                                        <span class="text-slate-300 font-semibold">{{ printService.pdfAnalyst() }}</span>
+                                    </span>
+                                    @if (printService.pdfPublishDate()) {
+                                        <span class="text-slate-650 font-bold hidden md:inline">•</span>
+                                        <span class="flex items-center gap-1 hidden md:inline-flex">
+                                            <i class="fa-solid fa-clock text-blue-400"></i>
+                                            <span class="text-slate-300">{{ formatPublishDate(printService.pdfPublishDate()) }}</span>
+                                        </span>
+                                    }
+                                </div>
                             }
-
-
-
-                            <!-- Print Button -->
-                            <button (click)="printPdf()" [disabled]="printService.isPrinting()"
-                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                @if (printService.isPrinting()) {
-                                    <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
-                                    <span>ĐANG CHUẨN BỊ...</span>
-                                } @else {
-                                    <i class="fa-solid fa-print"></i>
-                                    <span>IN NHANH</span>
-                                }
-                            </button>
-
-                            <!-- Download Button -->
-                            <button (click)="downloadPdf()" [disabled]="printService.isDownloading()"
-                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                @if (printService.isDownloading()) {
-                                    <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
-                                    <span>ĐANG TẢI...</span>
-                                } @else {
-                                    <i class="fa-solid fa-download"></i>
-                                    <span>TẢI TÀI LIỆU</span>
-                                }
-                            </button>
-
-                            <!-- Copy Link Button -->
-                            <button (click)="copyPdfLink()" 
-                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                <i class="fa-solid" [class.fa-copy]="!isCopying()" [class.fa-check]="isCopying()"></i>
-                                <span>{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LINK' }}</span>
-                            </button>
-
-
-
-                            <div class="h-6 w-[1px] bg-white/20 mx-1 hidden sm:block"></div>
-
-                            <!-- Maximize Toggle Button -->
-                            <button (click)="toggleFullscreen()" 
-                                    class="w-9 h-9 rounded-xl hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border-none cursor-pointer">
-                                <i class="fa-solid" [class.fa-expand]="!isFullscreen()" [class.fa-compress]="isFullscreen()"></i>
-                            </button>
-
-                            <!-- Close Button -->
-                            <button (click)="closePdfModal()" 
-                                    class="w-9 h-9 rounded-xl hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border border-white/10 cursor-pointer">
-                                <i class="fa-solid fa-xmark text-lg"></i>
-                            </button>
                         </div>
                     </div>
+                    
+                    <!-- Right Side Actions -->
+                    <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap justify-end shrink-0">
+                        <!-- Google Docs Button -->
+                        @if (printService.docsUrl()) {
+                            <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer"
+                               class="px-2.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer border border-slate-700"
+                               title="Mở Google Docs">
+                                <i class="fa-solid fa-file-word text-blue-400"></i>
+                                <span class="hidden md:inline">GOOGLE DOCS</span>
+                                <span class="inline md:hidden">Docs</span>
+                            </a>
+                        }
 
-                    <!-- Sub-header: Metadata badge row -->
-                    @if (printService.pdfVersion() > 0) {
-                        <div class="flex items-center gap-4 mt-3 pt-3 border-t border-white/10 text-xs text-slate-300">
-                            <span class="flex items-center gap-1.5">
-                                <i class="fa-solid fa-code-branch text-fuchsia-400"></i>
-                                <span>Phiên bản:</span>
-                                <strong class="text-white bg-fuchsia-600/60 px-2 py-0.5 rounded-lg font-extrabold text-[11px]">v{{ printService.pdfVersion() }}</strong>
-                            </span>
-                            <span class="flex items-center gap-1.5">
-                                <i class="fa-solid fa-user text-indigo-400"></i>
-                                <span>Phân tích viên:</span>
-                                <strong class="text-white font-bold">{{ printService.pdfAnalyst() }}</strong>
-                            </span>
-                            @if (printService.pdfPublishDate()) {
-                                <span class="flex items-center gap-1.5">
-                                    <i class="fa-solid fa-clock text-blue-400"></i>
-                                    <span>In lúc:</span>
-                                    <strong class="text-white font-bold">{{ formatPublishDate(printService.pdfPublishDate()) }}</strong>
-                                </span>
+                        <!-- Print Button -->
+                        <button (click)="printPdf()" [disabled]="printService.isPrinting()"
+                                class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
+                                title="In tài liệu">
+                            @if (printService.isPrinting()) {
+                                <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+                                <span>ĐANG IN...</span>
+                            } @else {
+                                <i class="fa-solid fa-print"></i>
+                                <span class="hidden md:inline">IN NHANH</span>
+                                <span class="inline md:hidden">In</span>
                             }
-                        </div>
-                    }
+                        </button>
+
+                        <!-- Download Button -->
+                        <button (click)="downloadPdf()" [disabled]="printService.isDownloading()"
+                                class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
+                                title="Tải PDF xuống">
+                            @if (printService.isDownloading()) {
+                                <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+                                <span>ĐANG TẢI...</span>
+                            } @else {
+                                <i class="fa-solid fa-download"></i>
+                                <span class="hidden md:inline">TẢI TÀI LIỆU</span>
+                                <span class="inline md:hidden">Tải file</span>
+                            }
+                        </button>
+
+                        <!-- Copy Link Button -->
+                        <button (click)="copyPdfLink()" 
+                                class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
+                                title="Sao chép liên kết PDF">
+                            <i class="fa-solid" [class.fa-copy]="!isCopying()" [class.fa-check]="isCopying()"></i>
+                            <span class="hidden md:inline">{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LINK' }}</span>
+                            <span class="inline md:hidden">{{ isCopying() ? 'Đã sao chép' : 'Sao chép' }}</span>
+                        </button>
+
+                        <div class="h-5 w-[1px] bg-white/20 mx-0.5 hidden sm:block"></div>
+
+                        <!-- Maximize Toggle Button -->
+                        <button (click)="toggleFullscreen()" 
+                                class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border-none cursor-pointer"
+                                [title]="isFullscreen() ? 'Thu nhỏ cửa sổ' : 'Phóng to cửa sổ'">
+                            <i class="fa-solid" [class.fa-expand]="!isFullscreen()" [class.fa-compress]="isFullscreen()"></i>
+                        </button>
+
+                        <!-- Close Button -->
+                        <button (click)="closePdfModal()" 
+                                class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border border-white/10 cursor-pointer"
+                                title="Đóng xem trước">
+                            <i class="fa-solid fa-xmark text-base"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Modal Body -->

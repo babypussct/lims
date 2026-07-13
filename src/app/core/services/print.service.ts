@@ -261,7 +261,7 @@ export class PrintService {
       return this.googleDriveService.hasValidToken;
   }
 
-  // authPopup: caller mở trước trong click handler để tránh bị chặn popup
+  // Called from a user action. GIS opens its own OAuth window when needed.
   async quickPrint(pdfUrl: string, authPopup?: WindowProxy | null): Promise<void> {
       const id = this.getFileId(pdfUrl);
       if (!id) {
@@ -276,23 +276,6 @@ export class PrintService {
       }
 
       if (!this.googleDriveService.hasValidToken) {
-          const popup = authPopup ?? window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-          if (!popup || popup.closed) {
-              this.toast.show('Không thể mở popup đăng nhập. Hãy cho phép hiển thị popup từ trang này.', 'error');
-              return;
-          }
-
-          try {
-              popup.document.write(
-                  '<html><head><title>Kết nối Google...</title></head>' +
-                  '<body style="display:flex;align-items:center;justify-content:center;' +
-                  'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
-                  '<div style="text-align:center">' +
-                  '<p style="font-size:15px;color:#64748b;font-weight:600">Đang chuẩn bị dịch vụ Google Drive...</p>' +
-                  '</div></body></html>'
-              );
-          } catch (_) {}
-
           try {
               if (!this.googleDriveService.canAuthSync) {
                   await this.googleDriveService.ensureInitialized();
@@ -301,16 +284,18 @@ export class PrintService {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
                       (err) => reject(new Error(err)),
-                      popup,
+                      // null = Google Identity Services opens the authorized
+                      // OAuth popup itself; do not create a blank placeholder.
+                      authPopup ?? null,
                       false
                   );
               });
           } catch (authErr: any) {
-              if (popup && !popup.closed) {
-                  try { popup.close(); } catch (_) {}
+              if (authPopup && !authPopup.closed) {
+                  try { authPopup.close(); } catch (_) {}
               }
-              window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
-              this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
+              console.error('[Print] Google authentication failed:', authErr);
+              this.toast.show('Không thể xác thực để in: ' + (authErr.message || 'Không xác định'), 'error');
               return;
           }
       }
@@ -325,7 +310,7 @@ export class PrintService {
           this.printBlobUrl(blobUrl, true);
       } catch (err: any) {
           console.error('[Print] Lỗi khi in nhanh:', err);
-          this.toast.show('Không thể in tự động (cần xác thực hoặc lỗi mạng). Đang mở chế độ xem trước...', 'warning');
+          this.toast.show('Không thể tải PDF để in. Đang mở bản xem trước...', 'warning');
           this.openPdfPreview(pdfUrl, 'Báo cáo (Cần in thủ công)', 1, 'Hệ thống', null, undefined, 'iframe');
       } finally {
           this.isPrinting.set(false);
