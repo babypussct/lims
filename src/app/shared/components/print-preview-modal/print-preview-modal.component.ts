@@ -413,26 +413,38 @@ export class PrintPreviewModalComponent {
       return match ? match[1] : null;
   }
 
-  async printPdf() {
+  printPdf() {
       const url = this.printService.pdfUrl();
-      if (url) {
-          await this.printService.quickPrint(url);
-      }
+      if (!url) return;
+      // Mở popup ngay trong click handler — trước bất kỳ await/async nào
+      const authPopup = this.printService.hasTokenForUrl(url)
+          ? null
+          : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+      this.printService.quickPrint(url, authPopup);
   }
 
-  async downloadPdf() {
+  downloadPdf() {
       const url = this.printService.pdfUrl();
       const title = this.printService.pdfTitle();
       const version = this.printService.pdfVersion();
-      if (url) {
-          // Gợi ý tên file: Tiêu_đề_v[Version].pdf
-          const fileName = `${title.replace(/[\/\\]/g, '_')}_v${version}.pdf`;
-          await this.printService.quickDownload(url, fileName);
-      }
+      if (!url) return;
+      const fileName = `${title.replace(/[\/\\]/g, '_')}_v${version}.pdf`;
+      // Mở popup ngay trong click handler — trước bất kỳ await/async nào
+      const authPopup = this.printService.hasTokenForUrl(url)
+          ? null
+          : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+      this.printService.quickDownload(url, fileName, authPopup);
   }
 
-  async retryLoadBlob() {
-      await this.printService.retryLoadPdfBlob();
+  retryLoadBlob() {
+      // Mở popup NGAY trong click handler — trước bất kỳ await hay async nào
+      // để trình duyệt không mất user gesture context và không chặn popup.
+      const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+      if (!authPopup || authPopup.closed) {
+          this.toast.show('Popup bị chặn. Vui lòng cho phép popup từ trang này rồi thử lại.', 'error');
+          return;
+      }
+      this.printService.retryLoadPdfBlob(authPopup);
   }
 
   async copyPdfLink() {

@@ -198,19 +198,14 @@ export class PrintService {
   }
 
 
-  // Được gọi từ nút "Thử lại" trong modal — phải nằm trong user gesture context
-  async retryLoadPdfBlob(): Promise<void> {
+  // Được gọi từ nút "Xác thực & Tải lại" trong modal.
+  // QUAN TRỌNG: caller phải mở popup TRƯỚC khi gọi hàm này (ngay trong click handler)
+  // để không bị trình duyệt chặn do mất user gesture context.
+  async retryLoadPdfBlob(authPopup: WindowProxy): Promise<void> {
       const pdfUrl = this.pdfUrl();
       if (!pdfUrl) return;
       const id = this.getFileId(pdfUrl);
       if (!id) return;
-
-      // Mở popup đồng bộ ngay trong click event để không bị chặn
-      const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-      if (!authPopup || authPopup.closed) {
-          this.toast.show('Popup bị chặn. Vui lòng cho phép popup từ trang này rồi thử lại.', 'error');
-          return;
-      }
 
       try {
           authPopup.document.write(
@@ -255,37 +250,42 @@ export class PrintService {
       }
   }
 
-  // --- 4. QUICK PRINT (No modal required) ---
   private getFileId(url: string | null): string | null {
       if (!url) return null;
       const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
       return match ? match[1] : null;
   }
 
-  async quickPrint(pdfUrl: string): Promise<void> {
+  /** True nếu đã có token hợp lệ hoặc URL không phải Drive (không cần popup) */
+  hasTokenForUrl(url: string): boolean {
+      if (!this.getFileId(url)) return true; // không phải Drive URL → không cần auth
+      if (this.pdfUrl() === url && this.pdfBlobUrl()?.startsWith('blob:')) return true; // đã có blob
+      return this.googleDriveService.hasValidToken;
+  }
+
+  // authPopup: caller mở trước trong click handler để tránh bị chặn popup
+  async quickPrint(pdfUrl: string, authPopup?: WindowProxy | null): Promise<void> {
       const id = this.getFileId(pdfUrl);
       if (!id) {
           window.open(pdfUrl, '_blank');
           return;
       }
-      
+
       // If we already loaded the blob for preview, reuse it!
       if (this.pdfUrl() === pdfUrl && this.pdfBlobUrl()?.startsWith('blob:')) {
           this.printBlobUrl(this.pdfBlobUrl()!);
           return;
       }
 
-      // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
       if (!this.googleDriveService.hasValidToken) {
-          // Mở popup ngay lập tức khi vẫn còn user gesture context để không bị chặn
-          const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-          if (!authPopup || authPopup.closed) {
+          const popup = authPopup ?? window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+          if (!popup || popup.closed) {
               this.toast.show('Không thể mở popup đăng nhập. Hãy cho phép hiển thị popup từ trang này.', 'error');
               return;
           }
 
           try {
-              authPopup.document.write(
+              popup.document.write(
                   '<html><head><title>Kết nối Google...</title></head>' +
                   '<body style="display:flex;align-items:center;justify-content:center;' +
                   'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
@@ -303,13 +303,13 @@ export class PrintService {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
                       (err) => reject(new Error(err)),
-                      authPopup,
-                      false // disable redirect fallback
+                      popup,
+                      false
                   );
               });
           } catch (authErr: any) {
-              if (authPopup && !authPopup.closed) {
-                  try { authPopup.close(); } catch (_) {}
+              if (popup && !popup.closed) {
+                  try { popup.close(); } catch (_) {}
               }
               window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
               this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
@@ -322,15 +322,12 @@ export class PrintService {
           this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
           await this.googleDriveService.ensureAuthenticated();
           const rawBlob = await this.googleDriveService.downloadFile(id);
-          // Ép kiểu Blob thành application/pdf để trình duyệt hiển thị trong iframe thay vì tải xuống
           const blob = new Blob([rawBlob], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
-
           this.printBlobUrl(blobUrl, true);
       } catch (err: any) {
           console.error('[Print] Lỗi khi in nhanh:', err);
           this.toast.show('Không thể in tự động (cần xác thực hoặc lỗi mạng). Đang mở chế độ xem trước...', 'warning');
-          // Mở Modal Preview trực tiếp trên trang thay vì window.open (tránh bị trình duyệt chặn popup)
           this.openPdfPreview(pdfUrl, 'Báo cáo (Cần in thủ công)', 1, 'Hệ thống', null, undefined, 'iframe');
       } finally {
           this.isPrinting.set(false);
@@ -353,31 +350,29 @@ export class PrintService {
       };
   }
 
-  // --- 5. QUICK DOWNLOAD (Silent background download) ---
-  async quickDownload(pdfUrl: string, fileName: string = 'document.pdf'): Promise<void> {
+  // authPopup: caller mở trước trong click handler để tránh bị chặn popup
+  async quickDownload(pdfUrl: string, fileName: string = 'document.pdf', authPopup?: WindowProxy | null): Promise<void> {
       const id = this.getFileId(pdfUrl);
       if (!id) {
           window.open(pdfUrl, '_blank');
           return;
       }
-      
+
       // If we already loaded the blob for preview, reuse it!
       if (this.pdfUrl() === pdfUrl && this.pdfBlobUrl()?.startsWith('blob:')) {
           this.downloadBlobUrl(this.pdfBlobUrl()!, fileName);
           return;
       }
 
-      // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
       if (!this.googleDriveService.hasValidToken) {
-          // Mở popup ngay lập tức khi vẫn còn user gesture context để không bị chặn
-          const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-          if (!authPopup || authPopup.closed) {
+          const popup = authPopup ?? window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+          if (!popup || popup.closed) {
               this.toast.show('Không thể mở popup đăng nhập. Hãy cho phép hiển thị popup từ trang này.', 'error');
               return;
           }
 
           try {
-              authPopup.document.write(
+              popup.document.write(
                   '<html><head><title>Kết nối Google...</title></head>' +
                   '<body style="display:flex;align-items:center;justify-content:center;' +
                   'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
@@ -395,13 +390,13 @@ export class PrintService {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
                       (err) => reject(new Error(err)),
-                      authPopup,
-                      false // disable redirect fallback
+                      popup,
+                      false
                   );
               });
           } catch (authErr: any) {
-              if (authPopup && !authPopup.closed) {
-                  try { authPopup.close(); } catch (_) {}
+              if (popup && !popup.closed) {
+                  try { popup.close(); } catch (_) {}
               }
               console.error('[Download] Auth failed, falling back to direct download link:', authErr);
               this.toast.show('Tải thất bại, chuyển sang tab mới...', 'warning');
@@ -413,13 +408,10 @@ export class PrintService {
       try {
           this.isDownloading.set(true);
           this.toast.show('Đang tải dữ liệu, vui lòng đợi...', 'info');
-          
           await this.googleDriveService.ensureAuthenticated();
           const blob = await this.googleDriveService.downloadFile(id);
           const blobUrl = URL.createObjectURL(blob);
-          
           this.downloadBlobUrl(blobUrl, fileName, true);
-          
       } catch (err: any) {
           console.error('[Download] Failed to download silently:', err);
           this.toast.show('Tải thất bại, chuyển sang tab mới...', 'warning');
