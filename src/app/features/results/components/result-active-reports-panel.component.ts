@@ -43,9 +43,12 @@ export class ResultActiveReportsPanelComponent {
     return this.getAllReportsForPrefixFn ? this.getAllReportsForPrefixFn(prefix) : [];
   }
 
-  /** Mở Google Docs trong tab mới */
+  /** Mở Google Docs trong tab mới ở chế độ xem trước */
   openDocsUrl(url: string) {
-    if (url) window.open(url, '_blank');
+    if (url) {
+      const previewUrl = url.replace(/\/edit.*$/, '/preview');
+      window.open(previewUrl, '_blank');
+    }
   }
 
   /** In nhanh không cần mở modal */

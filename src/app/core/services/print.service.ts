@@ -84,7 +84,8 @@ export class PrintService {
   // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
   openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe', docsUrl?: string) {
       this.pdfUrl.set(url);
-      this.docsUrl.set(docsUrl || null);
+      const docsPreviewUrl = docsUrl ? docsUrl.replace(/\/edit.*$/, '/preview') : null;
+      this.docsUrl.set(docsPreviewUrl);
       this.pdfTitle.set(title);
       this.pdfVersion.set(version);
       this.pdfAnalyst.set(analyst);
