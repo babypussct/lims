@@ -140,7 +140,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
   logFilterCategory = signal<'ALL' | 'SOP' | 'STOCK' | 'STANDARD' | 'APPROVE' | 'SYSTEM'>('ALL');
 
   recentLogsGrouped = computed(() => {
-      let logs = this.state.logs().slice(0, 50); // Fetch up to 50 logs for filtering
+      let logs = this.state.logs();
+      
+      const isManager = this.auth.currentUser()?.role === 'manager';
+      if (!isManager) {
+          const canViewInv = this.auth.canViewInventory();
+          const canViewStd = this.auth.canViewStandards();
+          const canViewSop = this.auth.canViewSop() || this.auth.canRunBatch();
+          const canViewSystem = this.auth.canManageSystem() || this.auth.canViewReports();
+
+          logs = logs.filter(l => {
+              const act = l.action || '';
+              if (act.includes('STOCK')) return canViewInv;
+              if (act.includes('STANDARD')) return canViewStd;
+              if (act.includes('RESULT') || act === 'PUBLISH_RESULT_REPORT' || act === 'CREATE_VIRTUAL_MASTER' || act === 'EDIT_REQUEST' || act === 'DIRECT_APPROVE' || act === 'APPROVE_REQUEST') {
+                  return canViewSop;
+              }
+              if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return canViewSystem;
+              return true;
+          });
+      }
+
+      logs = logs.slice(0, 50); // Fetch up to 50 logs for filtering after application of permissions filter
       
       const term = this.logSearchTerm().toLowerCase().trim();
       if (term) {
@@ -234,7 +255,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private _todayStr = this.getLocalYYYYMMDD(new Date());
   todayActivityCount = computed(() => {
-      return this.state.logs().filter(l => {
+      let logs = this.state.logs();
+      const isManager = this.auth.currentUser()?.role === 'manager';
+      if (!isManager) {
+          const canViewInv = this.auth.canViewInventory();
+          const canViewStd = this.auth.canViewStandards();
+          const canViewSop = this.auth.canViewSop() || this.auth.canRunBatch();
+          const canViewSystem = this.auth.canManageSystem() || this.auth.canViewReports();
+
+          logs = logs.filter(l => {
+              const act = l.action || '';
+              if (act.includes('STOCK')) return canViewInv;
+              if (act.includes('STANDARD')) return canViewStd;
+              if (act.includes('RESULT') || act === 'PUBLISH_RESULT_REPORT' || act === 'CREATE_VIRTUAL_MASTER' || act === 'EDIT_REQUEST' || act === 'DIRECT_APPROVE' || act === 'APPROVE_REQUEST') {
+                  return canViewSop;
+              }
+              if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return canViewSystem;
+              return true;
+          });
+      }
+
+      return logs.filter(l => {
           const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
           return d.toISOString().split('T')[0] === this._todayStr;
       }).length;

@@ -295,13 +295,11 @@ export class StateService implements OnDestroy {
       orderDirection: 'desc'
     };
 
-    if (this.auth.canViewReports()) {
-      const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
-        this.logs.set(items);
-        this.printableLogs.set(items.filter(l => l.printable === true));
-      });
-      this.listeners.push(logSub);
-    }
+    const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
+      this.logs.set(items);
+      this.printableLogs.set(items.filter(l => l.printable === true));
+    });
+    this.listeners.push(logSub);
 
     // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
     try {
