@@ -127,6 +127,23 @@ export class PrintService {
           window.open(pdfUrl, '_blank');
           return;
       }
+
+      // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
+      if (!this.googleDriveService.hasValidToken) {
+          try {
+              await new Promise<void>((resolve, reject) => {
+                  this.googleDriveService.authenticateSync(
+                      () => resolve(),
+                      (err) => reject(new Error(err))
+                  );
+              });
+          } catch (authErr: any) {
+              window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
+              this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
+              return;
+          }
+      }
+
       try {
           this.isPrinting.set(true);
           this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
@@ -164,6 +181,24 @@ export class PrintService {
           window.open(pdfUrl, '_blank');
           return;
       }
+
+      // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
+      if (!this.googleDriveService.hasValidToken) {
+          try {
+              await new Promise<void>((resolve, reject) => {
+                  this.googleDriveService.authenticateSync(
+                      () => resolve(),
+                      (err) => reject(new Error(err))
+                  );
+              });
+          } catch (authErr: any) {
+              console.error('[Download] Auth failed, falling back to direct download link:', authErr);
+              this.toast.show('Tải thất bại, chuyển sang tab mới...', 'warning');
+              window.open(`https://drive.google.com/uc?export=download&id=${id}`, '_blank');
+              return;
+          }
+      }
+
       try {
           this.isDownloading.set(true);
           this.toast.show('Đang tải dữ liệu, vui lòng đợi...', 'info');

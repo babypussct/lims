@@ -214,12 +214,13 @@ interface AvailableDateOption {
         column-gap: 8px !important;
       }
 
-      /* SOP Card dạng inline-block siêu nén, ôm khít nội dung */
+      /* SOP Card dạng block siêu nén, ôm khít nội dung (QUAN TRỌNG: Sửa lỗi khoảng trắng lớn đầu trang của Chrome) */
       body.daily-checklist-printing #print-container .cl-sop-section {
-        display: inline-block !important;
+        display: block !important;
         width: 100% !important;
         margin-bottom: 8px !important;
         break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
         page-break-inside: avoid !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
