@@ -458,6 +458,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.rememberSession.set(false);
       localStorage.setItem('lims_remember_session', 'false');
     }
+    this.auth.updatePersistence(this.rememberSession());
   }
 
   toggleRememberSession() {
@@ -467,6 +468,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.isSharedDevice.set(false);
       localStorage.setItem('lims_shared_device', 'false');
     }
+    this.auth.updatePersistence(this.rememberSession());
   }
 
   isLoading = signal(false);
@@ -645,13 +647,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         
         await loginPromise;
     } catch (e: any) {
-        // auth/popup-blocked or COOP issues: AuthService already called signInWithRedirect,
-        // page is navigating away — just show a brief message, don't treat as error
+        // auth/popup-blocked: Hiện thông báo yêu cầu cho phép popup (KHÔNG redirect nữa)
         if (e.code === 'auth/popup-blocked') {
-            this.errorMsg.set('Đang chuyển hướng đến Google đăng nhập...');
-            return; // Page navigating away, no need to reset loading
-        }
-        if (e.code === 'auth/popup-closed-by-user') {
+            this.errorMsg.set('Trình duyệt chặn popup. Nhấn biểu tượng 🔒 trên thanh địa chỉ → "Always allow popups" rồi thử lại.');
+        } else if (e.code === 'auth/popup-closed-by-user') {
             this.errorMsg.set('Đã hủy đăng nhập Google.');
             // Let the finally block reset the loading spinners
         } else {

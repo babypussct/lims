@@ -224,12 +224,23 @@ import { ToastService } from '../../../core/services/toast.service';
                             <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl bg-white"></iframe>
                         }
                     } @else {
-                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
-                            <i class="fa-solid fa-triangle-exclamation text-4xl text-amber-500"></i>
-                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Không thể hiển thị tài liệu</span>
-                            <p class="text-xs text-slate-500 text-center max-w-md leading-relaxed">
-                                Tài liệu bị lỗi hiển thị hoặc bị chặn bởi trình duyệt. Vui lòng nhấn nút
-                                <strong class="text-indigo-500">TẢI TÀI LIỆU</strong> hoặc <strong class="text-indigo-500">GOOGLE DOCS</strong> ở góc trên để xem.
+                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-4 p-6">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                                <i class="fa-solid fa-triangle-exclamation text-2xl text-amber-500"></i>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Cần xác thực Google Drive</p>
+                                <p class="text-xs text-slate-500 max-w-xs leading-relaxed">
+                                    Phiên xác thực đã hết hạn. Nhấn nút bên dưới để đăng nhập lại (một cửa sổ nhỏ sẽ xuất hiện).
+                                </p>
+                            </div>
+                            <button (click)="retryLoadBlob()"
+                                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 active:scale-95">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>Xác thực & Tải lại</span>
+                            </button>
+                            <p class="text-[11px] text-slate-400">
+                                Hoặc nhấn <strong class="text-indigo-500">TẢI TÀI LIỆU</strong> / <strong class="text-indigo-500">GOOGLE DOCS</strong> ở trên.
                             </p>
                         </div>
                     }
@@ -418,6 +429,10 @@ export class PrintPreviewModalComponent {
           const fileName = `${title.replace(/[\/\\]/g, '_')}_v${version}.pdf`;
           await this.printService.quickDownload(url, fileName);
       }
+  }
+
+  async retryLoadBlob() {
+      await this.printService.retryLoadPdfBlob();
   }
 
   async copyPdfLink() {

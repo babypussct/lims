@@ -281,6 +281,52 @@ export class GoogleDriveService {
   }
 
   /**
+   * Try to get token silently without any popup or UI.
+   * Works if user has previously granted the scopes and is still logged into Google.
+   * Use this FIRST before opening any popup.
+   * Throws if silent auth fails (user needs to interact).
+   */
+  tryAuthSilent(): Promise<string> {
+      if (this.hasValidToken) return Promise.resolve(this.accessToken);
+      if (!this.tokenClient) return Promise.reject(new Error('GIS not initialized'));
+
+      return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+              this.currentCallback = null;
+              this.currentErrorCallback = null;
+              reject(new Error('silent_timeout'));
+          }, 6000);
+
+          this.currentCallback = (response: any) => {
+              clearTimeout(timeout);
+              this.currentCallback = null;
+              this.currentErrorCallback = null;
+              if (response.error) {
+                  reject(new Error(response.error));
+                  return;
+              }
+              this.accessToken = response.access_token;
+              this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+              this.isAuthenticated.set(true);
+              sessionStorage.setItem('__gd_token', this.accessToken);
+              sessionStorage.setItem('__gd_expiry', this.tokenExpiry.toString());
+              console.log('[GoogleDrive] Silent auth successful.');
+              resolve(this.accessToken);
+          };
+
+          this.currentErrorCallback = (error: any) => {
+              clearTimeout(timeout);
+              this.currentCallback = null;
+              this.currentErrorCallback = null;
+              reject(new Error(error?.type || 'silent_auth_failed'));
+          };
+
+          // prompt: '' = use existing session, no UI shown
+          this.tokenClient.requestAccessToken({ prompt: '' });
+      });
+  }
+
+  /**
    * Auth trigger — call directly from a (click) handler.
    *
    * Strategy:

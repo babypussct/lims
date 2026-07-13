@@ -208,6 +208,13 @@ export class AuthService {
 
   // --- AUTH METHODS ---
 
+  /** Cập nhật persistence ngay khi user thay đổi checkbox "Duy trì đăng nhập" */
+  updatePersistence(rememberSession: boolean) {
+    setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
+      console.warn('[Auth] Failed to update session persistence:', err);
+    });
+  }
+
   async login(email: string, pass: string) {
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
     await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
@@ -234,13 +241,11 @@ export class AuthService {
     provider.addScope('https://www.googleapis.com/auth/drive.file');
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
 
-    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
-      console.warn('[Auth] Failed to set session persistence dynamically:', err);
-    });
+    // KHÔNG gọi await setPersistence ở đây — nó đã được set trong constructor.
+    // await làm mất user gesture context, khiến trình duyệt chặn popup của Firebase.
 
     try {
-        // ── 1. Try popup first ──
+        // ── Try popup — PHẢI chạy đồng bộ ngay sau click, không có await nào trước đó ──
         const result = await signInWithPopup(this.auth, provider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential?.accessToken) {
@@ -252,14 +257,14 @@ export class AuthService {
         }
     } catch (e: any) {
         if (e.code === 'auth/popup-closed-by-user') {
-            throw e; // Trả về cho component xử lý (không chuyển hướng)
+            throw e; // Trả về cho component xử lý
         }
         if (e.code === 'auth/popup-blocked') {
-            // ── 2. Popup blocked → Bulletproof Direct OpenID Connect Redirect ──
-            console.warn('[Auth] Popup blocked or COOP issue. Falling back to manual OpenID Connect redirect.');
-            this._authViaDirectOidc();
-            // Page navigates away — no further code runs here
-            return;
+            // Không redirect — hiện thông báo yêu cầu cho phép popup
+            console.warn('[Auth] Popup blocked by browser.');
+            const err = new Error('Trình duyệt đã chặn cửa sổ đăng nhập Google.\n→ Nhấn vào biểu tượng popup-blocked trên thanh địa chỉ và chọn "Always allow".\n→ Sau đó thử lại.');
+            (err as any).code = 'auth/popup-blocked';
+            throw err;
         }
         throw e; // Re-throw real errors
     }

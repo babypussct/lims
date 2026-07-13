@@ -145,51 +145,59 @@ export class PrintService {
           return;
       }
 
-      // Synchronous popup check before async fetch
-      let authPopup: WindowProxy | null = null;
-      if (!this.googleDriveService.hasValidToken) {
-          authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-          if (authPopup && !authPopup.closed) {
-              try {
-                  authPopup.document.write(
-                      '<html><head><title>Kết nối Google...</title></head>' +
-                      '<body style="display:flex;align-items:center;justify-content:center;' +
-                      'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
-                      '<div style="text-align:center">' +
-                      '<p style="font-size:15px;color:#64748b;font-weight:600">Đang tải tài liệu xem trước...</p>' +
-                      '</div></body></html>'
-                  );
-              } catch (_) {}
-          } else {
-              // Popup blocked. We can't fetch the blob. Fallback to normal URL and let user deal with it.
-              this.pdfBlobUrl.set(pdfUrl);
-              return;
-          }
-      }
-
       this.isPdfBlobLoading.set(true);
       try {
-          if (!this.googleDriveService.hasValidToken) {
-              if (!this.googleDriveService.canAuthSync) {
-                  await this.googleDriveService.ensureInitialized();
+          // 1. Đảm bảo GIS đã khởi tạo
+          await this.googleDriveService.ensureInitialized();
+
+          // 2. Đảm bảo có token hợp lệ (silent — không cần popup)
+          //    Luôn thử silent auth trước để làm mới token (tránh token cũ từ redirect bị thu hồi)
+          try {
+              console.log('[Preview] Refreshing Drive token (silent)...');
+              await this.googleDriveService.tryAuthSilent();
+              console.log('[Preview] Drive token OK.');
+          } catch (silentErr: any) {
+              if (!this.googleDriveService.hasValidToken) {
+                  // Không có token nào cả → cần user tương tác
+                  console.warn('[Preview] No valid token, need user interaction:', silentErr.message);
+                  this.isPdfBlobLoading.set(false);
+                  return; // pdfBlobUrl = null → UI hiện nút "Xác thực & Tải lại"
               }
-              await new Promise<void>((resolve, reject) => {
-                  this.googleDriveService.authenticateSync(
-                      () => resolve(),
-                      (err) => reject(new Error(err)),
-                      authPopup,
-                      false // disable redirect
-                  );
-              });
-          } else {
-              await this.googleDriveService.ensureAuthenticated();
+              // Có token trong cache nhưng silent refresh lỗi → thử với token hiện tại trước
+              console.warn('[Preview] Silent refresh failed, trying with cached token...');
           }
 
-          const rawBlob = await this.googleDriveService.downloadFile(id);
-          const blob = new Blob([rawBlob], { type: 'application/pdf' });
+          // 3. Tải file, xử lý 401 bằng cách xóa token cũ và thử lại
+          let rawBlob: Blob;
+          try {
+              rawBlob = await this.googleDriveService.downloadFile(id);
+          } catch (downloadErr: any) {
+              const is401 = downloadErr.message?.includes('401') ||
+                            downloadErr.message?.toLowerCase().includes('invalid authentication') ||
+                            downloadErr.message?.toLowerCase().includes('invalid credential');
+              
+              if (is401) {
+                  // Token cũ không hợp lệ (có thể do thiếu Drive scopes từ redirect)
+                  console.warn('[Preview] 401 from Drive — clearing stale token, retrying silent auth...');
+                  this.googleDriveService.clearSession();
+                  
+                  try {
+                      await this.googleDriveService.tryAuthSilent();
+                      rawBlob = await this.googleDriveService.downloadFile(id);
+                  } catch (retryErr: any) {
+                      // Cả retry cũng thất bại → hiện nút "Xác thực & Tải lại"
+                      console.error('[Preview] Retry after 401 also failed:', retryErr.message);
+                      this.isPdfBlobLoading.set(false);
+                      return;
+                  }
+              } else {
+                  throw downloadErr;
+              }
+          }
+
+          const blob = new Blob([rawBlob!], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
-          
-          // Double check if preview is still open and matches this URL
+
           if (this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
               this.pdfBlobUrl.set(blobUrl);
           } else {
@@ -197,11 +205,64 @@ export class PrintService {
           }
       } catch (err: any) {
           console.error('[Preview] Failed to load PDF blob:', err);
+          // pdfBlobUrl = null → UI hiện nút retry
+      } finally {
+          this.isPdfBlobLoading.set(false);
+      }
+  }
+
+  // Được gọi từ nút "Thử lại" trong modal — phải nằm trong user gesture context
+  async retryLoadPdfBlob(): Promise<void> {
+      const pdfUrl = this.pdfUrl();
+      if (!pdfUrl) return;
+      const id = this.getFileId(pdfUrl);
+      if (!id) return;
+
+      // Mở popup đồng bộ ngay trong click event để không bị chặn
+      const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+      if (!authPopup || authPopup.closed) {
+          this.toast.show('Popup bị chặn. Vui lòng cho phép popup từ trang này rồi thử lại.', 'error');
+          return;
+      }
+
+      try {
+          authPopup.document.write(
+              '<html><head><title>Kết nối Google...</title></head>' +
+              '<body style="display:flex;align-items:center;justify-content:center;' +
+              'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
+              '<div style="text-align:center"><p style="font-size:15px;color:#64748b;font-weight:600">Đang xác thực Google Drive...</p></div>' +
+              '</body></html>'
+          );
+      } catch (_) {}
+
+      this.isPdfBlobLoading.set(true);
+      try {
+          if (!this.googleDriveService.canAuthSync) {
+              await this.googleDriveService.ensureInitialized();
+          }
+          await new Promise<void>((resolve, reject) => {
+              this.googleDriveService.authenticateSync(
+                  () => resolve(),
+                  (err) => reject(new Error(err)),
+                  authPopup,
+                  false
+              );
+          });
+
+          const rawBlob = await this.googleDriveService.downloadFile(id);
+          const blob = new Blob([rawBlob], { type: 'application/pdf' });
+          const blobUrl = URL.createObjectURL(blob);
+
+          if (this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
+              this.pdfBlobUrl.set(blobUrl);
+          } else {
+              URL.revokeObjectURL(blobUrl);
+          }
+      } catch (err: any) {
           if (authPopup && !authPopup.closed) {
               try { authPopup.close(); } catch (_) {}
           }
-          // Fallback
-          this.pdfBlobUrl.set(pdfUrl);
+          this.toast.show('Xác thực thất bại: ' + (err.message || 'Không xác định'), 'error');
       } finally {
           this.isPdfBlobLoading.set(false);
       }
