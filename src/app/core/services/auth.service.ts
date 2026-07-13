@@ -232,7 +232,7 @@ export class AuthService {
     }
   }
 
-  async loginWithGoogle() {
+  loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
     // Force account picker — important for shared workstations
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -241,12 +241,10 @@ export class AuthService {
     provider.addScope('https://www.googleapis.com/auth/drive.file');
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
 
-    // KHÔNG gọi await setPersistence ở đây — nó đã được set trong constructor.
-    // await làm mất user gesture context, khiến trình duyệt chặn popup của Firebase.
+    // KHÔNG dùng async/await ở đây để đảm bảo `signInWithPopup` chạy đồng bộ ngay lập tức
+    // trong ngữ cảnh user click, tránh việc trình duyệt hiểu lầm và chặn popup.
 
-    try {
-        // ── Try popup — PHẢI chạy đồng bộ ngay sau click, không có await nào trước đó ──
-        const result = await signInWithPopup(this.auth, provider);
+    return signInWithPopup(this.auth, provider).then((result) => {
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential?.accessToken) {
             this.googleDriveService.setAccessToken(credential.accessToken);
@@ -255,19 +253,18 @@ export class AuthService {
         if (!this.currentUser() && this.auth.currentUser) {
             this.syncUser(this.auth.currentUser);
         }
-    } catch (e: any) {
+    }).catch((e: any) => {
         if (e.code === 'auth/popup-closed-by-user') {
             throw e; // Trả về cho component xử lý
         }
         if (e.code === 'auth/popup-blocked') {
-            // Không redirect — hiện thông báo yêu cầu cho phép popup
             console.warn('[Auth] Popup blocked by browser.');
-            const err = new Error('Trình duyệt đã chặn cửa sổ đăng nhập Google.\n→ Nhấn vào biểu tượng popup-blocked trên thanh địa chỉ và chọn "Always allow".\n→ Sau đó thử lại.');
+            const err = new Error('Trình duyệt chặn cửa sổ đăng nhập Google.\n→ Có thể do môi trường hiện tại (như Facebook browser/Zalo) không hỗ trợ popup.\n→ Hãy dùng Safari/Chrome gốc hoặc cho phép popup từ thanh địa chỉ.');
             (err as any).code = 'auth/popup-blocked';
             throw err;
         }
         throw e; // Re-throw real errors
-    }
+    });
   }
 
   /**

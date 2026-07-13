@@ -186,7 +186,8 @@ export class PrintService {
                       rawBlob = await this.googleDriveService.downloadFile(id);
                   } catch (retryErr: any) {
                       // Cả retry cũng thất bại → hiện nút "Xác thực & Tải lại"
-                      console.error('[Preview] Retry after 401 also failed:', retryErr.message);
+                      // Dùng console.info thay vì error để không làm rối log, vì đây là luồng expected
+                      console.info('[Preview] Requires user interaction (silent auth blocked):', retryErr.message);
                       this.isPdfBlobLoading.set(false);
                       return;
                   }

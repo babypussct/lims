@@ -634,32 +634,31 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 
-  async loginGoogle() {
+  loginGoogle(): void {
     this.errorMsg.set('');
 
-    try {
-        // Trigger the popup immediately (in user gesture context)
-        const loginPromise = this.auth.loginWithGoogle();
-        
-        // Set loading AFTER popup is triggered (not before — breaks gesture context)
-        this.isLoading.set(true); 
-        this.isGoogleLoading.set(true); 
-        
-        await loginPromise;
-    } catch (e: any) {
+    // Gọi loginWithGoogle (trả về Promise) ĐỒNG BỘ để không làm mất user gesture context
+    const loginPromise = this.auth.loginWithGoogle();
+    
+    // Set loading AFTER popup is triggered
+    this.isLoading.set(true); 
+    this.isGoogleLoading.set(true); 
+    
+    loginPromise.then(() => {
+        this.isLoading.set(false);
+        this.isGoogleLoading.set(false);
+    }).catch((e: any) => {
         // auth/popup-blocked: Hiện thông báo yêu cầu cho phép popup (KHÔNG redirect nữa)
         if (e.code === 'auth/popup-blocked') {
-            this.errorMsg.set('Trình duyệt chặn popup. Nhấn biểu tượng 🔒 trên thanh địa chỉ → "Always allow popups" rồi thử lại.');
+            this.errorMsg.set('Trình duyệt chặn popup. Vui lòng cho phép popup từ trang này hoặc dùng Safari/Chrome gốc thay vì trình duyệt nhúng (Zalo/Facebook).');
         } else if (e.code === 'auth/popup-closed-by-user') {
             this.errorMsg.set('Đã hủy đăng nhập Google.');
-            // Let the finally block reset the loading spinners
         } else {
             this.handleError(e, true);
         }
-    } finally { 
         this.isLoading.set(false); 
         this.isGoogleLoading.set(false); 
-    }
+    });
   }
 
   private handleError(e: any, isGoogle: boolean) {
