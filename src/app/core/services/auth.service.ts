@@ -232,70 +232,34 @@ export class AuthService {
     }
   }
 
-  loginWithGoogle(): Promise<void> {
+  async loginWithGoogle() {
     const provider = new GoogleAuthProvider();
+    // Force account picker — important for shared workstations
     provider.setCustomParameters({ prompt: 'select_account' });
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
-    provider.addScope('https://www.googleapis.com/auth/drive.readonly');
 
-    // MỞ POPUP ĐỒNG BỘ NGAY LẬP TỨC TRONG USER GESTURE ĐỂ KHÔNG BỊ CHẶN
-    const authPopup = window.open('about:blank', 'firebase_auth_popup', 'width=500,height=600,left=200,top=100');
-    
-    if (!authPopup || authPopup.closed) {
-        // Nếu popup thực sự bị chặn (do Zalo/Facebook WebView hoặc người dùng tắt hoàn toàn)
-        // Chúng ta buộc phải dùng Redirect
-        console.warn('[Auth] Synchronous popup blocked! Falling back to OIDC redirect...');
-        this._authViaDirectOidc();
-        return Promise.resolve(); // Navigate away
-    }
+    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
+      console.warn('[Auth] Failed to set session persistence dynamically:', err);
+    });
 
-    // Nếu popup mở thành công, hiển thị màn hình chờ mồi
     try {
-        authPopup.document.write(
-            '<html><head><title>Đang kết nối...</title></head>' +
-            '<body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
-            '<div style="text-align:center"><p style="font-size:15px;color:#64748b;font-weight:600">Đang khởi tạo đăng nhập Google...</p></div>' +
-            '</body></html>'
-        );
-    } catch (_) {}
-
-    // Monkey-patch window.open để Firebase sử dụng lại popup đồng bộ vừa mở
-    const origOpen = window.open.bind(window);
-    let restored = false;
-    const restore = () => { if (!restored) { window.open = origOpen; restored = true; } };
-
-    (window as any).open = (url?: string | URL, target?: string, features?: string): WindowProxy | null => {
-        restore();
-        if (authPopup && !authPopup.closed && url) {
-            try { authPopup.location.href = url.toString(); } catch (_) {}
-            return authPopup;
-        }
-        return origOpen(url, target, features);
-    };
-
-    return signInWithPopup(this.auth, provider).then((result) => {
-        restore();
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken) {
-            this.googleDriveService.setAccessToken(credential.accessToken);
-        }
+        // ── 1. Try popup first ──
+        const result = await signInWithPopup(this.auth, provider);
         if (!this.currentUser() && this.auth.currentUser) {
             this.syncUser(this.auth.currentUser);
         }
-    }).catch((e: any) => {
-        restore();
-        if (authPopup && !authPopup.closed) authPopup.close();
-
+    } catch (e: any) {
         if (e.code === 'auth/popup-closed-by-user') {
-            throw e; 
+            throw e; // Trả về cho component xử lý (không chuyển hướng)
         }
         if (e.code === 'auth/popup-blocked') {
-            console.warn('[Auth] Firebase still reported popup blocked. Falling back to redirect.');
+            // Popup bị chặn -> Fallback sang redirect (yêu cầu của người dùng)
+            console.warn('[Auth] Popup blocked or COOP issue. Falling back to manual OpenID Connect redirect.');
             this._authViaDirectOidc();
-            return Promise.resolve();
+            return; // Không ném lỗi nữa vì sẽ chuyển trang
         }
-        throw e;
-    });
+        throw e; // Re-throw real errors
+    }
   }
 
   /**
