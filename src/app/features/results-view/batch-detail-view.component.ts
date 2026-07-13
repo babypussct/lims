@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 declare let QRious: any;
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ResultService } from '../results/services/result.service';
@@ -383,7 +382,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                   </a>
                 }
 
-                @if (safePdfIframeUrl()) {
+                @if (getCurrentPdfUrl()) {
                   <button (click)="openPdfInModal(getCurrentPdfUrl()!)" 
                           class="p-2 -mr-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition active:scale-90" title="Mở PDF toàn màn hình (Modal hệ thống)">
                     <i class="fa-solid fa-expand text-sm lg:text-base"></i>
@@ -393,8 +392,18 @@ import { MasterTargetService } from '../targets/master-target.service';
             </div>
 
             <div class="flex-1 bg-slate-100/50 dark:bg-slate-950/50 flex flex-col relative">
-              @if (safePdfIframeUrl()) {
-                <iframe [src]="safePdfIframeUrl()" class="w-full h-full border-none absolute inset-0 z-0" allow="autoplay"></iframe>
+              @if (getCurrentPdfUrl()) {
+                <div class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+                  <i class="fa-solid fa-file-pdf text-5xl text-red-500"></i>
+                  <div>
+                    <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Báo cáo PDF đã sẵn sàng</p>
+                    <p class="text-xs text-slate-400 mt-1">Mở bằng PDF Preview để xác thực và xem an toàn.</p>
+                  </div>
+                  <button (click)="openPdfInModal(getCurrentPdfUrl()!)"
+                          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
+                    <i class="fa-solid fa-expand mr-2"></i>MỞ PDF PREVIEW
+                  </button>
+                </div>
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
                   <i class="fa-regular fa-file-pdf text-4xl"></i>
@@ -484,7 +493,6 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   private resultService = inject(ResultService);
   private printService = inject(PrintService);
   private toast = inject(ToastService);
-  private sanitizer = inject(DomSanitizer);
   private masterTargetService = inject(MasterTargetService);
   private auth = inject(AuthService);
 
@@ -550,26 +558,6 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       }
     }
     return true;
-  });
-
-  // Safe Docs Iframe url calculated from current filter
-  safeDocsIframeUrl = computed<SafeResourceUrl | null>(() => {
-    const url = this.getCurrentDocsUrl();
-    if (!url) return null;
-
-    // Convert to Google Drive preview embed format
-    const previewUrl = this.getGoogleDrivePreviewUrl(url);
-    return this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
-  });
-
-  // Safe PDF Iframe url calculated from current filter
-  safePdfIframeUrl = computed<SafeResourceUrl | null>(() => {
-    const url = this.getCurrentPdfUrl();
-    if (!url) return null;
-
-    // Convert to Google Drive preview embed format
-    const previewUrl = this.getGoogleDrivePreviewUrl(url);
-    return this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
   });
 
   // Extract compounds columns

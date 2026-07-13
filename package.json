@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "typecheck:api": "tsc -p tsconfig.api.json --noEmit",
     "dump-sops": "node scratch/dump_all_sops.js"
   },
   "private": true,

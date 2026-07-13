@@ -79,6 +79,11 @@ export class GoogleDriveService {
       this.isAuthenticated.set(false);
       sessionStorage.removeItem('__gd_token');
       sessionStorage.removeItem('__gd_expiry');
+      fetch('/api/oauth/google/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          keepalive: true
+      }).catch(() => undefined);
       console.log('[GoogleDrive] Session cleared.');
   }
 
@@ -450,6 +455,27 @@ export class GoogleDriveService {
       }
   }
 
+  /** Whether the server-side OAuth session cookie is currently usable. */
+  async hasServerOAuthSession(): Promise<boolean> {
+      try {
+          const response = await fetch('/api/oauth/google/status', {
+              credentials: 'same-origin',
+              cache: 'no-store'
+          });
+          if (!response.ok) return false;
+          const data = await response.json();
+          return data?.authenticated === true;
+      } catch {
+          return false;
+      }
+  }
+
+  /** Start the official server-side authorization-code redirect flow. */
+  beginRedirectAuth(): void {
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.location.assign(`/api/oauth/google/start?returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
   /** Starts the official GIS popup without opening or hijacking a placeholder. */
   private requestNativePopup(
       onSuccess: (token: string) => void,
@@ -508,39 +534,10 @@ export class GoogleDriveService {
       }
   }
 
-  /**
-   * Redirect-based auth fallback. Bypasses GIS popup entirely by
-   * constructing the OAuth 2.0 implicit grant URL manually and
-   * navigating via window.location.href (no popup needed).
-   *
-   * After auth, Google redirects back with #access_token=... in the URL.
-   * The index.html pre-bootstrap script catches and stores the token.
-   */
+  /** Redirect fallback using the server-side authorization-code flow. */
   private _authViaRedirect(): void {
-      const config = (environment as any).googleDrive;
-      if (!config?.clientId) {
-          console.error('[GoogleDrive] No clientId for redirect auth.');
-          return;
-      }
-
-      // Save current route so we return to the same page after redirect
-      sessionStorage.setItem('__gd_route', window.location.hash || '#/standards');
-
-      // redirect_uri PHẢI KHỚP CHÍNH XÁC với Authorized redirect URIs trong Google Console
-      // Dùng origin only (VD: https://nafiqpm6.vercel.app) — KHÔNG có dấu / cuối
-      const redirectUri = window.location.origin;
-      const params = new URLSearchParams({
-          client_id: config.clientId,
-          redirect_uri: redirectUri,
-          response_type: 'token',
-          scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
-          include_granted_scopes: 'true',
-          prompt: 'consent',
-      });
-
-      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-      console.log('[GoogleDrive] Redirecting to Google OAuth...');
-      window.location.href = authUrl;
+      console.log('[GoogleDrive] Starting server-side authorization-code redirect...');
+      this.beginRedirectAuth();
   }
 
   /**
@@ -657,19 +654,16 @@ export class GoogleDriveService {
    * Uses OAuth token for authorized download to bypass CORS restrictions.
    */
   async downloadFile(fileId: string): Promise<Blob> {
-      await this.ensureInitialized();
-      const token = await this.requestAccessToken();
-      
-      const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-          {
-              headers: { Authorization: `Bearer ${token}` }
-          }
-      );
+      const res = await fetch(`/api/google/drive/download?fileId=${encodeURIComponent(fileId)}`, {
+          credentials: 'same-origin',
+          cache: 'no-store'
+      });
       
       if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
-          throw new Error(errBody?.error?.message || `HTTP ${res.status}`);
+          const error = new Error(errBody?.error || `HTTP ${res.status}`) as Error & { code?: string };
+          if (res.status === 401) error.code = 'oauth_required';
+          throw error;
       }
       return await res.blob();
   }

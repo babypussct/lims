@@ -477,6 +477,7 @@ type ViewMode = 'list' | 'grid';
   `]
 })
 export class DocumentsComponent implements OnInit, OnDestroy {
+  private readonly pendingPreviewKey = '__gd_pending_document_preview';
   private driveService = inject(GoogleDriveService);
   private sanitizer = inject(DomSanitizer);
 
@@ -605,9 +606,19 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     this.offlineListener = () => this.isOnline.set(false);
     window.addEventListener('online', this.onlineListener);
     window.addEventListener('offline', this.offlineListener);
+
+    const pending = sessionStorage.getItem(this.pendingPreviewKey);
+    if (pending) {
+      sessionStorage.removeItem(this.pendingPreviewKey);
+      try {
+        const item = JSON.parse(pending) as DriveItem;
+        setTimeout(() => this.onItemClick(item));
+      } catch (_) {}
+    }
   }
 
   ngOnDestroy() {
+    this.closePreview();
     if (this.searchSub) this.searchSub.unsubscribe();
     if (this.onlineListener) window.removeEventListener('online', this.onlineListener);
     if (this.offlineListener) window.removeEventListener('offline', this.offlineListener);
@@ -669,7 +680,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     return item.mimeType === 'application/vnd.google-apps.folder';
   }
 
-  onItemClick(item: DriveItem) {
+  async onItemClick(item: DriveItem) {
     if (this.isFolder(item)) {
       this.folderStack.update(stack => [...stack, { id: item.id, name: item.name }]);
       this.loadFolder(item.id);
@@ -677,12 +688,31 @@ export class DocumentsComponent implements OnInit, OnDestroy {
       if (!this.isOnline()) {
         return;
       }
+      if (item.mimeType.startsWith('application/vnd.google-apps.')) {
+        const docsUrl = (item.webViewLink || `https://drive.google.com/open?id=${item.id}`).replace(/\/edit.*$/, '/preview');
+        window.open(docsUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
       this.previewLoading.set(true);
-      const url = `https://drive.google.com/file/d/${item.id}/preview`;
-      this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
       this.previewName.set(item.name);
       this.originalLink.set(`https://drive.google.com/file/d/${item.id}/view`);
-      this.previewContentLink.set(`https://drive.google.com/uc?export=download&id=${item.id}`);
+      this.previewContentLink.set('');
+
+      try {
+        if (!await this.driveService.hasServerOAuthSession()) {
+          sessionStorage.setItem(this.pendingPreviewKey, JSON.stringify(item));
+          this.driveService.beginRedirectAuth();
+          return;
+        }
+        const blob = await this.driveService.downloadFile(item.id);
+        const objectUrl = URL.createObjectURL(blob);
+        this.previewContentLink.set(objectUrl);
+        this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
+      } catch (err: any) {
+        this.previewLoading.set(false);
+        this.error.set(err?.message || 'Không thể tải bản xem trước tài liệu.');
+      }
     }
   }
 
@@ -702,6 +732,8 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   }
 
   closePreview() {
+    const objectUrl = this.previewContentLink();
+    if (objectUrl?.startsWith('blob:')) URL.revokeObjectURL(objectUrl);
     this.previewUrl.set(null);
     this.previewName.set('');
     this.originalLink.set('');

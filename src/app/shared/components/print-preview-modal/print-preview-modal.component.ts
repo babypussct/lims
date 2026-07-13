@@ -422,11 +422,7 @@ export class PrintPreviewModalComponent {
   printPdf() {
       const url = this.printService.pdfUrl();
       if (!url) return;
-      // Mở popup ngay trong click handler — trước bất kỳ await/async nào
-      const authPopup = this.printService.hasTokenForUrl(url)
-          ? null
-          : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-      this.printService.quickPrint(url, authPopup);
+      this.printService.quickPrint(url);
   }
 
   downloadPdf() {
@@ -435,17 +431,11 @@ export class PrintPreviewModalComponent {
       const version = this.printService.pdfVersion();
       if (!url) return;
       const fileName = `${title.replace(/[\/\\]/g, '_')}_v${version}.pdf`;
-      // Mở popup ngay trong click handler — trước bất kỳ await/async nào
-      const authPopup = this.printService.hasTokenForUrl(url)
-          ? null
-          : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-      this.printService.quickDownload(url, fileName, authPopup);
+      this.printService.quickDownload(url, fileName);
   }
 
   retryLoadBlob() {
-      // GIS mở popup OAuth của chính Google ngay trong click handler.
-      // Không mở popup "giữ chỗ" vì nó làm Chrome/Edge chặn cửa sổ GIS.
-      this.printService.retryLoadPdfBlob(null);
+      this.printService.retryLoadPdfBlob();
   }
 
   async copyPdfLink() {
