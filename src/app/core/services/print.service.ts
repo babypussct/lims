@@ -343,8 +343,10 @@ export class PrintService {
 
           this.printBlobUrl(blobUrl, true);
       } catch (err: any) {
-          window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
-          this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
+          console.error('[Print] Lỗi khi in nhanh:', err);
+          this.toast.show('Không thể in tự động (cần xác thực hoặc lỗi mạng). Đang mở chế độ xem trước...', 'warning');
+          // Mở Modal Preview trực tiếp trên trang thay vì window.open (tránh bị trình duyệt chặn popup)
+          this.openPdfPreview(pdfUrl, 'Báo cáo (Cần in thủ công)', 1, 'Hệ thống', null, undefined, 'iframe');
       } finally {
           this.isPrinting.set(false);
       }

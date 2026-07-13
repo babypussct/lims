@@ -43,11 +43,12 @@
           </button>
           <!-- Nút Google Docs -->
           @if (generalReport.docsUrl) {
-            <button type="button" (click)="$event.stopPropagation(); openDocsUrl(generalReport.docsUrl)"
-               class="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer"
+            <a [href]="getDocsPreviewUrl(generalReport.docsUrl)" target="_blank" rel="noopener noreferrer"
+               (click)="$event.stopPropagation()"
+               class="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer no-underline"
                title="Mở Google Docs">
               <i class="fa-brands fa-google-drive text-[8px]"></i>
-            </button>
+            </a>
           }
           <!-- Nút In nhanh -->
           @if (generalReport.pdfViewUrl || generalReport.pdfUrl) {
@@ -92,11 +93,12 @@
             }
             <!-- Nút Google Docs -->
             @if (rep.docsUrl) {
-              <button type="button" (click)="$event.stopPropagation(); openDocsUrl(rep.docsUrl)"
-                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer"
+              <a [href]="getDocsPreviewUrl(rep.docsUrl)" target="_blank" rel="noopener noreferrer"
+                 (click)="$event.stopPropagation()"
+                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer no-underline"
                  title="Mở Google Docs">
                 <i class="fa-brands fa-google-drive text-[8px]"></i>
-              </button>
+              </a>
             }
             <!-- Nút In nhanh -->
             @if (rep.pdfViewUrl || rep.pdfUrl) {
