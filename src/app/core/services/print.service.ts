@@ -135,18 +135,40 @@ export class PrintService {
 
       // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
       if (!this.googleDriveService.hasValidToken) {
+          // Mở popup ngay lập tức khi vẫn còn user gesture context để không bị chặn
+          const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+          if (!authPopup || authPopup.closed) {
+              this.toast.show('Không thể mở popup đăng nhập. Hãy cho phép hiển thị popup từ trang này.', 'error');
+              return;
+          }
+
+          try {
+              authPopup.document.write(
+                  '<html><head><title>Kết nối Google...</title></head>' +
+                  '<body style="display:flex;align-items:center;justify-content:center;' +
+                  'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
+                  '<div style="text-align:center">' +
+                  '<p style="font-size:15px;color:#64748b;font-weight:600">Đang chuẩn bị dịch vụ Google Drive...</p>' +
+                  '</div></body></html>'
+              );
+          } catch (_) {}
+
           try {
               if (!this.googleDriveService.canAuthSync) {
-                  this.toast.show('Đang chuẩn bị dịch vụ Google Drive...', 'info');
                   await this.googleDriveService.ensureInitialized();
               }
               await new Promise<void>((resolve, reject) => {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
-                      (err) => reject(new Error(err))
+                      (err) => reject(new Error(err)),
+                      authPopup,
+                      false // disable redirect fallback
                   );
               });
           } catch (authErr: any) {
+              if (authPopup && !authPopup.closed) {
+                  try { authPopup.close(); } catch (_) {}
+              }
               window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
               this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
               return;
@@ -193,18 +215,40 @@ export class PrintService {
 
       // Khởi tạo xác thực đồng bộ trước khi vào luồng async để tránh bị trình duyệt chặn popup
       if (!this.googleDriveService.hasValidToken) {
+          // Mở popup ngay lập tức khi vẫn còn user gesture context để không bị chặn
+          const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+          if (!authPopup || authPopup.closed) {
+              this.toast.show('Không thể mở popup đăng nhập. Hãy cho phép hiển thị popup từ trang này.', 'error');
+              return;
+          }
+
+          try {
+              authPopup.document.write(
+                  '<html><head><title>Kết nối Google...</title></head>' +
+                  '<body style="display:flex;align-items:center;justify-content:center;' +
+                  'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
+                  '<div style="text-align:center">' +
+                  '<p style="font-size:15px;color:#64748b;font-weight:600">Đang chuẩn bị dịch vụ Google Drive...</p>' +
+                  '</div></body></html>'
+              );
+          } catch (_) {}
+
           try {
               if (!this.googleDriveService.canAuthSync) {
-                  this.toast.show('Đang chuẩn bị dịch vụ Google Drive...', 'info');
                   await this.googleDriveService.ensureInitialized();
               }
               await new Promise<void>((resolve, reject) => {
                   this.googleDriveService.authenticateSync(
                       () => resolve(),
-                      (err) => reject(new Error(err))
+                      (err) => reject(new Error(err)),
+                      authPopup,
+                      false // disable redirect fallback
                   );
               });
           } catch (authErr: any) {
+              if (authPopup && !authPopup.closed) {
+                  try { authPopup.close(); } catch (_) {}
+              }
               console.error('[Download] Auth failed, falling back to direct download link:', authErr);
               this.toast.show('Tải thất bại, chuyển sang tab mới...', 'warning');
               window.open(`https://drive.google.com/uc?export=download&id=${id}`, '_blank');

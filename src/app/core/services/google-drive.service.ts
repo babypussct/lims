@@ -47,17 +47,39 @@ export class GoogleDriveService {
   }
 
   constructor() {
-      // Restore token from redirect auth (set by index.html pre-bootstrap script)
+      // Restore token from session storage (potentially saved by redirect auth)
       const savedToken = sessionStorage.getItem('__gd_token');
       const savedExpiry = sessionStorage.getItem('__gd_expiry');
       if (savedToken && savedExpiry) {
-          this.accessToken = savedToken;
-          this.tokenExpiry = parseInt(savedExpiry);
-          this.isAuthenticated.set(true);
-          sessionStorage.removeItem('__gd_token');
-          sessionStorage.removeItem('__gd_expiry');
-          console.log('[GoogleDrive] Token restored from redirect auth.');
+          const expiry = parseInt(savedExpiry);
+          if (Date.now() < expiry) {
+              this.accessToken = savedToken;
+              this.tokenExpiry = expiry;
+              this.isAuthenticated.set(true);
+              console.log('[GoogleDrive] Token restored from session storage.');
+          } else {
+              sessionStorage.removeItem('__gd_token');
+              sessionStorage.removeItem('__gd_expiry');
+          }
       }
+  }
+
+  setAccessToken(token: string, expiresInSeconds: number = 3600): void {
+      this.accessToken = token;
+      this.tokenExpiry = Date.now() + (expiresInSeconds - 300) * 1000;
+      this.isAuthenticated.set(true);
+      sessionStorage.setItem('__gd_token', token);
+      sessionStorage.setItem('__gd_expiry', this.tokenExpiry.toString());
+      console.log('[GoogleDrive] Access token saved from external source.');
+  }
+
+  clearSession(): void {
+      this.accessToken = '';
+      this.tokenExpiry = 0;
+      this.isAuthenticated.set(false);
+      sessionStorage.removeItem('__gd_token');
+      sessionStorage.removeItem('__gd_expiry');
+      console.log('[GoogleDrive] Session cleared.');
   }
 
   /** Whether tokenClient is redy to accept a synchronous requestAccessToken call */
@@ -268,7 +290,9 @@ export class GoogleDriveService {
    */
   authenticateSync(
       onSuccess: (token: string) => void,
-      onError: (message: string) => void
+      onError: (message: string) => void,
+      existingPopup?: WindowProxy | null,
+      allowRedirect: boolean = true
   ): void {
       // Already have a valid cached token — skip entirely
       if (this.accessToken && Date.now() < this.tokenExpiry) {
@@ -282,13 +306,16 @@ export class GoogleDriveService {
       }
 
       // ── 1. Try popup ──
-      const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
+      const authPopup = existingPopup !== undefined ? existingPopup : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
 
       if (!authPopup || authPopup.closed) {
-          // Popup blocked → fall back to redirect mode
-          console.warn('[GoogleDrive] Popup blocked. Falling back to redirect mode.');
-          this._authViaRedirect();
-          // Don't call onError — the page is navigating away
+          if (allowRedirect) {
+              // Popup blocked → fall back to redirect mode
+              console.warn('[GoogleDrive] Popup blocked. Falling back to redirect mode.');
+              this._authViaRedirect();
+          } else {
+              onError('popup_blocked');
+          }
           return;
       }
 

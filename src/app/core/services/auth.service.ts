@@ -1,6 +1,7 @@
 
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { GoogleDriveService } from './google-drive.service';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -114,6 +115,7 @@ export class AuthService {
   private fb = inject(FirebaseService);
   private router = inject(Router);
   private deltaSync = inject(DeltaSyncService);
+  private googleDriveService = inject(GoogleDriveService);
   private auth: Auth;
   private readonly CRED_KEY = 'lims_local_c'; // Key for local storage
 
@@ -227,6 +229,10 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
     // Force account picker — important for shared workstations
     provider.setCustomParameters({ prompt: 'select_account' });
+    
+    // Yêu cầu thêm quyền truy cập Google Drive ngay từ màn hình đăng nhập ban đầu
+    provider.addScope('https://www.googleapis.com/auth/drive.file');
+    provider.addScope('https://www.googleapis.com/auth/drive.readonly');
 
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
     await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
@@ -235,7 +241,12 @@ export class AuthService {
 
     try {
         // ── 1. Try popup first ──
-        await signInWithPopup(this.auth, provider);
+        const result = await signInWithPopup(this.auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+            this.googleDriveService.setAccessToken(credential.accessToken);
+        }
+
         if (!this.currentUser() && this.auth.currentUser) {
             this.syncUser(this.auth.currentUser);
         }
@@ -270,17 +281,18 @@ export class AuthService {
 
       // Redirect URI must be EXACTLY what is registered in Google Cloud Console
       const redirectUri = window.location.origin; 
+      // Request cả id_token (cho login) và access_token (cho Drive) kèm scopes tương ứng
       const params = new URLSearchParams({
           client_id: config.clientId,
           redirect_uri: redirectUri,
-          response_type: 'id_token',
-          scope: 'email profile openid',
+          response_type: 'id_token token',
+          scope: 'email profile openid https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
           prompt: 'select_account',
           nonce: Math.random().toString(36).substring(2) + Date.now() // Required for id_token
       });
 
       const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-      console.log('[Auth] Redirecting directly to Google OpenID Connect...');
+      console.log('[Auth] Redirecting directly to Google OpenID Connect (Hybrid flow)...');
       window.location.href = authUrl;
   }
 
@@ -295,6 +307,11 @@ export class AuthService {
     this.clearLocalCredentials(); // Security cleanup
     localStorage.removeItem('lims_remember_session'); // Clear remember session flag
     
+    // Clear Google Drive session state
+    try {
+        this.googleDriveService.clearSession();
+    } catch (e) {}
+
     // Xóa FCM token của thiết bị này để ngừng nhận Push Notifications
     const currentUser = this.currentUser();
     const currentToken = localStorage.getItem('lims_fcm_token');
