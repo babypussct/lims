@@ -295,7 +295,7 @@ export class GoogleDriveService {
               this.currentCallback = null;
               this.currentErrorCallback = null;
               reject(new Error('silent_timeout'));
-          }, 6000);
+          }, 3000); // prompt:'none' fails fast — 3s is plenty
 
           this.currentCallback = (response: any) => {
               clearTimeout(timeout);
@@ -321,8 +321,9 @@ export class GoogleDriveService {
               reject(new Error(error?.type || 'silent_auth_failed'));
           };
 
-          // prompt: '' = use existing session, no UI shown
-          this.tokenClient.requestAccessToken({ prompt: '' });
+          // prompt: 'none' = strictly no UI ever (no popup, no redirect).
+          // If session is missing or scopes not granted → error_callback fires immediately.
+          this.tokenClient.requestAccessToken({ prompt: 'none' });
       });
   }
 
