@@ -27,95 +27,86 @@
       }
     </div>
 
-    <!-- Chips row: tất cả báo cáo -->
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+    <!-- List row: tất cả báo cáo dạng dòng ngang compact -->
+    <div class="space-y-2">
 
       <!-- Báo cáo chung -->
       @if (generalReport) {
-        <div class="flex items-center gap-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-800/50 rounded-xl px-3 py-3 hover:border-indigo-400/60 transition shadow-sm min-h-16">
-          <div class="min-w-0 flex-1">
-            <div class="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">Tất cả mẫu <span class="text-[10px] text-slate-400 ml-1">v{{ generalReport.version }}</span></div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-mono">Báo cáo tổng hợp</div>
+        <div class="flex items-center justify-between gap-4 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-150/80 dark:border-indigo-800/40 rounded-xl px-4 py-2 hover:bg-indigo-50 hover:border-indigo-300 dark:hover:bg-indigo-950/40 transition shadow-xs">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="w-7 h-7 rounded-lg bg-indigo-500 text-white flex items-center justify-center shrink-0 text-xs shadow-xs">
+              <i class="fa-solid fa-file-invoice"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-black text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Báo cáo chung</span>
+                <span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[9px] font-black uppercase border border-indigo-200/50 dark:border-indigo-800/50 shadow-xs">v{{ generalReport.version }}</span>
+              </div>
+              <p class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Bản in tổng hợp toàn bộ mẫu trong mẻ</p>
+            </div>
           </div>
-          <!-- Nút XEM PDF -->
-          <button type="button" (click)="$event.stopPropagation(); openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl, docsUrl: generalReport.docsUrl })"
-             class="w-10 h-10 shrink-0 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded-lg text-sm font-bold transition active:scale-95 cursor-pointer"
-             title="Xem PDF">
-            <i class="fa-solid fa-file-pdf text-sm"></i>
-          </button>
-          <!-- Nút Google Docs -->
-          @if (generalReport.docsUrl) {
-            <a [href]="getDocsPreviewUrl(generalReport.docsUrl)" target="_blank" rel="noopener noreferrer"
-               (click)="$event.stopPropagation()"
-               class="w-10 h-10 shrink-0 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-bold transition active:scale-95 cursor-pointer no-underline flex items-center justify-center"
-               title="Mở Google Docs">
-              <i class="fa-brands fa-google-drive text-sm"></i>
-            </a>
-          }
-          <!-- Nút In nhanh -->
-          @if (generalReport.pdfViewUrl || generalReport.pdfUrl) {
-            <button type="button" (click)="$event.stopPropagation(); quickPrintReport(generalReport.pdfViewUrl || generalReport.pdfUrl)"
-               [disabled]="printService.isPrinting()"
-               class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-               title="In nhanh">
-              <i class="fa-solid text-sm"
-                 [class.fa-print]="!printService.isPrinting()"
-                 [class.fa-circle-notch]="printService.isPrinting()"
-                 [class.fa-spin]="printService.isPrinting()"></i>
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" (click)="$event.stopPropagation(); openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl, docsUrl: generalReport.docsUrl })"
+               class="w-8 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 text-red-500 dark:text-red-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-red-200 dark:border-red-900/30 flex items-center justify-center"
+               title="Xem PDF">
+              <i class="fa-solid fa-file-pdf text-xs"></i>
             </button>
-          }
+            @if (generalReport.docsUrl) {
+              <a [href]="getDocsPreviewUrl(generalReport.docsUrl)" target="_blank" rel="noopener noreferrer"
+                 (click)="$event.stopPropagation()"
+                 class="w-8 h-8 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 text-blue-500 dark:text-blue-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-blue-200 dark:border-blue-900/30 no-underline flex items-center justify-center animate-pulse"
+                 title="Mở Google Docs">
+                <i class="fa-brands fa-google-drive text-xs"></i>
+              </a>
+            }
+          </div>
         </div>
       }
 
       <!-- Báo cáo theo prefix + chunk -->
       @for (pref of prefixes; track pref) {
         @for (rep of getPrefixReports(pref); track rep.id || rep.pdfCreatedAt; let repIdx = $index) {
-          <div class="flex items-center gap-3 bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200/70 dark:border-fuchsia-800/50 rounded-xl px-3 py-3 hover:border-fuchsia-400/60 transition shadow-sm min-h-16">
-            <!-- Prefix badge -->
-            <div class="min-w-0 flex-1">
-              <div class="text-xs font-black text-fuchsia-700 dark:text-fuchsia-300 uppercase tracking-wide">
-                Nhóm {{ pref === '' ? 'N/A' : pref }}
-            <!-- Chunk index nếu có nhiều hơn 1 -->
-            @if (getPrefixReports(pref).length > 1) {
-              <span class="text-[10px] text-amber-600 dark:text-amber-400 font-bold"> · Phần {{ repIdx + 1 }}</span>
-            }
+          <div class="flex items-center justify-between gap-4 bg-fuchsia-50/30 dark:bg-fuchsia-950/10 border border-fuchsia-150/80 dark:border-fuchsia-800/40 rounded-xl px-4 py-2 hover:bg-fuchsia-50/60 hover:border-fuchsia-300 dark:hover:bg-fuchsia-950/20 transition shadow-xs">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <div class="w-7 h-7 rounded-lg bg-fuchsia-500 text-white flex items-center justify-center shrink-0 text-xs shadow-xs">
+                <i class="fa-solid fa-layer-group"></i>
               </div>
-            <!-- Sample names -->
-            @if ((rep.includedSamples || []).length > 0) {
-              <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 font-mono truncate" [title]="(rep.includedSamples || []).join(', ')">
-                {{ (rep.includedSamples || []).join(', ') }}
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-black text-fuchsia-800 dark:text-fuchsia-300 uppercase tracking-wide">
+                    Nhóm {{ pref === '' ? 'N/A' : pref }}
+                  </span>
+                  @if (getPrefixReports(pref).length > 1) {
+                    <span class="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[9px] font-black border border-amber-200/50 dark:border-amber-800/50 shadow-xs">Phần {{ repIdx + 1 }}</span>
+                  }
+                  <span class="px-1.5 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-900/60 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-black border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-xs">v{{ rep.version }}</span>
+                </div>
+                @if ((rep.includedSamples || []).length > 0) {
+                  <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-mono truncate" [title]="(rep.includedSamples || []).join(', ')">
+                    Mẫu: {{ (rep.includedSamples || []).join(', ') }}
+                  </p>
+                }
               </div>
-            }
             </div>
-            <!-- Nút XEM PDF -->
-            @if (rep.pdfViewUrl || rep.pdfUrl) {
-              <button type="button" (click)="$event.stopPropagation(); openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl, docsUrl: rep.docsUrl })"
-                 class="w-10 h-10 shrink-0 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded-lg text-sm font-bold transition active:scale-95 cursor-pointer"
-                 title="Xem PDF">
-                <i class="fa-solid fa-file-pdf text-sm"></i>
-              </button>
-            }
-            <!-- Nút Google Docs -->
-            @if (rep.docsUrl) {
-              <a [href]="getDocsPreviewUrl(rep.docsUrl)" target="_blank" rel="noopener noreferrer"
-                 (click)="$event.stopPropagation()"
-                 class="w-10 h-10 shrink-0 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-bold transition active:scale-95 cursor-pointer no-underline flex items-center justify-center"
-                 title="Mở Google Docs">
-                <i class="fa-brands fa-google-drive text-sm"></i>
-              </a>
-            }
-            <!-- Nút In nhanh -->
-            @if (rep.pdfViewUrl || rep.pdfUrl) {
-              <button type="button" (click)="$event.stopPropagation(); quickPrintReport(rep.pdfViewUrl || rep.pdfUrl)"
-                 [disabled]="printService.isPrinting()"
-                 class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-                 title="In nhanh">
-                <i class="fa-solid text-sm"
-                   [class.fa-print]="!printService.isPrinting()"
-                   [class.fa-circle-notch]="printService.isPrinting()"
-                   [class.fa-spin]="printService.isPrinting()"></i>
-              </button>
-            }
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              @if (rep.pdfViewUrl || rep.pdfUrl) {
+                <button type="button" (click)="$event.stopPropagation(); openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl, docsUrl: rep.docsUrl })"
+                   class="w-8 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 dark:hover:bg-red-900/50 text-red-500 dark:text-red-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-red-200 dark:border-red-900/30 flex items-center justify-center"
+                   title="Xem PDF">
+                  <i class="fa-solid fa-file-pdf text-xs"></i>
+                </button>
+              }
+              @if (rep.docsUrl) {
+                <a [href]="getDocsPreviewUrl(rep.docsUrl)" target="_blank" rel="noopener noreferrer"
+                   (click)="$event.stopPropagation()"
+                   class="w-8 h-8 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 text-blue-500 dark:text-blue-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-blue-200 dark:border-blue-900/30 no-underline flex items-center justify-center"
+                   title="Mở Google Docs">
+                  <i class="fa-brands fa-google-drive text-xs"></i>
+                </a>
+              }
+            </div>
           </div>
         }
       }

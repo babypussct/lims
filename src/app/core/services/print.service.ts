@@ -26,6 +26,7 @@ export interface PrintOptions {
 
 @Injectable({ providedIn: 'root' })
 export class PrintService {
+  private readonly pendingPreviewKey = '__gd_pending_pdf_preview';
   private toast = inject(ToastService);
   private googleDriveService = inject(GoogleDriveService);
 
@@ -39,6 +40,7 @@ export class PrintService {
   constructor() {
       // Preload Google Drive SDK to make it ready for quick print/download
       this.googleDriveService.ensureInitialized().catch(e => console.warn('PrintService: GIS preload deferred:', e));
+      this.restorePendingPdfPreview();
   }
 
   // PREVIEW STATE (Used by Modal)
@@ -138,6 +140,30 @@ export class PrintService {
       this.onRepublishCallback.set(null);
   }
 
+  /** Restores the document after redirect OAuth returns to the application. */
+  private restorePendingPdfPreview(): void {
+      const raw = sessionStorage.getItem(this.pendingPreviewKey);
+      if (!raw) return;
+      sessionStorage.removeItem(this.pendingPreviewKey);
+
+      try {
+          const pending = JSON.parse(raw);
+          if (!pending?.url) return;
+          this.openPdfPreview(
+              pending.url,
+              pending.title || 'Tài liệu',
+              pending.version || 1,
+              pending.analyst || 'Chưa rõ',
+              pending.publishDate ?? null,
+              undefined,
+              pending.previewType === 'image' ? 'image' : 'iframe',
+              pending.docsUrl
+          );
+      } catch (error) {
+          console.warn('[Preview] Cannot restore preview after OAuth redirect:', error);
+      }
+  }
+
   // --- FETCH BLOB FOR PREVIEW (Bypass CSP) ---
   // NOTE: This runs OUTSIDE a user-gesture context (called automatically when modal opens).
   // GIS requestAccessToken ALWAYS needs a popup — even with prompt:'none' — so we MUST NOT
@@ -205,6 +231,20 @@ export class PrintService {
       const id = this.getFileId(pdfUrl);
       if (!id) return;
 
+      // If GIS has to fall back to redirect OAuth, the page reloads. Preserve
+      // the current document so the modal resumes automatically on return.
+      if (!authPopup) {
+          sessionStorage.setItem(this.pendingPreviewKey, JSON.stringify({
+              url: pdfUrl,
+              title: this.pdfTitle(),
+              version: this.pdfVersion(),
+              analyst: this.pdfAnalyst(),
+              publishDate: this.pdfPublishDate(),
+              previewType: this.pdfPreviewType(),
+              docsUrl: this.docsUrl()
+          }));
+      }
+
       try {
           authPopup?.document.write(
               '<html><head><title>Kết nối Google...</title></head>' +
@@ -225,7 +265,7 @@ export class PrintService {
                   () => resolve(),
                   (err) => reject(new Error(err)),
                   authPopup,
-                  false
+                  true
               );
           });
 

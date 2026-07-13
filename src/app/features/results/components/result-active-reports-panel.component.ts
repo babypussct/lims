@@ -1,6 +1,5 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PrintService } from '../../../core/services/print.service';
 
 export interface ReportProgress {
   total: number;
@@ -21,8 +20,6 @@ export interface OpenPdfEvent {
   templateUrl: './result-active-reports-panel.component.html'
 })
 export class ResultActiveReportsPanelComponent {
-  printService = inject(PrintService);
-
   /** Có ít nhất 1 báo cáo active không */
   @Input() hasAnyReports: boolean = false;
   /** Báo cáo chung (tất cả mẫu) */
@@ -49,8 +46,4 @@ export class ResultActiveReportsPanelComponent {
     return url.replace(/\/edit.*$/, '/preview');
   }
 
-  /** In nhanh không cần mở modal */
-  async quickPrintReport(pdfUrl: string) {
-    await this.printService.quickPrint(pdfUrl);
-  }
 }

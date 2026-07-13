@@ -358,7 +358,7 @@ export class GoogleDriveService {
       // navigation as an unsolicited popup, even when this site's popup
       // permission is set to Allow.
       if (existingPopup === null) {
-          this.requestNativePopup(onSuccess, onError);
+          this.requestNativePopup(onSuccess, onError, allowRedirect);
           return;
       }
 
@@ -453,7 +453,8 @@ export class GoogleDriveService {
   /** Starts the official GIS popup without opening or hijacking a placeholder. */
   private requestNativePopup(
       onSuccess: (token: string) => void,
-      onError: (message: string) => void
+      onError: (message: string) => void,
+      allowRedirect: boolean
   ): void {
       const timeout = setTimeout(() => {
           cleanup();
@@ -484,7 +485,15 @@ export class GoogleDriveService {
           if (error?.type === 'popup_closed') {
               onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
           } else if (error?.type === 'popup_failed_to_open') {
-              onError('Google không thể mở cửa sổ đăng nhập. Hãy kiểm tra trình duyệt không chạy trong iframe bị hạn chế.');
+              // Some managed browsers and embedded webviews block GIS popups
+              // regardless of the site's popup permission. Redirect OAuth is
+              // the supported fallback because it does not create a window.
+              if (allowRedirect) {
+                  console.warn('[GoogleDrive] GIS popup blocked by browser policy; using redirect OAuth.');
+                  this._authViaRedirect();
+              } else {
+                  onError('Google không thể mở cửa sổ đăng nhập. Hãy kiểm tra trình duyệt không chạy trong iframe bị hạn chế.');
+              }
           } else {
               onError(error?.type || error?.message || 'Lỗi đăng nhập không xác định');
           }
