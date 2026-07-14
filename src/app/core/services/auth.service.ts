@@ -13,6 +13,7 @@ import {
   setPersistence,
   browserSessionPersistence,
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   EmailAuthProvider,
   reauthenticateWithCredential,
   linkWithCredential,
@@ -123,12 +124,15 @@ export class AuthService {
   isAuthReady = signal<boolean>(false);
   /** true trong khi đang xử lý token trả về từ Google redirect — dùng để ẩn màn hình Login */
   isProcessingRedirect = signal<boolean>(false);
+  /** Firebase popup iframe must be ready before the user clicks Google login. */
+  googlePopupState = signal<'loading' | 'ready' | 'failed'>('loading');
   private userUnsub: any = null;
   private rolesUnsub: any = null;
   readonly rolesConfig = signal<Record<string, string[]>>({});
 
   constructor() {
     this.auth = getAuth(this.fb.app);
+    this.preloadGooglePopupResolver();
 
     // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab (hoặc giữ nếu lưu trạng thái)
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
@@ -208,6 +212,26 @@ export class AuthService {
 
   // --- AUTH METHODS ---
 
+  /**
+   * Firebase 10 initializes its auth iframe before calling window.open(). On a
+   * cold start that async initialization can outlive transient user activation,
+   * causing a false auth/popup-blocked result. Warm the singleton resolver while
+   * the login screen is idle so the click path can open the popup immediately.
+   */
+  private preloadGooglePopupResolver(): void {
+    interface InternalPopupResolver {
+      _initialize(auth: Auth): Promise<unknown>;
+    }
+
+    const resolver = browserPopupRedirectResolver as unknown as InternalPopupResolver;
+    resolver._initialize(this.auth).then(() => {
+      this.googlePopupState.set('ready');
+    }).catch((error: unknown) => {
+      console.warn('[Auth] Firebase popup resolver preload failed; Google login will use redirect.', error);
+      this.googlePopupState.set('failed');
+    });
+  }
+
   /** Cập nhật persistence ngay khi user thay đổi checkbox "Duy trì đăng nhập" */
   updatePersistence(rememberSession: boolean) {
     setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
@@ -233,6 +257,11 @@ export class AuthService {
   }
 
   async loginWithGoogle(): Promise<void> {
+    if (this.googlePopupState() !== 'ready') {
+        this._authViaDirectOidc();
+        return;
+    }
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
@@ -240,7 +269,7 @@ export class AuthService {
         // Do not await setPersistence here. It is already synchronized by the
         // constructor and checkbox handler; an await before this call consumes
         // the transient user activation that browsers require for popups.
-        await signInWithPopup(this.auth, provider);
+        await signInWithPopup(this.auth, provider, browserPopupRedirectResolver);
         if (!this.currentUser() && this.auth.currentUser) {
             this.syncUser(this.auth.currentUser);
         }

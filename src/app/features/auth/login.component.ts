@@ -101,18 +101,20 @@ declare let QRious: any;
                 <!-- LOGIN MODE: GOOGLE (PRIMARY) -->
                 @if (mode() === 'google') {
                     <div class="animate-fade-in-up relative z-10 text-center">
-                        <button (click)="loginGoogle()" [disabled]="isLoading()"
+                        <button (click)="loginGoogle()" [disabled]="isLoading() || auth.googlePopupState() === 'loading'"
                                 class="w-full py-4 mt-2 bg-white dark:bg-slate-800 backdrop-blur-md border border-white dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-200 rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] group relative overflow-hidden">
                             <!-- Subtle pink hover glow -->
                             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-50/50 to-transparent dark:via-pink-950/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             
-                            @if (isGoogleLoading()) { <i class="fa-solid fa-spinner fa-spin text-gray-400"></i> } 
+                            @if (isGoogleLoading() || auth.googlePopupState() === 'loading') { <i class="fa-solid fa-spinner fa-spin text-gray-400"></i> } 
                             @else { 
                                 <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-950/50 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
                                     <i class="fa-brands fa-google text-red-500 text-[16px] group-hover:scale-110 transition-transform"></i> 
                                 </div>
                             }
-                            <span class="text-[15px]">Đăng nhập với Google</span>
+                            <span class="text-[15px]">
+                              {{ auth.googlePopupState() === 'loading' ? 'Đang chuẩn bị Google...' : 'Đăng nhập với Google' }}
+                            </span>
                         </button>
 
                         <!-- Shared Device & Remember Session Checkboxes (Horizontal Row) -->
