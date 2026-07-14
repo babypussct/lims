@@ -9,8 +9,8 @@ import { CommonModule } from '@angular/common';
 })
 export class ResultRunMetadataComponent {
   @Input() run: any = null;
-  @Input() isExpanded: boolean = false;
-  @Input() displayDevice: string = '';
+  @Input() isExpanded = false;
+  @Input() displayDevice = '';
   @Input() formatSampleListFn!: (list: string[]) => string;
   @Input() formatAnalysisDateFn!: (date: string) => string;
 

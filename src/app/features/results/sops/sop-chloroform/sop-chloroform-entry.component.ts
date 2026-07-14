@@ -19,7 +19,7 @@ export class SopChloroformEntryComponent implements OnInit {
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
   @Input() publishedSampleSet: Set<string> | null = null;
-  @Input() activeFilter: string = 'ALL';
+  @Input() activeFilter = 'ALL';
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   private masterTargetService = inject(MasterTargetService);

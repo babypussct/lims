@@ -302,8 +302,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // MỚI: Computed slice theo date range hiện tại — dùng chung cho kanbanBoard, chartKpis, trendInfo(current)
   private _rangeFilteredRequests = computed<ParsedRequest[]>(() => {
       const all = this._parsedRequests();
-      let startStr = this.startDate();
-      let endStr = this.endDate();
+      const startStr = this.startDate();
+      const endStr = this.endDate();
       if (!startStr || !endStr) return all; // Tất cả thời gian
       
       const start = new Date(startStr); start.setHours(0,0,0,0);
@@ -708,9 +708,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
       
-      let chartStart = new Date(start);
-      let chartEnd = new Date(end);
-      let chartDays = diffDays;
+      const chartStart = new Date(start);
+      const chartEnd = new Date(end);
+      const chartDays = diffDays;
       
       const labels = [];
       const sampleData = new Array(chartDays).fill(0);

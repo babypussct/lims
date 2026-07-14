@@ -13,7 +13,7 @@ import { copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
   templateUrl: './sop-1767857760184-entry.component.html'
 })
 export class Sop1767857760184EntryComponent extends AbstractSopEntry implements OnInit {
-  @Input() activeFilter: string = 'ALL';
+  @Input() activeFilter = 'ALL';
 
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];

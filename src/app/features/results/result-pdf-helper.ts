@@ -60,7 +60,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
 
   const samplesPayload: any[] = [];
 
-  // 1. ThÃƒÂªm Blank vÃƒÂ o Ã„â€˜Ã¡ÂºÂ§u danh sÃƒÂ¡ch
+  // 1. Thêm mẫu Blank vào đầu danh sách
   const blankObj = currentDraft.resultData['QC_BLANK'] || {};
   samplesPayload.push({
     loSo: blankObj['loSo'] || '1',
@@ -69,7 +69,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: blankObj['ghiChu'] || ''
   });
 
-  // 2. ThÃƒÂªm Spike vÃƒÂ o vÃ¡Â»â€¹ trÃƒÂ­ thÃ¡Â»Â© 2
+  // 2. Thêm mẫu Spike vào vị trí thứ hai
   const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
   samplesPayload.push({
     loSo: spikeObj['loSo'] || '2',
@@ -78,7 +78,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: spikeObj['ghiChu'] || ''
   });
 
-  // 3. ThÃƒÂªm cÃƒÂ¡c mÃ¡ÂºÂ«u vÃƒÂ  cÃƒÂ¡c mÃ¡ÂºÂ«u SPIKE_N xen kÃ¡ÂºÂ½
+  // 3. Thêm các mẫu và các mẫu SPIKE_N xen kẽ
   let selectedCount = 0;
   prefixSamples.forEach((sampleCode: string) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
@@ -627,7 +627,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
     samplesPayload.push(rowData);
   } else {
     const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
-    let formDonSamples = [...filteredSamples];
+    const formDonSamples = [...filteredSamples];
     if (isDon && currentConf.formType === 'type3b') {
       formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
       if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
@@ -806,7 +806,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
 
     samplesPayload.push(rowData);
   } else {
-    let formDonSamples = [...filteredSamples];
+    const formDonSamples = [...filteredSamples];
     if (isDon) {
       formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
       if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
@@ -1167,7 +1167,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
 
     samplesPayload.push(rowData);
   } else {
-    let formDonSamples = [...filteredSamples];
+    const formDonSamples = [...filteredSamples];
     if (isDon) {
       formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
       if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
@@ -1518,7 +1518,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
 
     samplesPayload.push(rowData);
   } else {
-    let formDonSamples = [...filteredSamples];
+    const formDonSamples = [...filteredSamples];
     if (isDon) {
       formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
       if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');

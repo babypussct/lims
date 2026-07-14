@@ -66,9 +66,9 @@ export class PubchemService {
         if (!pugViewRes.ok) return null;
         const pugViewData = await pugViewRes.json();
         
-        let pictograms = new Set<string>();
-        let hazardStatements = new Set<string>();
-        let precautionaryStatements = new Set<string>();
+        const pictograms = new Set<string>();
+        const hazardStatements = new Set<string>();
+        const precautionaryStatements = new Set<string>();
 
         const extractGhsRecursive = (obj: any) => {
             if (typeof obj === 'string') {

@@ -11,7 +11,7 @@ import { switchMap } from 'rxjs/operators';
  * 
  * Mặc định delay 300ms.
  */
-export function delayFetch<T>(timeMs: number = 300) {
+export function delayFetch<T>(timeMs = 300) {
   return (source: Observable<T>) => source.pipe(
     // Thay vì truyền value đi ngay, bắt đầu một bộ đếm timer
     switchMap((value) => timer(timeMs).pipe(

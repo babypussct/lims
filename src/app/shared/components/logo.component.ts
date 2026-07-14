@@ -27,7 +27,7 @@ import { CommonModule } from '@angular/common';
 })
 export class LogoComponent {
   /** Kích thước hiển thị (ví dụ: '18px', '32px', '64px', '128px') */
-  @Input() size: string = '32px';
+  @Input() size = '32px';
   /** Chế độ màu (để tương thích ngược với các file HTML cũ, không ảnh hưởng đến PNG) */
   @Input() mode: 'currentColor' | 'multicolor' = 'multicolor';
 

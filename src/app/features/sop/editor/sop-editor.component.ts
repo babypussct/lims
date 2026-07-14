@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, effect, input, output, computed, OnDestroy } from '@angular/core';
+import { Component, inject, signal, effect, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -37,7 +37,7 @@ const STANDARD_VARS = [
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './sop-editor.component.html'
 })
-export class SopEditorComponent implements OnDestroy {
+export class SopEditorComponent {
   // Services & State
   state = inject(StateService);
   sopService = inject(SopService);
@@ -168,8 +168,6 @@ export class SopEditorComponent implements OnDestroy {
     this.invService.getAllInventory().then(inv => this.masterInventory.set(inv));
     this.recipeService.getAllRecipes().then(rec => this.masterRecipes.set(rec));
   }
-
-  ngOnDestroy() {}
 
   // --- Strict Mode Form Logic ---
   onTypeChange(index: number) {

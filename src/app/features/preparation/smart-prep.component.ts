@@ -622,12 +622,6 @@ export class SmartPrepComponent {
       const labels = this.labelData().split('\n\n').filter(l => l.trim() !== '');
       if (labels.length === 0) return;
 
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      if (!printWindow) {
-          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
-          return;
-      }
-
       const w = this.quickPrintWidth();
       const h = this.quickPrintHeight();
       const fs = this.quickPrintFontSize();
@@ -665,17 +659,39 @@ export class SmartPrepComponent {
         }
       `;
 
-      let htmlContent = `<!DOCTYPE html><html><head><title>Quick Print</title><style>${css}</style></head><body onload="window.focus(); window.print();">`;
+      let htmlContent = `<!DOCTYPE html><html><head><title>Quick Print</title><style>${css}</style></head><body>`;
       
       labels.forEach(label => {
-          htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
+          const safeLabel = document.createElement('div');
+          safeLabel.textContent = label;
+          htmlContent += `<div class="label-container"><div class="label-text">${safeLabel.innerHTML}</div></div>`;
       });
 
       htmlContent += `</body></html>`;
 
-      printWindow.document.open();
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+      // Print through a temporary same-page iframe. This avoids window.open,
+      // so popup policies cannot block label printing.
+      const printFrame = document.createElement('iframe');
+      printFrame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      printFrame.srcdoc = htmlContent;
+      document.body.appendChild(printFrame);
+
+      const cleanup = () => {
+          if (document.body.contains(printFrame)) document.body.removeChild(printFrame);
+      };
+
+      printFrame.onload = () => {
+          const frameWindow = printFrame.contentWindow;
+          if (!frameWindow) {
+              cleanup();
+              this.toast.show('Không thể khởi tạo nội dung in.', 'error');
+              return;
+          }
+          frameWindow.onafterprint = cleanup;
+          frameWindow.focus();
+          frameWindow.print();
+          setTimeout(cleanup, 60000);
+      };
   }
 
   goToLabels() {

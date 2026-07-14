@@ -290,7 +290,7 @@ export class RequestsKanbanComponent {
   @Output() actionDelete = new EventEmitter<StandardRequest>();
 
   Date = Date;
-  @Input() currentFilter: string = 'ALL';
+  @Input() currentFilter = 'ALL';
 
   pendingApprovalReqs = computed(() => this._requests().filter(r => r.status === 'PENDING_APPROVAL'));
   inProgressReqs = computed(() => this._requests().filter(r => r.status === 'IN_PROGRESS'));
@@ -299,7 +299,7 @@ export class RequestsKanbanComponent {
   
   // Chỉ lấy 30 thẻ hoàn tất mới nhất (sắp xếp descending by returnDate / updatedAt)
   limitedCompletedReqs = computed(() => {
-    let sorted = [...this.completedReqs()].sort((a, b) => {
+    const sorted = [...this.completedReqs()].sort((a, b) => {
         const timeA = a.returnDate || a.updatedAt || a.requestDate || 0;
         const timeB = b.returnDate || b.updatedAt || b.requestDate || 0;
         return timeB - timeA;

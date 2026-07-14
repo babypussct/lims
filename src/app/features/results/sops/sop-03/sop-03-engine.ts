@@ -10,7 +10,7 @@ export interface Sop03Row {
  * @param spikeName Tên mẫu thêm chuẩn cấu hình (mặc định là 'Spike')
  * @returns Chuỗi ghi chú phần trăm thu hồi (ví dụ: "95%") hoặc chuỗi rỗng
  */
-export function calculateSop03Recovery(row: Sop03Row, sampleCode: string, spikeName: string = 'Spike'): string {
+export function calculateSop03Recovery(row: Sop03Row, sampleCode: string, spikeName = 'Spike'): string {
   const isSpike = sampleCode.toLowerCase().includes('spike') || 
                   sampleCode.toLowerCase().includes('sp') ||
                   sampleCode === 'QC_SPIKE' || 

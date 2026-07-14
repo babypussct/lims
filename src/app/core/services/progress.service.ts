@@ -21,7 +21,7 @@ export class ProgressService {
    * @param message Tin nhắn phụ
    * @param total Tổng số lượng mục cần xử lý (mặc định 0 nếu không biết trước)
    */
-  start(title: string, message: string, total: number = 0) {
+  start(title: string, message: string, total = 0) {
     this.title.set(title);
     this.message.set(message);
     this.total.set(total);

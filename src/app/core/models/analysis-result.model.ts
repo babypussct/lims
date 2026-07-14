@@ -24,11 +24,7 @@ export interface AnalysisResultDraft {
     checkCoMauPhatHien?: boolean;
     [key: string]: any; // Dành cho các trường động tùy chỉ tiêu (ví dụ: QC checklist)
   };
-  resultData: {
-    [sampleCode: string]: {
-      [key: string]: any; // Lưu giữ kết quả (string/null), cờ ND (boolean) và trạng thái QC (string)
-    };
-  };
+  resultData: Record<string, Record<string, any>>;
   publishedBackup?: {
     page1Data: any;
     resultData: any;

@@ -11,7 +11,7 @@ export class ResultPrefixTabsComponent {
   /** Danh sách tiền tố phát hiện được trong mẻ (không bao gồm 'ALL') */
   @Input() prefixes: string[] = [];
   /** Bộ lọc đang hoạt động: 'ALL' hoặc một tiền tố cụ thể */
-  @Input() activeFilter: string = 'ALL';
+  @Input() activeFilter = 'ALL';
 
   /** Phát ra giá trị bộ lọc mới khi người dùng click tab */
   @Output() filterChange = new EventEmitter<string>();

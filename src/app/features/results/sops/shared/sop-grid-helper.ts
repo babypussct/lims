@@ -4,7 +4,7 @@ export function navigateGrid(
   colIdx: number,
   columnsList: string[],
   rowsLength: number,
-  minColIdx: number = 0
+  minColIdx = 0
 ) {
   const key = event.key;
   let targetRowIdx = rowIdx;

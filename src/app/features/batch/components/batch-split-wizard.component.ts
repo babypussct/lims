@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sop, SopTarget } from '../../../core/models/sop.model';
@@ -168,7 +168,7 @@ export interface SplitWizardState {
     </div>
   `
 })
-export class BatchSplitWizardComponent {
+export class BatchSplitWizardComponent implements OnInit {
     @Input({required: true}) sourceBatch!: ProposedBatch;
     @Input({required: true}) allSops!: Sop[];
     

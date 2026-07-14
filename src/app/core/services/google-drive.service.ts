@@ -9,8 +9,8 @@ const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 @Injectable({ providedIn: 'root' })
 export class GoogleDriveService {
   private tokenClient: any = null;
-  private accessToken: string = '';
-  private tokenExpiry: number = 0;
+  private accessToken = '';
+  private tokenExpiry = 0;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
   private scriptLoaded = false;
@@ -64,7 +64,7 @@ export class GoogleDriveService {
       }
   }
 
-  setAccessToken(token: string, expiresInSeconds: number = 3600): void {
+  setAccessToken(token: string, expiresInSeconds = 3600): void {
       this.accessToken = token;
       this.tokenExpiry = Date.now() + (expiresInSeconds - 300) * 1000;
       this.isAuthenticated.set(true);
@@ -87,7 +87,7 @@ export class GoogleDriveService {
       console.log('[GoogleDrive] Session cleared.');
   }
 
-  /** Whether tokenClient is redy to accept a synchronous requestAccessToken call */
+  /** Whether tokenClient is ready to accept a synchronous requestAccessToken call */
   get canAuthSync(): boolean {
       return this.initialized && !!this.tokenClient;
   }
@@ -335,16 +335,15 @@ export class GoogleDriveService {
   /**
    * Auth trigger — call directly from a (click) handler.
    *
-   * Strategy:
-   * 1. Try popup mode (pre-open popup + monkey-patch window.open)
-   * 2. If popup is blocked → fall back to redirect mode (no popup needed,
-   *    navigates the page to Google auth and back)
+   * Uses the official GIS popup directly inside the click handler. Pre-opening
+   * a blank window or monkey-patching window.open breaks popup attribution in
+   * Chrome, Edge, Firefox and Safari. A top-level client OAuth redirect remains
+   * available when the browser forbids popups entirely.
    */
   authenticateSync(
       onSuccess: (token: string) => void,
       onError: (message: string) => void,
-      existingPopup?: WindowProxy | null,
-      allowRedirect: boolean = true
+      allowRedirect = true
   ): void {
       // Already have a valid cached token — skip entirely
       if (this.accessToken && Date.now() < this.tokenExpiry) {
@@ -353,106 +352,15 @@ export class GoogleDriveService {
       }
 
       if (!this.tokenClient) {
-          onError('Google Drive SDK chưa sẵn sàng. Hãy thử lại sau vài giây.');
-          return;
-      }
-
-      // Let Google Identity Services create its own popup.  This must be
-      // called directly from the button click handler: pre-opening a blank
-      // window and overriding window.open makes Chrome/Edge treat the GIS
-      // navigation as an unsolicited popup, even when this site's popup
-      // permission is set to Allow.
-      if (existingPopup === null) {
-          this.requestNativePopup(onSuccess, onError, allowRedirect);
-          return;
-      }
-
-      // ── 1. Try popup ──
-      const authPopup = existingPopup !== undefined ? existingPopup : window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
-
-      if (!authPopup || authPopup.closed) {
           if (allowRedirect) {
-              // Popup blocked → fall back to redirect mode
-              console.warn('[GoogleDrive] Popup blocked. Falling back to redirect mode.');
-              this._authViaRedirect();
+              this.beginClientRedirectAuth();
           } else {
-              onError('popup_blocked');
+              onError('Google Drive SDK chưa sẵn sàng. Hãy thử lại sau vài giây.');
           }
           return;
       }
 
-      // ── 2. Popup opened → use monkey-patch approach ──
-      try {
-          authPopup.document.write(
-              '<html><head><title>Đăng nhập Google</title></head>' +
-              '<body style="display:flex;align-items:center;justify-content:center;' +
-              'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
-              '<div style="text-align:center">' +
-              '<div style="font-size:40px;margin-bottom:16px">🔒</div>' +
-              '<p style="font-size:15px;color:#64748b;font-weight:600">Đang kết nối Google Drive...</p>' +
-              '</div></body></html>'
-          );
-      } catch (_) {}
-
-      const origOpen = window.open.bind(window);
-      let restored = false;
-      const restore = () => { if (!restored) { window.open = origOpen; restored = true; } };
-
-      (window as any).open = (url?: string | URL, target?: string, features?: string): WindowProxy | null => {
-          restore();
-          if (authPopup && !authPopup.closed && url) {
-              try { authPopup.location.href = url.toString(); } catch (_) {}
-              return authPopup;
-          }
-          return origOpen(url, target, features);
-      };
-
-      const cleanup = () => { restore(); this.currentCallback = null; this.currentErrorCallback = null; };
-
-      const safeClosePopup = () => {
-          if (authPopup) {
-              try { authPopup.close(); } catch (e) {}
-          }
-      };
-
-      const timeout = setTimeout(() => {
-          cleanup();
-          safeClosePopup();
-          onError('Đăng nhập Google quá thời gian (60s). Hãy thử lại.');
-      }, 60000);
-
-      this.currentCallback = (response: any) => {
-          clearTimeout(timeout);
-          cleanup();
-          safeClosePopup();
-          if (response.error) { onError(response.error_description || response.error); return; }
-          this.accessToken = response.access_token;
-          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-          console.log('[GoogleDrive] authenticateSync: token obtained via popup.');
-          this.isAuthenticated.set(true);
-          onSuccess(this.accessToken);
-      };
-
-      this.currentErrorCallback = (error: any) => {
-          clearTimeout(timeout);
-          cleanup();
-          safeClosePopup();
-          if (error?.type === 'popup_closed') {
-              onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
-          } else {
-              onError(error?.type || 'Lỗi đăng nhập không xác định');
-          }
-      };
-
-      try {
-          this.tokenClient.requestAccessToken({ prompt: '' });
-      } catch (e) {
-          clearTimeout(timeout);
-          cleanup();
-          safeClosePopup();
-          console.error('[GoogleDrive] requestAccessToken threw:', e);
-          onError('Không thể khởi tạo đăng nhập Google. Hãy thử lại.');
-      }
+      this.requestNativePopup(onSuccess, onError, allowRedirect);
   }
 
   /** Whether the server-side OAuth session cookie is currently usable. */
@@ -474,6 +382,30 @@ export class GoogleDriveService {
   beginRedirectAuth(): void {
       const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       window.location.assign(`/api/oauth/google/start?returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
+  /**
+   * Top-level OAuth fallback for client-side Drive uploads. Unlike the server
+   * code flow above, this returns an access token that index.html stores in
+   * sessionStorage for this service to restore after navigation.
+   */
+  beginClientRedirectAuth(): void {
+      const config = environment.googleDrive;
+      if (!config?.clientId) {
+          throw new Error('Chưa cấu hình Google Drive Client ID trong environment.');
+      }
+
+      sessionStorage.setItem('__gd_route', window.location.hash || '#/standards');
+      const params = new URLSearchParams({
+          client_id: config.clientId,
+          redirect_uri: window.location.origin,
+          response_type: 'token',
+          scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
+          include_granted_scopes: 'true',
+          prompt: 'select_account'
+      });
+
+      window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   }
 
   /** Starts the official GIS popup without opening or hijacking a placeholder. */
@@ -515,8 +447,8 @@ export class GoogleDriveService {
               // regardless of the site's popup permission. Redirect OAuth is
               // the supported fallback because it does not create a window.
               if (allowRedirect) {
-                  console.warn('[GoogleDrive] GIS popup blocked by browser policy; using redirect OAuth.');
-                  this._authViaRedirect();
+                  console.warn('[GoogleDrive] GIS popup blocked by browser policy; using top-level client OAuth.');
+                  this.beginClientRedirectAuth();
               } else {
                   onError('Google không thể mở cửa sổ đăng nhập. Hãy kiểm tra trình duyệt không chạy trong iframe bị hạn chế.');
               }
@@ -530,14 +462,12 @@ export class GoogleDriveService {
       } catch (error) {
           cleanup();
           console.error('[GoogleDrive] Native GIS popup could not start:', error);
-          onError('Không thể khởi tạo cửa sổ đăng nhập Google. Hãy thử lại.');
+          if (allowRedirect) {
+              this.beginClientRedirectAuth();
+          } else {
+              onError('Không thể khởi tạo cửa sổ đăng nhập Google. Hãy thử lại.');
+          }
       }
-  }
-
-  /** Redirect fallback using the server-side authorization-code flow. */
-  private _authViaRedirect(): void {
-      console.log('[GoogleDrive] Starting server-side authorization-code redirect...');
-      this.beginRedirectAuth();
   }
 
   /**

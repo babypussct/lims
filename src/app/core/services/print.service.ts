@@ -5,6 +5,7 @@ import { CalculatedItem } from '../models/sop.model';
 import { ToastService } from './toast.service';
 import { StateService } from './state.service';
 import { GoogleDriveService } from './google-drive.service';
+import { openInNewTab } from '../../shared/utils/browser-navigation';
 
 export interface PrintJob {
   sop: any; 
@@ -107,7 +108,7 @@ export class PrintService {
   }
 
   // --- 3. ENTRY POINT: OPEN COA PREVIEW ---
-  openCoaPreview(url: string, title: string = 'Certificate of Analysis') {
+  openCoaPreview(url: string, title = 'Certificate of Analysis') {
       if (!url) return;
       const cleanUrl = url.split('?')[0].toLowerCase();
       const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
@@ -272,7 +273,7 @@ export class PrintService {
   async quickPrint(pdfUrl: string): Promise<void> {
       const id = this.getFileId(pdfUrl);
       if (!id) {
-          window.open(pdfUrl, '_blank');
+          openInNewTab(pdfUrl);
           return;
       }
 
@@ -304,7 +305,7 @@ export class PrintService {
       }
   }
 
-  private printBlobUrl(blobUrl: string, autoRevoke: boolean = false) {
+  private printBlobUrl(blobUrl: string, autoRevoke = false) {
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
       iframe.src = blobUrl;
@@ -320,10 +321,10 @@ export class PrintService {
       };
   }
 
-  async quickDownload(pdfUrl: string, fileName: string = 'document.pdf'): Promise<void> {
+  async quickDownload(pdfUrl: string, fileName = 'document.pdf'): Promise<void> {
       const id = this.getFileId(pdfUrl);
       if (!id) {
-          window.open(pdfUrl, '_blank');
+          openInNewTab(pdfUrl);
           return;
       }
 
@@ -353,7 +354,7 @@ export class PrintService {
       }
   }
 
-  private downloadBlobUrl(blobUrl: string, fileName: string, autoRevoke: boolean = false) {
+  private downloadBlobUrl(blobUrl: string, fileName: string, autoRevoke = false) {
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = blobUrl;

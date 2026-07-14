@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { calculateSop01Recovery } from './sop-01-engine';
@@ -16,7 +16,7 @@ import { parseMassHunterWorkbook } from '../shared/mass-hunter-parser';
 @Component({
   selector: 'app-sop-01-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
   templateUrl: './sop-01-entry.component.html'
 })
 export class Sop01EntryComponent implements OnInit {

@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-sop-calibration-points',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="space-y-3">
       <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">{{ title }}</label>
@@ -89,16 +89,16 @@ import { FormsModule } from '@angular/forms';
   styles: []
 })
 export class SopCalibrationPointsComponent {
-  @Input() title: string = 'Các Điểm Đường chuẩn';
+  @Input() title = 'Các Điểm Đường chuẩn';
   @Input() calibPoints: any[] = [];
   /** Nhãn nồng độ tĩnh (VD: ['0 ppb','2 ppb'…]). Nếu có → ẩn cột Tên điểm & Nồng độ, chỉ edit Số vial. */
   @Input() pointLabels: string[] = [];
-  @Input() pointPrefix: string = 'C';
-  @Input() suffixText: string = 'IS: 20 ppb';
-  @Input() isSuffixVisible: boolean = true;
-  @Input() valLabel: string = 'Nồng độ';
-  @Input() isFuchsiaRing: boolean = true;
-  @Input() isReadOnly: boolean = false;
+  @Input() pointPrefix = 'C';
+  @Input() suffixText = 'IS: 20 ppb';
+  @Input() isSuffixVisible = true;
+  @Input() valLabel = 'Nồng độ';
+  @Input() isFuchsiaRing = true;
+  @Input() isReadOnly = false;
 
   @Output() pointsChanged = new EventEmitter<any[]>();
 

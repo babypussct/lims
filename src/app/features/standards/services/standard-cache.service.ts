@@ -154,7 +154,7 @@ export class StandardCacheService {
    */
   _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
     const base = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? [];
-    let items = base.filter(i => !deletedIds.includes(i.id));
+    const items = base.filter(i => !deletedIds.includes(i.id));
     changed.forEach(newDoc => {
       const idx = items.findIndex(i => i.id === newDoc.id);
       if (idx >= 0) { items[idx] = newDoc; } else { items.unshift(newDoc); }

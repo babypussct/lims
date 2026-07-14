@@ -136,7 +136,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   filteredRequests = computed(() => {
-    let reqs = this.requests();
+    const reqs = this.requests();
     const term = removeAccents(this.searchTerm().toLowerCase());
     const status = this.statusFilter();
     const stdsMap = new Map(this.allStandards().map(s => [s.id, s]));
@@ -291,7 +291,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'].includes(r.status)
               );
               if (hasActiveRequest) {
-                  this.toast.show(`"​${std.name}" đã có yêu cầu của bạn đang hoạt động, bỏ qua.`, 'info');
+                  this.toast.show(`"${std.name}" đã có yêu cầu của bạn đang hoạt động, bỏ qua.`, 'info');
                   skippedCount++;
                   continue;
               }

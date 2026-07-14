@@ -211,7 +211,7 @@ export class RequestsTableComponent {
   }
 
   @Input() requests: StandardRequest[] = [];
-  @Input() isLoading: boolean = false;
+  @Input() isLoading = false;
 
   @Output() navigateToStandard = new EventEmitter<string>();
   @Output() actionApprove = new EventEmitter<StandardRequest>();

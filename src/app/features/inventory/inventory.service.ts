@@ -192,7 +192,7 @@ export class InventoryService {
   private _mergeAndSaveInv(changed: InventoryItem[], deletedIds: string[]): void {
       if (!this._memInventory) return;
 
-      let items = this._memInventory.filter(i => !deletedIds.includes(i.id));
+      const items = this._memInventory.filter(i => !deletedIds.includes(i.id));
 
       changed.forEach(newDoc => {
           const idx = items.findIndex(i => i.id === newDoc.id);

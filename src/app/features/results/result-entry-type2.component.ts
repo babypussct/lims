@@ -1323,7 +1323,7 @@ export class ResultEntryType2Component implements OnInit {
       ? this.getDisplayRowsForPrefix(this.selectedPrefixFilter()).length
       : (this.isTrifluralin ? this.filteredSamples().length : this.run.sampleList.length);
     let targetRow = rowIdx;
-    let targetCol = col;
+    const targetCol = col;
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();

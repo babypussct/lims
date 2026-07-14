@@ -389,7 +389,7 @@ export class ResultService {
             
             const childDetailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', childId);
             const childDetailSnap = await getDoc(childDetailRef);
-            let childResultData = childDetailSnap.exists() ? (childDetailSnap.data()['resultData'] || {}) : {};
+            const childResultData = childDetailSnap.exists() ? (childDetailSnap.data()['resultData'] || {}) : {};
             
             let childUpdated = false;
             childSamples.forEach(sampleCode => {
@@ -625,7 +625,7 @@ export class ResultService {
       let targetReportId = '';
 
       if (isPrefixReport) {
-        const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
+        const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix!;
         const sortedIncluded = [...(includedSamples || [])].sort().join(',');
         
         let matchedId = '';
@@ -667,7 +667,7 @@ export class ResultService {
 
       // 3. Đóng gói và lưu phiên bản cũ vào Sub-collection history nếu bản in cũ đã tồn tại
       if (isPrefixReport) {
-        const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
+        const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix!;
         const existingReport = targetReportId ? reports[targetReportId] : null;
         if (existingReport && existingReport.pdfUrl) {
           const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${existingReport.version}_${targetReportId}`);
@@ -715,7 +715,7 @@ export class ResultService {
       let newStatus: 'completed' | 'draft' = 'completed';
 
       if (isPrefixReport) {
-        const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
+        const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix!;
         const updatedReports = {
           ...reports,
           [targetReportId]: {

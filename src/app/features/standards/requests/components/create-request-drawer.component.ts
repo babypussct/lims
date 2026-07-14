@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, computed, signal, inject, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, computed, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReferenceStandard } from '../../../../core/models/standard.model';
@@ -250,7 +250,7 @@ function removeAccents(str: string): string {
     }
   `
 })
-export class CreateRequestDrawerComponent implements OnInit {
+export class CreateRequestDrawerComponent {
   private fb = inject(FormBuilder);
 
   @Input() isOpen = false;
@@ -273,10 +273,6 @@ export class CreateRequestDrawerComponent implements OnInit {
     this.form = this.fb.group({
       purpose: ['', Validators.required]
     });
-  }
-
-  ngOnInit() {
-      // Tự động clear form khi mở
   }
 
   // Filter UI logic

@@ -391,8 +391,8 @@ export class ReportHubModalComponent {
   @Input() isOpen = false;
   @Input() run: any = null;
   @Input() historyList: any[] = [];
-  @Input() isLoadingHistory: boolean = false;
-  @Input() runStatus: string = '';
+  @Input() isLoadingHistory = false;
+  @Input() runStatus = '';
 
   @Output() close = new EventEmitter<void>();
   @Output() createReport = new EventEmitter<{requestId: string, prefix?: string}>();

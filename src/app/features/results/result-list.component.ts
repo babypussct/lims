@@ -10,6 +10,7 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
+import { openInNewTab } from '../../shared/utils/browser-navigation';
 
 import { ReportHubModalComponent } from './components/report-hub-modal.component';
 import { MergeRunsModalComponent } from './components/merge-runs-modal.component';
@@ -1529,6 +1530,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   openUrl(url: string) {
-    if (url) window.open(url, '_blank');
+    if (url) openInNewTab(url);
   }
 }

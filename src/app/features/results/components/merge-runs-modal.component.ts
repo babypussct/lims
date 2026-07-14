@@ -71,9 +71,9 @@ import { CommonModule } from '@angular/common';
 export class MergeRunsModalComponent {
   @Input() isOpen = false;
   @Input() selectedRuns: any[] = [];
-  @Input() masterCurveRunId: string = '';
-  @Input() unifiedDateString: string = '';
-  @Input() customMasterId: string = '';
+  @Input() masterCurveRunId = '';
+  @Input() unifiedDateString = '';
+  @Input() customMasterId = '';
 
   @Output() close = new EventEmitter<void>();
   @Output() masterCurveRunIdChange = new EventEmitter<string>();

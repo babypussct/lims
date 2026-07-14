@@ -18,6 +18,7 @@ import {
 } from './config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { PrintService } from '../../core/services/print.service';
+import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
@@ -1204,7 +1205,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   getSafeGoogleUrl = getSafeGoogleUrl;
 
   openUrl(url: string | null) {
-    if (url) window.open(url, '_blank');
+    if (url) openInNewTab(url);
   }
 
   formatAnalysisDate(dateStr: string): string {

@@ -232,33 +232,28 @@ export class AuthService {
     }
   }
 
-  async loginWithGoogle() {
+  async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
-    // Force account picker — important for shared workstations
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
-      console.warn('[Auth] Failed to set session persistence dynamically:', err);
-    });
-
     try {
-        // ── 1. Try popup first ──
-        const result = await signInWithPopup(this.auth, provider);
+        // Do not await setPersistence here. It is already synchronized by the
+        // constructor and checkbox handler; an await before this call consumes
+        // the transient user activation that browsers require for popups.
+        await signInWithPopup(this.auth, provider);
         if (!this.currentUser() && this.auth.currentUser) {
             this.syncUser(this.auth.currentUser);
         }
     } catch (e: any) {
         if (e.code === 'auth/popup-closed-by-user') {
-            throw e; // Trả về cho component xử lý (không chuyển hướng)
+            throw e;
         }
         if (e.code === 'auth/popup-blocked') {
-            // Popup bị chặn -> Fallback sang redirect (yêu cầu của người dùng)
-            console.warn('[Auth] Popup blocked or COOP issue. Falling back to manual OpenID Connect redirect.');
+            console.warn('[Auth] Firebase reported popup-blocked; switching to same-tab OAuth redirect.', e);
             this._authViaDirectOidc();
-            return; // Không ném lỗi nữa vì sẽ chuyển trang
+            return;
         }
-        throw e; // Re-throw real errors
+        throw e;
     }
   }
 
@@ -269,8 +264,7 @@ export class AuthService {
   private _authViaDirectOidc(): void {
       const config = environment.googleDrive;
       if (!config?.clientId) {
-          console.error('[Auth] No clientId found for manual OIDC redirect.');
-          return;
+          throw new Error('Chưa cấu hình Google OAuth Client ID.');
       }
 
       // Save current route so index.html knows where to put the user back
@@ -289,8 +283,8 @@ export class AuthService {
       });
 
       const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-      console.log('[Auth] Redirecting directly to Google OpenID Connect (Hybrid flow)...');
-      window.location.href = authUrl;
+      console.log('[Auth] Starting Google OpenID Connect redirect...');
+      window.location.assign(authUrl);
   }
 
   async logout() {

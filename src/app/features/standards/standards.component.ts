@@ -511,15 +511,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
      const newItems: CoaMatchItem[] = [];
      const standards = this.allStandards();
 
-     for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+     for (const file of Array.from(files)) {
         if (!file.name.toLowerCase().match(/\.(pdf|jpeg|jpg|png|webp|bmp|doc|docx)$/)) continue;
 
         const nameLower = file.name.toLowerCase();
         
         // Match logic: Generate suggested standards sorted by global similarity score
         const scoredStandards = standards.map(s => {
-            let score = calculateSimilarityScore(nameLower, s);
+            const score = calculateSimilarityScore(nameLower, s);
             return { std: s, score };
         });
 
@@ -565,7 +564,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // Xóa hàm triggerBulkUpload vì không cần nữa
 
   async confirmBulkCoaUpload() {
-      let items = this.bulkCoaItems();
+      const items = this.bulkCoaItems();
       const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
       if (toUpload.length === 0 || this.isBulkUploading()) return;
 

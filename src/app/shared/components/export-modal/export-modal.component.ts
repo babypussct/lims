@@ -82,15 +82,15 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class ExportModalComponent {
-  @Input() title: string = 'Xuất Báo cáo';
-  @Input() subtitle: string = '';
-  @Input() dateRangeText: string = '';
-  @Input() iconClass: string = 'fa-solid fa-file-export';
-  @Input() footerText: string = '';
-  @Input() submitButtonText: string = 'Bắt đầu Xuất File';
-  @Input() isExporting: boolean = false;
-  @Input() isCompleted: boolean = false;
-  @Input() isSubmitDisabled: boolean = false;
+  @Input() title = 'Xuất Báo cáo';
+  @Input() subtitle = '';
+  @Input() dateRangeText = '';
+  @Input() iconClass = 'fa-solid fa-file-export';
+  @Input() footerText = '';
+  @Input() submitButtonText = 'Bắt đầu Xuất File';
+  @Input() isExporting = false;
+  @Input() isCompleted = false;
+  @Input() isSubmitDisabled = false;
 
   @Output() close = new EventEmitter<void>();
   @Output() execute = new EventEmitter<void>();

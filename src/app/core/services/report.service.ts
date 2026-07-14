@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { openInNewTab } from '../../shared/utils/browser-navigation';
 
 export interface SampleResult {
   loSo: string;
@@ -105,7 +106,7 @@ export class ReportService {
    * Mở PDF trong tab mới để xem/in.
    */
   openPdf(result: ReportResult): void {
-    window.open(result.pdfViewUrl || result.pdfUrl, '_blank');
+    openInNewTab(result.pdfViewUrl || result.pdfUrl);
   }
 
   /**
@@ -135,7 +136,7 @@ export class ReportService {
     requestId: string,
     fileName: string,
     base64Data: string,
-    sopId: string = 'fipronil-chlorpyrifos'
+    sopId = 'fipronil-chlorpyrifos'
   ): Promise<{ success: boolean; fileUrl?: string; fileId?: string; error?: string }> {
     if (!this.GAS_URL) {
       throw new Error('Chưa cấu hình GAS Web App URL.');

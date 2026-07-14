@@ -644,26 +644,21 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.errorMsg.set('');
 
     try {
+        // Invoke the service before any await so Firebase receives the original
+        // click activation and can open its authentication popup normally.
         const loginPromise = this.auth.loginWithGoogle();
-        
-        // Set loading AFTER popup is triggered (not before — breaks gesture context)
-        this.isLoading.set(true); 
-        this.isGoogleLoading.set(true); 
-        
+        this.isLoading.set(true);
+        this.isGoogleLoading.set(true);
         await loginPromise;
     } catch (e: any) {
-        // auth/popup-blocked: Hiện thông báo yêu cầu cho phép popup (KHÔNG redirect nữa)
-        if (e.code === 'auth/popup-blocked') {
-            this.errorMsg.set('Trình duyệt chặn popup. Đang tự động chuyển hướng...');
-            return; // Page will navigate away, don't reset loading
-        } else if (e.code === 'auth/popup-closed-by-user') {
+        if (e.code === 'auth/popup-closed-by-user') {
             this.errorMsg.set('Đã hủy đăng nhập Google.');
         } else {
             this.handleError(e, true);
         }
-    } finally { 
-        this.isLoading.set(false); 
-        this.isGoogleLoading.set(false); 
+    } finally {
+        this.isLoading.set(false);
+        this.isGoogleLoading.set(false);
     }
   }
 

@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
+import { openInNewTab } from '../../shared/utils/browser-navigation';
 
 interface DriveItem {
   id: string;
@@ -421,7 +422,7 @@ type ViewMode = 'list' | 'grid';
                   <i class="fa-solid fa-download"></i>
                 </a>
                }
-              <a [href]="originalLink()" target="_blank" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
+              <a [href]="originalLink()" target="_blank" rel="noopener noreferrer" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
                 <i class="fa-solid fa-external-link-alt"></i>
               </a>
               <button (click)="closePreview()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
@@ -444,7 +445,7 @@ type ViewMode = 'list' | 'grid';
               <i class="fa-solid fa-circle-info text-fuchsia-400 text-sm"></i>
               Trình xem trước không hiển thị? Hãy đảm bảo đã đăng nhập Google hoặc tắt chặn cookie bên thứ ba.
             </span>
-            <a [href]="originalLink()" target="_blank" class="px-3 py-1.5 bg-fuchsia-600/20 hover:bg-fuchsia-600/30 text-fuchsia-400 hover:text-fuchsia-300 font-bold flex items-center gap-1.5 rounded-lg border border-fuchsia-500/30 transition-colors cursor-pointer">
+            <a [href]="originalLink()" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-fuchsia-600/20 hover:bg-fuchsia-600/30 text-fuchsia-400 hover:text-fuchsia-300 font-bold flex items-center gap-1.5 rounded-lg border border-fuchsia-500/30 transition-colors cursor-pointer">
               Mở tệp trong tab mới <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
             </a>
           </div>
@@ -690,7 +691,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
       }
       if (item.mimeType.startsWith('application/vnd.google-apps.')) {
         const docsUrl = (item.webViewLink || `https://drive.google.com/open?id=${item.id}`).replace(/\/edit.*$/, '/preview');
-        window.open(docsUrl, '_blank', 'noopener,noreferrer');
+        openInNewTab(docsUrl);
         return;
       }
 
@@ -722,12 +723,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
       return;
     }
     if (item.webContentLink) {
-      const a = document.createElement('a');
-      a.href = item.webContentLink;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      openInNewTab(item.webContentLink);
     }
   }
 
@@ -766,7 +762,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   printFile() {
     const link = this.originalLink();
     if (link) {
-      window.open(link, '_blank');
+      openInNewTab(link);
     }
   }
 
@@ -780,7 +776,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     else return (b / 1048576).toFixed(1) + ' MB';
   }
 
-  formatDate(dateStr?: string, short: boolean = false): string {
+  formatDate(dateStr?: string, short = false): string {
     if (!dateStr) return '--';
     const d = new Date(dateStr);
     if (short) {

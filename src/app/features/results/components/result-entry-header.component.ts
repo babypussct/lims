@@ -17,15 +17,15 @@ export class ResultEntryHeaderComponent {
 
   // ── State Inputs ─────────────────────────────────────────────────────────
   @Input() autoSaveStatus: 'synced' | 'modified' | 'saving' = 'synced';
-  @Input() isProcessing: boolean = false;
-  @Input() isPublishing: boolean = false;
-  @Input() isReadOnly: boolean = false;
-  @Input() showRestoreMenu: boolean = false;
-  @Input() showActionsMenu: boolean = false;
+  @Input() isProcessing = false;
+  @Input() isPublishing = false;
+  @Input() isReadOnly = false;
+  @Input() showRestoreMenu = false;
+  @Input() showActionsMenu = false;
   @Input() samplesPerReport: number | null = null;
   @Input() currentPdfUrl: string | null = null;
   @Input() currentDocsUrl: string | null = null;
-  @Input() printButtonLabel: string = 'Xuất Báo Cáo';
+  @Input() printButtonLabel = 'Xuất Báo Cáo';
 
   // ── Action Outputs ────────────────────────────────────────────────────────
   @Output() goBack = new EventEmitter<void>();

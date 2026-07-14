@@ -22,7 +22,7 @@ export interface DeltaSyncConfig {
 /** Entry nội bộ cho mỗi singleton */
 interface SingletonEntry<T = any> {
   unsub: () => void;
-  callbacks: Array<(data: T[]) => void>;
+  callbacks: ((data: T[]) => void)[];
   memCache: T[];
   config: DeltaSyncConfig;
 }
@@ -85,8 +85,8 @@ export class DeltaSyncService {
     const sortDir = config.orderDirection || 'desc';
 
     // Phase 1: Load từ localStorage
-    let memCache: T[] = this._loadFromCache<T>(key).filter(d => !isDeleted(d));
-    const callbacks: Array<(data: T[]) => void> = [onData];
+    const memCache: T[] = this._loadFromCache<T>(key).filter(d => !isDeleted(d));
+    const callbacks: ((data: T[]) => void)[] = [onData];
 
     // Emit cached data ngay
     if (memCache.length > 0) {

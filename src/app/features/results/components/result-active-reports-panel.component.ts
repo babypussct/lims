@@ -21,7 +21,7 @@ export interface OpenPdfEvent {
 })
 export class ResultActiveReportsPanelComponent {
   /** Có ít nhất 1 báo cáo active không */
-  @Input() hasAnyReports: boolean = false;
+  @Input() hasAnyReports = false;
   /** Báo cáo chung (tất cả mẫu) */
   @Input() generalReport: any | null = null;
   /** Danh sách prefix phát hiện được */
@@ -31,7 +31,7 @@ export class ResultActiveReportsPanelComponent {
   /** Hàm lấy tất cả report theo prefix (trả về array, hỗ trợ chunking) */
   @Input() getAllReportsForPrefixFn!: (prefix: string) => any[];
   /** Trạng thái draft */
-  @Input() draftStatus: string = 'draft';
+  @Input() draftStatus = 'draft';
   /** Tiến độ xuất báo cáo */
   @Input() progress: ReportProgress = { total: 0, published: 0, percent: 0, unpublishedSamples: [] };
 
