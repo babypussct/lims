@@ -224,13 +224,24 @@ export class AuthService {
     }
 
     const resolver = browserPopupRedirectResolver as unknown as InternalPopupResolver;
-    resolver._initialize(this.auth).then(() => {
-      this.googlePopupState.set('ready');
-    }).catch((error: unknown) => {
-      console.warn('[Auth] Firebase popup resolver preload failed; Google login will use redirect.', error);
+    if (resolver && typeof resolver._initialize === 'function') {
+      try {
+        resolver._initialize(this.auth).then(() => {
+          this.googlePopupState.set('ready');
+        }).catch((error: unknown) => {
+          console.warn('[Auth] Firebase popup resolver preload failed; Google login will use redirect.', error);
+          this.googlePopupState.set('failed');
+        });
+      } catch (error: unknown) {
+        console.warn('[Auth] Firebase popup resolver _initialize invocation failed; Google login will use redirect.', error);
+        this.googlePopupState.set('failed');
+      }
+    } else {
+      console.warn('[Auth] Firebase popup resolver _initialize is not a function; Google login will use redirect.');
       this.googlePopupState.set('failed');
-    });
+    }
   }
+
 
   /** Cập nhật persistence ngay khi user thay đổi checkbox "Duy trì đăng nhập" */
   updatePersistence(rememberSession: boolean) {
