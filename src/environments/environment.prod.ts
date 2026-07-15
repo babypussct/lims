@@ -3,7 +3,7 @@ export const environment = {
   production: true,
   firebase: {
     apiKey: "AIzaSyDZmI3PE-j1ZhkqUd3mQaYmX1pJpWqtwck",
-    authDomain: "lims-cloud-by-otada.firebaseapp.com",
+    authDomain: "nafiqpm6.vercel.app",
     projectId: "lims-cloud-by-otada",
     storageBucket: "lims-cloud-by-otada.firebasestorage.app",
     messagingSenderId: "498845778988",
