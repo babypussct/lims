@@ -599,6 +599,25 @@ export class GoogleDriveService {
   }
 
   /**
+   * Tải file public dưới dạng Blob trực tiếp từ Google Drive bằng API Key (Không cần OAuth)
+   */
+  async downloadPublicFile(fileId: string): Promise<Blob> {
+    const config = (environment as any).googleDrive;
+    if (!config?.apiKey) {
+      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+    }
+
+    const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${config.apiKey}`;
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Không thể tải file: ${err?.error?.message || res.status}`);
+    }
+    return await res.blob();
+  }
+
+  /**
    * Generate a clean, auto-named filename for CoA files.
    * Pattern: CoA_{StandardName}_{LotNumber}.{ext}
    * Handles Vietnamese characters by transliterating diacritics.

@@ -697,18 +697,19 @@ export class DocumentsComponent implements OnInit, OnDestroy {
 
       this.previewLoading.set(true);
       this.previewName.set(item.name);
-      this.originalLink.set(`https://drive.google.com/file/d/${item.id}/view`);
-      this.previewContentLink.set('');
+      this.originalLink.set(item.webViewLink || `https://drive.google.com/file/d/${item.id}/view`);
+      this.previewContentLink.set(item.webContentLink || '');
 
       try {
-        if (!await this.driveService.hasServerOAuthSession()) {
-          sessionStorage.setItem(this.pendingPreviewKey, JSON.stringify(item));
-          this.driveService.beginRedirectAuth();
-          return;
-        }
-        const blob = await this.driveService.downloadFile(item.id);
+        // Tải Blob trực tiếp từ Google API bằng API Key (dành cho file public, KHÔNG cần OAuth)
+        const blob = await this.driveService.downloadPublicFile(item.id);
         const objectUrl = URL.createObjectURL(blob);
-        this.previewContentLink.set(objectUrl);
+        
+        // Nếu item.webContentLink không có (do Google không cấp), dùng luôn objectUrl để có thể tải xuống.
+        if (!item.webContentLink) {
+          this.previewContentLink.set(objectUrl);
+        }
+        
         this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
       } catch (err: any) {
         this.previewLoading.set(false);
