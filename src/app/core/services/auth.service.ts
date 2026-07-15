@@ -1,5 +1,5 @@
 
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, inject, signal, computed, effect, NgZone } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { GoogleDriveService } from './google-drive.service';
 import { 
@@ -115,6 +115,7 @@ export interface UserProfile {
 export class AuthService {
   private fb = inject(FirebaseService);
   private router = inject(Router);
+  private ngZone = inject(NgZone);
   private deltaSync = inject(DeltaSyncService);
   private googleDriveService = inject(GoogleDriveService);
   private auth: Auth;
@@ -247,15 +248,20 @@ export class AuthService {
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
-        // Do not await setPersistence here. It is already synchronized by the
-        // constructor and checkbox handler; an await before this call consumes
-        // the transient user activation that browsers require for popups.
-        console.log('[Auth] loginWithGoogle: attempting signInWithPopup...');
-        await signInWithPopup(this.auth, provider, browserPopupRedirectResolver);
+        // Run signInWithPopup outside Angular's Zone so Zone.js does not wrap
+        // the window.open() call with async microtasks. Without this, the browser
+        // loses the "transient user activation" required for popups and blocks them.
+        console.log('[Auth] loginWithGoogle: attempting signInWithPopup (outside NgZone)...');
+        await this.ngZone.runOutsideAngular(() =>
+            signInWithPopup(this.auth, provider, browserPopupRedirectResolver)
+        );
         console.log('[Auth] loginWithGoogle: signInWithPopup SUCCESS');
-        if (!this.currentUser() && this.auth.currentUser) {
-            this.syncUser(this.auth.currentUser);
-        }
+        // Re-enter Angular zone to trigger change detection after successful login
+        this.ngZone.run(() => {
+            if (!this.currentUser() && this.auth.currentUser) {
+                this.syncUser(this.auth.currentUser);
+            }
+        });
     } catch (e: any) {
         console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
         if (e.code === 'auth/popup-closed-by-user') {
