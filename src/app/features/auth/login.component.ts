@@ -658,26 +658,24 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  async loginGoogle() {
+  loginGoogle() {
     this.errorMsg.set('');
+    this.isLoading.set(true);
+    this.isGoogleLoading.set(true);
 
-    try {
-        // Invoke the service before any await so Firebase receives the original
-        // click activation and can open its authentication popup normally.
-        const loginPromise = this.auth.loginWithGoogle();
-        this.isLoading.set(true);
-        this.isGoogleLoading.set(true);
-        await loginPromise;
-    } catch (e: any) {
-        if (e.code === 'auth/popup-closed-by-user') {
-            this.errorMsg.set('Đã hủy đăng nhập Google.');
-        } else {
-            this.handleError(e, true);
-        }
-    } finally {
+    // Bắt buộc gọi trực tiếp, không dùng await/async wrapper
+    this.auth.loginWithGoogle().then(() => {
         this.isLoading.set(false);
         this.isGoogleLoading.set(false);
-    }
+    }).catch((e: any) => {
+        if (e && e.code === 'auth/popup-closed-by-user') {
+            this.errorMsg.set('Đã hủy đăng nhập Google.');
+        } else if (e) {
+            this.handleError(e, true);
+        }
+        this.isLoading.set(false);
+        this.isGoogleLoading.set(false);
+    });
   }
 
   private handleError(e: any, isGoogle: boolean) {

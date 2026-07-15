@@ -237,43 +237,43 @@ export class AuthService {
     }
   }
 
-  async loginWithGoogle(): Promise<void> {
+  loginWithGoogle(): Promise<void> {
     if (this.googlePopupState() !== 'ready') {
         console.warn('[Auth] loginWithGoogle: googlePopupState is not ready:', this.googlePopupState());
         this._authViaDirectOidc();
-        return;
+        return Promise.resolve();
     }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    try {
-        // Run signInWithPopup outside Angular's Zone so Zone.js does not wrap
-        // the window.open() call with async microtasks. Without this, the browser
-        // loses the "transient user activation" required for popups and blocks them.
-        console.log('[Auth] loginWithGoogle: attempting signInWithPopup (outside NgZone)...');
-        await this.ngZone.runOutsideAngular(() =>
-            signInWithPopup(this.auth, provider, browserPopupRedirectResolver)
-        );
-        console.log('[Auth] loginWithGoogle: signInWithPopup SUCCESS');
-        // Re-enter Angular zone to trigger change detection after successful login
-        this.ngZone.run(() => {
-            if (!this.currentUser() && this.auth.currentUser) {
-                this.syncUser(this.auth.currentUser);
-            }
-        });
-    } catch (e: any) {
-        console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
-        if (e.code === 'auth/popup-closed-by-user') {
-            throw e;
-        }
-        if (e.code === 'auth/popup-blocked') {
-            console.warn('[Auth] Firebase reported popup-blocked; switching to same-tab OAuth redirect.', e);
-            this._authViaDirectOidc();
-            return;
-        }
-        throw e;
-    }
+    console.log('[Auth] loginWithGoogle: attempting signInWithPopup (outside NgZone)...');
+    
+    // Return the promise directly WITHOUT async/await wrapping before the call.
+    // This is strictly required to prevent strict PWA environments from dropping the user gesture.
+    return this.ngZone.runOutsideAngular(() => {
+        return signInWithPopup(this.auth, provider, browserPopupRedirectResolver)
+            .then((result) => {
+                console.log('[Auth] loginWithGoogle: signInWithPopup SUCCESS');
+                this.ngZone.run(() => {
+                    if (!this.currentUser() && this.auth.currentUser) {
+                        this.syncUser(this.auth.currentUser);
+                    }
+                });
+            })
+            .catch((e: any) => {
+                console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
+                if (e.code === 'auth/popup-closed-by-user') {
+                    throw e;
+                }
+                if (e.code === 'auth/popup-blocked') {
+                    console.warn('[Auth] Firebase reported popup-blocked; switching to same-tab OAuth redirect.', e);
+                    this._authViaDirectOidc();
+                    return;
+                }
+                throw e;
+            });
+    });
   }
 
   /**
