@@ -701,16 +701,29 @@ export class DocumentsComponent implements OnInit, OnDestroy {
       this.previewContentLink.set(item.webContentLink || '');
 
       try {
-        // Tải Blob trực tiếp từ Google API bằng API Key (dành cho file public, KHÔNG cần OAuth)
-        const blob = await this.driveService.downloadPublicFile(item.id);
-        const objectUrl = URL.createObjectURL(blob);
-        
-        // Nếu item.webContentLink không có (do Google không cấp), dùng luôn objectUrl để có thể tải xuống.
-        if (!item.webContentLink) {
-          this.previewContentLink.set(objectUrl);
+        // Kiểm tra xem trình duyệt có hỗ trợ xem trực tiếp định dạng này không
+        const isNativeViewable = item.mimeType === 'application/pdf' || 
+                                 item.mimeType.startsWith('image/') || 
+                                 item.mimeType.startsWith('video/') || 
+                                 item.mimeType.startsWith('audio/') || 
+                                 item.mimeType.startsWith('text/');
+
+        if (isNativeViewable) {
+          // Trình duyệt đọc được (PDF, Ảnh...): Tải Blob để dùng Native Viewer siêu mượt
+          const blob = await this.driveService.downloadPublicFile(item.id);
+          const objectUrl = URL.createObjectURL(blob);
+          
+          if (!item.webContentLink) {
+            this.previewContentLink.set(objectUrl);
+          }
+          this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
+        } else {
+          // Trình duyệt KHÔNG đọc được (Excel, Word...): Nếu truyền Blob vào Iframe thì trình duyệt sẽ TỰ ĐỘNG TẢI VỀ và màn hình trắng.
+          // Bắt buộc phải dùng trình Xem trước của Google Drive.
+          const previewLink = `https://drive.google.com/file/d/${item.id}/preview`;
+          this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(previewLink));
         }
         
-        this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
       } catch (err: any) {
         this.previewLoading.set(false);
         this.error.set(err?.message || 'Không thể tải bản xem trước tài liệu.');
