@@ -50,6 +50,8 @@ export interface DailyApprovedSummary {
 
 export interface DailyPrintTargetSetGroup {
   signature: string;
+  requestId: string;
+  status: ApprovedBatchStatus;
   targetIds: string[];
   targetNames: string[];
   sampleIds: string[];

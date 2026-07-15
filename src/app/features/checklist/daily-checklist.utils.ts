@@ -136,21 +136,28 @@ export function buildDailySampleOverviews(batches: ApprovedBatchOverview[]): Dai
 export function buildDailyPrintSopGroups(batches: ApprovedBatchOverview[]): DailyPrintSopGroup[] {
   const sopMap = new Map<string, {
     sopName: string;
-    samples: Map<string, Map<string, string>>;
+    // Map requestId -> Map<sampleId, Map<targetId, targetName>>
+    batchesData: Map<string, { status: ApprovedBatchStatus, samples: Map<string, Map<string, string>> }>;
   }>();
 
   batches.forEach(batch => {
     let sop = sopMap.get(batch.sopId);
     if (!sop) {
-      sop = { sopName: batch.sopName, samples: new Map<string, Map<string, string>>() };
+      sop = { sopName: batch.sopName, batchesData: new Map() };
       sopMap.set(batch.sopId, sop);
+    }
+    
+    let batchData = sop.batchesData.get(batch.requestId);
+    if (!batchData) {
+      batchData = { status: batch.status, samples: new Map<string, Map<string, string>>() };
+      sop.batchesData.set(batch.requestId, batchData);
     }
 
     batch.samples.forEach(sample => {
-      let targets = sop!.samples.get(sample.sampleId);
+      let targets = batchData!.samples.get(sample.sampleId);
       if (!targets) {
         targets = new Map<string, string>();
-        sop!.samples.set(sample.sampleId, targets);
+        batchData!.samples.set(sample.sampleId, targets);
       }
       sample.targetIds.forEach((targetId, index) => {
         targets!.set(targetId, sample.targetNames[index] || targetId);
@@ -161,24 +168,32 @@ export function buildDailyPrintSopGroups(batches: ApprovedBatchOverview[]): Dail
   return Array.from(sopMap, ([sopId, sop]) => {
     const targetSetMap = new Map<string, DailyPrintTargetSetGroup>();
     const allTargetIds = new Set<string>();
+    let totalSamples = 0;
 
-    sop.samples.forEach((targets, sampleId) => {
-      const targetEntries = Array.from(targets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
-      targetEntries.forEach(([targetId]) => allTargetIds.add(targetId));
-      const targetIds = targetEntries.map(([targetId]) => targetId);
-      const signature = targetIds.length ? targetIds.join('\u0000') : '__unassigned__';
-      let group = targetSetMap.get(signature);
-      if (!group) {
-        group = {
-          signature,
-          targetIds,
-          targetNames: targetEntries.map(([, targetName]) => targetName),
-          sampleIds: [],
-          formattedSamples: ''
-        };
-        targetSetMap.set(signature, group);
-      }
-      group.sampleIds.push(sampleId);
+    sop.batchesData.forEach((batchData, requestId) => {
+      batchData.samples.forEach((targets, sampleId) => {
+        const targetEntries = Array.from(targets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
+        targetEntries.forEach(([targetId]) => allTargetIds.add(targetId));
+        const targetIds = targetEntries.map(([targetId]) => targetId);
+        
+        // Bổ sung requestId vào signature để không trộn lẫn mẫu của 2 mẻ khác nhau
+        const signature = (targetIds.length ? targetIds.join('\u0000') : '__unassigned__') + '##' + requestId;
+        let group = targetSetMap.get(signature);
+        if (!group) {
+          group = {
+            signature,
+            requestId,
+            status: batchData.status,
+            targetIds,
+            targetNames: targetEntries.map(([, targetName]) => targetName),
+            sampleIds: [],
+            formattedSamples: ''
+          };
+          targetSetMap.set(signature, group);
+        }
+        group.sampleIds.push(sampleId);
+      });
+      totalSamples += batchData.samples.size;
     });
 
     const groups = Array.from(targetSetMap.values())
@@ -196,7 +211,7 @@ export function buildDailyPrintSopGroups(batches: ApprovedBatchOverview[]): Dail
       sopId,
       sopName: sop.sopName,
       groups,
-      uniqueSamples: sop.samples.size,
+      uniqueSamples: totalSamples,
       uniqueTargets: allTargetIds.size
     };
   }).sort((a, b) => a.sopName.localeCompare(b.sopName, 'vi'));

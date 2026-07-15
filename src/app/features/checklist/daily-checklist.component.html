@@ -126,31 +126,29 @@
       <article class="cl-board-root cl-board-enter" [class.print-compact]="boardSummary().groups > 4 || boardSummary().targets > 12">
 
         <!-- PRINT-ONLY: Document header -->
-        <header class="cl-doc-header cl-print-only border-b border-blue-100">
-          <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-600">
-                <span class="w-6 h-px bg-blue-400"></span>NAFIQPM6 · LIMS Cloud
-              </div>
-              <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Danh sách mẫu cần kiểm</h2>
-              <p class="mt-1 text-sm font-semibold text-slate-500 capitalize">{{selectedDateLabel()}}</p>
+        <header class="cl-doc-header cl-print-only border-b border-slate-200">
+          <div class="px-4 py-2 flex items-center justify-between gap-4">
+            <div class="flex items-baseline gap-2 min-w-0">
+              <h2 class="text-sm font-black text-slate-900 whitespace-nowrap">Danh sách mẫu cần kiểm</h2>
+              <span class="text-[10px] text-slate-400 font-bold capitalize">({{selectedDateLabel()}})</span>
+              <span class="text-[9px] text-slate-300 font-medium">| NAFIQPM6 · LIMS Cloud</span>
             </div>
-            <div class="cl-print-stats-grid grid grid-cols-4 gap-2 sm:w-[400px]">
-              <div class="rounded-xl bg-white border border-slate-200 px-2 py-2.5 text-center shadow-sm">
-                <div class="text-xl font-black tabular-nums text-blue-700">{{boardSummary().samples}}</div>
-                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400 mt-0.5">Mẫu</div>
+            <div class="cl-print-stats-grid flex items-center gap-1.5">
+              <div class="rounded-lg bg-slate-50 border border-slate-150 px-2 py-0.5 text-center flex items-center gap-1">
+                <span class="text-[8px] font-black uppercase text-slate-450">Mẫu:</span>
+                <span class="text-[10px] font-black text-slate-700">{{boardSummary().samples}}</span>
               </div>
-              <div class="rounded-xl bg-white border border-slate-200 px-2 py-2.5 text-center shadow-sm">
-                <div class="text-xl font-black tabular-nums text-indigo-700">{{boardSummary().sops}}</div>
-                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400 mt-0.5">SOP</div>
+              <div class="rounded-lg bg-slate-50 border border-slate-150 px-2 py-0.5 text-center flex items-center gap-1">
+                <span class="text-[8px] font-black uppercase text-slate-450">SOP:</span>
+                <span class="text-[10px] font-black text-slate-700">{{boardSummary().sops}}</span>
               </div>
-              <div class="rounded-xl bg-white border border-slate-200 px-2 py-2.5 text-center shadow-sm">
-                <div class="text-xl font-black tabular-nums text-sky-700">{{boardSummary().targets}}</div>
-                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400 mt-0.5">Chỉ tiêu</div>
+              <div class="rounded-lg bg-slate-50 border border-slate-150 px-2 py-0.5 text-center flex items-center gap-1 flex-nowrap whitespace-nowrap">
+                <span class="text-[8px] font-black uppercase text-slate-450">Chỉ tiêu:</span>
+                <span class="text-[10px] font-black text-slate-700">{{boardSummary().targets}}</span>
               </div>
-              <div class="rounded-xl bg-white border border-slate-200 px-2 py-2.5 text-center shadow-sm">
-                <div class="text-xl font-black tabular-nums text-emerald-700">{{boardSummary().groups}}</div>
-                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400 mt-0.5">Nhóm</div>
+              <div class="rounded-lg bg-slate-50 border border-slate-150 px-2 py-0.5 text-center flex items-center gap-1">
+                <span class="text-[8px] font-black uppercase text-slate-450">Nhóm:</span>
+                <span class="text-[10px] font-black text-slate-700">{{boardSummary().groups}}</span>
               </div>
             </div>
           </div>
@@ -208,9 +206,29 @@
                       </div>
                     }
 
-                    <!-- Mẫu áp dụng (font-mono dạng phẳng) -->
-                    <div class="font-mono font-bold text-slate-750 dark:text-slate-350 break-words mb-2">
-                      <span class="text-slate-400 dark:text-slate-500 font-sans select-none text-[10px]">Mẫu:</span> {{ printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds) }}
+                    <!-- Mẫu áp dụng (font-mono dạng phẳng) và Badge trạng thái mẻ (Interactive) -->
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                      <div class="font-mono font-bold text-slate-750 dark:text-slate-350 break-words flex-1 pt-0.5">
+                        <span class="text-slate-400 dark:text-slate-500 font-sans select-none text-[10px]">Mẫu:</span> {{ printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds) }}
+                      </div>
+                      
+                      <!-- SCREEN-ONLY: Interactive Status Badge -->
+                      <button type="button" (click)="navigateToResult(group.requestId)"
+                              class="cl-screen-only shrink-0 px-2 py-0.5 rounded border border-transparent flex items-center gap-1 transition-all hover:shadow-sm active:scale-95"
+                              [ngClass]="{
+                                'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 hover:bg-emerald-200': group.status === 'completed',
+                                'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30 hover:bg-amber-200': group.status === 'draft',
+                                'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 hover:bg-slate-200': group.status === 'approved'
+                              }"
+                              [title]="'Chuyển đến màn hình kết quả của mẻ này'">
+                        @if (group.status === 'completed') {
+                          <i class="fa-solid fa-check-circle text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Đã xong</span>
+                        } @else if (group.status === 'draft') {
+                          <i class="fa-solid fa-spinner fa-spin-pulse text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Đang làm</span>
+                        } @else {
+                          <i class="fa-regular fa-clock text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Chờ làm</span>
+                        }
+                      </button>
                     </div>
 
                     <!-- Chỉ tiêu cần kiểm (Dạng Tag flex-wrap, can chỉnh đều đặn) -->
@@ -245,8 +263,8 @@
 
         <!-- PRINT-ONLY: Document footer -->
         <footer class="cl-doc-footer cl-print-only border-t border-slate-200 flex items-center justify-between gap-2">
-          <span><i class="fa-solid fa-shield-check mr-1.5 text-emerald-500" aria-hidden="true"></i>Dữ liệu tổng hợp từ các mẻ đã qua phê duyệt.</span>
-          <span>Mỗi mẫu chỉ xuất hiện một lần trong cùng SOP · {{formatTimestamp(printGeneratedAt())}}</span>
+          <span><i class="fa-solid fa-shield-check mr-1 text-emerald-500" aria-hidden="true"></i>Mẻ đã phê duyệt (1 mẫu/SOP)</span>
+          <span>In lúc: {{formatTimestamp(printGeneratedAt())}}</span>
         </footer>
 
       </article>
@@ -273,9 +291,24 @@
       <!-- Modal Body (Print Settings Forms) -->
       <div class="p-5 space-y-4 text-xs font-bold text-slate-650 dark:text-slate-350">
         
+        <!-- Hướng giấy in (Portrait / Landscape) -->
+        <div class="space-y-2">
+          <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Hướng giấy in</span>
+          <div class="grid grid-cols-2 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
+            @for (opt of [{v:'portrait', l:'Chiều dọc (Ưu tiên)'}, {v:'landscape', l:'Chiều ngang'}]; track opt.v) {
+              <button type="button" (click)="printOrientation.set(opt.v)"
+                      [class.bg-white]="printOrientation() === opt.v" [class.dark:bg-slate-800]="printOrientation() === opt.v" [class.shadow-xs]="printOrientation() === opt.v" [class.text-blue-650] = "printOrientation() === opt.v" [class.dark:text-blue-400]="printOrientation() === opt.v"
+                      [class.text-slate-500]="printOrientation() !== opt.v" [class.dark:text-slate-400]="printOrientation() !== opt.v"
+                      class="py-1.5 rounded-lg text-[10px] font-extrabold hover:text-slate-800 dark:hover:text-white transition active:scale-95 text-center">
+                {{opt.l}}
+              </button>
+            }
+          </div>
+        </div>
+
         <!-- Setting 1: Column Count -->
         <div class="space-y-2">
-          <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Bố cục cột (A4 Landscape)</span>
+          <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Bố cục cột ({{printOrientation() === 'portrait' ? 'Giấy dọc' : 'Giấy ngang'}})</span>
           <div class="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
             @for (opt of [{v:'auto', l:'Auto'}, {v:1, l:'1 Cột'}, {v:2, l:'2 Cột'}, {v:3, l:'3 Cột'}, {v:4, l:'4 Cột'}]; track opt.v) {
               <button type="button" (click)="printCols.set(opt.v)"
@@ -291,8 +324,8 @@
         <!-- Setting 2: Font Size -->
         <div class="space-y-2">
           <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Cỡ chữ chữ in</span>
-          <div class="grid grid-cols-4 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
-            @for (opt of [{v:'auto', l:'Mặc định'}, {v:'small', l:'Nhỏ'}, {v:'medium', l:'Vừa'}, {v:'large', l:'Lớn'}]; track opt.v) {
+          <div class="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
+            @for (opt of [{v:'auto', l:'Auto'}, {v:'xs', l:'XS'}, {v:'small', l:'Nhỏ'}, {v:'medium', l:'Vừa'}, {v:'large', l:'Lớn'}]; track opt.v) {
               <button type="button" (click)="printFontSize.set(opt.v)"
                       [class.bg-white]="printFontSize() === opt.v" [class.dark:bg-slate-800]="printFontSize() === opt.v" [class.shadow-xs]="printFontSize() === opt.v" [class.text-blue-650] = "printFontSize() === opt.v" [class.dark:text-blue-400]="printFontSize() === opt.v"
                       [class.text-slate-500]="printFontSize() !== opt.v" [class.dark:text-slate-400]="printFontSize() !== opt.v"
