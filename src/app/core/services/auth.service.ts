@@ -238,6 +238,7 @@ export class AuthService {
 
   async loginWithGoogle(): Promise<void> {
     if (this.googlePopupState() !== 'ready') {
+        console.warn('[Auth] loginWithGoogle: googlePopupState is not ready:', this.googlePopupState());
         this._authViaDirectOidc();
         return;
     }
@@ -249,11 +250,14 @@ export class AuthService {
         // Do not await setPersistence here. It is already synchronized by the
         // constructor and checkbox handler; an await before this call consumes
         // the transient user activation that browsers require for popups.
+        console.log('[Auth] loginWithGoogle: attempting signInWithPopup...');
         await signInWithPopup(this.auth, provider, browserPopupRedirectResolver);
+        console.log('[Auth] loginWithGoogle: signInWithPopup SUCCESS');
         if (!this.currentUser() && this.auth.currentUser) {
             this.syncUser(this.auth.currentUser);
         }
     } catch (e: any) {
+        console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
         if (e.code === 'auth/popup-closed-by-user') {
             throw e;
         }
