@@ -317,7 +317,7 @@ export class AuthService {
           client_id: config.clientId,
           redirect_uri: redirectUri,
           response_type: 'id_token token',
-          scope: 'email profile openid https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
+          scope: 'email profile openid https://www.googleapis.com/auth/drive.file',
           prompt: 'select_account',
           nonce: Math.random().toString(36).substring(2) + Date.now() // Required for id_token
       });

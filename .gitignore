@@ -46,3 +46,5 @@ Report_ISTD_PARAMETER_NEW.xlsx
 build_errors.txt
 build_errors_2.txt
 build_errors*.txt
+.vercel
+.env*

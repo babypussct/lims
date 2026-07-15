@@ -3,10 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export const GOOGLE_SESSION_COOKIE = 'lims_google_oauth';
 export const GOOGLE_STATE_COOKIE = 'lims_google_oauth_state';
-export const DRIVE_SCOPES = [
-  'https://www.googleapis.com/auth/drive.file',
-  'https://www.googleapis.com/auth/drive.readonly'
-].join(' ');
+export const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 export interface GoogleSession {
   accessToken: string;
