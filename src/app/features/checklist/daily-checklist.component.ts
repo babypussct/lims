@@ -661,9 +661,9 @@ export class DailyChecklistComponent {
     }).format(date);
   }
 
-  navigateToResult(requestId: string): void {
+  navigateToResult(requestId: string, status?: string): void {
     if (!requestId) return;
-    this.router.navigate(['/results', requestId]);
+    this.router.navigate(['/results-view', requestId]);
   }
 
   formatDate(value: string, includeWeekday = false): string {
