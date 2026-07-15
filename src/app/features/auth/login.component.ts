@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -101,7 +100,7 @@ declare let QRious: any;
                 <!-- LOGIN MODE: GOOGLE (PRIMARY) -->
                 @if (mode() === 'google') {
                     <div class="animate-fade-in-up relative z-10 text-center">
-                        <button (click)="loginGoogle()" [disabled]="isLoading() || auth.googlePopupState() === 'loading'"
+                        <button #googleBtn type="button" [disabled]="isLoading() || auth.googlePopupState() === 'loading'"
                                 class="w-full py-4 mt-2 bg-white dark:bg-slate-800 backdrop-blur-md border border-white dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-200 rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] group relative overflow-hidden">
                             <!-- Subtle pink hover glow -->
                             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-50/50 to-transparent dark:via-pink-950/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -358,7 +357,7 @@ declare let QRious: any;
                                         <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
                                     </div>
                                     <div class="space-y-1.5 text-slate-300">
-                                        <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
+                                        <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành for máy cá nhân).</div>
                                         <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn Logout để bảo mật.</div>
                                     </div>
                                 </div>
@@ -429,7 +428,7 @@ declare let QRious: any;
     }
   `]
 })
-export class LoginComponent implements OnInit, OnDestroy {
+export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   auth = inject(AuthService);
   toast = inject(ToastService);
   state = inject(StateService);
@@ -442,6 +441,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   email = '';
   password = '';
   errorMsg = signal('');
+  isPWA = signal<boolean>(false);
+  
+  @ViewChild('googleBtn') googleBtn!: ElementRef<HTMLButtonElement>;
 
   ngOnInit() {
     const reason = localStorage.getItem('lims_logout_reason');
@@ -457,6 +459,20 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (rememberPref === 'true') {
       this.rememberSession.set(true);
     }
+
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      this.isPWA.set(true);
+    }
+  }
+
+  ngAfterViewInit() {
+      if (this.googleBtn) {
+          // Bypass Zone.js completely to guarantee transient user activation for popup
+          this.googleBtn.nativeElement.addEventListener('click', () => {
+              if (this.isLoading() || this.auth.googlePopupState() === 'loading') return;
+              this.loginGoogle();
+          });
+      }
   }
 
   toggleSharedDevice() {
