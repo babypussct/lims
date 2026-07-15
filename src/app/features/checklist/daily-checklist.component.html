@@ -295,7 +295,7 @@
         <div class="space-y-2">
           <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Hướng giấy in</span>
           <div class="grid grid-cols-2 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
-            @for (opt of [{v:'portrait', l:'Chiều dọc (Ưu tiên)'}, {v:'landscape', l:'Chiều ngang'}]; track opt.v) {
+            @for (opt of printOrientationOptions; track opt.v) {
               <button type="button" (click)="printOrientation.set(opt.v)"
                       [class.bg-white]="printOrientation() === opt.v" [class.dark:bg-slate-800]="printOrientation() === opt.v" [class.shadow-xs]="printOrientation() === opt.v" [class.text-blue-650] = "printOrientation() === opt.v" [class.dark:text-blue-400]="printOrientation() === opt.v"
                       [class.text-slate-500]="printOrientation() !== opt.v" [class.dark:text-slate-400]="printOrientation() !== opt.v"
@@ -310,7 +310,7 @@
         <div class="space-y-2">
           <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Bố cục cột ({{printOrientation() === 'portrait' ? 'Giấy dọc' : 'Giấy ngang'}})</span>
           <div class="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
-            @for (opt of [{v:'auto', l:'Auto'}, {v:1, l:'1 Cột'}, {v:2, l:'2 Cột'}, {v:3, l:'3 Cột'}, {v:4, l:'4 Cột'}]; track opt.v) {
+            @for (opt of printColsOptions; track opt.v) {
               <button type="button" (click)="printCols.set(opt.v)"
                       [class.bg-white]="printCols() === opt.v" [class.dark:bg-slate-800]="printCols() === opt.v" [class.shadow-xs]="printCols() === opt.v" [class.text-blue-650] = "printCols() === opt.v" [class.dark:text-blue-400]="printCols() === opt.v"
                       [class.text-slate-500]="printCols() !== opt.v" [class.dark:text-slate-400]="printCols() !== opt.v"
@@ -325,7 +325,7 @@
         <div class="space-y-2">
           <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Cỡ chữ chữ in</span>
           <div class="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
-            @for (opt of [{v:'auto', l:'Auto'}, {v:'xs', l:'XS'}, {v:'small', l:'Nhỏ'}, {v:'medium', l:'Vừa'}, {v:'large', l:'Lớn'}]; track opt.v) {
+            @for (opt of printFontSizeOptions; track opt.v) {
               <button type="button" (click)="printFontSize.set(opt.v)"
                       [class.bg-white]="printFontSize() === opt.v" [class.dark:bg-slate-800]="printFontSize() === opt.v" [class.shadow-xs]="printFontSize() === opt.v" [class.text-blue-650] = "printFontSize() === opt.v" [class.dark:text-blue-400]="printFontSize() === opt.v"
                       [class.text-slate-500]="printFontSize() !== opt.v" [class.dark:text-slate-400]="printFontSize() !== opt.v"

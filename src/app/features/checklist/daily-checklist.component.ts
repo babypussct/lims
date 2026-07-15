@@ -378,6 +378,25 @@ export class DailyChecklistComponent {
   readonly printShowStats = signal(true);
   readonly printGroupSamples = signal(true);
 
+  readonly printOrientationOptions: { v: 'portrait' | 'landscape', l: string }[] = [
+    { v: 'portrait', l: 'Chiều dọc (Ưu tiên)' },
+    { v: 'landscape', l: 'Chiều ngang' }
+  ];
+  readonly printColsOptions: { v: string | number, l: string }[] = [
+    { v: 'auto', l: 'Auto' },
+    { v: 1, l: '1 Cột' },
+    { v: 2, l: '2 Cột' },
+    { v: 3, l: '3 Cột' },
+    { v: 4, l: '4 Cột' }
+  ];
+  readonly printFontSizeOptions: { v: string, l: string }[] = [
+    { v: 'auto', l: 'Auto' },
+    { v: 'xs', l: 'XS' },
+    { v: 'small', l: 'Nhỏ' },
+    { v: 'medium', l: 'Vừa' },
+    { v: 'large', l: 'Lớn' }
+  ];
+
   private didInitializeDate = false;
 
   private readonly targetNameMap = computed(() => {

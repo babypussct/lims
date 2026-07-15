@@ -299,6 +299,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
           .map(r => ({ ...r, _date: this.parseRequestDate(r) }));
   });
 
+  private parseDateSafe(dateStr: string | null): Date | null {
+      if (!dateStr) return null;
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+          return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      }
+      return new Date(dateStr);
+  }
+
   // MỚI: Computed slice theo date range hiện tại — dùng chung cho kanbanBoard, chartKpis, trendInfo(current)
   private _rangeFilteredRequests = computed<ParsedRequest[]>(() => {
       const all = this._parsedRequests();
@@ -306,8 +315,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const endStr = this.endDate();
       if (!startStr || !endStr) return all; // Tất cả thời gian
       
-      const start = new Date(startStr); start.setHours(0,0,0,0);
-      const end = new Date(endStr); end.setHours(23,59,59,999);
+      const start = this.parseDateSafe(startStr)!; start.setHours(0,0,0,0);
+      const end = this.parseDateSafe(endStr)!; end.setHours(23,59,59,999);
       const filter = this.selectedSopFilter();
       
       return all.filter(r => {
@@ -331,12 +340,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       let currentStart = new Date(); currentStart.setHours(0,0,0,0);
       let currentEnd = new Date(); currentEnd.setHours(23,59,59,999);
       if (startStr && endStr) {
-          currentStart = new Date(startStr); currentStart.setHours(0,0,0,0);
-          currentEnd = new Date(endStr); currentEnd.setHours(23,59,59,999);
+          currentStart = this.parseDateSafe(startStr)!; currentStart.setHours(0,0,0,0);
+          currentEnd = this.parseDateSafe(endStr)!; currentEnd.setHours(23,59,59,999);
       }
       
       const diffTime = Math.abs(currentEnd.getTime() - currentStart.getTime());
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
       // Calculate current total
       let currentTotal = 0;
@@ -353,8 +362,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const currentAvg = diffDays > 0 ? currentTotal / diffDays : currentTotal;
 
-      // Historical period (30 days prior to currentStart)
-      const historyDays = 30;
+      // Historical period (Period-over-Period)
+      const historyDays = diffDays > 0 ? diffDays : 1;
       const historyEnd = new Date(currentStart); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
       const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
 
@@ -381,8 +390,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const variance = dailyTotals.reduce((a, b) => a + Math.pow(b - historyMean, 2), 0) / historyDays;
       const historyStdDev = Math.sqrt(variance);
 
-      // Z-Score and Status
-      const zScore = historyStdDev > 0 ? (currentAvg - historyMean) / historyStdDev : (currentAvg > historyMean ? 1.1 : (currentAvg < historyMean ? -1.1 : 0));
+      // Z-Score calculation (Applying Central Limit Theorem adjustment if historyDays > 1)
+      const standardError = historyDays > 1 ? historyStdDev / Math.sqrt(historyDays) : historyStdDev;
+      
+      let zScore = 0;
+      if (standardError > 0) {
+          zScore = (currentAvg - historyMean) / standardError;
+      } else {
+          zScore = currentAvg > historyMean ? 1.1 : (currentAvg < historyMean ? -1.1 : 0);
+      }
       
       let status: 'outstanding' | 'underperforming' | 'normal' = 'normal';
       let icon = 'fa-minus';
@@ -689,8 +705,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
           endStr = this.getLocalYYYYMMDD(new Date());
           
-          const tempStart = new Date(startStr);
-          const tempEnd = new Date(endStr);
+          const tempStart = this.parseDateSafe(startStr)!;
+          const tempEnd = this.parseDateSafe(endStr)!;
           const diffDays = Math.round(Math.abs(tempEnd.getTime() - tempStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
           if (diffDays > 90) {
              const t = new Date(tempEnd);
@@ -699,14 +715,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
       }
 
-      const start = new Date(startStr); start.setHours(0,0,0,0);
-      const end = new Date(endStr); end.setHours(23,59,59,999);
+      const start = this.parseDateSafe(startStr)!; start.setHours(0,0,0,0);
+      const end = this.parseDateSafe(endStr)!; end.setHours(23,59,59,999);
       
       const origStart = new Date(start);
       const origEnd = new Date(end);
 
       const diffTime = Math.abs(end.getTime() - start.getTime());
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
       
       const chartStart = new Date(start);
       const chartEnd = new Date(end);
