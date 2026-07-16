@@ -11,6 +11,7 @@ import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
   DailyBatchView,
+  DailyPrintModePreference,
   DailyPrintOrientationPreference
 } from './daily-checklist.model';
 import {
@@ -462,6 +463,121 @@ interface AvailableDateOption {
         white-space: nowrap !important;
       }
 
+      body.daily-checklist-printing #print-container .cl-print-list-layout,
+      body.daily-checklist-printing #print-container .cl-print-compact-layout {
+        display: none !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-mode-list .cl-print-list-layout {
+        display: block !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-mode-compact .cl-print-compact-layout {
+        display: block !important;
+      }
+
+      body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-layout {
+        column-count: 2 !important;
+        column-gap: 4mm !important;
+      }
+
+      body.daily-checklist-printing.print-landscape-mode #print-container .cl-print-compact-layout {
+        column-count: 3 !important;
+        column-gap: 4mm !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-card {
+        display: inline-block !important;
+        width: 100% !important;
+        margin: 0 0 4mm !important;
+        border: 1px solid #94a3b8 !important;
+        border-radius: 2.5mm !important;
+        overflow: hidden !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        background: white !important;
+        font-size: 8pt !important;
+        line-height: 1.3 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-head {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 2mm !important;
+        padding: 2.2mm !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        background: #f8fafc !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-head .cl-print-qr {
+        width: 14mm !important;
+        height: 14mm !important;
+        flex-basis: 14mm !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-index {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 5mm !important;
+        height: 5mm !important;
+        flex: 0 0 5mm !important;
+        border-radius: 50% !important;
+        color: white !important;
+        background: #2563eb !important;
+        font-size: 7pt !important;
+        font-weight: 800 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-title {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        font-size: 8.5pt !important;
+        font-weight: 800 !important;
+        overflow-wrap: anywhere !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-group {
+        padding: 2.2mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-group + .cl-print-compact-group {
+        border-top: 1px dashed #cbd5e1 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-label {
+        margin-bottom: 0.7mm !important;
+        color: #64748b !important;
+        font-size: 6.7pt !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.03em !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-samples {
+        margin-bottom: 1.5mm !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+        font-size: 8.5pt !important;
+        font-weight: 800 !important;
+        overflow-wrap: anywhere !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-targets {
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-targets li {
+        display: inline !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-targets li:not(:last-child)::after {
+        content: '; ' !important;
+      }
+
       body.daily-checklist-printing #print-container .cl-print-table {
         display: table !important;
         width: 100% !important;
@@ -611,6 +727,7 @@ export class DailyChecklistComponent implements OnDestroy {
   // Print Configuration Signals
   readonly showPrintSettings = signal(false);
   readonly printOrientation = signal<DailyPrintOrientationPreference>('auto');
+  readonly printMode = signal<DailyPrintModePreference>('auto');
   readonly printGroupSamples = signal(true);
   readonly expandedBatchIds = signal<Set<string>>(new Set());
   readonly viewMode = signal<DailyBatchViewMode>(this.loadStoredViewMode());
@@ -622,6 +739,11 @@ export class DailyChecklistComponent implements OnDestroy {
     { v: 'auto', l: 'Tự động' },
     { v: 'portrait', l: 'Chiều dọc' },
     { v: 'landscape', l: 'Chiều ngang' }
+  ];
+  readonly printModeOptions: { v: DailyPrintModePreference, l: string, icon: string }[] = [
+    { v: 'auto', l: 'Tự động', icon: 'fa-wand-magic-sparkles' },
+    { v: 'compact', l: 'Lưới gọn', icon: 'fa-grip' },
+    { v: 'list', l: 'Danh sách', icon: 'fa-bars' }
   ];
   readonly viewModeOptions: { value: DailyBatchViewMode, label: string, icon: string }[] = [
     { value: 'auto', label: 'Tự động', icon: 'fa-wand-magic-sparkles' },
@@ -754,7 +876,8 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly printPlan = computed(() => planDailyPrintLayout(
     this.boardBatches(),
     this.printGroupSamples(),
-    this.printOrientation()
+    this.printOrientation(),
+    this.printMode()
   ));
 
   readonly activeFilterCount = computed(() =>

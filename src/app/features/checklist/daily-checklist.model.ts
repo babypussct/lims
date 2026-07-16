@@ -50,8 +50,11 @@ export interface DailyBatchView {
 
 export type DailyPrintOrientation = 'portrait' | 'landscape';
 export type DailyPrintOrientationPreference = 'auto' | DailyPrintOrientation;
+export type DailyPrintMode = 'compact' | 'list';
+export type DailyPrintModePreference = 'auto' | DailyPrintMode;
 
 export interface DailyPrintLayoutCandidate {
+  mode: DailyPrintMode;
   orientation: DailyPrintOrientation;
   estimatedPages: number;
   estimatedBatchSplits: number;

@@ -305,12 +305,15 @@
           </div>
         </div>
 
-        <div class="cl-print-document cl-print-only">
+        <div class="cl-print-document cl-print-only"
+             [class.cl-print-mode-compact]="printPlan().mode === 'compact'"
+             [class.cl-print-mode-list]="printPlan().mode === 'list'">
           <header class="cl-print-header">
             <h2>BẢNG THEO DÕI MẪU NGÀY</h2>
             <div>Ngày kiểm nghiệm: <strong>{{selectedDateLabel()}}</strong></div>
           </header>
 
+          <div class="cl-print-list-layout">
           <table class="cl-print-table">
             <colgroup><col class="cl-col-batch"><col class="cl-col-samples"><col class="cl-col-targets"></colgroup>
             <thead>
@@ -351,6 +354,45 @@
               }
             </tbody>
           </table>
+          </div>
+
+          <div class="cl-print-compact-layout">
+            @for (batch of boardBatches(); track batch.requestId; let batchIndex = $index) {
+              <section class="cl-print-compact-card">
+                <header class="cl-print-compact-head">
+                  <span class="cl-print-compact-index">{{batchIndex + 1}}</span>
+                  <div class="cl-print-compact-title">
+                    <div>{{batch.sopName}}</div>
+                    <div class="cl-print-meta">
+                      <span>{{batch.uniqueSamples}} mẫu · {{batch.uniqueTargets}} chỉ tiêu</span>
+                      @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
+                      @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
+                    </div>
+                  </div>
+                  <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
+                </header>
+
+                @for (group of batch.groups; track group.signature; let groupIndex = $index) {
+                  <div class="cl-print-compact-group">
+                    <div class="cl-print-compact-label">
+                      Mẫu thực hiện@if (batch.groups.length > 1) { · Nhóm {{groupIndex + 1}} } · {{group.sampleIds.length}} mẫu
+                    </div>
+                    <div class="cl-print-compact-samples">
+                      {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                    </div>
+                    <div class="cl-print-compact-label">Chỉ tiêu kiểm · {{group.targetNames.length}}</div>
+                    @if (group.targetNames.length === 0) {
+                      <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
+                    } @else {
+                      <ul class="cl-print-compact-targets">
+                        @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
+                      </ul>
+                    }
+                  </div>
+                }
+              </section>
+            }
+          </div>
 
           <footer class="cl-print-footer">
             <span>{{boardSummary().batches}} mẻ · {{boardSummary().samples}} mã mẫu · {{boardSummary().targets}} chỉ tiêu</span>
@@ -364,8 +406,8 @@
 
 <!-- ===== PRINT OPTIONS SETTINGS MODAL ===== -->
 @if (showPrintSettings()) {
-  <div class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 max-w-sm w-full overflow-hidden cl-board-enter text-slate-800 dark:text-slate-200">
+  <div data-testid="daily-print-settings" class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 max-w-md w-full overflow-hidden cl-board-enter text-slate-800 dark:text-slate-200">
       
       <!-- Modal Header -->
       <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -380,6 +422,26 @@
 
       <!-- Modal Body (Print Settings Forms) -->
       <div class="p-5 space-y-4 text-xs font-bold text-slate-650 dark:text-slate-350">
+
+        <div class="space-y-2">
+          <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Chế độ in</span>
+          <div class="grid grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
+            @for (opt of printModeOptions; track opt.v) {
+              <button type="button" (click)="printMode.set(opt.v)"
+                      [attr.aria-pressed]="printMode() === opt.v"
+                      class="py-2 rounded-lg text-[10px] font-extrabold transition active:scale-95 flex items-center justify-center gap-1.5"
+                      [ngClass]="printMode() === opt.v
+                        ? 'bg-white dark:bg-slate-800 text-blue-650 dark:text-blue-400 shadow-xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'">
+                <i class="fa-solid" [ngClass]="opt.icon" aria-hidden="true"></i>
+                <span>{{opt.l}}</span>
+              </button>
+            }
+          </div>
+          <p class="text-[10px] font-medium text-slate-400">
+            Tự động so sánh lưới mini-card và bảng danh sách để hạn chế số trang, xuống dòng và chia mẻ.
+          </p>
+        </div>
         
         <!-- Adaptive orientation -->
         <div class="space-y-2">
@@ -400,7 +462,7 @@
           <div class="flex items-center justify-between gap-3">
             <span class="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400">Phương án hiện tại</span>
             <span class="text-xs font-black text-blue-800 dark:text-blue-300">
-              A4 {{printPlan().orientation === 'portrait' ? 'dọc' : 'ngang'}} · khoảng {{printPlan().estimatedPages}} trang
+              {{printPlan().mode === 'compact' ? 'Lưới gọn' : 'Danh sách'}} · A4 {{printPlan().orientation === 'portrait' ? 'dọc' : 'ngang'}} · khoảng {{printPlan().estimatedPages}} trang
             </span>
           </div>
           <p class="mt-1 text-[10px] font-medium text-blue-700/80 dark:text-blue-300/80">{{printPlan().reason}}</p>
@@ -410,7 +472,7 @@
           <label class="flex items-center gap-2.5 cursor-pointer select-none">
             <input type="checkbox" [ngModel]="printGroupSamples()" (ngModelChange)="printGroupSamples.set($event)"
                    class="w-4 h-4 text-blue-600 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded focus:ring-blue-500/30">
-            <span>Gom dải mẫu liên tục (L001 → L010)</span>
+            <span>Gom dải mẫu liên tục (L0115 → L5015)</span>
           </label>
         </div>
 

@@ -91,6 +91,30 @@ test('adaptive print planner chooses landscape for wide content and respects man
   assert.equal(planDailyPrintLayout(views, false, 'portrait').orientation, 'portrait');
 });
 
+test('adaptive print planner supports automatic, compact and list print modes', () => {
+  const overviews = buildApprovedBatchOverviews(
+    Array.from({ length: 6 }, (_, index) => request({
+      id: `REQ-${index + 1}`,
+      sampleList: [`L${String(index + 1).padStart(2, '0')}15`],
+      targetIds: ['T1']
+    })),
+    '2026-07-16',
+    (_item, targetId) => targetId
+  );
+  const views = buildDailyBatchViews(overviews);
+
+  assert.equal(planDailyPrintLayout(views, true, 'auto', 'auto').mode, 'compact');
+  assert.equal(planDailyPrintLayout(views, true, 'auto', 'compact').mode, 'compact');
+  assert.equal(planDailyPrintLayout(views, true, 'auto', 'list').mode, 'list');
+
+  const denseTargets = Array.from({ length: 80 }, (_, index) => `target-${index + 1}`);
+  const denseViews = buildDailyBatchViews(buildApprovedBatchOverviews([
+    request({ id: 'REQ-DENSE', targetIds: denseTargets })
+  ], '2026-07-16', (_item, targetId) => `Chỉ tiêu kiểm nghiệm dài ${targetId}`));
+
+  assert.equal(planDailyPrintLayout(denseViews, true, 'auto', 'auto').mode, 'list');
+});
+
 test('batch without sample codes is retained with its assigned targets', () => {
   const overviews = buildApprovedBatchOverviews([
     request({ sampleList: [], targetIds: ['T1', 'T2'] })
