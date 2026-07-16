@@ -16,6 +16,9 @@ export const permissionGuard: CanActivateFn = (route, state) => {
 
   // 1. Check Login — redirect về '/' để AppComponent hiển thị màn hình đăng nhập
   if (!user) {
+    // Lưu route ý định vào sessionStorage để OAuth redirect có thể restore sau khi đăng nhập
+    const intendedHash = '#/' + state.url.replace(/^\//, '');
+    sessionStorage.setItem('__lims_intended_route', intendedHash);
     router.navigate(['/']);
     return false;
   }

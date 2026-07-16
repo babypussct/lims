@@ -395,7 +395,8 @@ export class GoogleDriveService {
           throw new Error('Chưa cấu hình Google Drive Client ID trong environment.');
       }
 
-      sessionStorage.setItem('__gd_route', window.location.hash || '#/standards');
+      sessionStorage.setItem('__gd_route', window.location.hash || '#/');
+
       const params = new URLSearchParams({
           client_id: config.clientId,
           redirect_uri: window.location.origin,

@@ -174,6 +174,19 @@ export class AuthService {
       if (firebaseUser) {
         this.isProcessingRedirect.set(false); // Tắt overlay khi đã có user
         this.syncUser(firebaseUser);
+
+        // Restore intended route nếu guard đã lưu route ý định trước khi redirect về login.
+        // Key này chỉ được guard set khi cần, nên chỉ có khi user bị forced redirect.
+        const intendedRoute = sessionStorage.getItem('__lims_intended_route');
+        if (intendedRoute) {
+          sessionStorage.removeItem('__lims_intended_route');
+          // Delay nhỏ để đảm bảo Firestore snapshot của syncUser đã set currentUser
+          setTimeout(() => {
+            this.ngZone.run(() => {
+              this.router.navigateByUrl(intendedRoute.replace(/^#/, ''));
+            });
+          }, 500);
+        }
       } else {
         if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
         if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
@@ -259,6 +272,8 @@ export class AuthService {
                     if (!this.currentUser() && this.auth.currentUser) {
                         this.syncUser(this.auth.currentUser);
                     }
+                    // Note: intended route navigation is handled in onAuthStateChanged
+                    // after user profile is fully synced from Firestore.
                 });
             })
             .catch((e: any) => {
@@ -286,8 +301,14 @@ export class AuthService {
           throw new Error('Chưa cấu hình Google OAuth Client ID.');
       }
 
-      // Save current route so index.html knows where to put the user back
-      sessionStorage.setItem('__gd_route', window.location.hash || '#/');
+      // Save current route so index.html knows where to put the user back.
+      // Priority: (1) intended route saved by guard before login redirect,
+      // (2) current hash (if already on a real page), (3) fallback to root.
+      const intendedRoute = sessionStorage.getItem('__lims_intended_route');
+      sessionStorage.removeItem('__lims_intended_route');
+      const currentHash = window.location.hash;
+      const routeToRestore = intendedRoute || (currentHash && currentHash !== '#/' ? currentHash : '#/');
+      sessionStorage.setItem('__gd_route', routeToRestore);
 
       // Redirect URI must be EXACTLY what is registered in Google Cloud Console
       const redirectUri = window.location.origin; 
