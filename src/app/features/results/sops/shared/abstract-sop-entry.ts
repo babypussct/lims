@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { MasterTargetService } from '../../../targets/master-target.service';
-import { resolveCompoundDisplayName, COMPOUND_TO_FIRESTORE_ID, isCompoundAssigned, getCanonicalId } from '../../shared/compound-id-resolver';
+import { resolveCompoundDisplayName, COMPOUND_TO_FIRESTORE_ID, getAssignedTargetsForSample, isCompoundAssigned, getCanonicalId } from '../../shared/compound-id-resolver';
 
 /**
  * Bản đồ ngược: canonical id → các display string cũ có thể xuất hiện trong draft data.
@@ -426,22 +426,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   private _computeIsTargetAssigned(sampleCode: string, compound: string, targetMap: any): boolean {
-    // Hỗ trợ pooled samples (ví dụ: 'A001;A002')
-    const subCodes = sampleCode.split(';').map((s: string) => s.trim()).filter(Boolean);
-    if (subCodes.length > 1) {
-      return subCodes.some((sc: string) => {
-        const matchKey = Object.keys(targetMap)
-          .find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
-        const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
-        if (!assigned || assigned.length === 0) return true;
-        
-        return isCompoundAssigned(assigned, compound, this.masterTargets());
-      });
-    }
-
-    const matchKey = Object.keys(targetMap)
-      .find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-    const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+    const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
     if (!assigned || assigned.length === 0) return true;
 
     return isCompoundAssigned(assigned, compound, this.masterTargets());

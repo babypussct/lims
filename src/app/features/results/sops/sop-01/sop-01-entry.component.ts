@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { calculateSop01Recovery } from './sop-01-engine';
 import { MasterTargetService } from '../../../targets/master-target.service';
-import { resolveCompoundDisplayName, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
+import { getAssignedTargetsForSample, resolveCompoundDisplayName, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
 import { ProgressService } from '../../../../core/services/progress.service';
 import { ReportService } from '../../../../core/services/report.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -225,8 +225,7 @@ export class Sop01EntryComponent implements OnInit {
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
 
-    const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-    const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+    const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
     if (!assigned || assigned.length === 0) return true;
 
     // Fast path: canonical id direct match (v2 data)
@@ -250,8 +249,7 @@ export class Sop01EntryComponent implements OnInit {
 
     const canonicalId = SOP01_COLUMN_TO_CANONICAL[col];
     return sampleList.some((sampleCode: string) => {
-      const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-      const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+      const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
       if (!assigned || assigned.length === 0) return true;
 
       // Fast path: canonical id direct match (v2)

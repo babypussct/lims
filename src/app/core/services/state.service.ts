@@ -638,7 +638,32 @@ export class StateService implements OnDestroy {
     return requestItems;
   }
 
+  private buildSopTraceability(sop: Sop): Pick<Request, 'sopVersion' | 'sopRef' | 'targetNames'> {
+    return {
+      sopVersion: sop.version || 1,
+      sopRef: sop.ref || '',
+      targetNames: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name]))
+    };
+  }
+
+  private hasValidAnalysisDate(value: unknown): value is string {
+    if (typeof value !== 'string') return false;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return false;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const candidate = new Date(year, month - 1, day);
+    return candidate.getFullYear() === year
+      && candidate.getMonth() === month - 1
+      && candidate.getDate() === day;
+  }
+
   async submitRequest(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
+    if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
+      this.toast.show('Vui lòng chọn ngày phân tích hợp lệ trước khi gửi yêu cầu.', 'error');
+      return;
+    }
     try {
       const requestItems = this.mapToRequestItems(calculatedItems, invMap);
 
@@ -652,7 +677,8 @@ export class StateService implements OnDestroy {
         user: this.getCurrentUserName(),
         inputs: formInputs,
         margin: formInputs.safetyMargin || 0,
-        analysisDate: formInputs.analysisDate || null
+        analysisDate: formInputs.analysisDate,
+        ...this.buildSopTraceability(sop)
       };
 
       if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
@@ -666,6 +692,10 @@ export class StateService implements OnDestroy {
 
   async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<{ logId: string, printJobId: string } | null> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
+    if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
+      this.toast.show('Vui lòng chọn ngày phân tích hợp lệ trước khi duyệt.', 'error');
+      return null;
+    }
 
     const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
     const requestItems = this.mapToRequestItems(calculatedItems, invMap);
@@ -704,7 +734,8 @@ export class StateService implements OnDestroy {
           user: this.getCurrentUserName(),
           inputs: formInputs,
           margin: formInputs.safetyMargin || 0,
-          analysisDate: formInputs.analysisDate || null
+          analysisDate: formInputs.analysisDate,
+          ...this.buildSopTraceability(sop)
         };
 
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
@@ -756,7 +787,12 @@ export class StateService implements OnDestroy {
 
   async approveRequest(req: Request) {
     if (!this.auth.canApprove()) return;
+    if (!this.hasValidAnalysisDate(req.analysisDate)) {
+      this.toast.show('Yêu cầu chưa có ngày phân tích hợp lệ. Hãy chỉnh sửa trước khi duyệt.', 'error');
+      return;
+    }
     if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
+    const currentSop = this.sops().find(sop => sop.id === req.sopId);
 
     try {
       await runTransaction(this.fb.db, async (transaction) => {
@@ -775,9 +811,14 @@ export class StateService implements OnDestroy {
         }
 
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        transaction.update(reqRef, { status: 'approved', approvedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+        transaction.update(reqRef, {
+          status: 'approved',
+          approvedAt: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+          ...(currentSop ? this.buildSopTraceability(currentSop) : {})
+        });
 
-        const sop = this.sops().find(s => s.id === req.sopId);
+        const sop = currentSop;
 
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
@@ -893,6 +934,10 @@ export class StateService implements OnDestroy {
 
   async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
     if (!this.auth.canApprove()) return;
+    if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
+      this.toast.show('Vui lòng chọn ngày phân tích hợp lệ trước khi cập nhật.', 'error');
+      return false;
+    }
     if (!await this.confirmationService.confirm('Xác nhận lưu thay đổi và cập nhật kho?')) return;
 
     try {
@@ -952,7 +997,8 @@ export class StateService implements OnDestroy {
           margin: formInputs.safetyMargin || 0,
           analysisDate: formInputs.analysisDate || null,
           updatedAt: serverTimestamp(),
-          lastUpdated: serverTimestamp()
+          lastUpdated: serverTimestamp(),
+          ...this.buildSopTraceability(sop)
         };
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
         else reqData.sampleList = deleteField();

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { MasterTargetService } from '../targets/master-target.service';
-import { resolveCompoundDisplayName, isCompoundAssigned } from './shared/compound-id-resolver';
+import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssigned } from './shared/compound-id-resolver';
 
 @Component({
   selector: 'app-result-entry-type3b',
@@ -330,7 +330,7 @@ export class ResultEntryType3bComponent implements OnInit {
     if (!this.run) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
-    const assigned: string[] = targetMap[sampleCode];
+    const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
     if (!assigned || assigned.length === 0) return true;
 
     // Fast path: canonical id direct match (DATA_VERSION 2)

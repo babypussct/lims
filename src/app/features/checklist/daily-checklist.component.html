@@ -15,17 +15,17 @@
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng Check Mẫu Ngày</h1>
+              <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng theo dõi mẫu ngày</h1>
               <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[9px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">Bảng quan sát KNV</span>
             </div>
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Chỉ tiêu cần kiểm và nhóm mẫu áp dụng từ các mẻ đã phê duyệt</p>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Theo dõi ngày làm mẫu, chỉ tiêu thực hiện và tình trạng kết quả</p>
           </div>
         </div>
       } @else {
         <!-- When embedded, show a clean flat widget title line instead of a heavy box header -->
         <div class="flex items-center gap-2">
           <div class="w-1.5 h-4 bg-blue-600 rounded-full"></div>
-          <h2 class="text-base font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">Theo dõi Kiểm nghiệm & SOP Ngày</h2>
+          <h2 class="text-base font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">Theo dõi mẫu & kết quả ngày</h2>
         </div>
       }
 
@@ -56,6 +56,12 @@
                 aria-label="Ngày có dữ liệu mới hơn" title="Ngày có dữ liệu mới hơn"
                 class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95 flex items-center justify-center bg-white dark:bg-slate-800">
           <i class="fa-solid fa-chevron-right text-xs" aria-hidden="true"></i>
+        </button>
+
+        <button type="button" (click)="refreshData()" [disabled]="loading()"
+                aria-label="Làm mới dữ liệu" title="Làm mới dữ liệu từ máy chủ"
+                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40 shrink-0 transition active:scale-95 flex items-center justify-center bg-white dark:bg-slate-800">
+          <i class="fa-solid fa-rotate" [class.animate-spin]="loading()" aria-hidden="true"></i>
         </button>
 
         <button type="button" (click)="printDocument()" [disabled]="boardSopGroups().length === 0"
@@ -92,19 +98,40 @@
         </button>
       }
     </div>
+
+    @if (usingOfflineCache()) {
+      <div class="mt-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+        <i class="fa-solid fa-wifi mr-1.5" aria-hidden="true"></i>Đang hiển thị dữ liệu lưu cục bộ; hãy làm mới khi kết nối ổn định.
+      </div>
+    }
   </header>
 
   <!-- ===== MAIN SCROLL AREA ===== -->
   <main class="cl-board-scroll flex-1 min-h-0 overflow-y-auto p-0.5 custom-scrollbar">
 
-    @if (dayBatches().length === 0) {
+    @if (loading()) {
+      <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-16 text-center px-4 cl-board-enter">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500 mb-3" aria-hidden="true"></i>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Đang tải dữ liệu theo ngày</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Đã nhận {{loadedBatchCount()}} mẻ phù hợp.</p>
+      </section>
+
+    } @else if (dataError()) {
+      <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-red-100 dark:border-red-900/40 shadow-sm flex flex-col items-center justify-center py-14 text-center px-4 cl-board-enter">
+        <i class="fa-solid fa-triangle-exclamation text-2xl text-red-500 mb-3" aria-hidden="true"></i>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Không thể tải dữ liệu</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{dataError()}}</p>
+        <button type="button" (click)="refreshData()" class="mt-3 h-9 px-4 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">Thử lại</button>
+      </section>
+
+    } @else if (dayBatches().length === 0) {
       <!-- Empty state A: Chưa có dữ liệu phê duyệt -->
       <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-16 text-center px-4 cl-board-enter">
         <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 flex items-center justify-center mb-3">
           <i class="fa-regular fa-calendar-xmark text-xl" aria-hidden="true"></i>
         </div>
-        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chưa có dữ liệu đã phê duyệt</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">Hệ thống sẽ tự mở ngày gần nhất ngay khi có mẻ phù hợp.</p>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chưa có mẻ theo ngày phân tích này</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">Chỉ các mẻ có analysisDate hợp lệ và đã phê duyệt mới được hiển thị.</p>
       </section>
 
     } @else if (boardSopGroups().length === 0) {
@@ -129,7 +156,7 @@
         <header class="cl-doc-header cl-print-only border-b border-slate-200">
           <div class="px-4 py-2 flex items-center justify-between gap-4">
             <div class="flex items-baseline gap-2 min-w-0">
-              <h2 class="text-sm font-black text-slate-900 whitespace-nowrap">Danh sách mẫu cần kiểm</h2>
+              <h2 class="text-sm font-black text-slate-900 whitespace-nowrap">Danh sách mẫu theo dõi trong ngày</h2>
               <span class="text-[10px] text-slate-400 font-bold capitalize">({{selectedDateLabel()}})</span>
               <span class="text-[9px] text-slate-300 font-medium">| NAFIQPM6 · LIMS Cloud</span>
             </div>
@@ -206,6 +233,12 @@
                       </div>
                     }
 
+                    <div class="text-[8px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 break-all">
+                      Mẻ: {{group.requestId}}
+                      @if (group.sopVersion) { <span> · SOP v{{group.sopVersion}}</span> }
+                      @if (group.sopRef) { <span> · {{group.sopRef}}</span> }
+                    </div>
+
                     <!-- Mẫu áp dụng (font-mono dạng phẳng) và Badge trạng thái mẻ (Interactive) -->
                     <div class="flex items-start justify-between gap-2 mb-2">
                       <div class="font-mono font-bold text-slate-750 dark:text-slate-350 break-words flex-1 pt-0.5">
@@ -222,11 +255,11 @@
                               }"
                               [title]="'Chuyển đến màn hình kết quả của mẻ này'">
                         @if (group.status === 'completed') {
-                          <i class="fa-solid fa-check-circle text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Đã duyệt</span>
+                          <i class="fa-solid fa-check-circle text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Có kết quả</span>
                         } @else if (group.status === 'draft') {
-                          <i class="fa-solid fa-pen-to-square text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Đang nháp</span>
+                          <i class="fa-solid fa-pen-to-square text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Đang nhập KQ</span>
                         } @else {
-                          <i class="fa-regular fa-clock text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Chờ nhập</span>
+                          <i class="fa-regular fa-clock text-[9px]" aria-hidden="true"></i> <span class="text-[9px] font-bold uppercase tracking-wider">Chưa có KQ</span>
                         }
                       </button>
                     </div>
@@ -257,13 +290,16 @@
 
         <!-- SCREEN-ONLY: Footer note -->
         <div class="cl-screen-only mt-2.5 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[9px] font-semibold text-slate-400">
-          <span><i class="fa-solid fa-shield-check mr-1.5 text-emerald-500" aria-hidden="true"></i>Dữ liệu tổng hợp từ các mẻ đã qua phê duyệt.</span>
-          <span>Mỗi mẫu chỉ xuất hiện một lần trong cùng SOP</span>
+          <span><i class="fa-solid fa-shield-check mr-1.5 text-emerald-500" aria-hidden="true"></i>Dữ liệu truy vấn trực tiếp theo ngày phân tích.</span>
+          <span>
+            Mẫu được tách theo từng mẻ; thống kê mẫu là số mã mẫu duy nhất.
+            @if (lastLoadedAt(); as refreshedAt) { · Cập nhật {{formatTimestamp(refreshedAt)}} }
+          </span>
         </div>
 
         <!-- PRINT-ONLY: Document footer -->
         <footer class="cl-doc-footer cl-print-only border-t border-slate-200 flex items-center justify-between gap-2">
-          <span><i class="fa-solid fa-shield-check mr-1 text-emerald-500" aria-hidden="true"></i>Mẻ đã phê duyệt (1 mẫu/SOP)</span>
+          <span><i class="fa-solid fa-shield-check mr-1 text-emerald-500" aria-hidden="true"></i>Mẻ đã phê duyệt · Tách theo từng mẻ</span>
           <span>In lúc: {{formatTimestamp(printGeneratedAt())}}</span>
         </footer>
 
@@ -323,7 +359,7 @@
 
         <!-- Setting 2: Font Size -->
         <div class="space-y-2">
-          <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Cỡ chữ chữ in</span>
+          <span class="text-[10px] uppercase font-black tracking-wider text-slate-400 block">Cỡ chữ in</span>
           <div class="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
             @for (opt of printFontSizeOptions; track opt.v) {
               <button type="button" (click)="printFontSize.set(opt.v)"

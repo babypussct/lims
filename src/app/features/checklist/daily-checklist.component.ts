@@ -1,18 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, ViewEncapsulation, computed, effect, inject, signal } from '@angular/core';
+import { Component, Input, ViewEncapsulation, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
+import { Request } from '../../core/models/request.model';
+import { QueryDocumentSnapshot } from 'firebase/firestore';
+import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
-  ApprovedBatchStatus,
-  DailyApprovedSummary,
   DailyPrintSopGroup
 } from './daily-checklist.model';
 import {
   buildApprovedBatchOverviews,
   buildDailyPrintSopGroups,
-  getAvailableApprovedDates,
   isValidDateInput,
   toLocalDateInputValue
 } from './daily-checklist.utils';
@@ -364,8 +364,18 @@ export class DailyChecklistComponent {
   @Input() embedded = false;
   readonly state = inject(StateService);
   readonly router = inject(Router);
+  private readonly dataService = inject(DailyChecklistDataService);
 
   readonly selectedDate = signal(toLocalDateInputValue());
+  readonly dateRequests = signal<Request[]>([]);
+  readonly availableDates = signal<string[]>([]);
+  readonly loading = signal(true);
+  readonly loadingDates = signal(false);
+  readonly loadedBatchCount = signal(0);
+  readonly dataError = signal<string | null>(null);
+  readonly usingOfflineCache = signal(false);
+  readonly lastLoadedAt = signal<Date | null>(null);
+  readonly hasMoreDates = signal(false);
   readonly sopFilter = signal('all');
   readonly searchTerm = signal('');
   readonly printGeneratedAt = signal(new Date());
@@ -397,7 +407,8 @@ export class DailyChecklistComponent {
     { v: 'large', l: 'Lớn' }
   ];
 
-  private didInitializeDate = false;
+  private dateOptionsCursor: QueryDocumentSnapshot | null = null;
+  private dateLoadToken = 0;
 
   private readonly targetNameMap = computed(() => {
     const map = new Map<string, string>();
@@ -407,16 +418,13 @@ export class DailyChecklistComponent {
     return map;
   });
 
-  readonly approvedRequests = computed(() => this.state.approvedRequests());
-  readonly availableDates = computed(() => getAvailableApprovedDates(this.approvedRequests()));
-
   readonly availableDateOptions = computed<AvailableDateOption[]>(() =>
     this.availableDates().map(value => ({ value, label: this.formatDate(value) }))
   );
 
   readonly hasOlderDate = computed(() => {
     const index = this.availableDates().indexOf(this.selectedDate());
-    return index >= 0 && index < this.availableDates().length - 1;
+    return index >= 0 && (index < this.availableDates().length - 1 || this.hasMoreDates());
   });
 
   readonly hasNewerDate = computed(() => this.availableDates().indexOf(this.selectedDate()) > 0);
@@ -424,9 +432,11 @@ export class DailyChecklistComponent {
   readonly dayBatches = computed<ApprovedBatchOverview[]>(() => {
     const targetNames = this.targetNameMap();
     return buildApprovedBatchOverviews(
-      this.approvedRequests(),
+      this.dateRequests(),
       this.selectedDate(),
-      (sopId, targetId) => targetNames.get(`${sopId}\u0000${targetId}`) || targetId
+      (request, targetId) => request.targetNames?.[targetId]
+        || targetNames.get(`${request.sopId}\u0000${targetId}`)
+        || targetId
     );
   });
 
@@ -435,32 +445,6 @@ export class DailyChecklistComponent {
     this.dayBatches().forEach(batch => map.set(batch.sopId, batch.sopName));
     return Array.from(map, ([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
-  });
-
-  readonly summary = computed<DailyApprovedSummary>(() => {
-    const batches = this.dayBatches();
-    const samples = new Set<string>();
-    const sops = new Set<string>();
-    let sampleOccurrences = 0;
-    let targetAssignments = 0;
-    const statuses: Record<ApprovedBatchStatus, number> = { approved: 0, draft: 0, completed: 0 };
-
-    batches.forEach(batch => {
-      sops.add(batch.sopId);
-      statuses[batch.status]++;
-      sampleOccurrences += batch.samples.length;
-      targetAssignments += batch.targetAssignments;
-      batch.samples.forEach(sample => samples.add(sample.sampleId));
-    });
-
-    return {
-      batches: batches.length,
-      uniqueSamples: samples.size,
-      sampleOccurrences,
-      sops: sops.size,
-      targetAssignments,
-      statuses
-    };
   });
 
   readonly scopedBatches = computed(() => {
@@ -514,26 +498,43 @@ export class DailyChecklistComponent {
   readonly selectedDateLabel = computed(() => this.formatDate(this.selectedDate(), true));
 
   constructor() {
-    effect(() => {
-      const dates = this.availableDates();
-      if (this.didInitializeDate || dates.length === 0) return;
-      this.didInitializeDate = true;
-      if (!dates.includes(this.selectedDate())) this.selectedDate.set(dates[0]);
-    });
+    void this.initializeTracker();
   }
 
   onDateChange(value: string): void {
     if (!isValidDateInput(value) || !this.availableDates().includes(value)) return;
     this.selectedDate.set(value);
     this.clearFilters();
+    void this.loadSelectedDate();
   }
 
-  moveAvailableDate(direction: 'older' | 'newer'): void {
-    const dates = this.availableDates();
-    const currentIndex = dates.indexOf(this.selectedDate());
+  async moveAvailableDate(direction: 'older' | 'newer'): Promise<void> {
+    let dates = this.availableDates();
+    let currentIndex = dates.indexOf(this.selectedDate());
     if (currentIndex < 0) return;
+
+    if (direction === 'older' && currentIndex === dates.length - 1 && this.hasMoreDates()) {
+      try {
+        do {
+          await this.loadMoreDateOptions();
+        } while (
+          !this.availableDates().some(date => date < this.selectedDate())
+          && this.hasMoreDates()
+        );
+      } catch (error) {
+        this.handleLoadError(error);
+        return;
+      }
+      dates = this.availableDates();
+      currentIndex = dates.indexOf(this.selectedDate());
+    }
+
     const targetIndex = direction === 'older' ? currentIndex + 1 : currentIndex - 1;
     if (targetIndex >= 0 && targetIndex < dates.length) this.onDateChange(dates[targetIndex]);
+  }
+
+  refreshData(): void {
+    void this.refreshTracker();
   }
 
   clearFilters(): void {
@@ -675,6 +676,87 @@ export class DailyChecklistComponent {
       month: '2-digit',
       year: 'numeric'
     }).format(new Date(year, month - 1, day));
+  }
+
+  private async initializeTracker(): Promise<void> {
+    this.loading.set(true);
+    try {
+      do {
+        await this.loadMoreDateOptions(this.availableDates().length === 0);
+      } while (this.availableDates().length === 0 && this.hasMoreDates());
+
+      const dates = this.availableDates();
+      const today = toLocalDateInputValue();
+      this.selectedDate.set(dates.includes(today) ? today : (dates[0] || today));
+      await this.loadSelectedDate();
+    } catch (error) {
+      this.handleLoadError(error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private async refreshTracker(): Promise<void> {
+    try {
+      this.dateOptionsCursor = null;
+      this.hasMoreDates.set(false);
+      await this.loadMoreDateOptions(true);
+      if (!this.availableDates().includes(this.selectedDate())) {
+        this.availableDates.update(dates => [this.selectedDate(), ...dates].sort((a, b) => b.localeCompare(a)));
+      }
+      await this.loadSelectedDate();
+    } catch (error) {
+      this.handleLoadError(error);
+      this.loading.set(false);
+    }
+  }
+
+  private async loadMoreDateOptions(reset = false): Promise<void> {
+    if (this.loadingDates()) return;
+    this.loadingDates.set(true);
+    try {
+      if (reset) this.dateOptionsCursor = null;
+      const page = await this.dataService.loadDateOptionsPage(this.dateOptionsCursor);
+      const nextDates = reset
+        ? page.dates
+        : Array.from(new Set([...this.availableDates(), ...page.dates]));
+      this.availableDates.set(nextDates.sort((a, b) => b.localeCompare(a)));
+      this.dateOptionsCursor = page.cursor;
+      this.hasMoreDates.set(page.hasMore);
+      if (page.source === 'cache') this.usingOfflineCache.set(true);
+    } finally {
+      this.loadingDates.set(false);
+    }
+  }
+
+  private async loadSelectedDate(): Promise<void> {
+    const selectedDate = this.selectedDate();
+    const token = ++this.dateLoadToken;
+    this.loading.set(true);
+    this.loadedBatchCount.set(0);
+    this.dataError.set(null);
+    try {
+      const result = await this.dataService.loadRequestsForDate(
+        selectedDate,
+        count => {
+          if (token === this.dateLoadToken) this.loadedBatchCount.set(count);
+        }
+      );
+      if (token !== this.dateLoadToken) return;
+      this.dateRequests.set(result.requests);
+      this.usingOfflineCache.set(result.source === 'cache');
+      this.lastLoadedAt.set(new Date());
+    } catch (error) {
+      if (token === this.dateLoadToken) this.handleLoadError(error);
+    } finally {
+      if (token === this.dateLoadToken) this.loading.set(false);
+    }
+  }
+
+  private handleLoadError(error: unknown): void {
+    console.error('[DailySampleTracker] Load failed:', error);
+    this.dataError.set('Không thể tải dữ liệu theo ngày. Vui lòng kiểm tra kết nối và thử làm mới.');
+    this.dateRequests.set([]);
   }
 }
 

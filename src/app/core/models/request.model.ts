@@ -31,6 +31,9 @@ export interface Request {
   sampleList?: string[]; // List of Sample IDs
   targetIds?: string[];  // List of Selected Target IDs
   sampleTargetMap?: Record<string, string[]>; // Maps sample ID -> assigned Target IDs
+  targetNames?: Record<string, string>; // Immutable target-name snapshot for traceability
+  sopVersion?: number;
+  sopRef?: string;
 
   
   // Legacy: Embed Analysis Result directly in Request (pre-Document-Splitting)

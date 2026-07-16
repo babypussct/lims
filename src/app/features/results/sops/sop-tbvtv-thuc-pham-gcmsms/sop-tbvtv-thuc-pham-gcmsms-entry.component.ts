@@ -7,7 +7,7 @@ import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.
 import { calculateSop01Recovery } from '../sop-01/sop-01-engine';
 import { parseMassHunterWorkbook } from '../shared/mass-hunter-parser';
 import { navigateGrid } from '../shared/sop-grid-helper';
-import { SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
+import { getAssignedTargetsForSample, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
 import { ProgressService } from '../../../../core/services/progress.service';
 import { ReportService } from '../../../../core/services/report.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -304,8 +304,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
       const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
       if (!targetMap) return true;
 
-      const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-      const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+      const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
       if (!assigned || assigned.length === 0) return true;
 
       const canonicalId = SOP01_COLUMN_TO_CANONICAL[compoundOrCol];
@@ -325,8 +324,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
     const canonicalId = SOP01_COLUMN_TO_CANONICAL[col];
     return sampleList.some((sampleCode: string) => {
-      const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-      const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+      const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
       if (!assigned || assigned.length === 0) return true;
 
       if (canonicalId) {

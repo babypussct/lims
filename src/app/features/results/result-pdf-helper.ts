@@ -2,7 +2,7 @@
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
-import { isCompoundAssigned, resolveTargetMasterInfo, getCanonicalId, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from './shared/compound-id-resolver';
+import { getAssignedTargetsForSample, isCompoundAssigned, resolveTargetMasterInfo, getCanonicalId, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from './shared/compound-id-resolver';
 import { formatSampleList } from '../../shared/utils/utils';
 
 export function mapCompoundToKey(c: string): string {
@@ -13,13 +13,6 @@ export function isDetectedValue(val: any): boolean {
   if (val === undefined || val === null) return false;
   const s = String(val).trim().toUpperCase();
   return s !== '' && s !== 'ND' && s !== 'ND' && s !== 'N/A' && s !== '—';
-}
-
-export function getAssignedTargetsForSample(sampleCode: string, sampleTargetMap: Record<string, string[]>): string[] | null {
-  if (!sampleTargetMap || !sampleCode) return null;
-  const matchKey = Object.keys(sampleTargetMap)
-    .find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-  return matchKey ? sampleTargetMap[matchKey] : null;
 }
 
 export function buildTargetMetadata(compounds: string[], masterTargets: any[], sopIdOrConfigKey?: string | null) {

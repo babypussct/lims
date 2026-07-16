@@ -200,27 +200,6 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // CHECK MẪU NGÀY — mỗi document là một cặp mẻ × mẫu × chỉ tiêu.
-    // Người có sop_view được xem; chỉ người vận hành mẻ mới được check/bỏ check.
-    match /artifacts/{appId}/daily_checks/{checkId} {
-      allow read: if hasPermission(appId, 'sop_view');
-      allow create: if hasPermission(appId, 'batch_run')
-        && request.resource.data.updatedBy == request.auth.uid
-        && request.resource.data.requestId is string
-        && request.resource.data.sampleId is string
-        && request.resource.data.targetId is string
-        && request.resource.data.daySuffix is string
-        && request.resource.data.checked is bool;
-      allow update: if hasPermission(appId, 'batch_run')
-        && request.resource.data.updatedBy == request.auth.uid
-        && request.resource.data.requestId == resource.data.requestId
-        && request.resource.data.sampleId == resource.data.sampleId
-        && request.resource.data.targetId == resource.data.targetId
-        && request.resource.data.daySuffix == resource.data.daySuffix
-        && request.resource.data.checked is bool;
-      allow delete: if isManager(appId);
-    }
-
     // Yêu cầu in ấn nhãn / barcode (Print Jobs)
     match /artifacts/{appId}/print_jobs/{jobId} {
       allow read: if true; // Public read cho phép máy in hoặc client quét barcode không cần login

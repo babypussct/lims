@@ -381,6 +381,48 @@ export function getCanonicalId(name: string): string {
 }
 
 /**
+ * Canonical sample-code lookup shared by checklist, result entry and reports.
+ *
+ * Sample codes are user-entered in a few different screens, so historical data
+ * can contain harmless casing/whitespace differences. Pooled samples are stored
+ * as `A001;A002`; they are unrestricted when any member has no explicit target
+ * assignment, matching the legacy result-entry semantics.
+ */
+const normalizedSampleTargetMapCache = new WeakMap<object, Map<string, string[]>>();
+
+export function getAssignedTargetsForSample(
+  sampleCode: string,
+  sampleTargetMap: Record<string, string[]> | null | undefined
+): string[] | null {
+  if (!sampleCode || !sampleTargetMap) return null;
+
+  let normalizedEntries = normalizedSampleTargetMapCache.get(sampleTargetMap);
+  if (!normalizedEntries) {
+    normalizedEntries = new Map<string, string[]>();
+    Object.entries(sampleTargetMap).forEach(([key, targets]) => {
+      normalizedEntries!.set(normalizeSampleCode(key), Array.isArray(targets) ? targets : []);
+    });
+    normalizedSampleTargetMapCache.set(sampleTargetMap, normalizedEntries);
+  }
+
+  const memberCodes = sampleCode.split(';').map(normalizeSampleCode).filter(Boolean);
+  if (memberCodes.length === 0) return null;
+
+  const combinedTargets = new Set<string>();
+  for (const memberCode of memberCodes) {
+    const assigned = normalizedEntries.get(memberCode);
+    if (!assigned || assigned.length === 0) return null;
+    assigned.map(target => String(target).trim()).filter(Boolean).forEach(target => combinedTargets.add(target));
+  }
+
+  return Array.from(combinedTargets);
+}
+
+export function normalizeSampleCode(sampleCode: string): string {
+  return String(sampleCode || '').trim().toLocaleLowerCase('vi');
+}
+
+/**
  * Determines if a compound is assigned to a sample based on the sample's target ID array
  */
 export function isCompoundAssigned(assignedTargetIds: string[], compound: string, masterTargets?: any[]): boolean {

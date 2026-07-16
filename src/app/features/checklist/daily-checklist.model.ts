@@ -1,7 +1,6 @@
 import { Request } from '../../core/models/request.model';
 
 export type ApprovedBatchStatus = Extract<Request['status'], 'approved' | 'draft' | 'completed'>;
-export type DailyOverviewMode = 'samples' | 'batches';
 
 export interface ApprovedBatchSample {
   sampleId: string;
@@ -13,6 +12,8 @@ export interface ApprovedBatchOverview {
   requestId: string;
   sopId: string;
   sopName: string;
+  sopVersion?: number;
+  sopRef?: string;
   status: ApprovedBatchStatus;
   analysisDate: string;
   approvedAt?: Date;
@@ -22,36 +23,12 @@ export interface ApprovedBatchOverview {
   targetAssignments: number;
 }
 
-export interface SampleBatchReference {
-  requestId: string;
-  sopId: string;
-  sopName: string;
-  status: ApprovedBatchStatus;
-  targetIds: string[];
-  targetNames: string[];
-}
-
-export interface DailySampleOverview {
-  sampleId: string;
-  batches: SampleBatchReference[];
-  sopNames: string[];
-  targetNames: string[];
-  targetAssignments: number;
-}
-
-export interface DailyApprovedSummary {
-  batches: number;
-  uniqueSamples: number;
-  sampleOccurrences: number;
-  sops: number;
-  targetAssignments: number;
-  statuses: Record<ApprovedBatchStatus, number>;
-}
-
 export interface DailyPrintTargetSetGroup {
   signature: string;
   requestId: string;
   status: ApprovedBatchStatus;
+  sopVersion?: number;
+  sopRef?: string;
   targetIds: string[];
   targetNames: string[];
   sampleIds: string[];

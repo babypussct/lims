@@ -35,7 +35,7 @@ import { SopTbvtvTrongNuocGcmsmsEntryComponent } from './sops/sop-tbvtv-trong-nu
 import { SopTbvtvThucPhamGcmsmsEntryComponent } from './sops/sop-tbvtv-thuc-pham-gcmsms/sop-tbvtv-thuc-pham-gcmsms-entry.component';
 import { SopChloroformEntryComponent } from './sops/sop-chloroform/sop-chloroform-entry.component';
 import { SopNhomIEntryComponent } from './sops/sop-nhom-i/sop-nhom-i-entry.component';
-import { isCompoundAssigned } from './shared/compound-id-resolver';
+import { getAssignedTargetsForSample, isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -665,7 +665,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt chỉ cho các hoạt chất được phân công
           const sampleTargetMap = runDoc.sampleTargetMap || (runDoc.inputs && runDoc.inputs.sampleTargetMap) || {};
           const isAssigned = (sCode: string, compound: string): boolean => {
-            const assigned: string[] = sampleTargetMap[sCode];
+            const assigned = getAssignedTargetsForSample(sCode, sampleTargetMap);
             if (!assigned || assigned.length === 0) return true;
             // Fast path: canonical id direct match (DATA_VERSION 2)
             if (assigned.includes(compound)) return true;
