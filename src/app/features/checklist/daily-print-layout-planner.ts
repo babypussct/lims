@@ -67,7 +67,7 @@ function evaluateOrientation(
     let batchStartedOnPage = false;
     let batchWasSplit = false;
     batch.groups.forEach(group => {
-      const batchText = `${batch.requestId} ${batch.sopName} ${batch.sopRef || ''} v${batch.sopVersion || ''}`;
+      const batchText = `${batch.sopName} ${batch.sopRef || ''} v${batch.sopVersion || ''}`;
       const sampleText = groupSamples ? group.formattedSamples : group.sampleIds.join(', ');
       const targetText = group.targetNames.length ? group.targetNames.join('; ') : 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
@@ -77,7 +77,7 @@ function evaluateOrientation(
         1
       );
       wrappedLineCount += Math.max(0, lines - 1);
-      const rowHeight = ROW_BASE_MM + lines * LINE_HEIGHT_MM;
+      const rowHeight = Math.max(21, ROW_BASE_MM + lines * LINE_HEIGHT_MM);
 
       if (rowHeight > pageBodyHeight) {
         if (currentPageHeight > 0) {

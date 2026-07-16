@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, ViewEncapsulation, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, Input, OnDestroy, ViewChild, ViewEncapsulation, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import * as QRCode from 'qrcode';
 import { StateService } from '../../core/services/state.service';
+import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
@@ -18,6 +20,11 @@ import {
   toLocalDateInputValue
 } from './daily-checklist.utils';
 import { planDailyPrintLayout } from './daily-print-layout-planner';
+import {
+  computeDailyBatchLayoutHint,
+  DailyBatchLayoutHint,
+  DailyBatchViewMode
+} from './daily-screen-layout-planner';
 
 interface AvailableDateOption {
   value: string;
@@ -53,6 +60,52 @@ interface AvailableDateOption {
       width: 100%;
       max-width: none;
       margin-inline: auto;
+    }
+
+    .cl-batch-grid-shell { container: batch-grid-shell / inline-size; }
+    .cl-batch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+      gap: 12px;
+      align-items: start;
+      grid-auto-flow: row;
+    }
+    .cl-batch-card {
+      min-width: 0;
+      container-type: inline-size;
+    }
+    .cl-batch-card.cl-card-standard { grid-column: span 2; }
+    .cl-batch-card.cl-card-wide { grid-column: 1 / -1; }
+    .cl-batch-grid[data-view-mode='compact'] .cl-batch-card { grid-column: span 1; }
+    .cl-batch-grid[data-view-mode='list'] .cl-batch-card { grid-column: 1 / -1; }
+
+    .cl-assignment-row { grid-template-columns: minmax(0, 1fr); }
+    .cl-assignment-targets { border-top: 1px solid rgb(241 245 249); padding-top: 12px; }
+    .dark .cl-assignment-targets { border-color: rgb(51 65 85 / 0.7); }
+
+    @container (min-width: 520px) {
+      .cl-card-header { flex-direction: row; align-items: flex-start; }
+    }
+
+    @container (min-width: 620px) {
+      .cl-assignment-row { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+      .cl-assignment-targets {
+        border-top: 0;
+        border-left: 1px solid rgb(241 245 249);
+        padding-top: 0;
+        padding-left: 16px;
+      }
+      .dark .cl-assignment-targets { border-color: rgb(51 65 85 / 0.7); }
+    }
+
+    @container (max-width: 459px) {
+      .cl-copy-label { display: none; }
+      .cl-card-header { padding-inline: 12px; }
+      .cl-card-body-row { padding: 12px; gap: 12px; }
+    }
+
+    @container batch-grid-shell (max-width: 759px) {
+      .cl-batch-card.cl-card-standard { grid-column: 1 / -1; }
     }
 
     /* Target chips grid layout */
@@ -454,17 +507,35 @@ interface AvailableDateOption {
         border-top-color: #334155 !important;
       }
 
-      body.daily-checklist-printing #print-container .cl-print-request-id {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-        font-size: 9.5pt !important;
-        font-weight: 800 !important;
-        overflow-wrap: anywhere !important;
+      body.daily-checklist-printing #print-container .cl-print-batch-cell {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 2.5mm !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-qr {
+        display: block !important;
+        width: 18mm !important;
+        height: 18mm !important;
+        flex: 0 0 18mm !important;
+        object-fit: contain !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-batch-info {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
       }
 
       body.daily-checklist-printing #print-container .cl-print-sop {
-        margin-top: 1mm !important;
         font-weight: 700 !important;
         color: #334155 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-qr-label {
+        margin-top: 1.2mm !important;
+        color: #64748b !important;
+        font-size: 7pt !important;
+        font-weight: 600 !important;
       }
 
       body.daily-checklist-printing #print-container .cl-print-meta,
@@ -511,11 +582,12 @@ interface AvailableDateOption {
     }
   `]
 })
-export class DailyChecklistComponent {
+export class DailyChecklistComponent implements OnDestroy {
   @Input() embedded = false;
   readonly state = inject(StateService);
   readonly router = inject(Router);
   private readonly dataService = inject(DailyChecklistDataService);
+  private readonly toast = inject(ToastService);
 
   readonly selectedDate = signal(toLocalDateInputValue());
   readonly dateRequests = signal<Request[]>([]);
@@ -536,12 +608,40 @@ export class DailyChecklistComponent {
   readonly printOrientation = signal<DailyPrintOrientationPreference>('auto');
   readonly printGroupSamples = signal(true);
   readonly expandedBatchIds = signal<Set<string>>(new Set());
+  readonly viewMode = signal<DailyBatchViewMode>(this.loadStoredViewMode());
+  readonly batchGridWidth = signal(0);
+  readonly qrCodeDataUrls = signal<Record<string, string>>({});
+  readonly preparingQrCodes = signal(false);
 
   readonly printOrientationOptions: { v: DailyPrintOrientationPreference, l: string }[] = [
     { v: 'auto', l: 'Tự động' },
     { v: 'portrait', l: 'Chiều dọc' },
     { v: 'landscape', l: 'Chiều ngang' }
   ];
+  readonly viewModeOptions: { value: DailyBatchViewMode, label: string, icon: string }[] = [
+    { value: 'auto', label: 'Tự động', icon: 'fa-wand-magic-sparkles' },
+    { value: 'compact', label: 'Lưới gọn', icon: 'fa-grip' },
+    { value: 'list', label: 'Danh sách', icon: 'fa-bars' }
+  ];
+
+  private batchGridResizeObserver?: ResizeObserver;
+
+  @ViewChild('batchGrid')
+  set batchGrid(element: ElementRef<HTMLElement> | undefined) {
+    this.batchGridResizeObserver?.disconnect();
+    this.batchGridResizeObserver = undefined;
+    if (!element) return;
+
+    const updateWidth = () => this.batchGridWidth.set(Math.round(element.nativeElement.getBoundingClientRect().width));
+    updateWidth();
+    if (typeof ResizeObserver !== 'undefined') {
+      this.batchGridResizeObserver = new ResizeObserver(entries => {
+        const width = entries[0]?.contentRect.width;
+        if (width !== undefined) this.batchGridWidth.set(Math.round(width));
+      });
+      this.batchGridResizeObserver.observe(element.nativeElement);
+    }
+  }
 
   private dateOptionsCursor: QueryDocumentSnapshot | null = null;
   private dateLoadToken = 0;
@@ -614,6 +714,21 @@ export class DailyChecklistComponent {
       .filter((batch): batch is DailyBatchView => batch !== null);
   });
 
+  readonly batchLayoutHints = computed<ReadonlyMap<string, DailyBatchLayoutHint>>(() => {
+    const containerWidth = this.batchGridWidth();
+    const expandedBatchIds = this.expandedBatchIds();
+    const viewMode = this.viewMode();
+    return new Map(this.boardBatches().map(batch => [
+      batch.requestId,
+      computeDailyBatchLayoutHint(
+        batch,
+        containerWidth,
+        expandedBatchIds.has(batch.requestId),
+        viewMode
+      )
+    ]));
+  });
+
   readonly boardSummary = computed(() => {
     const batches = this.boardBatches();
     const samples = new Set<string>();
@@ -645,6 +760,10 @@ export class DailyChecklistComponent {
 
   constructor() {
     void this.initializeTracker();
+  }
+
+  ngOnDestroy(): void {
+    this.batchGridResizeObserver?.disconnect();
   }
 
   onDateChange(value: string): void {
@@ -688,9 +807,45 @@ export class DailyChecklistComponent {
     this.searchTerm.set('');
   }
 
-  printDocument(): void {
+  setViewMode(mode: DailyBatchViewMode): void {
+    this.viewMode.set(mode);
+    try {
+      localStorage.setItem('daily-sample-board-view-mode', mode);
+    } catch {
+      // Chế độ vẫn có hiệu lực trong phiên nếu trình duyệt chặn storage.
+    }
+  }
+
+  visibleBatchGroups(batch: DailyBatchView) {
+    return this.isBatchExpanded(batch.requestId) ? batch.groups : batch.groups.slice(0, 2);
+  }
+
+  visibleTargetNames(batch: DailyBatchView, targetNames: string[]): string[] {
+    return this.isBatchExpanded(batch.requestId) ? targetNames : targetNames.slice(0, 6);
+  }
+
+  hasHiddenBatchContent(batch: DailyBatchView): boolean {
+    return batch.uniqueSamples > 12
+      || batch.groups.length > 2
+      || batch.groups.some(group => group.targetNames.length > 6);
+  }
+
+  hiddenBatchGroupCount(batch: DailyBatchView): number {
+    return Math.max(0, batch.groups.length - 2);
+  }
+
+  async printDocument(): Promise<void> {
     if (this.boardBatches().length === 0) return;
-    this.showPrintSettings.set(true);
+    this.preparingQrCodes.set(true);
+    try {
+      await this.prepareBatchQrCodes();
+      this.showPrintSettings.set(true);
+    } catch (error) {
+      console.error('[DailySampleTracker] QR generation failed:', error);
+      this.toast.show('Không thể tạo mã QR truy xuất cho bản in.', 'error');
+    } finally {
+      this.preparingQrCodes.set(false);
+    }
   }
 
   executePrint(): void {
@@ -731,7 +886,7 @@ export class DailyChecklistComponent {
     document.head.appendChild(styleEl);
 
     // Đợi góc render của Angular cập nhật lại dải mẫu nếu tắt/bật gom mẫu
-    setTimeout(() => {
+    setTimeout(async () => {
       const clone = source.cloneNode(true) as HTMLElement;
       
       // Khử animation và transform để tránh phá vỡ thuật toán phân trang CSS Columns của trình duyệt
@@ -745,6 +900,11 @@ export class DailyChecklistComponent {
 
       printContainer.innerHTML = '';
       printContainer.appendChild(clone);
+
+      const qrImages = Array.from(printContainer.querySelectorAll<HTMLImageElement>('img.cl-print-qr'));
+      await Promise.all(qrImages.map(image => image.complete
+        ? Promise.resolve()
+        : image.decode().catch(() => undefined)));
 
       const cleanupPrintMode = () => {
         document.body.classList.remove('daily-checklist-printing', 'print-portrait-mode', 'print-landscape-mode');
@@ -781,6 +941,32 @@ export class DailyChecklistComponent {
     });
   }
 
+  async copyBatchId(requestId: string): Promise<void> {
+    if (!requestId) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(requestId);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = requestId;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (!copied) throw new Error('Clipboard API unavailable');
+      }
+      this.toast.show('Đã sao chép mã mẻ.', 'success');
+    } catch {
+      this.toast.show('Không thể sao chép mã mẻ trên thiết bị này.', 'error');
+    }
+  }
+
+  getBatchQrCode(requestId: string): string {
+    return this.qrCodeDataUrls()[requestId] || '';
+  }
+
   formatTimestamp(date: Date): string {
     return new Intl.DateTimeFormat('vi-VN', {
       hour: '2-digit',
@@ -794,6 +980,40 @@ export class DailyChecklistComponent {
   navigateToResult(requestId: string, status?: string): void {
     if (!requestId) return;
     this.router.navigate(['/results-view', requestId]);
+  }
+
+  private async prepareBatchQrCodes(): Promise<void> {
+    const current = this.qrCodeDataUrls();
+    const missingIds = this.boardBatches()
+      .map(batch => batch.requestId)
+      .filter(requestId => requestId && !current[requestId]);
+    if (missingIds.length === 0) return;
+
+    const generated = await Promise.all(missingIds.map(async requestId => {
+      const url = this.buildTraceabilityUrl(requestId);
+      const dataUrl = await QRCode.toDataURL(url, {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        width: 192,
+        color: { dark: '#000000', light: '#ffffff' }
+      });
+      return [requestId, dataUrl] as const;
+    }));
+    this.qrCodeDataUrls.update(values => ({ ...values, ...Object.fromEntries(generated) }));
+  }
+
+  private buildTraceabilityUrl(requestId: string): string {
+    return `${window.location.origin}${window.location.pathname}#/traceability/${encodeURIComponent(requestId)}`;
+  }
+
+  private loadStoredViewMode(): DailyBatchViewMode {
+    try {
+      const stored = localStorage.getItem('daily-sample-board-view-mode');
+      if (stored === 'compact' || stored === 'list') return stored;
+    } catch {
+      // Dùng mặc định khi storage không khả dụng.
+    }
+    return 'auto';
   }
 
   formatDate(value: string, includeWeekday = false): string {

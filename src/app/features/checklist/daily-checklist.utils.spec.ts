@@ -11,6 +11,7 @@ import {
   toDate
 } from './daily-checklist.utils';
 import { planDailyPrintLayout } from './daily-print-layout-planner';
+import { computeDailyBatchLayoutHint } from './daily-screen-layout-planner';
 
 function request(overrides: Partial<Request> = {}): Request {
   return {
@@ -129,4 +130,41 @@ test('missing analysisDate is not silently replaced by approval date', () => {
   assert.equal(getRequestDateValue(request({ analysisDate: undefined })), '');
   assert.equal(toDate({ seconds: 1_752_624_000 })?.getTime(), 1_752_624_000_000);
   assert.equal(isValidDateInput('2026-02-30'), false);
+});
+
+test('adaptive screen planner keeps a simple compressed batch compact', () => {
+  const sampleList = Array.from({ length: 50 }, (_, index) => `L${String(index + 1).padStart(3, '0')}`);
+  const [overview] = buildApprovedBatchOverviews([
+    request({ sampleList, targetIds: ['T1', 'T2'] })
+  ], '2026-07-16', (_item, targetId) => targetId);
+  const [view] = buildDailyBatchViews([overview]);
+
+  assert.equal(computeDailyBatchLayoutHint(view, 1200), 'compact');
+});
+
+test('adaptive screen planner promotes complex and expanded batches', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      sampleList: ['A001', 'A002', 'A003'],
+      sampleTargetMap: { A001: ['T1'], A002: ['T2'], A003: ['T3'] }
+    })
+  ], '2026-07-16', (_item, targetId) => `Chỉ tiêu ${targetId}`);
+  const [view] = buildDailyBatchViews([overview]);
+
+  assert.equal(computeDailyBatchLayoutHint(view, 1200), 'wide');
+  assert.equal(computeDailyBatchLayoutHint(view, 1200, false, 'compact'), 'compact');
+  assert.equal(computeDailyBatchLayoutHint(view, 1200, true, 'compact'), 'wide');
+  assert.equal(computeDailyBatchLayoutHint(view, 700), 'wide');
+});
+
+test('adaptive screen planner uses standard width for two assignment groups', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      sampleList: ['A001', 'A002'],
+      sampleTargetMap: { A001: ['T1'], A002: ['T2'] }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+  const [view] = buildDailyBatchViews([overview]);
+
+  assert.equal(computeDailyBatchLayoutHint(view, 1200), 'standard');
 });

@@ -64,11 +64,11 @@
           <i class="fa-solid fa-rotate" [class.animate-spin]="loading()" aria-hidden="true"></i>
         </button>
 
-        <button type="button" (click)="printDocument()" [disabled]="boardBatches().length === 0"
+        <button type="button" (click)="printDocument()" [disabled]="boardBatches().length === 0 || preparingQrCodes()"
                 aria-label="In bảng đang xem" title="In bảng đang xem"
                 class="px-4 h-10 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:shadow-md dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
-          <i class="fa-solid fa-print" aria-hidden="true"></i>
-          <span>In bảng</span>
+          <i class="fa-solid" [class.fa-print]="!preparingQrCodes()" [class.fa-circle-notch]="preparingQrCodes()" [class.fa-spin]="preparingQrCodes()" aria-hidden="true"></i>
+          <span>{{preparingQrCodes() ? 'Tạo QR...' : 'In bảng'}}</span>
         </button>
       </div>
     </div>
@@ -169,19 +169,37 @@
               <span class="text-sm font-black tabular-nums text-slate-700 dark:text-slate-300">{{boardSummary().sops}}</span>
               <span class="text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">SOP</span>
             </div>
+
+            <div class="ml-auto inline-flex items-center gap-0.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-0.5" role="group" aria-label="Chế độ hiển thị card">
+              @for (option of viewModeOptions; track option.value) {
+                <button type="button" (click)="setViewMode(option.value)"
+                        [attr.aria-pressed]="viewMode() === option.value"
+                        [title]="option.label"
+                        class="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-[10px] font-black transition active:scale-95"
+                        [ngClass]="viewMode() === option.value
+                          ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-300 shadow-sm'
+                          : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+                  <i class="fa-solid" [ngClass]="option.icon" aria-hidden="true"></i>
+                  <span class="hidden sm:inline">{{option.label}}</span>
+                </button>
+              }
+            </div>
           </div>
 
-          <div class="space-y-3">
-            @for (batch of boardBatches(); track batch.requestId; let batchIndex = $index) {
-              <section class="cl-batch-card bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <header class="px-4 py-3 border-b border-slate-100 dark:border-slate-700/80 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div class="cl-batch-grid-shell">
+            <div #batchGrid class="cl-batch-grid" [attr.data-view-mode]="viewMode()">
+              @let layoutHints = batchLayoutHints();
+              @for (batch of boardBatches(); track batch.requestId; let batchIndex = $index) {
+                @let layoutHint = layoutHints.get(batch.requestId) || 'wide';
+                <section class="cl-batch-card bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
+                         [class.cl-card-compact]="layoutHint === 'compact'"
+                         [class.cl-card-standard]="layoutHint === 'standard'"
+                         [class.cl-card-wide]="layoutHint === 'wide'">
+                <header class="cl-card-header px-4 py-3 border-b border-slate-100 dark:border-slate-700/80 flex flex-col justify-between gap-3">
                   <div class="min-w-0 flex items-start gap-3">
                     <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-black shrink-0">{{batchIndex + 1}}</div>
                     <div class="min-w-0">
-                      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <h3 class="font-mono text-base font-black tracking-tight text-slate-900 dark:text-white break-all">{{batch.requestId}}</h3>
-                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300">{{batch.sopName}}</span>
-                      </div>
+                      <h3 class="text-base font-black tracking-tight text-slate-900 dark:text-white break-words">{{batch.sopName}}</h3>
                       <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                         <span>{{batch.uniqueSamples}} mẫu</span><span>•</span>
                         <span>{{batch.uniqueTargets}} chỉ tiêu</span><span>•</span>
@@ -192,7 +210,13 @@
                     </div>
                   </div>
 
-                  <button type="button" (click)="navigateToResult(batch.requestId, batch.status)"
+                  <div class="shrink-0 flex flex-wrap items-center gap-2">
+                    <button type="button" (click)="copyBatchId(batch.requestId)"
+                            aria-label="Sao chép nhanh mã mẻ" title="Sao chép nhanh mã mẻ"
+                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center gap-1.5 transition active:scale-95">
+                      <i class="fa-regular fa-copy text-xs"></i><span class="cl-copy-label text-[10px] font-black uppercase tracking-wide">Copy mã mẻ</span>
+                    </button>
+                    <button type="button" (click)="navigateToResult(batch.requestId, batch.status)"
                           class="shrink-0 px-3 py-1.5 rounded-lg border flex items-center justify-center gap-1.5 transition active:scale-95"
                           [ngClass]="{
                             'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30': batch.status === 'completed',
@@ -206,12 +230,13 @@
                     } @else {
                       <i class="fa-regular fa-clock text-xs"></i><span class="text-[10px] font-black uppercase tracking-wide">Chưa có KQ</span>
                     }
-                  </button>
+                    </button>
+                  </div>
                 </header>
 
                 <div class="divide-y divide-slate-100 dark:divide-slate-700/70">
-                  @for (group of batch.groups; track group.signature; let groupIndex = $index) {
-                    <div class="cl-assignment-row p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4">
+                  @for (group of visibleBatchGroups(batch); track group.signature; let groupIndex = $index) {
+                    <div class="cl-assignment-row cl-card-body-row p-4 grid gap-4">
                       <div class="min-w-0">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
@@ -230,7 +255,7 @@
                         }
                       </div>
 
-                      <div class="min-w-0 lg:border-l lg:border-slate-100 dark:lg:border-slate-700/70 lg:pl-4">
+                      <div class="cl-assignment-targets min-w-0">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Chỉ tiêu được gán</span>
                           <span class="text-[10px] font-bold text-slate-400">{{group.targetNames.length}} chỉ tiêu</span>
@@ -239,8 +264,13 @@
                           <p class="text-xs font-bold text-amber-600 dark:text-amber-400">Chưa xác định chỉ tiêu</p>
                         } @else {
                           <div class="flex flex-wrap gap-1.5">
-                            @for (targetName of group.targetNames; track targetName) {
+                            @for (targetName of visibleTargetNames(batch, group.targetNames); track targetName) {
                               <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-800 dark:text-blue-300 break-words">{{targetName}}</span>
+                            }
+                            @if (!isBatchExpanded(batch.requestId) && group.targetNames.length > 6) {
+                              <span class="px-2.5 py-1 rounded-lg text-[11px] font-black bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                +{{group.targetNames.length - 6}} chỉ tiêu
+                              </span>
                             }
                           </div>
                         }
@@ -249,16 +279,22 @@
                   }
                 </div>
 
-                @if (batch.uniqueSamples > 12) {
-                  <footer class="px-4 py-2.5 bg-slate-50/70 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700/70 flex justify-end">
+                @if (hasHiddenBatchContent(batch)) {
+                  <footer class="px-4 py-2.5 bg-slate-50/70 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700/70 flex items-center justify-between gap-3">
+                    @if (!isBatchExpanded(batch.requestId) && hiddenBatchGroupCount(batch) > 0) {
+                      <span class="text-[10px] font-bold text-slate-400">+ {{hiddenBatchGroupCount(batch)}} nhóm phân công</span>
+                    } @else {
+                      <span></span>
+                    }
                     <button type="button" (click)="toggleBatchSamples(batch.requestId)" class="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1.5">
                       <i class="fa-solid" [class.fa-compress]="isBatchExpanded(batch.requestId)" [class.fa-table-cells]="!isBatchExpanded(batch.requestId)"></i>
-                      {{isBatchExpanded(batch.requestId) ? 'Thu gọn thành dải mẫu' : 'Xem đủ ' + batch.uniqueSamples + ' mã mẫu'}}
+                      {{isBatchExpanded(batch.requestId) ? 'Thu gọn card' : 'Mở rộng chi tiết'}}
                     </button>
                   </footer>
                 }
               </section>
-            }
+              }
+            </div>
           </div>
 
           <div class="mt-2.5 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[9px] font-semibold text-slate-400">
@@ -285,11 +321,16 @@
                 @for (group of batch.groups; track group.signature; let groupIndex = $index) {
                   <tr class="cl-print-assignment-row" [class.cl-print-batch-start]="groupIndex === 0">
                     <td>
-                      <div class="cl-print-request-id">{{batch.requestId}}</div>
-                      <div class="cl-print-sop">{{batch.sopName}}</div>
-                      <div class="cl-print-meta">
-                        @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                        @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
+                      <div class="cl-print-batch-cell">
+                        <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
+                        <div class="cl-print-batch-info">
+                          <div class="cl-print-sop">{{batch.sopName}}</div>
+                          <div class="cl-print-meta">
+                            @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
+                            @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
+                          </div>
+                          <div class="cl-print-qr-label">Quét để truy xuất</div>
+                        </div>
                       </div>
                     </td>
                     <td>
