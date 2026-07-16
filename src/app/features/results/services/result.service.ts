@@ -328,8 +328,6 @@ export class ResultService {
         ...(draft.resultData || {})
       }));
       
-      const mergedPublishedBackup = draft.publishedBackup || currentDetail['publishedBackup'] || legacyResult['publishedBackup'] || null;
-      
       const batch = writeBatch(this.fb.db);
       
       // 1. Cập nhật tài liệu metadata ( requests )
@@ -364,17 +362,18 @@ export class ResultService {
       });
       
       // 2. Lưu trữ dữ liệu lưới kết quả chi tiết ( results_details )
+      //    KHÔNG lưu publishedBackup vào đây để tránh vượt giới hạn 40.000 index entries
+      //    Dữ liệu backup đã được lưu an toàn trong sub-collection history khi xuất bản.
       const detailPayload: any = {
         requestId,
         sopId: metaData['sopId'],
         page1Data: mergedPage1Data,
         resultData: mergedResultData,
         updatedAt: timestampStr,
-        updatedBy: userName
+        updatedBy: userName,
+        // Xóa publishedBackup cũ (nếu có) để giảm index entries
+        publishedBackup: deleteField()
       };
-      if (mergedPublishedBackup) {
-        detailPayload.publishedBackup = mergedPublishedBackup;
-      }
       
       batch.set(detailRef, detailPayload, { merge: true });
       
@@ -451,13 +450,19 @@ export class ResultService {
   }
 
   /**
-   * Khôi phục kết quả từ bản xuất bản gần nhất (Backup Fallback)
+   * Khôi phục kết quả từ bản xuất bản gần nhất.
+   * Đọc từ sub-collection history thay vì publishedBackup (đã bị xóa để tránh index overflow).
    */
   async restoreFromBackup(requestId: string): Promise<AnalysisResultDraft | null> {
     try {
       const draft = await this.getDraft(requestId);
-      if (draft && draft.publishedBackup) {
-        // Ghi đè page1Data và resultData hiện tại bằng bản backup
+      if (!draft) {
+        this.toast.show('Không tìm thấy dữ liệu mẻ chạy!', 'error');
+        return null;
+      }
+
+      // Ưu tiên 1: Đọc publishedBackup cũ nếu vẫn còn tồn tại (tương thích ngược)
+      if (draft.publishedBackup?.page1Data && draft.publishedBackup?.resultData) {
         const restoredData: Partial<AnalysisResultDraft> = {
           page1Data: draft.publishedBackup.page1Data,
           resultData: draft.publishedBackup.resultData,
@@ -474,12 +479,32 @@ export class ResultService {
           draft.sopName || ''
         );
 
-        return {
-          ...draft,
-          ...restoredData,
-          updatedAt: new Date().toISOString()
-        } as any;
+        return { ...draft, ...restoredData, updatedAt: new Date().toISOString() } as any;
       }
+
+      // Ưu tiên 2: Đọc từ sub-collection history (bản mới nhất)
+      const historyList = await this.getHistory(requestId);
+      const latestHistory = historyList.find(h => h.page1DataBackup && h.resultDataBackup);
+      if (latestHistory) {
+        const restoredData: Partial<AnalysisResultDraft> = {
+          page1Data: latestHistory.page1DataBackup,
+          resultData: latestHistory.resultDataBackup,
+          status: 'draft'
+        };
+        await this.saveDraft(requestId, restoredData);
+        this.toast.show(`Đã khôi phục dữ liệu từ bản v${latestHistory.version}!`, 'success');
+
+        await this.logActivity(
+          'RESTORE_RESULT_BACKUP',
+          `Khôi phục kết quả từ history v${latestHistory.version}: ${draft.sopName} (ID: ${requestId})`,
+          requestId,
+          draft.sopId || '',
+          draft.sopName || ''
+        );
+
+        return { ...draft, ...restoredData, updatedAt: new Date().toISOString() } as any;
+      }
+
       this.toast.show('Không tìm thấy bản xuất bản trước đó để khôi phục!', 'info');
       return null;
     } catch (e: any) {
