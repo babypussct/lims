@@ -1,12 +1,12 @@
 import { Request } from '../../core/models/request.model';
-import { formatSampleList, naturalCompare } from '../../shared/utils/utils';
-import { getAssignedTargetsForSample } from '../results/shared/compound-id-resolver';
+import { naturalCompare } from '../../shared/utils/utils';
+import { getAssignedTargetsForSample, getCanonicalId, normalizeSampleCode } from '../results/shared/compound-id-resolver';
 import {
   ApprovedBatchOverview,
   ApprovedBatchSample,
   ApprovedBatchStatus,
-  DailyPrintSopGroup,
-  DailyPrintTargetSetGroup
+  DailyBatchAssignmentGroup,
+  DailyBatchView
 } from './daily-checklist.model';
 
 const APPROVED_BATCH_STATUSES = new Set<Request['status']>(['approved', 'draft', 'completed']);
@@ -63,7 +63,7 @@ export function buildApprovedBatchOverviews(
       const sampleTargetMap: Record<string, string[]> =
         request.sampleTargetMap ?? request.inputs?.sampleTargetMap ?? {};
       const fallbackTargets = uniqueStrings(request.targetIds || request.inputs?.targetIds || []);
-      const samples = uniqueStrings(request.sampleList || []).map<ApprovedBatchSample>(sampleId => {
+      const samples = uniqueSampleCodes(request.sampleList || []).map<ApprovedBatchSample>(sampleId => {
         const assignedTargets = getAssignedTargetsForSample(sampleId, sampleTargetMap);
         const targetIds = uniqueStrings(assignedTargets?.length ? assignedTargets : fallbackTargets);
         return {
@@ -72,7 +72,10 @@ export function buildApprovedBatchOverviews(
           targetNames: targetIds.map(targetId => resolveTargetName(request, targetId))
         };
       });
-      const uniqueTargetNames = uniqueStrings(samples.flatMap(sample => sample.targetNames));
+      const uniqueTargetIds = uniqueStrings(samples.length
+        ? samples.flatMap(sample => sample.targetIds)
+        : fallbackTargets);
+      const uniqueTargetNames = uniqueStrings(uniqueTargetIds.map(targetId => resolveTargetName(request, targetId)));
 
       return {
         requestId: request.id,
@@ -85,6 +88,7 @@ export function buildApprovedBatchOverviews(
         approvedAt: toDate(request.approvedAt || request.timestamp),
         ownerName: request.user,
         samples,
+        uniqueTargetIds,
         uniqueTargetNames,
         targetAssignments: samples.reduce((total, sample) => total + sample.targetIds.length, 0)
       };
@@ -95,106 +99,165 @@ export function buildApprovedBatchOverviews(
     });
 }
 
-export function buildDailyPrintSopGroups(batches: ApprovedBatchOverview[]): DailyPrintSopGroup[] {
-  const sopMap = new Map<string, {
-    sopName: string;
-    // Map requestId -> Map<sampleId, Map<targetId, targetName>>
-    batchesData: Map<string, {
-      status: ApprovedBatchStatus;
-      sopVersion?: number;
-      sopRef?: string;
-      samples: Map<string, Map<string, string>>;
-    }>;
-  }>();
-
-  batches.forEach(batch => {
-    let sop = sopMap.get(batch.sopId);
-    if (!sop) {
-      sop = { sopName: batch.sopName, batchesData: new Map() };
-      sopMap.set(batch.sopId, sop);
-    }
-    
-    let batchData = sop.batchesData.get(batch.requestId);
-    if (!batchData) {
-      batchData = {
-        status: batch.status,
-        sopVersion: batch.sopVersion,
-        sopRef: batch.sopRef,
-        samples: new Map<string, Map<string, string>>()
-      };
-      sop.batchesData.set(batch.requestId, batchData);
-    }
+export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBatchView[] {
+  return batches.map(batch => {
+    const targetSetMap = new Map<string, DailyBatchAssignmentGroup>();
+    const allSampleKeys = new Set<string>();
+    const allTargetIds = new Set<string>();
 
     batch.samples.forEach(sample => {
-      let targets = batchData!.samples.get(sample.sampleId);
-      if (!targets) {
-        targets = new Map<string, string>();
-        batchData!.samples.set(sample.sampleId, targets);
-      }
+      const sampleKey = normalizeSampleCode(sample.sampleId);
+      if (!sampleKey) return;
+      allSampleKeys.add(sampleKey);
+
+      const canonicalTargets = new Map<string, string>();
       sample.targetIds.forEach((targetId, index) => {
-        targets!.set(targetId, sample.targetNames[index] || targetId);
-      });
-    });
-  });
-
-  return Array.from(sopMap, ([sopId, sop]) => {
-    const targetSetMap = new Map<string, DailyPrintTargetSetGroup>();
-    const allTargetIds = new Set<string>();
-    const allSampleIds = new Set<string>();
-
-    sop.batchesData.forEach((batchData, requestId) => {
-      batchData.samples.forEach((targets, sampleId) => {
-        allSampleIds.add(sampleId);
-        const targetEntries = Array.from(targets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
-        targetEntries.forEach(([targetId]) => allTargetIds.add(targetId));
-        const targetIds = targetEntries.map(([targetId]) => targetId);
-        
-        // Bổ sung requestId vào signature để không trộn lẫn mẫu của 2 mẻ khác nhau
-        const signature = (targetIds.length ? targetIds.join('\u0000') : '__unassigned__') + '##' + requestId;
-        let group = targetSetMap.get(signature);
-        if (!group) {
-          group = {
-            signature,
-            requestId,
-            status: batchData.status,
-            sopVersion: batchData.sopVersion,
-            sopRef: batchData.sopRef,
-            targetIds,
-            targetNames: targetEntries.map(([, targetName]) => targetName),
-            sampleIds: [],
-            formattedSamples: ''
-          };
-          targetSetMap.set(signature, group);
+        const canonicalId = getCanonicalId(targetId);
+        if (canonicalId && !canonicalTargets.has(canonicalId)) {
+          canonicalTargets.set(canonicalId, sample.targetNames[index] || targetId);
         }
-        group.sampleIds.push(sampleId);
       });
+      const targetEntries = Array.from(canonicalTargets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
+      const targetIds = targetEntries.map(([targetId]) => targetId);
+      targetIds.forEach(targetId => allTargetIds.add(targetId));
+      const signature = targetIds.length ? targetIds.join('\u0000') : '__unassigned__';
+
+      let group = targetSetMap.get(signature);
+      if (!group) {
+        group = {
+          signature,
+          targetIds,
+          targetNames: targetEntries.map(([, targetName]) => targetName),
+          sampleIds: [],
+          formattedSamples: ''
+        };
+        targetSetMap.set(signature, group);
+      }
+      if (!group.sampleIds.some(existing => normalizeSampleCode(existing) === sampleKey)) {
+        group.sampleIds.push(sample.sampleId.trim());
+      }
     });
+
+    if (targetSetMap.size === 0) {
+      const canonicalTargets = new Map<string, string>();
+      batch.uniqueTargetIds.forEach((targetId, index) => {
+        const canonicalId = getCanonicalId(targetId);
+        if (canonicalId && !canonicalTargets.has(canonicalId)) {
+          canonicalTargets.set(canonicalId, batch.uniqueTargetNames[index] || targetId);
+        }
+      });
+      const targetEntries = Array.from(canonicalTargets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
+      targetEntries.forEach(([targetId]) => allTargetIds.add(targetId));
+      targetSetMap.set('__no_samples__', {
+        signature: '__no_samples__',
+        targetIds: targetEntries.map(([targetId]) => targetId),
+        targetNames: targetEntries.map(([, targetName]) => targetName),
+        sampleIds: [],
+        formattedSamples: ''
+      });
+    }
 
     const groups = Array.from(targetSetMap.values())
       .map(group => {
-        const sampleIds = Array.from(new Set(group.sampleIds)).sort(naturalCompare);
-        return { ...group, sampleIds, formattedSamples: formatSampleList(new Set(sampleIds)) };
+        const sampleIds = [...group.sampleIds].sort(naturalCompare);
+        return { ...group, sampleIds, formattedSamples: formatDailySampleList(sampleIds) };
       })
       .sort((a, b) => {
-        if (a.signature.startsWith('__unassigned__')) return 1;
-        if (b.signature.startsWith('__unassigned__')) return -1;
+        if (a.signature === '__unassigned__') return 1;
+        if (b.signature === '__unassigned__') return -1;
         return naturalCompare(a.targetNames.join(' '), b.targetNames.join(' '));
       });
 
     return {
-      sopId,
-      sopName: sop.sopName,
+      requestId: batch.requestId,
+      sopId: batch.sopId,
+      sopName: batch.sopName,
+      sopVersion: batch.sopVersion,
+      sopRef: batch.sopRef,
+      status: batch.status,
+      analysisDate: batch.analysisDate,
+      approvedAt: batch.approvedAt,
+      ownerName: batch.ownerName,
       groups,
-      uniqueSamples: allSampleIds.size,
-      uniqueTargets: allTargetIds.size
+      uniqueSamples: allSampleKeys.size,
+      uniqueTargets: allTargetIds.size,
+      targetAssignments: batch.targetAssignments
     };
-  }).sort((a, b) => a.sopName.localeCompare(b.sopName, 'vi'));
+  }).sort((a, b) => {
+    const timeDifference = (b.approvedAt?.getTime() || 0) - (a.approvedAt?.getTime() || 0);
+    return timeDifference || naturalCompare(a.requestId, b.requestId);
+  });
 }
 
 export function isTrackablePhysicalBatch(request: Request): boolean {
   return APPROVED_BATCH_STATUSES.has(request.status) && !request.isVirtualMaster;
 }
 
+export function formatDailySampleList(sampleIds: string[]): string {
+  interface SampleToken {
+    original: string;
+    prefix: string;
+    numericValue?: number;
+    numericWidth?: number;
+  }
+
+  const tokens = uniqueSampleCodes(sampleIds)
+    .sort(naturalCompare)
+    .map<SampleToken>(original => {
+      if (original.includes(';')) return { original, prefix: original };
+      const match = /^(.*?)(\d+)$/.exec(original);
+      if (!match) return { original, prefix: original };
+      return {
+        original,
+        prefix: match[1],
+        numericValue: Number(match[2]),
+        numericWidth: match[2].length
+      };
+    });
+  if (tokens.length === 0) return '';
+
+  const ranges: string[] = [];
+  let start = tokens[0];
+  let previous = tokens[0];
+  let rangeLength = 1;
+
+  const flush = () => {
+    if (rangeLength === 1) ranges.push(start.original);
+    else if (rangeLength === 2) ranges.push(`${start.original}; ${previous.original}`);
+    else ranges.push(`${start.original} -> ${previous.original}`);
+  };
+
+  for (let index = 1; index < tokens.length; index++) {
+    const current = tokens[index];
+    const isSequential = previous.numericValue !== undefined
+      && current.numericValue !== undefined
+      && previous.prefix === current.prefix
+      && previous.numericWidth === current.numericWidth
+      && current.numericValue === previous.numericValue + 1;
+    if (isSequential) {
+      previous = current;
+      rangeLength += 1;
+      continue;
+    }
+    flush();
+    start = current;
+    previous = current;
+    rangeLength = 1;
+  }
+  flush();
+  return ranges.join('; ');
+}
+
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values.map(value => String(value).trim()).filter(Boolean)));
+}
+
+function uniqueSampleCodes(values: string[]): string[] {
+  const unique = new Map<string, string>();
+  values.forEach(value => {
+    const display = String(value).trim();
+    const key = normalizeSampleCode(display);
+    if (key && !unique.has(key)) unique.set(key, display);
+  });
+  return Array.from(unique.values());
 }

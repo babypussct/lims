@@ -19,26 +19,46 @@ export interface ApprovedBatchOverview {
   approvedAt?: Date;
   ownerName?: string;
   samples: ApprovedBatchSample[];
+  uniqueTargetIds: string[];
   uniqueTargetNames: string[];
   targetAssignments: number;
 }
 
-export interface DailyPrintTargetSetGroup {
+export interface DailyBatchAssignmentGroup {
   signature: string;
-  requestId: string;
-  status: ApprovedBatchStatus;
-  sopVersion?: number;
-  sopRef?: string;
   targetIds: string[];
   targetNames: string[];
   sampleIds: string[];
   formattedSamples: string;
 }
 
-export interface DailyPrintSopGroup {
+export interface DailyBatchView {
+  requestId: string;
   sopId: string;
   sopName: string;
-  groups: DailyPrintTargetSetGroup[];
+  sopVersion?: number;
+  sopRef?: string;
+  status: ApprovedBatchStatus;
+  analysisDate: string;
+  approvedAt?: Date;
+  ownerName?: string;
+  groups: DailyBatchAssignmentGroup[];
   uniqueSamples: number;
   uniqueTargets: number;
+  targetAssignments: number;
+}
+
+export type DailyPrintOrientation = 'portrait' | 'landscape';
+export type DailyPrintOrientationPreference = 'auto' | DailyPrintOrientation;
+
+export interface DailyPrintLayoutCandidate {
+  orientation: DailyPrintOrientation;
+  estimatedPages: number;
+  estimatedBatchSplits: number;
+  wrappedLineCount: number;
+  score: number;
+}
+
+export interface DailyPrintLayoutPlan extends DailyPrintLayoutCandidate {
+  reason: string;
 }

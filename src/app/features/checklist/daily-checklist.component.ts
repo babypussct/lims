@@ -8,14 +8,16 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
-  DailyPrintSopGroup
+  DailyBatchView,
+  DailyPrintOrientationPreference
 } from './daily-checklist.model';
 import {
   buildApprovedBatchOverviews,
-  buildDailyPrintSopGroups,
+  buildDailyBatchViews,
   isValidDateInput,
   toLocalDateInputValue
 } from './daily-checklist.utils';
+import { planDailyPrintLayout } from './daily-print-layout-planner';
 
 interface AvailableDateOption {
   value: string;
@@ -73,6 +75,12 @@ interface AvailableDateOption {
 
     /* Print-only elements: ẩn hoàn toàn trên màn hình */
     .cl-print-only { display: none !important; }
+
+    .cl-sample-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+      gap: 6px;
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .cl-board-enter { animation: none; }
@@ -357,6 +365,149 @@ interface AvailableDateOption {
         color: #64748b !important;
         display: flex !important;
       }
+
+      /* Adaptive batch table: print renderer độc lập với card màn hình */
+      body.daily-checklist-printing #print-container .cl-adaptive-root {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        color: #0f172a !important;
+        background: #ffffff !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-document {
+        display: block !important;
+        width: 100% !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-header {
+        display: flex !important;
+        align-items: baseline !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        padding: 0 0 4mm !important;
+        border-bottom: 1.5px solid #334155 !important;
+        margin-bottom: 3mm !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-header h2 {
+        margin: 0 !important;
+        font-size: 12pt !important;
+        line-height: 1.2 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.02em !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-header div {
+        font-size: 9pt !important;
+        white-space: nowrap !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-table {
+        display: table !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        border: 1px solid #64748b !important;
+        font-size: 9pt !important;
+        line-height: 1.3 !important;
+      }
+
+      body.daily-checklist-printing.print-portrait-mode #print-container .cl-col-batch { width: 24% !important; }
+      body.daily-checklist-printing.print-portrait-mode #print-container .cl-col-samples { width: 38% !important; }
+      body.daily-checklist-printing.print-portrait-mode #print-container .cl-col-targets { width: 38% !important; }
+      body.daily-checklist-printing.print-landscape-mode #print-container .cl-col-batch { width: 22% !important; }
+      body.daily-checklist-printing.print-landscape-mode #print-container .cl-col-samples { width: 40% !important; }
+      body.daily-checklist-printing.print-landscape-mode #print-container .cl-col-targets { width: 38% !important; }
+
+      body.daily-checklist-printing #print-container .cl-print-table thead {
+        display: table-header-group !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-table th {
+        padding: 2.2mm 2.5mm !important;
+        border: 1px solid #64748b !important;
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
+        text-align: left !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        font-size: 8pt !important;
+        font-weight: 800 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-table td {
+        padding: 2.5mm !important;
+        border: 1px solid #94a3b8 !important;
+        vertical-align: top !important;
+        overflow-wrap: anywhere !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-assignment-row {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-batch-start td {
+        border-top-width: 1.5px !important;
+        border-top-color: #334155 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-request-id {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+        font-size: 9.5pt !important;
+        font-weight: 800 !important;
+        overflow-wrap: anywhere !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-sop {
+        margin-top: 1mm !important;
+        font-weight: 700 !important;
+        color: #334155 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-meta,
+      body.daily-checklist-printing #print-container .cl-print-count {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 1.5mm !important;
+        margin-top: 1mm !important;
+        color: #64748b !important;
+        font-size: 7.5pt !important;
+        font-weight: 600 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-samples {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+        font-size: 9pt !important;
+        font-weight: 800 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-targets {
+        margin: 0 !important;
+        padding-left: 4mm !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-targets li {
+        margin: 0 0 0.7mm !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-missing {
+        font-style: italic !important;
+        color: #92400e !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        margin-top: 3mm !important;
+        padding-top: 2mm !important;
+        border-top: 1px solid #cbd5e1 !important;
+        color: #64748b !important;
+        font-size: 7.5pt !important;
+      }
     }
   `]
 })
@@ -382,29 +533,14 @@ export class DailyChecklistComponent {
 
   // Print Configuration Signals
   readonly showPrintSettings = signal(false);
-  readonly printOrientation = signal<'portrait' | 'landscape'>('portrait');
-  readonly printCols = signal<string | number>('auto');
-  readonly printFontSize = signal<string>('auto');
-  readonly printShowStats = signal(true);
+  readonly printOrientation = signal<DailyPrintOrientationPreference>('auto');
   readonly printGroupSamples = signal(true);
+  readonly expandedBatchIds = signal<Set<string>>(new Set());
 
-  readonly printOrientationOptions: { v: 'portrait' | 'landscape', l: string }[] = [
-    { v: 'portrait', l: 'Chiều dọc (Ưu tiên)' },
+  readonly printOrientationOptions: { v: DailyPrintOrientationPreference, l: string }[] = [
+    { v: 'auto', l: 'Tự động' },
+    { v: 'portrait', l: 'Chiều dọc' },
     { v: 'landscape', l: 'Chiều ngang' }
-  ];
-  readonly printColsOptions: { v: string | number, l: string }[] = [
-    { v: 'auto', l: 'Auto' },
-    { v: 1, l: '1 Cột' },
-    { v: 2, l: '2 Cột' },
-    { v: 3, l: '3 Cột' },
-    { v: 4, l: '4 Cột' }
-  ];
-  readonly printFontSizeOptions: { v: string, l: string }[] = [
-    { v: 'auto', l: 'Auto' },
-    { v: 'xs', l: 'XS' },
-    { v: 'small', l: 'Nhỏ' },
-    { v: 'medium', l: 'Vừa' },
-    { v: 'large', l: 'Lớn' }
   ];
 
   private dateOptionsCursor: QueryDocumentSnapshot | null = null;
@@ -452,44 +588,54 @@ export class DailyChecklistComponent {
     return sop === 'all' ? this.dayBatches() : this.dayBatches().filter(batch => batch.sopId === sop);
   });
 
-  readonly boardSopGroups = computed<DailyPrintSopGroup[]>(() => {
-    const groups = buildDailyPrintSopGroups(this.scopedBatches());
+  readonly boardBatches = computed<DailyBatchView[]>(() => {
+    const batches = buildDailyBatchViews(this.scopedBatches());
     const search = normalizeSearch(this.searchTerm());
-    if (!search) return groups;
+    if (!search) return batches;
 
-    return groups
-      .map(sop => {
-        if (normalizeSearch(sop.sopName).includes(search)) return sop;
-        const matchingGroups = sop.groups.filter(group => normalizeSearch([
+    return batches
+      .map(batch => {
+        if (normalizeSearch([batch.requestId, batch.sopName, batch.sopRef || ''].join(' ')).includes(search)) {
+          return batch;
+        }
+        const matchingGroups = batch.groups.filter(group => normalizeSearch([
           ...group.targetNames,
           ...group.sampleIds,
           group.formattedSamples
         ].join(' ')).includes(search));
         if (matchingGroups.length === 0) return null;
         return {
-          ...sop,
+          ...batch,
           groups: matchingGroups,
           uniqueSamples: new Set(matchingGroups.flatMap(group => group.sampleIds)).size,
           uniqueTargets: new Set(matchingGroups.flatMap(group => group.targetIds)).size
         };
       })
-      .filter((sop): sop is DailyPrintSopGroup => sop !== null);
+      .filter((batch): batch is DailyBatchView => batch !== null);
   });
 
   readonly boardSummary = computed(() => {
-    const sops = this.boardSopGroups();
+    const batches = this.boardBatches();
     const samples = new Set<string>();
     const targets = new Set<string>();
+    const sops = new Set<string>();
     let groups = 0;
-    sops.forEach(sop => {
-      groups += sop.groups.length;
-      sop.groups.forEach(group => {
-        group.sampleIds.forEach(sample => samples.add(sample));
-        group.targetIds.forEach(target => targets.add(`${sop.sopId}\u0000${target}`));
+    batches.forEach(batch => {
+      sops.add(batch.sopId);
+      groups += batch.groups.length;
+      batch.groups.forEach(group => {
+        group.sampleIds.forEach(sample => samples.add(normalizeSearch(sample)));
+        group.targetIds.forEach(target => targets.add(`${batch.sopId}\u0000${target}`));
       });
     });
-    return { sops: sops.length, samples: samples.size, targets: targets.size, groups };
+    return { batches: batches.length, sops: sops.size, samples: samples.size, targets: targets.size, groups };
   });
+
+  readonly printPlan = computed(() => planDailyPrintLayout(
+    this.boardBatches(),
+    this.printGroupSamples(),
+    this.printOrientation()
+  ));
 
   readonly activeFilterCount = computed(() =>
     Number(this.sopFilter() !== 'all') + Number(Boolean(this.searchTerm().trim()))
@@ -543,7 +689,7 @@ export class DailyChecklistComponent {
   }
 
   printDocument(): void {
-    if (this.boardSopGroups().length === 0) return;
+    if (this.boardBatches().length === 0) return;
     this.showPrintSettings.set(true);
   }
 
@@ -563,8 +709,8 @@ export class DailyChecklistComponent {
       return;
     }
 
-    // Gán class chỉ thị in và hướng giấy vào body trước khi clone để CSS ăn theo
-    if (this.printOrientation() === 'portrait') {
+    const orientation = this.printPlan().orientation;
+    if (orientation === 'portrait') {
       document.body.classList.add('daily-checklist-printing', 'print-portrait-mode');
     } else {
       document.body.classList.add('daily-checklist-printing', 'print-landscape-mode');
@@ -581,7 +727,7 @@ export class DailyChecklistComponent {
     // Thêm dynamic style để khống chế hướng giấy in (Portrait / Landscape)
     const styleEl = document.createElement('style');
     styleEl.id = 'print-orientation-style';
-    styleEl.innerHTML = `@page { size: A4 ${this.printOrientation()}; margin: 6mm; }`;
+    styleEl.innerHTML = `@page { size: A4 ${orientation}; margin: 8mm; }`;
     document.head.appendChild(styleEl);
 
     // Đợi góc render của Angular cập nhật lại dải mẫu nếu tắt/bật gom mẫu
@@ -596,36 +742,6 @@ export class DailyChecklistComponent {
         el.style.animation = 'none';
         el.style.transform = 'none';
       });
-
-      const boardRoot = clone.querySelector('.cl-board-root');
-      if (boardRoot) {
-        // Cấu hình số cột
-        if (this.printCols() !== 'auto') {
-          boardRoot.classList.add(`print-layout-${this.printCols()}`);
-        } else {
-          boardRoot.classList.add('print-layout-auto');
-        }
-
-        // Cấu hình cỡ chữ
-        if (this.printFontSize() !== 'auto') {
-          boardRoot.classList.add(`print-text-${this.printFontSize()}`);
-        } else {
-          // Tự động điều chỉnh cỡ chữ dựa trên số lượng dữ liệu để tối ưu hóa vào 1 trang
-          const summary = this.boardSummary();
-          if (summary.groups > 10 || summary.targets > 30) {
-            boardRoot.classList.add('print-text-xs');
-          } else if (summary.groups > 5 || summary.targets > 15) {
-            boardRoot.classList.add('print-text-small');
-          } else {
-            boardRoot.classList.add('print-text-medium');
-          }
-        }
-
-        // Cấu hình ẩn thống kê
-        if (!this.printShowStats()) {
-          boardRoot.classList.add('print-stats-hide');
-        }
-      }
 
       printContainer.innerHTML = '';
       printContainer.appendChild(clone);
@@ -650,6 +766,19 @@ export class DailyChecklistComponent {
 
   joinWithCommas(ids: string[]): string {
     return ids.join(', ');
+  }
+
+  isBatchExpanded(requestId: string): boolean {
+    return this.expandedBatchIds().has(requestId);
+  }
+
+  toggleBatchSamples(requestId: string): void {
+    this.expandedBatchIds.update(current => {
+      const next = new Set(current);
+      if (next.has(requestId)) next.delete(requestId);
+      else next.add(requestId);
+      return next;
+    });
   }
 
   formatTimestamp(date: Date): string {
