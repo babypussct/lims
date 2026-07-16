@@ -221,7 +221,7 @@ test('full SOP snapshot is represented by one compact semantic scope', () => {
 
   assert.equal(view.groups[0].targetScope.kind, 'sop-all');
   assert.equal(view.groups[0].targetScope.compact, true);
-  assert.equal(view.groups[0].targetScope.headline, 'Toàn bộ chỉ tiêu SOP v7');
+  assert.equal(view.groups[0].targetScope.headline, 'Toàn bộ chỉ tiêu SOP');
   assert.equal(view.groups[0].targetScope.targetCount, 50);
   assert.equal(computeDailyBatchLayoutHint(view, 1200), 'compact');
 });
@@ -240,4 +240,15 @@ test('compact scope reduces print estimate without changing the assigned target 
   const manualPlan = planDailyPrintLayout(manualViews, true, 'portrait', 'compact');
   assert.equal(compactViews[0].uniqueTargets, 80);
   assert.ok(compactPlan.wrappedLineCount < manualPlan.wrappedLineCount);
+});
+
+test('a one-target SOP displays the target name instead of a redundant scope badge', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({ targetIds: ['T1'], targetNames: { T1: 'Pirimiphos methyl' }, sopVersion: 1 })
+  ], '2026-07-16', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const [view] = buildDailyBatchViews([overview]);
+
+  assert.equal(view.groups[0].targetScope.kind, 'sop-all');
+  assert.equal(view.groups[0].targetScope.compact, false);
+  assert.deepEqual(view.groups[0].targetScope.targetNames, ['Pirimiphos methyl']);
 });

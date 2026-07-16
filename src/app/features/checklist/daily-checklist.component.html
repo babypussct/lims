@@ -267,7 +267,6 @@
                             <div class="flex flex-wrap items-center justify-between gap-2">
                               <div class="min-w-0">
                                 <p class="text-xs font-black text-blue-900 dark:text-blue-200 break-words">{{group.targetScope.headline}}</p>
-                                <p class="mt-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">{{group.targetScope.detailLabel}}</p>
                               </div>
                               <button type="button" (click)="toggleTargetDetail(batch.requestId, group.signature)"
                                       class="shrink-0 text-[10px] font-black text-blue-700 dark:text-blue-300 hover:underline">
@@ -422,7 +421,6 @@
                               } @else if (group.targetScope.compact) {
                                 <div class="cl-print-scope">
                                   <strong>{{group.targetScope.headline}}</strong>
-                                  <span>{{group.targetScope.detailLabel}}</span>
                                 </div>
                               } @else {
                                 <ul class="cl-print-compact-targets">

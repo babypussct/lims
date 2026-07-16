@@ -184,9 +184,10 @@ export function buildTargetScopePresentation(
   scope: Pick<TargetScopeClassification, 'kind' | 'sourceName' | 'sopVersion' | 'traceability'>
 ): TargetScopePresentation {
   const targetCount = targetNames.length;
-  const compact = scope.kind === 'sop-all' || scope.kind === 'target-group';
+  // Một chỉ tiêu đã đủ ngắn và có giá trị nhận diện cao hơn nhãn scope tổng quát.
+  const compact = targetCount > 1 && (scope.kind === 'sop-all' || scope.kind === 'target-group');
   let headline = 'Chỉ tiêu tùy chọn';
-  if (scope.kind === 'sop-all') headline = `Toàn bộ chỉ tiêu SOP${scope.sopVersion ? ` v${scope.sopVersion}` : ''}`;
+  if (scope.kind === 'sop-all') headline = 'Toàn bộ chỉ tiêu SOP';
   if (scope.kind === 'target-group') headline = `Bộ chỉ tiêu: ${scope.sourceName || 'Không xác định'}`;
   if (scope.kind === 'unassigned') headline = 'Chưa xác định chỉ tiêu';
   return {
