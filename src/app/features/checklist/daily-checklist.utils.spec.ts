@@ -210,3 +210,34 @@ test('hidden target chips do not force a batch to wide layout', () => {
   assert.equal(view.uniqueTargets, 14);
   assert.equal(computeDailyBatchLayoutHint(view, 1200), 'standard');
 });
+
+test('full SOP snapshot is represented by one compact semantic scope', () => {
+  const targetIds = Array.from({ length: 50 }, (_, index) => `T${index + 1}`);
+  const targetNames = Object.fromEntries(targetIds.map(id => [id, `Chỉ tiêu ${id}`]));
+  const [overview] = buildApprovedBatchOverviews([
+    request({ sampleList: ['L0115'], targetIds, targetNames, sopVersion: 7 })
+  ], '2026-07-16', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const [view] = buildDailyBatchViews([overview]);
+
+  assert.equal(view.groups[0].targetScope.kind, 'sop-all');
+  assert.equal(view.groups[0].targetScope.compact, true);
+  assert.equal(view.groups[0].targetScope.headline, 'Toàn bộ chỉ tiêu SOP v7');
+  assert.equal(view.groups[0].targetScope.targetCount, 50);
+  assert.equal(computeDailyBatchLayoutHint(view, 1200), 'compact');
+});
+
+test('compact scope reduces print estimate without changing the assigned target count', () => {
+  const targetIds = Array.from({ length: 80 }, (_, index) => `T${index + 1}`);
+  const targetNames = Object.fromEntries(targetIds.map(id => [id, `Chỉ tiêu kiểm nghiệm dài ${id}`]));
+  const compactViews = buildDailyBatchViews(buildApprovedBatchOverviews([
+    request({ id: 'REQ-SOP-ALL', targetIds, targetNames })
+  ], '2026-07-16', (item, targetId) => item.targetNames?.[targetId] || targetId));
+  const manualViews = buildDailyBatchViews(buildApprovedBatchOverviews([
+    request({ id: 'REQ-MANUAL', targetIds })
+  ], '2026-07-16', (_item, targetId) => `Chỉ tiêu kiểm nghiệm dài ${targetId}`));
+
+  const compactPlan = planDailyPrintLayout(compactViews, true, 'portrait', 'compact');
+  const manualPlan = planDailyPrintLayout(manualViews, true, 'portrait', 'compact');
+  assert.equal(compactViews[0].uniqueTargets, 80);
+  assert.ok(compactPlan.wrappedLineCount < manualPlan.wrappedLineCount);
+});

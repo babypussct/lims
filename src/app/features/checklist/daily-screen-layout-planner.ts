@@ -1,4 +1,5 @@
 import { DailyBatchView } from './daily-checklist.model';
+import { getTargetScopeDisplayText } from '../targets/target-scope-classifier';
 
 export type DailyBatchLayoutHint = 'compact' | 'standard' | 'wide';
 export type DailyBatchViewMode = 'auto' | 'compact' | 'list';
@@ -29,7 +30,9 @@ export function computeDailyBatchLayoutHint(
   const maxTargetTextLength = batch.groups.reduce(
     (max, group) => Math.max(
       max,
-      group.targetNames.slice(0, 6).reduce((sum, name) => sum + name.length, 0)
+      group.targetScope.compact
+        ? getTargetScopeDisplayText(group.targetScope).length
+        : group.targetNames.slice(0, 6).reduce((sum, name) => sum + name.length, 0)
     ),
     0
   );

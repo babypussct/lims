@@ -14,12 +14,14 @@ import { DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
-import { Sop, CalculatedItem } from '../models/sop.model';
+import { Sop, CalculatedItem, TargetGroup } from '../models/sop.model';
 import { Request, RequestItem } from '../models/request.model';
 import { Log, PrintData } from '../models/log.model';
 import { PrintConfig, SafetyConfig, CategoryItem } from '../models/config.model';
 import { ReferenceStandard, StandardRequest } from '../models/standard.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
+import { TargetService } from '../../features/targets/target.service';
+import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 
 @Injectable({ providedIn: 'root' })
 export class StateService implements OnDestroy {
@@ -29,6 +31,7 @@ export class StateService implements OnDestroy {
   private confirmationService = inject(ConfirmationService);
   private injector = inject(Injector);
   private deltaSync = inject(DeltaSyncService);
+  private targetService = inject(TargetService);
 
   private listeners: Unsubscribe[] = [];
   /** Singleton request listener — unregister callback (không hủy listener) */
@@ -646,6 +649,44 @@ export class StateService implements OnDestroy {
     };
   }
 
+  private async buildTargetScopeTraceability(sop: Sop, formInputs: any) {
+    let availableGroups: TargetGroup[] = [];
+    try {
+      availableGroups = await this.targetService.getAllGroups();
+    } catch {
+      // Scope classification can still safely snapshot SOP-all/manual without current groups.
+    }
+    return sanitizeForFirebase(buildTargetScopeSnapshots({
+      sampleTargetMap: formInputs.sampleTargetMap,
+      fallbackTargetIds: formInputs.targetIds,
+      sopId: sop.id,
+      sopVersion: sop.version || 1,
+      sopTargetSnapshot: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name])),
+      availableGroups,
+      explicitGroupId: formInputs.explicitGroupId
+    }));
+  }
+
+  private async buildLegacyTargetScopeTraceability(req: Request, currentSop?: Sop) {
+    if (req.targetScopeSnapshots?.length) return req.targetScopeSnapshots;
+    let availableGroups: TargetGroup[] = [];
+    try {
+      availableGroups = await this.targetService.getAllGroups();
+    } catch {
+      // Historical SOP snapshot remains authoritative when group metadata is unavailable.
+    }
+    return sanitizeForFirebase(buildTargetScopeSnapshots({
+      sampleTargetMap: req.sampleTargetMap,
+      fallbackTargetIds: req.targetIds,
+      sopId: req.sopId,
+      sopVersion: req.sopVersion,
+      sopTargetSnapshot: req.targetNames || (currentSop
+        ? Object.fromEntries((currentSop.targets || []).map(target => [target.id, target.name]))
+        : undefined),
+      availableGroups
+    }));
+  }
+
   private hasValidAnalysisDate(value: unknown): value is string {
     if (typeof value !== 'string') return false;
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -666,6 +707,7 @@ export class StateService implements OnDestroy {
     }
     try {
       const requestItems = this.mapToRequestItems(calculatedItems, invMap);
+      const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
 
       const reqData: any = {
         sopId: sop.id,
@@ -680,6 +722,7 @@ export class StateService implements OnDestroy {
         analysisDate: formInputs.analysisDate,
         ...this.buildSopTraceability(sop)
       };
+      reqData.targetScopeSnapshots = targetScopeSnapshots;
 
       if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
       if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
@@ -707,6 +750,7 @@ export class StateService implements OnDestroy {
     const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
 
     try {
+      const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
       await runTransaction(this.fb.db, async (transaction) => {
         const invRefs = itemsToDeduct.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
         const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
@@ -737,6 +781,7 @@ export class StateService implements OnDestroy {
           analysisDate: formInputs.analysisDate,
           ...this.buildSopTraceability(sop)
         };
+        reqData.targetScopeSnapshots = targetScopeSnapshots;
 
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
         if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
@@ -795,6 +840,7 @@ export class StateService implements OnDestroy {
     const currentSop = this.sops().find(sop => sop.id === req.sopId);
 
     try {
+      const targetScopeSnapshots = await this.buildLegacyTargetScopeTraceability(req, currentSop);
       await runTransaction(this.fb.db, async (transaction) => {
         const invRefs = req.items.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
         const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
@@ -817,7 +863,12 @@ export class StateService implements OnDestroy {
           inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
           approvedAt: serverTimestamp(),
           lastUpdated: serverTimestamp(),
-          ...(currentSop ? this.buildSopTraceability(currentSop) : {})
+          targetScopeSnapshots,
+          ...(currentSop ? {
+            sopVersion: req.sopVersion ?? currentSop.version ?? 1,
+            sopRef: req.sopRef ?? currentSop.ref ?? '',
+            targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
+          } : {})
         });
 
         const sop = currentSop;
@@ -945,6 +996,7 @@ export class StateService implements OnDestroy {
     try {
       const oldItems = req.items;
       const newItems = this.mapToRequestItems(calculatedItems, invMap);
+      const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
 
       // Calculate inventory diff
       const inventoryDiff: Record<string, number> = {};
@@ -1002,6 +1054,7 @@ export class StateService implements OnDestroy {
           lastUpdated: serverTimestamp(),
           ...this.buildSopTraceability(sop)
         };
+        reqData.targetScopeSnapshots = targetScopeSnapshots;
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
         else reqData.sampleList = deleteField();
 

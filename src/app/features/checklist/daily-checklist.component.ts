@@ -6,6 +6,7 @@ import * as QRCode from 'qrcode';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
+import { TargetGroup } from '../../core/models/sop.model';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
@@ -26,6 +27,8 @@ import {
   DailyBatchLayoutHint,
   DailyBatchViewMode
 } from './daily-screen-layout-planner';
+import { TargetService } from '../targets/target.service';
+import { getCanonicalId } from '../results/shared/compound-id-resolver';
 
 interface AvailableDateOption {
   value: string;
@@ -723,6 +726,24 @@ interface AvailableDateOption {
         color: #92400e !important;
       }
 
+      body.daily-checklist-printing #print-container .cl-print-scope {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.8mm !important;
+        color: #172554 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-scope strong {
+        font-size: 8.5pt !important;
+        line-height: 1.2 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-scope span {
+        color: #64748b !important;
+        font-size: 7.5pt !important;
+        font-weight: 700 !important;
+      }
+
     }
   `]
 })
@@ -732,6 +753,7 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly router = inject(Router);
   private readonly dataService = inject(DailyChecklistDataService);
   private readonly toast = inject(ToastService);
+  private readonly targetService = inject(TargetService);
 
   readonly selectedDate = signal(toLocalDateInputValue());
   readonly dateRequests = signal<Request[]>([]);
@@ -757,6 +779,8 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly batchGridWidth = signal(0);
   readonly qrCodeDataUrls = signal<Record<string, string>>({});
   readonly preparingQrCodes = signal(false);
+  readonly availableTargetGroups = signal<TargetGroup[]>([]);
+  readonly openTargetDetailKeys = signal<Set<string>>(new Set());
 
   readonly printOrientationOptions: { v: DailyPrintOrientationPreference, l: string }[] = [
     { v: 'auto', l: 'Tự động' },
@@ -799,7 +823,10 @@ export class DailyChecklistComponent implements OnDestroy {
   private readonly targetNameMap = computed(() => {
     const map = new Map<string, string>();
     this.state.sops().forEach(sop => {
-      (sop.targets || []).forEach(target => map.set(`${sop.id}\u0000${target.id}`, target.name));
+      (sop.targets || []).forEach(target => {
+        map.set(`${sop.id}\u0000${target.id}`, target.name);
+        map.set(`${sop.id}\u0000${getCanonicalId(target.id || target.name)}`, target.name);
+      });
     });
     return map;
   });
@@ -821,7 +848,9 @@ export class DailyChecklistComponent implements OnDestroy {
       this.dateRequests(),
       this.selectedDate(),
       (request, targetId) => request.targetNames?.[targetId]
+        || Object.entries(request.targetNames || {}).find(([id]) => getCanonicalId(id) === getCanonicalId(targetId))?.[1]
         || targetNames.get(`${request.sopId}\u0000${targetId}`)
+        || targetNames.get(`${request.sopId}\u0000${getCanonicalId(targetId)}`)
         || targetId
     );
   });
@@ -839,7 +868,7 @@ export class DailyChecklistComponent implements OnDestroy {
   });
 
   readonly boardBatches = computed<DailyBatchView[]>(() => {
-    const batches = buildDailyBatchViews(this.scopedBatches());
+    const batches = buildDailyBatchViews(this.scopedBatches(), this.availableTargetGroups());
     const search = normalizeSearch(this.searchTerm());
     if (!search) return batches;
 
@@ -850,6 +879,7 @@ export class DailyChecklistComponent implements OnDestroy {
         }
         const matchingGroups = batch.groups.filter(group => normalizeSearch([
           ...group.targetNames,
+          group.targetScope.headline,
           ...group.sampleIds,
           group.formattedSamples
         ].join(' ')).includes(search));
@@ -981,10 +1011,24 @@ export class DailyChecklistComponent implements OnDestroy {
     return this.isBatchExpanded(batch.requestId) ? targetNames : targetNames.slice(0, 6);
   }
 
+  isTargetDetailOpen(requestId: string, signature: string): boolean {
+    return this.openTargetDetailKeys().has(this.targetDetailKey(requestId, signature));
+  }
+
+  toggleTargetDetail(requestId: string, signature: string): void {
+    const key = this.targetDetailKey(requestId, signature);
+    this.openTargetDetailKeys.update(current => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   hasHiddenBatchContent(batch: DailyBatchView): boolean {
     return batch.uniqueSamples > 12
       || batch.groups.length > 2
-      || batch.groups.some(group => group.targetNames.length > 6);
+      || batch.groups.some(group => !group.targetScope.compact && group.targetNames.length > 6);
   }
 
   hiddenBatchGroupCount(batch: DailyBatchView): number {
@@ -1163,6 +1207,10 @@ export class DailyChecklistComponent implements OnDestroy {
     return `${window.location.origin}${window.location.pathname}#/traceability/${encodeURIComponent(requestId)}`;
   }
 
+  private targetDetailKey(requestId: string, signature: string): string {
+    return `${requestId}\u0000${signature}`;
+  }
+
   private loadStoredViewMode(): DailyBatchViewMode {
     try {
       const stored = localStorage.getItem('daily-sample-board-view-mode');
@@ -1187,6 +1235,10 @@ export class DailyChecklistComponent implements OnDestroy {
   private async initializeTracker(): Promise<void> {
     this.loading.set(true);
     try {
+      const targetGroupsPromise = this.targetService.getAllGroups().catch(error => {
+        console.warn('[DailySampleTracker] Target groups unavailable:', error);
+        return [] as TargetGroup[];
+      });
       do {
         await this.loadMoreDateOptions(this.availableDates().length === 0);
       } while (this.availableDates().length === 0 && this.hasMoreDates());
@@ -1194,7 +1246,8 @@ export class DailyChecklistComponent implements OnDestroy {
       const dates = this.availableDates();
       const today = toLocalDateInputValue();
       this.selectedDate.set(dates.includes(today) ? today : (dates[0] || today));
-      await this.loadSelectedDate();
+      const [, targetGroups] = await Promise.all([this.loadSelectedDate(), targetGroupsPromise]);
+      this.availableTargetGroups.set(targetGroups);
     } catch (error) {
       this.handleLoadError(error);
     } finally {

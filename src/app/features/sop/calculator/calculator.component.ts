@@ -66,6 +66,8 @@ export class CalculatorComponent implements OnDestroy {
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
   targetGroups = signal<TargetGroup[]>([]);
+  selectedTargetGroupId = signal<string | null>(null);
+  targetSelectionModified = signal(false);
   
   // Custom Visual Selection Matrix State
   customSampleTargetMap = signal<Record<string, Set<string>>>({});
@@ -119,6 +121,7 @@ export class CalculatorComponent implements OnDestroy {
 
   toggleMatrixCell(sample: string, targetId: string) {
       this.isMatrixCustomized.set(true);
+      this.targetSelectionModified.set(true);
       this.customSampleTargetMap.update(map => {
           const next = { ...map };
           const set = next[sample] ? new Set(next[sample]) : new Set<string>();
@@ -282,6 +285,9 @@ export class CalculatorComponent implements OnDestroy {
             } else {
                 this.selectedTargets.set(new Set());
             }
+            const storedGroup = editingReq.targetScopeSnapshots?.find(scope => scope.kind === 'target-group' && scope.sourceId);
+            this.selectedTargetGroupId.set(storedGroup?.sourceId || null);
+            this.targetSelectionModified.set(!storedGroup);
 
             if (editingReq.sampleTargetMap) {
                 const map: Record<string, Set<string>> = {};
@@ -309,6 +315,8 @@ export class CalculatorComponent implements OnDestroy {
             this.selectedTargets.set(new Set());
             this.customSampleTargetMap.set({});
             this.isMatrixCustomized.set(false);
+            this.selectedTargetGroupId.set(null);
+            this.targetSelectionModified.set(false);
             this.marginMode.set('auto');
         }
         
@@ -381,6 +389,7 @@ export class CalculatorComponent implements OnDestroy {
   }
 
   toggleTarget(id: string) {
+      this.targetSelectionModified.set(true);
       this.selectedTargets.update(s => { 
           const n = new Set(s); 
           if (n.has(id)) {
@@ -418,6 +427,7 @@ export class CalculatorComponent implements OnDestroy {
   }
 
   toggleAllTargets(allTargets: any[]) {
+      this.targetSelectionModified.set(true);
       if (this.isAllSelected(allTargets)) { 
           this.selectedTargets.set(new Set()); 
           // Clear all targets from all samples in matrix
@@ -454,6 +464,8 @@ export class CalculatorComponent implements OnDestroy {
       const validIdsToSelect = sop.targets.filter(t => groupTargetIds.has(t.id)).map(t => t.id);
       
       this.selectedTargets.set(new Set(validIdsToSelect));
+      this.selectedTargetGroupId.set(group.id);
+      this.targetSelectionModified.set(false);
       
       this.customSampleTargetMap.update(map => {
           const next = { ...map };
@@ -484,7 +496,8 @@ export class CalculatorComponent implements OnDestroy {
           safetyMargin: finalMargin, 
           sampleList: sampleList, 
           targetIds: targetIds,
-          sampleTargetMap: sampleTargetMap
+          sampleTargetMap: sampleTargetMap,
+          explicitGroupId: this.targetSelectionModified() ? undefined : this.selectedTargetGroupId() || undefined
       };
   }
 

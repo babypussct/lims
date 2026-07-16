@@ -1,6 +1,12 @@
 import { Request } from '../../core/models/request.model';
+import { TargetGroup } from '../../core/models/sop.model';
 import { formatSampleList, naturalCompare } from '../../shared/utils/utils';
 import { getAssignedTargetsForSample, getCanonicalId, normalizeSampleCode } from '../results/shared/compound-id-resolver';
+import {
+  buildTargetScopePresentation,
+  classifyTargetScope,
+  computeTargetSignature
+} from '../targets/target-scope-classifier';
 import {
   ApprovedBatchOverview,
   ApprovedBatchSample,
@@ -90,7 +96,9 @@ export function buildApprovedBatchOverviews(
         samples,
         uniqueTargetIds,
         uniqueTargetNames,
-        targetAssignments: samples.reduce((total, sample) => total + sample.targetIds.length, 0)
+        targetAssignments: samples.reduce((total, sample) => total + sample.targetIds.length, 0),
+        targetNamesSnapshot: request.targetNames,
+        targetScopeSnapshots: request.targetScopeSnapshots
       };
     })
     .sort((a, b) => {
@@ -99,7 +107,7 @@ export function buildApprovedBatchOverviews(
     });
 }
 
-export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBatchView[] {
+export function buildDailyBatchViews(batches: ApprovedBatchOverview[], availableGroups: TargetGroup[] = []): DailyBatchView[] {
   return batches.map(batch => {
     const targetSetMap = new Map<string, DailyBatchAssignmentGroup>();
     const allSampleKeys = new Set<string>();
@@ -120,16 +128,25 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBat
       const targetEntries = Array.from(canonicalTargets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
       const targetIds = targetEntries.map(([targetId]) => targetId);
       targetIds.forEach(targetId => allTargetIds.add(targetId));
-      const signature = targetIds.length ? targetIds.join('\u0000') : '__unassigned__';
+      const signature = computeTargetSignature(targetIds);
 
       let group = targetSetMap.get(signature);
       if (!group) {
+        const classification = classifyTargetScope({
+          assignedTargetIds: targetIds,
+          sopId: batch.sopId,
+          sopVersion: batch.sopVersion,
+          sopTargetSnapshot: batch.targetNamesSnapshot,
+          storedSnapshots: batch.targetScopeSnapshots,
+          availableGroups
+        });
         group = {
           signature,
           targetIds,
           targetNames: targetEntries.map(([, targetName]) => targetName),
           sampleIds: [],
-          formattedSamples: ''
+          formattedSamples: '',
+          targetScope: buildTargetScopePresentation(targetEntries.map(([, targetName]) => targetName), classification)
         };
         targetSetMap.set(signature, group);
       }
@@ -148,12 +165,24 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBat
       });
       const targetEntries = Array.from(canonicalTargets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
       targetEntries.forEach(([targetId]) => allTargetIds.add(targetId));
-      targetSetMap.set('__no_samples__', {
-        signature: '__no_samples__',
-        targetIds: targetEntries.map(([targetId]) => targetId),
-        targetNames: targetEntries.map(([, targetName]) => targetName),
+      const targetIds = targetEntries.map(([targetId]) => targetId);
+      const targetNames = targetEntries.map(([, targetName]) => targetName);
+      const signature = computeTargetSignature(targetIds);
+      const classification = classifyTargetScope({
+        assignedTargetIds: targetIds,
+        sopId: batch.sopId,
+        sopVersion: batch.sopVersion,
+        sopTargetSnapshot: batch.targetNamesSnapshot,
+        storedSnapshots: batch.targetScopeSnapshots,
+        availableGroups
+      });
+      targetSetMap.set(signature, {
+        signature,
+        targetIds,
+        targetNames,
         sampleIds: [],
-        formattedSamples: ''
+        formattedSamples: '',
+        targetScope: buildTargetScopePresentation(targetNames, classification)
       });
     }
 
@@ -163,8 +192,8 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBat
         return { ...group, sampleIds, formattedSamples: formatSampleList(sampleIds) };
       })
       .sort((a, b) => {
-        if (a.signature === '__unassigned__') return 1;
-        if (b.signature === '__unassigned__') return -1;
+        if (a.targetScope.kind === 'unassigned') return 1;
+        if (b.targetScope.kind === 'unassigned') return -1;
         return naturalCompare(a.targetNames.join(' '), b.targetNames.join(' '));
       });
 

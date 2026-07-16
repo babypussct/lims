@@ -19,6 +19,7 @@ import { formatNum, generateSlug, formatSampleList } from '../../shared/utils/ut
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Recipe } from '../../core/models/recipe.model';
 import { GHS_DICTIONARY } from '../../core/services/pubchem.service';
+import { computeTargetSignature } from '../targets/target-scope-classifier';
 
 // --- DATA MODELS ---
 
@@ -31,6 +32,8 @@ interface JobBlock {
     isCollapsed: boolean;
     forcedSopId?: string;
     matrixType?: string;
+    sourceGroupId?: string;
+    sourceGroupModified?: boolean;
 }
 
 interface AnalysisTask {
@@ -39,6 +42,7 @@ interface AnalysisTask {
     targetName: string;
     covered: boolean;
     matrixType?: string;
+    sourceGroupId?: string;
 }
 
 interface ProposedBatch {
@@ -152,6 +156,7 @@ export class SmartBatchComponent {
   // Single mode state
   singleSampleCode = signal<string>('');
   singleSelectedTargets = signal<Set<string>>(new Set());
+  singleSourceGroupId = signal<string | null>(null);
   singleMatrixType = signal<string | undefined>(undefined);
   singleTargetSearch = signal<string>('');
   singleForcedSopId = signal<string | undefined>(undefined);
@@ -720,7 +725,7 @@ export class SmartBatchComponent {
       this.blocks.update(b => {
           const n = [...b]; const set = new Set(n[index].selectedTargets);
           if (set.has(targetId)) set.delete(targetId); else set.add(targetId);
-          n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined }; // Reset forced SOP on change
+          n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined, sourceGroupId: undefined, sourceGroupModified: true }; // Reset provenance on manual change
           return n;
       });
   }
@@ -729,16 +734,17 @@ export class SmartBatchComponent {
           const n = [...b]; const filtered = this.filteredTargetsMap().get(n[index].id) || [];
           const set = new Set(n[index].selectedTargets);
           filtered.forEach(t => set.add(t.uniqueKey));
-          n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined }; return n;
+          n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined, sourceGroupId: undefined, sourceGroupModified: true }; return n;
       });
   }
   deselectAllTargets(index: number) {
-      this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], selectedTargets: new Set(), forcedSopId: undefined }; return n; });
+      this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], selectedTargets: new Set(), forcedSopId: undefined, sourceGroupId: undefined, sourceGroupModified: true }; return n; });
   }
 
   // getFilteredSingleTargets method removed as it's replaced by singleFilteredTargets signal
   
   toggleSingleTarget(targetId: string) {
+      this.singleSourceGroupId.set(null);
       this.singleSelectedTargets.update(set => {
           const next = new Set(set);
           if (next.has(targetId)) next.delete(targetId); else next.add(targetId);
@@ -747,6 +753,7 @@ export class SmartBatchComponent {
   }
 
   selectAllSingleTargets() {
+      this.singleSourceGroupId.set(null);
       const filtered = this.singleFilteredTargets();
       this.singleSelectedTargets.update(set => {
           const next = new Set(set);
@@ -757,6 +764,7 @@ export class SmartBatchComponent {
 
   deselectAllSingleTargets() {
       this.singleSelectedTargets.set(new Set());
+      this.singleSourceGroupId.set(null);
   }
 
   openSingleTargetGroupModal() {
@@ -788,16 +796,32 @@ export class SmartBatchComponent {
       const idx = this.currentBlockIndexForGroupImport();
       if (idx === -2) {
           this.singleSelectedTargets.update(set => {
+              const hadTargets = set.size > 0;
               const next = new Set(set);
               g.targets.forEach(t => next.add(t.id));
+              this.singleSourceGroupId.set(!hadTargets
+                && computeTargetSignature([...next]) === computeTargetSignature(g.targets.map(target => target.id))
+                  ? g.id
+                  : null);
               return next;
           });
           this.toast.show(`Đã thêm ${g.targets.length} chỉ tiêu cho mẫu.`, 'success');
       } else if (idx >= 0) {
           this.blocks.update(b => {
-              const n = [...b]; const set = new Set(n[idx].selectedTargets);
+              const n = [...b];
+              const hadTargets = n[idx].selectedTargets.size > 0;
+              const set = new Set(n[idx].selectedTargets);
               g.targets.forEach(t => set.add(t.id));
-              n[idx] = { ...n[idx], selectedTargets: set, forcedSopId: undefined }; return n;
+              const exactGroup = !hadTargets
+                && computeTargetSignature([...set]) === computeTargetSignature(g.targets.map(target => target.id));
+              n[idx] = {
+                ...n[idx],
+                selectedTargets: set,
+                forcedSopId: undefined,
+                sourceGroupId: exactGroup ? g.id : undefined,
+                sourceGroupModified: hadTargets
+              };
+              return n;
           });
           this.toast.show(`Đã thêm ${g.targets.length} chỉ tiêu.`, 'success');
       }
@@ -825,7 +849,8 @@ export class SmartBatchComponent {
               targetSearch: '',
               isCollapsed: false,
               forcedSopId: this.singleForcedSopId(),
-              matrixType: this.singleMatrixType()
+              matrixType: this.singleMatrixType(),
+              sourceGroupId: this.singleSourceGroupId() || undefined
           };
           this.blocks.set([mockBlock]);
       }
@@ -865,10 +890,10 @@ export class SmartBatchComponent {
                               const tName = foundTarget?.name || targetId;
                               // Only mark 'covered: true' if the SOP ACTUALLY supports it
                               const isCovered = validSopTargets.has(targetId);
-                              blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered, matrixType: block.matrixType });
+                              blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered, matrixType: block.matrixType, sourceGroupId: block.sourceGroupId });
                               // If not covered, we still add it to allTasks so greedy algorithm can handle it
                               if (!isCovered) {
-                                  allTasks.push({ sample, targetId, targetName: tName, covered: false, matrixType: block.matrixType });
+                                  allTasks.push({ sample, targetId, targetName: tName, covered: false, matrixType: block.matrixType, sourceGroupId: block.sourceGroupId });
                               }
                           }
                       }
@@ -918,7 +943,8 @@ export class SmartBatchComponent {
                           targetId,
                           targetName: tName,
                           covered: false,
-                          matrixType: block.matrixType
+                          matrixType: block.matrixType,
+                          sourceGroupId: block.sourceGroupId
                       });
                   }
               }
@@ -1654,6 +1680,7 @@ export class SmartBatchComponent {
       this.blocks.set([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: undefined } ]);
       this.singleSampleCode.set('');
       this.singleSelectedTargets.set(new Set());
+      this.singleSourceGroupId.set(null);
       this.singleMatrixType.set(undefined);
       this.singleTargetSearch.set('');
       this.singleForcedSopId.set(undefined);
@@ -1664,6 +1691,7 @@ export class SmartBatchComponent {
           const mockBlock = this.blocks()[0];
           this.singleSampleCode.set(mockBlock.rawSamples.trim());
           this.singleSelectedTargets.set(new Set(mockBlock.selectedTargets));
+          this.singleSourceGroupId.set(mockBlock.sourceGroupId || null);
           this.singleMatrixType.set(mockBlock.matrixType);
           this.singleForcedSopId.set(mockBlock.forcedSopId);
       }
@@ -1717,7 +1745,11 @@ export class SmartBatchComponent {
                       sampleList: Array.from(batch.samples),
                       targetIds: batch.targets.map(t => t.id),
                       sampleTargetMap,
-                      analysisDate: batch.inputValues['analysisDate']
+                      analysisDate: batch.inputValues['analysisDate'],
+                      explicitGroupId: batch.tasks.length > 0
+                        && batch.tasks.every(task => task.sourceGroupId && task.sourceGroupId === batch.tasks[0].sourceGroupId)
+                        ? batch.tasks[0].sourceGroupId
+                        : undefined
                   };
                   const res = await this.state.directApproveAndPrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap);
                   if (res) {

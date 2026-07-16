@@ -1,6 +1,24 @@
 
 import { AnalysisResultDraft } from './analysis-result.model';
 
+export type TargetScopeKind = 'sop-all' | 'target-group' | 'manual' | 'unassigned' | 'ambiguous';
+export type TargetScopeTraceability = 'snapshot' | 'legacy-derived' | 'current-config';
+
+/** Immutable explanation of where one distinct assigned-target set came from. */
+export interface TargetScopeSnapshot {
+  signature: string;
+  kind: TargetScopeKind;
+  assignedTargetIds: string[];
+  sourceId?: string;
+  sourceName?: string;
+  sourceRevision?: string;
+  sourceTargetIds?: string[];
+  sopId: string;
+  sopVersion?: number;
+  capturedAt?: string;
+  traceability: TargetScopeTraceability;
+}
+
 export interface RequestItem {
   name: string; // ID of the item
   displayName?: string; // Human readable name (Denormalized)
@@ -32,6 +50,7 @@ export interface Request {
   targetIds?: string[];  // List of Selected Target IDs
   sampleTargetMap?: Record<string, string[]>; // Maps sample ID -> assigned Target IDs
   targetNames?: Record<string, string>; // Immutable target-name snapshot for traceability
+  targetScopeSnapshots?: TargetScopeSnapshot[]; // Immutable scope/source snapshot per distinct target set
   sopVersion?: number;
   sopRef?: string;
 

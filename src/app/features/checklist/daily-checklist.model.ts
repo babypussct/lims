@@ -1,4 +1,5 @@
-import { Request } from '../../core/models/request.model';
+import { Request, TargetScopeSnapshot } from '../../core/models/request.model';
+import { TargetScopePresentation } from '../targets/target-scope-classifier';
 
 export type ApprovedBatchStatus = Extract<Request['status'], 'approved' | 'draft' | 'completed'>;
 
@@ -22,6 +23,8 @@ export interface ApprovedBatchOverview {
   uniqueTargetIds: string[];
   uniqueTargetNames: string[];
   targetAssignments: number;
+  targetNamesSnapshot?: Record<string, string>;
+  targetScopeSnapshots?: TargetScopeSnapshot[];
 }
 
 export interface DailyBatchAssignmentGroup {
@@ -30,6 +33,7 @@ export interface DailyBatchAssignmentGroup {
   targetNames: string[];
   sampleIds: string[];
   formattedSamples: string;
+  targetScope: TargetScopePresentation;
 }
 
 export interface DailyBatchView {
