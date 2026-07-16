@@ -46,6 +46,19 @@ const LINE_HEIGHT_MM = 3.8;
 const COMPACT_CARD_HEADER_MM = 20;
 const COMPACT_GROUP_BASE_MM = 7;
 const COMPACT_LINE_HEIGHT_MM = 3.2;
+const COMPACT_CARD_GAP_MM = 4;
+
+interface CompactCardEstimate {
+  heightMm: number;
+  wrappedLineCount: number;
+}
+
+interface CompactPlacement {
+  pages: DailyBatchView[][][];
+  overflowPageCount: number;
+  estimatedBatchSplits: number;
+  wrappedLineCount: number;
+}
 
 export function planDailyPrintLayout(
   batches: DailyBatchView[],
@@ -154,41 +167,9 @@ function evaluateCompactLayout(
   groupSamples: boolean,
   orientation: DailyPrintOrientation
 ): DailyPrintLayoutCandidate {
-  const metrics = ORIENTATION_METRICS[orientation];
-  const pageBodyHeight = metrics.usableHeightMm - DOCUMENT_HEADER_MM;
-  const columnHeights = Array.from({ length: metrics.compactColumns }, () => 0);
-  let estimatedPages = batches.length ? 1 : 0;
-  let estimatedBatchSplits = 0;
-  let wrappedLineCount = 0;
-
-  batches.forEach(batch => {
-    let cardHeight = COMPACT_CARD_HEADER_MM;
-    batch.groups.forEach(group => {
-      const sampleText = groupSamples ? group.formattedSamples : group.sampleIds.join(', ');
-      const targetText = group.targetNames.length ? group.targetNames.join('; ') : 'Chưa xác định chỉ tiêu';
-      const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
-      const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);
-      wrappedLineCount += Math.max(0, sampleLines - 1) + Math.max(0, targetLines - 1);
-      cardHeight += COMPACT_GROUP_BASE_MM + (sampleLines + targetLines) * COMPACT_LINE_HEIGHT_MM;
-    });
-
-    if (cardHeight > pageBodyHeight) {
-      estimatedBatchSplits += 1;
-      const pagesForCard = Math.ceil(cardHeight / pageBodyHeight);
-      estimatedPages += Math.max(0, pagesForCard - 1);
-      const shortestColumn = indexOfSmallest(columnHeights);
-      columnHeights[shortestColumn] = cardHeight % pageBodyHeight;
-      return;
-    }
-
-    let targetColumn = indexOfSmallest(columnHeights);
-    if (columnHeights[targetColumn] + cardHeight > pageBodyHeight) {
-      estimatedPages += 1;
-      columnHeights.fill(0);
-      targetColumn = 0;
-    }
-    columnHeights[targetColumn] += cardHeight + 4;
-  });
+  const placement = buildCompactPlacement(batches, groupSamples, orientation);
+  const estimatedPages = placement.pages.length + placement.overflowPageCount;
+  const { estimatedBatchSplits, wrappedLineCount } = placement;
 
   const landscapePenalty = orientation === 'landscape' ? 4 : 0;
   const complexityPenalty = batches.reduce((penalty, batch) =>
@@ -207,6 +188,81 @@ function evaluateCompactLayout(
     wrappedLineCount,
     score
   };
+}
+
+export function buildDailyCompactPrintPages(
+  batches: DailyBatchView[],
+  groupSamples: boolean,
+  orientation: DailyPrintOrientation
+): DailyBatchView[][][] {
+  return buildCompactPlacement(batches, groupSamples, orientation).pages;
+}
+
+function buildCompactPlacement(
+  batches: DailyBatchView[],
+  groupSamples: boolean,
+  orientation: DailyPrintOrientation
+): CompactPlacement {
+  if (batches.length === 0) {
+    return { pages: [], overflowPageCount: 0, estimatedBatchSplits: 0, wrappedLineCount: 0 };
+  }
+
+  const metrics = ORIENTATION_METRICS[orientation];
+  const pageBodyHeight = metrics.usableHeightMm - DOCUMENT_HEADER_MM;
+  const pages: DailyBatchView[][][] = [];
+  let currentColumns: DailyBatchView[][] = [];
+  let columnHeights: number[] = [];
+  let estimatedBatchSplits = 0;
+  let overflowPageCount = 0;
+  let wrappedLineCount = 0;
+
+  const startPage = () => {
+    currentColumns = Array.from({ length: metrics.compactColumns }, () => [] as DailyBatchView[]);
+    columnHeights = Array.from({ length: metrics.compactColumns }, () => 0);
+    pages.push(currentColumns);
+  };
+
+  startPage();
+  batches.forEach(batch => {
+    const estimate = estimateCompactCard(batch, groupSamples, metrics);
+    wrappedLineCount += estimate.wrappedLineCount;
+    if (estimate.heightMm > pageBodyHeight) {
+      estimatedBatchSplits += 1;
+      overflowPageCount += Math.ceil(estimate.heightMm / pageBodyHeight) - 1;
+    }
+
+    let targetColumn = indexOfSmallest(columnHeights);
+    const pageHasCards = currentColumns.some(column => column.length > 0);
+    if (pageHasCards && columnHeights[targetColumn] + estimate.heightMm + COMPACT_CARD_GAP_MM > pageBodyHeight) {
+      startPage();
+      targetColumn = 0;
+    }
+
+    currentColumns[targetColumn].push(batch);
+    columnHeights[targetColumn] += estimate.heightMm + COMPACT_CARD_GAP_MM;
+  });
+
+  return { pages, overflowPageCount, estimatedBatchSplits, wrappedLineCount };
+}
+
+function estimateCompactCard(
+  batch: DailyBatchView,
+  groupSamples: boolean,
+  metrics: OrientationMetrics
+): CompactCardEstimate {
+  let heightMm = COMPACT_CARD_HEADER_MM;
+  let wrappedLineCount = 0;
+
+  batch.groups.forEach(group => {
+    const sampleText = groupSamples ? group.formattedSamples : group.sampleIds.join(', ');
+    const targetText = group.targetNames.length ? group.targetNames.join('; ') : 'Chưa xác định chỉ tiêu';
+    const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
+    const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);
+    wrappedLineCount += Math.max(0, sampleLines - 1) + Math.max(0, targetLines - 1);
+    heightMm += COMPACT_GROUP_BASE_MM + (sampleLines + targetLines) * COMPACT_LINE_HEIGHT_MM;
+  });
+
+  return { heightMm, wrappedLineCount };
 }
 
 function indexOfSmallest(values: number[]): number {

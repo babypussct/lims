@@ -20,7 +20,7 @@ import {
   isValidDateInput,
   toLocalDateInputValue
 } from './daily-checklist.utils';
-import { planDailyPrintLayout } from './daily-print-layout-planner';
+import { buildDailyCompactPrintPages, planDailyPrintLayout } from './daily-print-layout-planner';
 import {
   computeDailyBatchLayoutHint,
   DailyBatchLayoutHint,
@@ -476,18 +476,40 @@ interface AvailableDateOption {
         display: block !important;
       }
 
-      body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-layout {
-        column-count: 2 !important;
-        column-gap: 4mm !important;
+      body.daily-checklist-printing #print-container .cl-print-compact-page {
+        display: block !important;
+        break-inside: avoid-page !important;
+        page-break-inside: avoid !important;
+        break-after: page !important;
+        page-break-after: always !important;
       }
 
-      body.daily-checklist-printing.print-landscape-mode #print-container .cl-print-compact-layout {
-        column-count: 3 !important;
-        column-gap: 4mm !important;
+      body.daily-checklist-printing #print-container .cl-print-compact-page-last {
+        break-after: auto !important;
+        page-break-after: auto !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-columns {
+        display: grid !important;
+        align-items: start !important;
+        gap: 4mm !important;
+      }
+
+      body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      body.daily-checklist-printing.print-landscape-mode #print-container .cl-print-compact-columns {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-compact-column {
+        display: block !important;
+        min-width: 0 !important;
       }
 
       body.daily-checklist-printing #print-container .cl-print-compact-card {
-        display: inline-block !important;
+        display: block !important;
         width: 100% !important;
         margin: 0 0 4mm !important;
         border: 1px solid #94a3b8 !important;
@@ -878,6 +900,12 @@ export class DailyChecklistComponent implements OnDestroy {
     this.printGroupSamples(),
     this.printOrientation(),
     this.printMode()
+  ));
+
+  readonly compactPrintPages = computed(() => buildDailyCompactPrintPages(
+    this.boardBatches(),
+    this.printGroupSamples(),
+    this.printPlan().orientation
   ));
 
   readonly activeFilterCount = computed(() =>

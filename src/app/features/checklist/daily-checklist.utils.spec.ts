@@ -9,7 +9,7 @@ import {
   isValidDateInput,
   toDate
 } from './daily-checklist.utils';
-import { planDailyPrintLayout } from './daily-print-layout-planner';
+import { buildDailyCompactPrintPages, planDailyPrintLayout } from './daily-print-layout-planner';
 import { computeDailyBatchLayoutHint } from './daily-screen-layout-planner';
 
 function request(overrides: Partial<Request> = {}): Request {
@@ -113,6 +113,25 @@ test('adaptive print planner supports automatic, compact and list print modes', 
   ], '2026-07-16', (_item, targetId) => `Chỉ tiêu kiểm nghiệm dài ${targetId}`));
 
   assert.equal(planDailyPrintLayout(denseViews, true, 'auto', 'auto').mode, 'list');
+});
+
+test('compact renderer uses the exact page allocation reported by the planner', () => {
+  const targetCounts = [14, 28, 38, 1, 3, 1, 1, 3, 1];
+  const overviews = buildApprovedBatchOverviews(targetCounts.map((targetCount, index) => request({
+    id: `REQ-PRINT-${index + 1}`,
+    sampleList: Array.from({ length: index === 7 ? 42 : 3 }, (_, sampleIndex) => `L${index + 1}${sampleIndex + 1}15`),
+    targetIds: Array.from({ length: targetCount }, (_, targetIndex) => `T-${index + 1}-${targetIndex + 1}`)
+  })), '2026-07-16', (_item, targetId) => `Chỉ tiêu ${targetId}`);
+  const views = buildDailyBatchViews(overviews);
+  const plan = planDailyPrintLayout(views, true, 'landscape', 'compact');
+  const pages = buildDailyCompactPrintPages(views, true, plan.orientation);
+
+  assert.equal(plan.estimatedPages, pages.length);
+  assert.equal(pages.flat(2).length, views.length);
+  assert.deepEqual(
+    pages.flat(2).map(batch => batch.requestId).sort(),
+    views.map(batch => batch.requestId).sort()
+  );
 });
 
 test('batch without sample codes is retained with its assigned targets', () => {

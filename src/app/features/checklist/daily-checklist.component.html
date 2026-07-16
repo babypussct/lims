@@ -308,96 +308,120 @@
         <div class="cl-print-document cl-print-only"
              [class.cl-print-mode-compact]="printPlan().mode === 'compact'"
              [class.cl-print-mode-list]="printPlan().mode === 'list'">
-          <header class="cl-print-header">
-            <h2>BẢNG THEO DÕI MẪU NGÀY</h2>
-            <div>Ngày kiểm nghiệm: <strong>{{selectedDateLabel()}}</strong></div>
-          </header>
-
           <div class="cl-print-list-layout">
-          <table class="cl-print-table">
-            <colgroup><col class="cl-col-batch"><col class="cl-col-samples"><col class="cl-col-targets"></colgroup>
-            <thead>
-              <tr><th>Mẻ / SOP</th><th>Mẫu thực hiện</th><th>Chỉ tiêu kiểm</th></tr>
-            </thead>
-            <tbody>
-              @for (batch of boardBatches(); track batch.requestId) {
-                @for (group of batch.groups; track group.signature; let groupIndex = $index) {
-                  <tr class="cl-print-assignment-row" [class.cl-print-batch-start]="groupIndex === 0">
-                    <td>
-                      <div class="cl-print-batch-cell">
-                        <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
-                        <div class="cl-print-batch-info">
-                          <div class="cl-print-sop">{{batch.sopName}}</div>
-                          <div class="cl-print-meta">
-                            @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                            @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
+            <header class="cl-print-header">
+              <h2>BẢNG THEO DÕI MẪU NGÀY</h2>
+              <div>Ngày kiểm nghiệm: <strong>{{selectedDateLabel()}}</strong></div>
+            </header>
+
+            <table class="cl-print-table">
+              <colgroup><col class="cl-col-batch"><col class="cl-col-samples"><col class="cl-col-targets"></colgroup>
+              <thead>
+                <tr><th>Mẻ / SOP</th><th>Mẫu thực hiện</th><th>Chỉ tiêu kiểm</th></tr>
+              </thead>
+              <tbody>
+                @for (batch of boardBatches(); track batch.requestId) {
+                  @for (group of batch.groups; track group.signature; let groupIndex = $index) {
+                    <tr class="cl-print-assignment-row" [class.cl-print-batch-start]="groupIndex === 0">
+                      <td>
+                        <div class="cl-print-batch-cell">
+                          <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
+                          <div class="cl-print-batch-info">
+                            <div class="cl-print-sop">{{batch.sopName}}</div>
+                            <div class="cl-print-meta">
+                              @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
+                              @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
+                            </div>
+                            <div class="cl-print-qr-label">Quét để truy xuất</div>
                           </div>
-                          <div class="cl-print-qr-label">Quét để truy xuất</div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="cl-print-samples">{{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}</div>
-                      <div class="cl-print-count">{{group.sampleIds.length}} mẫu</div>
-                    </td>
-                    <td>
-                      @if (group.targetNames.length === 0) {
-                        <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
-                      } @else {
-                        <ul class="cl-print-targets">
-                          @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
-                        </ul>
-                      }
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div class="cl-print-samples">{{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}</div>
+                        <div class="cl-print-count">{{group.sampleIds.length}} mẫu</div>
+                      </td>
+                      <td>
+                        @if (group.targetNames.length === 0) {
+                          <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
+                        } @else {
+                          <ul class="cl-print-targets">
+                            @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
+                          </ul>
+                        }
+                      </td>
+                    </tr>
+                  }
                 }
-              }
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+
+            <footer class="cl-print-footer">
+              <span>{{boardSummary().batches}} mẻ · {{boardSummary().samples}} mã mẫu · {{boardSummary().targets}} chỉ tiêu</span>
+              <span>In lúc {{formatTimestamp(printGeneratedAt())}}</span>
+            </footer>
           </div>
 
           <div class="cl-print-compact-layout">
-            @for (batch of boardBatches(); track batch.requestId; let batchIndex = $index) {
-              <section class="cl-print-compact-card">
-                <header class="cl-print-compact-head">
-                  <span class="cl-print-compact-index">{{batchIndex + 1}}</span>
-                  <div class="cl-print-compact-title">
-                    <div>{{batch.sopName}}</div>
-                    <div class="cl-print-meta">
-                      <span>{{batch.uniqueSamples}} mẫu · {{batch.uniqueTargets}} chỉ tiêu</span>
-                      @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                      @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
-                    </div>
-                  </div>
-                  <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
+            @for (page of compactPrintPages(); track $index; let pageIndex = $index) {
+              <section class="cl-print-compact-page"
+                       [class.cl-print-compact-page-last]="pageIndex === compactPrintPages().length - 1">
+                <header class="cl-print-header">
+                  <h2>BẢNG THEO DÕI MẪU NGÀY</h2>
+                  <div>Ngày kiểm nghiệm: <strong>{{selectedDateLabel()}}</strong></div>
                 </header>
 
-                @for (group of batch.groups; track group.signature; let groupIndex = $index) {
-                  <div class="cl-print-compact-group">
-                    <div class="cl-print-compact-label">
-                      Mẫu thực hiện@if (batch.groups.length > 1) { · Nhóm {{groupIndex + 1}} } · {{group.sampleIds.length}} mẫu
+                <div class="cl-print-compact-columns">
+                  @for (column of page; track $index) {
+                    <div class="cl-print-compact-column">
+                      @for (batch of column; track batch.requestId) {
+                        <section class="cl-print-compact-card">
+                          <header class="cl-print-compact-head">
+                            <span class="cl-print-compact-index">{{boardBatches().indexOf(batch) + 1}}</span>
+                            <div class="cl-print-compact-title">
+                              <div>{{batch.sopName}}</div>
+                              <div class="cl-print-meta">
+                                <span>{{batch.uniqueSamples}} mẫu · {{batch.uniqueTargets}} chỉ tiêu</span>
+                                @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
+                                @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
+                              </div>
+                            </div>
+                            <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
+                          </header>
+
+                          @for (group of batch.groups; track group.signature; let groupIndex = $index) {
+                            <div class="cl-print-compact-group">
+                              <div class="cl-print-compact-label">
+                                Mẫu thực hiện@if (batch.groups.length > 1) { · Nhóm {{groupIndex + 1}} } · {{group.sampleIds.length}} mẫu
+                              </div>
+                              <div class="cl-print-compact-samples">
+                                {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                              </div>
+                              <div class="cl-print-compact-label">Chỉ tiêu kiểm · {{group.targetNames.length}}</div>
+                              @if (group.targetNames.length === 0) {
+                                <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
+                              } @else {
+                                <ul class="cl-print-compact-targets">
+                                  @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
+                                </ul>
+                              }
+                            </div>
+                          }
+                        </section>
+                      }
                     </div>
-                    <div class="cl-print-compact-samples">
-                      {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
-                    </div>
-                    <div class="cl-print-compact-label">Chỉ tiêu kiểm · {{group.targetNames.length}}</div>
-                    @if (group.targetNames.length === 0) {
-                      <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
-                    } @else {
-                      <ul class="cl-print-compact-targets">
-                        @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
-                      </ul>
-                    }
-                  </div>
-                }
+                  }
+                </div>
+
+                <footer class="cl-print-footer">
+                  <span>{{boardSummary().batches}} mẻ · {{boardSummary().samples}} mã mẫu · {{boardSummary().targets}} chỉ tiêu</span>
+                  <span>
+                    @if (compactPrintPages().length > 1) { Trang {{pageIndex + 1}}/{{compactPrintPages().length}} · }
+                    In lúc {{formatTimestamp(printGeneratedAt())}}
+                  </span>
+                </footer>
               </section>
             }
           </div>
-
-          <footer class="cl-print-footer">
-            <span>{{boardSummary().batches}} mẻ · {{boardSummary().samples}} mã mẫu · {{boardSummary().targets}} chỉ tiêu</span>
-            <span>In lúc {{formatTimestamp(printGeneratedAt())}}</span>
-          </footer>
         </div>
       </article>
     }
