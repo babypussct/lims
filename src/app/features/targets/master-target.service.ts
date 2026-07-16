@@ -123,19 +123,14 @@ export class MasterTargetService {
     // DeltaSync listener sẽ tự nhận thay đổi và cập nhật analytes signal
   }
 
-  async saveBatch(items: MasterAnalyte[], options: { merge?: boolean } = {}): Promise<void> {
+  async saveBatch(items: MasterAnalyte[]): Promise<void> {
     const MAX_BATCH_SIZE = 450;
     let opCount = 0;
     let currentBatch = writeBatch(this.fb.db);
 
     for (const item of items) {
         const ref = doc(this.fb.db, `${this.collectionPath}/${item.id}`);
-        const data = { ...item, lastUpdated: serverTimestamp() };
-        if (options.merge) {
-            currentBatch.set(ref, data, { merge: true });
-        } else {
-            currentBatch.set(ref, data);
-        }
+        currentBatch.set(ref, { ...item, lastUpdated: serverTimestamp() });
         opCount++;
 
         if (opCount >= MAX_BATCH_SIZE) {

@@ -33,7 +33,7 @@ import { Router } from '@angular/router';
             <div class="flex gap-2">
                 @if(isEditing()) {
                     <button (click)="cancelEdit()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold text-xs transition">Hủy</button>
-                    <button (click)="saveGroup()" [disabled]="form.invalid || isProcessing()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50">
+                    <button (click)="saveGroup()" [disabled]="form.invalid || isProcessing() || targets.length === 0 || !areAllTargetsMatched()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-save"></i> } Lưu
                     </button>
                 } @else {
@@ -103,58 +103,74 @@ import { Router } from '@angular/router';
                                         <i class="fa-solid fa-list-ul text-teal-500"></i> Danh sách Chỉ tiêu
                                     </h3>
                                     <div class="flex flex-wrap justify-end gap-2">
-                                        <button type="button" (click)="syncToMasterTargets()" [disabled]="isSyncing() || targets.length === 0" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            @if(isSyncing()) {
-                                                <i class="fa-solid fa-spinner fa-spin"></i>
-                                            } @else {
-                                                <i class="fa-solid fa-cloud-arrow-up"></i>
-                                            }
-                                            Đồng bộ về Thư viện
-                                        </button>
-                                        <!-- NEW: Import from Master Library -->
-                                        <button type="button" (click)="openLibraryModal()" class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95">
-                                            <i class="fa-solid fa-book-medical"></i> Chọn từ Master Library
-                                        </button>
-                                        <button type="button" (click)="addTarget()" class="text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95">
-                                            <i class="fa-solid fa-plus"></i> Thêm dòng
+                                        <button type="button" (click)="openLibraryModal()" class="text-xs bg-teal-600 text-white hover:bg-teal-700 border border-teal-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                                            <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Thư viện Gốc
                                         </button>
                                     </div>
                                 </div>
 
+                                <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                    <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>
+                                    Chỉ tiêu phải được chọn từ Target Master. Tên, mã ID và đơn vị được khóa theo Thư viện Gốc để tránh sai lệch dữ liệu hệ thống.
+                                </p>
+
                                 <div formArrayName="targets" class="space-y-2">
                                     @for (t of targets.controls; track t; let i = $index) {
-                                        <div [formGroupName]="i" class="flex gap-2 items-center p-2 bg-slate-50 rounded-lg border border-slate-100 group hover:border-teal-200 transition">
-                                            <div class="w-6 h-6 rounded bg-slate-200 text-slate-500 flex items-center justify-center text-[10px] font-bold">{{i+1}}</div>
-                                            
-                                            <!-- Logic for Linked ID -->
-                                            @let isLinked = targets.at(i).get('isMasterLinked')?.value;
+                                        @let masterItem = validTargetMap().get(t.get('id')?.value || '');
+                                        <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 rounded-xl border group transition-colors"
+                                             [class.border-red-200]="!masterItem"
+                                             [class.border-slate-100]="masterItem">
+                                            <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center transition-colors"
+                                                 [class.bg-red-100]="!masterItem"
+                                                 [class.text-red-600]="!masterItem"
+                                                 [class.bg-slate-200]="masterItem"
+                                                 [class.text-slate-500]="masterItem">{{i+1}}</div>
 
-                                            <div class="flex-1 grid grid-cols-12 gap-2">
-                                                <div class="col-span-4">
-                                                    <input formControlName="name" (input)="onTargetNameChange(i, $event)" placeholder="Tên chất" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                                            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-2">
+                                                <div class="md:col-span-4">
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 flex justify-between items-center gap-2">
+                                                        <span>Tên Chỉ tiêu</span>
+                                                        @if (masterItem) {
+                                                            <div class="flex items-center gap-1">
+                                                                <span class="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-check-circle"></i> Khớp Thư viện</span>
+                                                                <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition flex items-center gap-1 whitespace-nowrap">
+                                                                    <i class="fa-solid fa-rotate"></i> Thay thế
+                                                                </button>
+                                                            </div>
+                                                        } @else {
+                                                            <div class="flex items-center gap-1">
+                                                                <span class="text-[9px] bg-red-100 text-red-600 px-1 rounded flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation"></i> Không tồn tại</span>
+                                                                <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition whitespace-nowrap">Chọn lại</button>
+                                                            </div>
+                                                        }
+                                                    </label>
+                                                    <input formControlName="name" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs font-bold text-slate-500 outline-none cursor-not-allowed">
                                                 </div>
-                                                <div class="col-span-3 relative">
-                                                    <input formControlName="id" 
-                                                           placeholder="ID (Auto)" 
-                                                           [readonly]="isLinked"
-                                                           class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs font-mono text-slate-500 outline-none focus:border-teal-500"
-                                                           [class.bg-slate-100]="isLinked"
-                                                           [class.bg-white]="!isLinked"
-                                                           [class.cursor-not-allowed]="isLinked">
-                                                    @if(isLinked) {
-                                                        <i class="fa-solid fa-link absolute right-2 top-2 text-[10px] text-teal-500" title="Linked to Master Library"></i>
-                                                    }
+                                                <div class="md:col-span-3">
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã ID (Locked)</label>
+                                                    <input formControlName="id" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs font-mono text-slate-400 outline-none cursor-not-allowed">
                                                 </div>
-                                                <div class="col-span-2">
-                                                    <input formControlName="unit" placeholder="Đơn vị" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                <div class="md:col-span-2">
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị (Master)</label>
+                                                    <input formControlName="unit" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs text-slate-500 outline-none cursor-not-allowed text-center">
                                                 </div>
-                                                <div class="col-span-3 grid grid-cols-2 gap-1">
-                                                    <input formControlName="lod" placeholder="LOD" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
-                                                    <input formControlName="loq" placeholder="LOQ" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                <div class="md:col-span-3 grid grid-cols-2 gap-1">
+                                                    <div>
+                                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOD</label>
+                                                        <input formControlName="lod" placeholder="LOD" class="w-full border border-slate-300 bg-white rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                    </div>
+                                                    <div>
+                                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOQ</label>
+                                                        <input formControlName="loq" placeholder="LOQ" class="w-full border border-slate-300 bg-white rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                    </div>
                                                 </div>
                                             </div>
-                                            
-                                            <button type="button" (click)="targets.removeAt(i)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
+
+                                            <button type="button" (click)="targets.removeAt(i)" class="mt-6 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 transition rounded-full hover:bg-white"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    } @empty {
+                                        <div class="text-center py-8 text-slate-400 italic bg-white border border-dashed border-slate-200 rounded-xl">
+                                            Chưa có chỉ tiêu. Hãy chọn từ Thư viện Gốc.
                                         </div>
                                     }
                                 </div>
@@ -178,9 +194,10 @@ import { Router } from '@angular/router';
                     <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                         <div>
                             <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-book-medical text-teal-600"></i> Thư viện Master Data
+                                <i class="fa-solid fa-book-medical text-teal-600"></i>
+                                {{replacingTargetIndex() === null ? 'Chọn từ Thư viện Gốc' : 'Thay thế Chỉ tiêu'}}
                             </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Danh mục chỉ tiêu gốc của hệ thống.</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Tên, mã ID và đơn vị sẽ được lấy trực tiếp từ Target Master.</p>
                         </div>
                         <button (click)="showLibraryModal.set(false)" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
                     </div>
@@ -192,7 +209,9 @@ import { Router } from '@angular/router';
                                    class="w-full pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition" 
                                    placeholder="Tìm kiếm...">
                         </div>
-                        <button (click)="selectAllLibraryFiltered()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold whitespace-nowrap transition">Chọn hết</button>
+                        @if(replacingTargetIndex() === null) {
+                            <button (click)="selectAllLibraryFiltered()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold whitespace-nowrap transition">Chọn hết</button>
+                        }
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
@@ -228,7 +247,12 @@ import { Router } from '@angular/router';
                         <div class="flex gap-2">
                             <button (click)="showLibraryModal.set(false)" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg font-bold text-xs transition">Đóng</button>
                             <button (click)="importSelectedLibraryTargets()" [disabled]="selectedLibraryIds().size === 0" class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center gap-2">
-                                <i class="fa-solid fa-file-import"></i> Import ({{selectedLibraryIds().size}})
+                                <i class="fa-solid" [class.fa-rotate]="replacingTargetIndex() !== null" [class.fa-file-import]="replacingTargetIndex() === null"></i>
+                                @if(replacingTargetIndex() !== null) {
+                                    Thay thế
+                                } @else {
+                                    Thêm ({{selectedLibraryIds().size}})
+                                }
                             </button>
                         </div>
                     </div>
@@ -251,7 +275,6 @@ export class TargetGroupManagerComponent implements OnInit {
   
   isLoading = signal(false);
   isProcessing = signal(false);
-  isSyncing = signal(false);
   isEditing = signal(false);
 
   // Library Modal State
@@ -260,6 +283,13 @@ export class TargetGroupManagerComponent implements OnInit {
   libraryTargets = signal<MasterAnalyte[]>([]); // Changed to MasterAnalyte
   selectedLibraryIds = signal<Set<string>>(new Set());
   librarySearchTerm = signal('');
+  replacingTargetIndex = signal<number | null>(null);
+
+  validTargetMap = computed(() => {
+      const map = new Map<string, MasterAnalyte>();
+      this.libraryTargets().forEach(target => map.set(target.id, target));
+      return map;
+  });
 
   form = this.fb.group({
       id: ['', Validators.required],
@@ -272,6 +302,7 @@ export class TargetGroupManagerComponent implements OnInit {
 
   ngOnInit() {
       this.loadGroups();
+      this.loadMasterTargets();
   }
 
   async loadGroups() {
@@ -295,7 +326,7 @@ export class TargetGroupManagerComponent implements OnInit {
       this.isEditing.set(true);
       this.form.patchValue({ id: g.id, name: g.name, description: g.description });
       this.targets.clear();
-      g.targets.forEach(t => this.addTargetRaw(t));
+      (g.targets || []).forEach(t => this.addTargetRaw(t));
   }
 
   createNew() {
@@ -303,7 +334,6 @@ export class TargetGroupManagerComponent implements OnInit {
       this.isEditing.set(true);
       this.form.reset({ id: '', name: '', description: '' });
       this.targets.clear();
-      this.addTargetRaw({ id: '', name: '', unit: 'ppb' });
   }
 
   cancelEdit() {
@@ -311,16 +341,15 @@ export class TargetGroupManagerComponent implements OnInit {
       this.selectedGroup.set(null);
   }
 
-  addTarget() { this.addTargetRaw({ id: '', name: '', unit: 'ppb' }); }
-  
   private addTargetRaw(t: Partial<SopTarget>) {
+      const masterTarget = t.id ? this.validTargetMap().get(t.id) : undefined;
       this.targets.push(this.fb.group({
-          id: [t.id || '', Validators.required],
-          name: [t.name || '', Validators.required],
-          unit: [t.unit || ''],
+          id: [masterTarget?.id || t.id || '', Validators.required],
+          name: [masterTarget?.name || t.name || '', Validators.required],
+          unit: [masterTarget?.default_unit || t.unit || 'ppb'],
           lod: [t.lod || ''],
           loq: [t.loq || ''],
-          isMasterLinked: [t.isMasterLinked || false] // Include hidden flag
+          isMasterLinked: [!!masterTarget]
       }));
   }
 
@@ -330,17 +359,9 @@ export class TargetGroupManagerComponent implements OnInit {
       }
   }
 
-  onTargetNameChange(index: number, event: any) {
-      const isLinked = this.targets.at(index).get('isMasterLinked')?.value;
-      
-      // Only auto-generate ID if NOT linked to Master
-      if (!isLinked) {
-          const val = event.target.value;
-          const idControl = this.targets.at(index).get('id');
-          if (idControl && (idControl.pristine || !idControl.value)) {
-              idControl.setValue(generateSlug(val));
-          }
-      }
+  areAllTargetsMatched(): boolean {
+      const masterMap = this.validTargetMap();
+      return this.targets.controls.every(control => masterMap.has(control.get('id')?.value || ''));
   }
 
   async saveGroup() {
@@ -350,15 +371,40 @@ export class TargetGroupManagerComponent implements OnInit {
           return;
       }
 
+      if (this.targets.length === 0) {
+          this.toast.show('Bộ chỉ tiêu phải có ít nhất một Target từ Thư viện Gốc.', 'error');
+          return;
+      }
+
+      if (!this.areAllTargetsMatched()) {
+          this.toast.show('Có chỉ tiêu không tồn tại trong Target Master. Vui lòng Chọn lại trước khi lưu.', 'error');
+          return;
+      }
+
       this.isProcessing.set(true);
-      const val = this.form.value;
-      
-      const cleanTargets = (val.targets as SopTarget[])
-          .filter(t => t.name)
-          .map(t => {
-              if (!t.id) t.id = generateSlug(t.name);
-              return t;
-          });
+      const val = this.form.getRawValue();
+      const masterMap = this.validTargetMap();
+      const rawTargets = val.targets as SopTarget[];
+      const uniqueIds = new Set(rawTargets.map(target => target.id));
+
+      if (uniqueIds.size !== rawTargets.length) {
+          this.toast.show('Không thể lưu vì có mã ID chỉ tiêu bị trùng.', 'error');
+          this.isProcessing.set(false);
+          return;
+      }
+
+      // Master Target là nguồn dữ liệu duy nhất cho identity và đơn vị của chỉ tiêu.
+      const cleanTargets: SopTarget[] = rawTargets.map(target => {
+          const masterTarget = masterMap.get(target.id)!;
+          return {
+              id: masterTarget.id,
+              name: masterTarget.name,
+              unit: masterTarget.default_unit || 'ppb',
+              lod: target.lod || '',
+              loq: target.loq || '',
+              isMasterLinked: true
+          };
+      });
 
       const group: TargetGroup = {
           id: val.id!,
@@ -389,63 +435,7 @@ export class TargetGroupManagerComponent implements OnInit {
       }
   }
 
-  async syncToMasterTargets() {
-      const validTargets = (this.targets.getRawValue() as SopTarget[])
-          .map(target => ({
-              ...target,
-              id: target.id?.trim(),
-              name: target.name?.trim(),
-              unit: target.unit?.trim() || 'ppb'
-          }))
-          .filter(target => target.id && target.name);
-
-      if (validTargets.length === 0) {
-          this.toast.show('Không có chỉ tiêu hợp lệ để đồng bộ.', 'info');
-          return;
-      }
-
-      const uniqueIds = new Set(validTargets.map(target => target.id));
-      if (uniqueIds.size !== validTargets.length) {
-          this.toast.show('Không thể đồng bộ vì có mã ID chỉ tiêu bị trùng.', 'error');
-          return;
-      }
-
-      const masterAnalytes: MasterAnalyte[] = validTargets.map(target => ({
-          id: target.id,
-          name: target.name,
-          default_unit: target.unit || 'ppb'
-      }));
-
-      this.isSyncing.set(true);
-      try {
-          // Merge để không làm mất CAS, công thức hóa học hoặc mô tả đã có trong Master Library.
-          await this.masterService.saveBatch(masterAnalytes, { merge: true });
-
-          const syncedIds = new Set(masterAnalytes.map(target => target.id));
-          this.targets.controls.forEach(control => {
-              if (syncedIds.has(control.get('id')?.value)) {
-                  control.patchValue({ isMasterLinked: true }, { emitEvent: false });
-              }
-          });
-
-          this.libraryTargets.update(current => {
-              const merged = new Map(current.map(target => [target.id, target]));
-              masterAnalytes.forEach(target => {
-                  merged.set(target.id, { ...merged.get(target.id), ...target });
-              });
-              return Array.from(merged.values())
-                  .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-          });
-
-          this.toast.show(`Đã đồng bộ ${masterAnalytes.length} chỉ tiêu về Thư viện Master.`, 'success');
-      } catch (e: any) {
-          this.toast.show('Lỗi đồng bộ: ' + (e.message || 'Unknown'), 'error');
-      } finally {
-          this.isSyncing.set(false);
-      }
-  }
-
-  // --- CHANGED: LIBRARY MODAL LOGIC (Fetch from Master) ---
+  // --- MASTER LIBRARY: nguồn duy nhất để tạo và thay thế Target trong Group ---
 
   filteredLibraryTargets = computed(() => {
       const term = this.librarySearchTerm().toLowerCase().trim();
@@ -456,28 +446,57 @@ export class TargetGroupManagerComponent implements OnInit {
       );
   });
 
-  async openLibraryModal() {
+  private async loadMasterTargets() {
+      if (this.isLibraryLoading()) return;
+      this.isLibraryLoading.set(true);
+      try {
+          const data = await this.masterService.getAll();
+          this.libraryTargets.set(data);
+          this.hydrateTargetsFromMaster();
+      } catch(e) {
+          this.toast.show('Lỗi kết nối Master Library', 'error');
+      } finally {
+          this.isLibraryLoading.set(false);
+      }
+  }
+
+  private hydrateTargetsFromMaster() {
+      const masterMap = this.validTargetMap();
+      this.targets.controls.forEach(control => {
+          const masterTarget = masterMap.get(control.get('id')?.value || '');
+          if (masterTarget) {
+              control.patchValue({
+                  id: masterTarget.id,
+                  name: masterTarget.name,
+                  unit: masterTarget.default_unit || 'ppb',
+                  isMasterLinked: true
+              }, { emitEvent: false });
+          } else {
+              control.patchValue({ isMasterLinked: false }, { emitEvent: false });
+          }
+      });
+  }
+
+  async openLibraryModal(index?: number) {
+      this.replacingTargetIndex.set(typeof index === 'number' ? index : null);
       this.selectedLibraryIds.set(new Set());
       this.librarySearchTerm.set('');
       this.showLibraryModal.set(true);
       
       if (this.libraryTargets().length === 0) {
-          this.isLibraryLoading.set(true);
-          try {
-              const data = await this.masterService.getAll();
-              this.libraryTargets.set(data);
-          } catch(e) {
-              this.toast.show('Lỗi kết nối Master Library', 'error');
-          } finally {
-              this.isLibraryLoading.set(false);
-          }
+          await this.loadMasterTargets();
       }
   }
 
   toggleLibrarySelection(id: string) {
       this.selectedLibraryIds.update(ids => {
           const newSet = new Set(ids);
-          if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
+          if (newSet.has(id)) {
+              newSet.delete(id);
+          } else {
+              if (this.replacingTargetIndex() !== null) newSet.clear();
+              newSet.add(id);
+          }
           return newSet;
       });
   }
@@ -494,6 +513,33 @@ export class TargetGroupManagerComponent implements OnInit {
   importSelectedLibraryTargets() {
       const selectedIds = this.selectedLibraryIds();
       if (selectedIds.size === 0) return;
+
+      const replaceIndex = this.replacingTargetIndex();
+      if (replaceIndex !== null) {
+          const selectedId = Array.from(selectedIds)[0];
+          const masterTarget = this.libraryTargets().find(target => target.id === selectedId);
+          if (!masterTarget) return;
+
+          const duplicateIndex = this.targets.controls.findIndex((control, index) =>
+              index !== replaceIndex && control.get('id')?.value === masterTarget.id
+          );
+          if (duplicateIndex !== -1) {
+              this.toast.show('Chỉ tiêu này đã có trong bộ.', 'info');
+              return;
+          }
+
+          const currentTarget = this.targets.at(replaceIndex);
+          currentTarget.patchValue({
+              id: masterTarget.id,
+              name: masterTarget.name,
+              unit: masterTarget.default_unit || 'ppb',
+              isMasterLinked: true
+          });
+          this.toast.show(`Đã thay thế bằng chỉ tiêu "${masterTarget.name}".`, 'success');
+          this.showLibraryModal.set(false);
+          this.replacingTargetIndex.set(null);
+          return;
+      }
 
       const currentTargets = this.form.get('targets') as FormArray;
       const existingIds = new Set(
@@ -523,5 +569,6 @@ export class TargetGroupManagerComponent implements OnInit {
           this.toast.show('Các chỉ tiêu đã chọn đều có sẵn trong danh sách.', 'info');
       }
       this.showLibraryModal.set(false);
+      this.replacingTargetIndex.set(null);
   }
 }
