@@ -102,7 +102,15 @@ import { Router } from '@angular/router';
                                     <h3 class="font-bold text-slate-700 text-sm uppercase flex items-center gap-2">
                                         <i class="fa-solid fa-list-ul text-teal-500"></i> Danh sách Chỉ tiêu
                                     </h3>
-                                    <div class="flex gap-2">
+                                    <div class="flex flex-wrap justify-end gap-2">
+                                        <button type="button" (click)="syncToMasterTargets()" [disabled]="isSyncing() || targets.length === 0" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            @if(isSyncing()) {
+                                                <i class="fa-solid fa-spinner fa-spin"></i>
+                                            } @else {
+                                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                            }
+                                            Đồng bộ về Thư viện
+                                        </button>
                                         <!-- NEW: Import from Master Library -->
                                         <button type="button" (click)="openLibraryModal()" class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95">
                                             <i class="fa-solid fa-book-medical"></i> Chọn từ Master Library
@@ -243,6 +251,7 @@ export class TargetGroupManagerComponent implements OnInit {
   
   isLoading = signal(false);
   isProcessing = signal(false);
+  isSyncing = signal(false);
   isEditing = signal(false);
 
   // Library Modal State
@@ -377,6 +386,62 @@ export class TargetGroupManagerComponent implements OnInit {
           this.toast.show('Đã xóa');
           this.loadGroups();
           if (this.selectedGroup()?.id === g.id) this.cancelEdit();
+      }
+  }
+
+  async syncToMasterTargets() {
+      const validTargets = (this.targets.getRawValue() as SopTarget[])
+          .map(target => ({
+              ...target,
+              id: target.id?.trim(),
+              name: target.name?.trim(),
+              unit: target.unit?.trim() || 'ppb'
+          }))
+          .filter(target => target.id && target.name);
+
+      if (validTargets.length === 0) {
+          this.toast.show('Không có chỉ tiêu hợp lệ để đồng bộ.', 'info');
+          return;
+      }
+
+      const uniqueIds = new Set(validTargets.map(target => target.id));
+      if (uniqueIds.size !== validTargets.length) {
+          this.toast.show('Không thể đồng bộ vì có mã ID chỉ tiêu bị trùng.', 'error');
+          return;
+      }
+
+      const masterAnalytes: MasterAnalyte[] = validTargets.map(target => ({
+          id: target.id,
+          name: target.name,
+          default_unit: target.unit || 'ppb'
+      }));
+
+      this.isSyncing.set(true);
+      try {
+          // Merge để không làm mất CAS, công thức hóa học hoặc mô tả đã có trong Master Library.
+          await this.masterService.saveBatch(masterAnalytes, { merge: true });
+
+          const syncedIds = new Set(masterAnalytes.map(target => target.id));
+          this.targets.controls.forEach(control => {
+              if (syncedIds.has(control.get('id')?.value)) {
+                  control.patchValue({ isMasterLinked: true }, { emitEvent: false });
+              }
+          });
+
+          this.libraryTargets.update(current => {
+              const merged = new Map(current.map(target => [target.id, target]));
+              masterAnalytes.forEach(target => {
+                  merged.set(target.id, { ...merged.get(target.id), ...target });
+              });
+              return Array.from(merged.values())
+                  .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          });
+
+          this.toast.show(`Đã đồng bộ ${masterAnalytes.length} chỉ tiêu về Thư viện Master.`, 'success');
+      } catch (e: any) {
+          this.toast.show('Lỗi đồng bộ: ' + (e.message || 'Unknown'), 'error');
+      } finally {
+          this.isSyncing.set(false);
       }
   }
 
