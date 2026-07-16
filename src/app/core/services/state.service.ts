@@ -661,7 +661,7 @@ export class StateService implements OnDestroy {
 
   async submitRequest(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
     if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
-      this.toast.show('Vui lòng chọn ngày phân tích hợp lệ trước khi gửi yêu cầu.', 'error');
+      this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi gửi yêu cầu.', 'error');
       return;
     }
     try {
@@ -693,7 +693,7 @@ export class StateService implements OnDestroy {
   async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<{ logId: string, printJobId: string } | null> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
     if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
-      this.toast.show('Vui lòng chọn ngày phân tích hợp lệ trước khi duyệt.', 'error');
+      this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi duyệt.', 'error');
       return null;
     }
 
@@ -788,7 +788,7 @@ export class StateService implements OnDestroy {
   async approveRequest(req: Request) {
     if (!this.auth.canApprove()) return;
     if (!this.hasValidAnalysisDate(req.analysisDate)) {
-      this.toast.show('Yêu cầu chưa có ngày phân tích hợp lệ. Hãy chỉnh sửa trước khi duyệt.', 'error');
+      this.toast.show('Yêu cầu chưa có ngày kiểm nghiệm hợp lệ. Hãy bổ sung trước khi duyệt.', 'error');
       return;
     }
     if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
@@ -813,6 +813,8 @@ export class StateService implements OnDestroy {
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
         transaction.update(reqRef, {
           status: 'approved',
+          analysisDate: req.analysisDate,
+          inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
           approvedAt: serverTimestamp(),
           lastUpdated: serverTimestamp(),
           ...(currentSop ? this.buildSopTraceability(currentSop) : {})
@@ -935,7 +937,7 @@ export class StateService implements OnDestroy {
   async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
     if (!this.auth.canApprove()) return;
     if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
-      this.toast.show('Vui lòng chọn ngày phân tích hợp lệ trước khi cập nhật.', 'error');
+      this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi cập nhật.', 'error');
       return false;
     }
     if (!await this.confirmationService.confirm('Xác nhận lưu thay đổi và cập nhật kho?')) return;

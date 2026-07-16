@@ -873,8 +873,9 @@ export class SmartBatchComponent {
                           }
                       }
                       
-                      const inputs: Record<string, any> = {};
+                      const inputs: Record<string, any> = { analysisDate: this.getLocalTodayDate() };
                       forcedSop.inputs.forEach(i => inputs[i.var] = i.default);
+                      inputs['analysisDate'] ||= this.getLocalTodayDate();
                       inputs['n_sample'] = blockSamples.size;
                       if (forcedSop.device) {
                           inputs['device'] = forcedSop.device;
@@ -996,8 +997,9 @@ export class SmartBatchComponent {
               const batchTargets = (bestFit.sop.targets || []).filter(t => batchTargetIds.has(getCanonicalId(t.name)));
 
               // Calculate Resources
-              const inputs: Record<string, any> = {};
+              const inputs: Record<string, any> = { analysisDate: this.getLocalTodayDate() };
               bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
+              inputs['analysisDate'] ||= this.getLocalTodayDate();
               inputs['n_sample'] = batchSamples.size;
               if (bestFit.sop.device) {
                   inputs['device'] = bestFit.sop.device;
@@ -1087,6 +1089,31 @@ export class SmartBatchComponent {
           return next;
       });
       this.validateGlobalStock();
+  }
+
+  private getLocalTodayDate(): string {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+  }
+
+  private isValidAnalysisDate(value: unknown): value is string {
+      if (typeof value !== 'string') return false;
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+      if (!match) return false;
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const candidate = new Date(year, month - 1, day);
+      return candidate.getFullYear() === year
+          && candidate.getMonth() === month - 1
+          && candidate.getDate() === day;
+  }
+
+  hasInvalidAnalysisDates(): boolean {
+      return this.batches().some(batch => !this.isValidAnalysisDate(batch.inputValues['analysisDate']));
   }
 
   toggleBatchDetails(index: number) {
@@ -1650,6 +1677,10 @@ export class SmartBatchComponent {
           this.toast.show('Bạn không có quyền duyệt.', 'error');
           return;
       }
+      if (this.hasInvalidAnalysisDates()) {
+          this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ cho tất cả các mẻ.', 'error');
+          return;
+      }
       this.validateGlobalStock();
       if (this.hasCriticalMissing()) {
           this.toast.show('Kho không đủ đáp ứng. Vui lòng kiểm tra lại.', 'error');
@@ -1663,8 +1694,6 @@ export class SmartBatchComponent {
           
           try {
               for (const batch of this.batches()) {
-                  const todayStr = new Date().toISOString().split('T')[0];
-                  
                   const sampleTargetMap: Record<string, string[]> = {};
                   if (batch.tasks && batch.tasks.length > 0) {
                       batch.tasks.forEach(t => {
@@ -1688,13 +1717,14 @@ export class SmartBatchComponent {
                       sampleList: Array.from(batch.samples),
                       targetIds: batch.targets.map(t => t.id),
                       sampleTargetMap,
-                      analysisDate: batch.inputValues['analysisDate'] || todayStr
+                      analysisDate: batch.inputValues['analysisDate']
                   };
                   const res = await this.state.directApproveAndPrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap);
                   if (res) {
                       jobs.push({
                           sop: batch.sop, inputs: finalInputs, margin: batch.safetyMargin, items: batch.resourceImpact,
-                          date: new Date(), user: this.state.getCurrentUserName(), requestId: res.logId
+                          date: new Date(), user: this.state.getCurrentUserName(),
+                          analysisDate: finalInputs.analysisDate, requestId: res.logId
                       });
                   }
               }

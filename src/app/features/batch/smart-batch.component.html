@@ -779,9 +779,22 @@
 
                             <!-- Controls (Gray Block - Always Visible) -->
                             <div class="bg-slate-50 dark:bg-slate-800/50 p-3 border-b border-slate-100 dark:border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <!-- Analysis Date (business date used by the daily sample tracker) -->
+                                <div class="group">
+                                    <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1 truncate" title="Ngày kiểm nghiệm dự kiến">
+                                        Ngày kiểm nghiệm <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="date"
+                                           required
+                                           [ngModel]="batch.inputValues['analysisDate']"
+                                           (ngModelChange)="updateBatchInput(batchIdx, 'analysisDate', $event)"
+                                           [class.border-red-400]="!batch.inputValues['analysisDate']"
+                                           class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 dark:focus:border-teal-400 transition h-8 shadow-sm [color-scheme:light] dark:[color-scheme:dark]">
+                                </div>
+
                                 <!-- DYNAMIC INPUTS -->
                                 @for (inp of batch.sop.inputs; track inp.var) {
-                                    @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin') {
+                                    @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin' && inp.var !== 'analysisDate') {
                                         <div class="group">
                                             <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1 truncate" [title]="inp.label">{{inp.label}}</label>
                                             @switch (inp.type) {
@@ -1130,7 +1143,7 @@
                         }
 
                         <button (click)="executeAll()"
-                                [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || !coverageMetrics().isFullyCovered"
+                                [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || hasInvalidAnalysisDates() || !coverageMetrics().isFullyCovered"
                                 class="flex-[2] md:flex-none px-4 lg:px-8 py-3 bg-slate-900 dark:bg-slate-700 text-white hover:bg-black dark:hover:bg-slate-600 rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
                             @else { <i class="fa-solid fa-paper-plane"></i> Duyệt & In Phiếu }

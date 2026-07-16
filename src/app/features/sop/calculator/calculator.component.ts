@@ -1,7 +1,7 @@
 
 import { Component, inject, input, output, effect, signal, computed, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router'; 
 import { StateService } from '../../../core/services/state.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -153,7 +153,10 @@ export class CalculatorComponent implements OnDestroy {
       }
   }
 
-  form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
+  form = signal<FormGroup>(this.fb.group({
+    safetyMargin: [10],
+    analysisDate: [this.getTodayDate(), Validators.required]
+  }));
   private formValueSub?: Subscription;
   calculatedItems = signal<CalculatedItem[]>([]);
   aggregateGHSWarnings = computed(() => {
@@ -225,8 +228,15 @@ export class CalculatorComponent implements OnDestroy {
         if (s.id === this.currentFormSopId) return;
         this.currentFormSopId = s.id;
         this.formValueSub?.unsubscribe();
-        const controls: Record<string, any> = { safetyMargin: [10], analysisDate: [this.getTodayDate()] };
-        s.inputs.forEach(i => { if (i.var !== 'safetyMargin') controls[i.var] = [i.default !== undefined ? i.default : 0]; });
+        const controls: Record<string, any> = {
+          safetyMargin: [10],
+          analysisDate: [this.getTodayDate(), Validators.required]
+        };
+        s.inputs.forEach(i => {
+          if (i.var !== 'safetyMargin' && i.var !== 'analysisDate') {
+            controls[i.var] = [i.default !== undefined ? i.default : 0];
+          }
+        });
         const newForm = this.fb.group(controls);
         
         const cached = this.state.cachedCalculatorState();
@@ -321,7 +331,13 @@ export class CalculatorComponent implements OnDestroy {
   }
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
-  getTodayDate(): string { return new Date().toISOString().split('T')[0]; }
+  getTodayDate(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   setMarginMode(mode: 'auto' | 'manual') {
       this.marginMode.set(mode);

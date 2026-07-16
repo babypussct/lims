@@ -1,6 +1,7 @@
 
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { cleanName, formatNum, formatDate, formatSampleList } from '../../shared/utils/utils';
@@ -14,7 +15,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative">
         <!-- Header Card -->
@@ -112,10 +113,23 @@ import { Router } from '@angular/router';
                                                 </span>
                                              }
 
-                                             <span class="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
-                                                <i class="fa-regular fa-calendar"></i>
-                                                {{ getAnalysisDate(req) }}
-                                             </span>
+                                             @if (req.status === 'pending' && state.isAdmin()) {
+                                                <label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
+                                                    <i class="fa-regular fa-calendar text-blue-500"></i>
+                                                    <span>Ngày kiểm nghiệm <span class="text-red-500">*</span></span>
+                                                    <input type="date"
+                                                           required
+                                                           [ngModel]="getPendingAnalysisDate(req)"
+                                                           (ngModelChange)="setPendingAnalysisDate(req.id, $event)"
+                                                           class="h-8 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 [color-scheme:light] dark:[color-scheme:dark]"
+                                                           [class.border-red-400]="!getPendingAnalysisDate(req)">
+                                                </label>
+                                             } @else {
+                                                <span class="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
+                                                    <i class="fa-regular fa-calendar"></i>
+                                                    {{ getAnalysisDate(req) }}
+                                                </span>
+                                             }
                                         </div>
                                         
                                         <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{req.sopName}}</h3>
@@ -157,7 +171,7 @@ import { Router } from '@angular/router';
                                     @if(state.isAdmin()) {
                                         <div class="flex flex-row md:flex-col gap-2 shrink-0 md:w-36 mt-2 md:mt-0">
                                             @if (currentTab() === 'pending') {
-                                                <button (click)="approve(req)" [disabled]="!!processingId()" 
+                                                <button (click)="approve(req)" [disabled]="!!processingId() || !getPendingAnalysisDate(req)"
                                                         class="flex-1 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:shadow-md dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-check"></i> Duyệt
                                                 </button>
@@ -302,6 +316,7 @@ export class RequestListComponent implements OnInit {
   
   currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
   processingId = signal<string | null>(null);
+  pendingAnalysisDates = signal<Record<string, string>>({});
   isLoading = signal(true);
   showRevokeModal = signal<boolean>(false);
   selectedRevokeRequest = signal<Request | null>(null);
@@ -366,18 +381,26 @@ export class RequestListComponent implements OnInit {
           const [year, month, day] = req.analysisDate.split('-');
           return `${day}/${month}/${year}`;
       }
-      const timestamp = req.timestamp;
-      const d = (timestamp && typeof timestamp.toDate === 'function') ? timestamp.toDate() : new Date(timestamp);
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      return 'Chưa thiết lập ngày kiểm nghiệm';
+  }
+
+  getPendingAnalysisDate(req: Request): string {
+      return this.pendingAnalysisDates()[req.id] ?? req.analysisDate ?? '';
+  }
+
+  setPendingAnalysisDate(requestId: string, analysisDate: string) {
+      this.pendingAnalysisDates.update(current => ({ ...current, [requestId]: analysisDate }));
   }
 
   async approve(req: Request) {
       if (this.processingId()) return;
+      const analysisDate = this.getPendingAnalysisDate(req);
       this.processingId.set(req.id);
-      try { await this.state.approveRequest(req); } finally { this.processingId.set(null); }
+      try {
+          await this.state.approveRequest({ ...req, analysisDate });
+      } finally {
+          this.processingId.set(null);
+      }
   }
 
   async reject(req: Request) {
