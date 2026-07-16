@@ -195,7 +195,7 @@
                          [class.cl-card-compact]="layoutHint === 'compact'"
                          [class.cl-card-standard]="layoutHint === 'standard'"
                          [class.cl-card-wide]="layoutHint === 'wide'">
-                <header class="cl-card-header px-4 py-3 border-b border-slate-100 dark:border-slate-700/80 flex flex-col justify-between gap-3">
+                <header class="cl-card-header px-4 border-b border-slate-100 dark:border-slate-700/80 flex flex-col justify-between gap-3">
                   <div class="min-w-0 flex items-start gap-3">
                     <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-black shrink-0">{{batchIndex + 1}}</div>
                     <div class="min-w-0">
@@ -236,8 +236,8 @@
 
                 <div class="divide-y divide-slate-100 dark:divide-slate-700/70">
                   @for (group of visibleBatchGroups(batch); track group.signature; let groupIndex = $index) {
-                    <div class="cl-assignment-row cl-card-body-row p-4 grid gap-4">
-                      <div class="min-w-0">
+                    <div class="cl-assignment-row cl-card-body-row grid">
+                      <div class="cl-assignment-samples">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
                             Mẫu thực hiện@if (batch.groups.length > 1) { <span> · Nhóm {{groupIndex + 1}}</span> }
@@ -280,7 +280,7 @@
                 </div>
 
                 @if (hasHiddenBatchContent(batch)) {
-                  <footer class="px-4 py-2.5 bg-slate-50/70 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700/70 flex items-center justify-between gap-3">
+                  <footer class="cl-card-footer bg-slate-50/70 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700/70 flex items-center justify-between gap-3">
                     @if (!isBatchExpanded(batch.requestId) && hiddenBatchGroupCount(batch) > 0) {
                       <span class="text-[10px] font-bold text-slate-400">+ {{hiddenBatchGroupCount(batch)}} nhóm phân công</span>
                     } @else {

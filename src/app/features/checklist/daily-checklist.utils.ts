@@ -1,5 +1,5 @@
 import { Request } from '../../core/models/request.model';
-import { naturalCompare } from '../../shared/utils/utils';
+import { formatSampleList, naturalCompare } from '../../shared/utils/utils';
 import { getAssignedTargetsForSample, getCanonicalId, normalizeSampleCode } from '../results/shared/compound-id-resolver';
 import {
   ApprovedBatchOverview,
@@ -160,7 +160,7 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBat
     const groups = Array.from(targetSetMap.values())
       .map(group => {
         const sampleIds = [...group.sampleIds].sort(naturalCompare);
-        return { ...group, sampleIds, formattedSamples: formatDailySampleList(sampleIds) };
+        return { ...group, sampleIds, formattedSamples: formatSampleList(sampleIds) };
       })
       .sort((a, b) => {
         if (a.signature === '__unassigned__') return 1;
@@ -191,61 +191,6 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[]): DailyBat
 
 export function isTrackablePhysicalBatch(request: Request): boolean {
   return APPROVED_BATCH_STATUSES.has(request.status) && !request.isVirtualMaster;
-}
-
-export function formatDailySampleList(sampleIds: string[]): string {
-  interface SampleToken {
-    original: string;
-    prefix: string;
-    numericValue?: number;
-    numericWidth?: number;
-  }
-
-  const tokens = uniqueSampleCodes(sampleIds)
-    .sort(naturalCompare)
-    .map<SampleToken>(original => {
-      if (original.includes(';')) return { original, prefix: original };
-      const match = /^(.*?)(\d+)$/.exec(original);
-      if (!match) return { original, prefix: original };
-      return {
-        original,
-        prefix: match[1],
-        numericValue: Number(match[2]),
-        numericWidth: match[2].length
-      };
-    });
-  if (tokens.length === 0) return '';
-
-  const ranges: string[] = [];
-  let start = tokens[0];
-  let previous = tokens[0];
-  let rangeLength = 1;
-
-  const flush = () => {
-    if (rangeLength === 1) ranges.push(start.original);
-    else if (rangeLength === 2) ranges.push(`${start.original}; ${previous.original}`);
-    else ranges.push(`${start.original} -> ${previous.original}`);
-  };
-
-  for (let index = 1; index < tokens.length; index++) {
-    const current = tokens[index];
-    const isSequential = previous.numericValue !== undefined
-      && current.numericValue !== undefined
-      && previous.prefix === current.prefix
-      && previous.numericWidth === current.numericWidth
-      && current.numericValue === previous.numericValue + 1;
-    if (isSequential) {
-      previous = current;
-      rangeLength += 1;
-      continue;
-    }
-    flush();
-    start = current;
-    previous = current;
-    rangeLength = 1;
-  }
-  flush();
-  return ranges.join('; ');
 }
 
 function uniqueStrings(values: string[]): string[] {

@@ -80,15 +80,21 @@ interface AvailableDateOption {
     .cl-batch-grid[data-view-mode='list'] .cl-batch-card { grid-column: 1 / -1; }
 
     .cl-assignment-row { grid-template-columns: minmax(0, 1fr); }
+    .cl-assignment-samples { min-width: 0; }
     .cl-assignment-targets { border-top: 1px solid rgb(241 245 249); padding-top: 12px; }
     .dark .cl-assignment-targets { border-color: rgb(51 65 85 / 0.7); }
+    .cl-card-header { padding-block: 10px; }
+    .cl-card-body-row { padding: 12px; gap: 10px; }
+    .cl-card-footer { padding: 8px 16px; }
 
     @container (min-width: 520px) {
       .cl-card-header { flex-direction: row; align-items: flex-start; }
-    }
-
-    @container (min-width: 620px) {
-      .cl-assignment-row { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+      .cl-card-body-row { padding: 14px 16px; gap: 12px; }
+      .cl-assignment-row {
+        grid-template-columns: minmax(140px, max-content) minmax(0, 1fr);
+        max-width: 100%;
+      }
+      .cl-assignment-samples { max-width: min(45cqi, 340px); }
       .cl-assignment-targets {
         border-top: 0;
         border-left: 1px solid rgb(241 245 249);
@@ -101,7 +107,6 @@ interface AvailableDateOption {
     @container (max-width: 459px) {
       .cl-copy-label { display: none; }
       .cl-card-header { padding-inline: 12px; }
-      .cl-card-body-row { padding: 12px; gap: 12px; }
     }
 
     @container batch-grid-shell (max-width: 759px) {

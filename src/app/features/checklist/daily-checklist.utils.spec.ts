@@ -5,7 +5,6 @@ import { getAssignedTargetsForSample } from '../results/shared/compound-id-resol
 import {
   buildApprovedBatchOverviews,
   buildDailyBatchViews,
-  formatDailySampleList,
   getRequestDateValue,
   isValidDateInput,
   toDate
@@ -104,26 +103,15 @@ test('batch without sample codes is retained with its assigned targets', () => {
   assert.deepEqual(view.groups[0].targetNames, ['Tên T1', 'Tên T2']);
 });
 
-test('continuous sample ranges stay compact for large batches', () => {
-  const sampleList = Array.from({ length: 50 }, (_, index) => `L${String(index + 1).padStart(3, '0')}`);
+test('LIMS sample codes with a fixed two-digit suffix stay compact for large batches', () => {
+  const sampleList = Array.from({ length: 50 }, (_, index) => `L${String(index + 1).padStart(2, '0')}15`);
   const overviews = buildApprovedBatchOverviews([
     request({ sampleList, targetIds: ['T1'] })
   ], '2026-07-16', (_item, targetId) => targetId);
   const [view] = buildDailyBatchViews(overviews);
 
   assert.equal(view.groups.length, 1);
-  assert.equal(view.groups[0].formattedSamples, 'L001 -> L050');
-});
-
-test('sample range compression preserves gaps, padding and pooled identifiers', () => {
-  assert.equal(
-    formatDailySampleList(['L001', 'L003', 'L004', 'L005', 'L09', 'L010']),
-    'L001; L003 -> L005; L09; L010'
-  );
-  assert.equal(
-    formatDailySampleList(['A001;A002', 'A001;A003']),
-    'A001;A002; A001;A003'
-  );
+  assert.equal(view.groups[0].formattedSamples, 'L0115 -> L5015');
 });
 
 test('missing analysisDate is not silently replaced by approval date', () => {
@@ -133,7 +121,7 @@ test('missing analysisDate is not silently replaced by approval date', () => {
 });
 
 test('adaptive screen planner keeps a simple compressed batch compact', () => {
-  const sampleList = Array.from({ length: 50 }, (_, index) => `L${String(index + 1).padStart(3, '0')}`);
+  const sampleList = Array.from({ length: 50 }, (_, index) => `L${String(index + 1).padStart(2, '0')}15`);
   const [overview] = buildApprovedBatchOverviews([
     request({ sampleList, targetIds: ['T1', 'T2'] })
   ], '2026-07-16', (_item, targetId) => targetId);
@@ -166,5 +154,16 @@ test('adaptive screen planner uses standard width for two assignment groups', ()
   ], '2026-07-16', (_item, targetId) => targetId);
   const [view] = buildDailyBatchViews([overview]);
 
+  assert.equal(computeDailyBatchLayoutHint(view, 1200), 'standard');
+});
+
+test('hidden target chips do not force a batch to wide layout', () => {
+  const targetIds = Array.from({ length: 14 }, (_, index) => `T${index + 1}`);
+  const [overview] = buildApprovedBatchOverviews([
+    request({ sampleList: ['L0115', 'L0215', 'L0315'], targetIds })
+  ], '2026-07-16', (_item, targetId) => `Chỉ tiêu ${targetId}`);
+  const [view] = buildDailyBatchViews([overview]);
+
+  assert.equal(view.uniqueTargets, 14);
   assert.equal(computeDailyBatchLayoutHint(view, 1200), 'standard');
 });

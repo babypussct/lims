@@ -27,11 +27,14 @@ export function computeDailyBatchLayoutHint(
     0
   );
   const maxTargetTextLength = batch.groups.reduce(
-    (max, group) => Math.max(max, group.targetNames.reduce((sum, name) => sum + name.length, 0)),
+    (max, group) => Math.max(
+      max,
+      group.targetNames.slice(0, 6).reduce((sum, name) => sum + name.length, 0)
+    ),
     0
   );
 
-  if (groupCount >= 3 || maxSampleTextLength > 80 || maxTargetTextLength > 120) return 'wide';
-  if (groupCount === 2 || batch.uniqueTargets > 6 || maxSampleTextLength > 40) return 'standard';
+  if (groupCount >= 3 || maxSampleTextLength > 55 || maxTargetTextLength > 80) return 'wide';
+  if (groupCount === 2 || maxSampleTextLength > 25 || maxTargetTextLength > 50) return 'standard';
   return 'compact';
 }
