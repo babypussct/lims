@@ -354,11 +354,6 @@
                 }
               </tbody>
             </table>
-
-            <footer class="cl-print-footer">
-              <span>{{boardSummary().batches}} mẻ · {{boardSummary().samples}} mã mẫu · {{boardSummary().targets}} chỉ tiêu</span>
-              <span>In lúc {{formatTimestamp(printGeneratedAt())}}</span>
-            </footer>
           </div>
 
           <div class="cl-print-compact-layout">
@@ -411,14 +406,6 @@
                     </div>
                   }
                 </div>
-
-                <footer class="cl-print-footer">
-                  <span>{{boardSummary().batches}} mẻ · {{boardSummary().samples}} mã mẫu · {{boardSummary().targets}} chỉ tiêu</span>
-                  <span>
-                    @if (compactPrintPages().length > 1) { Trang {{pageIndex + 1}}/{{compactPrintPages().length}} · }
-                    In lúc {{formatTimestamp(printGeneratedAt())}}
-                  </span>
-                </footer>
               </section>
             }
           </div>

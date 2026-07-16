@@ -478,10 +478,20 @@ interface AvailableDateOption {
 
       body.daily-checklist-printing #print-container .cl-print-compact-page {
         display: block !important;
+        position: relative !important;
+        box-sizing: border-box !important;
         break-inside: avoid-page !important;
         page-break-inside: avoid !important;
         break-after: page !important;
         page-break-after: always !important;
+      }
+
+      body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-page {
+        height: 265mm !important;
+      }
+
+      body.daily-checklist-printing.print-landscape-mode #print-container .cl-print-compact-page {
+        height: 178mm !important;
       }
 
       body.daily-checklist-printing #print-container .cl-print-compact-page-last {
@@ -493,6 +503,7 @@ interface AvailableDateOption {
         display: grid !important;
         align-items: start !important;
         gap: 4mm !important;
+        box-sizing: border-box !important;
       }
 
       body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-columns {
@@ -712,16 +723,6 @@ interface AvailableDateOption {
         color: #92400e !important;
       }
 
-      body.daily-checklist-printing #print-container .cl-print-footer {
-        display: flex !important;
-        justify-content: space-between !important;
-        gap: 8px !important;
-        margin-top: 3mm !important;
-        padding-top: 2mm !important;
-        border-top: 1px solid #cbd5e1 !important;
-        color: #64748b !important;
-        font-size: 7.5pt !important;
-      }
     }
   `]
 })
