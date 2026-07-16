@@ -131,6 +131,10 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     // 9. Hook cho SOP đặc thù (override trong subclass nếu cần)
     this.onSopSpecificInit?.();
 
+    // 9.1 Emit draft ngay sau init đặc thù để đảm bảo parent nhận draft đã được
+    // khởi tạo đầy đủ (tránh race condition với Firestore onSnapshot)
+    this.draftChanged.emit(this.draft);
+
     // 9.5 Khởi tạo bulk vial start cho đường chuẩn và mẫu thử nếu chạy Form Đơn
     if (this.draft.page1Data['printFormType'] === 'formDon') {
       const calPoints = this.draft.page1Data['calibPoints'];

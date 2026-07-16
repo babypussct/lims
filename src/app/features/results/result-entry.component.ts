@@ -450,7 +450,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           }
 
           // Cập nhật draft signal thời gian thực
-          this.draft.set(draftDoc);
+          // Chỉ cập nhật nếu đang loading lần đầu hoặc không có thay đổi chưa lưu
+          // để tránh overwrite các giá trị đã được onSopSpecificInit() khởi tạo
+          // nhưng chưa kịp auto-save vào Firestore
+          if (this.isLoading() || this.autoSaveStatus() === 'synced') {
+            this.draft.set(draftDoc);
+          }
         }
       }
       this.isLoading.set(false);
@@ -709,7 +714,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
-    this.draft.set(updatedDraft);
+    // Tạo shallow copy để Angular signal luôn nhận new reference,
+    // đảm bảo signal trigger change detection ngay cả khi child emit
+    // cùng object reference (e.g., sau onSopSpecificInit trong ngOnInit).
+    this.draft.set({ ...updatedDraft });
     if (this.autoSaveStatus() !== 'saving') {
       this.autoSaveStatus.set('modified');
     }

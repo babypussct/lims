@@ -364,18 +364,17 @@ export class ResultService {
       // 2. Lưu trữ dữ liệu lưới kết quả chi tiết ( results_details )
       //    KHÔNG lưu publishedBackup vào đây để tránh vượt giới hạn 40.000 index entries
       //    Dữ liệu backup đã được lưu an toàn trong sub-collection history khi xuất bản.
+      //    Dùng set() KHÔNG merge để thay thế hoàn toàn document, tự động xóa publishedBackup cũ.
       const detailPayload: any = {
         requestId,
         sopId: metaData['sopId'],
         page1Data: mergedPage1Data,
         resultData: mergedResultData,
         updatedAt: timestampStr,
-        updatedBy: userName,
-        // Xóa publishedBackup cũ (nếu có) để giảm index entries
-        publishedBackup: deleteField()
+        updatedBy: userName
       };
       
-      batch.set(detailRef, detailPayload, { merge: true });
+      batch.set(detailRef, detailPayload);
       
       // 3. Tự động đồng bộ Dữ liệu từ Master -> Child (nếu mẻ chạy này là Master Ảo)
       if (metaData['isVirtualMaster'] && Array.isArray(metaData['childRequestIds']) && metaData['childRequestIds'].length > 0) {
