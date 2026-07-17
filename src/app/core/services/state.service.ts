@@ -728,7 +728,7 @@ export class StateService implements OnDestroy {
       if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
       if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
 
-      await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), reqData);
+      await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), sanitizeForFirebase(reqData));
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
@@ -787,7 +787,7 @@ export class StateService implements OnDestroy {
         if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
         if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
 
-        transaction.set(reqRef, reqData);
+        transaction.set(reqRef, sanitizeForFirebase(reqData));
 
         const printData: PrintData = {
           sop,
@@ -1064,7 +1064,7 @@ export class StateService implements OnDestroy {
         if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
         else reqData.sampleTargetMap = deleteField();
 
-        transaction.update(reqRef, reqData);
+        transaction.update(reqRef, sanitizeForFirebase(reqData));
 
         // 4. Create a new log and print job for the update
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
