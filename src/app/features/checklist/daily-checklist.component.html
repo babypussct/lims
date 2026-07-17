@@ -205,7 +205,6 @@
                         <span>{{batch.uniqueTargets}} chỉ tiêu</span><span>•</span>
                         <span>{{batch.groups.length}} nhóm phân công</span>
                         @if (batch.sopVersion) { <span>• SOP v{{batch.sopVersion}}</span> }
-                        @if (batch.sopRef) { <span>• {{batch.sopRef}}</span> }
                       </div>
                     </div>
                   </div>
@@ -349,7 +348,6 @@
                             <div class="cl-print-sop">{{batch.sopName}}</div>
                             <div class="cl-print-meta">
                               @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                              @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
                             </div>
                             <div class="cl-print-qr-label">Quét để truy xuất</div>
                           </div>
@@ -401,7 +399,6 @@
                               <div class="cl-print-meta">
                                 <span>{{batch.uniqueSamples}} mẫu · {{batch.uniqueTargets}} chỉ tiêu</span>
                                 @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                                @if (batch.sopRef) { <span>{{batch.sopRef}}</span> }
                               </div>
                             </div>
                             <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">

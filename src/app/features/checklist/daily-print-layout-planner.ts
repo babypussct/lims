@@ -110,7 +110,7 @@ function evaluateListLayout(
     let batchStartedOnPage = false;
     let batchWasSplit = false;
     batch.groups.forEach(group => {
-      const batchText = `${batch.sopName} ${batch.sopRef || ''} v${batch.sopVersion || ''}`;
+      const batchText = `${batch.sopName} v${batch.sopVersion || ''}`;
       const sampleText = groupSamples ? group.formattedSamples : group.sampleIds.join(', ');
       const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
