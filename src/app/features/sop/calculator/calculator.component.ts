@@ -491,14 +491,20 @@ export class CalculatorComponent implements OnDestroy {
           sampleTargetMap[sample] = currentMap[sample] ? Array.from(currentMap[sample]) : targetIds;
       });
       
-      return { 
+      const payload: any = { 
           ...values, 
           safetyMargin: finalMargin, 
           sampleList: sampleList, 
           targetIds: targetIds,
-          sampleTargetMap: sampleTargetMap,
-          explicitGroupId: this.targetSelectionModified() ? undefined : this.selectedTargetGroupId() || undefined
+          sampleTargetMap: sampleTargetMap
       };
+
+      const explicitGroupId = this.targetSelectionModified() ? undefined : (this.selectedTargetGroupId() || undefined);
+      if (explicitGroupId) {
+          payload.explicitGroupId = explicitGroupId;
+      }
+
+      return payload;
   }
 
   async fetchData(sop: Sop) {
