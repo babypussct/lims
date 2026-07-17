@@ -343,19 +343,13 @@
                     <tr class="cl-print-assignment-row" [class.cl-print-batch-start]="groupIndex === 0">
                       <td>
                         <div class="cl-print-batch-cell">
-                          <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
                           <div class="cl-print-batch-info">
                             <div class="cl-print-sop">{{batch.sopName}}</div>
-                            <div class="cl-print-meta">
-                              @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                            </div>
-                            <div class="cl-print-qr-label">Quét để truy xuất</div>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div class="cl-print-samples">{{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}</div>
-                        <div class="cl-print-count">{{group.sampleIds.length}} mẫu</div>
                       </td>
                       <td>
                         @if (group.targetNames.length === 0) {
@@ -393,26 +387,20 @@
                       @for (batch of column; track batch.requestId) {
                         <section class="cl-print-compact-card">
                           <header class="cl-print-compact-head">
-                            <span class="cl-print-compact-index">{{boardBatches().indexOf(batch) + 1}}</span>
-                            <div class="cl-print-compact-title">
-                              <div>{{batch.sopName}}</div>
-                              <div class="cl-print-meta">
-                                <span>{{batch.uniqueSamples}} mẫu · {{batch.uniqueTargets}} chỉ tiêu</span>
-                                @if (batch.sopVersion) { <span>v{{batch.sopVersion}}</span> }
-                              </div>
-                            </div>
-                            <img class="cl-print-qr" [src]="getBatchQrCode(batch.requestId)" alt="QR truy xuất mẻ">
-                          </header>
+                             <span class="cl-print-compact-index">{{boardBatches().indexOf(batch) + 1}}</span>
+                             <div class="cl-print-compact-title">
+                               <div>{{batch.sopName}}</div>
+                             </div>
+                           </header>
 
                           @for (group of batch.groups; track group.signature; let groupIndex = $index) {
                             <div class="cl-print-compact-group">
-                              <div class="cl-print-compact-label">
-                                Mẫu thực hiện@if (batch.groups.length > 1) { · Nhóm {{groupIndex + 1}} } · {{group.sampleIds.length}} mẫu
-                              </div>
+                              @if (batch.groups.length > 1) {
+                                <div class="cl-print-compact-label">Nhóm {{groupIndex + 1}}</div>
+                              }
                               <div class="cl-print-compact-samples">
                                 {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
                               </div>
-                              <div class="cl-print-compact-label">Chỉ tiêu kiểm · {{group.targetNames.length}}</div>
                               @if (group.targetNames.length === 0) {
                                 <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
                               } @else if (group.targetScope.compact) {
