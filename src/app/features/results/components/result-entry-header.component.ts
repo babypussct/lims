@@ -16,7 +16,9 @@ export class ResultEntryHeaderComponent {
   @Input() historyList: any[] = [];
 
   // ── State Inputs ─────────────────────────────────────────────────────────
-  @Input() autoSaveStatus: 'synced' | 'modified' | 'saving' = 'synced';
+  @Input() autoSaveStatus: 'synced' | 'modified' | 'saving' | 'error' = 'synced';
+  @Input() lastSavedAt: Date | null = null;
+  @Input() hasExistingReport = false;
   @Input() isProcessing = false;
   @Input() isPublishing = false;
   @Input() isReadOnly = false;

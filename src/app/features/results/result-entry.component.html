@@ -5,6 +5,8 @@
     [draft]="draft()"
     [historyList]="historyList()"
     [autoSaveStatus]="autoSaveStatus()"
+    [lastSavedAt]="lastSavedAt()"
+    [hasExistingReport]="hasAnyActiveReports()"
     [isProcessing]="isProcessing()"
     [isPublishing]="isPublishing()"
     [isReadOnly]="isReadOnly()"
@@ -99,6 +101,8 @@
 
 
 
+      @if (renderDraftForm()) {
+      <div [class.pointer-events-none]="formIsReadOnly()" [class.opacity-95]="formIsReadOnly()">
       <!-- Render Type 3B Component (Vertical Lists per sample) -->
       @if (config() && config().formType === 'type3b') {
         @if (ENABLE_MODULAR_SOPS) {
@@ -276,6 +280,8 @@
           </div>
         }
       }
+      </div>
+      }
     } @else {
       <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
         <div class="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-500">
@@ -299,11 +305,11 @@
           <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-lg">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-          <h3 class="text-base font-bold">Xác nhận xóa hoàn toàn kết quả</h3>
+          <h3 class="text-base font-bold">Đưa mẻ về trạng thái ban đầu</h3>
         </div>
         
         <p class="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
-          Hành động này sẽ <strong class="text-red-600 dark:text-red-400">xóa sạch toàn bộ số liệu nhập liệu</strong> của mẻ chạy này và di chuyển các báo cáo PDF đã in trên Drive vào thư mục lưu trữ (Archived). Bạn không thể hoàn tác hành động này.
+          Hành động này sẽ <strong class="text-red-600 dark:text-red-400">xóa số liệu hiện tại và khởi tạo lại đầy đủ giá trị mặc định của SOP</strong>, giống hệt lần đầu mở mẻ. Các báo cáo PDF đã in được chuyển vào thư mục Archived. Bạn không thể hoàn tác hành động này.
         </p>
         
         <div class="mb-5">
@@ -325,7 +331,7 @@
           <button (click)="triggerResetResults()" 
                   [disabled]="resetConfirmText() !== 'XÓA' || isProcessing()"
                   class="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-40">
-            Xác nhận Xóa
+            Xóa &amp; Khởi tạo lại
           </button>
         </div>
       </div>

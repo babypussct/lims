@@ -22,6 +22,7 @@ import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
+import { SopDraftFactoryService } from './services/sop-draft-factory.service';
 
 // Isolated SOP presentational components
 import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
@@ -35,7 +36,6 @@ import { SopTbvtvTrongNuocGcmsmsEntryComponent } from './sops/sop-tbvtv-trong-nu
 import { SopTbvtvThucPhamGcmsmsEntryComponent } from './sops/sop-tbvtv-thuc-pham-gcmsms/sop-tbvtv-thuc-pham-gcmsms-entry.component';
 import { SopChloroformEntryComponent } from './sops/sop-chloroform/sop-chloroform-entry.component';
 import { SopNhomIEntryComponent } from './sops/sop-nhom-i/sop-nhom-i-entry.component';
-import { getAssignedTargetsForSample, isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -51,6 +51,14 @@ import { ResultRunMetadataComponent } from './components/result-run-metadata.com
 import { ResultEntryStatusBannerComponent } from './components/result-entry-status-banner.component';
 import { ResultActiveReportsPanelComponent } from './components/result-active-reports-panel.component';
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
+
+type AutoSaveStatus = 'synced' | 'modified' | 'saving' | 'error';
+
+interface AutoSaveEnvelope {
+  draft: AnalysisResultDraft;
+  generation: number;
+  revision: number;
+}
 
 @Component({
   selector: 'app-result-entry',
@@ -92,6 +100,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private sanitizer = inject(DomSanitizer);
   private masterService = inject(MasterTargetService);
   private auth = inject(AuthService);
+  private draftFactory = inject(SopDraftFactoryService);
   printService = inject(PrintService);
 
   // Locking mechanism variables
@@ -148,7 +157,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification($event: any) {
-    if (this.autoSaveStatus() === 'modified') {
+    if (this.autoSaveStatus() !== 'synced') {
       $event.returnValue = true;
     }
     this.releaseLockIfNeeded();
@@ -175,11 +184,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isSavingDraft = signal(false);
   isPublishing = signal(false);
   isProcessing = computed(() => this.isSavingDraft() || this.isPublishing());
+  formIsReadOnly = computed(() => this.isReadOnly() || this.isProcessing());
 
   // Auto-save state
-  autoSaveStatus = signal<'synced' | 'modified' | 'saving'>('synced');
-  private draftChangeSubject = new Subject<AnalysisResultDraft>();
+  autoSaveStatus = signal<AutoSaveStatus>('synced');
+  lastSavedAt = signal<Date | null>(null);
+  renderDraftForm = signal(true);
+  private draftChangeSubject = new Subject<AutoSaveEnvelope>();
   private autoSaveSub?: Subscription;
+  private autoSaveGeneration = 0;
+  private autoSaveRevision = 0;
+  private lastSavedRevision = 0;
+  private autoSavePaused = false;
+  private autoSaveQueue: Promise<void> = Promise.resolve();
+  private completionReconcileChecked = false;
 
   // Emergency feature toggle for the new modular strategy architecture
   readonly ENABLE_MODULAR_SOPS = true;
@@ -373,25 +391,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Initialize auto-save subscription with 5s debounce (Optimized)
+    // Gom thao tác nhập nhanh, sau đó xếp hàng tuần tự để không có request cũ
+    // hoàn tất sau request mới và ghi đè dữ liệu/trạng thái.
     this.autoSaveSub = this.draftChangeSubject.pipe(
-      debounceTime(5000)
-    ).subscribe(async (updatedDraft) => {
-      // Chỉ lưu tự động nếu mình đang giữ khóa hoặc tài liệu chưa khóa
-      const r = this.run();
-      const user = this.auth.currentUser();
-      const isLockedByOthers = r?.lockedBy && user && r.lockedBy !== user.email;
-      if (isLockedByOthers) {
-        return; // Không lưu đè dữ liệu nếu bị người khác giành khóa
-      }
-
-      this.autoSaveStatus.set('saving');
-      const success = await this.resultService.saveDraft(this.requestId, updatedDraft, false);
-      if (success) {
-        this.autoSaveStatus.set('synced');
-      } else {
-        this.autoSaveStatus.set('modified');
-      }
+      debounceTime(1500)
+    ).subscribe((envelope) => {
+      this.autoSaveQueue = this.autoSaveQueue.then(() => this.performAutoSave(envelope));
     });
 
     // Cập nhật heartbeat định kỳ để cập nhật lastActiveAt (Optimized 1 - Throttled)
@@ -456,6 +461,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           if (this.isLoading() || this.autoSaveStatus() === 'synced') {
             this.draft.set(draftDoc);
           }
+
+          // Tự chữa các mẻ cũ đã in đủ 100% nhưng bị autosave kéo ngược về draft.
+          if (!this.completionReconcileChecked && draftDoc.status !== 'completed') {
+            this.completionReconcileChecked = true;
+            void this.resultService.reconcileCompletionStatus(
+              this.requestId,
+              draftDoc,
+              runDoc.sampleList || [],
+              runDoc.resultStatusReason
+            );
+          }
         }
       }
       this.isLoading.set(false);
@@ -494,234 +510,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
-  private createDefaultDraft(runDoc: any, sopConf: any): AnalysisResultDraft {
-    const isTrifluralin = runDoc.sopId === 'SOP-03' || (sopConf.columns && sopConf.columns.kqTrifluralin !== undefined);
-    const isFipronil = runDoc.sopId === 'SOP-01' || (sopConf.columns && sopConf.columns.kqFip !== undefined);
-    const isDichlorvos = runDoc.sopId === 'sop_1767857760184' || (sopConf.columns && sopConf.columns.kqDichlorvos !== undefined);
-    const isChloroform = runDoc.sopId === '9.20-chloroform' || (sopConf.columns && sopConf.columns.kqChloroform !== undefined);
-
-    const defaultPage1: Record<string, any> = {
-      ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
-      ngayNguoiThamTra: new Date().toISOString().split('T')[0],
-      checkTatCaND: true,
-      checkCoMauPhatHien: false
-    };
-
-    if (isTrifluralin) {
-      defaultPage1['r2'] = '0.999';
-      defaultPage1['hasFinal'] = true;
-      defaultPage1['blankName'] = '';
-      defaultPage1['spikeName'] = '';
-      defaultPage1['calibPoints'] = [
-        { loSo: '41', hamLuong: '0' },
-        { loSo: '42', hamLuong: '0.5' },
-        { loSo: '43', hamLuong: '1.0' },
-        { loSo: '44', hamLuong: '5.0' },
-        { loSo: '45', hamLuong: '10.0' },
-        { loSo: '46', hamLuong: '30.0' }
-      ];
-    } else if (isDichlorvos) {
-      defaultPage1['r2'] = '0.999';
-      defaultPage1['dichlorvosMethod'] = 'GC/MS';
-      defaultPage1['hasFinal'] = false;
-      defaultPage1['blankName'] = '';
-      defaultPage1['spikeName'] = '';
-      defaultPage1['calibPoints'] = [
-        { loSo: '51', hamLuong: '0' },
-        { loSo: '52', hamLuong: '5' },
-        { loSo: '53', hamLuong: '10' },
-        { loSo: '54', hamLuong: '20' },
-        { loSo: '55', hamLuong: '30' },
-        { loSo: '56', hamLuong: '40' }
-      ];
-    } else if (isFipronil) {
-      defaultPage1['hasCheckSample'] = false;
-      defaultPage1['maHoSo'] = '';
-      defaultPage1['heSoPhaLoang'] = '1';
-      defaultPage1['loaiMau'] = 'Thủy sản';
-      defaultPage1['tinhTrangMau'] = 'Bình thường';
-      defaultPage1['calibPoints'] = [
-        { loSo: '1.1', vialNo: '1.1' },
-        { loSo: '1.2', vialNo: '1.2' },
-        { loSo: '1.3', vialNo: '1.3' },
-        { loSo: '1.4', vialNo: '1.4' },
-        { loSo: '1.5', vialNo: '1.5' }
-      ];
-      // Explicitly set dynamic QC checklist defaults to true
-      defaultPage1['qcR2'] = true;
-      defaultPage1['qcThoiGianLuu'] = true;
-      defaultPage1['qcThemChuan'] = true;
-      defaultPage1['qcThuHoi'] = true;
-      defaultPage1['qcDanhGiaChung'] = true;
-      defaultPage1['qcKiemTraNoiBo'] = defaultPage1['hasCheckSample'] ? true : null;
-      defaultPage1['qcNhanDang'] = null; // Exception: qcNhanDang starts as N/A
-    } else if (isChloroform) {
-      defaultPage1['r2'] = '0.999';
-      defaultPage1['blankName'] = '';
-      defaultPage1['spikeName'] = '';
-      defaultPage1['calibPoints'] = [
-        { loSo: '1', hamLuong: '0' },
-        { loSo: '2', hamLuong: '2' },
-        { loSo: '3', hamLuong: '5' },
-        { loSo: '4', hamLuong: '10' },
-        { loSo: '5', hamLuong: '20' },
-        { loSo: '6', hamLuong: '50' }
-      ];
-    } else if (sopConf.checkboxLines) {
-      // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG
-      Object.values(sopConf.checkboxLines).forEach((field: any) => {
-        if (field !== 'checkTatCaND' && field !== 'checkCoMauPhatHien') {
-          if (field === 'qcNhanDang') {
-            defaultPage1[field] = null; // N/A
-          } else if (typeof field === 'string' && field.startsWith('qc')) {
-            defaultPage1[field] = true; // Đạt
-          } else {
-            defaultPage1[field] = false;
-          }
-        }
-      });
-    }
-
-    if (sopConf.formType === 'type3b') {
-      defaultPage1['checkGopInChung'] = true;
-      defaultPage1['printFormType'] = 'formCheck';
-      defaultPage1['loaiMau'] = 'Thủy sản';
-      defaultPage1['tinhTrangMau'] = 'Bình thường';
-      defaultPage1['khoiLuong'] = '10.0';
-    }
-
-    const defaultResultData: Record<string, any> = {};
-    const sampleList = runDoc.sampleList || [];
-    
-    if (isTrifluralin) {
-      defaultResultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
-      defaultResultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
-      
-      sampleList.forEach((sampleCode: string, idx: number) => {
-        defaultResultData[sampleCode] = {
-          loSo: String(idx + 1),
-          kqTrifluralin: '',
-          ghiChu: '',
-          selected: true
-        };
-      });
-    } else if (isDichlorvos) {
-      sampleList.forEach((sampleCode: string, idx: number) => {
-        const randW = (10.01 + Math.random() * 0.09).toFixed(2);
-        defaultResultData[sampleCode] = {
-          loSo: String(idx + 1),
-          selected: true,
-          khoiLuong: randW,
-          heSoPhaLoang: '1'
-        };
-        Object.keys(sopConf.columns || {}).forEach((col: string) => {
-          if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu' && col !== 'khoiLuong' && col !== 'heSoPhaLoang') {
-            defaultResultData[sampleCode][col] = '';
-          }
-        });
-        defaultResultData[sampleCode]['ghiChu'] = '';
-      });
-    } else if (isFipronil) {
-      const activeCols = Object.keys(sopConf.columns || {}).filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
-      
-      // 1. BLANK (vial 1.7)
-      defaultResultData['QC_BLANK'] = { loSo: '1.7', selected: true };
-      activeCols.forEach(col => defaultResultData['QC_BLANK'][col] = '');
-      defaultResultData['QC_BLANK']['ghiChu'] = '';
-
-      // 2. SPIKE (vial 1.8)
-      defaultResultData['QC_SPIKE'] = { loSo: '1.8', selected: true };
-      activeCols.forEach(col => defaultResultData['QC_SPIKE'][col] = '');
-      defaultResultData['QC_SPIKE']['ghiChu'] = '';
-
-      // 3. Optional CHECK_SAMPLE (vial 1.9)
-      defaultResultData['QC_CHECK_SAMPLE'] = { loSo: '1.9', selected: true };
-      activeCols.forEach(col => defaultResultData['QC_CHECK_SAMPLE'][col] = '');
-      defaultResultData['QC_CHECK_SAMPLE']['ghiChu'] = '';
-
-      // 4. Regular samples starting at vial 1.10
-      sampleList.forEach((sampleCode: string, idx: number) => {
-        const currentVial = 10 + idx;
-        const rack = 1 + Math.floor((currentVial - 1) / 54);
-        const vial = ((currentVial - 1) % 54) + 1;
-        
-        defaultResultData[sampleCode] = {
-          loSo: `${rack}.${vial}`,
-          selected: true
-        };
-        activeCols.forEach(col => defaultResultData[sampleCode][col] = '');
-        defaultResultData[sampleCode]['ghiChu'] = '';
-      });
-
-      // 5. FINAL (vial 1.8)
-      defaultResultData['QC_FINAL'] = { loSo: '1.8', selected: true };
-      activeCols.forEach(col => defaultResultData['QC_FINAL'][col] = '');
-      defaultResultData['QC_FINAL']['ghiChu'] = '';
-    } else {
-      sampleList.forEach((sampleCode: string) => {
-        defaultResultData[sampleCode] = {};
-        
-        if (sopConf.formType === 'type3b') {
-          // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt chỉ cho các hoạt chất được phân công
-          const sampleTargetMap = runDoc.sampleTargetMap || (runDoc.inputs && runDoc.inputs.sampleTargetMap) || {};
-          const isAssigned = (sCode: string, compound: string): boolean => {
-            const assigned = getAssignedTargetsForSample(sCode, sampleTargetMap);
-            if (!assigned || assigned.length === 0) return true;
-            // Fast path: canonical id direct match (DATA_VERSION 2)
-            if (assigned.includes(compound)) return true;
-            // Fallback shim cho data v1
-            return isCompoundAssigned(assigned, compound, this.masterTargets());
-          };
-
-
-          sopConf.compounds.forEach((c: string) => {
-            if (isAssigned(sampleCode, c)) {
-              defaultResultData[sampleCode][c] = '';
-              defaultResultData[sampleCode][`${c}_nd`] = true;
-              defaultResultData[sampleCode][`${c}_qc1`] = 'Đạt';
-              defaultResultData[sampleCode][`${c}_qc2`] = 'Đạt';
-              defaultResultData[sampleCode][`${c}_qc3`] = 'Đạt';
-            } else {
-              defaultResultData[sampleCode][c] = 'N/A';
-              defaultResultData[sampleCode][`${c}_nd`] = false;
-              defaultResultData[sampleCode][`${c}_qc1`] = 'N/A';
-              defaultResultData[sampleCode][`${c}_qc2`] = 'N/A';
-              defaultResultData[sampleCode][`${c}_qc3`] = 'N/A';
-            }
-          });
-        } else {
-          // Cho dạng 2 / 3A: Cột hoạt chất rỗng
-          Object.keys(sopConf.columns).forEach((col: string) => {
-            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              defaultResultData[sampleCode][col] = '';
-            }
-          });
-        }
-      });
-    }
-
-    return {
-      id: this.requestId,
-      requestId: this.requestId,
-      sopId: runDoc.sopId,
-      sopName: runDoc.sopName,
-      status: 'draft',
-      page1Data: defaultPage1,
-      resultData: defaultResultData,
-      updatedAt: new Date(),
-      updatedBy: 'System'
-    };
-  }
-
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
     // Tạo shallow copy để Angular signal luôn nhận new reference,
     // đảm bảo signal trigger change detection ngay cả khi child emit
     // cùng object reference (e.g., sau onSopSpecificInit trong ngOnInit).
     this.draft.set({ ...updatedDraft });
-    if (this.autoSaveStatus() !== 'saving') {
-      this.autoSaveStatus.set('modified');
-    }
-    this.draftChangeSubject.next(updatedDraft);
+    if (this.autoSavePaused) return;
+
+    const revision = ++this.autoSaveRevision;
+    this.autoSaveStatus.set('modified');
+    this.draftChangeSubject.next({
+      draft: this.cloneDraft(updatedDraft),
+      generation: this.autoSaveGeneration,
+      revision
+    });
   }
 
   /**
@@ -730,17 +532,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   async triggerSaveDraft() {
     if (!this.draft() || this.isProcessing()) return;
     this.isSavingDraft.set(true);
-    this.autoSaveStatus.set('saving'); // Kích hoạt trạng thái hiển thị "Đang lưu..."
-    
-    const success = await this.resultService.saveDraft(this.requestId, this.draft()!, true);
-    
-    if (success) {
-      this.toast.show('Đã lưu bản nháp kết quả phân tích thành công!', 'success');
-      this.autoSaveStatus.set('synced'); // Hiển thị "Đã lưu tự động"
-    } else {
-      this.autoSaveStatus.set('modified');
+    try {
+      const success = await this.flushCurrentDraft(true);
+      if (success) {
+        this.toast.show('Đã lưu bản nháp kết quả phân tích thành công!', 'success');
+      }
+    } finally {
+      this.resumeAutoSave();
+      this.isSavingDraft.set(false);
     }
-    this.isSavingDraft.set(false);
   }
 
   /**
@@ -817,8 +617,13 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.isPublishing.set(true);
 
     try {
-      this.autoSaveStatus.set('saving');
-      this.autoSaveStatus.set('synced');
+      // Chờ mọi autosave cũ kết thúc và lưu snapshot mới nhất trước khi tạo PDF.
+      // Autosave tiếp tục bị tạm dừng cho đến khi publish hoàn tất.
+      const flushed = await this.flushCurrentDraft(false);
+      if (!flushed) {
+        this.toast.show('Không thể lưu dữ liệu mới nhất. Đã dừng xuất báo cáo để tránh tạo PDF sai.', 'error');
+        return;
+      }
 
       const activeFilter = this.activeFilter();
       const key = this.configKey();
@@ -916,6 +721,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
       if (lastResult && lastResult.success) {
         this.draft.update((d: any) => d ? { ...d, status: lastResult.newStatus || 'completed', version: (d.version || 0) + 1 } as any : null);
+        this.lastSavedAt.set(new Date());
+        this.autoSaveStatus.set('synced');
         const hist = await this.resultService.getHistory(this.requestId);
         this.historyList.set(hist);
         const url = lastResult.pdfViewUrl || lastResult.pdfUrl;
@@ -926,6 +733,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         }
       }
     } finally {
+      this.resumeAutoSave();
       this.isPublishing.set(false);
     }
   }
@@ -970,18 +778,39 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   async triggerResetResults() {
     if (this.resetConfirmText() !== 'XÓA' || this.isProcessing()) return;
+    const run = this.run();
+    const config = this.config();
+    if (!run || !config) return;
+
     this.showResetModal.set(false);
     this.isSavingDraft.set(true);
 
     try {
-      const updated = await this.resultService.resetResults(this.requestId);
+      // Chặn mọi request autosave cũ trước khi reset. Nếu không, một request chậm
+      // có thể merge ngược số liệu vừa xóa vào document mới.
+      await this.pauseAutoSave();
+      const freshDraft = this.createDefaultDraft(run, config);
+      const updated = await this.resultService.resetResults(this.requestId, freshDraft);
       if (updated) {
+        // Remount component SOP để các hook khởi tạo chuyên biệt chạy đúng như
+        // lần đầu mở mẻ (loại mẫu, khối lượng, form in, vial, QC...).
+        this.renderDraftForm.set(false);
         this.draft.set(updated);
+        this.autoSaveRevision = 0;
+        this.lastSavedRevision = 0;
+        this.lastSavedAt.set(new Date());
+        this.autoSaveStatus.set('synced');
+        await Promise.resolve();
+        // Mở autosave trước khi remount để mọi mặc định bổ sung từ hook ngOnInit
+        // của SOP cũng được ghi lại, không chỉ tồn tại tạm thời trên giao diện.
+        this.resumeAutoSave();
+        this.renderDraftForm.set(true);
         // Reload lịch sử
         const hist = await this.resultService.getHistory(this.requestId);
         this.historyList.set(hist);
       }
     } finally {
+      this.resumeAutoSave();
       this.isSavingDraft.set(false);
       this.resetConfirmText.set('');
     }
@@ -1214,6 +1043,86 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   openUrl(url: string | null) {
     if (url) openInNewTab(url);
+  }
+
+  private cloneDraft(draft: AnalysisResultDraft): AnalysisResultDraft {
+    return JSON.parse(JSON.stringify(draft));
+  }
+
+  private createDefaultDraft(runDoc: any, sopConf: any): AnalysisResultDraft {
+    return this.draftFactory.createInitialDraft(runDoc, sopConf, {
+      requestId: this.requestId,
+      updatedBy: this.auth.currentUser()?.displayName || 'System',
+      masterTargets: this.masterTargets()
+    });
+  }
+
+  private async performAutoSave(envelope: AutoSaveEnvelope): Promise<void> {
+    if (this.autoSavePaused
+      || envelope.generation !== this.autoSaveGeneration
+      || envelope.revision <= this.lastSavedRevision) {
+      return;
+    }
+
+    const run = this.run();
+    const user = this.auth.currentUser();
+    const isLockedByOthers = run?.lockedBy && user
+      && run.lockedBy.toLowerCase() !== user.email.toLowerCase();
+    if (isLockedByOthers) return;
+
+    this.autoSaveStatus.set('saving');
+    const success = await this.resultService.saveDraft(
+      this.requestId,
+      envelope.draft,
+      false,
+      false
+    );
+
+    // Một thao tác reset/publish có thể đã bắt đầu trong lúc request đang chạy.
+    if (envelope.generation !== this.autoSaveGeneration) return;
+
+    if (success) {
+      this.lastSavedRevision = Math.max(this.lastSavedRevision, envelope.revision);
+      this.lastSavedAt.set(new Date());
+      this.autoSaveStatus.set(
+        this.autoSaveRevision <= this.lastSavedRevision ? 'synced' : 'modified'
+      );
+    } else {
+      this.autoSaveStatus.set('error');
+    }
+  }
+
+  private async pauseAutoSave(): Promise<void> {
+    this.autoSavePaused = true;
+    this.autoSaveGeneration++;
+    await this.autoSaveQueue;
+  }
+
+  private resumeAutoSave(): void {
+    this.autoSavePaused = false;
+  }
+
+  private async flushCurrentDraft(isManualSave: boolean): Promise<boolean> {
+    const currentDraft = this.draft();
+    if (!currentDraft) return false;
+
+    await this.pauseAutoSave();
+    this.autoSaveStatus.set('saving');
+    const success = await this.resultService.saveDraft(
+      this.requestId,
+      this.cloneDraft(currentDraft),
+      isManualSave,
+      false
+    );
+
+    if (success) {
+      this.lastSavedRevision = this.autoSaveRevision;
+      this.lastSavedAt.set(new Date());
+      this.autoSaveStatus.set('synced');
+    } else {
+      this.autoSaveStatus.set('error');
+    }
+    return success;
   }
 
   formatAnalysisDate(dateStr: string): string {

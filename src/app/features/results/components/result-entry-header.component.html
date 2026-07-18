@@ -110,7 +110,8 @@
               [ngClass]="{
                 'bg-emerald-50/40 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/30 dark:border-emerald-800/30 cursor-default': autoSaveStatus === 'synced',
                 'bg-amber-50/50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 hover:shadow': autoSaveStatus === 'modified',
-                'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus === 'saving'
+                'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus === 'saving',
+                'bg-red-50/70 text-red-650 dark:bg-red-950/30 dark:text-red-400 border-red-200/50 dark:border-red-900/30 hover:bg-red-100/70': autoSaveStatus === 'error'
               }"
               [title]="autoSaveStatus === 'synced' ? 'Dữ liệu phân tích đã được tự động đồng bộ thời gian thực' : 'Lưu nháp số liệu hiện tại lên đám mây'">
         @if (autoSaveStatus === 'saving') {
@@ -118,10 +119,17 @@
           <span class="text-[10px] uppercase tracking-wider font-black">Đang lưu...</span>
         } @else if (autoSaveStatus === 'synced') {
           <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
-          <span class="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">Đã lưu tự động</span>
+          <span class="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">
+            Đã lưu{{ lastSavedAt ? ' ' + (lastSavedAt | date:'HH:mm:ss') : '' }}
+          </span>
+        } @else if (autoSaveStatus === 'error') {
+          <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
+          <span class="text-[10px] uppercase tracking-wider font-black">Lưu thất bại — thử lại</span>
         } @else {
           <i class="fa-solid fa-cloud-arrow-up text-amber-500 animate-pulse text-sm"></i>
-          <span class="text-[10px] uppercase tracking-wider font-black">Có thay đổi...</span>
+          <span class="text-[10px] uppercase tracking-wider font-black">
+            {{ hasExistingReport ? 'Dữ liệu mới hơn PDF' : 'Có thay đổi chưa lưu' }}
+          </span>
         }
       </button>
 

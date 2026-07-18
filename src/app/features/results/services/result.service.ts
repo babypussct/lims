@@ -183,7 +183,10 @@ export class ResultService {
       
       // Hỗ trợ tương thích ngược cho tài liệu cũ chưa thực hiện di chuyển
       if (lastMeta['analysisResult']) {
-        callback(lastMeta['analysisResult'], { id: requestId, ...lastMeta });
+        callback({
+          ...lastMeta['analysisResult'],
+          status: lastMeta['status'] || lastMeta['analysisResult']['status'] || 'draft'
+        }, { id: requestId, ...lastMeta });
         return;
       }
       
@@ -263,7 +266,10 @@ export class ResultService {
       
       // Hỗ trợ tương thích ngược cho dữ liệu cũ chưa tách biệt
       if (metaData['analysisResult']) {
-        return metaData['analysisResult'];
+        return {
+          ...metaData['analysisResult'],
+          status: metaData['status'] || metaData['analysisResult']['status'] || 'draft'
+        };
       }
       
       const detailData = detailSnap.exists() ? detailSnap.data() : null;
@@ -295,7 +301,13 @@ export class ResultService {
   /**
    * Lưu nháp kết quả phân tích: Tách dữ liệu lưới và metadata bằng cách thực hiện nguyên tử qua writeBatch
    */
-  async saveDraft(requestId: string, draft: Partial<AnalysisResultDraft>, isManualSave = false): Promise<boolean> {
+  async saveDraft(
+    requestId: string,
+    draft: Partial<AnalysisResultDraft>,
+    isManualSave = false,
+    updateStatus = true,
+    statusReason?: string
+  ): Promise<boolean> {
     try {
       const metaRef = this.getDocRef(requestId);
       const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
@@ -353,13 +365,24 @@ export class ResultService {
       else if (metaData['analysisResultSummary']?.['reports'] !== undefined) summaryPayload.reports = metaData['analysisResultSummary']['reports'];
       else if (legacyResult['reports'] !== undefined) summaryPayload.reports = legacyResult['reports'];
       
-      batch.update(metaRef, {
-        status: draft.status || metaData['status'] || 'draft',
+      const metaUpdatePayload: any = {
         lastUpdated: serverTimestamp(),
         analysisResultSummary: summaryPayload,
         // Dọn dẹp trường dữ liệu nặng nguyên khối cũ để giảm tải băng thông
         analysisResult: deleteField()
-      });
+      };
+      // Autosave chỉ lưu nội dung. Trạng thái vòng đời chỉ được đổi bởi các
+      // nghiệp vụ explicit: publish, mở khóa, phục hồi hoặc reset.
+      if (updateStatus) {
+        metaUpdatePayload.status = draft.status || metaData['status'] || 'draft';
+        metaUpdatePayload.resultStatusReason = statusReason
+          || (draft.status === 'completed' ? 'published' : 'explicit_draft');
+      } else if (!metaData['status'] || metaData['status'] === 'approved') {
+        // Lần lưu nội dung đầu tiên là lúc mẻ chính thức chuyển từ Chờ nhập sang Nháp.
+        metaUpdatePayload.status = 'draft';
+        metaUpdatePayload.resultStatusReason = 'data_entry_started';
+      }
+      batch.update(metaRef, metaUpdatePayload);
       
       // 2. Lưu trữ dữ liệu lưới kết quả chi tiết ( results_details )
       //    KHÔNG lưu publishedBackup vào đây để tránh vượt giới hạn 40.000 index entries
@@ -416,12 +439,20 @@ export class ResultService {
             
             // Đồng bộ trạng thái, báo cáo (analysisResultSummary) và liên kết cha-con xuống mẻ con
             const childReqRef = this.getDocRef(childId);
-            batch.update(childReqRef, {
-              status: draft.status || metaData['status'] || 'draft',
+            const childMetaUpdatePayload: any = {
               parentMasterId: requestId, // Tự động phục hồi liên kết cho các mẻ cũ
               lastUpdated: serverTimestamp(),
               analysisResultSummary: summaryPayload
-            });
+            };
+            if (updateStatus) {
+              childMetaUpdatePayload.status = draft.status || metaData['status'] || 'draft';
+              childMetaUpdatePayload.resultStatusReason = statusReason
+                || (draft.status === 'completed' ? 'published' : 'explicit_draft');
+            } else if (!childMeta['status'] || childMeta['status'] === 'approved') {
+              childMetaUpdatePayload.status = 'draft';
+              childMetaUpdatePayload.resultStatusReason = 'data_entry_started';
+            }
+            batch.update(childReqRef, childMetaUpdatePayload);
           }
         }
       }
@@ -847,6 +878,66 @@ export class ResultService {
 
 
   /**
+   * Tự chữa dữ liệu cũ đã phủ đủ báo cáo nhưng status bị autosave kéo về draft.
+   */
+  async reconcileCompletionStatus(
+    requestId: string,
+    draft: AnalysisResultDraft,
+    sampleList: string[],
+    statusReason?: string
+  ): Promise<boolean> {
+    if (draft.status === 'completed') return false;
+    if (statusReason && ['manual_edit', 'reset', 'restore', 'explicit_draft'].includes(statusReason)) {
+      return false;
+    }
+
+    const samples = sampleList.filter(sample => !sample.startsWith('QC_'));
+    if (samples.length === 0) return false;
+
+    const publishedSamples = new Set<string>();
+    if (draft.pdfUrl) {
+      samples.forEach(sample => publishedSamples.add(sample));
+    }
+    for (const report of Object.values(draft.reports || {})) {
+      if (report && (report.status === 'completed' || report.pdfUrl)) {
+        (report.includedSamples || []).forEach(sample => publishedSamples.add(sample));
+      }
+    }
+
+    const allPublished = samples.every(sample => publishedSamples.has(sample));
+    const allHaveResults = samples.every(sample => {
+      const row = draft.resultData?.[sample];
+      if (!row) return false;
+      return Object.keys(row).some(key =>
+        key !== 'selected'
+        && row[key] !== null
+        && row[key] !== undefined
+        && row[key] !== ''
+      );
+    });
+    if (!allPublished || !allHaveResults) return false;
+
+    try {
+      await updateDoc(this.getDocRef(requestId), {
+        status: 'completed',
+        resultStatusReason: 'reconciled',
+        lastUpdated: serverTimestamp()
+      });
+      await this.logActivity(
+        'RECONCILE_RESULT_STATUS',
+        `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ draft sang completed (ID: ${requestId})`,
+        requestId,
+        draft.sopId || '',
+        draft.sopName || ''
+      );
+      return true;
+    } catch (error) {
+      console.error('[ResultService] Failed to reconcile completion status:', error);
+      return false;
+    }
+  }
+
+  /**
    * Mở khóa và chỉnh sửa (Chỉ chuyển status về draft, giữ nguyên các trường khác để tăng ver khi xuất bản lại)
    */
   async unlockToEdit(requestId: string): Promise<AnalysisResultDraft | null> {
@@ -865,7 +956,7 @@ export class ResultService {
         status: 'draft'
       };
 
-      const saved = await this.saveDraft(requestId, updatedResult);
+      const saved = await this.saveDraft(requestId, updatedResult, false, true, 'manual_edit');
       if (!saved) {
         throw new Error('Không thể cập nhật trạng thái nháp của mẻ chạy!');
       }
@@ -890,7 +981,10 @@ export class ResultService {
   /**
    * Xóa sạch kết quả nhập liệu và dọn dẹp toàn bộ file báo cáo cũ trên Drive
    */
-  async resetResults(requestId: string): Promise<AnalysisResultDraft | null> {
+  async resetResults(
+    requestId: string,
+    initialDraft: AnalysisResultDraft
+  ): Promise<AnalysisResultDraft | null> {
     try {
       const ref = this.getDocRef(requestId);
       const docSnap = await getDoc(ref);
@@ -931,8 +1025,9 @@ export class ResultService {
         await this.reportService.archiveReports(filesToArchive);
       }
 
-      // 3. Nếu bản hiện tại là completed, hãy sao lưu nó vào sub-collection history trước khi xóa sạch
-      if (currentDraft.status === 'completed') {
+      // 3. Lưu bản báo cáo hiện tại vào lịch sử kể cả khi mẻ đang draft.
+      // Mẻ có thể đã in một phần/prefix nhưng chưa đủ điều kiện completed.
+      if (currentDraft.pdfUrl || currentDraft.docsUrl || Object.keys(currentDraft.reports || {}).length > 0) {
         const currentReports2 = currentDraft.reports || {};
         if (Object.keys(currentReports2).length > 0) {
           for (const reportId of Object.keys(currentReports2)) {
@@ -972,71 +1067,35 @@ export class ResultService {
         }
       }
 
-      // 4. Khởi dựng lại page1Data và resultData an toàn để tránh crash lưới nhập kết quả (Grid Spreadsheet)
-      const resetPage1Data: Record<string, any> = {
-        ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
-        ngayNguoiThamTra: new Date().toISOString().split('T')[0],
-        checkTatCaND: true,
-        checkCoMauPhatHien: false
-      };
-      
-      if (currentDraft.page1Data) {
-        Object.keys(currentDraft.page1Data).forEach(key => {
-          if (key !== 'ngayNguoiPhanTich' && key !== 'ngayNguoiThamTra' && key !== 'checkTatCaND' && key !== 'checkCoMauPhatHien') {
-            if (key === 'qcR2' || key === 'qcThoiGianLuu' || key === 'qcThemChuan' || key === 'qcThuHoi' || key === 'qcDanhGiaChung') {
-              resetPage1Data[key] = true;
-            } else if (key === 'qcKiemTraNoiBo') {
-              resetPage1Data[key] = currentDraft.page1Data['hasCheckSample'] ? true : null;
-            } else if (key === 'qcNhanDang') {
-              resetPage1Data[key] = null;
-            } else {
-              resetPage1Data[key] = false;
-            }
-          }
-        });
-      }
-
-      const resetResultData: Record<string, any> = {};
-      const sampleList = reqData['sampleList'] || [];
-      
-      let activeCols: string[] = [];
-      if (currentDraft.resultData) {
-        const firstSample = Object.keys(currentDraft.resultData)[0];
-        if (firstSample && currentDraft.resultData[firstSample]) {
-          activeCols = Object.keys(currentDraft.resultData[firstSample]);
-        }
-      }
-
-      sampleList.forEach((sample: string) => {
-        resetResultData[sample] = {};
-        activeCols.forEach(col => {
-          resetResultData[sample][col] = '';
-        });
-      });
-
+      // 4. Dùng đúng nguồn mặc định SOP như lần mở đầu tiên; không suy đoán
+      // giá trị dựa trên dữ liệu cũ vì sẽ làm sai checkbox/QC/vial/khối lượng.
       const resetResult: AnalysisResultDraft = {
+        ...JSON.parse(JSON.stringify(initialDraft)),
         id: requestId,
-        requestId: requestId,
-        sopId: currentDraft.sopId || reqData['sopId'] || '',
-        sopName: currentDraft.sopName || reqData['sopName'] || '',
+        requestId,
+        sopId: initialDraft.sopId || currentDraft.sopId || reqData['sopId'] || '',
+        sopName: initialDraft.sopName || currentDraft.sopName || reqData['sopName'] || '',
         status: 'draft',
         version: 0,
-        page1Data: resetPage1Data,
-        resultData: resetResultData,
         pdfUrl: '',
         pdfViewUrl: '',
         docsUrl: '',
         pdfFileName: '',
         pdfCreatedAt: '',
+        reports: {},
         updatedAt: new Date().toISOString(),
         updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
+
+      const resetPage1Data = JSON.parse(JSON.stringify(resetResult.page1Data || {}));
+      const resetResultData = JSON.parse(JSON.stringify(resetResult.resultData || {}));
 
       const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
       
       const batch = writeBatch(this.fb.db);
       batch.update(ref, {
         status: 'draft',
+        resultStatusReason: 'reset',
         lastUpdated: serverTimestamp(),
         analysisResultSummary: {
           version: 0,
