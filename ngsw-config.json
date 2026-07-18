@@ -3,14 +3,26 @@
   "index": "/index.html",
   "assetGroups": [
     {
-      "name": "app",
+      "name": "app-shell",
       "installMode": "prefetch",
       "resources": {
         "files": [
+          "/index.html",
           "/favicon.ico",
           "/manifest.webmanifest",
-          "/*.css",
-          "/*.js"
+          "/main-*.js",
+          "/styles-*.css"
+        ]
+      }
+    },
+    {
+      "name": "feature-chunks",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/*.js",
+          "/*.css"
         ]
       }
     },

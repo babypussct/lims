@@ -24,4 +24,28 @@ describe('ToastService queue', () => {
     assert.equal(duplicateId, '');
     assert.equal(service.toasts().length, 1);
   });
+
+  it('pauses and resumes the dismissal timer', async () => {
+    const service = new ToastService();
+    const id = service.showEvent({ message: 'Timer', durationMs: 80 });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    service.pause(id);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(service.toasts().length, 1);
+
+    service.resume(id);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(service.toasts().length, 0);
+  });
+
+  it('runs the action and removes the toast', () => {
+    const service = new ToastService();
+    let actionRan = false;
+    const id = service.showEvent({ message: 'Action', persistent: true, action: () => { actionRan = true; } });
+    const toast = service.toasts().find(item => item.id === id);
+    assert.ok(toast);
+    service.runAction(toast);
+    assert.equal(actionRan, true);
+    assert.equal(service.toasts().length, 0);
+  });
 });

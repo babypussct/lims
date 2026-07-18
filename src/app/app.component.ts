@@ -1,5 +1,5 @@
 
-import { Component, inject, computed, effect, signal, HostListener, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, effect, signal, HostListener, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 
@@ -22,12 +22,17 @@ import { PrintService } from './core/services/print.service';
 import { IdleTimeoutService } from './core/services/idle-timeout.service';
 import { NotificationService } from './core/services/notification.service';
 import { NotificationCenterService } from './core/services/notification-center.service';
+import { ConfirmationService } from './core/services/confirmation.service';
+import { NotificationPanelService } from './core/services/notification-panel.service';
+import { ProgressService } from './core/services/progress.service';
+import { QrGlobalService } from './core/services/qr-global.service';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     RouterOutlet,
@@ -71,13 +76,25 @@ import { filter } from 'rxjs/operators';
       <!-- Loaders & Modals -->
       @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
       
-      <app-confirmation-modal></app-confirmation-modal>
-      <app-print-preview-modal></app-print-preview-modal>
-      <app-global-scanner></app-global-scanner> 
-      <app-gs1-info-modal></app-gs1-info-modal>
+      @defer (when confirmationService.state().isVisible) {
+        <app-confirmation-modal></app-confirmation-modal>
+      }
+      @defer (when printService.isPreviewOpen() || printService.isPreviewPdfOpen()) {
+        <app-print-preview-modal></app-print-preview-modal>
+      }
+      @defer (when qrService.isScanning()) {
+        <app-global-scanner></app-global-scanner>
+      }
+      @defer (when !!qrService.scannedGs1Data()) {
+        <app-gs1-info-modal></app-gs1-info-modal>
+      }
       <!-- Notification Panel: rendered at root to bypass sidebar stacking context -->
-      <app-notification-panel></app-notification-panel>
-      <app-progress-overlay></app-progress-overlay>
+      @defer (when notificationPanel.isOpen()) {
+        <app-notification-panel></app-notification-panel>
+      }
+      @defer (when progressService.isVisible()) {
+        <app-progress-overlay></app-progress-overlay>
+      }
 
       @if (hasNewVersion()) {
         <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md no-print p-4">
@@ -159,7 +176,9 @@ import { filter } from 'rxjs/operators';
                   <!-- Desktop Sidebar (Hidden on Mobile) -->
                   @if (!state.focusMode()) {
                       <div class="hidden md:block">
-                          <app-sidebar></app-sidebar>
+                          @defer (when !!state.currentUser()) {
+                            <app-sidebar></app-sidebar>
+                          }
                       </div>
                   }
                   
@@ -206,7 +225,9 @@ import { filter } from 'rxjs/operators';
   
                   <!-- Mobile Bottom Nav -->
                   @if (!state.focusMode()) {
-                      <app-bottom-nav></app-bottom-nav>
+                      @defer (when !!state.currentUser()) {
+                        <app-bottom-nav></app-bottom-nav>
+                      }
                   }
              </div>
           }
@@ -217,7 +238,14 @@ import { filter } from 'rxjs/operators';
               <router-outlet></router-outlet>
             </div>
           } @else {
-            <app-login class="no-print"></app-login>
+            @defer (when auth.isAuthReady() && !state.currentUser() && !isPublicRoute()) {
+              <app-login class="no-print"></app-login>
+            } @placeholder {
+              <div class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center">
+                <app-logo size="140px"></app-logo>
+                <div class="text-slate-300 text-xs font-bold tracking-widest mt-5">ĐANG TẢI ĐĂNG NHẬP...</div>
+              </div>
+            }
           }
         }
       }
@@ -233,7 +261,12 @@ export class AppComponent implements OnDestroy {
   idleService = inject(IdleTimeoutService);
   notificationService = inject(NotificationService);
   notificationCenter = inject(NotificationCenterService);
+  confirmationService = inject(ConfirmationService);
+  notificationPanel = inject(NotificationPanelService);
+  progressService = inject(ProgressService);
+  qrService = inject(QrGlobalService);
   swUpdate = inject(SwUpdate);
+  private ngZone = inject(NgZone);
 
   // Reactive URL signal for computed dependencies
   currentUrl = signal<string>('');
@@ -244,10 +277,16 @@ export class AppComponent implements OnDestroy {
   year = new Date().getFullYear();
 
   constructor() {
-    // Ticker for scheduled maintenance countdown
-    this._maintenanceInterval = setInterval(() => {
-      this.currentTime.set(Date.now());
-    }, 1000);
+    this.applyPerformanceProfile();
+
+    // Only run the maintenance clock when a schedule exists. Far from the
+    // deadline it wakes once a minute; inside the 30-minute warning window it
+    // updates once a second. Timers stay outside Angular to avoid full app-wide
+    // change detection on every tick.
+    effect((onCleanup) => {
+      this.startMaintenanceClock(this.state.maintenanceScheduledTime());
+      onCleanup(() => clearTimeout(this._maintenanceTimer));
+    });
 
     // Initialize currentUrl
     this.currentUrl.set(this.router.url);
@@ -367,7 +406,7 @@ export class AppComponent implements OnDestroy {
   isPulling = signal(false);
   hasNewVersion = signal(false);
   private _swCheckInterval: any;
-  private _maintenanceInterval: any;
+  private _maintenanceTimer: ReturnType<typeof setTimeout> | undefined;
 
   currentTime = signal<number>(Date.now());
 
@@ -405,12 +444,13 @@ export class AppComponent implements OnDestroy {
 
   ngOnDestroy() {
     clearInterval(this._swCheckInterval);
-    clearInterval(this._maintenanceInterval);
+    clearTimeout(this._maintenanceTimer);
   }
 
   // Kiểm tra build mới ngay khi user quay lại tab (từ bất kỳ ứng dụng nào khác)
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
+    this.startMaintenanceClock(this.state.maintenanceScheduledTime());
     if (document.visibilityState === 'visible' && this.swUpdate.isEnabled) {
       console.log('[LIMS SW] 👀 Tab được focus lại — kiểm tra update...');
       this.swUpdate.checkForUpdate().then(hasUpdate => {
@@ -418,6 +458,51 @@ export class AppComponent implements OnDestroy {
       }).catch(err => {
         console.warn('[LIMS SW] ⚠️ Visibility check failed:', err);
       });
+    }
+  }
+
+  private startMaintenanceClock(scheduled: string | null) {
+    clearTimeout(this._maintenanceTimer);
+    if (!scheduled) return;
+
+    const target = new Date(scheduled).getTime();
+    if (!Number.isFinite(target)) return;
+
+    const tick = () => {
+      const now = Date.now();
+      if (document.visibilityState === 'visible') {
+        this.ngZone.run(() => this.currentTime.set(now));
+      }
+
+      const remaining = target - now;
+      if (remaining <= 0) return;
+
+      const warningWindow = 30 * 60 * 1000;
+      const delay = document.visibilityState !== 'visible'
+        ? 60_000
+        : remaining > warningWindow
+          ? Math.min(60_000, Math.max(1_000, remaining - warningWindow))
+          : 1_000;
+
+      this.ngZone.runOutsideAngular(() => {
+        this._maintenanceTimer = setTimeout(tick, delay);
+      });
+    };
+
+    this.ngZone.runOutsideAngular(tick);
+  }
+
+  private applyPerformanceProfile() {
+    const nav = navigator as Navigator & {
+      deviceMemory?: number;
+      connection?: { saveData?: boolean };
+    };
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const lowMemory = typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4;
+    const lowCpu = typeof nav.hardwareConcurrency === 'number' && nav.hardwareConcurrency <= 4;
+
+    if (prefersReducedMotion || lowMemory || lowCpu || nav.connection?.saveData) {
+      document.documentElement.classList.add('performance-lite');
     }
   }
 

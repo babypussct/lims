@@ -22,3 +22,38 @@ router-outlet + * {
   flex-direction: column;
   min-height: 100%;
 }
+/* Lightweight rendering profile for low-memory/low-core devices. Expensive
+   blur and decorative motion are reduced while functional loading indicators
+   remain available. */
+html.performance-lite .backdrop-blur-sm,
+html.performance-lite .backdrop-blur-md,
+html.performance-lite .backdrop-blur-lg,
+html.performance-lite .backdrop-blur-xl,
+html.performance-lite .backdrop-blur-2xl,
+html.performance-lite .backdrop-blur-3xl {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.performance-lite .animate-bounce,
+html.performance-lite .animate-pulse,
+html.performance-lite .animate-bounce-in,
+html.performance-lite .animate-slide-down,
+html.performance-lite .animate-fade-in {
+  animation: none !important;
+}
+
+html.performance-lite .transition-all {
+  transition-duration: 100ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

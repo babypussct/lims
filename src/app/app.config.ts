@@ -55,7 +55,10 @@ export const appConfig: ApplicationConfig = {
     ), 
     provideServiceWorker('firebase-messaging-sw.js', {
       enabled: !isDevMode(),
-      registrationStrategy: 'registerImmediately'
+      // Do not make service-worker installation compete with the first render
+      // on older phones and low-spec PCs. The timeout is a safety net for apps
+      // that keep a long-running async task alive.
+      registrationStrategy: 'registerWhenStable:30000'
     }),
     provideHttpClient(),
     // Global chunk error handler

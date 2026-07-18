@@ -367,6 +367,15 @@
             }
 
             <div [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()" [class.pointer-events-none]="!auth.canViewSop()">
-                <app-daily-checklist [embedded]="true"></app-daily-checklist>
+                @defer (on viewport) {
+                    <app-daily-checklist [embedded]="true"></app-daily-checklist>
+                } @placeholder {
+                    <div class="min-h-48 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                        <div class="flex items-center gap-3 text-sm font-bold">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span>Bảng theo dõi mẫu sẽ tải khi cuộn đến đây</span>
+                        </div>
+                    </div>
+                }
             </div>
         </div>

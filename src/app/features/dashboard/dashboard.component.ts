@@ -1,5 +1,5 @@
 
-import { Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms'; 
@@ -11,9 +11,7 @@ import { InventoryItem } from '../../core/models/inventory.model';
 import { ReferenceStandard } from '../../core/models/standard.model';
 import { Request } from '../../core/models/request.model';
 import { ToastService } from '../../core/services/toast.service';
-import { FirebaseService } from '../../core/services/firebase.service';
 import { QrGlobalService } from '../../core/services/qr-global.service'; // Import Global Service
-import { onSnapshot, query, collection, orderBy, limit } from 'firebase/firestore';
 import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
@@ -57,6 +55,7 @@ import { DailyChecklistComponent } from '../checklist/daily-checklist.component'
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, SkeletonComponent, FormsModule, DateRangeFilterComponent, DailyChecklistComponent], 
   templateUrl: './dashboard.component.html',
   styles: []
@@ -69,7 +68,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   router: Router = inject(Router);
   toast = inject(ToastService);
   qrService = inject(QrGlobalService); // Injected Global Service
-  fb = inject(FirebaseService);
 
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
@@ -80,7 +78,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return this.state.inventory().filter(i => i.stock <= (i.threshold || 5));
   });
   priorityStandard = signal<PriorityStandard | null>(null);
-  userPhotoMap = signal<Record<string, string>>({});
   
   // Date Filters — init inline to avoid calling methods before they are available
   private static _getLocalStr(d: Date): string {
@@ -558,20 +555,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       } catch (e) {
           console.warn("Dashboard: Lỗi khi tải thông tin chất chuẩn sắp hết hạn:", e);
           this.priorityStandard.set({ name: 'Lỗi kết nối / dữ liệu', daysLeft: 0, date: '', status: 'error' });
-      }
-
-      // 3. Tải danh sách người dùng cho bản đồ ảnh đại diện (Graceful fallback nếu chưa có quyền/chưa đăng nhập xong)
-      try {
-          const users = await this.fb.getAllUsers();
-          const map: Record<string, string> = {};
-          users.forEach(u => {
-              if (u.displayName && u.photoURL) {
-                  map[u.displayName] = u.photoURL;
-              }
-          });
-          this.userPhotoMap.set(map);
-      } catch (e) {
-          console.warn("Dashboard: Không thể tải danh sách người dùng (lỗi phân quyền hoặc kết nối):", e);
       }
 
       this.isLoading.set(false);
