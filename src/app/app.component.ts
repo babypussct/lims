@@ -341,14 +341,14 @@ export class AppComponent implements OnDestroy {
         this.toast.removeByMessage('phiên bản mới');
       });
 
-      // Xử lý lỗi cài đặt bản mới (thường do extension modify HTML → hash mismatch)
-      // Root fix: index.html đã được loại khỏi hash verification trong ngsw-config.json
-      // Handler này chỉ là safety net — log lỗi và thông báo, KHÔNG auto-reload để tránh loop
+      // Giữ index.html trong hash verification để một phiên bản luôn gồm đúng HTML và chunks.
+      // Lỗi cài đặt thường là trạng thái deploy/CDN tạm thời; lần polling kế tiếp sẽ thử lại.
+      // Không auto-reload ở đây vì phiên bản hiện tại vẫn hợp lệ và reload có thể tạo vòng lặp.
       this.swUpdate.versionUpdates.pipe(
         filter(e => e.type === 'VERSION_INSTALLATION_FAILED')
       ).subscribe((event: any) => {
         console.error('[LIMS SW] ❌ VERSION_INSTALLATION_FAILED:', event.error);
-        this.toast.show('⚠️ Cập nhật phiên bản gặp lỗi. Hãy thử Ctrl+Shift+R để tải lại.', 'info');
+        this.toast.show('⚠️ Bản cập nhật chưa cài được. Hệ thống sẽ tự động thử lại.', 'info');
       });
 
       // Xử lý trạng thái không thể phục hồi (cache corrupt, hash mismatch nghiêm trọng)
