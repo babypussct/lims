@@ -8,6 +8,7 @@ import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
 import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
+import { getSameStandardLots, isFefoCandidate, sortStandardsByFefo } from '../../shared/utils/standard-fefo';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -194,18 +195,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   sameNameAsSelected = computed(() => {
     const sel = this.selectedStd();
     if (!sel) return [];
-    const nameLc = sel.name?.toLowerCase() || '';
-    return this.allStandards()
-      .filter(s => s.id !== sel.id && s.name?.toLowerCase() === nameLc)
-      .sort((a, b) => {
-        const aOk = (a.status !== 'IN_USE' && a.current_amount > 0);
-        const bOk = (b.status !== 'IN_USE' && b.current_amount > 0);
-        if (aOk !== bOk) return aOk ? -1 : 1;
-        const aExp = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
-        const bExp = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
-        if (aExp !== bExp) return aExp - bExp;
-        return (a.current_amount || 0) - (b.current_amount || 0);
-      });
+    return sortStandardsByFefo(getSameStandardLots(sel, this.allStandards(), false));
   });
 
   // Import Preview State
@@ -662,6 +652,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       
       if (!std || !data.userId || !data.purpose) {
           this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
+          return;
+      }
+      if (!isFefoCandidate(std)) {
+          this.toast.show('Lô chuẩn không còn sẵn sàng để cấp. Vui lòng tải lại và chọn lô khác.', 'error');
           return;
       }
 

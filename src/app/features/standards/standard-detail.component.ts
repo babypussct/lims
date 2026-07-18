@@ -10,6 +10,13 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { StateService } from '../../core/services/state.service';
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../core/models/standard.model';
 import { formatNum, getAvatarUrl, getStandardStatus, getStorageInfo, getExpiryClass, getExpiryTimeLeft, canAssign } from '../../shared/utils/utils';
+import {
+    getFefoPredecessor,
+    getFefoPriorityStandard,
+    getSameStandardLots,
+    isFefoCandidate,
+    sortStandardsByFefo
+} from '../../shared/utils/standard-fefo';
 
 // Modals
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
@@ -151,23 +158,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         const all = this.allStandardsCache();
         if (!std || all.length === 0) return [];
-        const related = all.filter(s => s.id !== std.id && s.name.toLowerCase() === std.name.toLowerCase());
-
-        // Sắp xếp theo FEFO (First Expiry First Out):
-        // 1. Lọ có thể dùng (canAssign) lên trước
-        // 2. Cùng assignable: lọ gần hết hạn hơn lên trước
-        // 3. Cùng hạn: lô ít lượng hơn lên trước
-        return related.sort((a, b) => {
-            const aOk = this.canAssign(a);
-            const bOk = this.canAssign(b);
-            if (aOk !== bOk) return aOk ? -1 : 1;
-
-            const aExp = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
-            const bExp = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
-            if (aExp !== bExp) return aExp - bExp;
-
-            return (a.current_amount || 0) - (b.current_amount || 0);
-        });
+        return sortStandardsByFefo(getSameStandardLots(std, all, false));
     });
 
     /**
@@ -176,20 +167,19 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
      */
     fefoWarningSibling = computed(() => {
         const std = this.standard();
-        if (!std || !this.canAssign(std)) return null;
-
-        const siblings = this.relatedStandards();
-        const first = siblings.find(s => this.canAssign(s));
-        if (!first) return null;
-
-        // Kiểm tra xem first có nên dùng trước lọ hiện tại không
-        const stdExp = std.expiry_date ? new Date(std.expiry_date).getTime() : Infinity;
-        const firstExp = first.expiry_date ? new Date(first.expiry_date).getTime() : Infinity;
-
-        if (firstExp < stdExp) return first;
-        if (firstExp === stdExp && (first.current_amount || 0) < (std.current_amount || 0)) return first;
-        return null;
+        if (!std) return null;
+        return getFefoPredecessor(std, this.allStandardsCache());
     });
+
+    fefoPriorityStandard = computed(() => {
+        const std = this.standard();
+        if (!std) return null;
+        return getFefoPriorityStandard(std, this.allStandardsCache());
+    });
+
+    isFefoPriority(std: ReferenceStandard): boolean {
+        return this.fefoPriorityStandard()?.id === std.id;
+    }
 
     ngOnInit() {
         // Subscribe to route params to handle navigation between related standards
@@ -316,6 +306,10 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
             return;
         }
+        if (!isFefoCandidate(std)) {
+            this.toast.show('Lô chuẩn không còn sẵn sàng để cấp. Vui lòng tải lại và chọn lô khác.', 'error');
+            return;
+        }
 
         this.isProcessing.set(true);
         try {
@@ -333,7 +327,17 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             };
 
             await this.stdService.createRequest(request, this.isAssignMode());
-            
+
+            if (this.isAssignMode()) {
+                await this.stdService.dispenseStandard(
+                    request.id!,
+                    std.id,
+                    this.auth.currentUser()?.uid || '',
+                    this.auth.currentUser()?.displayName || 'QTV',
+                    true
+                );
+            }
+
             this.toast.show(this.isAssignMode() ? 'Đã gán chuẩn thành công' : 'Đã gửi yêu cầu mượn chuẩn', 'success');
             this.showAssignModal.set(false);
             

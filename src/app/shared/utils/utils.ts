@@ -1,4 +1,6 @@
 import { ReferenceStandard } from '../../core/models/standard.model';
+import { isStandardExpired, parseStandardDate, startOfLocalDay } from './standard-fefo';
+export { canAssign } from './standard-fefo';
 
 export const UNIT_DATA: Record<string, { type: 'mass' | 'vol' | 'qty'; val: number }> = {
   // Mass (Base: g)
@@ -352,27 +354,33 @@ export function calculateSimilarityScore(query: string, std: any): number {
 
 export function getExpiryBarClass(dateStr: string | undefined): string {
     if (!dateStr) return 'bg-slate-300';
-    const exp = new Date(dateStr); const today = new Date();
+    const exp = parseStandardDate(dateStr);
+    if (exp === null) return 'bg-slate-300';
+    const today = startOfLocalDay();
     if (exp < today) return 'bg-red-500';
-    const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
+    const diffDays = (exp - today) / (1000 * 3600 * 24);
     if (diffDays < 180) return 'bg-orange-500'; 
     return 'bg-emerald-500';
 }
 
 export function getExpiryStatus(dateStr: string | undefined): string {
     if (!dateStr) return 'N/A';
-    const exp = new Date(dateStr); const today = new Date();
+    const exp = parseStandardDate(dateStr);
+    if (exp === null) return 'N/A';
+    const today = startOfLocalDay();
     if (exp < today) return 'Hết hạn';
-    const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
+    const diffMonths = (exp - today) / (1000 * 3600 * 24 * 30);
     if (diffMonths < 6) return '< 6 Tháng'; 
     return 'Còn hạn';
 }
 
 export function getExpiryStatusClass(dateStr: string | undefined): string {
     if (!dateStr) return 'border-slate-200 text-slate-400 bg-slate-50';
-    const exp = new Date(dateStr); const today = new Date();
+    const exp = parseStandardDate(dateStr);
+    if (exp === null) return 'border-slate-200 text-slate-400 bg-slate-50';
+    const today = startOfLocalDay();
     if (exp < today) return 'border-red-200 text-red-600 bg-red-50';
-    const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
+    const diffMonths = (exp - today) / (1000 * 3600 * 24 * 30);
     if (diffMonths < 6) return 'border-orange-200 text-orange-600 bg-orange-50';
     return 'border-emerald-200 text-emerald-600 bg-emerald-50';
 }
@@ -407,17 +415,20 @@ export function getStorageInfo(condition: string | undefined): { icon: string, c
 
 export function getExpiryClass(dateStr: string | undefined): string {
     if (!dateStr) return 'text-slate-400';
-    const exp = new Date(dateStr); const today = new Date();
-    if (exp < today) return 'text-red-600 line-through decoration-2'; 
-    const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
+    const exp = parseStandardDate(dateStr);
+    if (exp === null) return 'text-slate-400';
+    const today = startOfLocalDay();
+    if (exp < today) return 'text-red-600 line-through decoration-2';
+    const diffMonths = (exp - today) / (1000 * 3600 * 24 * 30);
     if (diffMonths < 6) return 'text-orange-600'; 
     return 'text-indigo-600'; 
 }
 
 export function getExpiryTimeClass(dateStr: string | undefined): string {
     if (!dateStr) return 'text-slate-400 italic';
-    const exp = new Date(dateStr); const today = new Date();
-    const diffDays = Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const exp = parseStandardDate(dateStr);
+    if (exp === null) return 'text-slate-400 italic';
+    const diffDays = Math.round((exp - startOfLocalDay()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return 'text-red-600 font-bold';
     if (diffDays < 180) return 'text-orange-600 font-bold';
     return 'text-emerald-600 font-bold';
@@ -425,10 +436,9 @@ export function getExpiryTimeClass(dateStr: string | undefined): string {
 
 export function getExpiryTimeLeft(dateStr: string | undefined): string {
     if (!dateStr) return '';
-    const exp = new Date(dateStr);
-    const now = new Date();
-    const diffTime = exp.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const exp = parseStandardDate(dateStr);
+    if (exp === null) return 'Hạn dùng không hợp lệ';
+    const diffDays = Math.round((exp - startOfLocalDay()) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return `Đã hết hạn ${Math.abs(diffDays)} ngày`;
     if (diffDays === 0) return 'Hết hạn hôm nay';
@@ -444,31 +454,18 @@ export function getStandardStatus(std: ReferenceStandard): { label: string, clas
     
     if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
     
-    const exp = new Date(std.expiry_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const exp = parseStandardDate(std.expiry_date);
+    if (exp === null) return { label: 'Hạn không hợp lệ', class: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' };
+    const today = startOfLocalDay();
 
-    if (exp < today) return { label: 'Hết hạn SD', class: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' };
+    if (isStandardExpired(std.expiry_date)) return { label: 'Hết hạn SD', class: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' };
     
-    const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
+    const diffDays = (exp - today) / (1000 * 3600 * 24);
     if (diffDays < 180) return { label: 'Sắp hết hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
     
     if ((std.current_amount / (std.initial_amount || 1)) <= 0.2) return { label: 'Sắp hết hàng', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
 
     return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' };
-}
-
-export function canAssign(std: ReferenceStandard): boolean {
-    if (std.status === 'IN_USE') return false;
-    if (std.status === 'DEPLETED' || std.current_amount <= 0) return false;
-    
-    if (std.expiry_date) {
-        const expDate = new Date(std.expiry_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (expDate < today) return false;
-    }
-    return true;
 }
 
 export function getSafeGoogleUrl(url: string | null | undefined, type: 'pdf' | 'doc'): string {

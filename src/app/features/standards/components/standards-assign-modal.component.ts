@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
-import { getExpiryClass, canAssign } from '../../../shared/utils/utils';
+import { getExpiryClass } from '../../../shared/utils/utils';
+import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
 
 @Component({
   selector: 'app-standards-assign-modal',
@@ -142,23 +143,12 @@ export class StandardsAssignModalComponent {
   assignExpectedAmount = signal<number | null>(null);
 
   getExpiryClass = getExpiryClass;
-  canAssignFn = canAssign;
-
   /** Lọ ưu tiên FEFO trong các lọ cùng tên mà nên dùng trước lọ hiện tại */
   fefoTopSibling = computed(() => {
     const current = this.std();
     const siblings = this.sameName();
     if (!current || siblings.length === 0) return null;
-
-    const first = siblings.find(s => canAssign(s));
-    if (!first) return null;
-
-    const stdExp = current.expiry_date ? new Date(current.expiry_date).getTime() : Infinity;
-    const firstExp = first.expiry_date ? new Date(first.expiry_date).getTime() : Infinity;
-
-    if (firstExp < stdExp) return first;
-    if (firstExp === stdExp && (first.current_amount || 0) < (current.current_amount || 0)) return first;
-    return null;
+    return getFefoPredecessor(current, [current, ...siblings]);
   });
 
   constructor() {

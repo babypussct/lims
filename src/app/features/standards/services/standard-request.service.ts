@@ -10,6 +10,7 @@ import {
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../../core/models/standard.model';
 import { NotificationService } from '../../../core/services/notification.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
+import { canAssign } from '../../../shared/utils/standard-fefo';
 import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
@@ -116,12 +117,23 @@ export class StandardRequestService {
     request.updatedAt = Date.now();
     
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}`);
-    const batch = writeBatch(this.fb.db);
-    batch.set(reqRef, { ...request, lastUpdated: serverTimestamp() });
-    if (!isAssign) {
-      batch.update(stdRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
-    }
-    await batch.commit();
+    await runTransaction(this.fb.db, async transaction => {
+      const stdDoc = await transaction.get(stdRef);
+      if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
+
+      const standard = { ...stdDoc.data(), id: stdDoc.id } as ReferenceStandard;
+      if (!canAssign(standard)) {
+        throw new Error('Lô chuẩn không còn sẵn sàng để cấp (đang dùng, đã hết hoặc hết hạn).');
+      }
+      if (standard.has_pending_request) {
+        throw new Error('Lô chuẩn đã có yêu cầu đang chờ duyệt.');
+      }
+
+      transaction.set(reqRef, { ...request, lastUpdated: serverTimestamp() });
+      // Reserve the lot atomically for both normal requests and direct assignment.
+      // dispenseStandard() clears this flag immediately after a direct assignment.
+      transaction.update(stdRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
+    });
 
     if (isAssign) {
       await this.crud.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
@@ -190,11 +202,15 @@ export class StandardRequestService {
       if (!reqDoc.exists()) throw new Error('Yêu cầu không tồn tại!');
 
       const stdData = stdDoc.data();
-      if (stdData['status'] === 'IN_USE' || stdData['status'] === 'DEPLETED') {
-        throw new Error('Chuẩn đang được sử dụng hoặc đã hết!');
+      const standard = { ...stdData, id: stdDoc.id } as ReferenceStandard;
+      if (!canAssign(standard)) {
+        throw new Error('Chuẩn đang được sử dụng, đã hết hoặc hết hạn!');
       }
 
       reqData = reqDoc.data() as StandardRequest;
+      if (reqData.standardId !== standardId || reqData.status !== 'PENDING_APPROVAL') {
+        throw new Error('Yêu cầu không còn hợp lệ để cấp chuẩn!');
+      }
       transaction.update(stdRef, {
         status: 'IN_USE', current_holder: reqData.requestedByName,
         current_holder_uid: reqData.requestedBy, current_request_id: requestId,

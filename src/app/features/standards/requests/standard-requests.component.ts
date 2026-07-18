@@ -11,6 +11,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { AuthService } from '../../../core/services/auth.service';
 import { Unsubscribe } from 'firebase/firestore';
 import { StandardRequestService } from '../services/standard-request.service';
+import { isFefoCandidate } from '../../../shared/utils/standard-fefo';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -284,6 +285,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           for (const stdId of event.standardIds) {
               const std = this.availableStandards().find(s => s.id === stdId);
               if (!std) continue;
+
+              if (!isFefoCandidate(std)) {
+                  this.toast.show(`Lô "${std.internal_id || std.lot_number || std.name}" không còn sẵn sàng, đã bỏ qua.`, 'info');
+                  skippedCount++;
+                  continue;
+              }
 
               // Kiểm tra request trùng lặp: bất kỳ ai đã có yêu cầu đang hoạt động cho chuẩn này chưa
               const hasActiveRequest = this.requests().some(r =>

@@ -2,6 +2,15 @@ import { Component, Input, Output, EventEmitter, computed, signal, inject } from
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReferenceStandard } from '../../../../core/models/standard.model';
+import {
+    getFefoUnavailableReason,
+    getSameStandardLots,
+    isFefoCandidate,
+    isFefoPriorityStandard,
+    isStandardExpired,
+    parseStandardDate,
+    sortStandardsByFefo
+} from '../../../../shared/utils/standard-fefo';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -44,11 +53,11 @@ function removeAccents(str: string): string {
                             @for(std of filteredAvailableStandards(); track std.id) {
                                 <div class="p-3 border rounded-2xl transition-all duration-200 flex items-start gap-3 group relative overflow-hidden"
                                         [ngClass]="{
-                                        'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
-                                        'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-md hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
-                                        'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
+                                        'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && isSelectable(std),
+                                        'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-md hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && isSelectable(std),
+                                        'opacity-50 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': !isSelectable(std)
                                         }"
-                                        (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
+                                        (click)="isSelectable(std) && toggleStandardSelection(std.id)">
 
                                     <!-- Selection Indicator Overlay -->
                                     @if(selectedStandardIds().has(std.id)) {
@@ -96,13 +105,15 @@ function removeAccents(str: string): string {
 
                                             <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
                                                  <div class="flex items-center gap-1.5 flex-wrap">
-                                                     @if(isDepleted(std)) {
+                                                     @if(!isSelectable(std)) {
                                                          <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
-                                                             <i class="fa-solid fa-ban text-red-400"></i> Hết
+                                                             <i class="fa-solid fa-ban text-red-400"></i> {{unavailableReason(std)}}
                                                          </div>
-                                                         <button (click)="$event.stopPropagation(); requestPurchase.emit(std)" class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[11px] font-black rounded flex items-center gap-1 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
-                                                             <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
-                                                         </button>
+                                                         @if(isDepleted(std)) {
+                                                             <button (click)="$event.stopPropagation(); requestPurchase.emit(std)" class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[11px] font-black rounded flex items-center gap-1 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
+                                                                 <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
+                                                             </button>
+                                                         }
                                                      } @else {
                                                          <div class="text-sm font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                                              {{std.current_amount}} <span class="text-[11px] text-emerald-500 uppercase">{{std.unit}}</span>
@@ -300,45 +311,24 @@ export class CreateRequestDrawerComponent {
           });
       }
       
-      const now = Date.now();
-      const thirtyDays = now + 30 * 24 * 60 * 60 * 1000;
-
-      return stds.sort((a, b) => {
-          // Depleted / hết: xuống cuối
-          const aD = this.isDepleted(a) ? 1 : 0;
-          const bD = this.isDepleted(b) ? 1 : 0;
-          if (aD !== bD) return aD - bD;
-
-          // Hết hạn sử dụng: xuống sau lọ còn hạn
-          const aExp = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
-          const bExp = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
-          const aExpired = aExp < now ? 1 : 0;
-          const bExpired = bExp < now ? 1 : 0;
-          if (aExpired !== bExpired) return aExpired - bExpired;
-
-          // FEFO: gần hết hạn hơn → lên trước
-          if (aExp !== bExp) return aExp - bExp;
-
-          // Cùng hạn: ít lượng hơn → lên trước
-          return (a.current_amount || 0) - (b.current_amount || 0);
-      });
+      return sortStandardsByFefo(stds);
   });
 
   /** Kiểm tra lọ có phải lọ nên ưu tiên nhất trong danh sách cùng tên không */
   isFefoTopForName(std: ReferenceStandard): boolean {
-      if (this.isDepleted(std)) return false;
-      const nameLc = std.name?.toLowerCase() || '';
-      const sameName = this.filteredAvailableStandards().filter(
-          s => s.name?.toLowerCase() === nameLc && !this.isDepleted(s)
-      );
-      return sameName.length > 1 && sameName[0]?.id === std.id;
+      const all = this._availableStandards();
+      const sameName = getSameStandardLots(std, all, true);
+      return sameName.length > 1 && isFefoPriorityStandard(std, all);
   }
 
   isExpiringSoon(std: ReferenceStandard): boolean {
       if (!std.expiry_date) return false;
-      const exp = new Date(std.expiry_date).getTime();
-      const thirtyDays = Date.now() + 30 * 24 * 60 * 60 * 1000;
-      return exp > Date.now() && exp <= thirtyDays;
+      const exp = parseStandardDate(std.expiry_date);
+      if (exp === null) return false;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
+      return exp >= today && exp <= thirtyDays;
   }
 
   isLowStock(std: ReferenceStandard): boolean {
@@ -355,10 +345,15 @@ export class CreateRequestDrawerComponent {
   }
 
   isExpired(expiryDate: string | undefined): boolean {
-      if (!expiryDate) return false;
-      const date = new Date(expiryDate);
-      if (isNaN(date.getTime())) return false;
-      return date.getTime() < Date.now();
+      return isStandardExpired(expiryDate);
+  }
+
+  isSelectable(std: ReferenceStandard): boolean {
+      return isFefoCandidate(std);
+  }
+
+  unavailableReason(std: ReferenceStandard): string {
+      return getFefoUnavailableReason(std) || 'Không khả dụng';
   }
 
   toggleStandardSelection(stdId: string) {
@@ -386,8 +381,13 @@ export class CreateRequestDrawerComponent {
   onSubmit() {
       if (this.selectedStandardIds().size === 0 || this.isProcessing) return;
       const val = this.form.value;
+      const selectableIds = Array.from(this.selectedStandardIds()).filter(id => {
+          const std = this._availableStandards().find(item => item.id === id);
+          return !!std && this.isSelectable(std);
+      });
+      if (selectableIds.length === 0) return;
       this.submitRequest.emit({
-          standardIds: Array.from(this.selectedStandardIds()),
+          standardIds: selectableIds,
           purpose: val.purpose?.trim() || 'Pha chuẩn mới'
       });
   }
