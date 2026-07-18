@@ -9,6 +9,7 @@
     "test": "ng test",
     "test:fefo": "tsx --test src/app/shared/utils/standard-fefo.test.ts",
     "test:standards": "tsx --test src/app/shared/utils/standard-fefo.test.ts src/app/shared/utils/standard-amount.test.ts src/app/shared/utils/standard-workflow.test.ts src/app/shared/utils/standard-rules.test.ts",
+    "test:notifications": "tsx --test src/app/core/services/notification-policy.test.ts src/app/core/services/toast.service.test.ts",
     "lint": "ng lint",
     "typecheck:api": "tsc -p tsconfig.api.json --noEmit",
     "dump-sops": "node scratch/dump_all_sops.js"

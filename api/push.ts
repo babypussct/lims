@@ -20,7 +20,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log('[WebPush API] Request received:', req.body);
+    const authorization = req.headers.authorization || '';
+    const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+    if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+
     const { recipientUids, title, body, url, appId } = req.body;
 
     if (!recipientUids || !Array.isArray(recipientUids) || recipientUids.length === 0 || !title || !body) {
@@ -49,11 +52,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[WebPush API] Querying Firestore for ${recipientUids.length} users...`);
     const db = admin.firestore();
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const resolvedAppId = appId || 'lims-cloud-fixed';
+    const callerProfile = await db.doc(`artifacts/${resolvedAppId}/users/${decoded.uid}`).get();
+    if (!callerProfile.exists || callerProfile.data()?.['role'] !== 'manager') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     let allTokens: string[] = [];
 
     // Fetch tokens for each recipient UID
-    const resolvedAppId = appId || 'lims-cloud-fixed';
-    
     // Batch query user documents
     const userDocs = await Promise.all(
       recipientUids.map((uid: string) => 

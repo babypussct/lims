@@ -38,3 +38,13 @@ test('usage logs use tombstones instead of client-side physical deletes', () => 
   assert.match(usageBlock, /allow update: if canRollbackStandardLogs/);
   assert.match(usageBlock, /allow delete: if false/);
 });
+
+test('notifications are recipient-scoped and client creation is denied', () => {
+  const notificationsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/notifications/{docId}'),
+    rules.indexOf('match /artifacts/{appId}/auth_sessions/{sessionId}')
+  );
+  assert.match(notificationsBlock, /resource\.data\.recipientUid == request\.auth\.uid/);
+  assert.match(notificationsBlock, /allow create: if false/);
+  assert.match(notificationsBlock, /affectedKeys\(\)\.hasOnly\(\['isRead'\]\)/);
+});

@@ -8,7 +8,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../../core/models/standard.model';
-import { NotificationService } from '../../../core/services/notification.service';
+import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount, formatNum } from '../../../shared/utils/utils';
 import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-amount';
 import { DeltaSyncService } from '../../../core/services/delta-sync.service';
@@ -28,7 +28,7 @@ export class StandardUsageService {
   private crud = inject(StandardCrudService);
   private cache = inject(StandardCacheService);
   private deltaSync = inject(DeltaSyncService);
-  private notificationService = inject(NotificationService);
+  private notificationCenter = inject(NotificationCenterService);
 
   // ─── Listen to Global Usage Logs ─────────────────────────────────────────────
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
@@ -231,11 +231,12 @@ export class StandardUsageService {
       const initial = s.initial_amount || 0;
       const current = s.current_amount || 0;
       if (current > 0 && current <= initial * 0.2) {
-        await this.notificationService.notify({
+        await this.notificationCenter.publish({
           recipientUid: 'role:admin', senderUid: 'system', senderName: 'Hệ thống LIMS',
           type: 'STOCK_LOW_ALERT', title: 'Cảnh báo tồn kho thấp',
           message: `Lô chuẩn ${s.name} chỉ còn ${formatNum(current)} ${s.unit} (dưới 20%). Vui lòng cân nhắc đặt mua thêm.`,
-          targetId: standardId, actionUrl: `/standards/${standardId}`
+          targetId: standardId, actionUrl: `/standards/${standardId}`,
+          channels: ['inbox', 'push']
         });
       }
     }

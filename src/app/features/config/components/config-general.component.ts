@@ -12,6 +12,7 @@ import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import { NotificationService } from '../../../core/services/notification.service';
+import { NotificationCenterService } from '../../../core/services/notification-center.service';
 
 @Component({
   selector: 'app-config-general',
@@ -28,6 +29,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   standardService = inject(StandardService);
   router = inject(Router);
   notificationService = inject(NotificationService);
+  notificationCenter = inject(NotificationCenterService);
 
   versionControl = new FormControl(''); 
   maintenanceModeLocal = signal<boolean>(false);
@@ -207,13 +209,14 @@ service cloud.firestore {
       });
 
       // Gửi Broadcast (Push Notification) tới tất cả user
-      await this.notificationService.notify({
+      await this.notificationCenter.publish({
           recipientUid: 'role:all',
-          groupId: newRef.id,
+          eventId: newRef.id,
           type: 'SYSTEM_UPDATE',
           title: 'Thông báo Hệ thống',
           message: content,
-          actionUrl: actionUrl
+          actionUrl: actionUrl,
+          channels: ['inbox', 'push']
       });
 
       this.toast.show('Đã đăng và Broadcast thông báo tới tất cả người dùng!', 'success');

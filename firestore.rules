@@ -121,7 +121,13 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
     match /artifacts/{appId}/notifications/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
+      allow create: if false; // Chỉ Firebase Admin trong /api/notifications được tạo
+      allow update: if isSignedIn() &&
+        resource.data.recipientUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']) &&
+        request.resource.data.isRead == true;
+      allow delete: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
     }
     match /artifacts/{appId}/auth_sessions/{sessionId} {
       allow read, write: if true;

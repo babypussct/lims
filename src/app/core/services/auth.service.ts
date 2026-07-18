@@ -565,6 +565,11 @@ export class AuthService {
   canDeleteStandardLogs(): boolean {
     return this.hasPermission(PERMISSIONS.STANDARD_LOG_DELETE) || this.hasPermission(PERMISSIONS.STANDARD_EDIT);
   }
+
+  /** Firebase ID token dùng cho các API server-side cần xác thực. */
+  async getIdToken(forceRefresh = false): Promise<string | null> {
+    return this.auth.currentUser?.getIdToken(forceRefresh) ?? null;
+  }
   canEditInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_EDIT); }
   canViewInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_VIEW); }
   canEditSop(): boolean { return this.hasPermission(PERMISSIONS.SOP_EDIT); }

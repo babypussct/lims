@@ -7,7 +7,7 @@ import {
   where, Unsubscribe, onSnapshot, getDocs
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus } from '../../../core/models/standard.model';
-import { NotificationService } from '../../../core/services/notification.service';
+import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
 import { canAssign, getFefoPriorityStandard } from '../../../shared/utils/standard-fefo';
 import {
@@ -39,7 +39,7 @@ export class StandardRequestService {
   private crud = inject(StandardCrudService);
   private cache = inject(StandardCacheService);
   private deltaSync = inject(DeltaSyncService);
-  private notificationService = inject(NotificationService);
+  private notificationCenter = inject(NotificationCenterService);
 
   constructor() {
     // Cleanup singleton khi user logout hoặc đổi account
@@ -190,12 +190,13 @@ export class StandardRequestService {
       await this.crud.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
     } else {
       await this.crud.logGlobalActivity('REQUEST_STANDARD', `Yêu cầu chuẩn: ${request.standardName}`, request.id);
-      await this.notificationService.notify({
+      await this.notificationCenter.publish({
         recipientUid: 'role:admin', senderUid: currentUser?.uid,
         senderName: currentUser?.displayName || 'Người dùng',
         type: 'BORROW_REQUEST', title: 'Yêu cầu mượn chuẩn',
         message: `${currentUser?.displayName || 'Ai đó'} vừa đăng ký mượn lô chuẩn ${request.standardName}.`,
-        targetId: request.standardId, actionUrl: `/standards/${request.standardId}`
+        targetId: request.standardId, actionUrl: `/standards/${request.standardId}`,
+        channels: ['inbox', 'push']
       });
     }
   }
@@ -284,12 +285,13 @@ export class StandardRequestService {
       if (status === 'REJECTED') {
         action = 'REJECT_STANDARD_REQUEST';
         details = `Từ chối yêu cầu: ${(reqData as StandardRequest).standardName}`;
-        await this.notificationService.notify({
+        await this.notificationCenter.publish({
           recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Hệ thống',
           type: 'REQUEST_REJECTED', title: 'Yêu cầu bị từ chối',
           message: `Yêu cầu mượn lô chuẩn ${(reqData as StandardRequest).standardName} của bạn không được phê duyệt.`,
-          targetId: (reqData as StandardRequest).standardId, actionUrl: `/standards/${(reqData as StandardRequest).standardId}`
+          targetId: (reqData as StandardRequest).standardId, actionUrl: `/standards/${(reqData as StandardRequest).standardId}`,
+          channels: ['inbox', 'push']
         });
       } else if (status === 'PENDING_RETURN') {
         action = 'REPORT_RETURN_STANDARD';
@@ -351,12 +353,13 @@ export class StandardRequestService {
 
     if (reqData && !isAssign) {
       await this.crud.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
-      await this.notificationService.notify({
+      await this.notificationCenter.publish({
         recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
         senderName: currentUser.displayName || 'Quản trị viên',
         type: 'REQUEST_APPROVED', title: 'Yêu cầu được duyệt',
         message: `Yêu cầu mượn lô chuẩn ${(reqData as StandardRequest).standardName} đã được phê duyệt. Xin hãy bảo quản cẩn thận!`,
-        targetId: standardId, actionUrl: `/standards/${standardId}`
+        targetId: standardId, actionUrl: `/standards/${standardId}`,
+        channels: ['inbox', 'push']
       });
     }
 

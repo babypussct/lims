@@ -10,7 +10,7 @@ import { ReferenceStandard, StandardsPage } from '../../../core/models/standard.
 import { ToastService } from '../../../core/services/toast.service';
 import { generateSlug, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
-import { NotificationService } from '../../../core/services/notification.service';
+import { NotificationCenterService } from '../../../core/services/notification-center.service';
 
 /**
  * StandardCrudService — Các thao tác CRUD cơ bản trên ReferenceStandard.
@@ -24,7 +24,7 @@ export class StandardCrudService {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
   private cache = inject(StandardCacheService);
-  private notifications = inject(NotificationService);
+  private notificationCenter = inject(NotificationCenterService);
 
   // ─── Search Key ──────────────────────────────────────────────────────────────
   generateSearchKey(std: ReferenceStandard): string {
@@ -216,7 +216,7 @@ export class StandardCrudService {
   }
 
   // ─── CoA Request ─────────────────────────────────────────────────────────────
-  async requestCoa(std: ReferenceStandard, notificationService: any): Promise<void> {
+  async requestCoa(std: ReferenceStandard): Promise<void> {
     const user = this.auth.currentUser();
     if (!user || !this.auth.hasPermission('standard_request')) {
       throw new Error('Bạn không có quyền yêu cầu cập nhật CoA.');
@@ -230,7 +230,7 @@ export class StandardCrudService {
       transaction.update(ref, { coa_requested_by: user.uid, lastUpdated: serverTimestamp() });
     });
     await this.logGlobalActivity('REQUEST_COA', `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`, std.id);
-    await notificationService.notify({
+    await this.notificationCenter.publish({
       recipientUid: 'role:admin',
       senderUid: user?.uid,
       senderName: user?.displayName || 'Người dùng',
@@ -238,7 +238,8 @@ export class StandardCrudService {
       title: 'Yêu cầu bổ sung CoA',
       message: `${user?.displayName || 'Ai đó'} vừa yêu cầu cập nhật file CoA cho lô chuẩn ${std.name} (Lô: ${std.lot_number || 'N/A'}).`,
       targetId: std.id,
-      actionUrl: `/standards/${std.id}`
+      actionUrl: `/standards/${std.id}`,
+      channels: ['inbox', 'push']
     });
   }
 
@@ -274,7 +275,7 @@ export class StandardCrudService {
 
     const admin = this.auth.currentUser();
     const recipients = [...new Set(freshStandards.map(item => item.coa_requested_by).filter(Boolean))] as string[];
-    await Promise.all(recipients.map(recipientUid => this.notifications.notify({
+    await Promise.all(recipients.map(recipientUid => this.notificationCenter.publish({
       recipientUid,
       senderUid: admin?.uid,
       senderName: admin?.displayName || 'Quản trị viên',
@@ -282,7 +283,8 @@ export class StandardCrudService {
       title: 'Đã cập nhật CoA',
       message: `File CoA của chuẩn "${freshStandards[0].name}" đã được tải lên thành công.`,
       targetId: freshStandards[0].id,
-      actionUrl: `/standards/${freshStandards[0].id}`
+      actionUrl: `/standards/${freshStandards[0].id}`,
+      channels: ['inbox', 'push']
     })));
     await this.logGlobalActivity(
       'UPLOAD_STANDARD_COA',

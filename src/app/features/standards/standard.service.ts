@@ -28,7 +28,6 @@ import { StandardCrudService }    from './services/standard-crud.service';
 import { StandardUsageService }   from './services/standard-usage.service';
 import { StandardRequestService } from './services/standard-request.service';
 import { StandardImportService }  from './services/standard-import.service';
-import { NotificationService }    from '../../core/services/notification.service';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -41,7 +40,6 @@ export class StandardService {
   private usage    = inject(StandardUsageService);
   private request  = inject(StandardRequestService);
   private importer = inject(StandardImportService);
-  private notif    = inject(NotificationService);
 
   // ─── Expose deltaSync cho component dùng stdService.deltaSync ────────────────
   get deltaSync() { return this.cache.deltaSync; }
@@ -111,9 +109,8 @@ export class StandardService {
   async restoreStandard(id: string, name?: string): Promise<void> {
     return this.crud.restoreStandard(id, name);
   }
-  /** requestCoa — notificationService là optional, mặc định dùng NotificationService inject */
-  async requestCoa(std: ReferenceStandard, notificationService?: any): Promise<void> {
-    return this.crud.requestCoa(std, notificationService ?? this.notif);
+  async requestCoa(std: ReferenceStandard): Promise<void> {
+    return this.crud.requestCoa(std);
   }
   async completeCoaUpload(standards: ReferenceStandard[], certificateUrl: string): Promise<void> {
     return this.crud.completeCoaUpload(standards, certificateUrl);
