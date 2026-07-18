@@ -193,11 +193,11 @@ export class RequestsTableComponent {
   private auth = inject(AuthService);
 
   canApproveRequest(req: StandardRequest): boolean {
-    return this.auth.hasPermission('standard_approve');
+    return this.auth.canAssignStandards();
   }
 
   canDeleteRequest(req: StandardRequest): boolean {
-    return this.auth.hasPermission('standard_log_delete');
+    return this.auth.canDeleteStandardLogs();
   }
 
   isCurrentUser(uid: string): boolean {
@@ -207,7 +207,7 @@ export class RequestsTableComponent {
 
   canApproveAndNotRequestedBySelf(req: StandardRequest): boolean {
     const user = this.auth.currentUser();
-    return this.auth.hasPermission('standard_approve') && !!user && req.requestedBy !== user.uid;
+    return this.auth.canAssignStandards() && !!user && req.requestedBy !== user.uid;
   }
 
   @Input() requests: StandardRequest[] = [];

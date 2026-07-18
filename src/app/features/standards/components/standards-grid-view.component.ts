@@ -150,12 +150,12 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: true})" class="w-auto px-3 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Gán cho mượn">
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Gán
                                                </button>
-                                           } @else {
+                                           } @else if(canRequestStandards()) {
                                                <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: false})" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Mượn chuẩn này">
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Mượn
                                                </button>
                                            }
-                                       } @else if (std.status === 'IN_USE' && (canEditStandards() || std.current_holder_uid === currentUser()?.uid)) {
+                                       } @else if (std.status === 'IN_USE' && (canAssignStandards() || std.current_holder_uid === currentUser()?.uid)) {
                                            <button (click)="$event.stopPropagation(); goToReturn.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Trả chuẩn">
                                                <i class="fa-solid fa-rotate-left"></i> Trả chuẩn
                                           </button>
@@ -164,7 +164,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <button class="w-auto px-3 h-8 rounded-lg bg-slate-300 dark:bg-slate-700 text-slate-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed" title="Đã có người yêu cầu mua">
                                                    <i class="fa-solid fa-cart-arrow-down"></i> Đã Y/C
                                                </button>
-                                           } @else {
+                                           } @else if(canRequestStandards() || canAssignStandards()) {
                                                <button (click)="$event.stopPropagation(); openPurchaseRequestModal.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-500 shadow-md shadow-amber-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Đề nghị mua sắm">
                                                    <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
                                                </button>
@@ -189,6 +189,7 @@ export class StandardsGridViewComponent {
   quickUploadStdId = input<string>('');
   canEditStandards = input<boolean>(true);
   canAssignStandards = input<boolean>(false);
+  canRequestStandards = input<boolean>(false);
   currentUser = input<UserProfile | null>(null);
 
   toggleSelection = output<string>();

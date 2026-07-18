@@ -26,8 +26,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 import { PrintService } from '../../core/services/print.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
-import { NotificationService } from '../../core/services/notification.service';
-import { writeBatch, doc, deleteField, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
 
 @Component({
@@ -50,7 +49,6 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     sanitizer = inject(DomSanitizer);
     printService = inject(PrintService);
     googleDriveService = inject(GoogleDriveService);
-    notificationService = inject(NotificationService);
 
     Math = Math;
     formatNum = formatNum;
@@ -141,7 +139,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     canReturnStandard = computed(() => {
         const std = this.standard();
         if (!std) return false;
-        const isEditor = this.auth.hasPermission('standard_edit');
+        const isEditor = this.auth.canAssignStandards();
         const isHolder = std.current_holder_uid === this.auth.currentUser()?.uid;
         return isEditor || isHolder;
     });
@@ -149,10 +147,15 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     canRequestCoa = computed(() => {
         const std = this.standard();
         if (!std) return false;
-        return !std.certificate_ref && !this.auth.hasPermission('standard_edit');
+        return !std.certificate_ref &&
+          this.auth.hasPermission('standard_request') &&
+          !this.auth.canAssignStandards();
     });
 
-    canAssignStandards = computed(() => this.auth.hasPermission('standard_edit') || this.auth.hasPermission('standard_approve'));
+    canAssignStandards = computed(() => this.auth.canAssignStandards());
+    canRequestStandards = computed(() => this.auth.hasPermission('standard_request'));
+    canRequestPurchase = computed(() => this.canRequestStandards() || this.canAssignStandards());
+    canDeleteStandardLogs = computed(() => this.auth.canDeleteStandardLogs());
 
     relatedStandards = computed(() => {
         const std = this.standard();
@@ -368,11 +371,11 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     openPurchaseModal() {
-        if (this.standard()) this.showPurchaseModal.set(true);
+        if (this.standard() && this.canRequestPurchase()) this.showPurchaseModal.set(true);
     }
 
     async requestCoa(std: ReferenceStandard) {
-        if (this.isProcessing() || std.coa_requested_by) return;
+        if (this.isProcessing() || std.coa_requested_by || !this.canRequestCoa()) return;
         
         this.confirmation.confirm({
             message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
@@ -467,32 +470,15 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
             // Tìm tất cả các chuẩn cùng Tên và Số Lô từ Delta Sync cache
             const allStds = this.stdService.getAllStandardsFromCache();
-            const siblings = allStds.filter(s => s.name === std.name && s.lot_number === std.lot_number && !s._isDeleted);
-            
-            const batch = writeBatch(this.firebaseService.db);
-            for (const s of siblings) {
-                if (s.id) {
-                    const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, s.id);
-                    batch.update(ref, { certificate_ref: previewUrl, coa_requested_by: deleteField(), lastUpdated: serverTimestamp() });
-                }
-            }
-            await batch.commit();
-            await this.firebaseService.updateMetadata('standards');
-
-            // Nếu có ai đó yêu cầu CoA, thông báo lại cho họ
-            if (std.coa_requested_by) {
-                const admin = this.auth.currentUser();
-                await this.notificationService.notify({
-                    recipientUid: std.coa_requested_by,
-                    senderUid: admin?.uid,
-                    senderName: admin?.displayName || 'Quản trị viên',
-                    type: 'SYSTEM_INFO', // Hoặc có thể thêm type 'COA_UPLOADED' nếu muốn
-                    title: 'Đã cập nhật CoA',
-                    message: `File CoA của chuẩn "${std.name}" đã được tải lên thành công.`,
-                    targetId: std.id,
-                    actionUrl: `/standards/${std.id}`
-                });
-            }
+            const lot = (std.lot_number || '').trim().toLowerCase();
+            const siblings = lot
+                ? allStds.filter(s =>
+                    s.name.trim().toLowerCase() === std.name.trim().toLowerCase() &&
+                    (s.lot_number || '').trim().toLowerCase() === lot &&
+                    !s._isDeleted
+                )
+                : [std];
+            await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
             // Cập nhật local signal cho view hiện tại
             this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested_by: undefined } : current);

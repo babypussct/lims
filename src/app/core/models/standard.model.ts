@@ -6,6 +6,9 @@ export interface UsageLog {
   user: string; 
   amount_used: number;
   unit?: string; // e.g. mg, ul
+  /** Amount converted exactly once into normalized_unit (normally the standard unit). */
+  normalized_amount?: number;
+  normalized_unit?: string;
   purpose?: string; 
   timestamp?: number;
   
@@ -21,6 +24,8 @@ export interface UsageLog {
   lastUpdated?: any;
   _isDeleted?: boolean;
   requestId?: string;
+  rolledBackAt?: number;
+  rolledBackBy?: string;
 }
 
 export interface ReferenceStandard {
@@ -56,7 +61,7 @@ export interface ReferenceStandard {
   search_key?: string; 
 
   // Workflow Status
-  status?: 'AVAILABLE' | 'IN_USE' | 'DEPLETED';
+  status?: 'AVAILABLE' | 'IN_USE' | 'DEPLETED' | 'ACTIVE' | 'DELETED';
   current_holder?: string; // User ID or Name holding the standard
   current_holder_uid?: string; // User ID holding the standard
   current_request_id?: string; // ID of the active request
@@ -129,6 +134,9 @@ export interface StandardRequest {
   
   // Usage tracking
   totalAmountUsed: number;
+  /** Confirmed cumulative consumption, expressed in confirmedUnit. */
+  confirmedAmountUsed?: number;
+  confirmedUnit?: string;
   reportedDepleted?: boolean;
   usageLogs?: UsageLog[];
   
@@ -138,6 +146,8 @@ export interface StandardRequest {
   // Soft Delete / DeltaSync
   _isDeleted?: boolean;
   lastUpdated?: any;
+  rolledBackAt?: number;
+  rolledBackBy?: string;
 
   // UI mapping
   standardDetails?: ReferenceStandard;
@@ -154,6 +164,8 @@ export interface ImportPreviewItem {
     parsed: ReferenceStandard; 
     logs: any[]; 
     isValid: boolean;
+    mode?: 'CREATE' | 'UPDATE_SAFE' | 'CONFLICT';
+    errorMessage?: string;
 }
 
 export interface ImportUsageLogPreviewItem {

@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, signal, effect, OnChanges, Simp
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StandardRequest, ReferenceStandard } from '../../../../core/models/standard.model';
+import { getStandardizedAmount } from '../../../../shared/utils/utils';
 
 export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminReceive' | null;
 
@@ -68,7 +69,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                            <div>
                                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng</label>
                                <div class="relative">
-                                   <input type="number" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
+                                   <input type="number" min="0" step="any" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                                </div>
                            </div>
@@ -156,7 +157,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                           @if (isForceReturn) {
                               <p class="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
                                   <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                                  Kho đã được trừ theo từng đợt. Số lượng nhập bên dưới chỉ để <strong>ghi sổ báo cáo</strong>, không ảnh hưởng thêm vào tồn kho.
+                                  Kho đã được trừ theo từng đợt. Nếu số xác nhận lớn hơn tổng đã ghi, phần chênh lệch sẽ được trừ kho và tạo nhật ký điều chỉnh.
                               </p>
                           } @else {
                               <p class="text-sm text-blue-600 dark:text-blue-400">
@@ -168,7 +169,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <div>
                           <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số lượng báo cáo (ghi sổ)</label>
                           <div class="relative">
-                              <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
+                              <input type="number" [min]="minimumLoggedAmount()" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
                               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                       </div>
@@ -176,7 +177,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <div>
                           <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
                           <div class="relative">
-                              <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
+                              <input type="number" min="0" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
                               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                           @if (returnAmount() !== null && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0)) {
@@ -192,7 +193,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onReturn()" [disabled]="returnAmount() === null || isProcessing || (!(request.usageLogs?.length) && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onReturn()" [disabled]="returnAmount() === null || returnAmount()! < minimumLoggedAmount() || isProcessing || (!(request.usageLogs?.length) && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                           Xác nhận trả
                       </button>
                   </div>
@@ -216,7 +217,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <div>
                       <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Khối lượng đợt này <span class="text-red-500">*</span></label>
                       <div class="relative">
-                          <input type="number" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 outline-none pr-12" placeholder="VD: 5.25">
+                          <input type="number" min="0" step="any" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 outline-none pr-12" placeholder="VD: 5.25">
                           <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                       </div>
                       @if (logUsageAmount() !== null && logUsageAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0)) {
@@ -231,7 +232,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
                   <div class="flex justify-end gap-3 mt-4">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onLogUsage()" [disabled]="!logUsageAmount() || isProcessing || (logUsageAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-teal-600 text-white font-bold text-base rounded-2xl hover:bg-teal-700 shadow-xl shadow-teal-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onLogUsage()" [disabled]="logUsageAmount() === null || logUsageAmount()! <= 0 || isProcessing || (logUsageAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-teal-600 text-white font-bold text-base rounded-2xl hover:bg-teal-700 shadow-xl shadow-teal-200 dark:shadow-none transition disabled:opacity-50">
                           Lưu nhật ký dùng
                       </button>
                   </div>
@@ -268,7 +269,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <div>
                       <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế trừ kho <span class="text-red-500">*</span></label>
                       <div class="relative">
-                          <input type="number" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
+                          <input type="number" [min]="minimumLoggedAmount()" step="any" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
                           <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                       </div>
                   </div>
@@ -287,7 +288,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onAdminReceive()" [disabled]="adminReceiveAmount() === null || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onAdminReceive()" [disabled]="adminReceiveAmount() === null || adminReceiveAmount()! < minimumLoggedAmount() || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                           Hoàn tất tiếp nhận
                       </button>
                   </div>
@@ -389,7 +390,7 @@ export class RequestsActionModalsComponent implements OnChanges {
 
   onLogUsage() {
     const amount = this.logUsageAmount();
-    if (this.isProcessing || amount === null) return;
+    if (this.isProcessing || amount === null || !Number.isFinite(amount) || amount <= 0) return;
     this.logUsageAction.emit({
         amount,
         purpose: this.logUsagePurpose()
@@ -398,7 +399,7 @@ export class RequestsActionModalsComponent implements OnChanges {
 
   onReturn() {
     const amount = this.returnAmount();
-    if (this.isProcessing || amount === null) return;
+    if (this.isProcessing || amount === null || !Number.isFinite(amount) || amount < this.minimumLoggedAmount()) return;
     this.returnAction.emit({
         amount,
         isDepleted: this.returnIsDepleted()
@@ -407,11 +408,26 @@ export class RequestsActionModalsComponent implements OnChanges {
 
   onAdminReceive() {
     const amount = this.adminReceiveAmount();
-    if (this.isProcessing || amount === null) return;
+    if (this.isProcessing || amount === null || !Number.isFinite(amount) || amount < this.minimumLoggedAmount()) return;
     this.adminReceiveAction.emit({
         amount,
         isDepleted: this.adminReceiveIsDepleted(),
-        disposalReason: this.adminReceiveDisposalReason()
+      disposalReason: this.adminReceiveDisposalReason()
     });
+  }
+
+  minimumLoggedAmount(): number {
+    const standardUnit = this.standard?.unit || this.request?.standardDetails?.unit;
+    return (this.request?.usageLogs || [])
+      .filter(log => !log._isDeleted)
+      .reduce((sum, log) => {
+        if (standardUnit && log.normalized_unit === standardUnit && Number.isFinite(log.normalized_amount)) {
+          return sum + Number(log.normalized_amount);
+        }
+        const normalized = standardUnit
+          ? getStandardizedAmount(log.amount_used, log.unit || standardUnit, standardUnit)
+          : log.amount_used;
+        return sum + (normalized !== null && Number.isFinite(normalized) ? normalized : 0);
+      }, 0);
   }
 }

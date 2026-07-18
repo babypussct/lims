@@ -10,6 +10,7 @@ import {
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../../core/models/standard.model';
 import { NotificationService } from '../../../core/services/notification.service';
 import { getStandardizedAmount, formatNum } from '../../../shared/utils/utils';
+import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-amount';
 import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
@@ -38,14 +39,16 @@ export class StandardUsageService {
       maxCacheSize: 1000,
       orderByField: 'timestamp',
       orderDirection: 'desc'
-    }, callback);
+    }, logs => callback(logs.filter(log => !log._isDeleted)));
   }
 
   // ─── Paginated Queries ────────────────────────────────────────────────────────
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
     const snapshot = await getDocs(query(logsRef, orderBy('timestamp', 'desc')));
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog));
+    return snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() } as UsageLog))
+      .filter(log => !log._isDeleted);
   }
 
   async queryUsageLogsByDateRange(
@@ -64,7 +67,7 @@ export class StandardUsageService {
     if (lastDoc) constraints.push(startAfter(lastDoc));
     const snapshot = await getDocs(query(colRef, ...constraints));
     return {
-      items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog)),
+      items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog)).filter(log => !log._isDeleted),
       lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
       hasMore: snapshot.docs.length === pageSize
     };
@@ -79,7 +82,7 @@ export class StandardUsageService {
     if (lastDoc) constraints.push(startAfter(lastDoc));
     const snapshot = await getDocs(query(colRef, ...constraints));
     return {
-      items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog)),
+      items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog)).filter(log => !log._isDeleted),
       lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
       hasMore: snapshot.docs.length === pageSize
     };
@@ -87,6 +90,10 @@ export class StandardUsageService {
 
   // ─── Record Usage (Direct — không qua request) ───────────────────────────────
   async recordUsage(stdId: string, log: UsageLog): Promise<void> {
+    const currentUser = this.auth.currentUser();
+    if (!currentUser || !this.auth.canEditStandards()) {
+      throw new Error('Bạn không có quyền ghi nhận sử dụng trực tiếp.');
+    }
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
     const newLogRef = doc(logsRef);
@@ -106,8 +113,7 @@ export class StandardUsageService {
       const currentAmount = stdData.current_amount || 0;
       const stockUnit = stdData.unit || 'mg';
       const usageUnit = log.unit || stockUnit;
-      const amountToDeduct = getStandardizedAmount(log.amount_used, usageUnit, stockUnit);
-      if (amountToDeduct === null) throw new Error(`Không thể quy đổi từ ${usageUnit} sang ${stockUnit}`);
+      const amountToDeduct = normalizePositiveStandardAmount(log.amount_used, usageUnit, stockUnit, 'Lượng sử dụng');
 
       const newAmount = currentAmount - amountToDeduct;
       if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
@@ -124,6 +130,9 @@ export class StandardUsageService {
       log.cas_number = stdData.cas_number;
       log.internalId = stdData.internal_id;
       log.manufacturer = stdData.manufacturer;
+      log.user = currentUser.displayName || currentUser.email || log.user || 'Người dùng';
+      log.normalized_amount = amountToDeduct;
+      log.normalized_unit = stockUnit;
 
       const newLogDate = log.date.split('T')[0];
       const existingDateOpened = stdData.date_opened || '';
@@ -143,6 +152,8 @@ export class StandardUsageService {
     requestId: string, standardId: string, amount: number,
     unit: string, purpose: string, userId: string, userName: string
   ): Promise<void> {
+    const currentUser = this.auth.currentUser();
+    if (!currentUser) throw new Error('Phiên đăng nhập không còn hợp lệ.');
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
@@ -160,20 +171,31 @@ export class StandardUsageService {
       if (reqData.status !== 'IN_PROGRESS') {
         throw new Error(`Không thể ghi nhận: yêu cầu đang ở trạng thái "${reqData.status}". Chỉ được ghi khi đang sử dụng.`);
       }
-      if (userId && reqData.requestedBy && reqData.requestedBy !== userId) {
+      if (reqData.requestedBy !== currentUser.uid) {
         throw new Error('Bạn không có quyền ghi nhận sử dụng cho yêu cầu của người khác.');
+      }
+      if (
+        reqData.standardId !== standardId ||
+        stdData.current_request_id !== requestId ||
+        stdData.current_holder_uid !== currentUser.uid
+      ) {
+        throw new Error('Chuẩn không còn được cấp cho tài khoản hiện tại theo yêu cầu này.');
       }
 
       const stockUnit = stdData.unit || 'mg';
-      const amountToDeduct = getStandardizedAmount(amount, unit, stockUnit);
-      if (amountToDeduct === null) throw new Error(`Không thể quy đổi đơn vị`);
+      const amountToDeduct = normalizePositiveStandardAmount(amount, unit, stockUnit, 'Lượng sử dụng');
 
       const newAmount = (stdData.current_amount || 0) - amountToDeduct;
       if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
 
       const log: UsageLog = {
         id: newLogRef.id, timestamp: Date.now(), date: new Date().toISOString(),
-        user: userName, amount_used: amount, unit, purpose: purpose || 'Báo cáo sử dụng',
+        user: currentUser.displayName || currentUser.email || userName || userId,
+        amount_used: amount,
+        unit,
+        normalized_amount: amountToDeduct,
+        normalized_unit: stockUnit,
+        purpose: purpose || 'Báo cáo sử dụng',
         standardId: stdData.id, standardName: stdData.name, lotNumber: stdData.lot_number,
         cas_number: stdData.cas_number, internalId: stdData.internal_id,
         manufacturer: stdData.manufacturer, requestId
@@ -221,10 +243,15 @@ export class StandardUsageService {
 
   // ─── Delete Usage Log ────────────────────────────────────────────────────────
   async deleteUsageLog(stdId: string, logId: string, requestId?: string): Promise<void> {
+    const currentUser = this.auth.currentUser();
+    if (!currentUser || !this.auth.canDeleteStandardLogs()) {
+      throw new Error('Bạn không có quyền rollback nhật ký sử dụng chuẩn.');
+    }
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${logId}`);
     const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
 
+    let didRollback = false;
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
       const logDoc = await transaction.get(logRef);
@@ -234,50 +261,82 @@ export class StandardUsageService {
         throw new Error('Không tìm thấy dữ liệu nhật ký trên hệ thống.');
       }
 
-      const logData = logDoc.exists() ? logDoc.data() : globalLogDoc.data();
+      const logData = (logDoc.exists() ? logDoc.data() : globalLogDoc.data()) as UsageLog;
+      if (logData._isDeleted || logData.rolledBackAt) return;
 
-      if (stdDoc.exists()) {
-        const stdData = stdDoc.data();
-        const stockUnit = stdData['unit'] || 'mg';
-        const amountUsed = logData?.['amount_used'] || 0;
-        const unitUsed = logData?.['unit'] || stockUnit;
-        const currentStock = stdData['current_amount'] || 0;
+      const stdData = stdDoc.exists() ? stdDoc.data() as ReferenceStandard : null;
+      const effectiveRequestId = requestId || logData.requestId || stdData?.current_request_id;
+      const reqRef = effectiveRequestId
+        ? doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${effectiveRequestId}`)
+        : null;
+      // Firestore transactions require every read to happen before the first write.
+      const reqDoc = reqRef ? await transaction.get(reqRef) : null;
 
-        const amountToRestore = getStandardizedAmount(amountUsed, unitUsed, stockUnit);
-        if (amountToRestore !== null) {
+      if (stdData) {
+        const stockUnit = stdData.unit || 'mg';
+        const amountUsed = logData.amount_used || 0;
+        const unitUsed = logData.unit || stockUnit;
+        const currentStock = stdData.current_amount || 0;
+
+        const amountToRestore = logData.normalized_unit === stockUnit && Number.isFinite(logData.normalized_amount)
+          ? Number(logData.normalized_amount)
+          : getStandardizedAmount(amountUsed, unitUsed, stockUnit);
+        if (amountToRestore !== null && Number.isFinite(amountToRestore) && amountToRestore >= 0) {
           const newStock = currentStock + amountToRestore;
           const updateData: Record<string, any> = { current_amount: newStock, lastUpdated: serverTimestamp() };
-          if (stdData['status'] === 'DEPLETED' && newStock > 0) {
-            updateData['status'] = stdData['current_request_id'] ? 'IN_USE' : 'AVAILABLE';
+          if (stdData.status === 'DEPLETED' && newStock > 0) {
+            updateData['status'] = stdData.current_request_id ? 'IN_USE' : 'AVAILABLE';
           }
           transaction.update(stdRef, updateData);
-        }
-
-        const effectiveRequestId = requestId || logData?.['requestId'] || stdData['current_request_id'];
-        if (effectiveRequestId) {
-          const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${effectiveRequestId}`);
-          const reqDoc = await transaction.get(reqRef);
-          if (reqDoc.exists()) {
+          if (reqRef && reqDoc?.exists()) {
             const reqData = reqDoc.data() as StandardRequest;
-            const currentLogs = reqData.usageLogs || [];
-            const updatedLogs = currentLogs.filter(l => l.id !== logId);
-            const amountToRestore2 = getStandardizedAmount(amountUsed, unitUsed, stockUnit) || 0;
             transaction.update(reqRef, {
-              usageLogs: updatedLogs,
-              totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - amountToRestore2),
-              updatedAt: Date.now(), lastUpdated: serverTimestamp()
+              usageLogs: (reqData.usageLogs || []).filter(item => item.id !== logId),
+              totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - amountToRestore),
+              updatedAt: Date.now(),
+              lastUpdated: serverTimestamp()
             });
           }
         }
       }
 
-      transaction.delete(logRef);
+      const rollbackFields = {
+        _isDeleted: true,
+        rolledBackAt: Date.now(),
+        rolledBackBy: currentUser.uid,
+        lastUpdated: serverTimestamp()
+      };
+      if (logDoc.exists()) transaction.update(logRef, rollbackFields);
       if (globalLogDoc.exists()) {
-        transaction.update(globalLogRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+        transaction.update(globalLogRef, rollbackFields);
+      } else {
+        transaction.set(globalLogRef, { ...logData, ...rollbackFields });
       }
+      didRollback = true;
     });
 
-    await this.crud.logGlobalActivity('DELETE_USAGE_LOG', `Xóa dòng nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`, logId);
+    if (didRollback) {
+      await this.crud.logGlobalActivity('DELETE_USAGE_LOG', `Rollback nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`, logId);
+    }
+  }
+
+  async queryUsageLogsBeforeTimestamp(
+    beforeTimestamp: number,
+    pageSize = 100
+  ): Promise<{ items: UsageLog[]; hasMore: boolean }> {
+    const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages`);
+    const snapshot = await getDocs(query(
+      colRef,
+      orderBy('timestamp', 'desc'),
+      startAfter(beforeTimestamp),
+      limit(pageSize)
+    ));
+    return {
+      items: snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() } as UsageLog))
+        .filter(log => !log._isDeleted),
+      hasMore: snapshot.docs.length === pageSize
+    };
   }
 
   // ─── Admin Utilities ─────────────────────────────────────────────────────────

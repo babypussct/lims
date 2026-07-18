@@ -242,7 +242,7 @@
                 }
 
                 <!-- ACTION SHORTCUTS (BOTTOM PANEL) -->
-                @if(canAssign(std) || std.status === 'DEPLETED' || std.current_amount <= 0 || canRequestCoa()) {
+                @if((canAssign(std) && (canAssignStandards() || canRequestStandards())) || ((std.status === 'DEPLETED' || std.current_amount <= 0) && canRequestPurchase()) || canRequestCoa()) {
                     <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
 
@@ -270,14 +270,14 @@
                                 <button (click)="openAssignModal(true)" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                     <i class="fa-solid fa-hand-holding-hand"></i> Gán cho mượn
                                 </button>
-                            } @else {
+                            } @else if(canRequestStandards()) {
                                 <button (click)="openAssignModal(false)" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                     <i class="fa-solid fa-hand-holding-hand"></i> Đăng ký mượn chuẩn
                                 </button>
                             }
                         }
 
-                        @if(std.status === 'DEPLETED' || std.current_amount <= 0) {
+                        @if((std.status === 'DEPLETED' || std.current_amount <= 0) && canRequestPurchase()) {
                             @if(!std.restock_requested) {
                                 <button (click)="openPurchaseModal()" class="px-4 py-2 bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                     <i class="fa-solid fa-cart-plus"></i> Đề nghị mua thêm
@@ -337,7 +337,9 @@
                                                     </div>
                                                 </td>
                                                 <td class="px-6 py-4 text-center">
-                                                        <button *appHasPermission="'standard_edit'" (click)="deleteLog(log, std.id!)" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition opacity-0 group-hover:opacity-100" title="Xóa & Hoàn kho"><i class="fa-solid fa-trash-can"></i></button>
+                                                        @if(canDeleteStandardLogs()) {
+                                                            <button (click)="deleteLog(log, std.id!)" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition opacity-0 group-hover:opacity-100" title="Rollback & Hoàn kho"><i class="fa-solid fa-trash-can"></i></button>
+                                                        }
                                                 </td>
                                             </tr>
                                         } @empty {

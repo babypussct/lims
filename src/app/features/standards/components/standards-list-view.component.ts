@@ -36,7 +36,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                           <td class="px-4 text-center"><app-skeleton width="60px" height="24px" class="mx-auto"></app-skeleton></td>
                       </tr>
                   }
-             } @else {
+               } @else {
                  @for (std of items(); track std.id) {
                     <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition group h-24" [ngClass]="{'bg-indigo-50 dark:bg-indigo-900/30': selectedIds().has(std.id!), 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0': std.status === 'DEPLETED' || std.current_amount <= 0}">
                        <td class="px-4 py-3 text-center align-top pt-4">
@@ -109,15 +109,15 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                          <button disabled class="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500 cursor-not-allowed border border-orange-200 dark:border-orange-800/50" title="Đang có người yêu cầu mượn"><i class="fa-solid fa-hourglass-half text-xs"></i></button>
                                      } @else if(canAssignStandards()) {
                                          <button (click)="openAssignModal.emit({std: std, isAssign: true})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95" title="Gán cho mượn"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
-                                     } @else {
+                                      } @else if(canRequestStandards()) {
                                          <button (click)="openAssignModal.emit({std: std, isAssign: false})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Mượn chuẩn này"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
                                      }
-                                 } @else if (std.status === 'IN_USE' && (canEditStandards() || std.current_holder_uid === currentUser()?.uid)) {
+                                 } @else if (std.status === 'IN_USE' && (canAssignStandards() || std.current_holder_uid === currentUser()?.uid)) {
                                      <button (click)="goToReturn.emit(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition active:scale-95" title="Trả chuẩn"><i class="fa-solid fa-rotate-left text-xs"></i></button>
                                  } @else if (std.status === 'DEPLETED' || std.current_amount <= 0) {
                                      @if (std.restock_requested) {
                                           <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed" title="Đã có người yêu cầu mua"><i class="fa-solid fa-cart-arrow-down text-xs"></i></button>
-                                     } @else {
+                                     } @else if(canRequestStandards() || canAssignStandards()) {
                                           <button (click)="openPurchaseRequestModal.emit(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-500 shadow-md shadow-amber-200 dark:shadow-none transition active:scale-95" title="Đề nghị mua"><i class="fa-solid fa-cart-plus text-xs"></i></button>
                                      }
                                  }
@@ -148,6 +148,7 @@ export class StandardsListViewComponent {
   quickUploadStdId = input<string>('');
   canEditStandards = input<boolean>(true);
   canAssignStandards = input<boolean>(false);
+  canRequestStandards = input<boolean>(false);
   currentUser = input<UserProfile | null>(null);
 
   toggleSelection = output<string>();

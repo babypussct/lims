@@ -10,6 +10,8 @@ export interface DeltaSyncConfig {
   orderByField?: string;
   orderDirection?: 'asc' | 'desc';
   queryConstraints?: QueryConstraint[];
+  /** Initial scan without orderBy, for legacy collections where the sort field may be missing. */
+  initialCollectionScan?: boolean;
   /**
    * Hàm kiểm tra doc đã bị xóa hay chưa.
    * Mặc định: (doc) => doc._isDeleted === true
@@ -291,7 +293,9 @@ export class DeltaSyncService {
     const maxCacheSize = config.maxCacheSize || 1000;
 
     const constraints = config.queryConstraints || [];
-    const q = query(colRef, ...constraints, orderBy(sortField, sortDir), limit(maxCacheSize));
+    const q = config.initialCollectionScan
+      ? query(colRef, ...constraints, limit(maxCacheSize))
+      : query(colRef, ...constraints, orderBy(sortField, sortDir), limit(maxCacheSize));
     const snapshot = await getDocs(q);
 
     const items: T[] = [];
@@ -328,6 +332,10 @@ export class DeltaSyncService {
       let valB = b[sortField] || 0;
       if (valA && typeof valA === 'object' && 'seconds' in valA) valA = valA.seconds;
       if (valB && typeof valB === 'object' && 'seconds' in valB) valB = valB.seconds;
+      if (typeof valA === 'string' || typeof valB === 'string') {
+        const comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+        return sortDir === 'asc' ? comparison : -comparison;
+      }
       return sortDir === 'asc' ? valA - valB : valB - valA;
     });
 

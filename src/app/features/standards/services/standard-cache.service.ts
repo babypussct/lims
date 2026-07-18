@@ -2,11 +2,12 @@ import { Injectable, inject, effect } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
-  collection, getDocs, getDoc, doc, query, orderBy,
+  collection, getDocs, getDoc, doc,
   Unsubscribe
 } from 'firebase/firestore';
 import { ReferenceStandard, StandardRequest } from '../../../core/models/standard.model';
 import { DeltaSyncService } from '../../../core/services/delta-sync.service';
+import { isFefoCandidate, parseStandardDate } from '../../../shared/utils/standard-fefo';
 
 /**
  * StandardCacheService — Quản lý cache cho ReferenceStandards.
@@ -50,6 +51,7 @@ export class StandardCacheService {
       maxCacheSize: 3000,
       orderByField: 'received_date',
       orderDirection: 'desc' as const,
+      initialCollectionScan: true,
       isDeletedFn: (doc: any) => doc._isDeleted === true || doc.status === 'DELETED'
     };
   }
@@ -138,11 +140,17 @@ export class StandardCacheService {
   }
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
-    const stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
-    if (!stds) throw new Error("Standards cache not ready");
-    const active = stds.filter(s => s.expiry_date && s.expiry_date !== '' && !s._isDeleted);
+    let stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
+    if (!stds || stds.length === 0) stds = await this.fetchAllAndCache();
+    const active = stds.filter(standard =>
+      isFefoCandidate(standard) &&
+      parseStandardDate(standard.expiry_date) !== null
+    );
     if (active.length > 0) {
-      return active.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime())[0];
+      return [...active].sort((a, b) =>
+        (parseStandardDate(a.expiry_date) || Number.MAX_SAFE_INTEGER) -
+        (parseStandardDate(b.expiry_date) || Number.MAX_SAFE_INTEGER)
+      )[0];
     }
     return null;
   }
@@ -165,10 +173,12 @@ export class StandardCacheService {
   // ─── Admin Bulk Operations ──────────────────────────────────────────────────
   async fetchAllAndCache(): Promise<ReferenceStandard[]> {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-    const snap = await getDocs(query(colRef, orderBy('received_date', 'desc')));
+    // Querying with orderBy excludes legacy documents that do not have received_date.
+    const snap = await getDocs(colRef);
     const items: ReferenceStandard[] = snap.docs
       .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
-      .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
+      .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+      .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
     this._saveStdToCache(items);
     this._memStandards = items;
     return items;

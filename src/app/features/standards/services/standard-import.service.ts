@@ -1,11 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
-  doc, collection, getDocs, setDoc, updateDoc, writeBatch,
-  serverTimestamp, increment
+  doc, collection, getDocs, getDoc, writeBatch,
+  serverTimestamp, runTransaction
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../../core/models/standard.model';
-import { generateSlug, parseQuantityInput, getStandardizedAmount } from '../../../shared/utils/utils';
+import { generateSlug, UNIT_DATA } from '../../../shared/utils/utils';
+import { normalizeStandardUnit, parseStandardQuantity } from '../../../shared/utils/standard-amount';
+import { parseStandardDate } from '../../../shared/utils/standard-fefo';
 import { ProgressService } from '../../../core/services/progress.service';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
@@ -19,6 +22,7 @@ import { StandardCrudService } from './standard-crud.service';
 @Injectable({ providedIn: 'root' })
 export class StandardImportService {
   private fb = inject(FirebaseService);
+  private auth = inject(AuthService);
   private cache = inject(StandardCacheService);
   private crud = inject(StandardCrudService);
   private progressService = inject(ProgressService);
@@ -35,7 +39,8 @@ export class StandardImportService {
 
     if (!isNaN(serial) && serial > 10000) {
       const dateInfo = new Date(Math.round((serial - 25569) * 86400 * 1000));
-      return dateInfo.toISOString().split('T')[0];
+      const result = dateInfo.toISOString().split('T')[0];
+      return parseStandardDate(result) === null ? '' : result;
     }
 
     const parts = strVal.split(/[\/\-\.]/);
@@ -49,7 +54,8 @@ export class StandardImportService {
       }
       const nDay = Number(day); const nMonth = Number(month);
       if (nDay > 31 || nMonth > 12 || nDay === 0 || nMonth === 0) return '';
-      return `${year}-${month}-${day}`;
+      const result = `${year}-${month}-${day}`;
+      return parseStandardDate(result) === null ? '' : result;
     }
     return '';
   }
@@ -90,7 +96,7 @@ export class StandardImportService {
           if (dp.length >= 3) {
             const d = dp[0].padStart(2, '0'); const m = dp[1].padStart(2, '0');
             let y = dp[2]; if (y.length === 2) y = '20' + y;
-            logDate = `${y}-${m}-${d}`;
+            logDate = this.parseExcelDate(`${y}-${m}-${d}`) || defaultDate;
           }
         }
         if (userMatch) {
@@ -119,7 +125,7 @@ export class StandardImportService {
     const XLSX = await import('xlsx');
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e: any) => {
+      reader.onload = async (e: any) => {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array', cellDates: false });
@@ -135,8 +141,12 @@ export class StandardImportService {
           };
           const results: ImportPreviewItem[] = [];
           const seenIds = new Map<string, number>();
+          const cachedStandards = this.cache._memStandards?.length
+            ? this.cache._memStandards
+            : this.cache.getAllStandardsFromCache();
+          const existingIds = new Set(cachedStandards.map(item => item.id));
 
-          for (const rawRow of rawRows) {
+          for (const [rowIndex, rawRow] of rawRows.entries()) {
             const row: Record<string, any> = {};
             Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
@@ -150,23 +160,27 @@ export class StandardImportService {
             const rawPackText = (getVal(row, ['quy cách', 'đóng gói']) || '').toString().trim();
             const rawAmount = getVal(row, ['khối lượng chai', 'kl chai', 'khối lượng', 'lượng']);
 
-            let initial = 0; let unit = 'mg';
-            if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '') {
-              const parsed = parseQuantityInput(rawAmount.toString(), 'mg');
-              if (parsed !== null) initial = parsed;
-              const unitMatch = rawAmount.toString().match(/[a-zA-Zµ]+/);
-              if (unitMatch) unit = unitMatch[0];
-            }
-
             const lowerPack = rawPackText.toLowerCase();
-            if (lowerPack.includes('ml') || lowerPack.includes('lít')) unit = 'mL';
-            else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
-            else if (lowerPack.includes('kg')) unit = 'kg';
-            else if (lowerPack.includes('g') && !lowerPack.includes('mg') && !lowerPack.includes('kg')) unit = 'g';
+            let packUnit = 'mg';
+            if (lowerPack.includes('ml') || lowerPack.includes('lít')) packUnit = 'ml';
+            else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) packUnit = 'µg';
+            else if (lowerPack.includes('kg')) packUnit = 'kg';
+            else if (lowerPack.includes('g') && !lowerPack.includes('mg') && !lowerPack.includes('kg')) packUnit = 'g';
 
-            if (initial === 0) {
-              const fallback = parseFloat((getVal(row, ['khối lượng chai', 'kl chai']) || '').toString().replace(',', '.'));
-              if (!isNaN(fallback)) initial = fallback;
+            let initial = 0;
+            let unit = packUnit;
+            let quantityError = '';
+            if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '') {
+              const unitMatch = rawAmount.toString().match(/[a-zA-ZµμÀ-ỹ]+/u);
+              const detectedUnit = unitMatch ? normalizeStandardUnit(unitMatch[0]) : packUnit;
+              const targetUnit = UNIT_DATA[detectedUnit] ? detectedUnit : packUnit;
+              const parsed = parseStandardQuantity(rawAmount, targetUnit);
+              if (parsed) {
+                initial = parsed.normalizedAmount;
+                unit = parsed.normalizedUnit;
+              } else {
+                quantityError = 'Khối lượng ban đầu hoặc đơn vị không hợp lệ.';
+              }
             }
 
             let packSize = rawPackText;
@@ -177,8 +191,9 @@ export class StandardImportService {
             let current = initial;
             const rawCurrentStr = (getVal(row, ['lượng còn lại', 'tồn kho', 'hiện tại']) || '').toString().trim();
             if (rawCurrentStr !== '') {
-              const m = rawCurrentStr.match(/[\d\.]+/);
-              if (m && !isNaN(parseFloat(m[0]))) current = parseFloat(m[0]);
+              const parsedCurrent = parseStandardQuantity(rawCurrentStr, unit);
+              if (parsedCurrent) current = parsedCurrent.normalizedAmount;
+              else quantityError = quantityError || 'Lượng còn lại hoặc đơn vị không hợp lệ.';
             }
 
             let location = (getVal(row, ['vị trí', 'nơi để']) || '').toString().trim();
@@ -193,8 +208,9 @@ export class StandardImportService {
             let idStr = name;
             if (lot) idStr += '_' + lot;
             if (internalId) idStr += '_' + internalId;
-            if (!lot && !internalId) idStr += '_' + Math.random().toString().substr(2, 5);
+            if (!lot && !internalId) idStr += `_row_${rowIndex + 2}`;
             let id = generateSlug(idStr);
+            if (!id) id = `standard_row_${rowIndex + 2}`;
             if (seenIds.has(id)) { const cnt = seenIds.get(id)! + 1; seenIds.set(id, cnt); id = `${id}_${cnt}`; }
             else seenIds.set(id, 1);
 
@@ -227,12 +243,29 @@ export class StandardImportService {
                   const sig = `${logData.date}_${logData.user}_${logData.amount_used}`;
                   if (!addedLogs.has(sig)) {
                     addedLogs.add(sig);
-                    logs.push({ ...logData, unit, timestamp: Date.now() + i });
+                    logs.push({
+                      ...logData,
+                      unit,
+                      normalized_amount: logData.amount_used,
+                      normalized_unit: unit,
+                      timestamp: (parseStandardDate(logData.date) || Date.now()) + i
+                    });
                   }
                 }
               }
             }
-            results.push({ raw: {}, parsed: standard, logs, isValid: true });
+            results.push({
+              raw: rawRow,
+              parsed: standard,
+              logs,
+              isValid: !quantityError && Number.isFinite(initial) && initial >= 0 && Number.isFinite(current) && current >= 0,
+              errorMessage: quantityError || (
+                !Number.isFinite(initial) || initial < 0 || !Number.isFinite(current) || current < 0
+                  ? 'Số lượng phải là số không âm.'
+                  : undefined
+              ),
+              mode: existingIds.has(standard.id) ? 'UPDATE_SAFE' : 'CREATE'
+            });
           }
           resolve(results);
         } catch (err: any) { reject(err); }
@@ -242,42 +275,114 @@ export class StandardImportService {
   }
 
   async saveImportedData(data: ImportPreviewItem[]): Promise<void> {
-    if (!data || data.length === 0) return;
-    
-    this.progressService.start('Đang lưu Chuẩn Đối Chiếu', 'Vui lòng không đóng trình duyệt', data.length);
-    
+    const validItems = (data || []).filter(item => item.isValid);
+    if (validItems.length === 0) return;
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền import danh mục chuẩn.');
+
+    // Preflight every deterministic id before the first write. Re-imports never overwrite stock/workflow.
+    const existing = new Map<string, ReferenceStandard>();
+    for (let offset = 0; offset < validItems.length; offset += 20) {
+      const chunk = validItems.slice(offset, offset + 20);
+      const snapshots = await Promise.all(chunk.map(item => getDoc(
+        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}`)
+      )));
+      snapshots.forEach(snapshot => {
+        if (snapshot.exists()) existing.set(snapshot.id, { id: snapshot.id, ...snapshot.data() } as ReferenceStandard);
+      });
+    }
+
+    const conflicts = validItems.filter(item => {
+      const current = existing.get(item.parsed.id);
+      if (!current) return false;
+      return current.status === 'IN_USE' || Boolean(
+        current.current_holder || current.current_holder_uid ||
+        current.current_request_id || current.has_pending_request
+      );
+    });
+    if (conflicts.length) {
+      conflicts.forEach(item => {
+        item.mode = 'CONFLICT';
+        item.errorMessage = 'Lô đang có workflow mượn/trả; import bị chặn để bảo toàn tồn kho.';
+      });
+      throw new Error(`Có ${conflicts.length} lô đang được mượn hoặc chờ duyệt. Không có dữ liệu nào được ghi.`);
+    }
+
+    this.progressService.start('Đang lưu Chuẩn Đối Chiếu', 'Vui lòng không đóng trình duyệt', validItems.length);
     let batch = writeBatch(this.fb.db);
     let opCount = 0;
     const MAX_BATCH_SIZE = 400;
     let processed = 0;
-    
+    const ensureCapacity = async (needed: number) => {
+      if (opCount + needed <= MAX_BATCH_SIZE) return;
+      if (opCount > 0) await batch.commit();
+      batch = writeBatch(this.fb.db);
+      opCount = 0;
+    };
+
     try {
-      for (const item of data) {
+      for (const item of validItems) {
         processed++;
-        this.progressService.update(processed, `Đang xử lý dòng ${processed}/${data.length}`);
-        
+        this.progressService.update(processed, `Đang xử lý dòng ${processed}/${validItems.length}`);
         const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}`);
-      batch.set(stdRef, { ...item.parsed, lastUpdated: serverTimestamp() });
-      opCount++;
-      if (item.logs && item.logs.length > 0) {
-        for (const log of item.logs) {
-          const logId = `log_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-          const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}/logs/${logId}`);
-          log.id = logId; log.standardId = item.parsed.id; log.standardName = item.parsed.name;
-          log.lotNumber = item.parsed.lot_number; log.cas_number = item.parsed.cas_number;
-          log.internalId = item.parsed.internal_id; log.manufacturer = item.parsed.manufacturer;
+        const current = existing.get(item.parsed.id);
+        await ensureCapacity(1);
+
+        if (current) {
+          item.mode = 'UPDATE_SAFE';
+          const safeMetadata: Partial<ReferenceStandard> = {
+            name: item.parsed.name,
+            chemical_name: item.parsed.chemical_name,
+            internal_id: item.parsed.internal_id,
+            cas_number: item.parsed.cas_number,
+            product_code: item.parsed.product_code,
+            purity: item.parsed.purity,
+            manufacturer: item.parsed.manufacturer,
+            pack_size: item.parsed.pack_size,
+            lot_number: item.parsed.lot_number,
+            location: item.parsed.location,
+            storage_condition: item.parsed.storage_condition,
+            received_date: item.parsed.received_date,
+            expiry_date: item.parsed.expiry_date,
+            contract_ref: item.parsed.contract_ref,
+            search_key: item.parsed.search_key
+          };
+          batch.set(stdRef, { ...safeMetadata, lastUpdated: serverTimestamp() }, { merge: true });
+          opCount++;
+          continue;
+        }
+
+        item.mode = 'CREATE';
+        batch.set(stdRef, { ...item.parsed, _isDeleted: false, lastUpdated: serverTimestamp() });
+        opCount++;
+        for (const rawLog of item.logs || []) {
+          await ensureCapacity(2);
+          const logRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}/logs`));
+          const log: UsageLog = {
+            ...rawLog,
+            id: logRef.id,
+            unit: rawLog.unit || item.parsed.unit,
+            normalized_amount: rawLog.normalized_amount ?? rawLog.amount_used,
+            normalized_unit: rawLog.normalized_unit || item.parsed.unit,
+            standardId: item.parsed.id,
+            standardName: item.parsed.name,
+            lotNumber: item.parsed.lot_number,
+            cas_number: item.parsed.cas_number,
+            internalId: item.parsed.internal_id,
+            manufacturer: item.parsed.manufacturer,
+            _isDeleted: false
+          };
           batch.set(logRef, log);
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
-          batch.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
+          batch.set(
+            doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`),
+            { ...log, lastUpdated: serverTimestamp() }
+          );
           opCount += 2;
         }
       }
-      if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
-    }
-    if (opCount > 0) await batch.commit();
-    await this.fb.updateMetadata('standards');
-    
-    this.progressService.complete();
+      if (opCount > 0) await batch.commit();
+      await this.fb.updateMetadata('standards');
+      this.cache.invalidateLocalStandardsCache();
+      this.progressService.complete();
     } catch (err) {
       this.progressService.stop();
       throw err;
@@ -304,9 +409,10 @@ export class StandardImportService {
             return found ? row[found] : undefined;
           };
 
-          const existingStandards = this.cache._memStandards !== null && this.cache._memStandards.length > 0
+          let existingStandards = this.cache._memStandards !== null && this.cache._memStandards.length > 0
             ? this.cache._memStandards
             : this.cache.getAllStandardsFromCache();
+          if (existingStandards.length === 0) existingStandards = await this.cache.fetchAllAndCache();
           const logsCache = new Map<string, UsageLog[]>();
           const results: ImportUsageLogPreviewItem[] = [];
 
@@ -336,31 +442,36 @@ export class StandardImportService {
             const prepDate = this.parseExcelDate(prepDateRaw);
             let amountUsed = 0;
             let usageUnit = matchedStandard ? matchedStandard.unit : 'mg';
+            let normalizedAmount: number | null = null;
 
             if (amountUsedRaw !== undefined && amountUsedRaw !== null && amountUsedRaw !== '') {
               const targetUnit = matchedStandard ? matchedStandard.unit : 'mg';
-              const parsed = parseQuantityInput(amountUsedRaw.toString(), targetUnit);
-              if (parsed !== null) {
-                amountUsed = parsed;
-                const unitMatch = amountUsedRaw.toString().match(/[a-zA-Zµ]+/);
-                if (unitMatch) usageUnit = unitMatch[0];
-              } else {
-                const val = parseFloat(amountUsedRaw.toString().replace(',', '.'));
-                if (!isNaN(val)) amountUsed = val;
+              const rawText = amountUsedRaw.toString().trim();
+              const hasInlineUnit = /[a-zA-ZµμÀ-ỹ]/u.test(rawText);
+              const quantityText = hasInlineUnit ? rawText : `${rawText} ${unitRaw || targetUnit}`;
+              const parsed = parseStandardQuantity(quantityText, targetUnit);
+              if (parsed) {
+                amountUsed = parsed.amount;
+                usageUnit = parsed.unit;
+                normalizedAmount = parsed.normalizedAmount;
               }
             }
-            if (unitRaw) usageUnit = unitRaw.toString().trim();
 
             let isValid = true; let errorMessage = '';
             if (!matchedStandard) { isValid = false; errorMessage = 'Không tìm thấy chất chuẩn tương ứng trong hệ thống.'; }
             else if (!prepDate) { isValid = false; errorMessage = 'Ngày pha chế không hợp lệ.'; }
             else if (!preparer) { isValid = false; errorMessage = 'Thiếu người pha chế.'; }
-            else if (amountUsed <= 0) { isValid = false; errorMessage = 'Lượng dùng không hợp lệ.'; }
+            else if (amountUsed <= 0 || normalizedAmount === null) { isValid = false; errorMessage = 'Lượng dùng hoặc đơn vị không hợp lệ.'; }
 
             const log: UsageLog = {
               date: prepDate || new Date().toISOString().split('T')[0],
-              user: preparer, amount_used: amountUsed, unit: usageUnit, purpose: 'Import Log',
-              timestamp: Date.now(),
+              user: preparer,
+              amount_used: amountUsed,
+              unit: usageUnit,
+              normalized_amount: normalizedAmount ?? undefined,
+              normalized_unit: matchedStandard?.unit,
+              purpose: 'Import Log',
+              timestamp: (parseStandardDate(prepDate) || Date.now()) + results.length,
               standardId: matchedStandard?.id, standardName: matchedStandard?.name,
               lotNumber: matchedStandard?.lot_number, cas_number: matchedStandard?.cas_number,
               internalId: matchedStandard?.internal_id, manufacturer: matchedStandard?.manufacturer
@@ -371,10 +482,21 @@ export class StandardImportService {
               if (!logsCache.has(matchedStandard.id!)) {
                 const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${matchedStandard.id}/logs`);
                 const snap = await getDocs(logsRef);
-                logsCache.set(matchedStandard.id!, snap.docs.map(d => d.data() as UsageLog));
+                logsCache.set(
+                  matchedStandard.id!,
+                  snap.docs.map(d => d.data() as UsageLog).filter(existingLog => !existingLog._isDeleted)
+                );
               }
               const existingLogs = logsCache.get(matchedStandard.id!) || [];
-              const duplicate = existingLogs.find(l => l.date === log.date && l.user === log.user && l.amount_used === log.amount_used);
+              const duplicate = existingLogs.find(existingLog => {
+                const existingNormalized = existingLog.normalized_unit === matchedStandard!.unit && Number.isFinite(existingLog.normalized_amount)
+                  ? Number(existingLog.normalized_amount)
+                  : parseStandardQuantity(`${existingLog.amount_used} ${existingLog.unit || matchedStandard!.unit}`, matchedStandard!.unit)?.normalizedAmount;
+                return existingLog.date === log.date &&
+                  existingLog.user.trim().toLowerCase() === log.user.trim().toLowerCase() &&
+                  existingNormalized !== undefined && normalizedAmount !== null &&
+                  Math.abs(existingNormalized - normalizedAmount) < 1e-9;
+              });
               if (duplicate) { isDuplicate = true; isValid = false; errorMessage = 'Nhật ký đã tồn tại.'; }
               else { existingLogs.push(log); logsCache.set(matchedStandard.id!, existingLogs); }
             }
@@ -389,12 +511,10 @@ export class StandardImportService {
 
   async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]): Promise<void> {
     if (!data || data.length === 0) return;
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền import nhật ký sử dụng chuẩn.');
     const validItems = data.filter(item => item.isValid && !item.isDuplicate && item.standard);
     if (validItems.length === 0) return;
 
-    let batch = writeBatch(this.fb.db);
-    let opCount = 0;
-    const MAX_BATCH_SIZE = 400;
     const logsByStandard = new Map<string, { standard: ReferenceStandard; logs: UsageLog[] }>();
     for (const item of validItems) {
       const stdId = item.standard!.id;
@@ -409,27 +529,89 @@ export class StandardImportService {
       for (const [stdId, { standard, logs }] of logsByStandard.entries()) {
         processed++;
         this.progressService.update(processed, `Đang xử lý ${logs.length} log của ${standard.name}`);
-        
         const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
-      let totalAmountDeducted = 0;
-      for (const log of logs) {
-        const logsCollRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
-        const logRef = doc(logsCollRef);
-        log.id = logRef.id;
-        batch.set(logRef, log);
-        const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`);
-        batch.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
-        opCount += 2;
-        const deduction = getStandardizedAmount(log.amount_used, log.unit || 'mg', standard.unit);
-        if (deduction !== null) totalAmountDeducted += deduction;
+        for (let offset = 0; offset < logs.length; offset += 100) {
+          const chunk = logs.slice(offset, offset + 100).map(log => {
+            const normalized = log.normalized_unit === standard.unit && Number.isFinite(log.normalized_amount)
+              ? Number(log.normalized_amount)
+              : parseStandardQuantity(`${log.amount_used} ${log.unit || standard.unit}`, standard.unit)?.normalizedAmount;
+            if (normalized === undefined || normalized <= 0) {
+              throw new Error(`Nhật ký ngày ${log.date} có lượng hoặc đơn vị không hợp lệ.`);
+            }
+            const amountToken = String(normalized).replace('-', 'neg_').replace('.', '_decimal_');
+            const signature = generateSlug(`${log.date}_${log.user}_${amountToken}_${standard.unit}`).slice(0, 160);
+            const id = `import_${signature}`;
+            return {
+              log: {
+                ...log,
+                id,
+                standardId: stdId,
+                standardName: standard.name,
+                lotNumber: standard.lot_number,
+                cas_number: standard.cas_number,
+                internalId: standard.internal_id,
+                manufacturer: standard.manufacturer,
+                normalized_amount: normalized,
+                normalized_unit: standard.unit,
+                _isDeleted: false
+              } as UsageLog,
+              normalized,
+              localRef: doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${id}`)
+            };
+          });
+
+          await runTransaction(this.fb.db, async transaction => {
+            const stdDoc = await transaction.get(stdRef);
+            if (!stdDoc.exists()) throw new Error(`Chuẩn ${standard.name} không còn tồn tại.`);
+            const freshStandard = { id: stdDoc.id, ...stdDoc.data() } as ReferenceStandard;
+            if (
+              freshStandard.status === 'IN_USE' || freshStandard.current_request_id ||
+              freshStandard.current_holder || freshStandard.has_pending_request
+            ) {
+              throw new Error(`Chuẩn ${freshStandard.name} đang có workflow mượn/trả; không thể import nhật ký.`);
+            }
+
+            // Read all deterministic log ids before any write to make retries/re-imports idempotent.
+            const existingLogDocs = await Promise.all(chunk.map(entry => transaction.get(entry.localRef)));
+            const accepted = chunk.filter((_, index) => !existingLogDocs[index].exists());
+            if (accepted.length === 0) return;
+
+            const totalDeducted = accepted.reduce((sum, entry) => sum + entry.normalized, 0);
+            const newAmount = (freshStandard.current_amount || 0) - totalDeducted;
+            if (newAmount < -1e-9) {
+              throw new Error(
+                `Không đủ tồn kho cho ${freshStandard.name}: cần ${totalDeducted} ${freshStandard.unit}, ` +
+                `chỉ còn ${freshStandard.current_amount || 0} ${freshStandard.unit}.`
+              );
+            }
+
+            const earliestDate = accepted
+              .map(entry => entry.log.date)
+              .filter(Boolean)
+              .sort()[0];
+            const stdUpdates: Record<string, any> = {
+              current_amount: Math.max(0, newAmount),
+              status: newAmount <= 0 ? 'DEPLETED' : (freshStandard.status || 'AVAILABLE'),
+              lastUpdated: serverTimestamp()
+            };
+            if (earliestDate && (!freshStandard.date_opened || earliestDate < freshStandard.date_opened)) {
+              stdUpdates['date_opened'] = earliestDate;
+            }
+            transaction.update(stdRef, stdUpdates);
+
+            accepted.forEach(entry => {
+              transaction.set(entry.localRef, entry.log);
+              transaction.set(
+                doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${entry.log.id}`),
+                { ...entry.log, lastUpdated: serverTimestamp() }
+              );
+            });
+          });
+        }
       }
-      batch.update(stdRef, { current_amount: increment(-totalAmountDeducted), lastUpdated: serverTimestamp() });
-      opCount++;
-      if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
-    }
-    if (opCount > 0) await batch.commit();
-    
-    this.progressService.complete();
+      await this.fb.updateMetadata('standards');
+      this.cache.invalidateLocalStandardsCache();
+      this.progressService.complete();
     } catch (err) {
       this.progressService.stop();
       throw err;

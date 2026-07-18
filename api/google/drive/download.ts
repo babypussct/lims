@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // 2. Thử tải bằng API Key của hệ thống nếu được cấu hình
-  const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
+  const apiKey = process.env['GOOGLE_DRIVE_API_KEY'];
   if (apiKey) {
     try {
       const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${apiKey}`);

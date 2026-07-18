@@ -63,7 +63,7 @@ export function normalizeStandardName(name: string | null | undefined): string {
  */
 export function canAssign(std: ReferenceStandard, now: Date = new Date()): boolean {
   if (!std || std._isDeleted) return false;
-  if (std.status === 'IN_USE' || std.status === 'DEPLETED') return false;
+  if (std.status === 'IN_USE' || std.status === 'DEPLETED' || std.status === 'DELETED') return false;
   if (std.current_holder || std.current_request_id) return false;
 
   const currentAmount = Number(std.current_amount);

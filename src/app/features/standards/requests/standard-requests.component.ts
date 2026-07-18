@@ -75,6 +75,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   selectedRequest = signal<StandardRequest | null>(null);
   activeModal = signal<ActionModalMode>(null);
   isForceReturn = signal(false);
+  canOperateStandards = computed(() => this.auth.canAssignStandards());
 
   currentStandard = computed(() => {
       const req = this.selectedRequest();
@@ -103,7 +104,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           const user = this.auth.currentUser();
           
           if (isAuthReady && user) {
-              const isAdmin = this.auth.canApproveStandards();
+              const isAdmin = this.auth.canAssignStandards();
               const roleKey = isAdmin ? 'admin' : user.uid;
               
               if (this.currentListenerRoleKey !== roleKey) {
@@ -142,7 +143,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     const status = this.statusFilter();
     const stdsMap = new Map(this.allStandards().map(s => [s.id, s]));
     const currentUser = this.auth.currentUser();
-    const isAdmin = this.auth.canApproveStandards();
+    const isAdmin = this.auth.canAssignStandards();
 
     // Filter for non-admins to only see their own requests (for the main list)
     let displayReqs = [...reqs];
@@ -172,7 +173,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   statusCounts = computed(() => {
       const reqs = this.requests();
       const currentUser = this.auth.currentUser();
-      const isAdmin = this.auth.canApproveStandards();
+      const isAdmin = this.auth.canAssignStandards();
       
       const filtered = isAdmin ? reqs : reqs.filter(r => r.requestedBy === currentUser?.uid);
       const now = Date.now();
@@ -217,7 +218,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   // --- Purchase Requests Logic (Admin) ---
   openAdminPurchaseRequests() {
-      if (!this.auth.canApproveStandards()) return;
+      if (!this.auth.canAssignStandards()) return;
       this.loadingAdminRequests.set(true);
       this.showPurchaseRequestsAdminModal.set(true);
       setTimeout(() => this.loadingAdminRequests.set(false), 300);
@@ -249,6 +250,39 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               }
           }
       });
+  }
+
+  async markPurchaseRequestOrdered(req: PurchaseRequest) {
+      if (!req.id || this.isProcessing()) return;
+      this.isProcessing.set(true);
+      try {
+          await this.stdService.updatePurchaseRequestStatus(req.id, req.standardId, 'ORDERED');
+          this.toast.show('Đã chuyển yêu cầu sang trạng thái đã đặt hàng.', 'success');
+      } catch (error: any) {
+          this.toast.show('Lỗi: ' + error.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
+  async rejectPurchaseRequest(req: PurchaseRequest) {
+      if (!req.id || this.isProcessing()) return;
+      const confirmed = await this.confirmationService.confirm({
+          message: `Từ chối yêu cầu mua chuẩn "${req.standardName}"?`,
+          confirmText: 'Từ chối',
+          cancelText: 'Hủy',
+          isDangerous: true
+      });
+      if (!confirmed) return;
+      this.isProcessing.set(true);
+      try {
+          await this.stdService.updatePurchaseRequestStatus(req.id, req.standardId, 'REJECTED');
+          this.toast.show('Đã từ chối yêu cầu mua.', 'success');
+      } catch (error: any) {
+          this.toast.show('Lỗi: ' + error.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
   openRequestModal() {
@@ -655,7 +689,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               XLSX.utils.book_append_sheet(wb, ws, 'Chi tiết yêu cầu');
           }
           else if (this.exportType() === 'standard') {
-              const summary: Record<string, { name: string; lot: string; internalId: string; manufacturer: string; count: number; totalUsed: number; unit: string; pending: number; inProgress: number; completed: number; rejected: number }> = {};
+              const summary: Record<string, { name: string; lot: string; internalId: string; manufacturer: string; count: number; totalUsed: number; unit: string; pending: number; inProgress: number; pendingReturn: number; completed: number; rejected: number }> = {};
               reqs.forEach(r => {
                   const key = r.standardId;
                   if (!summary[key]) {
@@ -668,7 +702,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                           totalUsed: 0,
                           unit: r.standardDetails?.unit || 'mg',
                           pending: 0,
-                          inProgress: 0,
+                           inProgress: 0,
+                           pendingReturn: 0,
                           completed: 0,
                           rejected: 0
                       };
@@ -676,7 +711,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   summary[key].count++;
                   summary[key].totalUsed += (r.totalAmountUsed || 0);
                   if (r.status === 'PENDING_APPROVAL') summary[key].pending++;
-                  else if (r.status === 'IN_PROGRESS') summary[key].inProgress++;
+                   else if (r.status === 'IN_PROGRESS') summary[key].inProgress++;
+                   else if (r.status === 'PENDING_RETURN' || r.status === 'PENDING_DEPLETION') summary[key].pendingReturn++;
                   else if (r.status === 'COMPLETED') summary[key].completed++;
                   else if (r.status === 'REJECTED') summary[key].rejected++;
               });
@@ -688,7 +724,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   'Hãng sản xuất': s.manufacturer,
                   'Tổng yêu cầu': s.count,
                   'Chờ duyệt': s.pending,
-                  'Đang dùng': s.inProgress,
+                   'Đang dùng': s.inProgress,
+                   'Chờ trả': s.pendingReturn,
                   'Hoàn thành': s.completed,
                   'Từ chối': s.rejected,
                   'Tổng lượng đã dùng': s.totalUsed,
@@ -701,26 +738,29 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               XLSX.utils.book_append_sheet(wb, ws, 'Theo Chất chuẩn');
           }
           else if (this.exportType() === 'user') {
-              const summary: Record<string, { name: string; total: number; totalUsed: number; pending: number; inProgress: number; completed: number; rejected: number; standards: Set<string> }> = {};
+              const summary: Record<string, { name: string; total: number; totalsByUnit: Record<string, number>; pending: number; inProgress: number; pendingReturn: number; completed: number; rejected: number; standards: Set<string> }> = {};
               reqs.forEach(r => {
                   const key = r.requestedBy;
                   if (!summary[key]) {
                       summary[key] = {
                           name: r.requestedByName,
                           total: 0,
-                          totalUsed: 0,
+                           totalsByUnit: {},
                           pending: 0,
-                          inProgress: 0,
+                           inProgress: 0,
+                           pendingReturn: 0,
                           completed: 0,
                           rejected: 0,
                           standards: new Set()
                       };
                   }
                   summary[key].total++;
-                  summary[key].totalUsed += (r.totalAmountUsed || 0);
+                  const unit = r.confirmedUnit || r.standardDetails?.unit || 'không rõ';
+                  summary[key].totalsByUnit[unit] = (summary[key].totalsByUnit[unit] || 0) + (r.totalAmountUsed || 0);
                   summary[key].standards.add(r.standardName);
                   if (r.status === 'PENDING_APPROVAL') summary[key].pending++;
-                  else if (r.status === 'IN_PROGRESS') summary[key].inProgress++;
+                   else if (r.status === 'IN_PROGRESS') summary[key].inProgress++;
+                   else if (r.status === 'PENDING_RETURN' || r.status === 'PENDING_DEPLETION') summary[key].pendingReturn++;
                   else if (r.status === 'COMPLETED') summary[key].completed++;
                   else if (r.status === 'REJECTED') summary[key].rejected++;
               });
@@ -730,10 +770,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   'Tổng yêu cầu': s.total,
                   'Số chuẩn sử dụng': s.standards.size,
                   'Chờ duyệt': s.pending,
-                  'Đang dùng': s.inProgress,
+                   'Đang dùng': s.inProgress,
+                   'Chờ trả': s.pendingReturn,
                   'Hoàn thành': s.completed,
                   'Từ chối': s.rejected,
-                  'Tổng lượng đã dùng': s.totalUsed
+                   'Tổng lượng đã dùng theo đơn vị': Object.entries(s.totalsByUnit)
+                       .map(([unit, amount]) => `${amount} ${unit}`)
+                       .join(' · ')
               }));
               const ws = XLSX.utils.json_to_sheet(exportData);
               ws['!cols'] = Object.keys(exportData[0]).map(key => ({

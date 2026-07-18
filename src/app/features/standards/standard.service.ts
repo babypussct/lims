@@ -20,7 +20,7 @@ import { QueryDocumentSnapshot, QueryConstraint, Unsubscribe } from 'firebase/fi
 import {
   ReferenceStandard, UsageLog, StandardsPage,
   ImportPreviewItem, ImportUsageLogPreviewItem,
-  StandardRequest, StandardRequestStatus, PurchaseRequest
+  StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus
 } from '../../core/models/standard.model';
 
 import { StandardCacheService }   from './services/standard-cache.service';
@@ -115,6 +115,9 @@ export class StandardService {
   async requestCoa(std: ReferenceStandard, notificationService?: any): Promise<void> {
     return this.crud.requestCoa(std, notificationService ?? this.notif);
   }
+  async completeCoaUpload(standards: ReferenceStandard[], certificateUrl: string): Promise<void> {
+    return this.crud.completeCoaUpload(standards, certificateUrl);
+  }
   async logGlobalActivity(action: string, details: string, targetId?: string): Promise<void> {
     return this.crud.logGlobalActivity(action, details, targetId);
   }
@@ -138,6 +141,12 @@ export class StandardService {
     pageSize?: number, lastDoc?: QueryDocumentSnapshot | null
   ): Promise<{ items: UsageLog[]; lastDoc: QueryDocumentSnapshot | null; hasMore: boolean }> {
     return this.usage.queryUsageLogsPage(pageSize, lastDoc);
+  }
+  async queryUsageLogsBeforeTimestamp(
+    beforeTimestamp: number,
+    pageSize?: number
+  ): Promise<{ items: UsageLog[]; hasMore: boolean }> {
+    return this.usage.queryUsageLogsBeforeTimestamp(beforeTimestamp, pageSize);
   }
   async recordUsage(stdId: string, log: UsageLog): Promise<void> {
     return this.usage.recordUsage(stdId, log);
@@ -203,6 +212,13 @@ export class StandardService {
   }
   async completePurchaseRequest(reqId: string, stdId: string, processedBy: string, processedByName: string): Promise<void> {
     return this.request.completePurchaseRequest(reqId, stdId, processedBy, processedByName);
+  }
+  async updatePurchaseRequestStatus(
+    reqId: string,
+    stdId: string,
+    status: Extract<PurchaseRequestStatus, 'ORDERED' | 'REJECTED'>
+  ): Promise<void> {
+    return this.request.updatePurchaseRequestStatus(reqId, stdId, status);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

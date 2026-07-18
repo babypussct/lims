@@ -4,12 +4,13 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDocs, getDoc, updateDoc, setDoc, writeBatch,
   serverTimestamp, deleteField, query, orderBy, limit, startAfter,
-  where, QueryDocumentSnapshot, QueryConstraint
+  where, QueryDocumentSnapshot, QueryConstraint, runTransaction
 } from 'firebase/firestore';
 import { ReferenceStandard, StandardsPage } from '../../../core/models/standard.model';
 import { ToastService } from '../../../core/services/toast.service';
-import { generateSlug } from '../../../shared/utils/utils';
+import { generateSlug, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 /**
  * StandardCrudService — Các thao tác CRUD cơ bản trên ReferenceStandard.
@@ -23,6 +24,7 @@ export class StandardCrudService {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
   private cache = inject(StandardCacheService);
+  private notifications = inject(NotificationService);
 
   // ─── Search Key ──────────────────────────────────────────────────────────────
   generateSearchKey(std: ReferenceStandard): string {
@@ -79,73 +81,154 @@ export class StandardCrudService {
 
   // ─── Write Operations ────────────────────────────────────────────────────────
   async addStandard(std: ReferenceStandard): Promise<void> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền thêm chuẩn.');
+    this.validateStandardAmounts(std);
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
-    await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
+    await runTransaction(this.fb.db, async transaction => {
+      const snapshot = await transaction.get(ref);
+      if (snapshot.exists()) throw new Error('Mã chuẩn đã tồn tại; không thể ghi đè bằng thao tác thêm mới.');
+      transaction.set(ref, sanitizeForFirebase({
+        ...std,
+        status: std.current_amount <= 0 ? 'DEPLETED' : 'AVAILABLE',
+        _isDeleted: false,
+        lastUpdated: serverTimestamp()
+      }));
+    });
     await this.logGlobalActivity('CREATE_STANDARD', `Thêm chuẩn mới: ${std.name} (Lô: ${std.lot_number})`, std.id);
     await this.fb.updateMetadata('standards');
   }
 
   async updateStandard(std: ReferenceStandard): Promise<void> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật chuẩn.');
+    this.validateStandardAmounts(std);
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
-    await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
+    await runTransaction(this.fb.db, async transaction => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
+      const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+      const workflowActive = fresh.status === 'IN_USE' || Boolean(
+        fresh.current_holder || fresh.current_holder_uid || fresh.current_request_id || fresh.has_pending_request
+      );
+      const {
+        id: _id,
+        status: _status,
+        current_holder: _holder,
+        current_holder_uid: _holderUid,
+        current_request_id: _requestId,
+        has_pending_request: _pending,
+        restock_requested: _restock,
+        coa_requested_by: _coaRequester,
+        lastUpdated: _lastUpdated,
+        _isDeleted: _deleted,
+        initial_amount: requestedInitialAmount,
+        current_amount: requestedCurrentAmount,
+        unit: requestedUnit,
+        ...metadata
+      } = std;
+      const currentAmount = workflowActive ? fresh.current_amount : requestedCurrentAmount;
+      transaction.update(ref, sanitizeForFirebase({
+        ...metadata,
+        initial_amount: workflowActive ? fresh.initial_amount : requestedInitialAmount,
+        current_amount: currentAmount,
+        unit: workflowActive ? fresh.unit : requestedUnit,
+        status: workflowActive ? fresh.status : (currentAmount <= 0 ? 'DEPLETED' : 'AVAILABLE'),
+        lastUpdated: serverTimestamp()
+      }));
+    });
     await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
   }
 
   async quickUpdateField(stdId: string, fields: Record<string, any>): Promise<void> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật nhanh chuẩn.');
+    const allowed = new Set([
+      'certificate_ref', 'date_opened', 'location', 'storage_condition',
+      'storage_status', 'contract_ref', 'expiry_date', 'received_date'
+    ]);
+    const invalidKey = Object.keys(fields).find(key => !allowed.has(key));
+    if (invalidKey) throw new Error(`Trường không được phép cập nhật nhanh: ${invalidKey}.`);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
     await this.fb.updateMetadata('standards');
   }
 
   async updateStandardStock(stdId: string, newAmount: number, reason: string): Promise<void> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật tồn kho chuẩn.');
+    if (!Number.isFinite(newAmount) || newAmount < 0) throw new Error('Tồn kho mới phải là số không âm.');
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
-    const updateData: Record<string, any> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
-    if (newAmount <= 0) updateData['status'] = 'DEPLETED';
-    await updateDoc(ref, updateData);
+    await runTransaction(this.fb.db, async transaction => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
+      const fresh = snapshot.data() as ReferenceStandard;
+      if (fresh.current_request_id || fresh.current_holder_uid || fresh.status === 'IN_USE') {
+        throw new Error('Không thể chỉnh tồn kho thủ công khi chuẩn đang được mượn.');
+      }
+      transaction.update(ref, {
+        current_amount: newAmount,
+        status: newAmount <= 0 ? 'DEPLETED' : 'AVAILABLE',
+        lastUpdated: serverTimestamp()
+      });
+    });
     await this.logGlobalActivity('UPDATE_STOCK', `Cập nhật tồn kho: ${newAmount} (${reason})`, stdId);
     await this.fb.updateMetadata('standards');
   }
 
   async deleteStandard(id: string, name = ''): Promise<void> {
-    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-    await updateDoc(ref, { _isDeleted: true, status: 'DELETED', lastUpdated: serverTimestamp() });
-    await this.logGlobalActivity('SOFT_DELETE_STANDARD', `Đưa chuẩn vào thùng rác: ${name || id}`, id);
-    await this.fb.updateMetadata('standards');
+    await this.deleteSelectedStandards([id]);
   }
 
   async deleteSelectedStandards(ids: string[]): Promise<void> {
-    const BATCH_SIZE = 400;
-    let batch = writeBatch(this.fb.db);
-    let opCount = 0;
-    for (const id of ids) {
-      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-      batch.update(stdRef, { _isDeleted: true, status: 'DELETED', lastUpdated: serverTimestamp() });
-      opCount++;
-      if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
-    }
-    if (opCount > 0) await batch.commit();
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền ẩn chuẩn.');
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (uniqueIds.length === 0) return;
+    if (uniqueIds.length > 200) throw new Error('Chỉ có thể ẩn tối đa 200 chuẩn trong một lần.');
+    const refs = uniqueIds.map(id => doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
+
+    await runTransaction(this.fb.db, async transaction => {
+      const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+      const active = snapshots
+        .filter(snapshot => snapshot.exists())
+        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
+        .filter(standard => standard.status === 'IN_USE' || Boolean(
+          standard.current_holder || standard.current_holder_uid ||
+          standard.current_request_id || standard.has_pending_request
+        ));
+      if (active.length) {
+        throw new Error(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt: ${active.map(item => item.internal_id || item.id).join(', ')}`);
+      }
+      snapshots.forEach((snapshot, index) => {
+        if (snapshot.exists()) {
+          transaction.update(refs[index], { _isDeleted: true, status: 'DELETED', lastUpdated: serverTimestamp() });
+        }
+      });
+    });
     await this.logGlobalActivity('SOFT_DELETE_BATCH', `Đã xóa lô ${ids.length} chuẩn đối chiếu.`);
     await this.fb.updateMetadata('standards');
+    this.cache.invalidateLocalStandardsCache();
   }
 
   async restoreStandard(id: string, name = ''): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-    await updateDoc(ref, { _isDeleted: deleteField(), status: 'ACTIVE', lastUpdated: serverTimestamp() });
+    await updateDoc(ref, { _isDeleted: deleteField(), status: 'AVAILABLE', lastUpdated: serverTimestamp() });
     await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
   }
 
   // ─── CoA Request ─────────────────────────────────────────────────────────────
   async requestCoa(std: ReferenceStandard, notificationService: any): Promise<void> {
-    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
-    const snap = await getDoc(ref);
-    if (snap.exists() && snap.data()['coa_requested_by']) {
-      throw new Error('Yêu cầu CoA cho chuẩn này đã được gửi trước đó.');
-    }
     const user = this.auth.currentUser();
-    await this.quickUpdateField(std.id, { coa_requested_by: user?.uid });
+    if (!user || !this.auth.hasPermission('standard_request')) {
+      throw new Error('Bạn không có quyền yêu cầu cập nhật CoA.');
+    }
+    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+    await runTransaction(this.fb.db, async transaction => {
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('Chuẩn không tồn tại.');
+      if (snap.data()['certificate_ref']) throw new Error('Chuẩn đã có CoA.');
+      if (snap.data()['coa_requested_by']) throw new Error('Yêu cầu CoA cho chuẩn này đã được gửi trước đó.');
+      transaction.update(ref, { coa_requested_by: user.uid, lastUpdated: serverTimestamp() });
+    });
     await this.logGlobalActivity('REQUEST_COA', `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`, std.id);
     await notificationService.notify({
       recipientUid: 'role:admin',
@@ -157,6 +240,66 @@ export class StandardCrudService {
       targetId: std.id,
       actionUrl: `/standards/${std.id}`
     });
+  }
+
+  async completeCoaUpload(standards: ReferenceStandard[], certificateUrl: string): Promise<void> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật CoA.');
+    if (!certificateUrl) throw new Error('URL CoA không hợp lệ.');
+    const unique = [...new Map(standards.filter(item => item?.id).map(item => [item.id, item])).values()];
+    if (unique.length === 0) throw new Error('Không tìm thấy chuẩn để cập nhật CoA.');
+    if (unique.length > 400) throw new Error('Chỉ có thể cập nhật tối đa 400 lô trong một lần.');
+
+    const snapshots = await Promise.all(unique.map(standard => getDoc(
+      doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standard.id}`)
+    )));
+    const freshStandards = snapshots
+      .filter(snapshot => snapshot.exists())
+      .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard));
+    if (freshStandards.length === 0) throw new Error('Các chuẩn cần cập nhật không còn tồn tại.');
+
+    const batch = writeBatch(this.fb.db);
+    freshStandards.forEach(standard => {
+      batch.update(
+        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standard.id}`),
+        {
+          certificate_ref: certificateUrl,
+          coa_requested_by: deleteField(),
+          lastUpdated: serverTimestamp()
+        }
+      );
+    });
+    await batch.commit();
+    await this.fb.updateMetadata('standards');
+    this.cache.invalidateLocalStandardsCache();
+
+    const admin = this.auth.currentUser();
+    const recipients = [...new Set(freshStandards.map(item => item.coa_requested_by).filter(Boolean))] as string[];
+    await Promise.all(recipients.map(recipientUid => this.notifications.notify({
+      recipientUid,
+      senderUid: admin?.uid,
+      senderName: admin?.displayName || 'Quản trị viên',
+      type: 'SYSTEM_INFO',
+      title: 'Đã cập nhật CoA',
+      message: `File CoA của chuẩn "${freshStandards[0].name}" đã được tải lên thành công.`,
+      targetId: freshStandards[0].id,
+      actionUrl: `/standards/${freshStandards[0].id}`
+    })));
+    await this.logGlobalActivity(
+      'UPLOAD_STANDARD_COA',
+      `Cập nhật CoA cho ${freshStandards.length} lô chuẩn: ${freshStandards[0].name}`,
+      freshStandards[0].id
+    );
+  }
+
+  private validateStandardAmounts(std: ReferenceStandard): void {
+    if (!std.id?.trim() || !std.name?.trim()) throw new Error('Mã và tên chuẩn là bắt buộc.');
+    if (!std.unit?.trim()) throw new Error('Đơn vị chuẩn là bắt buộc.');
+    if (!Number.isFinite(std.initial_amount) || std.initial_amount < 0) {
+      throw new Error('Lượng ban đầu phải là số không âm.');
+    }
+    if (!Number.isFinite(std.current_amount) || std.current_amount < 0) {
+      throw new Error('Lượng hiện tại phải là số không âm.');
+    }
   }
 
   // ─── Global Activity Logging ──────────────────────────────────────────────────

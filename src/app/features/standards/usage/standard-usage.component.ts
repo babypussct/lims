@@ -22,6 +22,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 export class StandardUsageComponent implements OnInit, OnDestroy {
   stdService = inject(StandardService);
   datePipe = inject(DatePipe);
+  decimalPipe = inject(DecimalPipe);
   auth = inject(AuthService);
   toast = inject(ToastService);
   confirmService = inject(ConfirmationService);
@@ -139,9 +140,18 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
 
   summaryStats = computed(() => {
       const data = this.filteredLogs();
+      const totals = new Map<string, number>();
+      data.forEach(log => {
+          const unit = log.normalized_unit || log.unit || 'không rõ';
+          const amount = log.normalized_amount ?? log.amount_used ?? 0;
+          totals.set(unit, (totals.get(unit) || 0) + amount);
+      });
       return {
           totalLogs: data.length,
-          totalAmountUsed: data.reduce((sum, l) => sum + (l.amount_used || 0), 0),
+          totalAmountDisplay: [...totals.entries()]
+            .sort(([unitA], [unitB]) => unitA.localeCompare(unitB))
+            .map(([unit, amount]) => `${this.decimalPipe.transform(amount, '1.0-6')} ${unit}`)
+            .join(' · ') || '0',
           uniqueUsers: new Set(data.map(l => l.user).filter(Boolean)).size,
           uniqueStandards: new Set(data.map(l => l.standardId).filter(Boolean)).size
       };
@@ -286,7 +296,19 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
               const toTs = new Date(this.toDate()).setHours(23, 59, 59, 999);
               res = await this.stdService.queryUsageLogsByDateRange(fromTs, toTs, 500, this.lastDoc());
           } else {
-              res = await this.stdService.queryUsageLogsPage(50, this.lastDoc());
+              const timestamps = this.logs().map(log => log.timestamp || 0).filter(value => value > 0);
+              const oldestTimestamp = timestamps.length ? Math.min(...timestamps) : Date.now();
+              const older = await this.stdService.queryUsageLogsBeforeTimestamp(oldestTimestamp, 100);
+              const knownIds = new Set(this.logs().map(log => log.id).filter(Boolean));
+              const uniqueItems = older.items.filter(log => !log.id || !knownIds.has(log.id));
+              if (uniqueItems.length > 0) {
+                  this.logs.update(previous => [...previous, ...uniqueItems]);
+                  this.hasMore.set(older.hasMore);
+                  this.displayLimit.update(value => value + 100);
+              } else {
+                  this.hasMore.set(false);
+              }
+              return;
           }
 
           if (res.items.length > 0) {
@@ -374,6 +396,8 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
                       'Quy cách đóng gói': std?.pack_size || '',
                       'Lượng dùng': log.amount_used,
                       'Đơn vị': log.unit || std?.unit || 'mg',
+                      'Lượng chuẩn hóa': log.normalized_amount ?? log.amount_used,
+                      'Đơn vị chuẩn hóa': log.normalized_unit || log.unit || std?.unit || 'mg',
                       'Hạn sử dụng': std?.expiry_date || '',
                       'Ngày mở nắp': std?.date_opened || '',
                       'Vị trí lưu trữ': std?.location || '',
@@ -394,14 +418,24 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
           else if (this.exportType() === 'standard') {
               const summary: any = {};
               logs.forEach(log => {
-                  const key = log.standardName || 'N/A';
-                  if (!summary[key]) summary[key] = { amount: 0, count: 0, unit: log.unit || 'mg' };
-                  summary[key].amount += (log.amount_used || 0);
+                  const unit = log.normalized_unit || log.unit || 'mg';
+                  const key = log.standardId || `${log.standardName || 'N/A'}|${log.lotNumber || ''}|${unit}`;
+                  if (!summary[key]) {
+                      summary[key] = {
+                          name: log.standardName || 'N/A',
+                          lot: log.lotNumber || '',
+                          amount: 0,
+                          count: 0,
+                          unit
+                      };
+                  }
+                  summary[key].amount += (log.normalized_amount ?? log.amount_used ?? 0);
                   summary[key].count += 1;
               });
               const exportData = Object.keys(summary).map((key, index) => ({
                   'STT': index + 1,
-                  'Hóa chất / Thuốc thử': key,
+                  'Hóa chất / Thuốc thử': summary[key].name,
+                  'Số lô': summary[key].lot,
                   'Số lượt dùng': summary[key].count,
                   'Tổng Lượng Dùng': summary[key].amount,
                   'Đơn vị': summary[key].unit

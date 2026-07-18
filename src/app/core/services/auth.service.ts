@@ -1,5 +1,5 @@
 
-import { Injectable, inject, signal, computed, effect, NgZone } from '@angular/core';
+import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { GoogleDriveService } from './google-drive.service';
 import { 
@@ -86,6 +86,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.STANDARD_EDIT,
       PERMISSIONS.STANDARD_APPROVE,
       PERMISSIONS.STANDARD_LOG_VIEW,
+      PERMISSIONS.STANDARD_LOG_DELETE,
       PERMISSIONS.RECIPE_VIEW,
       PERMISSIONS.RECIPE_EDIT,
       PERMISSIONS.SOP_VIEW,
@@ -138,15 +139,6 @@ export class AuthService {
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
     setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
       console.warn('[Auth] Failed to set session persistence:', err);
-    });
-
-    // Tự động đồng bộ/di chuyển quyền của chính user đăng nhập lên Firestore nếu chưa khớp
-    effect(() => {
-      const u = this.currentUser();
-      const roles = this.rolesConfig();
-      if (u && Object.keys(roles).length > 0) {
-        this.autoMigrateUserPermissionsIfNeeded(u, roles);
-      }
     });
 
     // --- DIRECT OIDC LOGIN FALLBACK INTERCEPTOR ---
@@ -567,49 +559,12 @@ export class AuthService {
     }
   }
 
-  private async autoMigrateUserPermissionsIfNeeded(u: UserProfile, roles: Record<string, string[]>) {
-    if (!u || !u.role || u.role === 'manager' || u.role === 'pending') return;
-    
-    let resolvedPerms: string[] = [];
-    let needsUpdate = false;
-
-    if (u.role === 'viewer') {
-      const viewerPerms: string[] = [];
-      if (!u.permissions || u.permissions.length !== viewerPerms.length) {
-        resolvedPerms = viewerPerms;
-        needsUpdate = true;
-      }
-    } else if (u.role === 'staff') {
-      const roleId = u.roleId || 'role_staff_default';
-      const rolePerms = roles[roleId];
-      if (rolePerms) {
-        const custom = u.customPermissions || [];
-        resolvedPerms = Array.from(new Set([...rolePerms, ...custom]));
-        if (!u.permissions || u.permissions.length !== resolvedPerms.length || !resolvedPerms.every(p => u.permissions!.includes(p))) {
-          needsUpdate = true;
-        }
-      }
-    }
-
-    if (needsUpdate) {
-      console.log(`[Auth] Auto-migrating/updating permissions for logged-in user ${u.displayName}...`);
-      try {
-        const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${u.uid}`);
-        await updateDoc(userRef, { 
-          permissions: resolvedPerms,
-          lastUpdated: serverTimestamp()
-        });
-        console.log(`[Auth] Auto-migration complete for ${u.displayName}.`);
-      } catch (e) {
-        console.warn("[Auth] Failed to auto-migrate user permissions:", e);
-      }
-    }
-  }
-
   canApprove(): boolean { return this.hasPermission(PERMISSIONS.SOP_APPROVE); }
   canApproveStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_APPROVE); }
   canViewStandardLogs(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_LOG_VIEW); }
-  canDeleteStandardLogs(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_LOG_DELETE); }
+  canDeleteStandardLogs(): boolean {
+    return this.hasPermission(PERMISSIONS.STANDARD_LOG_DELETE) || this.hasPermission(PERMISSIONS.STANDARD_EDIT);
+  }
   canEditInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_EDIT); }
   canViewInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_VIEW); }
   canEditSop(): boolean { return this.hasPermission(PERMISSIONS.SOP_EDIT); }

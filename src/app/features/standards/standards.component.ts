@@ -336,6 +336,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (this.isProcessing()) return;
       const ids = Array.from(this.selectedIds());
       if (ids.length === 0) return;
+      const active = this.allStandards().filter(standard => ids.includes(standard.id) && (
+          standard.status === 'IN_USE' || standard.current_holder || standard.current_holder_uid ||
+          standard.current_request_id || standard.has_pending_request
+      ));
+      if (active.length) {
+          this.toast.show(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt.`, 'error');
+          return;
+      }
       
       if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (Admin).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
           this.isProcessing.set(true);
@@ -468,15 +476,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
           const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
           // Tìm tất cả các chuẩn cùng Tên và Số Lô
-          const siblings = this.allStandards().filter(s => 
-              s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() && 
-              (s.lot_number || '').trim().toLowerCase() === (std.lot_number || '').trim().toLowerCase()
-          );
-
-          // Cập nhật URL cho tất cả
-          for (const sibling of siblings) {
-              await this.stdService.quickUpdateField(sibling.id, { certificate_ref: previewUrl });
-          }
+          const lot = (std.lot_number || '').trim().toLowerCase();
+          const siblings = lot
+              ? this.allStandards().filter(s =>
+                  s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() &&
+                  (s.lot_number || '').trim().toLowerCase() === lot &&
+                  !s._isDeleted
+              )
+              : [std];
+          await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
           if (siblings.length > 1) {
               this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
@@ -557,6 +565,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const items = this.bulkCoaItems();
       const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
       if (toUpload.length === 0 || this.isBulkUploading()) return;
+      const targetKeys = toUpload.map(item => {
+          const standard = item.matchedStandard!;
+          const lot = (standard.lot_number || '').trim().toLowerCase();
+          return lot ? `${standard.name.trim().toLowerCase()}|${lot}` : standard.id;
+      });
+      if (new Set(targetKeys).size !== targetKeys.length) {
+          this.toast.show('Có nhiều file cùng ghép vào một chuẩn/lô. Vui lòng chỉ giữ một file cho mỗi lô.', 'error');
+          return;
+      }
 
       // NÚT "XÁC NHẬN UPLOAD" TRONG MODAL SẼ KÍCH HOẠT HÀM NÀY, TỨC LÀ MỘT USER GESTURE.
       this.googleDriveService.authenticateSync(
@@ -582,15 +599,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
                           const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
                           
                           // Tìm tất cả các chuẩn cùng Tên và Số Lô (1-to-N matching)
-                          const siblings = this.allStandards().filter(s => 
-                              s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() && 
-                              (s.lot_number || '').trim().toLowerCase() === (std.lot_number || '').trim().toLowerCase()
-                          );
-
-                          // Cập nhật URL cho tất cả các lọ chuẩn đó
-                          for (const sibling of siblings) {
-                              await this.stdService.quickUpdateField(sibling.id, { certificate_ref: previewUrl });
-                          }
+                          const lot = (std.lot_number || '').trim().toLowerCase();
+                          const siblings = lot
+                              ? this.allStandards().filter(s =>
+                                  s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() &&
+                                  (s.lot_number || '').trim().toLowerCase() === lot &&
+                                  !s._isDeleted
+                              )
+                              : [std];
+                          await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
                           item.status = 'success';
                       } catch(e: any) {
@@ -602,7 +619,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
               } finally {
                   this.isBulkUploading.set(false);
                   this.bulkUploadComplete.set(true);
-                  this.toast.show('Hoàn tất quá trình tải lên CoA hàng loạt', 'success');
+                  const successCount = items.filter(item => item.status === 'success').length;
+                  const errorCount = items.filter(item => item.status === 'error').length;
+                  this.toast.show(
+                      errorCount > 0
+                          ? `Hoàn tất: ${successCount} thành công, ${errorCount} lỗi.`
+                          : `Hoàn tất ${successCount} file CoA.`,
+                      errorCount > 0 ? 'error' : 'success'
+                  );
                   this.progressService.complete();
               }
           },
