@@ -52,7 +52,7 @@ test('daily overview uses canonical assignments and immutable target-name snapsh
   assert.deepEqual(batches[0].samples[0].targetNames, ['Tên tại thời điểm tạo mẻ']);
 });
 
-test('batch views remain separated by request and group samples by assigned target set', () => {
+test('daily cards merge physical requests with the same SOP version and keep source traceability', () => {
   const batches = buildApprovedBatchOverviews([
     request({
       id: 'REQ-1',
@@ -63,17 +63,61 @@ test('batch views remain separated by request and group samples by assigned targ
         A003: ['T2']
       }
     }),
-    request({ id: 'REQ-2' })
+    request({ id: 'REQ-2', sampleList: ['A001'], targetIds: ['T1'], sampleTargetMap: { A001: ['T1'] } })
   ], '2026-07-16', (_item, targetId) => targetId);
 
   const views = buildDailyBatchViews(batches);
-  assert.equal(views.length, 2);
-  assert.equal(views.find(batch => batch.requestId === 'REQ-1')?.uniqueSamples, 3);
-  assert.equal(views.find(batch => batch.requestId === 'REQ-1')?.groups.length, 2);
+  assert.equal(views.length, 1);
+  assert.equal(views[0].physicalBatchCount, 2);
+  assert.deepEqual(views[0].sourceBatches.map(batch => batch.requestId).sort(), ['REQ-1', 'REQ-2']);
+  assert.equal(views[0].uniqueSamples, 3);
+  assert.equal(views[0].groups.length, 2);
   assert.deepEqual(
-    views.find(batch => batch.requestId === 'REQ-1')?.groups.find(group => group.targetIds[0] === 't1')?.sampleIds,
+    views[0].groups.find(group => group.targetIds[0] === 't1')?.sampleIds,
     ['A001', 'A002']
   );
+});
+
+test('same SOP on different versions remains in separate daily cards', () => {
+  const overviews = buildApprovedBatchOverviews([
+    request({ id: 'REQ-V1', sopVersion: 1 }),
+    request({ id: 'REQ-V2', sopVersion: 2 })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const views = buildDailyBatchViews(overviews);
+  assert.equal(views.length, 2);
+  assert.deepEqual(views.map(view => view.sopVersion).sort(), [1, 2]);
+});
+
+test('sample description snapshots are aggregated without losing physical request ownership', () => {
+  const overviews = buildApprovedBatchOverviews([
+    request({
+      id: 'REQ-DESC-1',
+      sampleList: ['L0101'],
+      sampleDescriptionMap: { L0101: { masterId: 'ca_tra', nameSnapshot: 'Cá tra' } }
+    }),
+    request({
+      id: 'REQ-DESC-2',
+      sampleList: ['L0201'],
+      sampleDescriptionMap: { L0201: { masterId: 'hanh_tim', nameSnapshot: 'Hành tím' } }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews(overviews);
+  assert.equal(view.physicalBatchCount, 2);
+  assert.equal(view.groups[0].formattedDescriptions, 'L0101 (Cá tra) · L0201 (Hành tím)');
+  assert.deepEqual(view.groups[0].samples[0].sourceRequestIds, ['REQ-DESC-1']);
+});
+
+test('conflicting descriptions for the same sample are visible instead of silently overwritten', () => {
+  const overviews = buildApprovedBatchOverviews([
+    request({ id: 'REQ-A', sampleDescriptionMap: { A001: { nameSnapshot: 'Cá tra' } } }),
+    request({ id: 'REQ-B', sampleDescriptionMap: { A001: { nameSnapshot: 'Cá basa' } } })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews(overviews);
+  assert.equal(view.groups[0].hasDescriptionConflict, true);
+  assert.deepEqual(view.groups[0].samples[0].descriptionAlternatives?.sort(), ['Cá basa', 'Cá tra']);
 });
 
 test('adaptive print planner chooses landscape for wide content and respects manual override', () => {
@@ -95,6 +139,8 @@ test('adaptive print planner supports automatic, compact and list print modes', 
   const overviews = buildApprovedBatchOverviews(
     Array.from({ length: 6 }, (_, index) => request({
       id: `REQ-${index + 1}`,
+      sopId: `SOP-${index + 1}`,
+      sopName: `SOP ${index + 1}`,
       sampleList: [`L${String(index + 1).padStart(2, '0')}15`],
       targetIds: ['T1']
     })),
@@ -119,6 +165,8 @@ test('compact renderer uses the exact page allocation reported by the planner', 
   const targetCounts = [14, 28, 38, 1, 3, 1, 1, 3, 1];
   const overviews = buildApprovedBatchOverviews(targetCounts.map((targetCount, index) => request({
     id: `REQ-PRINT-${index + 1}`,
+    sopId: `SOP-PRINT-${index + 1}`,
+    sopName: `SOP Print ${index + 1}`,
     sampleList: Array.from({ length: index === 7 ? 42 : 3 }, (_, sampleIndex) => `L${index + 1}${sampleIndex + 1}15`),
     targetIds: Array.from({ length: targetCount }, (_, targetIndex) => `T-${index + 1}-${targetIndex + 1}`)
   })), '2026-07-16', (_item, targetId) => `Chỉ tiêu ${targetId}`);
@@ -129,8 +177,8 @@ test('compact renderer uses the exact page allocation reported by the planner', 
   assert.equal(plan.estimatedPages, pages.length);
   assert.equal(pages.flat(2).length, views.length);
   assert.deepEqual(
-    pages.flat(2).map(batch => batch.requestId).sort(),
-    views.map(batch => batch.requestId).sort()
+    pages.flat(2).map(batch => batch.cardKey).sort(),
+    views.map(batch => batch.cardKey).sort()
   );
 });
 

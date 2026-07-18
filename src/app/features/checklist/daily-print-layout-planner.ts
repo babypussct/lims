@@ -111,7 +111,10 @@ function evaluateListLayout(
     let batchWasSplit = false;
     batch.groups.forEach(group => {
       const batchText = `${batch.sopName} v${batch.sopVersion || ''}`;
-      const sampleText = groupSamples ? group.formattedSamples : group.sampleIds.join(', ');
+      const sampleText = [
+        groupSamples ? group.formattedSamples : group.sampleIds.join(', '),
+        group.formattedDescriptions
+      ].filter(Boolean).join(' Mô tả: ');
       const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
         estimateLines(batchText, metrics.batchCharsPerLine),
@@ -256,7 +259,10 @@ function estimateCompactCard(
   let wrappedLineCount = 0;
 
   batch.groups.forEach(group => {
-    const sampleText = groupSamples ? group.formattedSamples : group.sampleIds.join(', ');
+    const sampleText = [
+      groupSamples ? group.formattedSamples : group.sampleIds.join(', '),
+      group.formattedDescriptions
+    ].filter(Boolean).join(' Mô tả: ');
     const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
     const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
     const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);

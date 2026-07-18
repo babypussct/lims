@@ -104,6 +104,12 @@ export const routes: Routes = [
     data: { role: 'manager' }
   },
   {
+    path: 'sample-description-master',
+    loadComponent: () => import('./features/config/sample-description-master.component').then(m => m.SampleDescriptionMasterComponent),
+    canActivate: [permissionGuard],
+    data: { role: 'manager' }
+  },
+  {
     path: 'requests',
     loadComponent: () => import('./features/requests/request-list.component').then(m => m.RequestListComponent),
     canActivate: [permissionGuard],

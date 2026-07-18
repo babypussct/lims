@@ -573,6 +573,14 @@ interface AvailableDateOption {
         overflow-wrap: anywhere !important;
       }
 
+      body.daily-checklist-printing #print-container .cl-print-compact-title small {
+        display: block !important;
+        margin-top: 0.7mm !important;
+        color: #64748b !important;
+        font-size: 6.5pt !important;
+        font-weight: 600 !important;
+      }
+
       body.daily-checklist-printing #print-container .cl-print-compact-group {
         padding: 2.2mm !important;
         break-inside: avoid !important;
@@ -706,6 +714,10 @@ interface AvailableDateOption {
         font-weight: 600 !important;
       }
 
+      body.daily-checklist-printing #print-container .cl-print-samples + .cl-print-meta {
+        color: #86198f !important;
+      }
+
       body.daily-checklist-printing #print-container .cl-print-samples {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
         font-size: 9pt !important;
@@ -775,6 +787,7 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly printMode = signal<DailyPrintModePreference>('auto');
   readonly printGroupSamples = signal(true);
   readonly expandedBatchIds = signal<Set<string>>(new Set());
+  readonly openSourceBatchCardKeys = signal<Set<string>>(new Set());
   readonly viewMode = signal<DailyBatchViewMode>(this.loadStoredViewMode());
   readonly batchGridWidth = signal(0);
   readonly qrCodeDataUrls = signal<Record<string, string>>({});
@@ -874,14 +887,20 @@ export class DailyChecklistComponent implements OnDestroy {
 
     return batches
       .map(batch => {
-        if (normalizeSearch([batch.requestId, batch.sopName, batch.sopRef || ''].join(' ')).includes(search)) {
+        if (normalizeSearch([
+          batch.sopName,
+          batch.sopRef || '',
+          ...batch.sourceBatches.map(source => source.requestId),
+          ...batch.groups.map(group => group.formattedDescriptions)
+        ].join(' ')).includes(search)) {
           return batch;
         }
         const matchingGroups = batch.groups.filter(group => normalizeSearch([
           ...group.targetNames,
           group.targetScope.headline,
           ...group.sampleIds,
-          group.formattedSamples
+          group.formattedSamples,
+          group.formattedDescriptions
         ].join(' ')).includes(search));
         if (matchingGroups.length === 0) return null;
         return {
@@ -899,11 +918,11 @@ export class DailyChecklistComponent implements OnDestroy {
     const expandedBatchIds = this.expandedBatchIds();
     const viewMode = this.viewMode();
     return new Map(this.boardBatches().map(batch => [
-      batch.requestId,
+      batch.cardKey,
       computeDailyBatchLayoutHint(
         batch,
         containerWidth,
-        expandedBatchIds.has(batch.requestId),
+        expandedBatchIds.has(batch.cardKey),
         viewMode
       )
     ]));
@@ -923,7 +942,14 @@ export class DailyChecklistComponent implements OnDestroy {
         group.targetIds.forEach(target => targets.add(`${batch.sopId}\u0000${target}`));
       });
     });
-    return { batches: batches.length, sops: sops.size, samples: samples.size, targets: targets.size, groups };
+    return {
+      batches: batches.reduce((total, batch) => total + batch.physicalBatchCount, 0),
+      cards: batches.length,
+      sops: sops.size,
+      samples: samples.size,
+      targets: targets.size,
+      groups
+    };
   });
 
   readonly printPlan = computed(() => planDailyPrintLayout(
@@ -1004,11 +1030,11 @@ export class DailyChecklistComponent implements OnDestroy {
   }
 
   visibleBatchGroups(batch: DailyBatchView) {
-    return this.isBatchExpanded(batch.requestId) ? batch.groups : batch.groups.slice(0, 2);
+    return this.isBatchExpanded(batch.cardKey) ? batch.groups : batch.groups.slice(0, 2);
   }
 
   visibleTargetNames(batch: DailyBatchView, targetNames: string[]): string[] {
-    return this.isBatchExpanded(batch.requestId) ? targetNames : targetNames.slice(0, 6);
+    return this.isBatchExpanded(batch.cardKey) ? targetNames : targetNames.slice(0, 6);
   }
 
   isTargetDetailOpen(requestId: string, signature: string): boolean {
@@ -1033,6 +1059,25 @@ export class DailyChecklistComponent implements OnDestroy {
 
   hiddenBatchGroupCount(batch: DailyBatchView): number {
     return Math.max(0, batch.groups.length - 2);
+  }
+
+  isSourceBatchListOpen(cardKey: string): boolean {
+    return this.openSourceBatchCardKeys().has(cardKey);
+  }
+
+  toggleSourceBatchList(cardKey: string): void {
+    this.openSourceBatchCardKeys.update(current => {
+      const next = new Set(current);
+      if (next.has(cardKey)) next.delete(cardKey);
+      else next.add(cardKey);
+      return next;
+    });
+  }
+
+  sourceBatchStatusLabel(status: string): string {
+    if (status === 'completed') return 'Có kết quả';
+    if (status === 'draft') return 'Đang nhập KQ';
+    return 'Chưa có KQ';
   }
 
   async printDocument(): Promise<void> {
@@ -1186,7 +1231,7 @@ export class DailyChecklistComponent implements OnDestroy {
   private async prepareBatchQrCodes(): Promise<void> {
     const current = this.qrCodeDataUrls();
     const missingIds = this.boardBatches()
-      .map(batch => batch.requestId)
+      .flatMap(batch => batch.sourceBatches.map(source => source.requestId))
       .filter(requestId => requestId && !current[requestId]);
     if (missingIds.length === 0) return;
 

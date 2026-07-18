@@ -1,6 +1,6 @@
 
 import { Component, inject, signal, computed, effect } from '@angular/core';
-import { getCanonicalId, resolveTargetMasterInfo } from '../results/shared/compound-id-resolver';
+import { getCanonicalId, normalizeSampleCode, resolveTargetMasterInfo } from '../results/shared/compound-id-resolver';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
@@ -20,6 +20,18 @@ import { InventoryItem } from '../../core/models/inventory.model';
 import { Recipe } from '../../core/models/recipe.model';
 import { GHS_DICTIONARY } from '../../core/services/pubchem.service';
 import { computeTargetSignature } from '../targets/target-scope-classifier';
+import {
+  SampleDescriptionMap,
+  SampleDescriptionMaster,
+  SampleDescriptionSnapshot
+} from '../../core/models/sample-description.model';
+import { SampleDescriptionMasterService } from '../config/sample-description-master.service';
+import {
+  formatSampleDescriptions,
+  getSampleDescriptionSnapshot,
+  setSampleDescriptionSnapshot,
+  subsetSampleDescriptionMap
+} from '../../shared/utils/sample-description.utils';
 
 // --- DATA MODELS ---
 
@@ -34,6 +46,7 @@ interface JobBlock {
     matrixType?: string;
     sourceGroupId?: string;
     sourceGroupModified?: boolean;
+    sampleDescriptionMap: SampleDescriptionMap;
 }
 
 interface AnalysisTask {
@@ -59,6 +72,7 @@ interface ProposedBatch {
     status: 'ready' | 'missing_stock' | 'processed';
     tags?: string[]; 
     isExpanded?: boolean; 
+    sampleDescriptionMap: SampleDescriptionMap;
 }
 
 export interface SopSuggestion {
@@ -146,6 +160,7 @@ export class SmartBatchComponent {
   printService = inject(PrintService);
   matrixTypeService = inject(MatrixTypeService);
   masterDeviceService = inject(MasterDeviceService);
+  sampleDescriptionMasterService = inject(SampleDescriptionMasterService);
   formatNum = formatNum;
   formatSampleList = formatSampleList;
 
@@ -160,14 +175,16 @@ export class SmartBatchComponent {
   singleMatrixType = signal<string | undefined>(undefined);
   singleTargetSearch = signal<string>('');
   singleForcedSopId = signal<string | undefined>(undefined);
+  singleSampleDescription = signal<SampleDescriptionSnapshot | undefined>(undefined);
 
-  blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: undefined } ]);
+  blocks = signal<JobBlock[]>([this.createEmptyBlock()]);
   batches = signal<ProposedBatch[]>([]);
   unmappedTasks = signal<AnalysisTask[]>([]);
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
   availableMatrices = signal<MatrixType[]>([]);
   availableDevices = signal<MasterDevice[]>([]);
+  availableSampleDescriptions = signal<SampleDescriptionMaster[]>([]);
 
   constructor() {
       this.matrixTypeService.getAll().then(m => {
@@ -178,6 +195,9 @@ export class SmartBatchComponent {
           }
       });
       this.masterDeviceService.getAll().then(d => this.availableDevices.set(d));
+      this.sampleDescriptionMasterService.getActive()
+        .then(items => this.availableSampleDescriptions.set(items))
+        .catch(() => this.toast.show('Không thể tải gợi ý mô tả mẫu; vẫn có thể nhập tự do.', 'info'));
       
       effect(() => {
           const activeIds = new Set(this.activeSops().map(s => s.id));
@@ -653,22 +673,135 @@ export class SmartBatchComponent {
       return Array.from(samples).sort().join(', ');
   }
 
+  getBatchDescriptionText(batch: ProposedBatch): string {
+      return formatSampleDescriptions(batch.samples, batch.sampleDescriptionMap);
+  }
+
+  getBlockSamples(block: JobBlock): string[] {
+      const unique = new Map<string, string>();
+      block.rawSamples.split('\n').map(sample => sample.trim()).filter(Boolean).forEach(sample => {
+          const key = normalizeSampleCode(sample);
+          if (key && !unique.has(key)) unique.set(key, sample);
+      });
+      return Array.from(unique.values());
+  }
+
+  getBlockSampleDescription(block: JobBlock, sampleCode: string): string {
+      return getSampleDescriptionSnapshot(block.sampleDescriptionMap, sampleCode)?.nameSnapshot || '';
+  }
+
+  getBlockDescriptionCount(block: JobBlock): number {
+      return this.getBlockSamples(block).filter(sample => Boolean(getSampleDescriptionSnapshot(block.sampleDescriptionMap, sample))).length;
+  }
+
+  updateBlockSampleDescription(index: number, sampleCode: string, value: string): void {
+      const snapshot = this.resolveDescriptionSnapshot(value);
+      this.blocks.update(blocks => {
+          const next = [...blocks];
+          const block = next[index];
+          next[index] = {
+              ...block,
+              sampleDescriptionMap: setSampleDescriptionSnapshot(block.sampleDescriptionMap, sampleCode, snapshot)
+          };
+          return next;
+      });
+  }
+
+  updateSingleSampleDescription(value: string): void {
+      this.singleSampleDescription.set(this.resolveDescriptionSnapshot(value));
+  }
+
+  singleSampleDescriptionName(): string {
+      return this.singleSampleDescription()?.nameSnapshot || '';
+  }
+
+  private createEmptyBlock(name = 'Nhóm Mẫu #1', matrixType?: string): JobBlock {
+      return {
+          id: Date.now(),
+          name,
+          rawSamples: '',
+          selectedTargets: new Set<string>(),
+          targetSearch: '',
+          isCollapsed: false,
+          forcedSopId: undefined,
+          matrixType,
+          sampleDescriptionMap: {}
+      };
+  }
+
+  private resolveDescriptionSnapshot(value: string): SampleDescriptionSnapshot | undefined {
+      const name = String(value || '').trim();
+      if (!name) return undefined;
+      const normalized = normalizeDescription(name);
+      const master = this.availableSampleDescriptions().find(item =>
+          normalizeDescription(item.name) === normalized
+          || (item.aliases || []).some(alias => normalizeDescription(alias) === normalized)
+      );
+      return master
+          ? { masterId: master.id, nameSnapshot: master.name }
+          : { nameSnapshot: name };
+  }
+
+  private buildDescriptionMapForSamples(samples: Iterable<string>): SampleDescriptionMap {
+      const result: SampleDescriptionMap = {};
+      Array.from(samples).forEach(sample => {
+          for (const block of this.blocks()) {
+              const snapshot = getSampleDescriptionSnapshot(block.sampleDescriptionMap, sample);
+              if (snapshot) {
+                  result[sample] = snapshot;
+                  break;
+              }
+          }
+      });
+      return result;
+  }
+
+  private findDescriptionConflict(): string | null {
+      const descriptions = new Map<string, { sample: string; names: Set<string> }>();
+      this.blocks().forEach(block => this.getBlockSamples(block).forEach(sample => {
+          const snapshot = getSampleDescriptionSnapshot(block.sampleDescriptionMap, sample);
+          if (!snapshot) return;
+          const key = normalizeSampleCode(sample);
+          const current = descriptions.get(key) || { sample, names: new Set<string>() };
+          current.names.add(normalizeDescription(snapshot.nameSnapshot));
+          descriptions.set(key, current);
+      }));
+      const conflict = Array.from(descriptions.values()).find(item => item.names.size > 1);
+      return conflict?.sample || null;
+  }
+
   // ... Block management helpers ...
   addBlock() {
       const defaultMatrix = this.availableMatrices().find(m => m.isDefault);
-      this.blocks.update(b => [...b, { id: Date.now(), name: `Nhóm Mẫu #${b.length + 1}`, rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: defaultMatrix?.id }]);
+      this.blocks.update(b => [...b, this.createEmptyBlock(`Nhóm Mẫu #${b.length + 1}`, defaultMatrix?.id)]);
   }
   removeBlock(index: number) { this.blocks.update(b => b.filter((_, i) => i !== index)); }
   duplicateBlock(index: number) {
       const src = this.blocks()[index];
-      const newBlock = { ...src, id: Date.now(), name: src.name + ' (Copy)', selectedTargets: new Set(src.selectedTargets) };
+      const newBlock = {
+          ...src,
+          id: Date.now(),
+          name: src.name + ' (Copy)',
+          selectedTargets: new Set(src.selectedTargets),
+          sampleDescriptionMap: { ...src.sampleDescriptionMap }
+      };
       this.blocks.update(b => { const n = [...b]; n.splice(index + 1, 0, newBlock); return n; });
   }
   toggleBlockCollapse(index: number) { 
       this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], isCollapsed: !n[index].isCollapsed }; return n; }); 
   }
   updateBlockName(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], name: val }; return n; }); }
-  updateBlockSamples(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], rawSamples: val }; return n; }); }
+  updateBlockSamples(index: number, val: string) {
+      this.blocks.update(blocks => {
+          const next = [...blocks];
+          next[index] = {
+              ...next[index],
+              rawSamples: val,
+              sampleDescriptionMap: subsetSampleDescriptionMap(next[index].sampleDescriptionMap, val.split('\n').map(sample => sample.trim()).filter(Boolean))
+          };
+          return next;
+      });
+  }
   updateBlockSearch(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], targetSearch: val }; return n; }); }
   updateBlockForcedSop(index: number, sopId: string | undefined) {
       this.blocks.update(b => {
@@ -850,9 +983,18 @@ export class SmartBatchComponent {
               isCollapsed: false,
               forcedSopId: this.singleForcedSopId(),
               matrixType: this.singleMatrixType(),
-              sourceGroupId: this.singleSourceGroupId() || undefined
+              sourceGroupId: this.singleSourceGroupId() || undefined,
+              sampleDescriptionMap: this.singleSampleDescription()
+                  ? { [sample]: this.singleSampleDescription()! }
+                  : {}
           };
           this.blocks.set([mockBlock]);
+      }
+
+      const descriptionConflict = this.findDescriptionConflict();
+      if (descriptionConflict) {
+          this.toast.show(`Mã mẫu “${descriptionConflict}” đang có mô tả không thống nhất giữa các nhóm mẫu.`, 'error');
+          return;
       }
 
       this.isProcessing.set(true);
@@ -927,7 +1069,8 @@ export class SmartBatchComponent {
                           resourceImpact: needs,
                           status: 'ready',
                           tags: tags,
-                          isExpanded: false
+                          isExpanded: false,
+                          sampleDescriptionMap: this.buildDescriptionMapForSamples(blockSamples)
                       });
                       
                       continue; // Skip adding to allTasks for greedy
@@ -1054,7 +1197,8 @@ export class SmartBatchComponent {
                   resourceImpact: needs,
                   status: 'ready',
                   tags: tags,
-                  isExpanded: false // Collapsed by default
+                  isExpanded: false, // Collapsed by default
+                  sampleDescriptionMap: this.buildDescriptionMapForSamples(batchSamples)
               });
 
               // Mark tasks as covered
@@ -1260,7 +1404,8 @@ export class SmartBatchComponent {
           targets: batchTargets,
           tasks: tasks,
           inputValues: newInputs,
-          resourceImpact: needs
+          resourceImpact: needs,
+          sampleDescriptionMap: subsetSampleDescriptionMap(originalBatch.sampleDescriptionMap, uniqueSamples)
       };
   }
 
@@ -1341,7 +1486,8 @@ export class SmartBatchComponent {
           safetyMargin: sourceBatch.safetyMargin,
           resourceImpact: newNeeds,
           status: 'ready',
-          isExpanded: false
+          isExpanded: false,
+          sampleDescriptionMap: subsetSampleDescriptionMap(sourceBatch.sampleDescriptionMap, uniqueSamplesNew)
       };
 
       // 3. Update Source Batch
@@ -1677,8 +1823,9 @@ export class SmartBatchComponent {
       this.step.set(0);
       this.batches.set([]);
       this.unmappedTasks.set([]);
-      this.blocks.set([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: undefined } ]);
+      this.blocks.set([this.createEmptyBlock()]);
       this.singleSampleCode.set('');
+      this.singleSampleDescription.set(undefined);
       this.singleSelectedTargets.set(new Set());
       this.singleSourceGroupId.set(null);
       this.singleMatrixType.set(undefined);
@@ -1690,6 +1837,7 @@ export class SmartBatchComponent {
       if (this.smartBatchMode() === 'single' && this.blocks().length > 0) {
           const mockBlock = this.blocks()[0];
           this.singleSampleCode.set(mockBlock.rawSamples.trim());
+          this.singleSampleDescription.set(getSampleDescriptionSnapshot(mockBlock.sampleDescriptionMap, mockBlock.rawSamples.trim()));
           this.singleSelectedTargets.set(new Set(mockBlock.selectedTargets));
           this.singleSourceGroupId.set(mockBlock.sourceGroupId || null);
           this.singleMatrixType.set(mockBlock.matrixType);
@@ -1745,6 +1893,7 @@ export class SmartBatchComponent {
                       sampleList: Array.from(batch.samples),
                       targetIds: batch.targets.map(t => t.id),
                       sampleTargetMap,
+                      sampleDescriptionMap: batch.sampleDescriptionMap,
                       analysisDate: batch.inputValues['analysisDate'],
                       explicitGroupId: batch.tasks.length > 0
                         && batch.tasks.every(task => task.sourceGroupId && task.sourceGroupId === batch.tasks[0].sourceGroupId)
@@ -1765,7 +1914,6 @@ export class SmartBatchComponent {
                   this.printService.openPreview(jobs);
                   this.toast.show('Hoàn tất! Đang mở xem trước.', 'success');
                   this.reset();
-                  this.blocks.set([{ id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined }]);
               }
           } catch (e: any) {
               this.toast.show('Lỗi xử lý: ' + e.message, 'error');
@@ -1801,4 +1949,12 @@ export class SmartBatchComponent {
       }
       this.closeQuickGenerateModal();
   }
+}
+
+function normalizeDescription(value: string): string {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
 }

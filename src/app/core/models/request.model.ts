@@ -1,5 +1,6 @@
 
 import { AnalysisResultDraft } from './analysis-result.model';
+import { SampleDescriptionMap } from './sample-description.model';
 
 export type TargetScopeKind = 'sop-all' | 'target-group' | 'manual' | 'unassigned' | 'ambiguous';
 export type TargetScopeTraceability = 'snapshot' | 'legacy-derived' | 'current-config';
@@ -49,6 +50,7 @@ export interface Request {
   sampleList?: string[]; // List of Sample IDs
   targetIds?: string[];  // List of Selected Target IDs
   sampleTargetMap?: Record<string, string[]>; // Maps sample ID -> assigned Target IDs
+  sampleDescriptionMap?: SampleDescriptionMap; // Optional immutable description snapshot per sample ID
   targetNames?: Record<string, string>; // Immutable target-name snapshot for traceability
   targetScopeSnapshots?: TargetScopeSnapshot[]; // Immutable scope/source snapshot per distinct target set
   sopVersion?: number;

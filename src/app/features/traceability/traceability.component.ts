@@ -11,6 +11,7 @@ import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
 import { MasterTargetService } from '../targets/master-target.service';
 import { resolveCompoundDisplayName } from '../results/shared/compound-id-resolver';
+import { getSampleDescriptionSnapshot } from '../../shared/utils/sample-description.utils';
 
 declare let QRious: any;
 
@@ -289,7 +290,7 @@ declare let QRious: any;
                                         <span class="text-xs text-slate-500 block mb-1">Thông số đầu vào</span>
                                         <div class="flex flex-wrap gap-2">
                                             @for(key of objectKeys(logData()?.printData?.inputs); track key) {
-                                                @if(key !== 'sampleList' && key !== 'targetIds' && key !== 'sampleTargetMap') {
+                                                @if(key !== 'sampleList' && key !== 'targetIds' && key !== 'sampleTargetMap' && key !== 'sampleDescriptionMap') {
                                                     <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
                                                         {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
                                                     </span>
@@ -305,6 +306,17 @@ declare let QRious: any;
                                        <span class="text-xs text-slate-500 block">Danh sách mẫu</span>
                                        <span class="font-bold text-slate-800 break-words font-mono text-sm leading-snug">{{ formatSampleList(logData()?.printData?.inputs?.sampleList) }}</span>
                                    </div>
+                                }
+
+                                @if(getSampleDescriptionRows().length > 0) {
+                                  <div>
+                                    <span class="text-xs text-slate-500 block mb-1">Mô tả từng mẫu</span>
+                                    <div class="flex flex-wrap gap-1.5">
+                                      @for(row of getSampleDescriptionRows(); track row.sampleId) {
+                                        <span class="bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-800 px-2 py-1 rounded-lg text-xs font-bold"><span class="font-mono">{{row.sampleId}}</span> · {{row.description}}</span>
+                                      }
+                                    </div>
+                                  </div>
                                 }
 
                                 <!-- Target Map -->
@@ -486,6 +498,17 @@ export class TraceabilityComponent implements OnInit {
       return null;
   }
 
+  getSampleDescriptionRows(): { sampleId: string; description: string }[] {
+      const log = this.logData() as any;
+      const inputs = log?.printData?.inputs || log?.inputs || {};
+      const map = log?.sampleDescriptionMap || inputs.sampleDescriptionMap;
+      const samples: string[] = inputs.sampleList || log?.sampleList || Object.keys(map || {});
+      return samples.map(sampleId => ({
+          sampleId,
+          description: getSampleDescriptionSnapshot(map, sampleId)?.nameSnapshot || ''
+      })).filter(item => item.description).sort((a, b) => naturalCompare(a.sampleId, b.sampleId));
+  }
+
   getSortedSamples(map: Record<string, string[]> | null): string[] {
       if (!map) return [];
       return Object.keys(map).sort(naturalCompare);
@@ -571,7 +594,8 @@ export class TraceabilityComponent implements OnInit {
                           ...reqData.inputs, 
                           sampleList: reqData.sampleList,
                           targetIds: reqData.targetIds,
-                          sampleTargetMap: reqData.sampleTargetMap
+                          sampleTargetMap: reqData.sampleTargetMap,
+                          sampleDescriptionMap: reqData.sampleDescriptionMap
                       },
                       items: mappedItems,
                       margin: reqData.margin,

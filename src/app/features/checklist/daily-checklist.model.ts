@@ -1,4 +1,5 @@
 import { Request, TargetScopeSnapshot } from '../../core/models/request.model';
+import { SampleDescriptionSnapshot } from '../../core/models/sample-description.model';
 import { TargetScopePresentation } from '../targets/target-scope-classifier';
 
 export type ApprovedBatchStatus = Extract<Request['status'], 'approved' | 'draft' | 'completed'>;
@@ -7,6 +8,7 @@ export interface ApprovedBatchSample {
   sampleId: string;
   targetIds: string[];
   targetNames: string[];
+  description?: SampleDescriptionSnapshot;
 }
 
 export interface ApprovedBatchOverview {
@@ -33,20 +35,41 @@ export interface DailyBatchAssignmentGroup {
   targetNames: string[];
   sampleIds: string[];
   formattedSamples: string;
+  samples: DailySampleView[];
+  formattedDescriptions: string;
+  hasDescriptionConflict: boolean;
   targetScope: TargetScopePresentation;
 }
 
-export interface DailyBatchView {
+export interface DailySampleView {
+  sampleId: string;
+  description?: SampleDescriptionSnapshot;
+  descriptionAlternatives?: string[];
+  sourceRequestIds: string[];
+}
+
+export interface DailyPhysicalBatchRef {
   requestId: string;
+  status: ApprovedBatchStatus;
+  approvedAt?: Date;
+  ownerName?: string;
+  sampleIds: string[];
+  formattedSamples: string;
+}
+
+export interface DailyBatchView {
+  cardKey: string;
   sopId: string;
   sopName: string;
   sopVersion?: number;
   sopRef?: string;
-  status: ApprovedBatchStatus;
   analysisDate: string;
   approvedAt?: Date;
   ownerName?: string;
   groups: DailyBatchAssignmentGroup[];
+  sourceBatches: DailyPhysicalBatchRef[];
+  physicalBatchCount: number;
+  statusCounts: Record<ApprovedBatchStatus, number>;
   uniqueSamples: number;
   uniqueTargets: number;
   targetAssignments: number;

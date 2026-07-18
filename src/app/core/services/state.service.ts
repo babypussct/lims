@@ -727,6 +727,7 @@ export class StateService implements OnDestroy {
       if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
       if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
       if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
+      if (formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
 
       await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), sanitizeForFirebase(reqData));
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
@@ -786,6 +787,7 @@ export class StateService implements OnDestroy {
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
         if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
         if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
+        if (formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
 
         transaction.set(reqRef, sanitizeForFirebase(reqData));
 
@@ -904,6 +906,7 @@ export class StateService implements OnDestroy {
           if (req.sampleList) extendedInputs.sampleList = req.sampleList;
           if (req.targetIds) extendedInputs.targetIds = req.targetIds;
           if (req.sampleTargetMap) extendedInputs.sampleTargetMap = req.sampleTargetMap;
+          if (req.sampleDescriptionMap) extendedInputs.sampleDescriptionMap = req.sampleDescriptionMap;
 
           const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
           const printData: PrintData = {
@@ -1063,6 +1066,9 @@ export class StateService implements OnDestroy {
 
         if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
         else reqData.sampleTargetMap = deleteField();
+
+        if (formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
+        else if ('sampleDescriptionMap' in formInputs) reqData.sampleDescriptionMap = deleteField();
 
         transaction.update(reqRef, sanitizeForFirebase(reqData));
 

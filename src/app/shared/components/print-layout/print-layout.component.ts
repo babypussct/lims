@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { PrintJob } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
 import { formatDate, formatNum, formatSampleList } from '../../utils/utils';
+import { formatSampleDescriptions } from '../../utils/sample-description.utils';
 
 declare let QRious: any;
 
@@ -94,6 +95,9 @@ declare let QRious: any;
                         <div class="samples-box">
                             <div class="box-label">Danh sách mẫu ({{job.inputs['sampleList'].length}})</div>
                             <div class="box-content">{{ formatSampleList(job.inputs['sampleList']) }}</div>
+                            @if (formatSampleDescriptionList(job)) {
+                                <div class="box-content" style="margin-top: 3px; color: #86198f; font-size: 9px;"><strong>Mô tả:</strong> {{formatSampleDescriptionList(job)}}</div>
+                            }
                         </div>
                     }
 
@@ -289,6 +293,10 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
   formatNum = formatNum;
   formatDate = formatDate;
   formatSampleList = formatSampleList;
+
+  formatSampleDescriptionList(job: PrintJob): string {
+    return formatSampleDescriptions(job.inputs?.sampleList || [], job.inputs?.sampleDescriptionMap || {});
+  }
 
   @Input() jobs: PrintJob[] = [];
   @Input() options: any = { showHeader: true, showFooter: true, showSignature: true, showCutLine: true };

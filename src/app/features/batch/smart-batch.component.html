@@ -1,4 +1,9 @@
     <div class="h-full flex flex-col fade-in pb-0 relative font-sans text-slate-800 dark:text-slate-200">
+        <datalist id="sample-description-master-options">
+            @for (description of availableSampleDescriptions(); track description.id) {
+                <option [value]="description.name">{{description.aliases?.join(', ') || description.description || ''}}</option>
+            }
+        </datalist>
         <!-- HEADER -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
             <div class="flex items-center gap-3">
@@ -152,6 +157,30 @@
                                                 <textarea [ngModel]="block.rawSamples" (ngModelChange)="updateBlockSamples(i, $event)"
                                                           class="w-full h-40 p-3 text-sm font-mono border border-slate-200 dark:border-slate-700 rounded-xl focus:border-teal-500 dark:focus:border-teal-400 focus:ring-1 focus:ring-teal-200 dark:focus:ring-teal-900/30 outline-none resize-none bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-900 transition text-slate-800 dark:text-slate-200"
                                                           placeholder="A01&#10;A02&#10;..."></textarea>
+                                                @if (getBlockSamples(block).length > 0) {
+                                                    <details class="mt-2 rounded-xl border border-fuchsia-100 dark:border-fuchsia-900/40 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 overflow-hidden">
+                                                        <summary class="px-3 py-2 cursor-pointer text-[10px] font-black uppercase tracking-wide text-fuchsia-700 dark:text-fuchsia-400 flex items-center justify-between gap-2">
+                                                            <span><i class="fa-solid fa-tags mr-1.5"></i>Mô tả từng mẫu — tùy chọn</span>
+                                                            <span class="normal-case text-slate-400">{{getBlockDescriptionCount(block)}}/{{getBlockSamples(block).length}} mẫu</span>
+                                                        </summary>
+                                                        <div class="max-h-64 overflow-y-auto custom-scrollbar border-t border-fuchsia-100 dark:border-fuchsia-900/40 divide-y divide-fuchsia-100/70 dark:divide-fuchsia-900/30">
+                                                            @for (sampleCode of getBlockSamples(block); track sampleCode) {
+                                                                <div class="grid grid-cols-[minmax(90px,0.7fr)_minmax(150px,1.3fr)] gap-2 items-center px-3 py-2 bg-white/70 dark:bg-slate-900/40">
+                                                                    <span class="font-mono text-xs font-black text-slate-700 dark:text-slate-300 break-all">{{sampleCode}}</span>
+                                                                    <div class="relative">
+                                                                        <i class="fa-solid fa-tag absolute left-2.5 top-1/2 -translate-y-1/2 text-fuchsia-300 text-[10px]"></i>
+                                                                        <input [ngModel]="getBlockSampleDescription(block, sampleCode)"
+                                                                               (ngModelChange)="updateBlockSampleDescription(i, sampleCode, $event)"
+                                                                               list="sample-description-master-options"
+                                                                               class="w-full h-8 pl-7 pr-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-fuchsia-400"
+                                                                               placeholder="Chọn hoặc nhập mô tả...">
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                        <p class="px-3 py-2 text-[9px] text-slate-400 border-t border-fuchsia-100 dark:border-fuchsia-900/40">Tên chọn từ Master được lưu kèm ID; nội dung nhập tự do vẫn được lưu dưới dạng snapshot.</p>
+                                                    </details>
+                                                }
                                             </div>
 
                                             <!-- Target Selector -->
@@ -332,6 +361,16 @@
                                         <input [ngModel]="singleSampleCode()" (ngModelChange)="singleSampleCode.set($event)"
                                                class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 transition shadow-sm"
                                                placeholder="Nhập mã mẫu (ví dụ: M-TEST-001)...">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-fuchsia-500 dark:text-fuchsia-400 uppercase block mb-1.5 ml-1">Mô tả mẫu — tùy chọn</label>
+                                        <div class="relative">
+                                            <i class="fa-solid fa-tag absolute left-3 top-1/2 -translate-y-1/2 text-fuchsia-300 text-xs"></i>
+                                            <input [ngModel]="singleSampleDescriptionName()" (ngModelChange)="updateSingleSampleDescription($event)"
+                                                   list="sample-description-master-options"
+                                                   class="w-full px-4 pl-9 py-2.5 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 border border-fuchsia-100 dark:border-fuchsia-900/40 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500"
+                                                   placeholder="Chọn từ Master hoặc nhập tự do...">
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-1.5 mb-1.5 ml-1">
@@ -763,6 +802,11 @@
                                             </div>
                                         </div>
                                     </div>
+                                    @if (getBatchDescriptionText(batch)) {
+                                        <div class="mt-2 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/40 bg-fuchsia-50/50 dark:bg-fuchsia-950/10 px-2.5 py-2 text-[10px] text-fuchsia-800 dark:text-fuchsia-300 leading-relaxed">
+                                            <span class="font-black uppercase tracking-wide mr-1"><i class="fa-solid fa-tags mr-1"></i>Mô tả:</span>{{getBatchDescriptionText(batch)}}
+                                        </div>
+                                    }
                                 </div>
 
                                 <!-- Tags (Targets) -->

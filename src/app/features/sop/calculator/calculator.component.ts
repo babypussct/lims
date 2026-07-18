@@ -24,6 +24,8 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
 import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { TargetService } from '../../targets/target.service';
+import { SampleDescriptionMap } from '../../../core/models/sample-description.model';
+import { subsetSampleDescriptionMap } from '../../../shared/utils/sample-description.utils';
 
 @Component({
   selector: 'app-calculator',
@@ -62,6 +64,7 @@ export class CalculatorComponent implements OnDestroy {
   isLoadingInventory = signal(false);
   sampleListText = signal('');
   sampleCount = signal(0);
+  preservedSampleDescriptionMap = signal<SampleDescriptionMap>({});
   selectedTargets = signal<Set<string>>(new Set());
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
@@ -279,6 +282,7 @@ export class CalculatorComponent implements OnDestroy {
                 this.sampleListText.set('');
                 this.sampleCount.set(0);
             }
+            this.preservedSampleDescriptionMap.set(editingReq.sampleDescriptionMap || editingReq.inputs?.sampleDescriptionMap || {});
             
             if (editingReq.targetIds) {
                 this.selectedTargets.set(new Set(editingReq.targetIds));
@@ -312,6 +316,7 @@ export class CalculatorComponent implements OnDestroy {
             }
             this.sampleListText.set('');
             this.sampleCount.set(0);
+            this.preservedSampleDescriptionMap.set({});
             this.selectedTargets.set(new Set());
             this.customSampleTargetMap.set({});
             this.isMatrixCustomized.set(false);
@@ -496,7 +501,8 @@ export class CalculatorComponent implements OnDestroy {
           safetyMargin: finalMargin, 
           sampleList: sampleList, 
           targetIds: targetIds,
-          sampleTargetMap: sampleTargetMap
+          sampleTargetMap: sampleTargetMap,
+          sampleDescriptionMap: subsetSampleDescriptionMap(this.preservedSampleDescriptionMap(), sampleList)
       };
 
       const explicitGroupId = this.targetSelectionModified() ? undefined : (this.selectedTargetGroupId() || undefined);

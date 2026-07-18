@@ -95,6 +95,10 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isManager(appId);
     }
+    match /artifacts/{appId}/sample_description_master/{itemId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
+    }
     match /artifacts/{appId}/system_updates/{docId} {
       allow read: if isSignedIn();
       allow write: if isManager(appId);

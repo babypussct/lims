@@ -145,6 +145,7 @@ service cloud.firestore {
         match /master_targets/{docId}       { allow read, write: if isAuth(); }
         match /master_analytes/{docId}      { allow read, write: if isAuth(); }
         match /target_groups/{docId}        { allow read, write: if isAuth(); }
+        match /sample_description_master/{docId} { allow read: if isAuth(); allow write: if isManager(); }
         match /results_details/{docId}      { allow read, write: if isAuth(); }
 
         // Fallback an toàn: từ chối tất cả những gì không được liệt kê
