@@ -2,27 +2,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // 1. Hàm kiểm tra người dùng đã đăng nhập chưa
+    // 1. Ham kiem tra nguoi dung da dang nhap chua
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 2. Kiểm tra tài liệu User Profile có tồn tại không
+    // 2. Kiem tra tai lieu User Profile co ton tai khong
     function userExists(appId) {
       return isSignedIn() && exists(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid));
     }
 
-    // 3. Lấy tài liệu User Profile của request hiện tại
+    // 3. Lay tai lieu User Profile cua request hien tai
     function getUserProfile(appId) {
       return get(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)).data;
     }
 
-    // 4. Kiểm tra User có phải là Manager không
+    // 4. Kiem tra User co phai la Manager khong
     function isManager(appId) {
       return userExists(appId) && getUserProfile(appId).get('role', 'pending') == 'manager';
     }
 
-    // 5. Trợ giúp phân giải quyền hạn khi tài liệu người dùng được xác định là tồn tại
+    // 5. Tro giup phan giai quyen han khi tai lieu nguoi dung duoc xac dinh la ton tai
     function evaluateUserPermission(appId, profile, permission) {
       let role = profile.get('role', 'pending');
       let rawRoleId = profile.get('roleId', 'role_staff_default');
@@ -42,7 +42,7 @@ service cloud.firestore {
         (
           role == 'staff' &&
           (
-            // 1. Ưu tiên cao nhất: Nếu manager đã cấu hình roles_config thì lấy theo cấu hình đó
+            // 1. Uu tien cao nhat: Neu manager da cau hinh roles_config thi lay theo cau hinh do
             (
               exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
               'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
@@ -50,7 +50,7 @@ service cloud.firestore {
               get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
             )
             ||
-            // 2. Fallback: CHỈ ÁP DỤNG khi roles_config chưa được tạo (bị trống)
+            // 2. Fallback: CHI AP DUNG khi roles_config chua duoc tao (bi trong)
             (
               !exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
               (
@@ -63,7 +63,7 @@ service cloud.firestore {
         );
     }
 
-    // 6. Kiểm tra User có một quyền cụ thể nào đó không (Tuyệt đối không gây crash nếu user profile chưa tồn tại)
+    // 6. Kiem tra User co mot quyen cu the nao do khong (Tuyet doi khong gay crash neu user profile chua ton tai)
     function hasPermission(appId, permission) {
       return userExists(appId) && evaluateUserPermission(appId, getUserProfile(appId), permission);
     }
@@ -76,10 +76,10 @@ service cloud.firestore {
       return hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_log_delete');
     }
 
-    // --- CẤU HÌNH HỆ THỐNG VÀ VAI TRÒ ---
+    // --- CAU HINH HE THONG VA VAI TRO ---
     
-    // Mọi người dùng đã đăng nhập đều có thể đọc thông tin cơ bản để hiển thị avatar,
-    // nhưng chỉ người dùng đó hoặc Manager mới được phép chỉnh sửa
+    // Moi nguoi dung da dang nhap deu co the doc thong tin co ban de hien thi avatar,
+    // nhung chi nguoi dung do hoac Manager moi duoc phep chinh sua
     match /artifacts/{appId}/users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid &&
@@ -94,13 +94,13 @@ service cloud.firestore {
       allow delete: if isManager(appId);
     }
 
-    // Cấu hình nhóm vai trò động (Roles Config)
+    // Cau hinh nhom vai tro dong (Roles Config)
     match /artifacts/{appId}/roles_config/{roleId} {
       allow read: if isSignedIn();
       allow write: if isManager(appId);
     }
 
-    // Metadata hệ thống và Cấu hình chung
+    // Metadata he thong va Cau hinh chung
     match /artifacts/{appId}/system/{docId} {
       allow read: if isSignedIn();
       allow write: if isManager(appId);
@@ -122,7 +122,7 @@ service cloud.firestore {
     }
     match /artifacts/{appId}/notifications/{docId} {
       allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
-      allow create: if false; // Chỉ Firebase Admin trong /api/notifications được tạo
+      allow create: if false; // Chi Firebase Admin trong /api/notifications duoc tao
       allow update: if isSignedIn() &&
         resource.data.recipientUid == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']) &&
@@ -133,21 +133,21 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // --- CÁC MODULE NGHIỆP VỤ ---
+    // --- CAC MODULE NGHIEP VU ---
 
     // MODULE KHO (INVENTORY)
     match /artifacts/{appId}/inventory/{itemId} {
       allow read: if hasPermission(appId, 'inventory_view');
       allow write: if hasPermission(appId, 'inventory_edit');
       
-      // Lịch sử tiêu hao / thay đổi kho
+      // Lich su tieu hao / thay doi kho
       match /history/{histId} {
         allow read: if hasPermission(appId, 'inventory_view');
         allow write: if hasPermission(appId, 'inventory_edit');
       }
     }
 
-    // MODULE CHUẨN ĐỐI CHIẾU (REFERENCE STANDARDS)
+    // MODULE CHUAN DOI CHIEU (REFERENCE STANDARDS)
     match /artifacts/{appId}/reference_standards/{stdId} {
       allow read: if hasPermission(appId, 'standard_view');
       allow create: if hasPermission(appId, 'standard_edit');
@@ -193,7 +193,7 @@ service cloud.firestore {
         );
       allow delete: if hasPermission(appId, 'standard_delete') || isManager(appId);
 
-      // Nhật ký mượn/sử dụng chất chuẩn chi tiết
+      // Nhat ky muon/su dung chat chuan chi tiet
       match /logs/{logId} {
         allow read: if hasPermission(appId, 'standard_view');
         allow create: if canOperateStandards(appId) || (
@@ -207,7 +207,7 @@ service cloud.firestore {
       }
     }
 
-    // Yêu cầu mua chuẩn (Purchase/Standard Requests)
+    // Yeu cau mua chuan (Purchase/Standard Requests)
     match /artifacts/{appId}/standard_requests/{reqId} {
       allow read: if canOperateStandards(appId) || hasPermission(appId, 'standard_log_view') ||
         hasPermission(appId, 'standard_log_delete') || (
@@ -259,7 +259,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Lịch sử sử dụng chuẩn chung
+    // Lich su su dung chuan chung
     match /artifacts/{appId}/standard_usages/{useId} {
       allow read: if hasPermission(appId, 'standard_log_view') ||
         hasPermission(appId, 'standard_log_delete') || canOperateStandards(appId);
@@ -273,7 +273,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // MODULE QUY TRÌNH SOP & CÔNG THỨC (SOPS & RECIPES)
+    // MODULE QUY TRINH SOP & CONG THUC (SOPS & RECIPES)
     match /artifacts/{appId}/sops/{sopId} {
       allow read: if hasPermission(appId, 'sop_view');
       allow write: if hasPermission(appId, 'sop_edit');
@@ -288,9 +288,9 @@ service cloud.firestore {
       allow write: if hasPermission(appId, 'recipe_edit');
     }
 
-    // MODULE YÊU CẦU KIỂM NGHIỆM VÀ KẾT QUẢ (REQUESTS)
+    // MODULE YEU CAU KIEM NGHIEM VA KET QUA (REQUESTS)
     match /artifacts/{appId}/requests/{reqId} {
-      allow get: if true; // Public read cho phép truy xuất kết quả/QR code không cần đăng nhập
+      allow get: if true; // Public read cho phep truy xuat ket qua/QR code khong can dang nhap
       allow list: if isSignedIn();
       allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
 
@@ -303,13 +303,13 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // Yêu cầu in ấn nhãn / barcode (Print Jobs)
+    // Yeu cau in an nhan / barcode (Print Jobs)
     match /artifacts/{appId}/print_jobs/{jobId} {
-      allow read: if true; // Public read cho phép máy in hoặc client quét barcode không cần login
+      allow read: if true; // Public read cho phep may in hoac client quet barcode khong can login
       allow write: if isSignedIn();
     }
 
-    // Thư viện Target Master
+    // Thu vien Target Master
     match /artifacts/{appId}/target_groups/{tgId} {
       allow read: if isSignedIn();
       allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
@@ -327,10 +327,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // Lịch sử Audit Trail / Nhật ký hệ thống chung (Logs)
+    // Lich su Audit Trail / Nhat ky he thong chung (Logs)
     match /artifacts/{appId}/logs/{logId} {
       allow create: if isSignedIn();
-      allow get: if true; // Public read cho phép quét QR code truy xuất nguồn gốc
+      allow get: if true; // Public read cho phep quet QR code truy xuat nguon goc
       allow list: if isSignedIn();
       allow update, delete: if isManager(appId);
     }
