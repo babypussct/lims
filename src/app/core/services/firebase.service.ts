@@ -69,7 +69,11 @@ export class FirebaseService {
     }
 
     try {
-        const swReg = await navigator.serviceWorker.getRegistration();
+        let swReg = await navigator.serviceWorker.getRegistration();
+        if (!swReg) {
+            console.log('[FirebaseService] Service Worker chưa được đăng ký (có thể do Angular đang đợi app stable). Đăng ký thủ công...');
+            swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        }
         if (!swReg) {
             throw new Error('Chưa tìm thấy Service Worker. Hãy tải lại trang web.');
         }
