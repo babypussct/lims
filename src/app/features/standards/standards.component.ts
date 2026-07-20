@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -88,7 +88,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
-      // Logic 3 tháng: lấy tháng hiện tại + 3 tháng, bất kể ngày
+      // Logic 3 thÃ¡ng: láº¥y thÃ¡ng hiá»‡n táº¡i + 3 thÃ¡ng, báº¥t ká»ƒ ngÃ y
       const threeMonthsEnd = new Date(now.getFullYear(), now.getMonth() + 4, 1).getTime(); // exclusive
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
@@ -213,14 +213,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   selectedIds = signal<Set<string>>(new Set());
 
-  /** Danh sách lọ cùng tên với selectedStd(), đã sắp xếp FEFO. Dùng cho Assign Modal. */
+  /** Danh sÃ¡ch lá» cÃ¹ng tÃªn vá»›i selectedStd(), Ä‘Ã£ sáº¯p xáº¿p FEFO. DÃ¹ng cho Assign Modal. */
   sameNameAsSelected = computed(() => {
     const sel = this.selectedStd();
     if (!sel) return [];
     return sortStandardsByFefo(getSameStandardLots(sel, this.allStandards(), false));
   });
 
-  /** Dữ liệu thực tế sẽ xuất: các chuẩn đã chọn (nếu có) hoặc toàn bộ filteredItems */
+  /** Dá»¯ liá»‡u thá»±c táº¿ sáº½ xuáº¥t: cÃ¡c chuáº©n Ä‘Ã£ chá»n (náº¿u cÃ³) hoáº·c toÃ n bá»™ filteredItems */
   exportItems = computed(() => {
     if (this.exportDataSource() === 'selected' && this.selectedIds().size > 0) {
       return this.filteredItems().filter(item => this.selectedIds().has(item.id));
@@ -228,22 +228,30 @@ export class StandardsComponent implements OnInit, OnDestroy {
     return this.filteredItems();
   });
 
-  /** Mô tả ngắn bộ lọc đang áp dụng — hiển thị trong modal header */
+  /** MÃ´ táº£ ngáº¯n bá»™ lá»c Ä‘ang Ã¡p dá»¥ng â€” hiá»ƒn thá»‹ trong modal header */
   exportSubtitle = computed(() => {
     const src = this.exportDataSource();
     const cnt = src === 'selected' ? this.selectedIds().size : this.filteredItems().length;
     const filter = this.activeWidgetFilter();
     const search = this.searchTerm();
     const filterLabels: Record<string, string> = {
-      expired: 'Đã hết hạn',
-      expiring_soon: 'Sắp hết hạn 30 ngày',
-      expiring_3months: 'Sắp hết hạn 3 tháng tới',
-      low_stock: 'Tồn kho thấp',
+      expired: 'ÄÃ£ háº¿t háº¡n',
+      expiring_soon: 'Sáº¯p háº¿t háº¡n 30 ngÃ y',
+      expiring_3months: 'Sáº¯p háº¿t háº¡n 3 thÃ¡ng tá»›i',
+      low_stock: 'Tá»“n kho tháº¥p',
     };
-    let desc = src === 'selected' ? `${cnt} chuẩn đã chọn` : `${cnt} kết quả`;
-    if (filter !== 'all') desc += ` · Lọc: ${filterLabels[filter] || filter}`;
-    if (search) desc += ` · Tìm: “${search}”`;
+    let desc = src === 'selected' ? `${cnt} chuáº©n Ä‘Ã£ chá»n` : `${cnt} káº¿t quáº£`;
+    if (filter !== 'all') desc += ` Â· Lá»c: ${filterLabels[filter] || filter}`;
+    if (search) desc += ` Â· TÃ¬m: â€œ${search}â€`;
     return desc;
+  });
+
+  /** Sá»‘ nhÃ³m chuáº©n cÃ³ Ã­t nháº¥t 1 chuáº©n thay tháº¿ trong kho â€” hiá»ƒn thá»‹ trong modal footer */
+  exportGroupCount = computed(() => {
+    const items = this.exportItems();
+    if (items.length === 0) return 0;
+    const allStds = this.allStandards();
+    return items.filter(item => this.hasRelatedStandards(item, allStds)).length;
   });
 
   // Import Preview State
@@ -389,18 +397,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
           standard.current_request_id || standard.has_pending_request
       ));
       if (active.length) {
-          this.toast.show(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt.`, 'error');
+          this.toast.show(`KhÃ´ng thá»ƒ áº©n ${active.length} lÃ´ Ä‘ang mÆ°á»£n/tráº£ hoáº·c chá» duyá»‡t.`, 'error');
           return;
       }
       
-      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (Admin).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Báº¡n cÃ³ cháº¯c muá»‘n áº©n ${ids.length} chuáº©n Ä‘Ã£ chá»n khá»i danh sÃ¡ch?\n\nâ€¢ Lá»‹ch sá»­ sá»­ dá»¥ng váº«n Ä‘Æ°á»£c lÆ°u giá»¯ Ä‘áº§y Ä‘á»§.\nâ€¢ Dá»¯ liá»‡u cÃ³ thá»ƒ khÃ´i phá»¥c tá»« ThÃ¹ng rÃ¡c (Admin).`, confirmText: 'XÃ¡c nháº­n áº©n', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteSelectedStandards(ids); 
-              this.toast.show(`Đã ẩn ${ids.length} chuẩn. Lịch sử sử dụng vẫn được giữ lại.`, 'success'); 
+              this.toast.show(`ÄÃ£ áº©n ${ids.length} chuáº©n. Lá»‹ch sá»­ sá»­ dá»¥ng váº«n Ä‘Æ°á»£c giá»¯ láº¡i.`, 'success'); 
               this.selectedIds.set(new Set());
           } catch(e: any) { 
-              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+              this.toast.show('Lá»—i xÃ³a: ' + e.message, 'error'); 
           } finally {
               this.isProcessing.set(false);
           }
@@ -415,9 +423,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
      try {
          const data = await this.stdService.parseExcelData(file);
          this.importPreviewData.set(data);
-         this.toast.show(`Đã đọc ${data.length} dòng. Vui lòng kiểm tra ngày tháng.`);
+         this.toast.show(`ÄÃ£ Ä‘á»c ${data.length} dÃ²ng. Vui lÃ²ng kiá»ƒm tra ngÃ y thÃ¡ng.`);
      } catch (e: any) {
-         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+         this.toast.show('Lá»—i Ä‘á»c file: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -431,9 +439,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
      try {
          const data = await this.stdService.parseUsageLogExcelData(file);
          this.importUsageLogPreviewData.set(data);
-         this.toast.show(`Đã đọc ${data.length} dòng nhật ký.`);
+         this.toast.show(`ÄÃ£ Ä‘á»c ${data.length} dÃ²ng nháº­t kÃ½.`);
      } catch (e: any) {
-         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+         this.toast.show('Lá»—i Ä‘á»c file: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -451,10 +459,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedData(this.importPreviewData());
-          this.toast.show('Import thành công!', 'success');
+          this.toast.show('Import thÃ nh cÃ´ng!', 'success');
           this.importPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Lỗi lưu import: ' + e.message, 'error');
+          this.toast.show('Lá»—i lÆ°u import: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -465,10 +473,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedUsageLogs(this.importUsageLogPreviewData());
-          this.toast.show('Import nhật ký thành công!', 'success');
+          this.toast.show('Import nháº­t kÃ½ thÃ nh cÃ´ng!', 'success');
           this.importUsageLogPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Lỗi lưu import nhật ký: ' + e.message, 'error');
+          this.toast.show('Lá»—i lÆ°u import nháº­t kÃ½: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -492,15 +500,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
               driveInput.click();
               return;
           }
-          this.toast.show('Không tìm thấy input upload', 'error');
+          this.toast.show('KhÃ´ng tÃ¬m tháº¥y input upload', 'error');
       } else {
-          // XÁC THỰC TRƯỚC: Nếu chưa có token, xác thực xong yêu cầu user nhấn lại để có user activation
+          // XÃC THá»°C TRÆ¯á»šC: Náº¿u chÆ°a cÃ³ token, xÃ¡c thá»±c xong yÃªu cáº§u user nháº¥n láº¡i Ä‘á»ƒ cÃ³ user activation
           this.googleDriveService.authenticateSync(
               () => {
-                  this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Upload để chọn file.', 'success');
+                  this.toast.show('ÄÃ£ káº¿t ná»‘i Google Drive! Vui lÃ²ng nháº¥n láº¡i nÃºt Upload Ä‘á»ƒ chá»n file.', 'success');
               },
               (err) => {
-                  this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+                  this.toast.show('Lá»—i Ä‘Äƒng nháº­p Google: ' + err, 'error');
                   this.quickUploadStd = null;
               }
           );
@@ -518,12 +526,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.quickUploadStdId.set(std.id);
       try {
           const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-          this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+          this.toast.show(`Äang upload CoA cho "${std.name}"...`);
 
-          // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
+          // ÄÃ£ cÃ³ token rá»“i nÃªn hÃ m nÃ y sáº½ upload luÃ´n mÃ  khÃ´ng bá»‹ há»i láº¡i
           const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-          // Tìm tất cả các chuẩn cùng Tên và Số Lô
+          // TÃ¬m táº¥t cáº£ cÃ¡c chuáº©n cÃ¹ng TÃªn vÃ  Sá»‘ LÃ´
           const lot = (std.lot_number || '').trim().toLowerCase();
           const siblings = lot
               ? this.allStandards().filter(s =>
@@ -535,13 +543,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
           await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
           if (siblings.length > 1) {
-              this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+              this.toast.show(`Upload thÃ nh cÃ´ng! ÄÃ£ tá»± Ä‘á»™ng Ã¡p dá»¥ng CoA cho ${siblings.length} lá» chuáº©n cÃ¹ng lÃ´.`);
           } else {
-              this.toast.show(`Upload CoA thành công! ${fileName}`);
+              this.toast.show(`Upload CoA thÃ nh cÃ´ng! ${fileName}`);
           }
       } catch (e: any) {
           console.error('Quick Drive upload error:', e);
-          this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+          this.toast.show('Upload CoA lá»—i: ' + (e.message || 'KhÃ´ng xÃ¡c Ä‘á»‹nh'), 'error');
       } finally {
           this.quickUploadStdId.set('');
           this.quickUploadStd = null;
@@ -596,7 +604,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
          this.showBulkCoaModal.set(true);
          this.bulkUploadComplete.set(false);
      } else {
-         this.toast.show('Không tìm thấy file tài liệu hợp lệ trong thư mục/số file đã chọn (yêu cầu .pdf, .jpg, v.v.)', 'error');
+         this.toast.show('KhÃ´ng tÃ¬m tháº¥y file tÃ i liá»‡u há»£p lá»‡ trong thÆ° má»¥c/sá»‘ file Ä‘Ã£ chá»n (yÃªu cáº§u .pdf, .jpg, v.v.)', 'error');
      }
      event.target.value = '';
   }
@@ -607,7 +615,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.bulkCoaItems.set([]);
   }
 
-  // Xóa hàm triggerBulkUpload vì không cần nữa
+  // XÃ³a hÃ m triggerBulkUpload vÃ¬ khÃ´ng cáº§n ná»¯a
 
   async confirmBulkCoaUpload() {
       const items = this.bulkCoaItems();
@@ -619,23 +627,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return lot ? `${standard.name.trim().toLowerCase()}|${lot}` : standard.id;
       });
       if (new Set(targetKeys).size !== targetKeys.length) {
-          this.toast.show('Có nhiều file cùng ghép vào một chuẩn/lô. Vui lòng chỉ giữ một file cho mỗi lô.', 'error');
+          this.toast.show('CÃ³ nhiá»u file cÃ¹ng ghÃ©p vÃ o má»™t chuáº©n/lÃ´. Vui lÃ²ng chá»‰ giá»¯ má»™t file cho má»—i lÃ´.', 'error');
           return;
       }
 
-      // NÚT "XÁC NHẬN UPLOAD" TRONG MODAL SẼ KÍCH HOẠT HÀM NÀY, TỨC LÀ MỘT USER GESTURE.
+      // NÃšT "XÃC NHáº¬N UPLOAD" TRONG MODAL Sáº¼ KÃCH HOáº T HÃ€M NÃ€Y, Tá»¨C LÃ€ Má»˜T USER GESTURE.
       this.googleDriveService.authenticateSync(
           async () => {
               this.isBulkUploading.set(true);
               this.bulkUploadComplete.set(false);
               
-              this.progressService.start('Đang tải lên CoA hàng loạt', 'Vui lòng không đóng trình duyệt', toUpload.length);
+              this.progressService.start('Äang táº£i lÃªn CoA hÃ ng loáº¡t', 'Vui lÃ²ng khÃ´ng Ä‘Ã³ng trÃ¬nh duyá»‡t', toUpload.length);
               let processed = 0;
 
               try {
                   for (const item of toUpload) {
                       processed++;
-                      this.progressService.update(processed, `Đang xử lý tải lên cho chuẩn ${item.matchedStandard?.name}`);
+                      this.progressService.update(processed, `Äang xá»­ lÃ½ táº£i lÃªn cho chuáº©n ${item.matchedStandard?.name}`);
                       
                       item.status = 'uploading';
                       this.bulkCoaItems.set([...items]); // Trigger UI update
@@ -646,7 +654,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                       try {
                           const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
                           
-                          // Tìm tất cả các chuẩn cùng Tên và Số Lô (1-to-N matching)
+                          // TÃ¬m táº¥t cáº£ cÃ¡c chuáº©n cÃ¹ng TÃªn vÃ  Sá»‘ LÃ´ (1-to-N matching)
                           const lot = (std.lot_number || '').trim().toLowerCase();
                           const siblings = lot
                               ? this.allStandards().filter(s =>
@@ -660,7 +668,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                           item.status = 'success';
                       } catch(e: any) {
                           item.status = 'error';
-                          item.uploadError = e.message || 'Lỗi kết nối';
+                          item.uploadError = e.message || 'Lá»—i káº¿t ná»‘i';
                       }
                       this.bulkCoaItems.set([...items]); // Update progress for this file
                   }
@@ -671,15 +679,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   const errorCount = items.filter(item => item.status === 'error').length;
                   this.toast.show(
                       errorCount > 0
-                          ? `Hoàn tất: ${successCount} thành công, ${errorCount} lỗi.`
-                          : `Hoàn tất ${successCount} file CoA.`,
+                          ? `HoÃ n táº¥t: ${successCount} thÃ nh cÃ´ng, ${errorCount} lá»—i.`
+                          : `HoÃ n táº¥t ${successCount} file CoA.`,
                       errorCount > 0 ? 'error' : 'success'
                   );
                   this.progressService.complete();
               }
           },
           (err) => {
-              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+              this.toast.show('Lá»—i Ä‘Äƒng nháº­p Google: ' + err, 'error');
           }
       );
   }
@@ -690,15 +698,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
   copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
       if (!text) return;
-      navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
+      navigator.clipboard.writeText(text).then(() => this.toast.show('ÄÃ£ copy: ' + text));
   }
 
   goToReturn(std: ReferenceStandard) {
       if (!std.current_request_id) {
-          this.toast.show('Không tìm thấy yêu cầu mượn chuẩn này', 'error');
+          this.toast.show('KhÃ´ng tÃ¬m tháº¥y yÃªu cáº§u mÆ°á»£n chuáº©n nÃ y', 'error');
           return;
       }
-      this.toast.show('Chuyển đến trang Yêu cầu để trả chuẩn');
+      this.toast.show('Chuyá»ƒn Ä‘áº¿n trang YÃªu cáº§u Ä‘á»ƒ tráº£ chuáº©n');
       this.router.navigate(['/standard-requests']);
   }
 
@@ -723,11 +731,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const std = this.selectedStd();
       
       if (!std || !data.userId || !data.purpose) {
-          this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
+          this.toast.show('Vui lÃ²ng Ä‘iá»n Ä‘áº§y Ä‘á»§ thÃ´ng tin báº¯t buá»™c (*)', 'error');
           return;
       }
       if (!isFefoCandidate(std)) {
-          this.toast.show('Lô chuẩn không còn sẵn sàng để cấp. Vui lòng tải lại và chọn lô khác.', 'error');
+          this.toast.show('LÃ´ chuáº©n khÃ´ng cÃ²n sáºµn sÃ ng Ä‘á»ƒ cáº¥p. Vui lÃ²ng táº£i láº¡i vÃ  chá»n lÃ´ khÃ¡c.', 'error');
           return;
       }
 
@@ -753,14 +761,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
           if (this.isAssignMode()) {
               // Automatically dispense if assigning directly
               await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
-              this.toast.show('Đã gán chuẩn thành công', 'success');
+              this.toast.show('ÄÃ£ gÃ¡n chuáº©n thÃ nh cÃ´ng', 'success');
           } else {
-              this.toast.show('Đã gửi yêu cầu mượn chuẩn', 'success');
+              this.toast.show('ÄÃ£ gá»­i yÃªu cáº§u mÆ°á»£n chuáº©n', 'success');
           }
           
           this.showAssignModal.set(false);
       } catch (error: any) {
-          this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
+          this.toast.show(error.message || 'Lá»—i khi xá»­ lÃ½', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -806,14 +814,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (this.isProcessing()) return;
       if (!this.historyStd() || !log.id) return;
       
-      if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `XÃ³a lá»‹ch sá»­ dá»¥ng ngÃ y ${log.date}?`, confirmText: 'XÃ³a & HoÃ n kho', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); 
-              this.toast.show('Đã xóa', 'success'); 
+              this.toast.show('ÄÃ£ xÃ³a', 'success'); 
               await this.viewHistory(this.historyStd()!); 
           } catch (e: any) { 
-              this.toast.show('Lỗi: ' + e.message, 'error'); 
+              this.toast.show('Lá»—i: ' + e.message, 'error'); 
           } finally {
               this.isProcessing.set(false);
           }
@@ -822,13 +830,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   openCoaPreview(url: string, event: Event) {
       event.stopPropagation();
-      this.printService.openCoaPreview(url, 'Chứng chỉ chất lượng (CoA)');
+      this.printService.openCoaPreview(url, 'Chung chi chat luong (CoA)');
   }
 
-  // ─── EXPORT EXCEL ───────────────────────────────────────────
+  // --- EXPORT EXCEL ---
 
   openExportModal() {
-      // Nếu đang có chuẩn được tick, ưu tiên xuất đã chọn; ngược lại xuất theo lọc
       this.exportDataSource.set(this.selectedIds().size > 0 ? 'selected' : 'filtered');
       this.exportType.set('full');
       this.exportCompleted.set(false);
@@ -838,133 +845,321 @@ export class StandardsComponent implements OnInit, OnDestroy {
   async runExport() {
       const items = this.exportItems();
       if (items.length === 0) {
-          this.toast.show('Không có dữ liệu để xuất.', 'info');
+          this.toast.show('Khong co du lieu de xuat.', 'info');
           return;
       }
       this.isExporting.set(true);
       this.exportCompleted.set(false);
 
       try {
-          const XLSX = await import('xlsx');
-          const wb = XLSX.utils.book_new();
+          const ExcelJS = await import('exceljs');
+          const wb = new ExcelJS.Workbook();
+          wb.creator = 'LIMS System';
+          wb.created = new Date();
 
-          // ─── Sheet 1: Dữ liệu chi tiết ───
-          let detailData: Record<string, any>[];
+          const isExpiry = this.exportType() === 'expiry';
+          const today = new Date();
+          const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+          const thirtyDaysMs = todayMs + 30 * 86400000;
+          const ninetyDaysMs = todayMs + 90 * 86400000;
 
-          if (this.exportType() === 'expiry') {
-              const now = new Date();
-              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-              detailData = items
-                  .filter(item => item.expiry_date)
-                  .map((item, i) => {
-                      const expMs = new Date(item.expiry_date!).getTime();
-                      const daysLeft = Math.ceil((expMs - today) / 86400000);
-                      const expiryStatus = daysLeft < 0 ? 'Đã hết hạn'
-                          : daysLeft <= 30 ? 'Sắp hết hạn (30 ngày)'
-                          : daysLeft <= 90 ? 'Sắp hết hạn (3 tháng)'
-                          : 'Còn hạn';
-                      return {
-                          'STT': i + 1,
-                          'Mã quản lý': item.internal_id || '',
-                          'Tên chuẩn': item.name,
-                          'Số lô': item.lot_number || '',
-                          'Hãng sản xuất': item.manufacturer || '',
-                          'Mã Catalog': item.product_code || '',
-                          'Lượng còn lại': item.current_amount,
-                          'Đơn vị': item.unit,
-                          'Hạn sử dụng': item.expiry_date || '',
-                          'Còn lại (ngày)': daysLeft,
-                          'Trạng thái hạn': expiryStatus,
-                          'Vị trí lưu trữ': item.location || '',
-                          'Điều kiện bảo quản': item.storage_condition || '',
-                      };
-                  });
+          const C = {
+              headerBg: 'FF3730A3', headerFg: 'FFFFFFFF',
+              primaryBg: 'FFEEF2FF', primaryFg: 'FF1E1B4B', primaryBorder: 'FF4F46E5',
+              replaceBg: 'FFFEFCE8', replaceFg: 'FF92400E', replaceBorder: 'FFF59E0B',
+              depletedBg: 'FFF3F4F6', depletedFg: 'FF9CA3AF', depletedBorder: 'FF9CA3AF',
+              expiredBg: 'FFFEE2E2', expiredFg: 'FFB91C1C',
+              soonBg: 'FFFFF7ED', soonFg: 'FFC2410C',
+              m3Bg: 'FFFEFCE8', m3Fg: 'FFA16207',
+              sepBg: 'FFF1F5F9', border: 'FFE2E8F0',
+          };
+
+          const getExpiryCat = (d?: string): 'expired' | 'soon' | 'm3' | null => {
+              if (!d) return null;
+              const ms = new Date(d).getTime();
+              if (ms < todayMs) return 'expired';
+              if (ms <= thirtyDaysMs) return 'soon';
+              if (ms <= ninetyDaysMs) return 'm3';
+              return null;
+          };
+          const getPrimaryBg = (cat: ReturnType<typeof getExpiryCat>) =>
+              cat === 'expired' ? C.expiredBg : cat === 'soon' ? C.soonBg : cat === 'm3' ? C.m3Bg : C.primaryBg;
+          const getPrimaryFg = (cat: ReturnType<typeof getExpiryCat>) =>
+              cat === 'expired' ? C.expiredFg : cat === 'soon' ? C.soonFg : cat === 'm3' ? C.m3Fg : C.primaryFg;
+          const getDaysLeft = (d?: string): string =>
+              d ? Math.ceil((new Date(d).getTime() - todayMs) / 86400000).toString() : '';
+          const getExpiryLabel = (d?: string): string => {
+              if (!d) return '';
+              const ms = new Date(d).getTime();
+              if (ms < todayMs) return 'Da het han';
+              if (ms <= thirtyDaysMs) return 'Sap het han (30 ngay)';
+              if (ms <= ninetyDaysMs) return 'Sap het han (3 thang)';
+              return 'Con han';
+          };
+
+          const ws = wb.addWorksheet(
+              isExpiry ? 'Bao cao han dung' : 'Danh sach chuan',
+              { views: [{ state: 'frozen', ySplit: 1 }] }
+          );
+
+          if (isExpiry) {
+              ws.columns = [
+                  { header: 'STT',           key: 'stt',     width: 6  },
+                  { header: 'Phan loai',     key: 'pl',      width: 17 },
+                  { header: 'Ma quan ly',    key: 'mql',     width: 14 },
+                  { header: 'Ten chuan',     key: 'ten',     width: 32 },
+                  { header: 'So lo',         key: 'lot',     width: 14 },
+                  { header: 'Hang san xuat', key: 'hang',    width: 22 },
+                  { header: 'Ma Catalog',    key: 'catalog', width: 16 },
+                  { header: 'Luong con lai', key: 'luong',   width: 14 },
+                  { header: 'Don vi',        key: 'dv',      width: 9  },
+                  { header: 'Han su dung',   key: 'han',     width: 14 },
+                  { header: 'Con lai ngay',  key: 'ngay',    width: 15 },
+                  { header: 'Trang thai han',key: 'tt',      width: 24 },
+                  { header: 'Vi tri luu tru',key: 'vt',      width: 16 },
+                  { header: 'Dieu kien BQ',  key: 'dk',      width: 20 },
+              ];
           } else {
-              detailData = items.map((item, i) => ({
-                  'STT': i + 1,
-                  'Mã quản lý': item.internal_id || '',
-                  'Tên chuẩn': item.name,
-                  'Tên hóa học': item.chemical_name || '',
-                  'Số CAS': item.cas_number || '',
-                  'Mã Catalog': item.product_code || '',
-                  'Số lô': item.lot_number || '',
-                  'Độ tinh khiết': item.purity || '',
-                  'Hãng sản xuất': item.manufacturer || '',
-                  'Quy cách': item.pack_size || '',
-                  'Lượng ban đầu': item.initial_amount,
-                  'Lượng còn lại': item.current_amount,
-                  'Đơn vị': item.unit,
-                  'Ngày nhận': item.received_date || '',
-                  'Hạn sử dụng': item.expiry_date || '',
-                  'Ngày mở nắp': item.date_opened || '',
-                  'Vị trí lưu trữ': item.location || '',
-                  'Điều kiện bảo quản': item.storage_condition || '',
-                  'Trạng thái': item.status || '',
-                  'Link CoA': item.certificate_ref || '',
-                  'Số hợp đồng': item.contract_ref || '',
-              }));
+              ws.columns = [
+                  { header: 'STT',           key: 'stt',      width: 6  },
+                  { header: 'Phan loai',     key: 'pl',       width: 17 },
+                  { header: 'Ma quan ly',    key: 'mql',      width: 14 },
+                  { header: 'Ten chuan',     key: 'ten',      width: 32 },
+                  { header: 'Ten hoa hoc',   key: 'tenhh',    width: 28 },
+                  { header: 'So CAS',        key: 'cas',      width: 14 },
+                  { header: 'Ma Catalog',    key: 'catalog',  width: 16 },
+                  { header: 'So lo',         key: 'lot',      width: 14 },
+                  { header: 'Do tinh khiet', key: 'dtk',      width: 14 },
+                  { header: 'Hang san xuat', key: 'hang',     width: 22 },
+                  { header: 'Quy cach',      key: 'qc',       width: 13 },
+                  { header: 'Luong ban dau', key: 'luongbd',  width: 15 },
+                  { header: 'Luong con lai', key: 'luong',    width: 15 },
+                  { header: 'Don vi',        key: 'dv',       width: 9  },
+                  { header: 'Ngay nhan',     key: 'ngaynhan', width: 13 },
+                  { header: 'Han su dung',   key: 'han',      width: 14 },
+                  { header: 'Ngay mo nap',   key: 'ngaymo',   width: 14 },
+                  { header: 'Vi tri luu tru',key: 'vt',       width: 16 },
+                  { header: 'Dieu kien BQ',  key: 'dk',       width: 20 },
+                  { header: 'Trang thai',    key: 'status',   width: 14 },
+                  { header: 'Link CoA',      key: 'coa',      width: 32 },
+                  { header: 'So hop dong',   key: 'hopd',     width: 15 },
+              ];
           }
 
-          if (detailData.length === 0) {
-              this.toast.show('Không có dữ liệu phù hợp để xuất (ví dụ: xuất Báo cáo hạn nhưng không có chuẩn nào có hạn dùng).', 'info');
-              return;
+          const headerRow = ws.getRow(1);
+          headerRow.height = 32;
+          for (let ci = 1; ci <= ws.columnCount; ci++) {
+              const cell = headerRow.getCell(ci);
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.headerBg } };
+              cell.font = { color: { argb: C.headerFg }, bold: true, size: 10.5 };
+              cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false };
+              cell.border = {
+                  bottom: { style: 'medium', color: { argb: 'FF1E1B4B' } },
+                  right:  { style: 'thin',   color: { argb: 'FF4338CA' } },
+              };
           }
 
-          const ws1 = XLSX.utils.json_to_sheet(detailData);
-          // Tự động căn độ rộng cột
-          ws1['!cols'] = Object.keys(detailData[0]).map(key => ({
-              wch: Math.max(key.length, ...detailData.map(row => String(row[key] ?? '').length)) + 2
-          }));
-          // Đóng băng hàng tiêu đề (để dễ đọc khi cuộn)
-          (ws1 as any)['!freeze'] = { xSplit: 0, ySplit: 1 };
-          XLSX.utils.book_append_sheet(wb, ws1, this.exportType() === 'expiry' ? 'Bao cao han dung' : 'Danh sach chuan');
+          const applyRowStyle = (
+              row: any,
+              type: 'primary' | 'replacement' | 'depleted',
+              expCat: ReturnType<typeof getExpiryCat>
+          ) => {
+              const bg      = type === 'primary'     ? getPrimaryBg(expCat) : type === 'replacement' ? C.replaceBg     : C.depletedBg;
+              const fg      = type === 'primary'     ? getPrimaryFg(expCat) : type === 'replacement' ? C.replaceFg     : C.depletedFg;
+              const lBorder = type === 'primary'     ? C.primaryBorder      : type === 'replacement' ? C.replaceBorder : C.depletedBorder;
+              row.height = type === 'primary' ? 20 : 18;
+              for (let ci = 1; ci <= ws.columnCount; ci++) {
+                  const cell = row.getCell(ci);
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                  cell.font = { color: { argb: fg }, bold: type === 'primary', italic: type === 'depleted', size: 10 };
+                  cell.border = {
+                      left:   ci === 1 ? { style: 'thick', color: { argb: lBorder } } : { style: 'thin', color: { argb: C.border } },
+                      right:  { style: 'thin', color: { argb: C.border } },
+                      bottom: { style: 'thin', color: { argb: C.border } },
+                  };
+                  cell.alignment = { vertical: 'middle', wrapText: false };
+              }
+              if (expCat && type !== 'depleted') {
+                  const expFg = expCat === 'expired' ? C.expiredFg : expCat === 'soon' ? C.soonFg : C.m3Fg;
+                  const hanCell = row.getCell('han');
+                  hanCell.font = { color: { argb: expFg }, bold: true, size: 10 };
+              }
+              if (type === 'depleted') {
+                  const luongCell = row.getCell('luong');
+                  luongCell.font = { color: { argb: C.depletedFg }, italic: true, strike: true, size: 10 };
+              }
+          };
 
-          // ─── Sheet 2: Tổng hợp ───
+          const groups = this.buildExportGroups(items);
+          let stt = 1;
+
+          const buildRowData = (item: any, label: string, sttVal: number | string): Record<string, any> => {
+              if (isExpiry) {
+                  return {
+                      stt: sttVal, pl: label,
+                      mql: item.internal_id || '', ten: item.name,
+                      lot: item.lot_number || '', hang: item.manufacturer || '',
+                      catalog: item.product_code || '',
+                      luong: item.current_amount, dv: item.unit,
+                      han: item.expiry_date || '',
+                      ngay: getDaysLeft(item.expiry_date),
+                      tt: getExpiryLabel(item.expiry_date),
+                      vt: item.location || '', dk: item.storage_condition || '',
+                  };
+              }
+              return {
+                  stt: sttVal, pl: label,
+                  mql: item.internal_id || '', ten: item.name,
+                  tenhh: item.chemical_name || '', cas: item.cas_number || '',
+                  catalog: item.product_code || '', lot: item.lot_number || '',
+                  dtk: item.purity || '', hang: item.manufacturer || '',
+                  qc: item.pack_size || '',
+                  luongbd: item.initial_amount, luong: item.current_amount,
+                  dv: item.unit, ngaynhan: item.received_date || '',
+                  han: item.expiry_date || '', ngaymo: item.date_opened || '',
+                  vt: item.location || '', dk: item.storage_condition || '',
+                  status: item.status || '', coa: item.certificate_ref || '',
+                  hopd: item.contract_ref || '',
+              };
+          };
+
+          for (const group of groups) {
+              const p = group.primary;
+              const pCat = getExpiryCat(p.expiry_date);
+              const pRow = ws.addRow(buildRowData(p, 'CO DINH', stt++));
+              applyRowStyle(pRow, 'primary', pCat);
+              for (const rep of group.replacements) {
+                  const isDepleted = rep.status === 'DEPLETED' || rep.current_amount <= 0;
+                  const rCat = isDepleted ? null : getExpiryCat(rep.expiry_date);
+                  const rRow = ws.addRow(buildRowData(rep, isDepleted ? '  Het hang' : '  Thay the', ''));
+                  applyRowStyle(rRow, isDepleted ? 'depleted' : 'replacement', rCat);
+              }
+              const sep = ws.addRow({});
+              sep.height = 5;
+              for (let ci = 1; ci <= ws.columnCount; ci++) {
+                  sep.getCell(ci).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.sepBg } };
+              }
+          }
+
+          // Sheet 2: Tong hop
+          const ws2 = wb.addWorksheet('Tong hop');
+          ws2.columns = [
+              { header: 'Chi tieu', key: 'chi', width: 44 },
+              { header: 'Gia tri',  key: 'gia', width: 25 },
+          ];
+          const h2 = ws2.getRow(1);
+          h2.height = 30;
+          for (let ci = 1; ci <= 2; ci++) {
+              const cell = h2.getCell(ci);
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } };
+              cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+              cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          }
+
           const allFiltered = this.filteredItems();
-          const now2 = new Date();
-          const today2 = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate()).getTime();
-          const thirtyDays2 = today2 + 30 * 24 * 60 * 60 * 1000;
-          const thisMonthStart2 = new Date(now2.getFullYear(), now2.getMonth(), 1).getTime();
-          const threeMonthsEnd2 = new Date(now2.getFullYear(), now2.getMonth() + 4, 1).getTime();
-
+          const groupsWithRep = groups.filter(g => g.replacements.length > 0).length;
           let sumExpired = 0, sumSoon = 0, sum3m = 0, sumLow = 0;
+          const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).getTime();
+          const threeMonthsEnd = new Date(today.getFullYear(), today.getMonth() + 4, 1).getTime();
           allFiltered.forEach(item => {
               if ((item.current_amount / (item.initial_amount || 1)) <= 0.2) sumLow++;
               if (item.expiry_date) {
                   const d = new Date(item.expiry_date).getTime();
-                  if (d < today2) sumExpired++;
-                  else if (d <= thirtyDays2) sumSoon++;
-                  if (d >= thisMonthStart2 && d < threeMonthsEnd2) sum3m++;
+                  if (d < todayMs) sumExpired++;
+                  else if (d <= thirtyDaysMs) sumSoon++;
+                  if (d >= thisMonthStart && d < threeMonthsEnd) sum3m++;
               }
           });
 
-          const summaryData = [
-              { 'Chỉ tiêu': 'Tổng số chuẩn trong danh sách lọc', 'Giá trị': allFiltered.length },
-              { 'Chỉ tiêu': 'Số chuẩn xuất trong báo cáo này', 'Giá trị': detailData.length },
-              { 'Chỉ tiêu': '', 'Giá trị': '' },
-              { 'Chỉ tiêu': 'Đã hết hạn', 'Giá trị': sumExpired },
-              { 'Chỉ tiêu': 'Sắp hết hạn (30 ngày tới)', 'Giá trị': sumSoon },
-              { 'Chỉ tiêu': 'Sắp hết hạn (3 tháng tới)', 'Giá trị': sum3m },
-              { 'Chỉ tiêu': 'Tồn kho thấp (≤20%)', 'Giá trị': sumLow },
-              { 'Chỉ tiêu': '', 'Giá trị': '' },
-              { 'Chỉ tiêu': 'Ngày xuất báo cáo', 'Giá trị': this.datePipe.transform(Date.now(), 'dd/MM/yyyy HH:mm') || '' },
-              { 'Chỉ tiêu': 'Bộ lọc / Ghi chú', 'Giá trị': this.exportSubtitle() },
+          const summaryDefs: Array<{ chi: string; gia: string | number; bg?: string; fg?: string; bold?: boolean }> = [
+              { chi: 'Tong so chuan trong danh sach loc',   gia: allFiltered.length },
+              { chi: 'So chuan xuat trong bao cao nay',     gia: items.length, bold: true },
+              { chi: 'So nhom co chuan thay the trong kho', gia: groupsWithRep, bg: 'FFEEF2FF', fg: 'FF3730A3', bold: true },
+              { chi: '', gia: '' },
+              { chi: 'Da het han',                gia: sumExpired, ...(sumExpired > 0 ? { bg: 'FFFEE2E2', fg: 'FFB91C1C', bold: true } : {}) },
+              { chi: 'Sap het han (30 ngay toi)', gia: sumSoon,    ...(sumSoon    > 0 ? { bg: 'FFFFF7ED', fg: 'FFC2410C', bold: true } : {}) },
+              { chi: 'Sap het han (3 thang toi)', gia: sum3m,      ...(sum3m      > 0 ? { bg: 'FFFEFCE8', fg: 'FFA16207', bold: true } : {}) },
+              { chi: 'Ton kho thap (<=20%)',       gia: sumLow,     ...(sumLow     > 0 ? { bg: 'FFEFF6FF', fg: 'FF1D4ED8', bold: true } : {}) },
+              { chi: '', gia: '' },
+              { chi: 'Ngay xuat bao cao', gia: this.datePipe.transform(Date.now(), 'dd/MM/yyyy HH:mm') || '' },
+              { chi: 'Bo loc / Ghi chu',  gia: this.exportSubtitle() },
           ];
-          const ws2 = XLSX.utils.json_to_sheet(summaryData);
-          ws2['!cols'] = [{ wch: 40 }, { wch: 28 }];
-          XLSX.utils.book_append_sheet(wb, ws2, 'Tong hop');
 
-          // Ghi file
-          const typeSuffix = this.exportType() === 'expiry' ? 'HanDung' : 'DanhSach';
-          XLSX.writeFile(wb, `ChuanDoiChieu_${typeSuffix}_${this.datePipe.transform(Date.now(), 'yyyyMMdd_HHmm')}.xlsx`);
+          summaryDefs.forEach((data, idx) => {
+              const row = ws2.addRow({ chi: data.chi, gia: data.gia });
+              row.height = data.chi === '' ? 8 : 22;
+              const bg = data.bg || (idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF');
+              for (let ci = 1; ci <= 2; ci++) {
+                  const cell = row.getCell(ci);
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                  cell.font = { bold: data.bold || false, color: { argb: data.fg || 'FF1E293B' }, size: 10.5 };
+                  cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+                  cell.alignment = { vertical: 'middle', horizontal: ci === 1 ? 'left' : 'center', indent: ci === 1 ? 1 : 0 };
+              }
+          });
+
+          // Download
+          const buffer = await (wb.xlsx as any).writeBuffer();
+          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `ChuanDoiChieu_${isExpiry ? 'HanDung' : 'DanhSach'}_${this.datePipe.transform(Date.now(), 'yyyyMMdd_HHmm')}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
 
           this.exportCompleted.set(true);
-          this.toast.show('Xuất file Excel thành công!', 'success');
+          this.toast.show('Xuat file Excel thanh cong!', 'success');
+
       } catch (err: any) {
-          console.error('Lỗi xuất Excel:', err);
-          this.toast.show('Lỗi xuất file Excel: ' + (err.message || ''), 'error');
+          console.error('Loi xuat Excel:', err);
+          this.toast.show('Loi xuat file Excel: ' + (err.message || ''), 'error');
       } finally {
           this.isExporting.set(false);
       }
+  }
+
+  // Private helpers
+
+  private normalizeStr(s: string): string {
+      return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  private hasRelatedStandards(item: ReferenceStandard, allStds: ReferenceStandard[]): boolean {
+      const norm = this.normalizeStr.bind(this);
+      return allStds.some(std => {
+          if (std.id === item.id || std._isDeleted) return false;
+          if (item.cas_number?.trim() && std.cas_number?.trim() &&
+              item.cas_number.trim() === std.cas_number.trim()) return true;
+          if (item.product_code?.trim() && std.product_code?.trim() &&
+              item.product_code.trim() === std.product_code.trim()) return true;
+          if (item.name && std.name && norm(item.name) === norm(std.name)) return true;
+          return false;
+      });
+  }
+
+  private buildExportGroups(items: ReferenceStandard[]): Array<{ primary: ReferenceStandard; replacements: ReferenceStandard[] }> {
+      const allStds = this.allStandards();
+      const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      return items.map(item => {
+          const replacements = allStds.filter(std => {
+              if (std.id === item.id || std._isDeleted) return false;
+              if (item.cas_number?.trim() && std.cas_number?.trim() &&
+                  item.cas_number.trim() === std.cas_number.trim()) return true;
+              if (item.product_code?.trim() && std.product_code?.trim() &&
+                  item.product_code.trim() === std.product_code.trim()) return true;
+              if (item.name && std.name && norm(item.name) === norm(std.name)) return true;
+              return false;
+          });
+          replacements.sort((a, b) => {
+              const aOk = (a.status !== 'DEPLETED' && a.current_amount > 0) ? 1 : 0;
+              const bOk = (b.status !== 'DEPLETED' && b.current_amount > 0) ? 1 : 0;
+              if (aOk !== bOk) return bOk - aOk;
+              return (a.expiry_date || '9999').localeCompare(b.expiry_date || '9999');
+          });
+          return { primary: item, replacements };
+      });
   }
 }
