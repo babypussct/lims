@@ -89,7 +89,7 @@
              @if (hasMore() && !isLoading()) {
                 <div class="text-center p-4">
                     <button (click)="loadMore()" class="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-full shadow-sm dark:shadow-none">
-                        Xem them...
+                        Xem thêm...
                     </button>
                 </div>
              }
@@ -133,11 +133,11 @@
       <!-- EXPORT EXCEL MODAL -->
       @if (showExportModal()) {
         <app-export-modal
-          title="Xuat Danh sach Chuan"
+          title="Xuất Danh sách Chuẩn"
           iconClass="fa-solid fa-file-excel"
-          submitButtonText="Bat dau Xuat File"
+          submitButtonText="Bắt đầu Xuất File"
           [subtitle]="exportSubtitle()"
-          [footerText]="exportItems().length + ' chuan se xuat' + (exportGroupCount() > 0 ? ' - ' + exportGroupCount() + ' nhom co chuan thay the' : '') + ' - 2 sheet: Chi tiet + Tong hop'"
+          [footerText]="exportItems().length + ' chuẩn sẽ được xuất' + (exportGroupCount() > 0 ? ' - ' + exportGroupCount() + ' nhóm có chuẩn thay thế' : '') + ' - 2 sheet: Chi tiết + Tổng hợp'"
           [isExporting]="isExporting()"
           [isCompleted]="exportCompleted()"
           [isSubmitDisabled]="exportItems().length === 0"
@@ -151,7 +151,7 @@
               <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 space-y-2">
                 <div class="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                   <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                  Ban dang co {{ selectedIds().size }} chuan duoc tick. Xuat tu dau?
+                  Bạn đang có {{ selectedIds().size }} chuẩn được tick. Xuất từ đâu?
                 </div>
                 <div class="flex gap-2">
                   <button (click)="exportDataSource.set('selected'); exportCompleted.set(false)"
@@ -159,20 +159,20 @@
                     [class]="exportDataSource() === 'selected'
                       ? 'bg-amber-500 text-white border-amber-500'
                       : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-amber-300'">
-                    <i class="fa-solid fa-check-square mr-1"></i> {{ selectedIds().size }} chuan da chon
+                    <i class="fa-solid fa-check-square mr-1"></i> {{ selectedIds().size }} chuẩn đã chọn
                   </button>
                   <button (click)="exportDataSource.set('filtered'); exportCompleted.set(false)"
                     class="flex-1 py-2 rounded-xl text-[11px] font-black transition border"
                     [class]="exportDataSource() === 'filtered'
                       ? 'bg-indigo-500 text-white border-indigo-500'
                       : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-300'">
-                    <i class="fa-solid fa-filter mr-1"></i> {{ filteredItems().length }} ket qua dang loc
+                    <i class="fa-solid fa-filter mr-1"></i> {{ filteredItems().length }} kết quả đang lọc
                   </button>
                 </div>
               </div>
             }
 
-            <!-- Kieu xuat 1: Danh sach day du -->
+            <!-- Kiểu xuất 1: Danh sách đầy đủ -->
             <div class="border rounded-2xl overflow-hidden transition-all"
               [class]="exportType() === 'full'
                 ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-900/20'
@@ -184,13 +184,13 @@
                   <i class="fa-solid fa-table"></i>
                 </div>
                 <div class="flex-1">
-                  <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'full'">1. Danh sach day du</div>
-                  <div class="text-[11px] text-slate-500">22 cot: ma, ten, so lo, ton kho, han dung, CoA, hang san xuat...</div>
+                  <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'full'">1. Danh sách đầy đủ</div>
+                  <div class="text-[11px] text-slate-500">22 cột: mã, tên, số lô, tồn kho, hạn dùng, CoA, hãng sản xuất...</div>
                 </div>
               </button>
             </div>
 
-            <!-- Kieu xuat 2: Bao cao han dung -->
+            <!-- Kiểu xuất 2: Báo cáo hạn dùng -->
             <div class="border rounded-2xl overflow-hidden transition-all"
               [class]="exportType() === 'expiry'
                 ? 'border-rose-200 bg-rose-50/30 dark:border-rose-800 dark:bg-rose-900/20'
@@ -202,8 +202,8 @@
                   <i class="fa-solid fa-calendar-xmark"></i>
                 </div>
                 <div class="flex-1">
-                  <div class="text-sm font-black dark:text-slate-200" [class.text-rose-700]="exportType() === 'expiry'">2. Bao cao han dung</div>
-                  <div class="text-[11px] text-slate-500">Chi chuan co han dung - Kem cot "Con lai (ngay)" va trang thai han</div>
+                  <div class="text-sm font-black dark:text-slate-200" [class.text-rose-700]="exportType() === 'expiry'">2. Báo cáo hạn dùng</div>
+                  <div class="text-[11px] text-slate-500">Chỉ chuẩn có hạn dùng - Kèm cột "Còn lại (ngày)" và trạng thái hạn</div>
                 </div>
               </button>
             </div>
@@ -211,7 +211,7 @@
             <!-- Info note -->
             <div class="text-[10px] text-slate-400 dark:text-slate-500 px-1 flex items-start gap-1.5">
               <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
-              <span>File Excel gom <b>2 sheet</b>: Chi tiet + Tong hop. Hang tieu de dong bang. Mau sac: <span class="text-indigo-500 font-bold">CO DINH</span> - <span class="text-amber-500 font-bold">Thay the</span> - <span class="text-gray-400 font-bold">Het hang</span> - <span class="text-red-400 font-bold">Het han</span>.</span>
+              <span>File Excel gồm <b>2 sheet</b>: Chi tiết + Tổng hợp. Hàng tiêu đề được đóng băng (freeze). Màu sắc: <span class="text-indigo-500 font-bold">CỐ ĐỊNH</span> - <span class="text-amber-500 font-bold">Thay thế</span> - <span class="text-gray-400 font-bold">Hết hàng</span> - <span class="text-red-400 font-bold">Hết hạn</span>.</span>
             </div>
 
           </div>

@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -88,7 +88,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
-      // Logic 3 thÃ¡ng: láº¥y thÃ¡ng hiá»‡n táº¡i + 3 thÃ¡ng, báº¥t ká»ƒ ngÃ y
+      // Logic 3 thang: lay thang hien tai + 3 thang, bat ke ngay
       const threeMonthsEnd = new Date(now.getFullYear(), now.getMonth() + 4, 1).getTime(); // exclusive
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
@@ -213,14 +213,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   selectedIds = signal<Set<string>>(new Set());
 
-  /** Danh sÃ¡ch lá» cÃ¹ng tÃªn vá»›i selectedStd(), Ä‘Ã£ sáº¯p xáº¿p FEFO. DÃ¹ng cho Assign Modal. */
+  /** Danh sach lo cung ten voi selectedStd(), da sap xep FEFO. Dung cho Assign Modal. */
   sameNameAsSelected = computed(() => {
     const sel = this.selectedStd();
     if (!sel) return [];
     return sortStandardsByFefo(getSameStandardLots(sel, this.allStandards(), false));
   });
 
-  /** Dá»¯ liá»‡u thá»±c táº¿ sáº½ xuáº¥t: cÃ¡c chuáº©n Ä‘Ã£ chá»n (náº¿u cÃ³) hoáº·c toÃ n bá»™ filteredItems */
+  /** Du lieu thuc te se xuat: cac chuan da chon (neu co) hoac toan bo filteredItems */
   exportItems = computed(() => {
     if (this.exportDataSource() === 'selected' && this.selectedIds().size > 0) {
       return this.filteredItems().filter(item => this.selectedIds().has(item.id));
@@ -228,25 +228,25 @@ export class StandardsComponent implements OnInit, OnDestroy {
     return this.filteredItems();
   });
 
-  /** MÃ´ táº£ ngáº¯n bá»™ lá»c Ä‘ang Ã¡p dá»¥ng â€” hiá»ƒn thá»‹ trong modal header */
+  /** Mo ta ngan bo loc dang ap dung - hien thi trong modal header */
   exportSubtitle = computed(() => {
     const src = this.exportDataSource();
     const cnt = src === 'selected' ? this.selectedIds().size : this.filteredItems().length;
     const filter = this.activeWidgetFilter();
     const search = this.searchTerm();
     const filterLabels: Record<string, string> = {
-      expired: 'ÄÃ£ háº¿t háº¡n',
-      expiring_soon: 'Sáº¯p háº¿t háº¡n 30 ngÃ y',
-      expiring_3months: 'Sáº¯p háº¿t háº¡n 3 thÃ¡ng tá»›i',
-      low_stock: 'Tá»“n kho tháº¥p',
+      expired: 'Da het han',
+      expiring_soon: 'Sap het han 30 ngay',
+      expiring_3months: 'Sap het han 3 thang toi',
+      low_stock: 'Ton kho thap',
     };
-    let desc = src === 'selected' ? `${cnt} chuáº©n Ä‘Ã£ chá»n` : `${cnt} káº¿t quáº£`;
-    if (filter !== 'all') desc += ` Â· Lá»c: ${filterLabels[filter] || filter}`;
-    if (search) desc += ` Â· TÃ¬m: â€œ${search}â€`;
+    let desc = src === 'selected' ? `${cnt} chuan da chon` : `${cnt} ket qua`;
+    if (filter !== 'all') desc += ` · Loc: ${filterLabels[filter] || filter}`;
+    if (search) desc += ` · Tim: “${search}”`;
     return desc;
   });
 
-  /** Sá»‘ nhÃ³m chuáº©n cÃ³ Ã­t nháº¥t 1 chuáº©n thay tháº¿ trong kho â€” hiá»ƒn thá»‹ trong modal footer */
+  /** So nhom chuan co it nhat 1 chuan thay the trong kho - hien thi trong modal footer */
   exportGroupCount = computed(() => {
     const items = this.exportItems();
     if (items.length === 0) return 0;
@@ -397,18 +397,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
           standard.current_request_id || standard.has_pending_request
       ));
       if (active.length) {
-          this.toast.show(`KhÃ´ng thá»ƒ áº©n ${active.length} lÃ´ Ä‘ang mÆ°á»£n/tráº£ hoáº·c chá» duyá»‡t.`, 'error');
+          this.toast.show(`Khong the an ${active.length} lo dang muon/tra hoac cho duyet.`, 'error');
           return;
       }
       
-      if (await this.confirmationService.confirm({ message: `Báº¡n cÃ³ cháº¯c muá»‘n áº©n ${ids.length} chuáº©n Ä‘Ã£ chá»n khá»i danh sÃ¡ch?\n\nâ€¢ Lá»‹ch sá»­ sá»­ dá»¥ng váº«n Ä‘Æ°á»£c lÆ°u giá»¯ Ä‘áº§y Ä‘á»§.\nâ€¢ Dá»¯ liá»‡u cÃ³ thá»ƒ khÃ´i phá»¥c tá»« ThÃ¹ng rÃ¡c (Admin).`, confirmText: 'XÃ¡c nháº­n áº©n', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Ban co chac muon an ${ids.length} chuan da chon khoi danh sach?\n\n• Lich su su dung van duoc luu giu day du.\n• Du lieu co the khoi phuc tu Thung rac (Admin).`, confirmText: 'Xac nhan an', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteSelectedStandards(ids); 
-              this.toast.show(`ÄÃ£ áº©n ${ids.length} chuáº©n. Lá»‹ch sá»­ sá»­ dá»¥ng váº«n Ä‘Æ°á»£c giá»¯ láº¡i.`, 'success'); 
+              this.toast.show(`Da an ${ids.length} chuan. Lich su su dung van duoc giu lai.`, 'success'); 
               this.selectedIds.set(new Set());
           } catch(e: any) { 
-              this.toast.show('Lá»—i xÃ³a: ' + e.message, 'error'); 
+              this.toast.show('Loi xoa: ' + e.message, 'error'); 
           } finally {
               this.isProcessing.set(false);
           }
@@ -423,9 +423,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
      try {
          const data = await this.stdService.parseExcelData(file);
          this.importPreviewData.set(data);
-         this.toast.show(`ÄÃ£ Ä‘á»c ${data.length} dÃ²ng. Vui lÃ²ng kiá»ƒm tra ngÃ y thÃ¡ng.`);
+         this.toast.show(`Da doc ${data.length} dong. Vui long kiem tra ngay thang.`);
      } catch (e: any) {
-         this.toast.show('Lá»—i Ä‘á»c file: ' + e.message, 'error');
+         this.toast.show('Loi doc file: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -439,9 +439,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
      try {
          const data = await this.stdService.parseUsageLogExcelData(file);
          this.importUsageLogPreviewData.set(data);
-         this.toast.show(`ÄÃ£ Ä‘á»c ${data.length} dÃ²ng nháº­t kÃ½.`);
+         this.toast.show(`Da doc ${data.length} dong nhat ky.`);
      } catch (e: any) {
-         this.toast.show('Lá»—i Ä‘á»c file: ' + e.message, 'error');
+         this.toast.show('Loi doc file: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -459,10 +459,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedData(this.importPreviewData());
-          this.toast.show('Import thÃ nh cÃ´ng!', 'success');
+          this.toast.show('Import thanh cong!', 'success');
           this.importPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Lá»—i lÆ°u import: ' + e.message, 'error');
+          this.toast.show('Loi luu import: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -473,10 +473,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedUsageLogs(this.importUsageLogPreviewData());
-          this.toast.show('Import nháº­t kÃ½ thÃ nh cÃ´ng!', 'success');
+          this.toast.show('Import nhat ky thanh cong!', 'success');
           this.importUsageLogPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Lá»—i lÆ°u import nháº­t kÃ½: ' + e.message, 'error');
+          this.toast.show('Loi luu import nhat ky: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -500,15 +500,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
               driveInput.click();
               return;
           }
-          this.toast.show('KhÃ´ng tÃ¬m tháº¥y input upload', 'error');
+          this.toast.show('Khong tim thay input upload', 'error');
       } else {
-          // XÃC THá»°C TRÆ¯á»šC: Náº¿u chÆ°a cÃ³ token, xÃ¡c thá»±c xong yÃªu cáº§u user nháº¥n láº¡i Ä‘á»ƒ cÃ³ user activation
+          // XAC THUC TRUOC: Neu chua co token, xac thuc xong yeu cau user nhan lai de co user activation
           this.googleDriveService.authenticateSync(
               () => {
-                  this.toast.show('ÄÃ£ káº¿t ná»‘i Google Drive! Vui lÃ²ng nháº¥n láº¡i nÃºt Upload Ä‘á»ƒ chá»n file.', 'success');
+                  this.toast.show('Da ket noi Google Drive! Vui long nhan lai nut Upload de chon file.', 'success');
               },
               (err) => {
-                  this.toast.show('Lá»—i Ä‘Äƒng nháº­p Google: ' + err, 'error');
+                  this.toast.show('Loi dang nhap Google: ' + err, 'error');
                   this.quickUploadStd = null;
               }
           );
@@ -526,12 +526,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.quickUploadStdId.set(std.id);
       try {
           const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-          this.toast.show(`Äang upload CoA cho "${std.name}"...`);
+          this.toast.show(`Dang upload CoA cho "${std.name}"...`);
 
-          // ÄÃ£ cÃ³ token rá»“i nÃªn hÃ m nÃ y sáº½ upload luÃ´n mÃ  khÃ´ng bá»‹ há»i láº¡i
+          // Da co token roi nen ham nay se upload luon ma khong bi hoi lai
           const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-          // TÃ¬m táº¥t cáº£ cÃ¡c chuáº©n cÃ¹ng TÃªn vÃ  Sá»‘ LÃ´
+          // Tim tat ca cac chuan cung Ten va So Lo
           const lot = (std.lot_number || '').trim().toLowerCase();
           const siblings = lot
               ? this.allStandards().filter(s =>
@@ -543,13 +543,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
           await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
           if (siblings.length > 1) {
-              this.toast.show(`Upload thÃ nh cÃ´ng! ÄÃ£ tá»± Ä‘á»™ng Ã¡p dá»¥ng CoA cho ${siblings.length} lá» chuáº©n cÃ¹ng lÃ´.`);
+              this.toast.show(`Upload thanh cong! Da tu dong ap dung CoA cho ${siblings.length} lo chuan cung lo.`);
           } else {
-              this.toast.show(`Upload CoA thÃ nh cÃ´ng! ${fileName}`);
+              this.toast.show(`Upload CoA thanh cong! ${fileName}`);
           }
       } catch (e: any) {
           console.error('Quick Drive upload error:', e);
-          this.toast.show('Upload CoA lá»—i: ' + (e.message || 'KhÃ´ng xÃ¡c Ä‘á»‹nh'), 'error');
+          this.toast.show('Upload CoA loi: ' + (e.message || 'Khong xac dinh'), 'error');
       } finally {
           this.quickUploadStdId.set('');
           this.quickUploadStd = null;
@@ -604,7 +604,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
          this.showBulkCoaModal.set(true);
          this.bulkUploadComplete.set(false);
      } else {
-         this.toast.show('KhÃ´ng tÃ¬m tháº¥y file tÃ i liá»‡u há»£p lá»‡ trong thÆ° má»¥c/sá»‘ file Ä‘Ã£ chá»n (yÃªu cáº§u .pdf, .jpg, v.v.)', 'error');
+         this.toast.show('Khong tim thay file tai lieu hop le trong thu muc/so file da chon (yeu cau .pdf, .jpg, v.v.)', 'error');
      }
      event.target.value = '';
   }
@@ -615,7 +615,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.bulkCoaItems.set([]);
   }
 
-  // XÃ³a hÃ m triggerBulkUpload vÃ¬ khÃ´ng cáº§n ná»¯a
+  // Xoa ham triggerBulkUpload vi khong can nua
 
   async confirmBulkCoaUpload() {
       const items = this.bulkCoaItems();
@@ -627,23 +627,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return lot ? `${standard.name.trim().toLowerCase()}|${lot}` : standard.id;
       });
       if (new Set(targetKeys).size !== targetKeys.length) {
-          this.toast.show('CÃ³ nhiá»u file cÃ¹ng ghÃ©p vÃ o má»™t chuáº©n/lÃ´. Vui lÃ²ng chá»‰ giá»¯ má»™t file cho má»—i lÃ´.', 'error');
+          this.toast.show('Co nhieu file cung ghep vao mot chuan/lo. Vui long chi giu mot file cho moi lo.', 'error');
           return;
       }
 
-      // NÃšT "XÃC NHáº¬N UPLOAD" TRONG MODAL Sáº¼ KÃCH HOáº T HÃ€M NÃ€Y, Tá»¨C LÃ€ Má»˜T USER GESTURE.
+      // NUT "XAC NHAN UPLOAD" TRONG MODAL SE KICH HOAT HAM NAY, TUC LA MOT USER GESTURE.
       this.googleDriveService.authenticateSync(
           async () => {
               this.isBulkUploading.set(true);
               this.bulkUploadComplete.set(false);
               
-              this.progressService.start('Äang táº£i lÃªn CoA hÃ ng loáº¡t', 'Vui lÃ²ng khÃ´ng Ä‘Ã³ng trÃ¬nh duyá»‡t', toUpload.length);
+              this.progressService.start('Dang tai len CoA hang loat', 'Vui long khong dong trinh duyet', toUpload.length);
               let processed = 0;
 
               try {
                   for (const item of toUpload) {
                       processed++;
-                      this.progressService.update(processed, `Äang xá»­ lÃ½ táº£i lÃªn cho chuáº©n ${item.matchedStandard?.name}`);
+                      this.progressService.update(processed, `Dang xu ly tai len cho chuan ${item.matchedStandard?.name}`);
                       
                       item.status = 'uploading';
                       this.bulkCoaItems.set([...items]); // Trigger UI update
@@ -654,7 +654,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                       try {
                           const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
                           
-                          // TÃ¬m táº¥t cáº£ cÃ¡c chuáº©n cÃ¹ng TÃªn vÃ  Sá»‘ LÃ´ (1-to-N matching)
+                          // Tim tat ca cac chuan cung Ten va So Lo (1-to-N matching)
                           const lot = (std.lot_number || '').trim().toLowerCase();
                           const siblings = lot
                               ? this.allStandards().filter(s =>
@@ -668,7 +668,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                           item.status = 'success';
                       } catch(e: any) {
                           item.status = 'error';
-                          item.uploadError = e.message || 'Lá»—i káº¿t ná»‘i';
+                          item.uploadError = e.message || 'Loi ket noi';
                       }
                       this.bulkCoaItems.set([...items]); // Update progress for this file
                   }
@@ -679,15 +679,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   const errorCount = items.filter(item => item.status === 'error').length;
                   this.toast.show(
                       errorCount > 0
-                          ? `HoÃ n táº¥t: ${successCount} thÃ nh cÃ´ng, ${errorCount} lá»—i.`
-                          : `HoÃ n táº¥t ${successCount} file CoA.`,
+                          ? `Hoan tat: ${successCount} thanh cong, ${errorCount} loi.`
+                          : `Hoan tat ${successCount} file CoA.`,
                       errorCount > 0 ? 'error' : 'success'
                   );
                   this.progressService.complete();
               }
           },
           (err) => {
-              this.toast.show('Lá»—i Ä‘Äƒng nháº­p Google: ' + err, 'error');
+              this.toast.show('Loi dang nhap Google: ' + err, 'error');
           }
       );
   }
@@ -698,15 +698,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
   copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
       if (!text) return;
-      navigator.clipboard.writeText(text).then(() => this.toast.show('ÄÃ£ copy: ' + text));
+      navigator.clipboard.writeText(text).then(() => this.toast.show('Da copy: ' + text));
   }
 
   goToReturn(std: ReferenceStandard) {
       if (!std.current_request_id) {
-          this.toast.show('KhÃ´ng tÃ¬m tháº¥y yÃªu cáº§u mÆ°á»£n chuáº©n nÃ y', 'error');
+          this.toast.show('Khong tim thay yeu cau muon chuan nay', 'error');
           return;
       }
-      this.toast.show('Chuyá»ƒn Ä‘áº¿n trang YÃªu cáº§u Ä‘á»ƒ tráº£ chuáº©n');
+      this.toast.show('Chuyen den trang Yeu cau de tra chuan');
       this.router.navigate(['/standard-requests']);
   }
 
@@ -731,11 +731,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const std = this.selectedStd();
       
       if (!std || !data.userId || !data.purpose) {
-          this.toast.show('Vui lÃ²ng Ä‘iá»n Ä‘áº§y Ä‘á»§ thÃ´ng tin báº¯t buá»™c (*)', 'error');
+          this.toast.show('Vui long dien day du thong tin bat buoc (*)', 'error');
           return;
       }
       if (!isFefoCandidate(std)) {
-          this.toast.show('LÃ´ chuáº©n khÃ´ng cÃ²n sáºµn sÃ ng Ä‘á»ƒ cáº¥p. Vui lÃ²ng táº£i láº¡i vÃ  chá»n lÃ´ khÃ¡c.', 'error');
+          this.toast.show('Lo chuan khong con san sang de cap. Vui long tai lai va chon lo khac.', 'error');
           return;
       }
 
@@ -761,14 +761,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
           if (this.isAssignMode()) {
               // Automatically dispense if assigning directly
               await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
-              this.toast.show('ÄÃ£ gÃ¡n chuáº©n thÃ nh cÃ´ng', 'success');
+              this.toast.show('Da gan chuan thanh cong', 'success');
           } else {
-              this.toast.show('ÄÃ£ gá»­i yÃªu cáº§u mÆ°á»£n chuáº©n', 'success');
+              this.toast.show('Da gui yeu cau muon chuan', 'success');
           }
           
           this.showAssignModal.set(false);
       } catch (error: any) {
-          this.toast.show(error.message || 'Lá»—i khi xá»­ lÃ½', 'error');
+          this.toast.show(error.message || 'Loi khi xu ly', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -814,14 +814,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (this.isProcessing()) return;
       if (!this.historyStd() || !log.id) return;
       
-      if (await this.confirmationService.confirm({ message: `XÃ³a lá»‹ch sá»­ dá»¥ng ngÃ y ${log.date}?`, confirmText: 'XÃ³a & HoÃ n kho', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Xoa lich su dung ngay ${log.date}?`, confirmText: 'Xoa & Hoan kho', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); 
-              this.toast.show('ÄÃ£ xÃ³a', 'success'); 
+              this.toast.show('Da xoa', 'success'); 
               await this.viewHistory(this.historyStd()!); 
           } catch (e: any) { 
-              this.toast.show('Lá»—i: ' + e.message, 'error'); 
+              this.toast.show('Loi: ' + e.message, 'error'); 
           } finally {
               this.isProcessing.set(false);
           }
