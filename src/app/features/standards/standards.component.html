@@ -137,7 +137,7 @@
           iconClass="fa-solid fa-file-excel"
           submitButtonText="Bắt đầu Xuất File"
           [subtitle]="exportSubtitle()"
-          [footerText]="exportItems().length + ' chuẩn sẽ được xuất' + (exportGroupCount() > 0 ? ' - ' + exportGroupCount() + ' nhóm có chuẩn thay thế' : '') + ' - 2 sheet: Chi tiết + Tổng hợp'"
+          [footerText]="exportItems().length + ' chuẩn sẽ được xuất' + (exportGroupCount() > 0 ? ' - ' + exportGroupCount() + ' nhóm có chuẩn thay thế' : '') + ' - 2 sheet: ' + (exportType() === 'expiry' ? 'Báo cáo' : 'Chi tiết') + ' + Tổng hợp'"
           [isExporting]="isExporting()"
           [isCompleted]="exportCompleted()"
           [isSubmitDisabled]="exportItems().length === 0"
@@ -211,7 +211,7 @@
             <!-- Info note -->
             <div class="text-[10px] text-slate-400 dark:text-slate-500 px-1 flex items-start gap-1.5">
               <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
-              <span>File Excel gồm <b>2 sheet</b>: Chi tiết + Tổng hợp. Hàng tiêu đề được đóng băng (freeze). Màu sắc: <span class="text-indigo-500 font-bold">CỐ ĐỊNH</span> - <span class="text-amber-500 font-bold">Thay thế</span> - <span class="text-gray-400 font-bold">Hết hàng</span> - <span class="text-red-400 font-bold">Hết hạn</span>.</span>
+              <span>File Excel gồm <b>2 sheet</b>: {{ exportType() === 'expiry' ? 'Báo cáo hạn dùng' : 'Chi tiết' }} + Tổng hợp. Hàng tiêu đề được đóng băng (freeze). Màu sắc: <span class="text-indigo-500 font-bold">CỐ ĐỊNH</span> - <span class="text-amber-500 font-bold">Thay thế</span> - <span class="text-gray-400 font-bold">Hết hàng</span> - <span class="text-red-400 font-bold">Hết hạn</span>.</span>
             </div>
 
           </div>

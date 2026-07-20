@@ -222,10 +222,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   /** Du lieu thuc te se xuat: cac chuan da chon (neu co) hoac toan bo filteredItems */
   exportItems = computed(() => {
+    let items = this.filteredItems();
     if (this.exportDataSource() === 'selected' && this.selectedIds().size > 0) {
-      return this.filteredItems().filter(item => this.selectedIds().has(item.id));
+      items = items.filter(item => this.selectedIds().has(item.id));
     }
-    return this.filteredItems();
+    if (this.exportType() === 'expiry') {
+      items = items.filter(item => !!item.expiry_date);
+    }
+    return items;
   });
 
   /** Mo ta ngan bo loc dang ap dung - hien thi trong modal header */
@@ -235,14 +239,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
     const filter = this.activeWidgetFilter();
     const search = this.searchTerm();
     const filterLabels: Record<string, string> = {
-      expired: 'Da het han',
-      expiring_soon: 'Sap het han 30 ngay',
-      expiring_3months: 'Sap het han 3 thang toi',
-      low_stock: 'Ton kho thap',
+      expired: 'Đã hết hạn',
+      expiring_soon: 'Sắp hết hạn 30 ngày',
+      expiring_3months: 'Sắp hết hạn 3 tháng tới',
+      low_stock: 'Tồn kho thấp',
     };
-    let desc = src === 'selected' ? `${cnt} chuan da chon` : `${cnt} ket qua`;
-    if (filter !== 'all') desc += ` · Loc: ${filterLabels[filter] || filter}`;
-    if (search) desc += ` · Tim: “${search}”`;
+    let desc = src === 'selected' ? `${cnt} chuẩn đã chọn` : `${cnt} kết quả`;
+    if (filter !== 'all') desc += ` · Lọc: ${filterLabels[filter] || filter}`;
+    if (search) desc += ` · Tìm: “${search}”`;
     return desc;
   });
 
@@ -397,18 +401,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
           standard.current_request_id || standard.has_pending_request
       ));
       if (active.length) {
-          this.toast.show(`Khong the an ${active.length} lo dang muon/tra hoac cho duyet.`, 'error');
+          this.toast.show(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt.`, 'error');
           return;
       }
       
-      if (await this.confirmationService.confirm({ message: `Ban co chac muon an ${ids.length} chuan da chon khoi danh sach?\n\n• Lich su su dung van duoc luu giu day du.\n• Du lieu co the khoi phuc tu Thung rac (Admin).`, confirmText: 'Xac nhan an', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (Admin).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteSelectedStandards(ids); 
-              this.toast.show(`Da an ${ids.length} chuan. Lich su su dung van duoc giu lai.`, 'success'); 
+              this.toast.show(`Đã ẩn ${ids.length} chuẩn. Lịch sử sử dụng vẫn được giữ lại.`, 'success'); 
               this.selectedIds.set(new Set());
           } catch(e: any) { 
-              this.toast.show('Loi xoa: ' + e.message, 'error'); 
+              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
           } finally {
               this.isProcessing.set(false);
           }
@@ -423,9 +427,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
      try {
          const data = await this.stdService.parseExcelData(file);
          this.importPreviewData.set(data);
-         this.toast.show(`Da doc ${data.length} dong. Vui long kiem tra ngay thang.`);
+         this.toast.show(`Đã đọc ${data.length} dòng. Vui lòng kiểm tra ngày tháng.`);
      } catch (e: any) {
-         this.toast.show('Loi doc file: ' + e.message, 'error');
+         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -439,9 +443,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
      try {
          const data = await this.stdService.parseUsageLogExcelData(file);
          this.importUsageLogPreviewData.set(data);
-         this.toast.show(`Da doc ${data.length} dong nhat ky.`);
+         this.toast.show(`Đã đọc ${data.length} dòng nhật ký.`);
      } catch (e: any) {
-         this.toast.show('Loi doc file: ' + e.message, 'error');
+         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -459,10 +463,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedData(this.importPreviewData());
-          this.toast.show('Import thanh cong!', 'success');
+          this.toast.show('Import thành công!', 'success');
           this.importPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Loi luu import: ' + e.message, 'error');
+          this.toast.show('Lỗi lưu import: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -473,10 +477,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedUsageLogs(this.importUsageLogPreviewData());
-          this.toast.show('Import nhat ky thanh cong!', 'success');
+          this.toast.show('Import nhật ký thành công!', 'success');
           this.importUsageLogPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Loi luu import nhat ky: ' + e.message, 'error');
+          this.toast.show('Lỗi lưu import nhật ký: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -500,15 +504,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
               driveInput.click();
               return;
           }
-          this.toast.show('Khong tim thay input upload', 'error');
+          this.toast.show('Không tìm thấy input upload', 'error');
       } else {
-          // XAC THUC TRUOC: Neu chua co token, xac thuc xong yeu cau user nhan lai de co user activation
+          // XÁC THỰC TRƯỚC: Nếu chưa có token, xác thực xong yêu cầu user nhấn lại để có user activation
           this.googleDriveService.authenticateSync(
               () => {
-                  this.toast.show('Da ket noi Google Drive! Vui long nhan lai nut Upload de chon file.', 'success');
+                  this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Upload để chọn file.', 'success');
               },
               (err) => {
-                  this.toast.show('Loi dang nhap Google: ' + err, 'error');
+                  this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
                   this.quickUploadStd = null;
               }
           );
@@ -526,12 +530,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.quickUploadStdId.set(std.id);
       try {
           const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-          this.toast.show(`Dang upload CoA cho "${std.name}"...`);
+          this.toast.show(`Đang upload CoA cho "${std.name}"...`);
 
-          // Da co token roi nen ham nay se upload luon ma khong bi hoi lai
+          // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
           const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-          // Tim tat ca cac chuan cung Ten va So Lo
+          // Tìm tất cả các chuẩn cùng Tên và Số Lô
           const lot = (std.lot_number || '').trim().toLowerCase();
           const siblings = lot
               ? this.allStandards().filter(s =>
@@ -543,13 +547,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
           await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
           if (siblings.length > 1) {
-              this.toast.show(`Upload thanh cong! Da tu dong ap dung CoA cho ${siblings.length} lo chuan cung lo.`);
+              this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
           } else {
-              this.toast.show(`Upload CoA thanh cong! ${fileName}`);
+              this.toast.show(`Upload CoA thành công! ${fileName}`);
           }
       } catch (e: any) {
           console.error('Quick Drive upload error:', e);
-          this.toast.show('Upload CoA loi: ' + (e.message || 'Khong xac dinh'), 'error');
+          this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
       } finally {
           this.quickUploadStdId.set('');
           this.quickUploadStd = null;
@@ -604,7 +608,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
          this.showBulkCoaModal.set(true);
          this.bulkUploadComplete.set(false);
      } else {
-         this.toast.show('Khong tim thay file tai lieu hop le trong thu muc/so file da chon (yeu cau .pdf, .jpg, v.v.)', 'error');
+         this.toast.show('Không tìm thấy file tài liệu hợp lệ trong thư mục/số file đã chọn (yêu cầu .pdf, .jpg, v.v.)', 'error');
      }
      event.target.value = '';
   }
@@ -615,7 +619,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.bulkCoaItems.set([]);
   }
 
-  // Xoa ham triggerBulkUpload vi khong can nua
+  // Xóa hàm triggerBulkUpload vì không cần nữa
 
   async confirmBulkCoaUpload() {
       const items = this.bulkCoaItems();
@@ -627,23 +631,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return lot ? `${standard.name.trim().toLowerCase()}|${lot}` : standard.id;
       });
       if (new Set(targetKeys).size !== targetKeys.length) {
-          this.toast.show('Co nhieu file cung ghep vao mot chuan/lo. Vui long chi giu mot file cho moi lo.', 'error');
+          this.toast.show('Có nhiều file cùng ghép vào một chuẩn/lô. Vui lòng chỉ giữ một file cho mỗi lô.', 'error');
           return;
       }
 
-      // NUT "XAC NHAN UPLOAD" TRONG MODAL SE KICH HOAT HAM NAY, TUC LA MOT USER GESTURE.
+      // NÚT "XÁC NHẬN UPLOAD" TRONG MODAL SẼ KÍCH HOẠT HÀM NÀY, TỨC LÀ MỘT USER GESTURE.
       this.googleDriveService.authenticateSync(
           async () => {
               this.isBulkUploading.set(true);
               this.bulkUploadComplete.set(false);
               
-              this.progressService.start('Dang tai len CoA hang loat', 'Vui long khong dong trinh duyet', toUpload.length);
+              this.progressService.start('Đang tải lên CoA hàng loạt', 'Vui lòng không đóng trình duyệt', toUpload.length);
               let processed = 0;
 
               try {
                   for (const item of toUpload) {
                       processed++;
-                      this.progressService.update(processed, `Dang xu ly tai len cho chuan ${item.matchedStandard?.name}`);
+                      this.progressService.update(processed, `Đang xử lý tải lên cho chuẩn ${item.matchedStandard?.name}`);
                       
                       item.status = 'uploading';
                       this.bulkCoaItems.set([...items]); // Trigger UI update
@@ -654,7 +658,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                       try {
                           const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
                           
-                          // Tim tat ca cac chuan cung Ten va So Lo (1-to-N matching)
+                          // Tìm tất cả các chuẩn cùng Tên và Số Lô (1-to-N matching)
                           const lot = (std.lot_number || '').trim().toLowerCase();
                           const siblings = lot
                               ? this.allStandards().filter(s =>
@@ -668,7 +672,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                           item.status = 'success';
                       } catch(e: any) {
                           item.status = 'error';
-                          item.uploadError = e.message || 'Loi ket noi';
+                          item.uploadError = e.message || 'Lỗi kết nối';
                       }
                       this.bulkCoaItems.set([...items]); // Update progress for this file
                   }
@@ -679,15 +683,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   const errorCount = items.filter(item => item.status === 'error').length;
                   this.toast.show(
                       errorCount > 0
-                          ? `Hoan tat: ${successCount} thanh cong, ${errorCount} loi.`
-                          : `Hoan tat ${successCount} file CoA.`,
+                          ? `Hoàn tất: ${successCount} thành công, ${errorCount} lỗi.`
+                          : `Hoàn tất ${successCount} file CoA.`,
                       errorCount > 0 ? 'error' : 'success'
                   );
                   this.progressService.complete();
               }
           },
           (err) => {
-              this.toast.show('Loi dang nhap Google: ' + err, 'error');
+              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
           }
       );
   }
@@ -698,15 +702,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
   copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
       if (!text) return;
-      navigator.clipboard.writeText(text).then(() => this.toast.show('Da copy: ' + text));
+      navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
   }
 
   goToReturn(std: ReferenceStandard) {
       if (!std.current_request_id) {
-          this.toast.show('Khong tim thay yeu cau muon chuan nay', 'error');
+          this.toast.show('Không tìm thấy yêu cầu mượn chuẩn này', 'error');
           return;
       }
-      this.toast.show('Chuyen den trang Yeu cau de tra chuan');
+      this.toast.show('Chuyển đến trang Yêu cầu để trả chuẩn');
       this.router.navigate(['/standard-requests']);
   }
 
@@ -731,11 +735,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const std = this.selectedStd();
       
       if (!std || !data.userId || !data.purpose) {
-          this.toast.show('Vui long dien day du thong tin bat buoc (*)', 'error');
+          this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
           return;
       }
       if (!isFefoCandidate(std)) {
-          this.toast.show('Lo chuan khong con san sang de cap. Vui long tai lai va chon lo khac.', 'error');
+          this.toast.show('Lô chuẩn không còn sẵn sàng để cấp. Vui lòng tải lại và chọn lô khác.', 'error');
           return;
       }
 
@@ -761,14 +765,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
           if (this.isAssignMode()) {
               // Automatically dispense if assigning directly
               await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
-              this.toast.show('Da gan chuan thanh cong', 'success');
+              this.toast.show('Đã gán chuẩn thành công', 'success');
           } else {
-              this.toast.show('Da gui yeu cau muon chuan', 'success');
+              this.toast.show('Đã gửi yêu cầu mượn chuẩn', 'success');
           }
           
           this.showAssignModal.set(false);
       } catch (error: any) {
-          this.toast.show(error.message || 'Loi khi xu ly', 'error');
+          this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -814,14 +818,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (this.isProcessing()) return;
       if (!this.historyStd() || !log.id) return;
       
-      if (await this.confirmationService.confirm({ message: `Xoa lich su dung ngay ${log.date}?`, confirmText: 'Xoa & Hoan kho', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); 
-              this.toast.show('Da xoa', 'success'); 
+              this.toast.show('Đã xóa', 'success'); 
               await this.viewHistory(this.historyStd()!); 
           } catch (e: any) { 
-              this.toast.show('Loi: ' + e.message, 'error'); 
+              this.toast.show('Lỗi: ' + e.message, 'error'); 
           } finally {
               this.isProcessing.set(false);
           }
@@ -845,15 +849,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
   async runExport() {
       const items = this.exportItems();
       if (items.length === 0) {
-          this.toast.show('Khong co du lieu de xuat.', 'info');
+          this.toast.show('Không có dữ liệu để xuất.', 'info');
           return;
       }
       this.isExporting.set(true);
       this.exportCompleted.set(false);
 
       try {
-          const ExcelJS = await import('exceljs');
-          const wb = new ExcelJS.Workbook();
+          const ExcelJSModule = await import('exceljs');
+          const Workbook = ExcelJSModule.Workbook || (ExcelJSModule as any).default.Workbook;
+          const wb = new Workbook();
           wb.creator = 'LIMS System';
           wb.created = new Date();
 
