@@ -60,7 +60,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                <!-- Identity -->
                                <div class="mb-4 cursor-pointer" (click)="navigateToDetail.emit(std)">
                                    <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition break-words">{{std.name}}</h3>
-                                   @if(std.chemical_name) { <p class="text-sm text-slate-500 dark:text-slate-400 italic font-medium break-words">{{std.chemical_name}}</p> }
+                                   @if(std.chemical_name) { <p class="text-xs text-slate-500 dark:text-slate-400 italic font-medium break-words"><span class="font-bold mr-1 text-slate-400">Synonyms:</span>{{std.chemical_name}}</p> }
                                </div>
 
                                <!-- Data Grid (Click to copy) -->

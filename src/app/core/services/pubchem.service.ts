@@ -100,4 +100,46 @@ export class PubchemService {
         return null;
     }
   }
+
+  /**
+   * Fetch standard name and synonyms using CAS number or name
+   * @param identifier CAS number or chemical name
+   */
+  async getChemicalInfo(identifier: string): Promise<{commercialName: string, synonyms: string[]} | null> {
+    if (!identifier) return null;
+    
+    // Clean identifier
+    const sanitizedIdentifier = identifier.trim();
+    
+    try {
+      // Fetch synonyms which contains the most common name as first element
+      const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(sanitizedIdentifier)}/synonyms/JSON`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      
+      if (data?.InformationList?.Information?.length > 0) {
+        const info = data.InformationList.Information[0];
+        const rawSynonyms: string[] = info.Synonym || [];
+        
+        if (rawSynonyms.length > 0) {
+            // The first synonym in PubChem is usually the standard/common name
+            const commercialName = rawSynonyms[0];
+            
+            // Filter out the identifier itself from synonyms if it's there
+            const synonyms = rawSynonyms
+                .filter(s => s.toLowerCase() !== commercialName.toLowerCase() && s.toLowerCase() !== sanitizedIdentifier.toLowerCase())
+                .slice(0, 50); // Cap at 50 synonyms to avoid massive data
+                
+            return {
+                commercialName,
+                synonyms
+            };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.warn(`PubChem API failed for ${sanitizedIdentifier}:`, error);
+      return null;
+    }
+  }
 }

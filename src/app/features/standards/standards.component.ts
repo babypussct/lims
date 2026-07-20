@@ -29,11 +29,12 @@ import { StandardsFilterComponent } from './components/standards-filter.componen
 import { StandardsListViewComponent } from './components/standards-list-view.component';
 import { StandardsGridViewComponent } from './components/standards-grid-view.component';
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
+import { StandardsDataCleanupModalComponent } from './components/standards-data-cleanup-modal.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html'
 })
@@ -286,6 +287,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   showBulkCoaModal = signal(false);
   isBulkUploading = signal(false);
   bulkUploadComplete = signal(false);
+
+  showDataCleanupModal = signal(false);
 
   formatNum = formatNum;
 

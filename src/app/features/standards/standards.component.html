@@ -11,7 +11,8 @@
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
           (bulkCoaSelect)="handleBulkCoaSelect($event)"
-          (openExportModal)="openExportModal()">
+          (openExportModal)="openExportModal()"
+          (openCleanupModal)="showDataCleanupModal.set(true)">
       </app-standards-toolbar>
 
       <!-- Main Content -->
@@ -107,6 +108,9 @@
 
       <!-- BULK COA MODAL -->
       <app-standards-bulk-coa-modal [isOpen]="showBulkCoaModal()" [items]="bulkCoaItems()" [allStandards]="allStandards()" [isUploading]="isBulkUploading()" [uploadComplete]="bulkUploadComplete()" (cancel)="cancelBulkCoa()" (confirm)="confirmBulkCoaUpload()"></app-standards-bulk-coa-modal>
+
+      <!-- DATA CLEANUP MODAL -->
+      <app-standards-data-cleanup-modal [isOpen]="showDataCleanupModal()" [allStandards]="allStandards()" (closeModal)="showDataCleanupModal.set(false)"></app-standards-data-cleanup-modal>
 
       <app-standards-assign-modal
           [isOpen]="showAssignModal()"
