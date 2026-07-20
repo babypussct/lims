@@ -1132,15 +1132,20 @@ export class StandardsComponent implements OnInit, OnDestroy {
       return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
+  private isValidMatch(v: string | null | undefined): boolean {
+      if (!v) return false;
+      const s = v.trim().toLowerCase();
+      if (!s || s === 'n/a' || s === 'na' || s === '-' || s === 'none' || s === 'null' || s.includes('cas inside') || s.includes('không có') || s.includes('khong co')) return false;
+      return true;
+  }
+
   private hasRelatedStandards(item: ReferenceStandard, allStds: ReferenceStandard[]): boolean {
       const norm = this.normalizeStr.bind(this);
       return allStds.some(std => {
           if (std.id === item.id || std._isDeleted) return false;
-          if (item.cas_number?.trim() && std.cas_number?.trim() &&
-              item.cas_number.trim() === std.cas_number.trim()) return true;
-          if (item.product_code?.trim() && std.product_code?.trim() &&
-              item.product_code.trim() === std.product_code.trim()) return true;
-          if (item.name && std.name && norm(item.name) === norm(std.name)) return true;
+          if (this.isValidMatch(item.cas_number) && item.cas_number!.trim().toLowerCase() === std.cas_number?.trim().toLowerCase()) return true;
+          if (this.isValidMatch(item.product_code) && item.product_code!.trim().toLowerCase() === std.product_code?.trim().toLowerCase()) return true;
+          if (this.isValidMatch(item.name) && norm(item.name) === norm(std.name)) return true;
           return false;
       });
   }
@@ -1151,11 +1156,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
       return items.map(item => {
           const replacements = allStds.filter(std => {
               if (std.id === item.id || std._isDeleted) return false;
-              if (item.cas_number?.trim() && std.cas_number?.trim() &&
-                  item.cas_number.trim() === std.cas_number.trim()) return true;
-              if (item.product_code?.trim() && std.product_code?.trim() &&
-                  item.product_code.trim() === std.product_code.trim()) return true;
-              if (item.name && std.name && norm(item.name) === norm(std.name)) return true;
+              if (this.isValidMatch(item.cas_number) && item.cas_number!.trim().toLowerCase() === std.cas_number?.trim().toLowerCase()) return true;
+              if (this.isValidMatch(item.product_code) && item.product_code!.trim().toLowerCase() === std.product_code?.trim().toLowerCase()) return true;
+              if (this.isValidMatch(item.name) && norm(item.name || '') === norm(std.name || '')) return true;
               return false;
           });
           replacements.sort((a, b) => {
