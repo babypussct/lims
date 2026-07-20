@@ -23,7 +23,8 @@ import { FormsModule } from '@angular/forms';
                        class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
                    <option value="all" class="dark:bg-slate-800">Tất cả ({{stats().total}})</option>
                    <option value="expired" class="dark:bg-slate-800">Đã hết hạn ({{stats().expired}})</option>
-                   <option value="expiring_soon" class="dark:bg-slate-800">Sắp hết hạn ({{stats().expiringSoon}})</option>
+                   <option value="expiring_soon" class="dark:bg-slate-800">Sắp hết hạn 30 ngày ({{stats().expiringSoon}})</option>
+                   <option value="expiring_3months" class="dark:bg-slate-800">Sắp hết hạn 3 tháng tới ({{stats().expiring3Months}})</option>
                    <option value="low_stock" class="dark:bg-slate-800">Sắp hết hàng ({{stats().lowStock}})</option>
                </select>
            </div>
@@ -65,16 +66,16 @@ import { FormsModule } from '@angular/forms';
 })
 export class StandardsFilterComponent {
   searchTerm = input<string>('');
-  activeWidgetFilter = input<'all' | 'expired' | 'expiring_soon' | 'low_stock'>('all');
+  activeWidgetFilter = input<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>('all');
   sortOption = input<string>('received_desc');
   viewMode = input<'list' | 'grid'>('list');
-  stats = input<{total: number, expired: number, expiringSoon: number, lowStock: number}>({total: 0, expired: 0, expiringSoon: 0, lowStock: 0});
+  stats = input<{total: number, expired: number, expiringSoon: number, expiring3Months: number, lowStock: number}>({total: 0, expired: 0, expiringSoon: 0, expiring3Months: 0, lowStock: 0});
   visibleCount = input<number>(0);
   filteredCount = input<number>(0);
   isLoading = input<boolean>(false);
 
   searchTermChange = output<string>();
-  activeWidgetFilterChange = output<'all' | 'expired' | 'expiring_soon' | 'low_stock'>();
+  activeWidgetFilterChange = output<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>();
   sortOptionChange = output<string>();
   viewModeChange = output<'list' | 'grid'>();
 
@@ -83,7 +84,7 @@ export class StandardsFilterComponent {
   }
 
   onWidgetFilterChange(val: string) {
-    this.activeWidgetFilterChange.emit(val as 'all' | 'expired' | 'expiring_soon' | 'low_stock');
+    this.activeWidgetFilterChange.emit(val as 'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock');
   }
 
   onSortChange(val: string) {

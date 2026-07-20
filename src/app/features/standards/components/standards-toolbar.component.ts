@@ -61,6 +61,11 @@ import { CommonModule } from '@angular/common';
                <input #bulkCoaFilesInput type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" class="hidden" (change)="onBulkCoaSelect($event, bulkCoaFilesInput)">
            </div>
          }
+         <!-- Xuất Excel — hiển thị cho tất cả user, không cần phân quyền -->
+         <button (click)="openExportModal.emit()" title="Xuất danh sách đang lọc ra file Excel"
+             class="px-3 py-1.5 bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg shadow-sm shadow-emerald-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
+             <i class="fa-solid fa-file-excel"></i> Xuất Excel
+         </button>
       </div>
     </div>
   `
@@ -76,6 +81,7 @@ export class StandardsToolbarComponent {
   importStandardsFile = output<any>();
   importUsageLogFile = output<any>();
   bulkCoaSelect = output<any>();
+  openExportModal = output<void>();
 
   onFileSelect(event: any, inputEl: HTMLInputElement, type: 'standards' | 'usageLogs') {
     if (type === 'standards') {

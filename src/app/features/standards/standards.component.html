@@ -10,7 +10,8 @@
           (openAddModal)="openAddModal()"
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
-          (bulkCoaSelect)="handleBulkCoaSelect($event)">
+          (bulkCoaSelect)="handleBulkCoaSelect($event)"
+          (openExportModal)="openExportModal()">
       </app-standards-toolbar>
 
       <!-- Main Content -->
@@ -129,5 +130,92 @@
       <!-- PURCHASE REQUEST MODAL -->
       <app-standards-purchase-modal [isOpen]="showPurchaseRequestModal()" [selectedStd]="selectedPurchaseStd()" (closeModal)="closePurchaseRequestModal()"></app-standards-purchase-modal>
 
+      <!-- EXPORT EXCEL MODAL -->
+      @if (showExportModal()) {
+        <app-export-modal
+          title="Xuất Danh sách Chuẩn"
+          iconClass="fa-solid fa-file-excel"
+          submitButtonText="Bắt đầu Xuất File"
+          [subtitle]="exportSubtitle()"
+          [footerText]="exportItems().length + ' chuẩn sẽ được xuất — 2 sheet: Chi tiết + Tổng hợp'"
+          [isExporting]="isExporting()"
+          [isCompleted]="exportCompleted()"
+          [isSubmitDisabled]="exportItems().length === 0"
+          (close)="showExportModal.set(false)"
+          (execute)="runExport()">
+
+          <div class="px-5 pb-5 space-y-3 mt-4">
+
+            <!-- Data source selector (chỉ hiện khi có chuẩn được tick) -->
+            @if (selectedIds().size > 0) {
+              <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 space-y-2">
+                <div class="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                  <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                  Bạn đang có {{ selectedIds().size }} chuẩn được tick. Xuất từ đâu?
+                </div>
+                <div class="flex gap-2">
+                  <button (click)="exportDataSource.set('selected'); exportCompleted.set(false)"
+                    class="flex-1 py-2 rounded-xl text-[11px] font-black transition border"
+                    [class]="exportDataSource() === 'selected'
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-amber-300'">
+                    <i class="fa-solid fa-check-square mr-1"></i> {{ selectedIds().size }} chuẩn đã chọn
+                  </button>
+                  <button (click)="exportDataSource.set('filtered'); exportCompleted.set(false)"
+                    class="flex-1 py-2 rounded-xl text-[11px] font-black transition border"
+                    [class]="exportDataSource() === 'filtered'
+                      ? 'bg-indigo-500 text-white border-indigo-500'
+                      : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-300'">
+                    <i class="fa-solid fa-filter mr-1"></i> {{ filteredItems().length }} kết quả đang lọc
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Kiểu xuất 1: Danh sách đầy đủ -->
+            <div class="border rounded-2xl overflow-hidden transition-all"
+              [class]="exportType() === 'full'
+                ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-900/20'
+                : 'border-slate-100 dark:border-slate-700'">
+              <button (click)="exportType.set('full'); exportCompleted.set(false)" [disabled]="isExporting()"
+                class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition text-left">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                  [class]="exportType() === 'full' ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                  <i class="fa-solid fa-table"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'full'">1. Danh sách đầy đủ</div>
+                  <div class="text-[11px] text-slate-500">21 cột: mã, tên, số lô, tồn kho, hạn dùng, CoA, hãng sản xuất...</div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Kiểu xuất 2: Báo cáo hạn dùng -->
+            <div class="border rounded-2xl overflow-hidden transition-all"
+              [class]="exportType() === 'expiry'
+                ? 'border-rose-200 bg-rose-50/30 dark:border-rose-800 dark:bg-rose-900/20'
+                : 'border-slate-100 dark:border-slate-700'">
+              <button (click)="exportType.set('expiry'); exportCompleted.set(false)" [disabled]="isExporting()"
+                class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition text-left">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                  [class]="exportType() === 'expiry' ? 'bg-rose-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                  <i class="fa-solid fa-calendar-xmark"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-black dark:text-slate-200" [class.text-rose-700]="exportType() === 'expiry'">2. Báo cáo hạn dùng</div>
+                  <div class="text-[11px] text-slate-500">Chỉ chuẩn có hạn dùng · Kèm cột “Còn lại (ngày)” và trạng thái hạn</div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Info note -->
+            <div class="text-[10px] text-slate-400 dark:text-slate-500 px-1 flex items-start gap-1.5">
+              <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
+              <span>File Excel gồm <b>2 sheet</b>: Chi tiết + Tổng hợp. Hàng tiêu đề được đóng băng (freeze) để dễ đọc khi cuộn.</span>
+            </div>
+
+          </div>
+        </app-export-modal>
+      }
 
     </div>

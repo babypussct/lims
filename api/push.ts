@@ -1,6 +1,19 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-
+/**
+ * @deprecated
+ * Endpoint này KHÔNG còn được sử dụng kể từ khi luồng push notification được
+ * gộp vào /api/notifications (action='publish', sendPush=true).
+ *
+ * Lý do: /api/push yêu cầu caller phải có role='manager', không phù hợp cho
+ * các nghiệp vụ thông thường (COA_REQUEST, BORROW_REQUEST, v.v.).
+ *
+ * Thay thế: Dùng NotificationCenterService.publish({ channels: ['inbox', 'push'], ... })
+ *           hoặc gọi POST /api/notifications trực tiếp.
+ *
+ * File giữ lại để tránh 404 nếu có request cũ còn cached. Có thể xóa an toàn
+ * sau khi xác nhận không còn traffic vào /api/push.
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Allow CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -63,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Fetch tokens for each recipient UID
     // Batch query user documents
     const userDocs = await Promise.all(
-      recipientUids.map((uid: string) => 
+      recipientUids.map((uid: string) =>
         db.doc(`artifacts/${resolvedAppId}/users/${uid}`).get()
       )
     );
@@ -102,11 +115,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[WebPush API] Sending multicast message...');
     const response = await admin.messaging().sendEachForMulticast(message);
-    
+
     console.log(`[WebPush API] Successfully sent ${response.successCount} messages. Failed: ${response.failureCount}`);
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       sentCount: response.successCount,
       failureCount: response.failureCount
     });

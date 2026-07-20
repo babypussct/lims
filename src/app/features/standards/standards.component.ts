@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
@@ -29,10 +29,12 @@ import { StandardsFilterComponent } from './components/standards-filter.componen
 import { StandardsListViewComponent } from './components/standards-list-view.component';
 import { StandardsGridViewComponent } from './components/standards-grid-view.component';
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
+import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, ExportModalComponent],
+  providers: [DatePipe],
   templateUrl: './standards.component.html'
 })
 export class StandardsComponent implements OnInit, OnDestroy {
@@ -47,6 +49,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   googleDriveService = inject(GoogleDriveService);
   printService = inject(PrintService);
   progressService = inject(ProgressService);
+  datePipe = inject(DatePipe);
   Math = Math;
   isLoading = signal(true);
   quickUploadStdId = signal<string>(''); // Track which std is being quick-uploaded
@@ -65,8 +68,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // --- CHANGED: CLIENT-SIDE STATE ---
   allStandards = signal<ReferenceStandard[]>([]); // Holds ALL data from Firebase stream
   displayLimit = signal<number>(50); // Virtual scroll limit
-  activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'low_stock'>('all');
+  activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>('all');
   private snapshotUnsub?: Unsubscribe;
+
+  // --- Export State ---
+  showExportModal = signal(false);
+  exportType = signal<'full' | 'expiry'>('full');
+  exportDataSource = signal<'selected' | 'filtered'>('filtered');
+  isExporting = signal(false);
+  exportCompleted = signal(false);
 
   // --- Purchase Requests State (Staff) ---
   showPurchaseRequestModal = signal(false);
@@ -78,9 +88,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
+      // Logic 3 tháng: lấy tháng hiện tại + 3 tháng, bất kể ngày
+      const threeMonthsEnd = new Date(now.getFullYear(), now.getMonth() + 4, 1).getTime(); // exclusive
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
       let expired = 0;
       let expiringSoon = 0;
+      let expiring3Months = 0;
       let lowStock = 0;
 
       data.forEach(item => {
@@ -94,10 +108,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
               } else if (expDate <= thirtyDays) {
                   expiringSoon++;
               }
+              if (expDate >= thisMonthStart && expDate < threeMonthsEnd) {
+                  expiring3Months++;
+              }
           }
       });
 
-      return { expired, expiringSoon, lowStock, total: data.length };
+      return { expired, expiringSoon, expiring3Months, lowStock, total: data.length };
   });
 
   filteredItems = computed(() => {
@@ -110,6 +127,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
           const now = new Date();
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
           const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
+          const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+          const threeMonthsEnd = new Date(now.getFullYear(), now.getMonth() + 4, 1).getTime(); // exclusive
 
           data = data.filter(item => {
               if (widgetFilter === 'low_stock') {
@@ -124,6 +143,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
               }
               if (widgetFilter === 'expiring_soon') {
                   return expDate >= today && expDate <= thirtyDays;
+              }
+              if (widgetFilter === 'expiring_3months') {
+                  return expDate >= thisMonthStart && expDate < threeMonthsEnd;
               }
               return true;
           });
@@ -196,6 +218,32 @@ export class StandardsComponent implements OnInit, OnDestroy {
     const sel = this.selectedStd();
     if (!sel) return [];
     return sortStandardsByFefo(getSameStandardLots(sel, this.allStandards(), false));
+  });
+
+  /** Dữ liệu thực tế sẽ xuất: các chuẩn đã chọn (nếu có) hoặc toàn bộ filteredItems */
+  exportItems = computed(() => {
+    if (this.exportDataSource() === 'selected' && this.selectedIds().size > 0) {
+      return this.filteredItems().filter(item => this.selectedIds().has(item.id));
+    }
+    return this.filteredItems();
+  });
+
+  /** Mô tả ngắn bộ lọc đang áp dụng — hiển thị trong modal header */
+  exportSubtitle = computed(() => {
+    const src = this.exportDataSource();
+    const cnt = src === 'selected' ? this.selectedIds().size : this.filteredItems().length;
+    const filter = this.activeWidgetFilter();
+    const search = this.searchTerm();
+    const filterLabels: Record<string, string> = {
+      expired: 'Đã hết hạn',
+      expiring_soon: 'Sắp hết hạn 30 ngày',
+      expiring_3months: 'Sắp hết hạn 3 tháng tới',
+      low_stock: 'Tồn kho thấp',
+    };
+    let desc = src === 'selected' ? `${cnt} chuẩn đã chọn` : `${cnt} kết quả`;
+    if (filter !== 'all') desc += ` · Lọc: ${filterLabels[filter] || filter}`;
+    if (search) desc += ` · Tìm: “${search}”`;
+    return desc;
   });
 
   // Import Preview State
@@ -775,5 +823,148 @@ export class StandardsComponent implements OnInit, OnDestroy {
   openCoaPreview(url: string, event: Event) {
       event.stopPropagation();
       this.printService.openCoaPreview(url, 'Chứng chỉ chất lượng (CoA)');
+  }
+
+  // ─── EXPORT EXCEL ───────────────────────────────────────────
+
+  openExportModal() {
+      // Nếu đang có chuẩn được tick, ưu tiên xuất đã chọn; ngược lại xuất theo lọc
+      this.exportDataSource.set(this.selectedIds().size > 0 ? 'selected' : 'filtered');
+      this.exportType.set('full');
+      this.exportCompleted.set(false);
+      this.showExportModal.set(true);
+  }
+
+  async runExport() {
+      const items = this.exportItems();
+      if (items.length === 0) {
+          this.toast.show('Không có dữ liệu để xuất.', 'info');
+          return;
+      }
+      this.isExporting.set(true);
+      this.exportCompleted.set(false);
+
+      try {
+          const XLSX = await import('xlsx');
+          const wb = XLSX.utils.book_new();
+
+          // ─── Sheet 1: Dữ liệu chi tiết ───
+          let detailData: Record<string, any>[];
+
+          if (this.exportType() === 'expiry') {
+              const now = new Date();
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+              detailData = items
+                  .filter(item => item.expiry_date)
+                  .map((item, i) => {
+                      const expMs = new Date(item.expiry_date!).getTime();
+                      const daysLeft = Math.ceil((expMs - today) / 86400000);
+                      const expiryStatus = daysLeft < 0 ? 'Đã hết hạn'
+                          : daysLeft <= 30 ? 'Sắp hết hạn (30 ngày)'
+                          : daysLeft <= 90 ? 'Sắp hết hạn (3 tháng)'
+                          : 'Còn hạn';
+                      return {
+                          'STT': i + 1,
+                          'Mã quản lý': item.internal_id || '',
+                          'Tên chuẩn': item.name,
+                          'Số lô': item.lot_number || '',
+                          'Hãng sản xuất': item.manufacturer || '',
+                          'Mã Catalog': item.product_code || '',
+                          'Lượng còn lại': item.current_amount,
+                          'Đơn vị': item.unit,
+                          'Hạn sử dụng': item.expiry_date || '',
+                          'Còn lại (ngày)': daysLeft,
+                          'Trạng thái hạn': expiryStatus,
+                          'Vị trí lưu trữ': item.location || '',
+                          'Điều kiện bảo quản': item.storage_condition || '',
+                      };
+                  });
+          } else {
+              detailData = items.map((item, i) => ({
+                  'STT': i + 1,
+                  'Mã quản lý': item.internal_id || '',
+                  'Tên chuẩn': item.name,
+                  'Tên hóa học': item.chemical_name || '',
+                  'Số CAS': item.cas_number || '',
+                  'Mã Catalog': item.product_code || '',
+                  'Số lô': item.lot_number || '',
+                  'Độ tinh khiết': item.purity || '',
+                  'Hãng sản xuất': item.manufacturer || '',
+                  'Quy cách': item.pack_size || '',
+                  'Lượng ban đầu': item.initial_amount,
+                  'Lượng còn lại': item.current_amount,
+                  'Đơn vị': item.unit,
+                  'Ngày nhận': item.received_date || '',
+                  'Hạn sử dụng': item.expiry_date || '',
+                  'Ngày mở nắp': item.date_opened || '',
+                  'Vị trí lưu trữ': item.location || '',
+                  'Điều kiện bảo quản': item.storage_condition || '',
+                  'Trạng thái': item.status || '',
+                  'Link CoA': item.certificate_ref || '',
+                  'Số hợp đồng': item.contract_ref || '',
+              }));
+          }
+
+          if (detailData.length === 0) {
+              this.toast.show('Không có dữ liệu phù hợp để xuất (ví dụ: xuất Báo cáo hạn nhưng không có chuẩn nào có hạn dùng).', 'info');
+              return;
+          }
+
+          const ws1 = XLSX.utils.json_to_sheet(detailData);
+          // Tự động căn độ rộng cột
+          ws1['!cols'] = Object.keys(detailData[0]).map(key => ({
+              wch: Math.max(key.length, ...detailData.map(row => String(row[key] ?? '').length)) + 2
+          }));
+          // Đóng băng hàng tiêu đề (để dễ đọc khi cuộn)
+          (ws1 as any)['!freeze'] = { xSplit: 0, ySplit: 1 };
+          XLSX.utils.book_append_sheet(wb, ws1, this.exportType() === 'expiry' ? 'Bao cao han dung' : 'Danh sach chuan');
+
+          // ─── Sheet 2: Tổng hợp ───
+          const allFiltered = this.filteredItems();
+          const now2 = new Date();
+          const today2 = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate()).getTime();
+          const thirtyDays2 = today2 + 30 * 24 * 60 * 60 * 1000;
+          const thisMonthStart2 = new Date(now2.getFullYear(), now2.getMonth(), 1).getTime();
+          const threeMonthsEnd2 = new Date(now2.getFullYear(), now2.getMonth() + 4, 1).getTime();
+
+          let sumExpired = 0, sumSoon = 0, sum3m = 0, sumLow = 0;
+          allFiltered.forEach(item => {
+              if ((item.current_amount / (item.initial_amount || 1)) <= 0.2) sumLow++;
+              if (item.expiry_date) {
+                  const d = new Date(item.expiry_date).getTime();
+                  if (d < today2) sumExpired++;
+                  else if (d <= thirtyDays2) sumSoon++;
+                  if (d >= thisMonthStart2 && d < threeMonthsEnd2) sum3m++;
+              }
+          });
+
+          const summaryData = [
+              { 'Chỉ tiêu': 'Tổng số chuẩn trong danh sách lọc', 'Giá trị': allFiltered.length },
+              { 'Chỉ tiêu': 'Số chuẩn xuất trong báo cáo này', 'Giá trị': detailData.length },
+              { 'Chỉ tiêu': '', 'Giá trị': '' },
+              { 'Chỉ tiêu': 'Đã hết hạn', 'Giá trị': sumExpired },
+              { 'Chỉ tiêu': 'Sắp hết hạn (30 ngày tới)', 'Giá trị': sumSoon },
+              { 'Chỉ tiêu': 'Sắp hết hạn (3 tháng tới)', 'Giá trị': sum3m },
+              { 'Chỉ tiêu': 'Tồn kho thấp (≤20%)', 'Giá trị': sumLow },
+              { 'Chỉ tiêu': '', 'Giá trị': '' },
+              { 'Chỉ tiêu': 'Ngày xuất báo cáo', 'Giá trị': this.datePipe.transform(Date.now(), 'dd/MM/yyyy HH:mm') || '' },
+              { 'Chỉ tiêu': 'Bộ lọc / Ghi chú', 'Giá trị': this.exportSubtitle() },
+          ];
+          const ws2 = XLSX.utils.json_to_sheet(summaryData);
+          ws2['!cols'] = [{ wch: 40 }, { wch: 28 }];
+          XLSX.utils.book_append_sheet(wb, ws2, 'Tong hop');
+
+          // Ghi file
+          const typeSuffix = this.exportType() === 'expiry' ? 'HanDung' : 'DanhSach';
+          XLSX.writeFile(wb, `ChuanDoiChieu_${typeSuffix}_${this.datePipe.transform(Date.now(), 'yyyyMMdd_HHmm')}.xlsx`);
+
+          this.exportCompleted.set(true);
+          this.toast.show('Xuất file Excel thành công!', 'success');
+      } catch (err: any) {
+          console.error('Lỗi xuất Excel:', err);
+          this.toast.show('Lỗi xuất file Excel: ' + (err.message || ''), 'error');
+      } finally {
+          this.isExporting.set(false);
+      }
   }
 }
