@@ -12,6 +12,9 @@ import { ToastService } from '../../core/services/toast.service';
 import { MasterTargetService } from '../targets/master-target.service';
 import { resolveCompoundDisplayName, getAssignedTargetsForSample, getCanonicalId } from '../results/shared/compound-id-resolver';
 import { getSampleDescriptionSnapshot } from '../../shared/utils/sample-description.utils';
+import { TargetService } from '../targets/target.service';
+import { TargetGroup } from '../../core/models/sop.model';
+import { classifyTargetScope, buildTargetScopePresentation, TargetScopePresentation } from '../targets/target-scope-classifier';
 
 declare let QRious: any;
 
@@ -328,12 +331,18 @@ declare let QRious: any;
                                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xs">
                                                     <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ group.formattedSamples }}</span>
                                                     <div class="flex flex-wrap gap-1.5 justify-end">
-                                                        @for(tId of group.targetIds; track tId) {
+                                                        @if(group.targetScope.compact) {
                                                             <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                                                                {{ resolveCompoundName(tId) }}
+                                                                {{ group.targetScope.headline }}
                                                             </span>
-                                                        } @empty {
-                                                            <span class="text-xs text-slate-400 dark:text-slate-500 italic">Không có chỉ tiêu</span>
+                                                        } @else {
+                                                            @for(tName of group.targetNames; track tName) {
+                                                                <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                                                                    {{ tName }}
+                                                                </span>
+                                                            } @empty {
+                                                                <span class="text-xs text-slate-400 dark:text-slate-500 italic">Không có chỉ tiêu</span>
+                                                            }
                                                         }
                                                     </div>
                                                 </div>
@@ -393,6 +402,7 @@ export class TraceabilityComponent implements OnInit {
   fb = inject(FirebaseService);
   toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
+  private targetService = inject(TargetService);
   private router = inject(Router);
   
   formatDate = formatDate;
@@ -403,6 +413,7 @@ export class TraceabilityComponent implements OnInit {
 
   logData = signal<Log | null>(null);
   masterTargets = signal<any[]>([]);
+  availableTargetGroups = signal<TargetGroup[]>([]);
   isLoading = signal(false);
   isVerifying = signal(false);
   verifyStep = signal(0);
@@ -452,10 +463,28 @@ export class TraceabilityComponent implements OnInit {
           groupMap.get(signature)!.samples.push(sampleId);
       });
 
-      const groups = Array.from(groupMap.values()).map(g => ({
-          formattedSamples: formatSampleList(g.samples.sort(naturalCompare)),
-          targetIds: g.targetIds
-      })).sort((a, b) => naturalCompare(a.formattedSamples, b.formattedSamples));
+      const groups = Array.from(groupMap.values()).map(g => {
+          const sopId = log.printData?.sop?.id || (log.sopBasicInfo as any)?.id || log.sopId;
+          const sopVersion = log.printData?.sop?.version || (log.sopBasicInfo as any)?.version || log.sopVersion;
+          const sopTargetSnapshot = log.targetNames || log.printData?.targetNames || log.printData?.sop?.targets;
+          
+          const classification = classifyTargetScope({
+            assignedTargetIds: g.targetIds,
+            sopId,
+            sopVersion,
+            sopTargetSnapshot,
+            availableGroups: this.availableTargetGroups()
+          });
+          const targetNames = g.targetIds.map(tId => this.resolveCompoundName(tId));
+          const targetScope = buildTargetScopePresentation(targetNames, classification);
+          
+          return {
+              formattedSamples: formatSampleList(g.samples.sort(naturalCompare)),
+              targetIds: g.targetIds,
+              targetScope,
+              targetNames
+          };
+      }).sort((a, b) => naturalCompare(a.formattedSamples, b.formattedSamples));
 
       return groups.length > 0 ? groups : null;
   });
@@ -468,10 +497,14 @@ export class TraceabilityComponent implements OnInit {
       }
 
       try {
-          const analytes = await this.masterTargetService.getAll();
+          const [analytes, groups] = await Promise.all([
+              this.masterTargetService.getAll(),
+              this.targetService.getAllGroups()
+          ]);
           this.masterTargets.set(analytes);
+          this.availableTargetGroups.set(groups);
       } catch (e) {
-          console.warn('Failed to load master analytes in TraceabilityComponent', e);
+          console.warn('Failed to load master analytes or target groups in TraceabilityComponent', e);
       }
   }
 
