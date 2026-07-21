@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v1.0.0 (Final)",
+    "version": "v26.07.21-b02",
     "title": "Cập nhật Hệ thống LIMS",
     "features": [
       "Áp dụng cơ chế cập nhật tự động không gián đoạn.",

@@ -379,6 +379,16 @@ export class AuthService {
             if (snap.exists()) {
               const data = snap.data() as UserProfile;
               data.uid = firebaseUser.uid; // Ensure uid is present
+
+              // Auto-upgrade existing Super Admin account to Manager if not already
+              if ((data.email || '').toLowerCase() === 'oneloveonepeopleforever@gmail.com' && data.role !== 'manager') {
+                  data.role = 'manager';
+                  data.permissions = Object.values(PERMISSIONS);
+                  updateDoc(userRef, { 
+                      role: 'manager', 
+                      permissions: Object.values(PERMISSIONS) 
+                  }).catch((e: any) => console.error("Could not auto-promote Super Admin in Firestore", e));
+              }
               
               // Ensure we sync Google Avatar to Firestore so others can see it
               if (firebaseUser.photoURL && data.photoURL !== firebaseUser.photoURL) {
@@ -389,12 +399,13 @@ export class AuthService {
               
               this.currentUser.set(data);
             } else {
+              const isSuperAdmin = (firebaseUser.email || '').toLowerCase() === 'oneloveonepeopleforever@gmail.com';
               const newUser: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
                 displayName: firebaseUser.displayName || 'User',
-                role: 'pending',
-                permissions: [],
+                role: isSuperAdmin ? 'manager' : 'pending',
+                permissions: isSuperAdmin ? Object.values(PERMISSIONS) : [],
                 photoURL: firebaseUser.photoURL || '',
                 createdAt: serverTimestamp()
               };

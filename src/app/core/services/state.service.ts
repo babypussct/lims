@@ -87,7 +87,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('V1.0 FINAL');
+  systemVersion = signal<string>('v26.07.21-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -424,7 +424,7 @@ export class StateService implements OnDestroy {
       }
       if (sysSnap.exists()) {
         const d = sysSnap.data()!;
-        if (d['version']) this.systemVersion.set(d['version']);
+        // systemVersion is strictly controlled by package.json build sync
         if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
         if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
         if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
@@ -451,7 +451,7 @@ export class StateService implements OnDestroy {
       if (cache.print) this.printConfig.set(cache.print as PrintConfig);
       if (cache.safety) this.safetyConfig.set(cache.safety as SafetyConfig);
       if (cache.categories?.['items']) this.categories.set(cache.categories['items'] as CategoryItem[]);
-      if (cache.system?.['version']) this.systemVersion.set(cache.system['version']);
+      // systemVersion is strictly controlled by package.json build sync
       if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
       if (cache.system?.['maintenanceMode'] !== undefined) this.maintenanceMode.set(cache.system['maintenanceMode']);
       if (cache.system?.['maintenanceMessage']) this.maintenanceMessage.set(cache.system['maintenanceMessage']);

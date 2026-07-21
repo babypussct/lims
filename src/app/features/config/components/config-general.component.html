@@ -177,12 +177,12 @@
                     </select>
                 </div>
 
-                <div class="flex gap-2 items-end">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">System Version</label>
-                        <input [formControl]="versionControl" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-500 transition">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">System Version (Mã nguồn Build)</label>
+                    <div class="flex items-center justify-between border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span class="font-mono text-blue-600 dark:text-blue-400">{{ state.systemVersion() }}</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Đồng bộ tự động từ Build</span>
                     </div>
-                    <button (click)="saveVersion()" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm dark:shadow-none h-[34px]">Cập nhật</button>
                 </div>
             </div>
 

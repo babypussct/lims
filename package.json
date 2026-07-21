@@ -1,10 +1,14 @@
 {
   "name": "lims-cloud-pro",
-  "version": "1.0.0",
+  "version": "26.07.21-b02",
   "scripts": {
+    "sync-version": "node scripts/sync-version.js",
+    "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
+    "release:minor": "npm version minor --no-git-tag-version && npm run sync-version",
+    "release:major": "npm version major --no-git-tag-version && npm run sync-version",
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "npm run sync-version && ng serve",
+    "build": "npm run sync-version && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:fefo": "tsx --test src/app/shared/utils/standard-fefo.test.ts",
