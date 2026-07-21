@@ -80,6 +80,7 @@ export class Sop01EntryComponent implements OnInit {
     if (this.draft.page1Data['tinhTrangMau'] === undefined) this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
     if (this.draft.page1Data['hasSpikeSample'] === undefined) this.draft.page1Data['hasSpikeSample'] = true;
+    if (this.draft.page1Data['hasSpikeNSample'] === undefined) this.draft.page1Data['hasSpikeNSample'] = true;
     if (this.draft.page1Data['hasFinalSample'] === undefined) this.draft.page1Data['hasFinalSample'] = true;
     if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) this.draft.page1Data['uploadMassHunterToDrive'] = true;
 
@@ -383,7 +384,7 @@ export class Sop01EntryComponent implements OnInit {
       regularCount++;
       if (regularCount % 10 === 0) {
         const isLastSample = regularCount === (this.run.sampleList || []).length;
-        if (!isLastSample && this.draft.page1Data['hasSpikeSample']) {
+        if (!isLastSample && this.draft.page1Data['hasSpikeNSample']) {
           const n = regularCount / 10;
           const spikeNKey = this.getSpikeNKey(n);
           const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
