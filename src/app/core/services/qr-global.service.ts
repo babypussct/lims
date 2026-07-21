@@ -117,7 +117,15 @@ export class QrGlobalService {
         return;
     }
 
-    // CASE H: Fallback (Default Search in Inventory)
+    // CASE H: Firestore ID (Mã mẻ / Batch ID tự động của Firestore)
+    // Nhận diện chuỗi chính xác 20 ký tự alphanumeric
+    const firestoreIdRegex = /^[a-zA-Z0-9]{20}$/;
+    if (firestoreIdRegex.test(code)) {
+        this.router.navigate(['/results-view', code]);
+        return;
+    }
+
+    // CASE I: Fallback (Default Search in Inventory)
     // If it looks like a number or generic string, try inventory
     this.router.navigate(['/inventory'], { queryParams: { search: code } });
   }
