@@ -351,16 +351,41 @@ export class StandardRequestService {
       });
     });
 
-    if (reqData && !isAssign) {
-      await this.crud.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
-      await this.notificationCenter.publish({
-        recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
-        senderName: currentUser.displayName || 'Quản trị viên',
-        type: 'REQUEST_APPROVED', title: 'Yêu cầu được duyệt',
-        message: `Yêu cầu mượn lô chuẩn ${(reqData as StandardRequest).standardName} đã được phê duyệt. Xin hãy bảo quản cẩn thận!`,
-        targetId: standardId, actionUrl: `/standards/${standardId}`,
-        channels: ['inbox', 'push']
-      });
+    if (reqData) {
+      if (!isAssign) {
+        await this.crud.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
+        await this.notificationCenter.publish({
+          recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
+          senderName: currentUser.displayName || 'Quản trị viên',
+          type: 'REQUEST_APPROVED', title: 'Yêu cầu được duyệt',
+          message: `Yêu cầu mượn lô chuẩn ${(reqData as StandardRequest).standardName} đã được phê duyệt. Xin hãy bảo quản cẩn thận!`,
+          targetId: standardId, actionUrl: `/standards/${standardId}`,
+          channels: ['inbox', 'push']
+        });
+      } else {
+        // Send to the person who received it
+        if (currentUser.uid !== (reqData as StandardRequest).requestedBy) {
+          await this.notificationCenter.publish({
+            recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
+            senderName: currentUser.displayName || 'Quản trị viên',
+            type: 'REQUEST_APPROVED', title: 'Được cấp chuẩn',
+            message: `Quản trị viên đã trực tiếp cấp cho bạn lô chuẩn ${(reqData as StandardRequest).standardName}. Xin hãy bảo quản cẩn thận!`,
+            targetId: standardId, actionUrl: `/standards/${standardId}`,
+            channels: ['inbox', 'push']
+          });
+        }
+        
+        // Also send to all admins (manager) so they know a standard was assigned, 
+        // and so the person testing can see the notification themselves.
+        await this.notificationCenter.publish({
+          recipientUid: 'role:admin', senderUid: currentUser.uid,
+          senderName: currentUser.displayName || 'Quản trị viên',
+          type: 'SYSTEM_INFO', title: 'Gán chuẩn trực tiếp',
+          message: `Quản trị viên ${currentUser.displayName} vừa gán trực tiếp lô chuẩn ${(reqData as StandardRequest).standardName} cho ${(reqData as StandardRequest).requestedByName}.`,
+          targetId: standardId, actionUrl: `/standards/${standardId}`,
+          channels: ['inbox', 'push']
+        });
+      }
     }
 
     // Tự động từ chối các request PENDING_APPROVAL còn sót cho cùng chuẩn

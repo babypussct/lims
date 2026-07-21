@@ -126,13 +126,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (recipientUid === 'role:all') return true;
           const user = userDoc.data();
           const configuredRolePermissions = permissionsByRole.get(user['roleId'] || 'role_staff_default') || [];
-          return user['role'] === 'manager'
+          const roleStr = typeof user['role'] === 'string' ? user['role'].toLowerCase() : '';
+          return roleStr === 'manager'
             || (Array.isArray(user['permissions']) && user['permissions'].includes('standard_approve'))
             || (Array.isArray(user['customPermissions']) && user['customPermissions'].includes('standard_approve'))
             || configuredRolePermissions.includes('standard_approve')
             || (user['roleId'] === 'role_qc_lead' && !permissionsByRole.has('role_qc_lead'));
         })
         .map(userDoc => userDoc.id);
+      
+      console.log(`[Notifications API] Resolved ${recipientUid} to ${recipientUids.length} users:`, recipientUids);
     } else {
       recipientUids = [recipientUid];
     }
@@ -176,8 +179,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const fcmTokens = userDoc.data()?.['fcmTokens'];
         return Array.isArray(fcmTokens) ? fcmTokens.filter((token): token is string => typeof token === 'string') : [];
       }))];
+      
+      console.log(`[Notifications API] Found ${tokens.length} FCM tokens to push.`);
 
       for (const tokenGroup of chunks(tokens, 500)) {
+        if (tokenGroup.length === 0) continue;
         const response = await admin.messaging().sendEachForMulticast({
           notification: { title, body: message },
           data: {
