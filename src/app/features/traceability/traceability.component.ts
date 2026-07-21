@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from '@angular/core';
+import { Component, inject, signal, computed, Input, OnInit, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,7 +10,7 @@ import { formatDate, formatNum, formatSampleList, naturalCompare, getAvatarUrl }
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
 import { MasterTargetService } from '../targets/master-target.service';
-import { resolveCompoundDisplayName } from '../results/shared/compound-id-resolver';
+import { resolveCompoundDisplayName, getAssignedTargetsForSample, getCanonicalId } from '../results/shared/compound-id-resolver';
 import { getSampleDescriptionSnapshot } from '../../shared/utils/sample-description.utils';
 
 declare let QRious: any;
@@ -308,10 +308,7 @@ declare let QRious: any;
                                    </div>
                                 }
 
-                                @if(getSampleDescriptionRows().length > 0) {
-                                  <div>
-                                    <span class="text-xs text-slate-500 block mb-1">Mô tả từng mẫu</span>
-                                    <div class="flex flex-wrap gap-1.5">
+                            <div class="flex flex-wrap gap-1.5">
                                       @for(row of getSampleDescriptionRows(); track row.sampleId) {
                                         <span class="bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-800 px-2 py-1 rounded-lg text-xs font-bold"><span class="font-mono">{{row.sampleId}}</span> · {{row.description}}</span>
                                       }
@@ -320,15 +317,15 @@ declare let QRious: any;
                                 }
 
                                 <!-- Target Map -->
-                                @if(getSampleTargetMap()) {
+                                @if(computedSampleTargetGroups(); as targetGroups) {
                                     <div class="pt-2">
                                         <span class="text-xs text-slate-500 block mb-2 font-bold uppercase tracking-wider text-slate-400">Chỉ tiêu phân tích theo từng mẫu</span>
                                         <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                                            @for(sample of getSortedSamples(getSampleTargetMap()); track sample) {
+                                            @for(group of targetGroups; track group.formattedSamples) {
                                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xs">
-                                                    <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ sample }}</span>
+                                                    <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ group.formattedSamples }}</span>
                                                     <div class="flex flex-wrap gap-1.5 justify-end">
-                                                        @for(tId of getSortedTargets(getSampleTargetMap()![sample]); track tId) {
+                                                        @for(tId of group.targetIds; track tId) {
                                                             <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
                                                                 {{ resolveCompoundName(tId) }}
                                                             </span>
@@ -409,6 +406,56 @@ export class TraceabilityComponent implements OnInit {
   errorMsg = signal('');
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
+
+  computedSampleTargetGroups = computed(() => {
+      const log = this.logData() as any;
+      if (!log) return null;
+      
+      const targetMap = log.sampleTargetMap 
+          || log.inputs?.sampleTargetMap
+          || log.printData?.sampleTargetMap
+          || log.printData?.inputs?.sampleTargetMap
+          || {};
+
+      const fallbackTargets = log.targetIds || log.inputs?.targetIds || log.printData?.targetIds || log.printData?.inputs?.targetIds || [];
+      const sampleList = log.sampleList || log.inputs?.sampleList || log.printData?.sampleList || log.printData?.inputs?.sampleList || [];
+
+      if (!sampleList.length && !Object.keys(targetMap).length) return null;
+
+      const allSamples = Array.from(new Set([...sampleList, ...Object.keys(targetMap)]));
+      if (allSamples.length === 0) return null;
+
+      const groupMap = new Map<string, { samples: string[], targetIds: string[] }>();
+
+      allSamples.forEach(sampleId => {
+          const assignedTargets = getAssignedTargetsForSample(sampleId, targetMap);
+          const targetIds = assignedTargets?.length ? assignedTargets : fallbackTargets;
+          
+          const canonicalTargets = new Map<string, string>();
+          targetIds.forEach((targetId: string) => {
+              const canonicalId = getCanonicalId(targetId);
+              if (canonicalId && !canonicalTargets.has(canonicalId)) {
+                  canonicalTargets.set(canonicalId, targetId);
+              }
+          });
+          
+          // Sort canonical IDs for consistent signature
+          const dedupedTargetIds = Array.from(canonicalTargets.values()).sort((a, b) => naturalCompare(this.resolveCompoundName(a), this.resolveCompoundName(b)));
+          const signature = dedupedTargetIds.join('|');
+          
+          if (!groupMap.has(signature)) {
+              groupMap.set(signature, { samples: [], targetIds: dedupedTargetIds });
+          }
+          groupMap.get(signature)!.samples.push(sampleId);
+      });
+
+      const groups = Array.from(groupMap.values()).map(g => ({
+          formattedSamples: formatSampleList(g.samples.sort(naturalCompare)),
+          targetIds: g.targetIds
+      })).sort((a, b) => naturalCompare(a.formattedSamples, b.formattedSamples));
+
+      return groups.length > 0 ? groups : null;
+  });
 
   async ngOnInit() {
       if (this.id) {
@@ -507,11 +554,6 @@ export class TraceabilityComponent implements OnInit {
           sampleId,
           description: getSampleDescriptionSnapshot(map, sampleId)?.nameSnapshot || ''
       })).filter(item => item.description).sort((a, b) => naturalCompare(a.sampleId, b.sampleId));
-  }
-
-  getSortedSamples(map: Record<string, string[]> | null): string[] {
-      if (!map) return [];
-      return Object.keys(map).sort(naturalCompare);
   }
 
   getSortedTargets(tIds: string[] | undefined): string[] {
