@@ -160,6 +160,7 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
           formattedSamples: '',
           samples: [],
           formattedDescriptions: '',
+          hasMultipleDescriptions: false,
           hasDescriptionConflict: false,
           targetScope: buildTargetScopePresentation(targetNames, classification)
         };
@@ -234,24 +235,34 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
         samples,
         sampleIds,
         formattedSamples: formatSampleList(sampleIds),
-        formattedDescriptions: (() => {
-          if (describedSamples.length === 0) return '';
+        ...(() => {
+          if (describedSamples.length === 0) {
+            return { formattedDescriptions: '', hasMultipleDescriptions: false };
+          }
           const descMap = new Map<string, string[]>();
-          for (const sample of describedSamples) {
-            const desc = sample.descriptionAlternatives?.length
-              ? sample.descriptionAlternatives.join(' / ')
-              : sample.description!.nameSnapshot;
+          for (const sample of samples) {
+            let desc = 'Không có mô tả';
+            if (sample.description) {
+              desc = sample.descriptionAlternatives?.length
+                ? sample.descriptionAlternatives.join(' / ')
+                : sample.description.nameSnapshot;
+            }
             if (!descMap.has(desc)) {
               descMap.set(desc, []);
             }
             descMap.get(desc)!.push(sample.sampleId);
           }
-          if (descMap.size === 1 && describedSamples.length === sampleIds.length) {
-            return Array.from(descMap.keys())[0];
+          if (descMap.size === 1) {
+            const onlyDesc = Array.from(descMap.keys())[0];
+            return {
+              formattedDescriptions: onlyDesc === 'Không có mô tả' ? '' : onlyDesc,
+              hasMultipleDescriptions: false
+            };
           }
-          return Array.from(descMap.entries()).map(([desc, sIds]) => {
+          const formatted = Array.from(descMap.entries()).map(([desc, sIds]) => {
             return `${formatSampleList(sIds)} (${desc})`;
           }).join(' · ');
+          return { formattedDescriptions: formatted, hasMultipleDescriptions: true };
         })(),
         hasDescriptionConflict: samples.some(sample => Boolean(sample.descriptionAlternatives?.length))
       };

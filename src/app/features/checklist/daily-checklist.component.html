@@ -261,9 +261,11 @@
                             }
                           </div>
                         } @else {
-                          <p class="font-mono text-sm font-black leading-relaxed text-slate-850 dark:text-slate-100 break-words">{{group.formattedSamples || 'Chưa xác định mã mẫu'}}</p>
+                          <p class="text-sm font-black leading-relaxed text-slate-850 dark:text-slate-100 break-words" [class.font-mono]="!group.hasMultipleDescriptions">
+                            {{group.hasMultipleDescriptions ? group.formattedDescriptions : (group.formattedSamples || 'Chưa xác định mã mẫu')}}
+                          </p>
                         }
-                        @if (group.formattedDescriptions) {
+                        @if (group.formattedDescriptions && !group.hasMultipleDescriptions) {
                           <p class="mt-2 text-[10px] font-bold leading-relaxed text-fuchsia-700 dark:text-fuchsia-400 break-words"><i class="fa-solid fa-tags mr-1"></i>{{group.formattedDescriptions}}</p>
                         }
                         @if (group.hasDescriptionConflict) { <p class="mt-1 text-[9px] font-black text-amber-600 dark:text-amber-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Có mã mẫu mang mô tả không thống nhất giữa các mẻ.</p> }
@@ -365,8 +367,14 @@
                         </div>
                       </td>
                       <td>
-                        <div class="cl-print-samples">{{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}</div>
-                        @if (group.formattedDescriptions) { <div class="cl-print-meta"><strong>Mô tả:</strong> {{group.formattedDescriptions}}</div> }
+                        <div class="cl-print-samples">
+                          @if (group.hasMultipleDescriptions) {
+                            {{group.formattedDescriptions}}
+                          } @else {
+                            {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                          }
+                        </div>
+                        @if (group.formattedDescriptions && !group.hasMultipleDescriptions) { <div class="cl-print-meta"><strong>Mô tả:</strong> {{group.formattedDescriptions}}</div> }
                         @if (group.hasDescriptionConflict) { <div class="cl-print-missing">Cảnh báo: mô tả mẫu không thống nhất giữa các mẻ</div> }
                       </td>
                       <td>
@@ -418,9 +426,13 @@
                                 <div class="cl-print-compact-label">Nhóm {{groupIndex + 1}}</div>
                               }
                               <div class="cl-print-compact-samples">
-                                {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                                @if (group.hasMultipleDescriptions) {
+                                  {{group.formattedDescriptions}}
+                                } @else {
+                                  {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                                }
                               </div>
-                              @if (group.formattedDescriptions) { <div class="cl-print-compact-label">Mô tả: {{group.formattedDescriptions}}</div> }
+                              @if (group.formattedDescriptions && !group.hasMultipleDescriptions) { <div class="cl-print-compact-label">Mô tả: {{group.formattedDescriptions}}</div> }
                               @if (group.hasDescriptionConflict) { <div class="cl-print-missing">Mô tả mẫu không thống nhất</div> }
                               @if (group.targetNames.length === 0) {
                                 <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
