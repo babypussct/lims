@@ -482,6 +482,23 @@ export class Sop01EntryComponent implements OnInit {
     this.onDataChanged();
   }
 
+  isAllSelected(): boolean {
+    const rows = this.getDisplayRowsForFipronil().filter(r => !r.isQC);
+    if (rows.length === 0) return false;
+    return rows.every(r => this.draft.resultData[r.key]?.['selected'] !== false);
+  }
+
+  toggleSelectAll(event: Event) {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    const rows = this.getDisplayRowsForFipronil().filter(r => !r.isQC);
+    rows.forEach(r => {
+      if (this.draft.resultData[r.key]) {
+        this.draft.resultData[r.key]['selected'] = isChecked;
+      }
+    });
+    this.onDataChanged();
+  }
+
   handleGridNavigation(event: KeyboardEvent, rowIdx: number, colName: string, colIdx: number) {
     const columnsList = ['loSo', ...this.activeColumns];
     const rows = this.getDisplayRowsForFipronil();
