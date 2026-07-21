@@ -72,6 +72,55 @@ export class Sop01EntryComponent implements OnInit {
         { loSo: '1.3', vialNo: '1.3' },
         { loSo: '1.4', vialNo: '1.4' },
         { loSo: '1.5', vialNo: '1.5' }
+  @Input() publishedSampleSet: Set<string> | null = null;
+  @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
+
+  private masterTargetService = inject(MasterTargetService);
+  private progressService = inject(ProgressService);
+  private reportService = inject(ReportService);
+  private toast = inject(ToastService);
+  masterTargets = signal<any[]>([]);
+  columnDisplayNames = signal<Record<string, string>>({});
+  activeColumns: string[] = [];
+  checkboxList: { key: string; label: string }[] = [];
+  decimalPlaces = 2; // Số chữ số thập phân làm tròn (Mặc định 2)
+
+  // Bulk rack properties
+  bulkRackStart = 1;
+  bulkVialStartFip = 10;
+  bulkVialsPerRack = 54;
+
+  async ngOnInit() {
+    try {
+      const analytes = await this.masterTargetService.getAll();
+      this.masterTargets.set(analytes);
+    } catch (e) {
+      console.warn('Failed to load master analytes', e);
+    }
+    // Trích lọc các hoạt chất thực sự
+    const cols = Object.keys(this.config.columns || {});
+    this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+    this.buildColumnDisplayNames();
+
+    // Nạp danh sách checkbox
+    if (this.config.checkboxLines) {
+      this.checkboxList = Object.entries(this.config.checkboxLines).map(([label, key]) => ({
+        key: key as string,
+        label
+      }));
+    }
+
+    // Khởi tạo các trường dữ liệu Fipronil nếu chưa có
+    if (!this.draft.page1Data) {
+      this.draft.page1Data = {};
+    }
+    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '1.1', vialNo: '1.1' },
+        { loSo: '1.2', vialNo: '1.2' },
+        { loSo: '1.3', vialNo: '1.3' },
+        { loSo: '1.4', vialNo: '1.4' },
+        { loSo: '1.5', vialNo: '1.5' }
       ];
     }
     if (this.draft.page1Data['maHoSo'] === undefined) this.draft.page1Data['maHoSo'] = '';
@@ -79,6 +128,8 @@ export class Sop01EntryComponent implements OnInit {
     if (this.draft.page1Data['loaiMau'] === undefined) this.draft.page1Data['loaiMau'] = 'Thủy sản';
     if (this.draft.page1Data['tinhTrangMau'] === undefined) this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
+    if (this.draft.page1Data['hasSpikeSample'] === undefined) this.draft.page1Data['hasSpikeSample'] = true;
+    if (this.draft.page1Data['hasFinalSample'] === undefined) this.draft.page1Data['hasFinalSample'] = true;
     if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) this.draft.page1Data['uploadMassHunterToDrive'] = true;
 
     // Khởi tạo tên tuỳ chỉnh cho các mẫu QC
@@ -250,172 +301,6 @@ export class Sop01EntryComponent implements OnInit {
     const canonicalId = SOP01_COLUMN_TO_CANONICAL[col];
     return sampleList.some((sampleCode: string) => {
       const assigned = getAssignedTargetsForSample(sampleCode, targetMap);
-      if (!assigned || assigned.length === 0) return true;
-
-      // Fast path: canonical id direct match (v2)
-      if (canonicalId) {
-        if (assigned.includes(canonicalId)) return true;
-        return assigned.some(tid => tid.toLowerCase() === canonicalId.toLowerCase());
-      }
-      return assigned.some(tid => tid.toLowerCase() === col.toLowerCase());
-    });
-  }
-
-  prefillUnassignedTargets() {
-    const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
-    if (!this.run || !targetMap || !this.activeColumns) return;
-    
-    // Get all rows in display (including QC samples)
-    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
-    let changed = false;
-
-    allRowKeys.forEach((sampleCode: string) => {
-      if (!this.draft.resultData[sampleCode]) {
-        this.draft.resultData[sampleCode] = {};
-      }
-      const row = this.draft.resultData[sampleCode];
-      this.activeColumns.forEach((c: string) => {
-        if (!this.isTargetAssigned(sampleCode, c)) {
-          if (row[c] !== 'N/A') {
-            row[c] = 'N/A';
-            changed = true;
-          }
-        }
-      });
-    });
-
-    if (changed) {
-      this.onDataChanged();
-    }
-  }
-
-  onCellChanged(sampleCode: string) {
-    this.updateRecovery(sampleCode);
-    this.onDataChanged();
-  }
-
-  updateRecovery(sampleCode: string) {
-    const row = this.draft.resultData[sampleCode];
-    if (!row) return;
-
-    // Delegate to Fipronil pure calculation engine
-    row['ghiChu'] = calculateSop01Recovery(row, sampleCode);
-  }
-
-  getSpikeNKey(n: number): string {
-    return `QC_SPIKE_${n}`;
-  }
-
-  getDisplayRowsForFipronil(): any[] {
-    const list: any[] = [];
-    const blankName = this.draft.page1Data['blankName'] || 'BLANK';
-    const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
-    const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
-    
-    const ensureKey = (key: string, defaultVial: string) => {
-      if (!this.draft.resultData[key]) {
-        this.draft.resultData[key] = {
-          loSo: defaultVial,
-          selected: true
-        };
-      }
-    };
-
-    // 1. BLANK (vial 1.7)
-    ensureKey('QC_BLANK', '1.7');
-    if (this.draft.resultData['QC_BLANK']['kqFip'] === undefined || this.draft.resultData['QC_BLANK']['kqFip'] === '') {
-      this.draft.resultData['QC_BLANK']['kqFip'] = 'ND';
-    }
-    if (this.draft.resultData['QC_BLANK']['kqFipDesl'] === undefined || this.draft.resultData['QC_BLANK']['kqFipDesl'] === '') {
-      this.draft.resultData['QC_BLANK']['kqFipDesl'] = 'ND';
-    }
-    if (this.draft.resultData['QC_BLANK']['kqFipSulf'] === undefined || this.draft.resultData['QC_BLANK']['kqFipSulf'] === '') {
-      this.draft.resultData['QC_BLANK']['kqFipSulf'] = 'ND';
-    }
-
-    list.push({
-      key: 'QC_BLANK',
-      type: 'QC_BLANK',
-      label: blankName,
-      isQC: true
-    });
-
-    // 2. SPIKE (vial 1.8)
-    ensureKey('QC_SPIKE', '1.8');
-    list.push({
-      key: 'QC_SPIKE',
-      type: 'QC_SPIKE',
-      label: spikeName,
-      isQC: true
-    });
-
-    // 3. CHECK_SAMPLE (vial 1.9, optional)
-    if (this.draft.page1Data['hasCheckSample']) {
-      ensureKey('QC_CHECK_SAMPLE', '1.9');
-      list.push({
-        key: 'QC_CHECK_SAMPLE',
-        type: 'QC_CHECK_SAMPLE',
-        label: checkSampleName,
-        isQC: true
-      });
-    }
-
-    // 4. REGULAR samples (vials start at 1.10) with dynamic SP_N every 10 samples
-    let regularCount = 0;
-    (this.run.sampleList || []).forEach((sampleCode: string) => {
-      if (!this.draft.resultData[sampleCode]) {
-        this.draft.resultData[sampleCode] = {
-          loSo: '',
-          selected: true
-        };
-      }
-      list.push({
-        key: sampleCode,
-        type: 'REGULAR',
-        label: sampleCode,
-        isQC: false
-      });
-
-      regularCount++;
-      if (regularCount % 10 === 0) {
-        const isLastSample = regularCount === (this.run.sampleList || []).length;
-        if (!isLastSample) {
-          const n = regularCount / 10;
-          const spikeNKey = this.getSpikeNKey(n);
-          const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
-          if (!this.draft.resultData[spikeNKey]) {
-            this.draft.resultData[spikeNKey] = {
-              loSo: spikeVial,
-              selected: true
-            };
-          } else {
-            this.draft.resultData[spikeNKey]['loSo'] = spikeVial;
-          }
-          list.push({
-            key: spikeNKey,
-            type: 'QC_SPIKE_N',
-            label: `SP_${n}`,
-            isQC: true,
-            n: n
-          });
-        }
-      }
-    });
-
-    // 5. FINAL (vial 1.8)
-    ensureKey('QC_FINAL', '1.8');
-    list.push({
-      key: 'QC_FINAL',
-      type: 'QC_FINAL',
-      label: 'FINAL',
-      isQC: true
-    });
-
-    return list;
-  }
-
-  bulkFillND() {
-    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
 
     allRowKeys.forEach((key: string) => {
       const row = this.draft.resultData[key];
