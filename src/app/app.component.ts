@@ -97,18 +97,61 @@ import { filter } from 'rxjs/operators';
       }
 
       @if (hasNewVersion()) {
-        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md no-print p-4">
-           <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-blue-500/30 animate-bounce-in">
-              <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500 animate-pulse">
-                <i class="fa-solid fa-rocket text-4xl"></i>
+        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm no-print p-4 md:p-6">
+           <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 md:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 animate-fade-in">
+              
+              <div class="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8">
+                <!-- SVG Circular Progress -->
+                <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="47" class="fill-slate-50 dark:fill-slate-800/50 stroke-slate-200 dark:stroke-slate-700/50" stroke-width="2"></circle>
+                  <circle cx="50" cy="50" r="47" class="fill-none stroke-blue-600 transition-all duration-1000 ease-linear" stroke-width="3" stroke-linecap="round" 
+                          [style.stroke-dasharray]="'296'" 
+                          [style.stroke-dashoffset]="296 - (updateCountdown() / 30) * 296"></circle>
+                </svg>
+                <!-- Icon inside -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-700 dark:text-slate-300 z-10">
+                  <i class="fa-solid fa-cloud-arrow-down text-2xl md:text-3xl"></i>
+                  <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 opacity-60">{{ updateCountdown() }}s</span>
+                </div>
               </div>
-              <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Đã có phiên bản mới!</h2>
-              <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed">
-                Hệ thống vừa cập nhật một phiên bản mới với nhiều cải tiến. Vui lòng cập nhật ngay để tiếp tục sử dụng.
-              </p>
-              <button (click)="window_reload()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 active:scale-95">
-                <i class="fa-solid fa-rotate-right"></i> Cập nhật ngay
+
+              <h2 class="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2 text-center tracking-tight leading-snug">
+                 @if (updateVersion()) { Cập nhật phiên bản {{ updateVersion() }} }
+                 @else { Có bản cập nhật hệ thống mới }
+              </h2>
+              
+              @if (updateTitle()) {
+                 <p class="text-slate-500 dark:text-slate-400 text-xs md:text-sm text-center font-medium mb-5 md:mb-6 px-2">{{ updateTitle() }}</p>
+              }
+
+              @if (updateFeatures().length > 0) {
+                 <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 md:p-5 mb-6 md:mb-8 text-left border border-slate-100 dark:border-slate-700/50">
+                    <h3 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5 md:mb-3">Nội dung nâng cấp</h3>
+                    <ul class="space-y-2.5 md:space-y-3 max-h-36 md:max-h-40 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
+                       @for (feature of updateFeatures(); track feature) {
+                          <li class="flex gap-2.5 md:gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300 items-start">
+                             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1 md:mt-1.5 shrink-0 opacity-80"></div>
+                             <span class="leading-relaxed">{{ feature }}</span>
+                          </li>
+                       }
+                    </ul>
+                 </div>
+              } @else {
+                 <p class="text-slate-500 dark:text-slate-400 mb-6 md:mb-8 text-xs md:text-sm leading-relaxed text-center px-2">
+                   Hệ thống LIMS vừa được nâng cấp. Vui lòng áp dụng ngay để đảm bảo tính đồng bộ dữ liệu.
+                 </p>
+              }
+              
+              <button (click)="window_reload()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrows-rotate"></i> Áp dụng cập nhật
               </button>
+              
+              <div class="mt-4 text-center">
+                 <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-notch fa-spin opacity-70"></i>
+                    Tự động áp dụng sau {{ updateCountdown() }} giây
+                 </span>
+              </div>
            </div>
         </div>
       } @else if (isMaintenanceActive() && auth.currentUser() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
@@ -336,7 +379,19 @@ export class AppComponent implements OnDestroy {
           current: event.currentVersion.hash,
           latest: event.latestVersion.hash
         });
+
+        // Xử lý dữ liệu Changelog từ ngsw-config.json (nếu có)
+        const appData = event.latestVersion.appData as any;
+        if (appData) {
+            if (appData.version) this.updateVersion.set(appData.version);
+            if (appData.title) this.updateTitle.set(appData.title);
+            if (appData.features && Array.isArray(appData.features)) {
+                this.updateFeatures.set(appData.features);
+            }
+        }
+
         this.hasNewVersion.set(true);
+        this.startUpdateCountdown();
         // Toast can be removed since we have a blocking modal now
         this.toast.removeByMessage('phiên bản mới');
       });
@@ -401,10 +456,15 @@ export class AppComponent implements OnDestroy {
     return titles[url] || 'LIMS Cloud';
   });
 
-  // --- PULL TO REFRESH LOGIC ---
+  // --- PULL TO REFRESH & UPDATE LOGIC ---
   private touchStartY = 0;
   isPulling = signal(false);
   hasNewVersion = signal(false);
+  updateCountdown = signal(30);
+  updateVersion = signal<string | null>(null);
+  updateTitle = signal<string | null>(null);
+  updateFeatures = signal<string[]>([]);
+  private _updateTimer: any;
   private _swCheckInterval: any;
   private _maintenanceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -445,6 +505,7 @@ export class AppComponent implements OnDestroy {
   ngOnDestroy() {
     clearInterval(this._swCheckInterval);
     clearTimeout(this._maintenanceTimer);
+    clearInterval(this._updateTimer);
   }
 
   // Kiểm tra build mới ngay khi user quay lại tab (từ bất kỳ ứng dụng nào khác)
@@ -534,8 +595,26 @@ export class AppComponent implements OnDestroy {
     this.isPulling.set(false);
   }
 
+  startUpdateCountdown() {
+    this.updateCountdown.set(30);
+    clearInterval(this._updateTimer);
+    this.ngZone.runOutsideAngular(() => {
+      this._updateTimer = setInterval(() => {
+        this.ngZone.run(() => {
+          const current = this.updateCountdown() - 1;
+          this.updateCountdown.set(current);
+          if (current <= 0) {
+            clearInterval(this._updateTimer);
+            this.window_reload();
+          }
+        });
+      }, 1000);
+    });
+  }
+
   // Dùng trong template cho nút "Tải lại ngay" trong Toast
   async window_reload() {
+    clearInterval(this._updateTimer);
     // Kích hoạt bản SW mới trước khi reload (đảm bảo không serve bản cũ từ cache)
     if (this.swUpdate.isEnabled && this.hasNewVersion()) {
       try {

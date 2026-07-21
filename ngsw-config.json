@@ -1,6 +1,16 @@
 {
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
+  "appData": {
+    "version": "v1.0.0 (Final)",
+    "title": "Cập nhật Hệ thống LIMS",
+    "features": [
+      "Áp dụng cơ chế cập nhật tự động không gián đoạn.",
+      "Tối ưu hóa hiệu năng phản hồi của giao diện thông báo.",
+      "Cải thiện độ ổn định trong luồng định tuyến thiết bị ngoại vi.",
+      "Nâng cấp kiến trúc giao diện theo tiêu chuẩn Enterprise."
+    ]
+  },
   "assetGroups": [
     {
       "name": "app-shell",
