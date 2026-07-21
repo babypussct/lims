@@ -707,6 +707,27 @@ export class SmartBatchComponent {
       });
   }
 
+  applyDescriptionToAll(index: number, sourceSampleCode: string): void {
+      this.blocks.update(blocks => {
+          const next = [...blocks];
+          const block = next[index];
+          const snapshot = getSampleDescriptionSnapshot(block.sampleDescriptionMap, sourceSampleCode);
+          let newMap = block.sampleDescriptionMap;
+          
+          for (const sample of this.getBlockSamples(block)) {
+              if (sample !== sourceSampleCode) {
+                  newMap = setSampleDescriptionSnapshot(newMap, sample, snapshot);
+              }
+          }
+          
+          next[index] = {
+              ...block,
+              sampleDescriptionMap: newMap
+          };
+          return next;
+      });
+  }
+
   updateSingleSampleDescription(value: string): void {
       this.singleSampleDescription.set(this.resolveDescriptionSnapshot(value));
   }
