@@ -308,7 +308,10 @@ declare let QRious: any;
                                    </div>
                                 }
 
-                            <div class="flex flex-wrap gap-1.5">
+                                @if(getSampleDescriptionRows().length > 0) {
+                                  <div>
+                                    <span class="text-xs text-slate-500 block mb-1">Mô tả từng mẫu</span>
+                                    <div class="flex flex-wrap gap-1.5">
                                       @for(row of getSampleDescriptionRows(); track row.sampleId) {
                                         <span class="bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-800 px-2 py-1 rounded-lg text-xs font-bold"><span class="font-mono">{{row.sampleId}}</span> · {{row.description}}</span>
                                       }
