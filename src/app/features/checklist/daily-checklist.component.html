@@ -360,7 +360,7 @@
                         <div class="cl-print-batch-cell">
                           <div class="cl-print-batch-info">
                             <div class="cl-print-sop">{{batch.sopName}}</div>
-                            <div class="cl-print-meta">{{batch.physicalBatchCount}} mẻ vật lý@if (batch.sopVersion) { · SOP v{{batch.sopVersion}} }</div>
+                            <div class="cl-print-meta">{{batch.uniqueSamples}} mẫu thực hiện</div>
                           </div>
                         </div>
                       </td>
@@ -408,7 +408,7 @@
                              <span class="cl-print-compact-index">{{boardBatches().indexOf(batch) + 1}}</span>
                              <div class="cl-print-compact-title">
                                <div>{{batch.sopName}}</div>
-                               <small>{{batch.physicalBatchCount}} mẻ vật lý@if (batch.sopVersion) { · SOP v{{batch.sopVersion}} }</small>
+                               <small>{{batch.uniqueSamples}} mẫu thực hiện</small>
                              </div>
                            </header>
 

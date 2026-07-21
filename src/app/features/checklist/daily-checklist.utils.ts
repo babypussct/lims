@@ -234,11 +234,25 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
         samples,
         sampleIds,
         formattedSamples: formatSampleList(sampleIds),
-        formattedDescriptions: describedSamples.map(sample =>
-          sample.descriptionAlternatives?.length
-            ? `${sample.sampleId} (${sample.descriptionAlternatives.join(' / ')})`
-            : `${sample.sampleId} (${sample.description!.nameSnapshot})`
-        ).join(' · '),
+        formattedDescriptions: (() => {
+          if (describedSamples.length === 0) return '';
+          const descMap = new Map<string, string[]>();
+          for (const sample of describedSamples) {
+            const desc = sample.descriptionAlternatives?.length
+              ? sample.descriptionAlternatives.join(' / ')
+              : sample.description!.nameSnapshot;
+            if (!descMap.has(desc)) {
+              descMap.set(desc, []);
+            }
+            descMap.get(desc)!.push(sample.sampleId);
+          }
+          if (descMap.size === 1 && describedSamples.length === sampleIds.length) {
+            return Array.from(descMap.keys())[0];
+          }
+          return Array.from(descMap.entries()).map(([desc, sIds]) => {
+            return `${formatSampleList(sIds)} (${desc})`;
+          }).join(' · ');
+        })(),
         hasDescriptionConflict: samples.some(sample => Boolean(sample.descriptionAlternatives?.length))
       };
     }).sort((a, b) => {
