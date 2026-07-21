@@ -16,13 +16,24 @@ describe('ToastService queue', () => {
     assert.deepEqual(service.toasts().map(toast => toast.message), ['Hai', 'Ba', 'Bốn']);
   });
 
-  it('deduplicates active and queued toasts', () => {
+  it('aggregates toasts by dedupeKey and increments count', () => {
     const service = new ToastService();
-    service.showEvent({ message: 'Đầu tiên', persistent: true, dedupeKey: 'same-event' });
+    const id1 = service.showEvent({ message: 'Đầu tiên', persistent: true, dedupeKey: 'same-event' });
     const duplicateId = service.showEvent({ message: 'Lặp lại', persistent: true, dedupeKey: 'same-event' });
 
-    assert.equal(duplicateId, '');
+    assert.equal(duplicateId, id1);
     assert.equal(service.toasts().length, 1);
+    assert.equal(service.toasts()[0].count, 2);
+  });
+
+  it('aggregates toasts by type and message and increments count', () => {
+    const service = new ToastService();
+    const id1 = service.showEvent({ message: 'Same message', type: 'info', persistent: true });
+    const duplicateId = service.showEvent({ message: 'Same message', type: 'info', persistent: true });
+    
+    assert.equal(duplicateId, id1);
+    assert.equal(service.toasts().length, 1);
+    assert.equal(service.toasts()[0].count, 2);
   });
 
   it('pauses and resumes the dismissal timer', async () => {

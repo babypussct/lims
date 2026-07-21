@@ -27,8 +27,13 @@ import { ToastService } from '../../../core/services/toast.service';
               @else { <i class="fa-solid fa-circle-info text-blue-500"></i> }
             </div>
             <div class="flex-1 min-w-0 text-slate-800 dark:text-slate-100">
-              <div class="text-xs font-bold uppercase opacity-60 tracking-wider">
+              <div class="text-xs font-bold uppercase opacity-60 tracking-wider flex items-center gap-1.5">
                 {{ t.title || defaultTitle(t.type) }}
+                @if ((t.count || 1) > 1) {
+                  <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-current/15 text-current opacity-100">
+                    ×{{ t.count }}
+                  </span>
+                }
               </div>
               <div class="text-sm font-semibold leading-snug break-words"
                    [class.line-clamp-3]="!isExpanded(t.id)">{{ t.message }}</div>

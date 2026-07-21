@@ -358,12 +358,18 @@ export class StateService implements OnDestroy {
         // Delta Sync Logic: mỗi field thay đổi hiện 1 toast riêng, độc lập nhau
         if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
           lastSyncTimes['standards'] = data['standards'];
-          this.toast.show('📊 Danh sách chuẩn đối chiếu vừa được cập nhật.', 'info');
+          const stdActions = ['CREATE_STANDARD', 'UPDATE_STANDARD', 'UPDATE_STOCK', 'SOFT_DELETE_BATCH', 'RESTORE_STANDARD'];
+          const latestLog = this.logs().find(l => stdActions.includes(l.action));
+          const msg = latestLog ? buildStandardsToastMessage(latestLog) : '📊 Danh sách chuẩn đối chiếu vừa được cập nhật.';
+          this.toast.showEvent({ message: msg, type: 'info', dedupeKey: `std-sync-${data['standards']}` });
         }
 
         if (data['inventory'] > (lastSyncTimes['inventory'] || 0)) {
           lastSyncTimes['inventory'] = data['inventory'];
-          this.toast.show('🧪 Kho hóa chất vừa có thay đổi.', 'info');
+          const invActions = ['CREATE_ITEM', 'UPDATE_INFO', 'STOCK_IN', 'STOCK_OUT', 'SOFT_DELETE_ITEM', 'RESTORE_ITEM', 'BULK_ZERO'];
+          const latestLog = this.logs().find(l => invActions.includes(l.action));
+          const msg = latestLog ? buildInventoryToastMessage(latestLog) : '🧪 Kho hóa chất vừa có thay đổi.';
+          this.toast.showEvent({ message: msg, type: 'info', dedupeKey: `inv-sync-${data['inventory']}` });
         }
 
         if (data['config'] > (lastSyncTimes['config'] || 0)) {
@@ -822,7 +828,7 @@ export class StateService implements OnDestroy {
           }
         });
       });
-      this.toast.show('Duyệt thành công!', 'success');
+      this.toast.show(`Duyệt thành công yêu cầu "${sop.name}"`, 'success');
       return { logId: logRef.id, printJobId: printJobRef.id };
 
     } catch (e: any) {
@@ -945,7 +951,7 @@ export class StateService implements OnDestroy {
           });
         }
       });
-      this.toast.show('Duyệt thành công!', 'success');
+      this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
   }
 
@@ -1108,7 +1114,7 @@ export class StateService implements OnDestroy {
           }
         });
       });
-      this.toast.show('Cập nhật phiếu thành công!', 'success');
+      this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');
       return true;
     } catch (e: any) {
       this.toast.show(e.message, 'error');
@@ -1155,5 +1161,29 @@ export class StateService implements OnDestroy {
     } catch (e: any) {
       this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
     }
+  }
+}
+
+function buildInventoryToastMessage(log: Log): string {
+  const who = log.user || 'Ai đó';
+  switch (log.action) {
+    case 'CREATE_ITEM':  return `🧪 [${who}] Thêm mới hóa chất vào kho: ${log.details.replace('Tạo mới: ', '')}`;
+    case 'STOCK_IN':     return `🧪 [${who}] Nhập kho: ${log.details.replace('Điều chỉnh kho ', '').replace(': +', ' (+') + ')'}`;
+    case 'STOCK_OUT':    return `🧪 [${who}] Xuất kho: ${log.details}`;
+    case 'UPDATE_INFO':  return `🧪 [${who}] Cập nhật hóa chất: ${log.targetId || ''}`;
+    case 'SOFT_DELETE_ITEM': return `🧪 [${who}] Xóa hóa chất: ${log.details.replace('Đưa vào Thùng rác: ', '')}`;
+    default: return `🧪 [${who}] Kho hóa chất vừa có thay đổi.`;
+  }
+}
+
+function buildStandardsToastMessage(log: Log): string {
+  const who = log.user || 'Ai đó';
+  switch (log.action) {
+    case 'CREATE_STANDARD':   return `📊 [${who}] Thêm chuẩn mới: ${log.details.replace('Thêm chuẩn mới: ', '')}`;
+    case 'UPDATE_STANDARD':   return `📊 [${who}] Cập nhật chuẩn: ${log.details.replace('Cập nhật chuẩn: ', '')}`;
+    case 'UPDATE_STOCK':      return `📊 [${who}] Điều chỉnh tồn kho chuẩn: ${log.details}`;
+    case 'SOFT_DELETE_BATCH': return `📊 [${who}] Xóa chuẩn: ${log.details}`;
+    case 'RESTORE_STANDARD':  return `📊 [${who}] Khôi phục chuẩn: ${log.details.replace('Khôi phục chuẩn đối chiếu: ', '')}`;
+    default: return `📊 [${who}] Danh sách chuẩn đối chiếu vừa được cập nhật.`;
   }
 }

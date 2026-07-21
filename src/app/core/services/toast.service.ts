@@ -13,6 +13,7 @@ export interface Toast {
   dedupeKey?: string;
   durationMs?: number;
   paused?: boolean;
+  count?: number;
 }
 
 export interface ToastOptions {
@@ -46,9 +47,27 @@ export class ToastService {
     const type = options.type ?? 'success';
     const id = `${Date.now()}-${++this.sequence}`;
 
-    if (options.dedupeKey) {
-      const duplicate = [...this.toasts(), ...this.queue].some(t => t.dedupeKey === options.dedupeKey);
-      if (duplicate) return '';
+    const groupKey = options.dedupeKey || `${type}:${options.message}`;
+    const existing = [...this.toasts(), ...this.queue].find(t => 
+      (t.dedupeKey || `${t.type}:${t.message}`) === groupKey
+    );
+
+    if (existing) {
+      this.toasts.update(current => 
+        current.map(t => t.id === existing.id 
+          ? { ...t, count: (t.count || 1) + 1 } 
+          : t
+        )
+      );
+      
+      const timer = this.timers.get(existing.id);
+      if (timer) {
+        if (timer.handle) clearTimeout(timer.handle);
+        timer.remainingMs = this.defaultDuration(type);
+        timer.startedAt = Date.now();
+        timer.handle = setTimeout(() => this.remove(existing.id), timer.remainingMs);
+      }
+      return existing.id;
     }
 
     const durationMs = options.durationMs ?? this.defaultDuration(type);
@@ -63,7 +82,8 @@ export class ToastService {
       actionLabel: options.actionLabel,
       dedupeKey: options.dedupeKey,
       durationMs: options.persistent ? undefined : durationMs,
-      paused: false
+      paused: false,
+      count: 1
     };
 
     if (this.toasts().length < this.maxVisible) {
