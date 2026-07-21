@@ -48,6 +48,38 @@ export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, pre
     }
 };
 
+/**
+ * Chuẩn hóa viết hoa chữ cái đầu cho tên hóa chất / tên thương mại theo đúng danh pháp
+ * Ví dụ: "acetaminophen" -> "Acetaminophen", "SODIUM CHLORIDE" -> "Sodium Chloride", "1-propanol" -> "1-Propanol"
+ */
+export function formatChemicalName(name: string): string {
+    if (!name || typeof name !== 'string') return '';
+    const trimmed = name.trim();
+    if (!trimmed) return '';
+
+    const isAllLower = trimmed === trimmed.toLowerCase();
+    const isAllUpper = trimmed === trimmed.toUpperCase();
+
+    let target = trimmed;
+    if (isAllUpper) {
+        target = trimmed.toLowerCase();
+    }
+
+    if (isAllLower || isAllUpper) {
+        // Viết hoa chữ cái đầu tiên của các từ (hỗ trợ dấu gạch nối, ngoặc đơn...)
+        target = target.replace(/(^|[\s\-\(])([a-z])/g, (match, prefix, char) => {
+            return prefix + char.toUpperCase();
+        });
+    } else {
+        // Nếu tên bắt đầu bằng chữ cái thường, viết hoa chữ cái đầu tiên
+        if (/^[a-z]/.test(target)) {
+            target = target.charAt(0).toUpperCase() + target.slice(1);
+        }
+    }
+
+    return target;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PubchemService {
 
@@ -122,12 +154,19 @@ export class PubchemService {
         const rawSynonyms: string[] = info.Synonym || [];
         
         if (rawSynonyms.length > 0) {
-            // The first synonym in PubChem is usually the standard/common name
-            const commercialName = rawSynonyms[0];
+            // Tìm tên chuẩn thương mại đầu tiên không phải số CAS hoặc mã CID thuần túy
+            const rawCommercial = rawSynonyms.find(s => {
+                const clean = s.trim();
+                return !/^\d+[\d\-]*$/.test(clean) && !/^cid\s*\d+/i.test(clean);
+            }) || rawSynonyms[0];
+
+            // Định dạng viết hoa chữ cái đầu chuẩn danh pháp
+            const commercialName = formatChemicalName(rawCommercial);
             
-            // Filter out the identifier itself from synonyms if it's there
+            // Lọc loại bỏ mã và tên thương mại khỏi danh sách synonyms, chuẩn hóa định dạng từng tên
             const synonyms = rawSynonyms
                 .filter(s => s.toLowerCase() !== commercialName.toLowerCase() && s.toLowerCase() !== sanitizedIdentifier.toLowerCase())
+                .map(s => formatChemicalName(s))
                 .slice(0, 50); // Cap at 50 synonyms to avoid massive data
                 
             return {

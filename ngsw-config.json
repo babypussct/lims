@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.21-b02",
-    "title": "Cập nhật Hệ thống LIMS",
+    "version": "v26.07.22-b02",
+    "title": "Cập nhật Hệ thống LIMS v26.07.22-b01",
     "features": [
-      "Áp dụng cơ chế cập nhật tự động không gián đoạn.",
-      "Tối ưu hóa hiệu năng phản hồi của giao diện thông báo.",
-      "Cải thiện độ ổn định trong luồng định tuyến thiết bị ngoại vi.",
-      "Nâng cấp kiến trúc giao diện theo tiêu chuẩn Enterprise."
+      "Nâng cấp Công cụ Chuẩn hóa Dữ liệu (Data Cleanup) với khả năng tự động quét phân nhóm theo mã CAS.",
+      "Tích hợp tính năng Tìm kiếm thời gian thực & Bộ lọc trạng thái (Filter chips) trực quan.",
+      "Tự động chuẩn hóa viết hoa danh pháp hóa học và tên thương mại theo tiêu chuẩn PubChem.",
+      "Tối ưu đếm số lượng hợp lệ, chống lỗi Signal mutation và bảo vệ an toàn tiến trình lưu Firebase."
     ]
   },
   "assetGroups": [
