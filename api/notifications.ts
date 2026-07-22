@@ -9,13 +9,15 @@ const USER_INITIATED_ADMIN_EVENTS = new Set([
   'COA_REQUEST', 'BORROW_REQUEST'
 ]);
 
-function chunks<T>(items: T[], size: number): T[][] {
+function chunks<T>(items: T[] | null | undefined, size: number): T[][] {
+  if (!items || !items.length) return [];
   const result: T[][] = [];
   for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size));
   return result;
 }
 
 function cleanObject(value: Record<string, unknown>): Record<string, unknown> {
+  if (!value || typeof value !== 'object') return {};
   return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
 }
 
@@ -26,7 +28,7 @@ async function removeStaleTokens(
   loadedUsersMap: Map<string, FirebaseFirestore.DocumentData> | null,
   recipientUids: string[]
 ): Promise<void> {
-  if (staleTokens.length === 0) return;
+  if (!staleTokens || !staleTokens.length) return;
   const admin = await import('firebase-admin');
   const FieldValue = admin.firestore.FieldValue;
   const staleSet = new Set(staleTokens);
@@ -34,14 +36,16 @@ async function removeStaleTokens(
   const uidsToClean: string[] = [];
   if (loadedUsersMap) {
     for (const [uid, userData] of loadedUsersMap) {
+      if (!userData) continue;
       const tokens: string[] = Array.isArray(userData['fcmTokens']) ? userData['fcmTokens'] : [];
       if (tokens.some(t => staleSet.has(t))) uidsToClean.push(uid);
     }
-  } else {
+  } else if (Array.isArray(recipientUids)) {
     uidsToClean.push(...recipientUids);
   }
 
   for (const uid of uidsToClean) {
+    if (!uid) continue;
     const userRef = usersCollection.doc(uid);
     await userRef.update({ fcmTokens: FieldValue.arrayRemove(...staleTokens) })
       .catch(() => {});
@@ -54,7 +58,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    const authorization = req.headers.authorization || '';
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch { body = {}; }
+    }
+    if (!body || typeof body !== 'object') body = {};
+
+    const authorization = req.headers?.authorization || '';
     const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
     if (!idToken) return res.status(401).json({ error: 'Thiếu Firebase ID token.' });
 
@@ -81,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const decoded = await admin.auth().verifyIdToken(idToken);
     const db = admin.firestore();
-    const appId = typeof req.body?.appId === 'string' ? req.body.appId : 'lims-cloud-fixed';
+    const appId = typeof body.appId === 'string' ? body.appId : 'lims-cloud-fixed';
     const profileRef = db.doc(`artifacts/${appId}/users/${decoded.uid}`);
     const profileSnap = await profileRef.get();
     if (!profileSnap.exists) return res.status(403).json({ error: 'Tài khoản không thuộc hệ thống này.' });
@@ -99,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : 'role_staff_default';
       const roleConfig = await db.doc(`artifacts/${appId}/roles_config/${roleId}`).get();
       if (roleConfig.exists && Array.isArray(roleConfig.data()?.['permissions'])) {
-        rolePermissions = roleConfig.data()?.['permissions'];
+        rolePermissions = roleConfig.data()?.['permissions'] || [];
       } else if (roleId === 'role_qc_lead') {
         rolePermissions = ['standard_edit', 'standard_approve'];
       }
@@ -109,11 +119,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       || directPermissions.includes('standard_approve')
       || rolePermissions.includes('standard_edit')
       || rolePermissions.includes('standard_approve');
-    const action = req.body?.action;
+    const action = body.action;
 
     if (action === 'deleteGroup') {
       if (!isManager) return res.status(403).json({ error: 'Chỉ quản trị viên được thu hồi broadcast.' });
-      const groupId = typeof req.body?.groupId === 'string' ? req.body.groupId : '';
+      const groupId = typeof body.groupId === 'string' ? body.groupId : '';
       if (!groupId) return res.status(400).json({ error: 'Thiếu groupId.' });
 
       const snapshot = await db.collection(`artifacts/${appId}/notifications`)
@@ -128,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action !== 'publish') return res.status(400).json({ error: 'Action không hợp lệ.' });
 
-    const input = req.body?.notification || {};
+    const input = (body.notification && typeof body.notification === 'object') ? body.notification : {};
     const recipientUid = typeof input.recipientUid === 'string' ? input.recipientUid : '';
     const type = typeof input.type === 'string' ? input.type : '';
     const title = typeof input.title === 'string' ? input.title.trim() : '';
@@ -160,18 +170,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const roles = recipientUid === 'role:admin'
         ? await db.collection(`artifacts/${appId}/roles_config`).get()
         : null;
-      const permissionsByRole = new Map(
-        roles?.docs.map(roleDoc => [
-          roleDoc.id,
-          Array.isArray(roleDoc.data()['permissions']) ? roleDoc.data()['permissions'] as string[] : []
-        ]) || []
+      const permissionsByRole = new Map<string, string[]>(
+        roles?.docs ? roles.docs.map(roleDoc => {
+          const data = roleDoc.data() || {};
+          return [
+            roleDoc.id,
+            Array.isArray(data['permissions']) ? (data['permissions'] as string[]) : []
+          ];
+        }) : []
       );
 
       loadedUsersMap = new Map();
       const matchingUids: string[] = [];
 
       for (const userDoc of users.docs) {
-        const userData = userDoc.data();
+        const userData = userDoc.data() || {};
         loadedUsersMap.set(userDoc.id, userData);
 
         if (recipientUid === 'role:all') {
@@ -182,7 +195,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const isAdmin = roleStr === 'manager'
             || (Array.isArray(userData['permissions']) && userData['permissions'].includes('standard_approve'))
             || (Array.isArray(userData['customPermissions']) && userData['customPermissions'].includes('standard_approve'))
-            || configuredRolePermissions.includes('standard_approve')
+            || (Array.isArray(configuredRolePermissions) && configuredRolePermissions.includes('standard_approve'))
             || (userData['roleId'] === 'role_qc_lead' && !permissionsByRole.has('role_qc_lead'));
 
           if (isAdmin) {
@@ -234,7 +247,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let failureCount = 0;
     let pushError: string | undefined;
 
-    if (req.body?.sendPush !== false) {
+    if (body.sendPush !== false) {
       try {
         let tokens: string[] = [];
         if (loadedUsersMap) {
@@ -254,7 +267,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`[Notifications API] Found ${tokens.length} FCM tokens to push.`);
 
         for (const tokenGroup of chunks(tokens, 500)) {
-          if (tokenGroup.length === 0) continue;
+          if (!tokenGroup || tokenGroup.length === 0) continue;
           const response = await admin.messaging().sendEachForMulticast({
             notification: { title, body: message },
             data: {
@@ -265,13 +278,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             webpush: { fcmOptions: { link: typeof input.actionUrl === 'string' && input.actionUrl ? input.actionUrl : '/' } },
             tokens: tokenGroup
           });
-          sentCount += response.successCount;
-          failureCount += response.failureCount;
+          sentCount += response?.successCount || 0;
+          failureCount += response?.failureCount || 0;
 
-          if (response.failureCount > 0) {
+          if (response && response.failureCount > 0 && Array.isArray(response.responses)) {
             const staleTokens = tokenGroup.filter((_, idx) => {
               const r = response.responses[idx];
-              return !r.success && (
+              return r && !r.success && (
                 r.error?.code === 'messaging/registration-token-not-registered' ||
                 r.error?.code === 'messaging/invalid-registration-token'
               );
@@ -306,3 +319,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+
