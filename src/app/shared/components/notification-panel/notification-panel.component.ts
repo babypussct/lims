@@ -82,7 +82,7 @@ interface DateGroup {
             @if (totalCount() > 0) {
               <div class="relative notif-actions-wrapper">
                 <button
-                  (click)="showActionsMenu.update(v => !v)"
+                  (click)="toggleActionsMenu()"
                   class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
                          hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300
                          transition-all active:scale-90"
@@ -844,6 +844,10 @@ export class NotificationPanelComponent {
     } else {
       this.expandedIds.add(id);
     }
+  }
+
+  toggleActionsMenu() {
+    this.showActionsMenu.set(!this.showActionsMenu());
   }
 
   loadMore() {
