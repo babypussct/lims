@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.22-b02",
-    "title": "Cập nhật Hệ thống LIMS v26.07.22-b01",
+    "version": "v26.07.22-b03",
+    "title": "Cập nhật Hộp thư Thông báo & Chuông Báo v26.07.22-b03",
     "features": [
-      "Nâng cấp Công cụ Chuẩn hóa Dữ liệu (Data Cleanup) với khả năng tự động quét phân nhóm theo mã CAS.",
-      "Tích hợp tính năng Tìm kiếm thời gian thực & Bộ lọc trạng thái (Filter chips) trực quan.",
-      "Tự động chuẩn hóa viết hoa danh pháp hóa học và tên thương mại theo tiêu chuẩn PubChem.",
-      "Tối ưu đếm số lượng hợp lệ, chống lỗi Signal mutation và bảo vệ an toàn tiến trình lưu Firebase."
+      "Nâng cấp Hộp thư Thông báo: Đếm chính xác 100% số lượng chưa đọc & hỗ trợ bấm xem thêm danh sách dài.",
+      "Bổ sung Menu tùy chọn: Cho phép Xóa thông báo đã đọc hoặc Xóa tất cả thông báo với xác nhận an toàn.",
+      "Cải tiến Thông báo Đẩy: Bấm vào thông báo mở ngay lập tức tới đúng nội dung chi tiết.",
+      "Phân loại Cảnh báo: Biểu tượng chuông tự động đổi màu Cam khi có yêu cầu mượn chuẩn / CoA đang chờ bạn duyệt."
     ]
   },
   "assetGroups": [

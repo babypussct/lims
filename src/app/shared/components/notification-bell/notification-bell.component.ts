@@ -1,4 +1,4 @@
-import { Component, inject, Input } from '@angular/core';
+import { Component, inject, Input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationPanelService } from '../../../core/services/notification-panel.service';
@@ -42,9 +42,11 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
 
           @if (unreadCount() > 0) {
             <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60"></span>
-              <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[8px] font-black items-center justify-center border-2"
-                    [class]="panel.isOpen() ? 'border-fuchsia-500' : 'border-white dark:border-slate-900'">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+                    [class]="hasActionableUnread() ? 'bg-amber-400' : 'bg-red-400'"></span>
+              <span class="relative inline-flex rounded-full h-4 w-4 text-white text-[8px] font-black items-center justify-center border-2"
+                    [class]="panel.isOpen() ? 'border-fuchsia-500' : 'border-white dark:border-slate-900'"
+                    [ngClass]="hasActionableUnread() ? 'bg-gradient-to-br from-amber-500 to-orange-500' : 'bg-red-500'">
                 {{ unreadCount() > 9 ? '9+' : unreadCount() }}
               </span>
             </span>
@@ -66,12 +68,14 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
         class="relative flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm transition-all hover:scale-110 active:scale-95 z-10"
         [ngClass]="unreadCount() > 0
-          ? 'bg-gradient-to-br from-red-500 to-rose-500 text-white'
+          ? (hasActionableUnread() ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white' : 'bg-gradient-to-br from-red-500 to-rose-500 text-white')
           : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
 
         @if (unreadCount() > 0) {
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60"></span>
-          <span class="relative inline-flex rounded-full h-full w-full bg-gradient-to-br from-red-500 to-rose-500 text-white text-[8px] font-black items-center justify-center">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+                [class]="hasActionableUnread() ? 'bg-amber-400' : 'bg-red-400'"></span>
+          <span class="relative inline-flex rounded-full h-full w-full text-white text-[8px] font-black items-center justify-center"
+                [ngClass]="hasActionableUnread() ? 'bg-gradient-to-br from-amber-500 to-orange-500' : 'bg-gradient-to-br from-red-500 to-rose-500'">
             {{ unreadCount() > 9 ? '9+' : unreadCount() }}
           </span>
         } @else {
@@ -103,10 +107,12 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
         <!-- Unread badge -->
         @if (unreadCount() > 0) {
           <span class="absolute -top-1 -right-1 flex h-[18px] w-[18px] items-center justify-center z-20">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60"></span>
-            <span class="relative inline-flex rounded-full h-[18px] w-[18px] bg-gradient-to-br from-red-500 to-rose-500
-                         text-white text-[9px] font-black items-center justify-center
-                         border-2 border-white dark:border-slate-900 shadow-sm shadow-red-500/30">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+                  [class]="hasActionableUnread() ? 'bg-amber-400' : 'bg-red-400'"></span>
+            <span class="relative inline-flex rounded-full h-[18px] w-[18px] text-white text-[9px] font-black items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm"
+                  [ngClass]="hasActionableUnread()
+                    ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-orange-500/30'
+                    : 'bg-gradient-to-br from-red-500 to-rose-500 shadow-red-500/30'">
               {{ unreadCount() > 9 ? '9+' : unreadCount() }}
             </span>
           </span>
@@ -182,6 +188,11 @@ export class NotificationBellComponent {
   panel         = inject(NotificationPanelService);
   notifications = inject(NotificationService);
   unreadCount   = this.notifications.unreadCount;
+
+  hasActionableUnread = computed(() =>
+    this.notifications.notifications()
+      .some(n => !n.isRead && (n.type === 'COA_REQUEST' || n.type === 'BORROW_REQUEST'))
+  );
 
   /** stopPropagation ngăn click bubble lên parent (sidebar toggleProfileMenu) */
   onToggle(event: Event) {

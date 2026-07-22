@@ -19,6 +19,35 @@ function cleanObject(value: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
 }
 
+async function removeStaleTokens(
+  appId: string,
+  staleTokens: string[],
+  usersCollection: FirebaseFirestore.CollectionReference,
+  loadedUsersMap: Map<string, FirebaseFirestore.DocumentData> | null,
+  recipientUids: string[]
+): Promise<void> {
+  if (staleTokens.length === 0) return;
+  const admin = await import('firebase-admin');
+  const FieldValue = admin.firestore.FieldValue;
+  const staleSet = new Set(staleTokens);
+
+  const uidsToClean: string[] = [];
+  if (loadedUsersMap) {
+    for (const [uid, userData] of loadedUsersMap) {
+      const tokens: string[] = Array.isArray(userData['fcmTokens']) ? userData['fcmTokens'] : [];
+      if (tokens.some(t => staleSet.has(t))) uidsToClean.push(uid);
+    }
+  } else {
+    uidsToClean.push(...recipientUids);
+  }
+
+  for (const uid of uidsToClean) {
+    const userRef = usersCollection.doc(uid);
+    await userRef.update({ fcmTokens: FieldValue.arrayRemove(...staleTokens) })
+      .catch(() => {});
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Allow', 'POST,OPTIONS');
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -33,7 +62,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!admin.apps.length) {
       const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
       if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
-      admin.initializeApp({ credential: admin.credential.cert(JSON.parse(serviceAccountJson)) });
+      
+      let serviceAccount: any;
+      try {
+        serviceAccount = typeof serviceAccountJson === 'string'
+          ? JSON.parse(serviceAccountJson)
+          : serviceAccountJson;
+      } catch (e: any) {
+        throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
+      }
+
+      if (serviceAccount && typeof serviceAccount.private_key === 'string') {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
+
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     }
 
     const decoded = await admin.auth().verifyIdToken(idToken);
@@ -110,6 +153,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const usersCollection = db.collection(`artifacts/${appId}/users`);
     let recipientUids: string[];
+    let loadedUsersMap: Map<string, FirebaseFirestore.DocumentData> | null = null;
+
     if (recipientUid === 'role:all' || recipientUid === 'role:admin') {
       const users = await usersCollection.get();
       const roles = recipientUid === 'role:admin'
@@ -121,20 +166,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           Array.isArray(roleDoc.data()['permissions']) ? roleDoc.data()['permissions'] as string[] : []
         ]) || []
       );
-      recipientUids = users.docs
-        .filter(userDoc => {
-          if (recipientUid === 'role:all') return true;
-          const user = userDoc.data();
-          const configuredRolePermissions = permissionsByRole.get(user['roleId'] || 'role_staff_default') || [];
-          const roleStr = typeof user['role'] === 'string' ? user['role'].toLowerCase() : '';
-          return roleStr === 'manager'
-            || (Array.isArray(user['permissions']) && user['permissions'].includes('standard_approve'))
-            || (Array.isArray(user['customPermissions']) && user['customPermissions'].includes('standard_approve'))
+
+      loadedUsersMap = new Map();
+      const matchingUids: string[] = [];
+
+      for (const userDoc of users.docs) {
+        const userData = userDoc.data();
+        loadedUsersMap.set(userDoc.id, userData);
+
+        if (recipientUid === 'role:all') {
+          matchingUids.push(userDoc.id);
+        } else {
+          const configuredRolePermissions = permissionsByRole.get(userData['roleId'] || 'role_staff_default') || [];
+          const roleStr = typeof userData['role'] === 'string' ? userData['role'].toLowerCase() : '';
+          const isAdmin = roleStr === 'manager'
+            || (Array.isArray(userData['permissions']) && userData['permissions'].includes('standard_approve'))
+            || (Array.isArray(userData['customPermissions']) && userData['customPermissions'].includes('standard_approve'))
             || configuredRolePermissions.includes('standard_approve')
-            || (user['roleId'] === 'role_qc_lead' && !permissionsByRole.has('role_qc_lead'));
-        })
-        .map(userDoc => userDoc.id);
-      
+            || (userData['roleId'] === 'role_qc_lead' && !permissionsByRole.has('role_qc_lead'));
+
+          if (isAdmin) {
+            matchingUids.push(userDoc.id);
+          }
+        }
+      }
+
+      recipientUids = matchingUids;
       console.log(`[Notifications API] Resolved ${recipientUid} to ${recipientUids.length} users:`, recipientUids);
     } else {
       recipientUids = [recipientUid];
@@ -155,7 +212,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       targetId: input.targetId,
       actionUrl: input.actionUrl,
       senderUid: decoded.uid,
-      senderName: profile['displayName'] || decoded['name'] || 'Người dùng',
+      senderName: (typeof input.senderName === 'string' && input.senderName.trim())
+        ? input.senderName.trim()
+        : (profile['displayName'] || decoded['name'] || 'Người dùng'),
       groupId: eventId,
       eventId,
       isRead: false,
@@ -173,36 +232,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let sentCount = 0;
     let failureCount = 0;
-    if (req.body?.sendPush !== false) {
-      const userDocs = await Promise.all(recipientUids.map(uid => usersCollection.doc(uid).get()));
-      const tokens = [...new Set(userDocs.flatMap(userDoc => {
-        const fcmTokens = userDoc.data()?.['fcmTokens'];
-        return Array.isArray(fcmTokens) ? fcmTokens.filter((token): token is string => typeof token === 'string') : [];
-      }))];
-      
-      console.log(`[Notifications API] Found ${tokens.length} FCM tokens to push.`);
+    let pushError: string | undefined;
 
-      for (const tokenGroup of chunks(tokens, 500)) {
-        if (tokenGroup.length === 0) continue;
-        const response = await admin.messaging().sendEachForMulticast({
-          notification: { title, body: message },
-          data: {
-            eventId,
-            level: typeof input.level === 'string' ? input.level : 'info',
-            actionUrl: typeof input.actionUrl === 'string' ? input.actionUrl : ''
-          },
-          webpush: { fcmOptions: { link: typeof input.actionUrl === 'string' && input.actionUrl ? input.actionUrl : '/' } },
-          tokens: tokenGroup
-        });
-        sentCount += response.successCount;
-        failureCount += response.failureCount;
+    if (req.body?.sendPush !== false) {
+      try {
+        let tokens: string[] = [];
+        if (loadedUsersMap) {
+          tokens = [...new Set(recipientUids.flatMap(uid => {
+            const userData = loadedUsersMap!.get(uid);
+            const fcmTokens = userData?.['fcmTokens'];
+            return Array.isArray(fcmTokens) ? fcmTokens.filter((token): token is string => typeof token === 'string') : [];
+          }))];
+        } else {
+          const userDocs = await Promise.all(recipientUids.map(uid => usersCollection.doc(uid).get()));
+          tokens = [...new Set(userDocs.flatMap(userDoc => {
+            const fcmTokens = userDoc.data()?.['fcmTokens'];
+            return Array.isArray(fcmTokens) ? fcmTokens.filter((token): token is string => typeof token === 'string') : [];
+          }))];
+        }
+
+        console.log(`[Notifications API] Found ${tokens.length} FCM tokens to push.`);
+
+        for (const tokenGroup of chunks(tokens, 500)) {
+          if (tokenGroup.length === 0) continue;
+          const response = await admin.messaging().sendEachForMulticast({
+            notification: { title, body: message },
+            data: {
+              eventId,
+              level: typeof input.level === 'string' ? input.level : 'info',
+              actionUrl: typeof input.actionUrl === 'string' ? input.actionUrl : ''
+            },
+            webpush: { fcmOptions: { link: typeof input.actionUrl === 'string' && input.actionUrl ? input.actionUrl : '/' } },
+            tokens: tokenGroup
+          });
+          sentCount += response.successCount;
+          failureCount += response.failureCount;
+
+          if (response.failureCount > 0) {
+            const staleTokens = tokenGroup.filter((_, idx) => {
+              const r = response.responses[idx];
+              return !r.success && (
+                r.error?.code === 'messaging/registration-token-not-registered' ||
+                r.error?.code === 'messaging/invalid-registration-token'
+              );
+            });
+            if (staleTokens.length > 0) {
+              console.log(`[Notifications API] Cleaning ${staleTokens.length} stale FCM tokens.`);
+              removeStaleTokens(appId, staleTokens, usersCollection, loadedUsersMap, recipientUids)
+                .catch(e => console.warn('[Notifications API] Stale token cleanup failed:', e));
+            }
+          }
+        }
+      } catch (pErr: any) {
+        pushError = pErr?.message || String(pErr);
+        console.error('[Notifications API] Push notification failed (inbox notification saved):', pushError);
       }
     }
 
-    return res.status(200).json({ success: true, eventId, recipientCount: recipientUids.length, sentCount, failureCount });
+    return res.status(200).json({
+      success: true,
+      eventId,
+      recipientCount: recipientUids.length,
+      sentCount,
+      failureCount,
+      ...(pushError ? { pushError } : {})
+    });
   } catch (error: any) {
     console.error('[Notifications API] Error:', error);
     const status = error?.code?.startsWith?.('auth/') ? 401 : 500;
-    return res.status(status).json({ error: status === 401 ? 'Firebase ID token không hợp lệ.' : 'Không thể gửi thông báo.' });
+    const errorMessage = error?.message || 'Không thể gửi thông báo.';
+    return res.status(status).json({
+      error: status === 401 ? 'Firebase ID token không hợp lệ.' : errorMessage
+    });
   }
 }

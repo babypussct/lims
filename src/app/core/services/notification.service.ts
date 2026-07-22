@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
 import {
@@ -15,10 +16,14 @@ const CLEANUP_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 export class NotificationService {
     private fb = inject(FirebaseService);
     private auth = inject(AuthService);
+    private router = inject(Router);
 
     // Reactive state
     notifications = signal<AppNotification[]>([]);
     unreadCount = signal(0);
+    totalCount = signal(0);
+    displayLimit = signal(50);
+
     foregroundMessage = signal<{
         eventId?: string;
         title: string;
@@ -29,6 +34,13 @@ export class NotificationService {
 
     private unsub?: Unsubscribe;
     private fcmUnsub?: () => void;
+    private _allItems: AppNotification[] = [];
+
+    private readonly _onSwMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'SW_NAVIGATE' && typeof event.data.url === 'string') {
+            this.router.navigateByUrl(event.data.url);
+        }
+    };
 
     constructor() {
         // Initialise empty; startListener() is called by AppComponent after login
@@ -70,14 +82,17 @@ export class NotificationService {
             const items: AppNotification[] = [];
             snapshot.forEach(d => items.push({ ...d.data(), id: d.id } as AppNotification));
 
-            // Sort newest first, limit to 50
+            // Sort newest first
             items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            const recent = items.slice(0, 50);
+            this._allItems = items;
 
-            this.notifications.set(recent);
-            const currentUnread = recent.filter(n => !n.isRead).length;
-            this.unreadCount.set(currentUnread);
-            this.updateAppBadge(currentUnread);
+            const trueUnread = items.filter(n => !n.isRead).length;
+            this.totalCount.set(items.length);
+            this.unreadCount.set(trueUnread);
+            this.updateAppBadge(trueUnread);
+
+            // Render items up to the current displayLimit
+            this.notifications.set(items.slice(0, this.displayLimit()));
 
             // Trigger 90-day cleanup in background (fire-and-forget)
             this._cleanupOldNotifications(items);
@@ -110,15 +125,32 @@ export class NotificationService {
                 });
             });
         }
+
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', this._onSwMessage);
+        }
     }
 
     stopListener() {
         if (this.unsub) { this.unsub(); this.unsub = undefined; }
         if (this.fcmUnsub) { this.fcmUnsub(); this.fcmUnsub = undefined; }
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.removeEventListener('message', this._onSwMessage);
+        }
+        this.displayLimit.set(50);
+        this._allItems = [];
         this.notifications.set([]);
         this.unreadCount.set(0);
+        this.totalCount.set(0);
         this.updateAppBadge(0);
         this.foregroundMessage.set(null);
+    }
+
+    // ── Pagination ─────────────────────────────────────────────────────────────
+    loadMore(increment = 50): void {
+        const next = Math.min(this.displayLimit() + increment, this._allItems.length);
+        this.displayLimit.set(next);
+        this.notifications.set(this._allItems.slice(0, next));
     }
 
     // ── App Badge API ─────────────────────────────────────────────────────────
@@ -148,7 +180,7 @@ export class NotificationService {
     }
 
     async markAllAsRead() {
-        const unreadList = this.notifications().filter(n => !n.isRead && n.id);
+        const unreadList = this._allItems.filter(n => !n.isRead && n.id);
         if (!unreadList.length) return;
 
         try {
@@ -170,6 +202,54 @@ export class NotificationService {
             await deleteDoc(docRef);
         } catch (e) {
             console.error('Failed to delete notification:', e);
+        }
+    }
+
+    async deleteReadNotifications(): Promise<number> {
+        const readList = this._allItems.filter(n => n.isRead && n.id);
+        if (!readList.length) return 0;
+
+        try {
+            const chunks: AppNotification[][] = [];
+            for (let i = 0; i < readList.length; i += 400) {
+                chunks.push(readList.slice(i, i + 400));
+            }
+            for (const chunk of chunks) {
+                const batch = writeBatch(this.fb.db);
+                chunk.forEach(n => {
+                    const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`, n.id!);
+                    batch.delete(docRef);
+                });
+                await batch.commit();
+            }
+            return readList.length;
+        } catch (e) {
+            console.error('Failed to delete read notifications:', e);
+            throw e;
+        }
+    }
+
+    async deleteAllNotifications(): Promise<number> {
+        const allList = this._allItems.filter(n => n.id);
+        if (!allList.length) return 0;
+
+        try {
+            const chunks: AppNotification[][] = [];
+            for (let i = 0; i < allList.length; i += 400) {
+                chunks.push(allList.slice(i, i + 400));
+            }
+            for (const chunk of chunks) {
+                const batch = writeBatch(this.fb.db);
+                chunk.forEach(n => {
+                    const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`, n.id!);
+                    batch.delete(docRef);
+                });
+                await batch.commit();
+            }
+            return allList.length;
+        } catch (e) {
+            console.error('Failed to delete all notifications:', e);
+            throw e;
         }
     }
 
@@ -213,17 +293,25 @@ export class NotificationService {
     }
 
     private async callNotificationApi(payload: Record<string, unknown>): Promise<void> {
-        const token = await this.auth.getIdToken();
-        if (!token) throw new Error('Phiên đăng nhập không hợp lệ.');
+        const doFetch = async (forceRefresh: boolean) => {
+            const token = await this.auth.getIdToken(forceRefresh);
+            if (!token) throw new Error('Phiên đăng nhập không hợp lệ.');
+            return fetch('/api/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+        };
 
-        const response = await fetch('/api/notifications', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-        });
+        let response = await doFetch(false);
+
+        // Retry một lần với fresh token nếu token hết hạn (401)
+        if (response.status === 401) {
+            response = await doFetch(true);
+        }
 
         if (!response.ok) {
             const result = await response.json().catch(() => ({}));

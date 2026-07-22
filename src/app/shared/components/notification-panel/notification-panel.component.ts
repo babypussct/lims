@@ -1,9 +1,11 @@
-import { Component, inject, HostListener, signal, computed } from '@angular/core';
+import { Component, inject, HostListener, signal, computed, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationPanelService } from '../../../core/services/notification-panel.service';
 import { StateService } from '../../../core/services/state.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { AppNotification, NotificationType } from '../../../core/models/notification.model';
 
 type TabId = 'all' | 'unread' | 'system';
@@ -24,6 +26,8 @@ interface DateGroup {
  *  - Date grouping: Hôm nay | Hôm qua | Tuần này | Cũ hơn
  *  - Action chip per notification (if actionUrl present)
  *  - Gradient header with unread badge
+ *  - Actions dropdown: Xóa đã đọc / Xóa tất cả với dialog xác nhận
+ *  - Pagination / Load More
  *  - Expand/collapse long messages
  */
 @Component({
@@ -74,6 +78,35 @@ interface DateGroup {
                 Đọc tất cả
               </button>
             }
+
+            @if (totalCount() > 0) {
+              <div class="relative notif-actions-wrapper">
+                <button
+                  (click)="showActionsMenu.update(v => !v)"
+                  class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
+                         hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300
+                         transition-all active:scale-90"
+                  title="Tùy chọn">
+                  <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                </button>
+
+                @if (showActionsMenu()) {
+                  <div class="notif-actions-dropdown">
+                    @if (readCount() > 0) {
+                      <button (click)="onDeleteRead()" class="notif-action-item">
+                        <i class="fa-solid fa-check-double text-emerald-500"></i>
+                        <span>Xóa đã đọc ({{ readCount() }})</span>
+                      </button>
+                    }
+                    <button (click)="onDeleteAll()" class="notif-action-item notif-action-item--danger">
+                      <i class="fa-solid fa-trash-can text-red-500"></i>
+                      <span>Xóa tất cả ({{ totalCount() }})</span>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+
             <button
               (click)="panel.close()"
               class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
@@ -105,16 +138,16 @@ interface DateGroup {
         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           @if (filteredGroups().length === 0) {
             <!-- Empty State -->
-            <div class="h-full flex flex-col items-center justify-center gap-5 py-20 px-8 text-center">
+            <div class="h-full flex flex-col items-center justify-center gap-4 py-16 px-8 text-center">
               <div class="notif-empty-icon">
-                <i class="fa-regular fa-bell-slash text-3xl text-slate-300 dark:text-slate-600"></i>
+                <i class="fa-regular text-3xl text-slate-300 dark:text-slate-600" [ngClass]="emptyIcon()"></i>
               </div>
               <div>
                 <p class="font-bold text-slate-500 dark:text-slate-400 text-sm">
-                  {{ activeTab() === 'unread' ? 'Không có thông báo chưa đọc' : 'Không có thông báo' }}
+                  {{ emptyTitle() }}
                 </p>
                 <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
-                  {{ activeTab() === 'unread' ? 'Tất cả thông báo đã được đọc.' : 'Các thông báo mới sẽ xuất hiện ở đây khi có hoạt động liên quan.' }}
+                  {{ emptySubtitle() }}
                 </p>
               </div>
             </div>
@@ -131,7 +164,9 @@ interface DateGroup {
                 <div
                   (click)="onNotificationClick(n)"
                   class="notif-item group"
-                  [class.notif-item--unread]="!n.isRead">
+                  [class.notif-item--unread]="!n.isRead"
+                  [class.notif-item--actionable]="!n.isRead && isActionable(n.type)"
+                  [class.notif-item--informational]="isInformational(n.type)">
 
                   <!-- Unread accent bar -->
                   @if (!n.isRead) {
@@ -183,13 +218,26 @@ interface DateGroup {
                 </div>
               }
             }
+
+            @if (hasMore()) {
+              <div class="p-3">
+                <button (click)="loadMore()" class="notif-load-more-btn">
+                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                  <span>Xem thêm {{ totalCount() - displayLimit() }} thông báo</span>
+                </button>
+              </div>
+            }
           }
         </div>
 
         <!-- ── Footer ── -->
         <div class="notif-footer shrink-0">
           <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-            {{ totalCount() }} thông báo
+            @if (totalCount() > displayLimit()) {
+              Hiển thị {{ notifications().length }} / {{ totalCount() }} thông báo
+            } @else {
+              {{ totalCount() }} thông báo
+            }
           </span>
           <button
             (click)="goToSettings()"
@@ -278,6 +326,113 @@ interface DateGroup {
     @keyframes notifPillPulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.75; }
+    }
+
+    /* === Actions Dropdown === */
+    .notif-actions-dropdown {
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 6px;
+      width: 190px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      padding: 6px;
+      z-index: 50;
+      animation: notifPopUp 0.18s ease-out forwards;
+    }
+
+    :host-context(.dark) .notif-actions-dropdown {
+      background: #1e293b;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .notif-action-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    :host-context(.dark) .notif-action-item {
+      color: #cbd5e1;
+    }
+
+    .notif-action-item:hover {
+      background: #f1f5f9;
+    }
+
+    :host-context(.dark) .notif-action-item:hover {
+      background: #334155;
+    }
+
+    .notif-action-item--danger:hover {
+      background: #fef2f2;
+      color: #ef4444;
+    }
+
+    :host-context(.dark) .notif-action-item--danger:hover {
+      background: rgba(127, 29, 29, 0.25);
+      color: #f87171;
+    }
+
+    /* === Load More Button === */
+    .notif-load-more-btn {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1.5px dashed #cbd5e1;
+      background: #fafafa;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+
+    :host-context(.dark) .notif-load-more-btn {
+      border-color: #334155;
+      background: #0f172a;
+      color: #94a3b8;
+    }
+
+    .notif-load-more-btn:hover {
+      border-color: #d946ef;
+      color: #a21caf;
+      background: #fdf4ff;
+    }
+
+    :host-context(.dark) .notif-load-more-btn:hover {
+      border-color: #c084fc;
+      color: #e879f9;
+      background: rgba(192, 132, 252, 0.1);
+    }
+
+    /* === Actionable & Informational variants === */
+    .notif-item--actionable {
+      background: linear-gradient(90deg, rgba(254, 243, 199, 0.6) 0%, rgba(255, 251, 235, 0.4) 100%);
+    }
+
+    :host-context(.dark) .notif-item--actionable {
+      background: linear-gradient(90deg, rgba(180, 83, 9, 0.15) 0%, rgba(180, 83, 9, 0.05) 100%);
+    }
+
+    .notif-item--informational .notif-type-icon {
+      width: 30px;
+      height: 30px;
+      font-size: 11px;
     }
 
     /* === Tab Bar === */
@@ -568,21 +723,31 @@ export class NotificationPanelComponent {
   notificationService = inject(NotificationService);
   state               = inject(StateService);
   router              = inject(Router);
+  confirmation        = inject(ConfirmationService);
+  toast               = inject(ToastService);
+  elementRef          = inject(ElementRef);
 
   notifications = this.notificationService.notifications;
   unreadCount   = this.notificationService.unreadCount;
+  totalCount    = this.notificationService.totalCount;
+  displayLimit  = this.notificationService.displayLimit;
+
+  hasMore   = computed(() => this.displayLimit() < this.totalCount());
+  readCount = computed(() => Math.max(0, this.totalCount() - this.unreadCount()));
 
   activeTab = signal<TabId>('all');
+  showActionsMenu = signal(false);
   expandedIds = new Set<string>();
 
   // ── Tab definitions ──────────────────────────────────────────────────────
   readonly SYSTEM_TYPES = new Set<NotificationType>(['SYSTEM_INFO', 'SYSTEM_UPDATE', 'STOCK_LOW_ALERT', 'RETURN_OVERDUE']);
+  readonly ACTIONABLE_TYPES = new Set<NotificationType>(['COA_REQUEST', 'BORROW_REQUEST']);
 
   tabs = [
     {
       id: 'all' as TabId,
       label: 'Tất cả',
-      count: computed(() => this.notifications().length)
+      count: computed(() => 0)
     },
     {
       id: 'unread' as TabId,
@@ -596,9 +761,25 @@ export class NotificationPanelComponent {
     }
   ];
 
-  // ── Filtered + grouped ────────────────────────────────────────────────────
-  totalCount = computed(() => this.notifications().length);
+  emptyIcon = computed(() => {
+    if (this.activeTab() === 'unread') return 'fa-circle-check';
+    if (this.activeTab() === 'system') return 'fa-shield-check';
+    return 'fa-bell-slash';
+  });
 
+  emptyTitle = computed(() => {
+    if (this.activeTab() === 'unread') return 'Tất cả đã đọc! 🎉';
+    if (this.activeTab() === 'system') return 'Không có cảnh báo hệ thống';
+    return 'Chưa có thông báo nào';
+  });
+
+  emptySubtitle = computed(() => {
+    if (this.activeTab() === 'unread') return 'Bạn đã xử lý hết tất cả thông báo.';
+    if (this.activeTab() === 'system') return 'Không có cảnh báo tồn kho thấp hay cập nhật hệ thống nào.';
+    return 'Các thông báo mới sẽ xuất hiện ở đây khi có hoạt động liên quan.';
+  });
+
+  // ── Filtered + grouped ────────────────────────────────────────────────────
   filteredGroups = computed<DateGroup[]>(() => {
     const tab = this.activeTab();
     let items = this.notifications();
@@ -643,6 +824,14 @@ export class NotificationPanelComponent {
     return d.getTime();
   }
 
+  isActionable(type: NotificationType): boolean {
+    return this.ACTIONABLE_TYPES.has(type);
+  }
+
+  isInformational(type: NotificationType): boolean {
+    return type === 'SYSTEM_INFO' || type === 'SYSTEM_UPDATE';
+  }
+
   isExpanded(n: AppNotification): boolean {
     return this.expandedIds.has(n.id || '');
   }
@@ -654,6 +843,54 @@ export class NotificationPanelComponent {
       this.expandedIds.delete(id);
     } else {
       this.expandedIds.add(id);
+    }
+  }
+
+  loadMore() {
+    this.notificationService.loadMore();
+  }
+
+  async onDeleteRead() {
+    this.showActionsMenu.set(false);
+    if (this.readCount() === 0) return;
+    const confirmed = await this.confirmation.confirm({
+      message: `Xóa ${this.readCount()} thông báo đã đọc? Thao tác này không thể hoàn tác.`,
+      confirmText: 'Xóa đã đọc',
+      isDangerous: true
+    });
+    if (!confirmed) return;
+    try {
+      const count = await this.notificationService.deleteReadNotifications();
+      this.toast.show(`Đã xóa ${count} thông báo đã đọc.`, 'info');
+    } catch (e: any) {
+      this.toast.show('Lỗi xóa thông báo: ' + (e?.message || e), 'error');
+    }
+  }
+
+  async onDeleteAll() {
+    this.showActionsMenu.set(false);
+    if (this.totalCount() === 0) return;
+    const confirmed = await this.confirmation.confirm({
+      message: `Xóa toàn bộ ${this.totalCount()} thông báo? Thao tác này không thể hoàn tác.`,
+      confirmText: 'Xóa tất cả',
+      isDangerous: true
+    });
+    if (!confirmed) return;
+    try {
+      const count = await this.notificationService.deleteAllNotifications();
+      this.toast.show(`Đã xóa toàn bộ ${count} thông báo.`, 'info');
+    } catch (e: any) {
+      this.toast.show('Lỗi xóa thông báo: ' + (e?.message || e), 'error');
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.showActionsMenu()) {
+      const target = event.target as HTMLElement;
+      if (!this.elementRef.nativeElement.querySelector('.notif-actions-wrapper')?.contains(target)) {
+        this.showActionsMenu.set(false);
+      }
     }
   }
 
