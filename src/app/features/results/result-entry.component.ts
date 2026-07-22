@@ -715,7 +715,14 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           reportPayload = buildDefaultSopPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this), this.masterTargets());
         }
 
-        const result = await this.resultService.publishReport(this.requestId, chunkDraft, reportPayload, prefixForReport, chunk);
+        // Tách dữ liệu dùng để build PDF (chunkDraft, có selected=false cho các mẫu ngoài chunk)
+        // khỏi dữ liệu lưu xuống Firestore (draftForSave, giữ nguyên selected gốc của mọi mẫu).
+        // Chỉ kế thừa page1Data từ chunkDraft (có thể đã sửa maHoSo) để phản ánh đúng tên hồ sơ.
+        const draftForSave = {
+          ...currentDraft,
+          page1Data: { ...(chunkDraft.page1Data || currentDraft.page1Data) }
+        };
+        const result = await this.resultService.publishReport(this.requestId, draftForSave, reportPayload, prefixForReport, chunk);
         lastResult = result;
       }
 

@@ -464,7 +464,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
         title: 'Nghiệp vụ & Vận hành',
         accentClass: 'from-purple-500/15 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800/30',
         items: [
-          { name: 'Theo dõi mẫu', icon: 'fa-list-check', action: () => this.navTo('/daily-checklist', 'Theo dõi mẫu', 'fa-list-check'), visible: this.auth.canViewSop(), isActive: this.isActive('/daily-checklist') },
           { name: 'Pha Chế', icon: 'fa-flask-vial', action: () => this.navTo('/prep', 'Pha Chế', 'fa-flask-vial'), visible: this.auth.canViewInventory(), isActive: this.isActive('/prep') },
           { name: 'Vận hành', icon: 'fa-play pl-0.5', action: () => this.navTo('/calculator', 'Vận hành', 'fa-play'), visible: this.auth.canViewSop(), isActive: this.isActive('/calculator') },
           { name: 'Duyệt', icon: 'fa-clipboard-list', action: () => this.navTo('/requests', 'Duyệt', 'fa-clipboard-list'), visible: this.auth.canViewSop(), isActive: this.isActive('/requests') },

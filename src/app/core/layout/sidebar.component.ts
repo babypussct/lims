@@ -38,21 +38,39 @@ export interface MenuGroup {
            [class.translate-x-0]="state.sidebarOpen()">
       
       <!-- 1. Brand -->
-      <div class="h-16 flex items-center px-6 shrink-0 relative cursor-pointer group"
-           [class.justify-center]="state.sidebarCollapsed()"
-           (click)="state.toggleSidebarCollapse()"
-           title="Nhấn để Thu gọn / Mở rộng">
-         <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-105">
-             <app-logo size="40px"></app-logo>
+      <div class="h-16 flex items-center shrink-0 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300 relative"
+           [class.px-4]="!state.sidebarCollapsed()"
+           [class.px-2]="state.sidebarCollapsed()"
+           [class.justify-between]="!state.sidebarCollapsed()"
+           [class.justify-center]="state.sidebarCollapsed()">
+         
+         <!-- Logo + Brand Name (Click to Home) -->
+         <div (click)="goHome()" 
+              class="flex items-center gap-2.5 cursor-pointer group select-none min-w-0"
+              title="Về Trang chủ (Dashboard)">
+             <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-105 group-active:scale-95 bg-slate-50 dark:bg-slate-800/80">
+                 <app-logo size="40px"></app-logo>
+             </div>
+             @if (!state.sidebarCollapsed()) {
+                <span class="font-bold text-gray-800 dark:text-slate-100 text-sm tracking-wide fade-in group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors flex items-center h-10 truncate">
+                    LIMS Cloud <span class="font-light text-gray-400 dark:text-slate-500 ml-1">Pro</span>
+                </span>
+             }
          </div>
-         @if (!state.sidebarCollapsed()) {
-            <span class="font-bold text-gray-700 dark:text-slate-200 text-sm tracking-wide ml-3 fade-in group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors flex items-center h-10">
-                LIMS Cloud <span class="font-light text-gray-400 dark:text-slate-500 ml-1">Pro</span>
-            </span>
-         }
-         <button (click)="state.closeSidebar(); $event.stopPropagation()" class="md:hidden ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 active:bg-gray-200 dark:active:bg-slate-700">
-             <i class="fa-solid fa-times"></i>
-         </button>
+
+         <!-- Controls: Collapse toggle on Desktop & Close on Mobile -->
+         <div class="flex items-center gap-1 shrink-0" [class.ml-auto]="!state.sidebarCollapsed()">
+             <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()" 
+                     class="hidden md:flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 active:scale-95 transition-all"
+                     [title]="state.sidebarCollapsed() ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'">
+                 <i class="fa-solid text-xs" [class.fa-angles-left]="!state.sidebarCollapsed()" [class.fa-angles-right]="state.sidebarCollapsed()"></i>
+             </button>
+             
+             <button (click)="state.closeSidebar(); $event.stopPropagation()" 
+                     class="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 active:bg-gray-200 dark:active:bg-slate-700">
+                 <i class="fa-solid fa-times"></i>
+             </button>
+         </div>
       </div>
 
       <!-- 2. GLOBAL ACTION: SCAN -->
@@ -232,7 +250,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'overview',
       title: 'Tổng quan',
       items: [
-        { name: 'Trang chủ', icon: 'fa-house', path: 'dashboard', activeMatch: ['/dashboard'] },
         { name: 'Báo cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], hidden: !this.auth.canViewReports() },
         { name: 'Phiếu giao nhận mẫu', icon: 'fa-folder-open', path: 'documents', activeMatch: ['/documents'] }
       ]
@@ -241,7 +258,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'operation',
       title: 'Vận hành',
       items: [
-        { name: 'Theo dõi mẫu ngày', icon: 'fa-list-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], hidden: !this.auth.canViewSop() },
         { name: 'Chạy Mẻ (Smart)', icon: 'fa-wand-magic-sparkles', path: 'smart-batch', activeMatch: ['/smart-batch'], hidden: !this.auth.canViewSop() },
         { name: 'Vận hành (SOP)', icon: 'fa-play pl-0.5', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], hidden: !this.auth.canViewSop() },
         { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], hidden: !this.auth.canViewInventory() },
@@ -300,6 +316,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
       window.removeEventListener('online', this.onlineListener);
       window.removeEventListener('offline', this.offlineListener);
+  }
+
+  goHome() {
+      this.router.navigate(['/dashboard']);
+      this.state.closeSidebar();
   }
 
   navigateTo(path: string) {

@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.22-b06",
+    "version": "v26.07.22-b07",
     "title": "Nâng Cấp Giao Diện Thông Báo Dành Cho Kiểm Nghiệm Viên",
     "features": [
       "Cửa sổ Thông báo Rộng rãi & Hiện đại: Khung thông báo mở rộng thoáng đãng, gắn tự nhiên sát nút Chuông góc trái màn hình.",

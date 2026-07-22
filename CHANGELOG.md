@@ -1,5 +1,23 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.22-b07] - 22/07/2026
+
+### 🎨 Tinh Giản Giao Diện Điều Hướng & Tối Ưu Màn Hình Làm Việc
+
+#### 🧭 Điều Hướng Thông Minh & Bấm Logo Về Trang Chủ
+- **Bấm vào Logo để về ngay Trang chủ**:
+  Thao tác nhấp vào biểu tượng **Logo LIMS Cloud Pro** ở góc trên cùng thanh điều hướng giúp kiểm nghiệm viên quay về màn hình Trang chủ (Dashboard) nhanh chóng từ bất kỳ phân hệ nào.
+- **Nút thu gọn/mở rộng thanh điều hướng riêng biệt**:
+  Bổ sung nút thu gọn / mở rộng chuyên biệt ở góc phải thanh Sidebar giúp chủ động mở rộng không gian hiển thị danh sách mẫu và bảng số liệu khi phân tích.
+
+#### 📊 Tối Ưu Bảng Theo Dõi Mẫu Ngày & Giao Diện Tinh Gọn
+- **Tập trung bảng theo dõi mẫu tại Trang chủ**:
+  Toàn bộ dữ liệu **Bảng theo dõi mẫu ngày** được tích hợp trực tiếp ngay tại khu vực trung tâm của Dashboard ("Theo dõi mẫu & kết quả ngày"). Kiểm nghiệm viên nắm bắt toàn bộ tiến độ xử lý mẻ phân tích và kết quả mẫu trong ngày ngay từ đầu ca làm việc.
+- **Loại bỏ các mục menu trùng lặp**:
+  Tối giản danh sách điều hướng ở Sidebar và thanh công cụ di động, mang lại trải nghiệm làm việc tập trung, thoáng đãng và không bị xao nhãng bởi các menu dư thừa.
+
+---
+
 ## [v26.07.22-b06] - 22/07/2026
 
 ### 🔔 Nâng Cấp Toàn Diện Giao Diện Thông Báo Dành Cho Kiểm Nghiệm Viên
