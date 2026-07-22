@@ -1,20 +1,26 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
-## [v26.07.22-b08] - 22/07/2026
+## [v26.07.22-b10] - 22/07/2026
 
-### 🐛 Sửa Lỗi Trạng Thái Chọn Mẫu (Checkbox) Khi Xuất Kết Quả Theo Tiền Tố
+### 🎨 Tối Ưu Căn Chỉnh Giao Diện Header Sidebar Khi Thu Gọn
 
-#### 🔄 Bảo Toàn Trạng Thái Check Mẫu Giữa Các Tiền Tố
+#### 🎯 Căn Giữa Logo & Thiết Kế Nút Mở Rộng Nổi Viền
+- **Căn giữa Logo hoàn hảo khi Sidebar thu gọn (`w-20`)**:
+  Khắc phục triệt để sự cố Logo và nút mở rộng bị ép sát chật chội vào lề trái. Ở trạng thái thu gọn, biểu tượng **Logo LIMS Cloud** được đặt thẳng hàng chính giữa cột 80px, tạo sự đồng bộ hoàn hảo với danh sách biểu tượng menu và ảnh đại diện phía dưới.
+- **Nút mở rộng (>>) kiểu nút nổi tinh tế trên mép viền Sidebar**:
+  Chuyển đổi nút mở rộng (`>>`) ở trạng thái thu gọn thành nút tròn nổi (`rounded-full shadow-md`) nằm ngay trên đường mép phân cách Sidebar và màn hình chính. Thiết kế này giúp tiết kiệm không gian, vô cùng dễ bấm và mang lại vẻ đẹp hiện đại chuẩn cao cấp.
+
+---
+
+## [v26.07.22-b09] - 22/07/2026
+
+### 🎨 Tinh Giản Giao Diện Điều Hướng & Bảo Toàn Trạng Thái Xuất Báo Cáo
+
+#### 🐛 Sửa Lỗi Trạng Thái Chọn Mẫu (Checkbox) Khi Xuất Kết Quả Theo Tiền Tố
 - **Khắc phục triệt để lỗi uncheck mẫu khi chuyển tiền tố**:
   Trước đây, khi xuất kết quả cho một tiền tố (ví dụ: Tiền tố A), dữ liệu nháp tạm cho báo cáo PDF bị vô tình ghi đè xuống Firestore làm các mẫu thuộc tiền tố khác (Tiền tố B, C...) bị đổi sang `selected: false`.
 - **Tách biệt dữ liệu xuất PDF & dữ liệu lưu nháp**:
   Tách riêng dữ liệu dùng để sinh PDF (`chunkDraft`) và dữ liệu lưu Firestore (`draftForSave`), đảm bảo duy trì đầy đủ thuộc tính `selected` thực tế của tất cả các mẫu thuộc mọi tiền tố sau khi hoàn tất xuất kết quả.
-
----
-
-## [v26.07.22-b07] - 22/07/2026
-
-### 🎨 Tinh Giản Giao Diện Điều Hướng & Tối Ưu Màn Hình Làm Việc
 
 #### 🧭 Điều Hướng Thông Minh & Bấm Logo Về Trang Chủ
 - **Bấm vào Logo để về ngay Trang chủ**:

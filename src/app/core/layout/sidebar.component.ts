@@ -40,13 +40,14 @@ export interface MenuGroup {
       <!-- 1. Brand -->
       <div class="h-16 flex items-center shrink-0 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300 relative"
            [class.px-4]="!state.sidebarCollapsed()"
-           [class.px-2]="state.sidebarCollapsed()"
+           [class.px-0]="state.sidebarCollapsed()"
            [class.justify-between]="!state.sidebarCollapsed()"
            [class.justify-center]="state.sidebarCollapsed()">
          
          <!-- Logo + Brand Name (Click to Home) -->
          <div (click)="goHome()" 
-              class="flex items-center gap-2.5 cursor-pointer group select-none min-w-0"
+              class="flex items-center gap-3 cursor-pointer group select-none min-w-0"
+              [class.mx-auto]="state.sidebarCollapsed()"
               title="Về Trang chủ (Dashboard)">
              <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-105 group-active:scale-95 bg-slate-50 dark:bg-slate-800/80">
                  <app-logo size="40px"></app-logo>
@@ -59,18 +60,27 @@ export interface MenuGroup {
          </div>
 
          <!-- Controls: Collapse toggle on Desktop & Close on Mobile -->
-         <div class="flex items-center gap-1 shrink-0" [class.ml-auto]="!state.sidebarCollapsed()">
+         @if (!state.sidebarCollapsed()) {
+             <div class="flex items-center gap-1 shrink-0 ml-auto">
+                 <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()" 
+                         class="hidden md:flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 active:scale-95 transition-all"
+                         title="Thu gọn Sidebar">
+                     <i class="fa-solid fa-angles-left text-xs"></i>
+                 </button>
+                 
+                 <button (click)="state.closeSidebar(); $event.stopPropagation()" 
+                         class="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 active:bg-gray-200 dark:active:bg-slate-700">
+                     <i class="fa-solid fa-times"></i>
+                 </button>
+             </div>
+         } @else {
+             <!-- Floating Pill Expand Button on Sidebar Border when Collapsed (Desktop) -->
              <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()" 
-                     class="hidden md:flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 active:scale-95 transition-all"
-                     [title]="state.sidebarCollapsed() ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'">
-                 <i class="fa-solid text-xs" [class.fa-angles-left]="!state.sidebarCollapsed()" [class.fa-angles-right]="state.sidebarCollapsed()"></i>
+                     class="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:scale-110 active:scale-95 transition-all z-50"
+                     title="Mở rộng Sidebar">
+                 <i class="fa-solid fa-angles-right text-[10px]"></i>
              </button>
-             
-             <button (click)="state.closeSidebar(); $event.stopPropagation()" 
-                     class="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 active:bg-gray-200 dark:active:bg-slate-700">
-                 <i class="fa-solid fa-times"></i>
-             </button>
-         </div>
+         }
       </div>
 
       <!-- 2. GLOBAL ACTION: SCAN -->

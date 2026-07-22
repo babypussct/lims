@@ -2,12 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.22-b08",
-    "title": "Khắc Phục Lỗi Chọn Mẫu (Checkbox) Khi Xuất Báo Cáo Theo Tiền Tố",
+    "version": "v26.07.22-b10",
+    "title": "Tối Ưu Căn Chỉnh Logo & Nút Nút Mở Rộng Sidebar (Collapsed Mode)",
     "features": [
-      "Bảo Toàn Trạng Thái Check Mẫu: Khắc phục triệt để sự cố các mẫu thuộc tiền tố khác bị tự động bỏ chọn (uncheck) sau khi xuất kết quả của một tiền tố.",
-      "Tách Biệt Dữ Liệu Xuất Báo Cáo: Dữ liệu dùng để tạo PDF được tách riêng, giữ nguyên trạng thái chọn mẫu ban đầu trên Firestore.",
-      "Nâng Cao Độ Ổn Định: Đảm bảo kiểm nghiệm viên thoải mái xuất báo cáo từng tiền tố mà không lo mất dữ liệu nháp."
+      "🎨 Căn Giữa Logo Khi Thu Gọn Sidebar: Khắc phục triệt để lỗi Logo bị chèn lệch hẳn sang bên trái khi ở trạng thái thu gọn.",
+      "🔘 Nút Mở Rộng Nổi Viền Nút Bấm: Chuyển nút mở rộng (>>) thành nút nổi hình tròn tinh tế ngay trên đường viền Sidebar, tạo điểm nhấn hiện đại.",
+      "✨ Căn Chỉnh Đồng Bộ: Giúp Logo, Icon Menu và Avatar tài khoản xếp thẳng hàng hoàn hảo khi Sidebar ở dạng thu gọn 80px."
     ]
   },
   "assetGroups": [
