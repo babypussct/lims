@@ -1,4 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 
 /**
  * @deprecated
@@ -44,28 +48,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing or invalid required fields (recipientUids, title, body)' });
     }
 
-    // Dynamically import firebase-admin to catch any loading errors on Vercel
-    console.log('[WebPush API] Loading firebase-admin...');
-    const admin = await import('firebase-admin');
-    console.log('[WebPush API] firebase-admin loaded.');
-
     // Initialize Firebase Admin if not already initialized
-    if (!admin.apps.length) {
+    if (!getApps().length) {
       console.log('[WebPush API] Initializing Firebase Admin...');
       const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
       if (!serviceAccountJson) {
         throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is not set on Vercel.');
       }
       const serviceAccount = JSON.parse(serviceAccountJson);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+      initializeApp({
+        credential: cert(serviceAccount)
       });
       console.log('[WebPush API] Firebase Admin initialized.');
     }
 
     console.log(`[WebPush API] Querying Firestore for ${recipientUids.length} users...`);
-    const db = admin.firestore();
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const db = getFirestore();
+    const decoded = await getAuth().verifyIdToken(idToken);
     const resolvedAppId = appId || 'lims-cloud-fixed';
     const callerProfile = await db.doc(`artifacts/${resolvedAppId}/users/${decoded.uid}`).get();
     if (!callerProfile.exists || callerProfile.data()?.['role'] !== 'manager') {
@@ -114,7 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     console.log('[WebPush API] Sending multicast message...');
-    const response = await admin.messaging().sendEachForMulticast(message);
+    const response = await getMessaging().sendEachForMulticast(message);
 
     console.log(`[WebPush API] Successfully sent ${response.successCount} messages. Failed: ${response.failureCount}`);
 

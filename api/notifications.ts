@@ -1,4 +1,13 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import {
+  CollectionReference,
+  DocumentData,
+  FieldValue,
+  getFirestore
+} from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 
 const NOTIFICATION_TYPES = new Set([
   'COA_REQUEST', 'BORROW_REQUEST', 'REQUEST_APPROVED', 'REQUEST_REJECTED',
@@ -24,13 +33,11 @@ function cleanObject(value: Record<string, unknown>): Record<string, unknown> {
 async function removeStaleTokens(
   appId: string,
   staleTokens: string[],
-  usersCollection: FirebaseFirestore.CollectionReference,
-  loadedUsersMap: Map<string, FirebaseFirestore.DocumentData> | null,
+  usersCollection: CollectionReference,
+  loadedUsersMap: Map<string, DocumentData> | null,
   recipientUids: string[]
 ): Promise<void> {
   if (!staleTokens || !staleTokens.length) return;
-  const admin = await import('firebase-admin');
-  const FieldValue = admin.firestore.FieldValue;
   const staleSet = new Set(staleTokens);
 
   const uidsToClean: string[] = [];
@@ -68,8 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
     if (!idToken) return res.status(401).json({ error: 'Thiếu Firebase ID token.' });
 
-    const admin = await import('firebase-admin');
-    if (!admin.apps.length) {
+    if (!getApps().length) {
       const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
       if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
       
@@ -86,11 +92,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
       }
 
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      initializeApp({ credential: cert(serviceAccount) });
     }
 
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    const db = admin.firestore();
+    const decoded = await getAuth().verifyIdToken(idToken);
+    const db = getFirestore();
     const appId = typeof body.appId === 'string' ? body.appId : 'lims-cloud-fixed';
     const profileRef = db.doc(`artifacts/${appId}/users/${decoded.uid}`);
     const profileSnap = await profileRef.get();
@@ -163,7 +169,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const usersCollection = db.collection(`artifacts/${appId}/users`);
     let recipientUids: string[];
-    let loadedUsersMap: Map<string, FirebaseFirestore.DocumentData> | null = null;
+    let loadedUsersMap: Map<string, DocumentData> | null = null;
 
     if (recipientUid === 'role:all' || recipientUid === 'role:admin') {
       const users = await usersCollection.get();
@@ -268,7 +274,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         for (const tokenGroup of chunks(tokens, 500)) {
           if (!tokenGroup || tokenGroup.length === 0) continue;
-          const response = await admin.messaging().sendEachForMulticast({
+          const response = await getMessaging().sendEachForMulticast({
             notification: { title, body: message },
             data: {
               eventId,
@@ -319,4 +325,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
-

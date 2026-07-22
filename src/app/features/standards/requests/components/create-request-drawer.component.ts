@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { ReferenceStandard } from '../../../../core/models/standard.model';
 import {
     getFefoUnavailableReason,
+    getFefoPriorityStandard,
     getSameStandardLots,
     isFefoCandidate,
     isFefoPriorityStandard,
@@ -225,6 +226,23 @@ function removeAccents(str: string): string {
                             </div>
                         </div>
 
+                        <!-- FEFO Warning: lô được chọn không phải ưu tiên đầu tiên -->
+                        @if (fefoWarnings().length > 0) {
+                            <div class="rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-3.5 py-3 space-y-1.5">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs"></i>
+                                    <span class="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wide">Gợi ý FEFO</span>
+                                </div>
+                                @for (warn of fefoWarnings(); track warn.selectedId) {
+                                    <p class="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                                        Lô <strong>{{warn.selectedLabel}}</strong> — nên dùng lô
+                                        <strong>{{warn.priorityLabel}}</strong>
+                                        (hạn: {{warn.priorityExpiry}}) trước.
+                                    </p>
+                                }
+                            </div>
+                        }
+
                         <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
@@ -312,6 +330,27 @@ export class CreateRequestDrawerComponent {
       }
       
       return sortStandardsByFefo(stds);
+  });
+
+  /** Danh sách cảnh báo FEFO cho các lô đã chọn không theo thứ tự tối ưu */
+  fefoWarnings = computed(() => {
+      const selected = this.selectedStandardsList();
+      if (selected.length === 0) return [];
+      const all = this._availableStandards();
+      const warnings: { selectedId: string; selectedLabel: string; priorityLabel: string; priorityExpiry: string }[] = [];
+      for (const std of selected) {
+          if (!isFefoCandidate(std)) continue;
+          const priority = getFefoPriorityStandard(std, all);
+          if (priority && priority.id !== std.id) {
+              warnings.push({
+                  selectedId: std.id,
+                  selectedLabel: std.internal_id || std.lot_number || std.name,
+                  priorityLabel: priority.internal_id || priority.lot_number || priority.id,
+                  priorityExpiry: priority.expiry_date || 'N/A'
+              });
+          }
+      }
+      return warnings;
   });
 
   /** Kiểm tra lọ có phải lọ nên ưu tiên nhất trong danh sách cùng tên không */

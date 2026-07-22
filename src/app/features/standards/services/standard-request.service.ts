@@ -9,7 +9,7 @@ import {
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus } from '../../../core/models/standard.model';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
-import { canAssign, getFefoPriorityStandard } from '../../../shared/utils/standard-fefo';
+import { canAssign } from '../../../shared/utils/standard-fefo';
 import {
   normalizeNonNegativeStandardAmount,
   reconcileStandardReturn
@@ -146,9 +146,6 @@ export class StandardRequestService {
     request.id = reqRef.id;
     request.createdAt = Date.now();
     request.updatedAt = Date.now();
-    let fefoStandards = this.cache.getAllStandardsFromCache();
-    if (fefoStandards.length === 0) fefoStandards = await this.cache.fetchAllAndCache();
-    
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}`);
     await runTransaction(this.fb.db, async transaction => {
       const stdDoc = await transaction.get(stdRef);
@@ -161,10 +158,8 @@ export class StandardRequestService {
       if (standard.has_pending_request) {
         throw new Error('Lô chuẩn đã có yêu cầu đang chờ duyệt.');
       }
-      const priority = getFefoPriorityStandard({ ...standard, has_pending_request: false }, fefoStandards);
-      if (priority && priority.id !== standard.id) {
-        throw new Error(`FEFO: cần dùng lô ${priority.internal_id || priority.lot_number || priority.id} trước.`);
-      }
+      // FEFO là gợi ý (soft recommendation): UI đã hiển thị cảnh báo thứ tự ưu tiên,
+      // nhưng không khóa cứng — người dùng được phép chọn lô bất kỳ còn sẵn sàng.
 
       const trustedRequest: StandardRequest = {
         ...request,
@@ -313,9 +308,6 @@ export class StandardRequestService {
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
     let reqData: StandardRequest | null = null;
-    let fefoStandards = this.cache.getAllStandardsFromCache();
-    if (fefoStandards.length === 0) fefoStandards = await this.cache.fetchAllAndCache();
-
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
       const reqDoc = await transaction.get(reqRef);
@@ -327,11 +319,8 @@ export class StandardRequestService {
       if (!canAssign(standard)) {
         throw new Error('Chuẩn đang được sử dụng, đã hết hoặc hết hạn!');
       }
-      // Ignore the reservation made by this request while still respecting other reserved lots.
-      const priority = getFefoPriorityStandard({ ...standard, has_pending_request: false }, fefoStandards);
-      if (priority && priority.id !== standard.id) {
-        throw new Error(`FEFO: cần cấp lô ${priority.internal_id || priority.lot_number || priority.id} trước.`);
-      }
+      // FEFO là gợi ý (soft recommendation): bỏ qua kiểm tra thứ tự ưu tiên tại đây.
+      // UI đã hiển thị cảnh báo và badge gợi ý — người dùng có quyền chọn lô bất kỳ còn sẵn sàng.
 
       reqData = reqDoc.data() as StandardRequest;
       if (reqData.standardId !== standardId || reqData.status !== 'PENDING_APPROVAL') {
