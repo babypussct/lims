@@ -3,12 +3,11 @@
   "index": "/index.html",
   "appData": {
     "version": "v26.07.22-b08",
-    "title": "Nâng Cấp Giao Diện Thông Báo Dành Cho Kiểm Nghiệm Viên",
+    "title": "Khắc Phục Lỗi Chọn Mẫu (Checkbox) Khi Xuất Báo Cáo Theo Tiền Tố",
     "features": [
-      "Cửa sổ Thông báo Rộng rãi & Hiện đại: Khung thông báo mở rộng thoáng đãng, gắn tự nhiên sát nút Chuông góc trái màn hình.",
-      "Giao diện Vuốt Trượt Mobile: Mở trượt dạng Bottom Sheet tiện lợi trên điện thoại và máy tính bảng.",
-      "Mục 'Cần xử lý' & Phân loại Màu sắc: Thêm danh mục riêng cho các Yêu cầu COA & Mượn đồ cần duyệt, phân biệt khẩn cấp bằng viền màu trực quan.",
-      "Chuông Thông báo Nhã nhặn: Thay thế rung lắc bằng hiệu ứng chao nhẹ & hào quang êm dịu, tự động đổi màu Cam khi có việc khẩn."
+      "Bảo Toàn Trạng Thái Check Mẫu: Khắc phục triệt để sự cố các mẫu thuộc tiền tố khác bị tự động bỏ chọn (uncheck) sau khi xuất kết quả của một tiền tố.",
+      "Tách Biệt Dữ Liệu Xuất Báo Cáo: Dữ liệu dùng để tạo PDF được tách riêng, giữ nguyên trạng thái chọn mẫu ban đầu trên Firestore.",
+      "Nâng Cao Độ Ổn Định: Đảm bảo kiểm nghiệm viên thoải mái xuất báo cáo từng tiền tố mà không lo mất dữ liệu nháp."
     ]
   },
   "assetGroups": [
