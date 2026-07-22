@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.22-b03",
-    "title": "Cập nhật Hộp thư Thông báo & Chuông Báo v26.07.22-b03",
+    "version": "v26.07.22-b06",
+    "title": "Nâng Cấp Giao Diện Thông Báo Dành Cho Kiểm Nghiệm Viên",
     "features": [
-      "Nâng cấp Hộp thư Thông báo: Đếm chính xác 100% số lượng chưa đọc & hỗ trợ bấm xem thêm danh sách dài.",
-      "Bổ sung Menu tùy chọn: Cho phép Xóa thông báo đã đọc hoặc Xóa tất cả thông báo với xác nhận an toàn.",
-      "Cải tiến Thông báo Đẩy: Bấm vào thông báo mở ngay lập tức tới đúng nội dung chi tiết.",
-      "Phân loại Cảnh báo: Biểu tượng chuông tự động đổi màu Cam khi có yêu cầu mượn chuẩn / CoA đang chờ bạn duyệt."
+      "Cửa sổ Thông báo Rộng rãi & Hiện đại: Khung thông báo mở rộng thoáng đãng, gắn tự nhiên sát nút Chuông góc trái màn hình.",
+      "Giao diện Vuốt Trượt Mobile: Mở trượt dạng Bottom Sheet tiện lợi trên điện thoại và máy tính bảng.",
+      "Mục 'Cần xử lý' & Phân loại Màu sắc: Thêm danh mục riêng cho các Yêu cầu COA & Mượn đồ cần duyệt, phân biệt khẩn cấp bằng viền màu trực quan.",
+      "Chuông Thông báo Nhã nhặn: Thay thế rung lắc bằng hiệu ứng chao nhẹ & hào quang êm dịu, tự động đổi màu Cam khi có việc khẩn."
     ]
   },
   "assetGroups": [

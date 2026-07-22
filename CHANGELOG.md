@@ -1,5 +1,40 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.22-b06] - 22/07/2026
+
+### 🔔 Nâng Cấp Toàn Diện Giao Diện Thông Báo Dành Cho Kiểm Nghiệm Viên
+
+#### 🌟 Cửa sổ Thông báo Rộng rãi & Hiện đại (Máy tính)
+- **Cửa sổ mở rộng thoáng đãng**:
+  Khung thông báo nay được mở rộng kích thước gấp đôi, giúp kiểm nghiệm viên dễ dàng đọc toàn bộ nội dung thông báo dài (yêu cầu COA, thông tin lô chuẩn) mà không bị tù túng hay che mất vùng làm việc.
+- **Tự động gắn theo vị trí nút Chuông**:
+  Bật mở tự nhiên ngay góc bên trái màn hình cạnh ảnh đại diện cá nhân, tạo cảm giác thân thuộc và thuận tay thao tác.
+- **Phông nền mờ cao cấp**:
+  Tích hợp hiệu ứng mờ phông nền nhẹ nhàng giúp các thông báo hiển thị nổi bật, chuyên nghiệp và dễ quan sát.
+
+#### 📱 Trải nghiệm Tiện lợi Trên Điện thoại & Máy tính bảng
+- **Giao diện vuốt trượt kiểu ứng dụng di động**:
+  Khi sử dụng trên điện thoại, bảng thông báo sẽ mở trượt mượt mà từ bên dưới lên với thanh kéo vuốt tay tiện lợi, giúp thao tác bằng một tay cực kỳ nhanh chóng.
+
+#### 🎯 Phân Loại Thông báo Thông minh & Thao tác Nhanh
+- **Thêm mục "Cần xử lý" riêng biệt**:
+  Bổ sung danh mục tab **"Cần xử lý"** giúp kiểm nghiệm viên và quản trị viên lọc ngay lập tức các **Yêu cầu phê duyệt COA** và **Yêu cầu mượn trả chuẩn** đang chờ duyệt chỉ với 1 cú nhấp.
+- **Nhận diện mức độ khẩn cấp bằng màu sắc**:
+  - **Màu tím**: Yêu cầu cập nhật hoặc xem hồ sơ COA.
+  - **Màu xanh dương**: Yêu cầu mượn/trả mẫu và thiết bị phòng lab.
+  - **Màu hổ phách (cam)**: Cảnh báo tồn kho hóa chất/chuẩn sắp hết hoặc đã quá hạn trả.
+  - **Màu xanh lá**: Thông báo yêu cầu đã được phê duyệt thành công.
+- **Nút xử lý nhanh trực tiếp**:
+  Kiểm nghiệm viên có thể bấm ngay các nút "Xem yêu cầu", "Xem kho", hoặc rê chuột để bấm "Đánh dấu đã đọc ✓" và "Xóa 🗑" trực tiếp mà không cần qua nhiều bước trung gian.
+
+#### 🔔 Biểu tượng Chuông & Thẻ Báo Nhẹ nhàng
+- **Biểu tượng nhã nhặn, không gây mất tập trung**:
+  Thay thế hoàn toàn hiệu ứng rung lắc mạnh bằng nhịp chao chuông nhẹ nhàng và ánh hào quang tỏa êm dịu khi có tin mới, giúp kiểm nghiệm viên tập trung cao độ khi đang phân tích mẫu.
+- **Đổi màu thông minh khi có việc khẩn**:
+  Huy hiệu số đếm thông báo sẽ tự động chuyển sang màu Cam nổi bật khi có công việc cần bạn phê duyệt ngay và màu Đỏ cho các tin tức thông thường.
+
+---
+
 ## [v26.07.22-b04] - 22/07/2026
 
 ### ⚗️ Quy tắc FEFO Chuẩn Đối Chiếu: Gợi Ý Thay Vì Bắt Buộc

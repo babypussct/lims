@@ -8,7 +8,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { ToastService } from '../../../core/services/toast.service';
 import { AppNotification, NotificationType } from '../../../core/models/notification.model';
 
-type TabId = 'all' | 'unread' | 'system';
+type TabId = 'all' | 'unread' | 'actionable' | 'system';
 
 interface DateGroup {
   label: string;
@@ -16,19 +16,10 @@ interface DateGroup {
 }
 
 /**
- * NotificationPanelComponent — Premium Inbox v2
+ * NotificationPanelComponent — Premium Inbox v3 (Floating Popover + Mobile Bottom Sheet)
  *
- * Rendered once at the app root level (app.component.ts), completely outside
- * the sidebar DOM tree. This ensures no stacking-context / z-index clipping.
- *
- * Features:
- *  - 3-tab filter: Tất cả | Chưa đọc | Hệ thống
- *  - Date grouping: Hôm nay | Hôm qua | Tuần này | Cũ hơn
- *  - Action chip per notification (if actionUrl present)
- *  - Gradient header with unread badge
- *  - Actions dropdown: Xóa đã đọc / Xóa tất cả với dialog xác nhận
- *  - Pagination / Load More
- *  - Expand/collapse long messages
+ * Rendered at app root level (app.component.ts) to avoid sidebar stacking context z-index clipping.
+ * Anchor-based placement on Desktop (adjacent to Bell button at sidebar bottom) and Bottom Sheet on Mobile.
  */
 @Component({
   selector: 'app-notification-panel',
@@ -43,13 +34,18 @@ interface DateGroup {
         aria-hidden="true">
       </div>
 
-      <!-- Drawer Panel -->
+      <!-- Main Drawer / Popover Container -->
       <div
         role="dialog"
-        aria-label="Thông báo"
+        aria-label="Trung tâm Thông báo"
         class="notif-drawer fixed z-[200] flex flex-col"
         [style.left]="panelPos.left"
         [style.bottom]="panelPos.bottom">
+
+        <!-- Mobile Drag Indicator -->
+        <div class="md:hidden pt-2.5 pb-1 flex justify-center shrink-0">
+          <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+        </div>
 
         <!-- ── Header ── -->
         <div class="notif-header shrink-0">
@@ -58,14 +54,17 @@ interface DateGroup {
               <i class="fa-solid fa-bell text-sm"></i>
             </div>
             <div>
-              <h2 class="font-bold text-slate-800 dark:text-slate-100 text-[15px] leading-tight">Thông báo</h2>
-              @if (unreadCount() > 0) {
-                <p class="text-[10px] font-bold mt-0.5 flex items-center gap-1">
-                  <span class="notif-unread-pill">{{ unreadCount() }} chưa đọc</span>
-                </p>
-              } @else {
-                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Tất cả đã đọc</p>
-              }
+              <h2 class="font-bold text-slate-900 dark:text-slate-100 text-base leading-tight tracking-tight">Thông báo</h2>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                @if (unreadCount() > 0) {
+                  <span class="notif-unread-pill">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    {{ unreadCount() }} chưa đọc
+                  </span>
+                } @else {
+                  <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Tất cả đã đọc</span>
+                }
+              </div>
             </div>
           </div>
 
@@ -74,7 +73,8 @@ interface DateGroup {
               <button
                 (click)="markAllAsRead()"
                 class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-700 dark:hover:text-fuchsia-300
-                       px-2.5 py-1.5 rounded-lg hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 transition-all active:scale-95">
+                       px-2.5 py-1.5 rounded-xl hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40 transition-all active:scale-95 flex items-center gap-1">
+                <i class="fa-solid fa-check-double text-[10px]"></i>
                 Đọc tất cả
               </button>
             }
@@ -84,7 +84,7 @@ interface DateGroup {
                 <button
                   (click)="toggleActionsMenu()"
                   class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
-                         hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300
+                         hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-700 dark:hover:text-slate-200
                          transition-all active:scale-90"
                   title="Tùy chọn">
                   <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
@@ -110,43 +110,45 @@ interface DateGroup {
             <button
               (click)="panel.close()"
               class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
-                     hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300
+                     hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-700 dark:hover:text-slate-200
                      transition-all active:scale-90">
               <i class="fa-solid fa-xmark text-sm"></i>
             </button>
           </div>
         </div>
 
-        <!-- ── Tab Filter Bar ── -->
+        <!-- ── Segmented Control Tab Filter Bar ── -->
         <div class="notif-tab-bar shrink-0">
-          @for (tab of tabs; track tab.id) {
-            <button
-              (click)="activeTab.set(tab.id)"
-              class="notif-tab"
-              [class.notif-tab--active]="activeTab() === tab.id">
-              {{ tab.label }}
-              @if (tab.count() > 0) {
-                <span class="notif-tab-count" [class.notif-tab-count--active]="activeTab() === tab.id">
-                  {{ tab.count() }}
-                </span>
-              }
-            </button>
-          }
+          <div class="notif-tab-container">
+            @for (tab of tabs; track tab.id) {
+              <button
+                (click)="activeTab.set(tab.id)"
+                class="notif-tab"
+                [class.notif-tab--active]="activeTab() === tab.id">
+                <span>{{ tab.label }}</span>
+                @if (tab.count() > 0) {
+                  <span class="notif-tab-count" [class.notif-tab-count--active]="activeTab() === tab.id">
+                    {{ tab.count() }}
+                  </span>
+                }
+              </button>
+            }
+          </div>
         </div>
 
         <!-- ── Notification List ── -->
         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           @if (filteredGroups().length === 0) {
             <!-- Empty State -->
-            <div class="h-full flex flex-col items-center justify-center gap-4 py-16 px-8 text-center">
+            <div class="h-full flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
               <div class="notif-empty-icon">
-                <i class="fa-regular text-3xl text-slate-300 dark:text-slate-600" [ngClass]="emptyIcon()"></i>
+                <i class="fa-solid text-3xl text-slate-400 dark:text-slate-500" [ngClass]="emptyIcon()"></i>
               </div>
-              <div>
-                <p class="font-bold text-slate-500 dark:text-slate-400 text-sm">
+              <div class="max-w-[260px]">
+                <p class="font-bold text-slate-700 dark:text-slate-300 text-sm">
                   {{ emptyTitle() }}
                 </p>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed">
                   {{ emptySubtitle() }}
                 </p>
               </div>
@@ -163,57 +165,71 @@ interface DateGroup {
               @for (n of group.items; track n.id) {
                 <div
                   (click)="onNotificationClick(n)"
-                  class="notif-item group"
-                  [class.notif-item--unread]="!n.isRead"
-                  [class.notif-item--actionable]="!n.isRead && isActionable(n.type)"
-                  [class.notif-item--informational]="isInformational(n.type)">
+                  class="notif-item group relative"
+                  [class.notif-item--unread]="!n.isRead">
 
-                  <!-- Unread accent bar -->
-                  @if (!n.isRead) {
-                    <span class="notif-accent-bar"></span>
-                  }
+                  <!-- Color Accent Left Bar -->
+                  <span class="notif-accent-bar" [ngClass]="getAccentBarClass(n.type)"></span>
 
-                  <div class="flex gap-3 items-start" [class.pl-3]="!n.isRead" [class.pl-5]="n.isRead">
-                    <!-- Type Icon -->
+                  <div class="flex gap-3 items-start pl-3.5 pr-3 py-3">
+                    <!-- Type Icon Container -->
                     <div class="notif-type-icon shrink-0" [ngClass]="getIconClass(n.type)">
                       <i class="fa-solid" [ngClass]="getIcon(n.type)"></i>
                     </div>
 
-                    <!-- Content -->
+                    <!-- Main Body Content -->
                     <div class="flex-1 min-w-0">
                       <div class="flex justify-between items-start gap-2 mb-0.5">
-                        <h4 class="font-bold text-[13px] text-slate-800 dark:text-slate-200 leading-snug"
-                            [class.truncate]="!isExpanded(n)">{{ n.title }}</h4>
-                        <span class="text-[10px] whitespace-nowrap text-slate-400 dark:text-slate-500 shrink-0 pt-0.5 font-medium"
-                              [title]="getFullDate(n.createdAt)">{{ getTimeAgo(n.createdAt) }}</span>
+                        <h4 class="font-bold text-[13px] text-slate-800 dark:text-slate-100 leading-snug"
+                            [class.truncate]="!isExpanded(n)">
+                          {{ n.title }}
+                        </h4>
+                        <span class="text-[10px] whitespace-nowrap text-slate-400 dark:text-slate-500 shrink-0 font-medium pt-0.5"
+                              [title]="getFullDate(n.createdAt)">
+                          {{ getTimeAgo(n.createdAt) }}
+                        </span>
                       </div>
-                      <div class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap break-words"
-                           [class.line-clamp-2]="!isExpanded(n)">{{ n.message }}</div>
+
+                      <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap break-words"
+                           [class.line-clamp-2]="!isExpanded(n)">
+                        {{ n.message }}
+                      </div>
+
                       @if (n.message && n.message.length > 90) {
                         <button (click)="toggleExpand(n, $event)"
-                                class="text-[10px] font-bold text-blue-500 hover:text-blue-600 mt-0.5 transition inline-block">
+                                class="text-[10px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline mt-1 inline-block">
                           {{ isExpanded(n) ? 'Ẩn bớt ↑' : 'Xem thêm ↓' }}
                         </button>
                       }
 
-                      <!-- Action Chip -->
+                      <!-- Action Button Chip -->
                       @if (n.actionUrl) {
-                        <div class="mt-1.5">
+                        <div class="mt-2 flex items-center justify-between">
                           <span class="notif-action-chip" [ngClass]="getChipClass(n.type)">
-                            <i class="fa-solid fa-arrow-right text-[8px]"></i>
-                            {{ getActionLabel(n.type) }}
+                            <span>{{ getActionLabel(n.type) }}</span>
+                            <i class="fa-solid fa-arrow-right text-[9px] transition-transform group-hover:translate-x-0.5"></i>
                           </span>
                         </div>
                       }
                     </div>
 
-                    <!-- Delete (hover) -->
-                    <button
-                      (click)="deleteNotification(n, $event)"
-                      class="notif-delete-btn shrink-0"
-                      title="Xoá thông báo">
-                      <i class="fa-solid fa-trash-can text-[10px]"></i>
-                    </button>
+                    <!-- Quick Hover Action Buttons -->
+                    <div class="notif-item-actions shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      @if (!n.isRead) {
+                        <button
+                          (click)="markAsRead(n.id!, $event)"
+                          class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/60 text-slate-500 hover:text-fuchsia-600 dark:text-slate-400 dark:hover:text-fuchsia-300 flex items-center justify-center transition-all"
+                          title="Đánh dấu đã đọc">
+                          <i class="fa-solid fa-check text-[10px]"></i>
+                        </button>
+                      }
+                      <button
+                        (click)="deleteNotification(n, $event)"
+                        class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 flex items-center justify-center transition-all"
+                        title="Xoá thông báo">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               }
@@ -232,7 +248,7 @@ interface DateGroup {
 
         <!-- ── Footer ── -->
         <div class="notif-footer shrink-0">
-          <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+          <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
             @if (totalCount() > displayLimit()) {
               Hiển thị {{ notifications().length }} / {{ totalCount() }} thông báo
             } @else {
@@ -241,8 +257,8 @@ interface DateGroup {
           </span>
           <button
             (click)="goToSettings()"
-            class="text-[10px] font-bold text-fuchsia-500 hover:text-fuchsia-600 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 transition-colors flex items-center gap-1">
-            <i class="fa-solid fa-gear text-[9px]"></i>
+            class="text-[11px] font-bold text-fuchsia-600 hover:text-fuchsia-700 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-gear text-[10px]"></i>
             Cài đặt thông báo
           </button>
         </div>
@@ -252,35 +268,38 @@ interface DateGroup {
   styles: [`
     /* === Backdrop === */
     .notif-backdrop {
-      background: rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(2px);
-      animation: notifFadeIn 0.2s ease forwards;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      animation: notifFadeIn 0.22s ease-out forwards;
     }
 
-    /* === Drawer ===
-     * Desktop: popup cạnh sidebar, gắn dưới (gần bell), slide lên.
-     * Bottom căn theo footer sidebar (~70px) + margin 12px.
+    /* === Popover Container ===
+     * Desktop: Premium Floating Popover attached to Bell button at sidebar bottom.
+     * Dimensions: width 420px, max-height 70vh, border-radius 24px.
      */
     .notif-drawer {
-      bottom: 0;           /* overridden by [style.bottom] */
-      left: 0;             /* overridden by [style.left]   */
-      width: min(380px, calc(100vw - 2rem));
-      max-height: min(680px, calc(100vh - 80px));
-      background: white;
-      border-radius: 20px;
+      width: min(420px, calc(100vw - 24px));
+      max-height: min(680px, 70vh);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      border: 1px solid rgba(226, 232, 240, 0.9);
       box-shadow:
-        0 -4px 6px -1px rgba(0,0,0,0.04),
-        0 20px 50px -8px rgba(0, 0, 0, 0.22),
-        0 0 0 1px rgba(0, 0, 0, 0.04);
-      animation: notifPopUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        0 4px 6px -1px rgba(0, 0, 0, 0.03),
+        0 24px 60px -12px rgba(15, 23, 42, 0.22),
+        0 0 0 1px rgba(0, 0, 0, 0.03);
+      animation: notifPopUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       overflow: hidden;
     }
 
     :host-context(.dark) .notif-drawer {
-      background: #0f172a;
+      background: rgba(15, 23, 42, 0.96);
+      border-color: rgba(51, 65, 85, 0.8);
       box-shadow:
-        0 25px 60px -12px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.06);
+        0 25px 65px -12px rgba(0, 0, 0, 0.65),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
     }
 
     /* === Header === */
@@ -289,43 +308,38 @@ interface DateGroup {
       align-items: center;
       justify-content: space-between;
       padding: 16px 20px 14px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid rgba(241, 245, 249, 0.9);
     }
 
     :host-context(.dark) .notif-header {
-      border-bottom-color: #1e293b;
+      border-bottom-color: rgba(30, 41, 59, 0.9);
     }
 
     .notif-header-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #f0abfc 0%, #d946ef 100%);
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 100%);
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(217, 70, 239, 0.3);
+      box-shadow: 0 4px 14px rgba(217, 70, 239, 0.35);
       flex-shrink: 0;
     }
 
-    /* Unread pill badge in header */
     .notif-unread-pill {
       display: inline-flex;
       align-items: center;
-      background: linear-gradient(135deg, #f0abfc, #d946ef);
+      gap: 5px;
+      background: linear-gradient(135deg, #d946ef, #ec4899);
       color: white;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 800;
-      padding: 1px 7px;
+      padding: 2px 8px;
       border-radius: 999px;
-      letter-spacing: 0.02em;
-      animation: notifPillPulse 2s ease-in-out infinite;
-    }
-
-    @keyframes notifPillPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.75; }
+      letter-spacing: 0.01em;
+      box-shadow: 0 2px 6px rgba(217, 70, 239, 0.25);
     }
 
     /* === Actions Dropdown === */
@@ -334,10 +348,10 @@ interface DateGroup {
       right: 0;
       top: 100%;
       margin-top: 6px;
-      width: 190px;
+      width: 200px;
       background: white;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      border-radius: 16px;
+      box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
       padding: 6px;
       z-index: 50;
       animation: notifPopUp 0.18s ease-out forwards;
@@ -345,7 +359,7 @@ interface DateGroup {
 
     :host-context(.dark) .notif-actions-dropdown {
       background: #1e293b;
-      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
 
     .notif-action-item {
@@ -353,8 +367,8 @@ interface DateGroup {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
+      padding: 9px 12px;
+      border-radius: 10px;
       font-size: 11px;
       font-weight: 600;
       color: #475569;
@@ -380,20 +394,203 @@ interface DateGroup {
     }
 
     :host-context(.dark) .notif-action-item--danger:hover {
-      background: rgba(127, 29, 29, 0.25);
+      background: rgba(127, 29, 29, 0.3);
       color: #f87171;
+    }
+
+    /* === Segmented Control Tab Bar === */
+    .notif-tab-bar {
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(241, 245, 249, 0.9);
+      background: rgba(248, 250, 252, 0.8);
+    }
+
+    :host-context(.dark) .notif-tab-bar {
+      border-bottom-color: rgba(30, 41, 59, 0.9);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .notif-tab-container {
+      display: flex;
+      gap: 4px;
+      padding: 3px;
+      background: rgba(226, 232, 240, 0.6);
+      border-radius: 14px;
+    }
+
+    :host-context(.dark) .notif-tab-container {
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .notif-tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 7px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    :host-context(.dark) .notif-tab {
+      color: #94a3b8;
+    }
+
+    .notif-tab:hover {
+      color: #1e293b;
+    }
+
+    :host-context(.dark) .notif-tab:hover {
+      color: #f1f5f9;
+    }
+
+    .notif-tab--active {
+      background: white;
+      color: #a21caf;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    :host-context(.dark) .notif-tab--active {
+      background: #1e1030;
+      color: #e879f9;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .notif-tab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      background: rgba(100, 116, 139, 0.15);
+      color: #64748b;
+    }
+
+    .notif-tab-count--active {
+      background: linear-gradient(135deg, #d946ef, #ec4899);
+      color: white;
+    }
+
+    /* === Date Separator === */
+    .notif-date-separator {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 6px 18px 4px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    }
+
+    :host-context(.dark) .notif-date-separator {
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom-color: rgba(30, 41, 59, 0.8);
+    }
+
+    .notif-date-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+    }
+
+    :host-context(.dark) .notif-date-label {
+      color: #64748b;
+    }
+
+    /* === Notification Item === */
+    .notif-item {
+      transition: background-color 0.18s ease;
+      border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+      cursor: pointer;
+    }
+
+    :host-context(.dark) .notif-item {
+      border-bottom-color: rgba(30, 41, 59, 0.8);
+    }
+
+    .notif-item:hover {
+      background: rgba(248, 250, 252, 0.9);
+    }
+
+    :host-context(.dark) .notif-item:hover {
+      background: rgba(30, 41, 59, 0.6);
+    }
+
+    .notif-item--unread {
+      background: linear-gradient(90deg, rgba(250, 245, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+    }
+
+    :host-context(.dark) .notif-item--unread {
+      background: linear-gradient(90deg, rgba(147, 51, 234, 0.1) 0%, rgba(15, 23, 42, 0.2) 100%);
+    }
+
+    .notif-item--unread:hover {
+      background: linear-gradient(90deg, rgba(243, 232, 255, 0.9) 0%, rgba(250, 245, 255, 0.6) 100%);
+    }
+
+    :host-context(.dark) .notif-item--unread:hover {
+      background: linear-gradient(90deg, rgba(147, 51, 234, 0.16) 0%, rgba(30, 41, 59, 0.5) 100%);
+    }
+
+    /* === Accent Left Bar === */
+    .notif-accent-bar {
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 4px;
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* === Type Icon Container === */
+    .notif-type-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* === Action Chip Button === */
+    .notif-action-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: all 0.18s ease;
     }
 
     /* === Load More Button === */
     .notif-load-more-btn {
       width: 100%;
-      padding: 8px 12px;
-      border-radius: 12px;
+      padding: 9px 14px;
+      border-radius: 14px;
       border: 1.5px dashed #cbd5e1;
       background: #fafafa;
       color: #64748b;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -420,147 +617,25 @@ interface DateGroup {
       background: rgba(192, 132, 252, 0.1);
     }
 
-    /* === Actionable & Informational variants === */
-    .notif-item--actionable {
-      background: linear-gradient(90deg, rgba(254, 243, 199, 0.6) 0%, rgba(255, 251, 235, 0.4) 100%);
-    }
-
-    :host-context(.dark) .notif-item--actionable {
-      background: linear-gradient(90deg, rgba(180, 83, 9, 0.15) 0%, rgba(180, 83, 9, 0.05) 100%);
-    }
-
-    .notif-item--informational .notif-type-icon {
-      width: 30px;
-      height: 30px;
-      font-size: 11px;
-    }
-
-    /* === Tab Bar === */
-    .notif-tab-bar {
-      display: flex;
-      gap: 2px;
-      padding: 8px 12px;
-      border-bottom: 1px solid #f1f5f9;
-      background: #fafafa;
-    }
-
-    :host-context(.dark) .notif-tab-bar {
-      border-bottom-color: #1e293b;
-      background: #0c1526;
-    }
-
-    .notif-tab {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748b;
-      transition: all 0.18s ease;
-      border: 1.5px solid transparent;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    :host-context(.dark) .notif-tab {
-      color: #64748b;
-    }
-
-    .notif-tab:hover {
-      background: #f1f5f9;
-      color: #334155;
-    }
-
-    :host-context(.dark) .notif-tab:hover {
-      background: #1e293b;
-      color: #cbd5e1;
-    }
-
-    .notif-tab--active {
-      background: white;
-      color: #a21caf;
-      border-color: #f0abfc;
-      font-weight: 700;
-      box-shadow: 0 1px 4px rgba(217, 70, 239, 0.12);
-    }
-
-    :host-context(.dark) .notif-tab--active {
-      background: #1e1030;
-      color: #e879f9;
-      border-color: #6b21a8;
-    }
-
-    .notif-tab-count {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
-      border-radius: 999px;
-      font-size: 9px;
-      font-weight: 800;
-      background: #e2e8f0;
-      color: #64748b;
-    }
-
-    .notif-tab-count--active {
-      background: linear-gradient(135deg, #f0abfc, #d946ef);
-      color: white;
-    }
-
-    /* === Date Separator === */
-    .notif-date-separator {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      padding: 6px 16px 4px;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-bottom: 1px solid #f1f5f9;
-    }
-
-    :host-context(.dark) .notif-date-separator {
-      background: rgba(15, 23, 42, 0.85);
-      border-bottom-color: #1e293b;
-    }
-
-    .notif-date-label {
-      font-size: 9px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #94a3b8;
-    }
-
-    :host-context(.dark) .notif-date-label {
-      color: #475569;
-    }
-
     /* === Footer === */
     .notif-footer {
-      padding: 10px 20px;
-      border-top: 1px solid #f1f5f9;
+      padding: 12px 20px;
+      border-top: 1px solid rgba(241, 245, 249, 0.9);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
     :host-context(.dark) .notif-footer {
-      border-top-color: #1e293b;
+      border-top-color: rgba(30, 41, 59, 0.9);
     }
 
     /* === Empty State Icon === */
     .notif-empty-icon {
       width: 72px;
       height: 72px;
-      border-radius: 20px;
-      background: #f8fafc;
+      border-radius: 24px;
+      background: #f1f5f9;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -570,119 +645,6 @@ interface DateGroup {
       background: #1e293b;
     }
 
-    /* === Notification Item === */
-    .notif-item {
-      position: relative;
-      padding: 12px 14px 12px 0;
-      cursor: pointer;
-      transition: background-color 0.15s ease;
-      border-bottom: 1px solid #f8fafc;
-    }
-
-    :host-context(.dark) .notif-item {
-      border-bottom-color: #1e293b;
-    }
-
-    .notif-item:hover {
-      background: #f8fafc;
-    }
-
-    :host-context(.dark) .notif-item:hover {
-      background: rgba(30, 41, 59, 0.6);
-    }
-
-    .notif-item--unread {
-      background: linear-gradient(90deg, rgba(250, 245, 255, 0.7) 0%, #faf5ff 100%);
-    }
-
-    :host-context(.dark) .notif-item--unread {
-      background: linear-gradient(90deg, rgba(76, 29, 149, 0.08) 0%, rgba(76, 29, 149, 0.04) 100%);
-    }
-
-    .notif-item--unread:hover {
-      background: linear-gradient(90deg, #f3e8ff 0%, #f5f3ff 100%);
-    }
-
-    :host-context(.dark) .notif-item--unread:hover {
-      background: linear-gradient(90deg, rgba(76, 29, 149, 0.14) 0%, rgba(76, 29, 149, 0.08) 100%);
-    }
-
-    .notif-item:last-child {
-      border-bottom: none;
-    }
-
-    /* === Unread Accent Bar === */
-    .notif-accent-bar {
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 3px;
-      height: 60%;
-      border-radius: 0 3px 3px 0;
-      background: linear-gradient(180deg, #f0abfc 0%, #d946ef 100%);
-    }
-
-    /* === Type Icon === */
-    .notif-type-icon {
-      flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      margin-top: 1px;
-    }
-
-    /* === Action Chip === */
-    .notif-action-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 700;
-      border: 1px solid transparent;
-    }
-
-    /* === Delete Button === */
-    .notif-delete-btn {
-      flex-shrink: 0;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: #fee2e2;
-      color: #ef4444;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: all 0.15s ease;
-      margin-top: 2px;
-      align-self: flex-start;
-    }
-
-    :host-context(.dark) .notif-delete-btn {
-      background: rgba(127, 29, 29, 0.2);
-      color: #f87171;
-    }
-
-    .notif-item:hover .notif-delete-btn {
-      opacity: 1;
-    }
-
-    .notif-delete-btn:hover {
-      background: #fecaca;
-      transform: scale(1.1);
-    }
-
-    :host-context(.dark) .notif-delete-btn:hover {
-      background: rgba(127, 29, 29, 0.35);
-    }
-
     /* === Animations === */
     @keyframes notifFadeIn {
       from { opacity: 0; }
@@ -690,30 +652,31 @@ interface DateGroup {
     }
 
     @keyframes notifPopUp {
-      from { transform: translateY(16px) scale(0.97); opacity: 0; }
+      from { transform: translateY(20px) scale(0.97); opacity: 0; }
       to   { transform: translateY(0)    scale(1);    opacity: 1; }
     }
 
-    /* Mobile: slide up from bottom nav */
+    /* === Mobile Native Bottom Sheet === */
     @media (max-width: 767px) {
       .notif-drawer {
-        bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
-        left: 8px !important;
-        right: 8px !important;
-        width: auto !important;
-        max-height: 70vh;
-        border-radius: 20px;
-        animation: notifPopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-height: 85vh !important;
+        border-radius: 24px 24px 0 0 !important;
+        animation: notifSheetSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      @keyframes notifSheetSlideUp {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
       }
     }
 
-    /* performance-lite: no animations */
+    /* Performance Lite override */
     :host-context(html.performance-lite) .notif-backdrop,
     :host-context(html.performance-lite) .notif-drawer {
-      animation: none !important;
-    }
-
-    :host-context(html.performance-lite) .notif-unread-pill {
       animation: none !important;
     }
   `]
@@ -747,12 +710,17 @@ export class NotificationPanelComponent {
     {
       id: 'all' as TabId,
       label: 'Tất cả',
-      count: computed(() => 0)
+      count: computed(() => this.totalCount())
     },
     {
       id: 'unread' as TabId,
       label: 'Chưa đọc',
       count: computed(() => this.unreadCount())
+    },
+    {
+      id: 'actionable' as TabId,
+      label: 'Cần xử lý',
+      count: computed(() => this.notifications().filter(n => !n.isRead && this.ACTIONABLE_TYPES.has(n.type)).length)
     },
     {
       id: 'system' as TabId,
@@ -763,18 +731,21 @@ export class NotificationPanelComponent {
 
   emptyIcon = computed(() => {
     if (this.activeTab() === 'unread') return 'fa-circle-check';
+    if (this.activeTab() === 'actionable') return 'fa-clipboard-check';
     if (this.activeTab() === 'system') return 'fa-shield-check';
     return 'fa-bell-slash';
   });
 
   emptyTitle = computed(() => {
     if (this.activeTab() === 'unread') return 'Tất cả đã đọc! 🎉';
+    if (this.activeTab() === 'actionable') return 'Không có yêu cầu chờ duyệt 👍';
     if (this.activeTab() === 'system') return 'Không có cảnh báo hệ thống';
     return 'Chưa có thông báo nào';
   });
 
   emptySubtitle = computed(() => {
     if (this.activeTab() === 'unread') return 'Bạn đã xử lý hết tất cả thông báo.';
+    if (this.activeTab() === 'actionable') return 'Tất cả yêu cầu COA và mượn trả thiết bị đã được xử lý.';
     if (this.activeTab() === 'system') return 'Không có cảnh báo tồn kho thấp hay cập nhật hệ thống nào.';
     return 'Các thông báo mới sẽ xuất hiện ở đây khi có hoạt động liên quan.';
   });
@@ -786,6 +757,8 @@ export class NotificationPanelComponent {
 
     if (tab === 'unread') {
       items = items.filter(n => !n.isRead);
+    } else if (tab === 'actionable') {
+      items = items.filter(n => this.ACTIONABLE_TYPES.has(n.type));
     } else if (tab === 'system') {
       items = items.filter(n => this.SYSTEM_TYPES.has(n.type));
     }
@@ -806,10 +779,10 @@ export class NotificationPanelComponent {
 
     for (const n of items) {
       const ts = n.createdAt || 0;
-      if (ts >= startOfToday)     groups['Hôm nay'].push(n);
+      if (ts >= startOfToday)          groups['Hôm nay'].push(n);
       else if (ts >= startOfYesterday) groups['Hôm qua'].push(n);
-      else if (ts >= startOfWeek) groups['Tuần này'].push(n);
-      else                        groups['Cũ hơn'].push(n);
+      else if (ts >= startOfWeek)     groups['Tuần này'].push(n);
+      else                            groups['Cũ hơn'].push(n);
     }
 
     return Object.entries(groups)
@@ -899,13 +872,13 @@ export class NotificationPanelComponent {
   }
 
   /**
-   * Vị trí panel desktop:
-   * - left: sát phải sidebar + 12px margin
-   * - bottom: 12px cách mép dưới viewport (panel mở lên trên)
+   * Vị trí Popover desktop (Anchor tại vị trí nút Bell góc dưới sidebar):
+   * - left: sát bên phải sidebar + 12px margin
+   * - bottom: 12px cách mép dưới viewport
    */
   get panelPos(): { left: string; bottom: string } {
     if (typeof window === 'undefined' || window.innerWidth < 768) {
-      return { left: '8px', bottom: `calc(80px + env(safe-area-inset-bottom, 0px))` };
+      return { left: '0px', bottom: '0px' };
     }
     const sidebarEl = document.querySelector('aside');
     const w = sidebarEl
@@ -919,6 +892,11 @@ export class NotificationPanelComponent {
 
   async markAllAsRead() {
     await this.notificationService.markAllAsRead();
+  }
+
+  async markAsRead(id: string, event: Event) {
+    event.stopPropagation();
+    if (id) await this.notificationService.markAsRead(id);
   }
 
   async deleteNotification(n: AppNotification, event: Event) {
@@ -937,17 +915,31 @@ export class NotificationPanelComponent {
     this.router.navigateByUrl('/config');
   }
 
-  // ── Icon & color maps ──────────────────────────────────────────────────────
+  // ── Icon & Color Accent maps ─────────────────────────────────────────────
+  getAccentBarClass(type: string): string {
+    const map: Record<string, string> = {
+      'COA_REQUEST':      'bg-purple-600 dark:bg-purple-400',
+      'BORROW_REQUEST':   'bg-blue-600 dark:bg-blue-400',
+      'REQUEST_APPROVED': 'bg-emerald-600 dark:bg-emerald-400',
+      'REQUEST_REJECTED': 'bg-rose-600 dark:bg-rose-400',
+      'STOCK_LOW_ALERT':  'bg-amber-500 dark:bg-amber-400',
+      'RETURN_OVERDUE':   'bg-amber-500 dark:bg-amber-400',
+      'SYSTEM_UPDATE':    'bg-orange-500 dark:bg-orange-400',
+      'SYSTEM_INFO':      'bg-sky-500 dark:bg-sky-400',
+    };
+    return map[type] ?? 'bg-slate-400 dark:bg-slate-500';
+  }
+
   getIconClass(type: string): string {
     const map: Record<string, string> = {
-      'COA_REQUEST':      'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-      'BORROW_REQUEST':   'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-      'REQUEST_APPROVED': 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-      'REQUEST_REJECTED': 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-      'STOCK_LOW_ALERT':  'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-      'RETURN_OVERDUE':   'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-      'SYSTEM_UPDATE':    'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
-      'SYSTEM_INFO':      'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
+      'COA_REQUEST':      'bg-purple-100/90 text-purple-600 dark:bg-purple-950/60 dark:text-purple-300 ring-1 ring-purple-500/20',
+      'BORROW_REQUEST':   'bg-blue-100/90 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 ring-1 ring-blue-500/20',
+      'REQUEST_APPROVED': 'bg-emerald-100/90 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-500/20',
+      'REQUEST_REJECTED': 'bg-rose-100/90 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300 ring-1 ring-rose-500/20',
+      'STOCK_LOW_ALERT':  'bg-amber-100/90 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 ring-1 ring-amber-500/20',
+      'RETURN_OVERDUE':   'bg-amber-100/90 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 ring-1 ring-amber-500/20',
+      'SYSTEM_UPDATE':    'bg-orange-100/90 text-orange-600 dark:bg-orange-950/60 dark:text-orange-300 ring-1 ring-orange-500/20',
+      'SYSTEM_INFO':      'bg-sky-100/90 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300 ring-1 ring-sky-500/20',
     };
     return map[type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
   }
@@ -968,14 +960,14 @@ export class NotificationPanelComponent {
 
   getChipClass(type: string): string {
     const map: Record<string, string> = {
-      'COA_REQUEST':      'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800/40',
-      'BORROW_REQUEST':   'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/40',
-      'REQUEST_APPROVED': 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/40',
-      'REQUEST_REJECTED': 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/40',
-      'STOCK_LOW_ALERT':  'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/40',
-      'RETURN_OVERDUE':   'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/40',
+      'COA_REQUEST':      'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50',
+      'BORROW_REQUEST':   'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50',
+      'REQUEST_APPROVED': 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50',
+      'REQUEST_REJECTED': 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/50',
+      'STOCK_LOW_ALERT':  'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50',
+      'RETURN_OVERDUE':   'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50',
     };
-    return map[type] ?? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200 dark:bg-fuchsia-900/20 dark:text-fuchsia-400 dark:border-fuchsia-800/40';
+    return map[type] ?? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-800/50';
   }
 
   getActionLabel(type: string): string {
