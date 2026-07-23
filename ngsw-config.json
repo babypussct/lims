@@ -2,12 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.23-b21",
-    "title": "Chuẩn Hóa Tiếng Việt và Biểu Tượng Toàn Hệ Thống",
+    "version": "v26.07.23-b22",
+    "notesVersion": "v26.07.23-b22",
+    "title": "Data Cleanup: Điều Chỉnh CAS Lỗi & Hoàn Tác Theo Phiên",
     "features": [
-      "✍️ Biên Tập Lại Nội Dung Tiếng Việt Theo Ngữ Cảnh Phòng Thí Nghiệm",
-      "🔤 Áp Dụng Title Case Nhất Quán cho Menu, Tiêu Đề và Nút Chính",
-      "🎯 Đồng Bộ Biểu Tượng Font Awesome và Khắc Phục Toàn Bộ Icon Không Hợp Lệ"
+      "📄 Phân Trang Theo Từng Nhóm CAS hoặc Từng Hồ Sơ Lỗi, Giảm Quá Tải và Nguy Cơ Chọn Nhầm",
+      "🧹 Mở Trực Tiếp 128 Nhãn Giữ Chỗ, 32 CAS Dạng Ngày và 3 CAS Lỗi Khác để Điều Chỉnh",
+      "✅ Kiểm Tra Cấu Trúc, Checksum và Đối Chiếu PubChem Trước Khi Lưu CAS",
+      "↩️ Hoàn Tác Theo Phiên Cho Cả Danh Pháp, CAS và Metadata Chuẩn Hóa"
     ]
   },
   "assetGroups": [

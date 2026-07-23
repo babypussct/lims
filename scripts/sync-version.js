@@ -40,6 +40,7 @@ if (fs.existsSync(ngswPath)) {
   ngswContent = ngswContent.replace(ngswRegex, `"version": "v${newVersion}"`);
   fs.writeFileSync(ngswPath, ngswContent);
   console.log('✅ Đã đồng bộ ngsw-config.json');
+  console.log('⚠️  Bắt buộc cập nhật appData.notesVersion, title và features trước khi build release.');
 }
 
 // 5. Đồng bộ vào state.service.ts (Cho Login & Header)

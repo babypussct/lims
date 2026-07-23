@@ -1,5 +1,20 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b22] - 23/07/2026
+
+### 📣 Đồng Bộ “Nội Dung Nâng Cấp” Trên UI
+
+#### 🖥️ Khôi Phục Nội Dung Release Trên Popup Cập Nhật
+- **Sửa metadata bị giữ từ b17:** Popup cập nhật nay hiển thị đúng tiêu đề và các nâng cấp Data Cleanup của b20–b22 thay vì nội dung chuẩn hóa tiếng Việt cũ.
+- **Tóm tắt đầy đủ cho người dùng:** Bao gồm phân trang nhóm CAS, điều chỉnh trực tiếp 128 nhãn giữ chỗ/32 CAS dạng ngày/3 CAS lỗi khác, kiểm tra checksum–PubChem và hoàn tác theo phiên.
+
+#### 🛡️ Bổ Sung Cổng Kiểm Tra Quy Trình Changelog
+- **Gắn phiên bản cho nội dung UI:** `notesVersion` phải trùng phiên bản ứng dụng và `appData.version`.
+- **Build sẽ dừng nếu thiếu nội dung:** Trình kiểm tra bắt buộc tiêu đề, danh sách tính năng và mục phiên bản tương ứng trong `CHANGELOG.md`.
+- **Ngăn tái diễn nội dung cũ:** Khi tăng phiên bản mà chưa cập nhật “Nội Dung Nâng Cấp”, quy trình build phát hiện sai lệch trước khi phát hành.
+
+---
+
 ## [v26.07.23-b21] - 23/07/2026
 
 ### 🧹 Điều Chỉnh CAS Lỗi Trực Tiếp Trong Data Cleanup
