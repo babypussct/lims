@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
                 <span class="w-7 h-7 bg-fuchsia-100 dark:bg-fuchsia-950/40 rounded-lg flex items-center justify-center">
                   <i class="fa-solid fa-code-merge rotate-90 text-fuchsia-600 dark:text-fuchsia-400 text-xs"></i>
                 </span>
-                Cấu hình Gộp mẻ chạy
+                Cấu Hình Gộp Mẻ Chạy
               </h3>
               <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 ml-9">Hợp nhất mẫu từ nhiều mẻ chạy vào 1 phiếu duy nhất.</p>
             </div>
@@ -51,7 +51,7 @@ import { CommonModule } from '@angular/common';
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mã mẻ gộp Master (Custom ID)</label>
+              <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mã mẻ tổng hợp (tùy chỉnh)</label>
               <input type="text" [value]="customMasterId" (input)="onCustomMasterIdChange($event)"
                      class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-mono font-bold uppercase text-xs">
             </div>
@@ -60,7 +60,7 @@ import { CommonModule } from '@angular/common';
           <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <button (click)="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition active:scale-95 border-0 cursor-pointer">Hủy</button>
             <button (click)="executeMerge()" class="px-5 py-2 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition shadow-md shadow-fuchsia-500/10 active:scale-95 flex items-center gap-1.5 border-0 cursor-pointer">
-              <i class="fa-solid fa-check text-[10px]"></i> Tạo mẻ gộp
+              <i class="fa-solid fa-check text-[10px]"></i> Tạo Mẻ Gộp
             </button>
           </div>
         </div>

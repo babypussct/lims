@@ -6,12 +6,12 @@
         <i class="fa-solid fa-lock text-base"></i>
       </div>
       <div>
-        <h4 class="text-xs font-black uppercase tracking-wider text-red-800 dark:text-red-400">Chỉ xem — Mẻ chạy đang bị khóa chỉnh sửa</h4>
+        <h4 class="text-xs font-black uppercase tracking-wider text-red-800 dark:text-red-400">Chỉ Xem — Mẻ Chạy Đang Bị Khóa Chỉnh Sửa</h4>
         <p class="text-[11px] text-red-650 dark:text-red-300 font-semibold mt-1">
           KTV <strong>{{ lockerName }}</strong> đang chỉnh sửa mẻ chạy này từ lúc <strong>{{ lockedAt }}</strong>.
           <br>
           <span class="text-[10px] text-red-500 dark:text-red-400 flex items-center gap-1.5 mt-1">
-            <i class="fa-solid fa-clock-pulse animate-pulse"></i> Hoạt động cuối: <strong>{{ lastActiveAt }}</strong>
+            <i class="fa-solid fa-clock-rotate-left animate-pulse"></i> Hoạt động cuối: <strong>{{ lastActiveAt }}</strong>
           </span>
         </p>
       </div>
@@ -20,7 +20,7 @@
     <button (click)="takeOverLock.emit()"
             class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-red-500/10">
       <i class="fa-solid fa-unlock-keyhole"></i>
-      <span>Giành quyền chỉnh sửa</span>
+      <span>Giành Quyền Chỉnh Sửa</span>
     </button>
   </div>
 } @else if (isCompleted) {
@@ -47,7 +47,7 @@
     <button (click)="unlockToEdit.emit()"
             class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-amber-500/10 cursor-pointer">
       <i class="fa-solid fa-unlock-keyhole"></i>
-      <span>Mở khóa &amp; chỉnh sửa</span>
+      <span>Mở Khóa và Chỉnh Sửa</span>
     </button>
   </div>
 }

@@ -126,7 +126,7 @@ import { filter } from 'rxjs/operators';
 
               @if (updateFeatures().length > 0) {
                  <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 md:p-5 mb-6 md:mb-8 text-left border border-slate-100 dark:border-slate-700/50">
-                    <h3 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5 md:mb-3">Nội dung nâng cấp</h3>
+                    <h3 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5 md:mb-3">Nội Dung Nâng Cấp</h3>
                     <ul class="space-y-2.5 md:space-y-3 max-h-36 md:max-h-40 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
                        @for (feature of updateFeatures(); track feature) {
                           <li class="flex gap-2.5 md:gap-3 text-xs md:text-sm text-slate-600 dark:text-slate-300 items-start">
@@ -143,7 +143,7 @@ import { filter } from 'rxjs/operators';
               }
               
               <button (click)="window_reload()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-                <i class="fa-solid fa-arrows-rotate"></i> Áp dụng cập nhật
+                <i class="fa-solid fa-arrows-rotate"></i> Áp Dụng Cập Nhật
               </button>
               
               <div class="mt-4 text-center">
@@ -177,7 +177,7 @@ import { filter } from 'rxjs/operators';
                 <div class="w-10 h-10 shrink-0 bg-white/20 rounded-full flex items-center justify-center animate-pulse"><i class="fa-solid fa-person-digging text-lg"></i></div>
                 <div class="flex-1">
                     <div class="text-[10px] font-black uppercase tracking-wider text-rose-200">Đang Bật Bảo Trì</div>
-                    <div class="text-xs font-bold leading-tight mt-0.5">Hệ thống đang chặn tất cả user. Đừng quên tắt khi xong!</div>
+                    <div class="text-xs font-bold leading-tight mt-0.5">Hệ thống đang chặn tất cả người dùng. Đừng quên tắt khi xong!</div>
                 </div>
             </div>
         </div>
@@ -203,13 +203,13 @@ import { filter } from 'rxjs/operators';
              <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 p-4">
                 <div class="bg-white rounded-3xl shadow-soft-xl p-8 max-w-md w-full text-center border border-slate-100">
                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 text-orange-500 animate-pulse"><i class="fa-solid fa-hourglass-half text-3xl"></i></div>
-                   <h2 class="text-2xl font-black text-slate-800 mb-2">Đang chờ phê duyệt</h2>
-                   <p class="text-slate-500 mb-6 text-sm leading-relaxed">Xin chào <b>{{user.displayName}}</b>,<br>Tài khoản của bạn đã được tạo nhưng cần Admin cấp quyền truy cập vào hệ thống.</p>
+                   <h2 class="text-2xl font-black text-slate-800 mb-2">Đang Chờ Phê Duyệt</h2>
+                   <p class="text-slate-500 mb-6 text-sm leading-relaxed">Xin chào <b>{{user.displayName}}</b>,<br>Tài khoản của bạn đã được tạo nhưng cần quản trị viên cấp quyền truy cập vào hệ thống.</p>
                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-left">
                       <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">UID của bạn (Gửi cho Admin):</div>
                       <div class="flex gap-2 items-center"><code class="text-sm font-mono font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 flex-1 truncate select-all">{{user.uid}}</code></div>
                    </div>
-                   <button (click)="auth.logout()" class="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition active:scale-95"><i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Đăng xuất</button>
+                   <button (click)="auth.logout()" class="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition active:scale-95"><i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Đăng Xuất</button>
                 </div>
              </div>
           } 
@@ -241,14 +241,14 @@ import { filter } from 'rxjs/operators';
                          
                          @if (state.permissionError()) {
                             <div class="w-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-xl p-3 mb-4 flex items-center justify-between animate-bounce-in shadow-sm shrink-0">
-                                <div class="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
+                                <div class="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Bạn không có quyền truy cập nội dung này.</span></div>
                             </div>
                          }
 
                          @if (state.isOffline()) {
                             <div class="w-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/30 rounded-xl p-3 mb-4 flex items-center justify-between animate-bounce-in shadow-sm shrink-0">
                                 <div class="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-400 font-bold">
-                                    <i class="fa-solid fa-wifi-slash"></i>
+                                    <i class="fa-solid fa-plug-circle-xmark"></i>
                                     <span>Mất kết nối dữ liệu ({{ state.offlineSource() }}). Dữ liệu có thể chưa được cập nhật.</span>
                                 </div>
                                 <button (click)="state.clearOfflineState()" class="text-orange-500 hover:text-orange-700 dark:hover:text-orange-300 transition ml-3 shrink-0" title="Đóng">
@@ -441,16 +441,16 @@ export class AppComponent implements OnDestroy {
   pageTitle = computed(() => {
     const url = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
     const titles: Record<string, string> = {
-        'dashboard': 'Trang chủ',
-        'inventory': 'Kho Hóa chất',
-        'calculator': 'Vận hành SOP',
-        'requests': 'Quản lý Yêu cầu',
-        'stats': 'Báo cáo',
-        'config': 'Cấu hình',
-        'standards': 'Chuẩn đối chiếu',
-        'recipes': 'Thư viện Công thức',
+        'dashboard': 'Trang Chủ',
+        'inventory': 'Kho Hóa Chất',
+        'calculator': 'Vận Hành SOP',
+        'requests': 'Quản Lý Yêu Cầu',
+        'stats': 'Báo Cáo',
+        'config': 'Cấu Hình',
+        'standards': 'Chất Chuẩn Đối Chiếu',
+        'recipes': 'Thư Viện Công Thức',
         'prep': 'Trạm Pha Chế',
-        'smart-batch': 'Chạy Mẻ Smart',
+        'smart-batch': 'Lập Mẻ Phân Tích',
         'traceability': 'Truy xuất nguồn gốc'
     };
     return titles[url] || 'LIMS Cloud';

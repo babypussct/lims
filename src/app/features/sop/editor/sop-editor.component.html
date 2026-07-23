@@ -3,7 +3,7 @@
         <div class="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 shrink-0 shadow-sm z-30">
             <div class="flex items-center gap-4">
                 <button (click)="goBack()" [disabled]="isLoading()" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-sm font-bold flex items-center gap-2 transition disabled:opacity-50">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Quay lại</span>
+                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Quay Lại</span>
                 </button>
                 <div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                 <div>
@@ -38,11 +38,11 @@
             <div class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900 overflow-hidden border-r border-slate-200 dark:border-slate-700">
                 <!-- Tabs -->
                 <div class="flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 gap-6 shrink-0 overflow-x-auto no-scrollbar">
-                   <button (click)="currentTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'general' ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Thông tin</button>
+                   <button (click)="currentTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'general' ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Thông Tin</button>
                    <button (click)="currentTab.set('logic')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'logic' ? 'border-purple-600 dark:border-purple-500 text-purple-700 dark:text-purple-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Logic</button>
-                   <button (click)="currentTab.set('consumables')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'consumables' ? 'border-orange-600 dark:border-orange-500 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Vật tư (Consumables)</button>
+                   <button (click)="currentTab.set('consumables')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'consumables' ? 'border-orange-600 dark:border-orange-500 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Vật Tư (Consumables)</button>
                    <button (click)="currentTab.set('targets')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'targets' ? 'border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                       <i class="fa-solid fa-bullseye"></i> Chỉ tiêu (Targets)
+                       <i class="fa-solid fa-bullseye"></i> Chỉ Tiêu
                    </button>
                 </div>
 
@@ -54,7 +54,7 @@
                           <div class="space-y-6 fade-in">
                               <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
                                   <div>
-                                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên Quy Trình <span class="text-red-500">*</span></label>
+                                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên quy trình <span class="text-red-500">*</span></label>
                                       <input formControlName="name" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-sm font-bold outline-none focus:border-blue-500 dark:focus:border-blue-400 transition">
                                   </div>
                                   <div class="grid grid-cols-2 gap-4">
@@ -71,14 +71,14 @@
                                   <div class="flex items-center gap-2 pt-1">
                                       <input type="checkbox" id="isManualOnly" formControlName="isManualOnly" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer">
                                       <label for="isManualOnly" class="text-xs font-bold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                                          Chỉ định thủ công (Manual Only) — Ẩn khỏi thuật toán tự động gán Smart Batch
+                                          Chỉ định thủ công — Không tự động phân bổ khi lập mẻ
                                       </label>
                                   </div>
 
                                   <!-- Matrix Tags -->
                                   <div class="space-y-2 border-t border-slate-100 dark:border-slate-700/50 pt-4 mt-2">
                                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                                      Nền Mẫu Áp Dụng
+                                      Nền mẫu áp dụng
                                     </label>
                                     <div class="flex flex-wrap gap-2">
                                       <button type="button" (click)="clearMatrixTags()"
@@ -160,8 +160,8 @@
                               <!-- INPUTS CONFIG -->
                               <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                   <div class="flex justify-between items-center mb-4">
-                                      <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase">Đầu vào (Inputs)</h3>
-                                      <button type="button" (click)="addInput()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg font-bold text-slate-600 dark:text-slate-300 transition">+ Thêm Input</button>
+                                      <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase">Dữ Liệu Đầu vào</h3>
+                                      <button type="button" (click)="addInput()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg font-bold text-slate-600 dark:text-slate-300 transition">+ Thêm Trường Nhập</button>
                                   </div>
                                   
                                   <div formArrayName="inputs" class="space-y-3">
@@ -175,7 +175,7 @@
                                                           <select formControlName="type" class="w-full border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs outline-none bg-white dark:bg-slate-800">
                                                               <option value="number">Số (Number)</option>
                                                               <option value="checkbox">Checkbox</option>
-                                                              <option value="select">Danh sách (Select)</option>
+                                                              <option value="select">Danh sách lựa chọn</option>
                                                           </select>
                                                       </div>
                                                       <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Mặc định</label><input formControlName="default" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-bold outline-none"></div>
@@ -208,14 +208,14 @@
                               </div>
                               <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                   <i class="fa-solid fa-circle-info mr-1"></i> Định nghĩa các công thức toán học dùng chung. 
-                                  Dùng các biến input (VD: <code class="dark:text-slate-300">n_sample</code>) hoặc các biến khác.
+                                  Dùng các biến đầu vào (VD: <code class="dark:text-slate-300">n_sample</code>) hoặc các biến khác.
                               </p>
 
                               <div formArrayName="variablesList" class="space-y-3">
                                   @for (v of variablesList.controls; track v; let i = $index) {
                                       <div [formGroupName]="i" class="flex gap-2 items-center p-3 border border-purple-100 dark:border-purple-900/30 bg-purple-50/30 dark:bg-purple-900/10 rounded-xl relative group">
                                           <div class="w-1/3">
-                                              <label class="text-[9px] font-bold text-purple-400 dark:text-purple-500 uppercase mb-1 block">Tên Biến</label>
+                                              <label class="text-[9px] font-bold text-purple-400 dark:text-purple-500 uppercase mb-1 block">Tên biến</label>
                                               <input formControlName="key" list="std_vars" placeholder="VD: total_vol" class="w-full border border-purple-200 dark:border-purple-800/50 bg-transparent rounded-lg px-3 py-2 text-xs font-mono font-bold text-purple-700 dark:text-purple-400 outline-none focus:bg-white dark:focus:bg-slate-800 transition">
                                               <datalist id="std_vars">
                                                   @for(std of standardVars; track std.value) { <option [value]="std.value">{{std.label}}</option> }
@@ -223,7 +223,7 @@
                                           </div>
                                           <div class="flex items-center justify-center pt-4 text-purple-300 dark:text-purple-600"><i class="fa-solid fa-equals"></i></div>
                                           <div class="flex-1">
-                                              <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Công thức (JavaScript Math)</label>
+                                              <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Biểu thức tính toán (JavaScript)</label>
                                               <input formControlName="formula" placeholder="VD: n_sample * 10" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 outline-none focus:border-purple-500 dark:focus:border-purple-400 focus:bg-white dark:focus:bg-slate-800 transition">
                                           </div>
                                           <button type="button" (click)="variablesList.removeAt(i)" class="mt-4 w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-800"><i class="fa-solid fa-trash"></i></button>
@@ -238,7 +238,7 @@
                           <div class="fade-in pb-32">
                              <div class="flex items-center justify-between mb-4">
                                  <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                     Danh sách Vật tư <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[10px] px-2 py-0.5 rounded-full">{{consumables.length}}</span>
+                                     Danh Sách Vật Tư <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[10px] px-2 py-0.5 rounded-full">{{consumables.length}}</span>
                                  </h3>
                                  <button type="button" (click)="addConsumable()" class="text-xs bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-bold transition">+ Thêm Dòng</button>
                              </div>
@@ -343,7 +343,7 @@
                                             <div class="mt-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-3 relative z-10">
                                                <div class="flex justify-between items-center mb-2 border-b border-slate-200 dark:border-slate-700 pb-2">
                                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2"><i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Thành phần con</span>
-                                                   <button type="button" (click)="addIngredient(i)" class="text-[10px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-600 dark:text-slate-400 px-2 py-1 rounded font-bold transition">+ Thêm chất</button>
+                                                   <button type="button" (click)="addIngredient(i)" class="text-[10px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-600 dark:text-slate-400 px-2 py-1 rounded font-bold transition">+ Thêm Chất</button>
                                                </div>
                                                <div formArrayName="ingredients" class="space-y-2">
                                                   @for (ing of getIngredients(i).controls; track ing; let j = $index) {
@@ -400,14 +400,14 @@
                               <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                   <div class="flex justify-between items-center mb-4">
                                       <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
-                                          <i class="fa-solid fa-bullseye text-emerald-500 dark:text-emerald-400"></i> Danh sách Chỉ tiêu (Targets)
+                                          <i class="fa-solid fa-bullseye text-emerald-500 dark:text-emerald-400"></i> Danh Sách Chỉ Tiêu (Targets)
                                       </h3>
                                       <div class="flex gap-2">
                                           <button type="button" (click)="openGroupImport()" class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
                                               <i class="fa-solid fa-layer-group"></i> Nhập từ Bộ
                                           </button>
                                           <button type="button" (click)="openTargetModal()" class="text-xs bg-emerald-500 text-white hover:bg-emerald-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow-sm shadow-emerald-500/20">
-                                              <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Thư viện Gốc
+                                              <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Danh Mục Gốc
                                           </button>
                                       </div>
                                   </div>
@@ -425,25 +425,25 @@
                                                   <!-- Name & ID -->
                                                   <div class="md:col-span-4">
                                                       <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 flex justify-between items-center">
-                                                          <span>Tên Chỉ tiêu</span>
+                                                          <span>Tên chỉ tiêu</span>
                                                           @if (masterItem) {
                                                               <div class="flex items-center gap-1">
-                                                                  <span class="text-[9px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1 rounded flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> Khớp Thư viện</span>
+                                                                  <span class="text-[9px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1 rounded flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> Khớp danh mục</span>
                                                                   <button type="button" (click)="openTargetModal(i)" class="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/40 px-1.5 py-0.5 rounded transition flex items-center gap-1">
-                                                                      <i class="fa-solid fa-rotate"></i> Thay thế
+                                                                      <i class="fa-solid fa-rotate"></i> Thay Thế
                                                                   </button>
                                                               </div>
                                                           } @else {
                                                               <div class="flex items-center gap-1">
                                                                   <span class="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1 rounded flex items-center gap-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi: Không tồn tại!</span>
-                                                                  <button type="button" (click)="openTargetModal(i)" class="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/40 px-1.5 py-0.5 rounded transition">Chọn lại</button>
+                                                                  <button type="button" (click)="openTargetModal(i)" class="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/40 px-1.5 py-0.5 rounded transition">Chọn Lại</button>
                                                               </div>
                                                           }
                                                       </label>
                                                       <input formControlName="name" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 rounded px-2 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed">
                                                   </div>
                                                   <div class="md:col-span-3">
-                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Mã ID (Locked)</label>
+                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Mã định danh (đã khóa)</label>
                                                       <input formControlName="id" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 rounded px-2 py-1.5 text-xs font-mono text-slate-400 dark:text-slate-500 outline-none cursor-not-allowed">
                                                   </div>
                                                   
@@ -511,7 +511,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
                     <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg">Chọn Bộ Chỉ tiêu</h3>
+                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg">Chọn Nhóm Chỉ Tiêu</h3>
                         <button (click)="showGroupModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times text-lg"></i></button>
                     </div>
                     <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
@@ -543,7 +543,7 @@
                     <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shrink-0">
                         <div>
                             <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-magnifying-glass-plus text-emerald-500"></i> Chọn từ Thư viện Gốc
+                                <i class="fa-solid fa-magnifying-glass-plus text-emerald-500"></i> Chọn từ Danh Mục Gốc
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Chọn các chỉ tiêu phân tích để thêm vào SOP hiện tại.</p>
                         </div>
@@ -624,9 +624,9 @@
                     <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                         <div>
                             <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                <i class="fa-solid fa-flask text-blue-500"></i> Chọn Hóa Chất / Công Thức
+                                <i class="fa-solid fa-flask text-blue-500"></i> Chọn Hóa Chất hoặc Công Thức
                             </h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tìm kiếm và chọn từ Master Library.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tìm và chọn trong danh mục chỉ tiêu gốc.</p>
                         </div>
                         <button (click)="showConsumableModal.set(false)" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-red-100 hover:text-red-500 transition-colors flex items-center justify-center">
                             <i class="fa-solid fa-xmark"></i>

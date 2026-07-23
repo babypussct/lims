@@ -106,7 +106,7 @@ export class StandardUsageService {
       if (stdData.status === 'IN_USE') {
         throw new Error(
           `Chuẩn "${stdData.name}" đang được ${stdData.current_holder || 'nhân viên khác'} mượn theo yêu cầu. ` +
-          `Vui lòng ghi nhận sử dụng qua màn hình Quản lý Yêu cầu.`
+          `Vui lòng ghi nhận sử dụng qua màn hình Quản lý yêu cầu.`
         );
       }
 

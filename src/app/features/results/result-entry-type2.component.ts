@@ -13,7 +13,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
       <!-- 1. Metadata Form & Checkboxes -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
         <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-          <i class="fa-solid fa-file-invoice mr-2 text-indigo-500"></i> Thông tin chung & Đánh giá
+          <i class="fa-solid fa-file-invoice mr-2 text-indigo-500"></i> Thông Tin Chung & Đánh Giá
         </h4>
 
         <!-- Signature Dates -->
@@ -99,7 +99,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                           ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition-all shrink-0' 
                           : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shrink-0'"
                         title="Chọn Thủy sản">
-                  Thủy sản
+                  Thủy Sản
                 </button>
                 <input type="text" 
                        [(ngModel)]="draft.page1Data['loaiMau']" 
@@ -120,7 +120,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                           ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition-all shrink-0' 
                           : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shrink-0'"
                         title="Chọn Bình thường">
-                  Bình thường
+                  Bình Thường
                 </button>
                 <input type="text" 
                        [(ngModel)]="draft.page1Data['tinhTrangMau']" 
@@ -206,7 +206,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
             @if (isTrifluralin) {
               <div class="lg:col-span-4 space-y-4">
                 <div>
-                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Trắng (Blank)</label>
+                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu trắng</label>
                   <input type="text" 
                          [(ngModel)]="draft.page1Data['blankName']" 
                          (ngModelChange)="onDataChanged()"
@@ -216,7 +216,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                 </div>
                 
                 <div>
-                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Thêm chuẩn (Spike)</label>
+                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu thêm chuẩn</label>
                   <input type="text" 
                          [(ngModel)]="draft.page1Data['spikeName']" 
                          (ngModelChange)="onDataChanged()"
@@ -241,7 +241,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
               <div class="lg:col-span-4 space-y-4">
                 <div class="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/50 rounded-xl space-y-3 shadow-sm">
                   <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide flex items-center gap-1.5">
-                    <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC
+                    <i class="fa-solid fa-flask-vial"></i> Cấu Hình Mẫu QC
                   </h5>
                   
                   <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition">
@@ -321,7 +321,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-3">
           <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500"></i> Lưới nhập kết quả (Grid Spreadsheet)
+            <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500"></i> Lưới Nhập Kết Quả (Grid Spreadsheet)
           </h4>
 
           <!-- Premium Bulk Actions Panel -->
@@ -332,14 +332,14 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                     class="px-3 py-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
                     title="Đặt toàn bộ các ô kết quả chưa điền là ND">
               <i class="fa-solid fa-pen-clip"></i>
-              <span>Điền ND ô trống</span>
+              <span>Điền ND Ô Trống</span>
             </button>
 
             <button (click)="bulkClearAll()" 
                     class="px-3 py-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-900/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
                     title="Xóa toàn bộ các ô kết quả của bảng">
               <i class="fa-solid fa-trash-can"></i>
-              <span>Xóa hết bảng</span>
+              <span>Xóa Hết Bảng</span>
             </button>
 
             @if (isTrifluralin) {
@@ -359,7 +359,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                 <button (click)="applyBulkVials()" 
                         class="px-2.5 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded font-bold transition flex items-center gap-1">
                   <i class="fa-solid fa-check"></i>
-                  <span>Áp dụng</span>
+                  <span>Áp Dụng</span>
                 </button>
               </div>
             }
@@ -367,7 +367,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
             @if (isFipronil) {
               <!-- Quick Vial Rack Input for Fipronil (Lọ số nhanh dạng Rack.Vial) -->
               <div class="flex items-center gap-1.5 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/50 rounded-xl px-3 py-1.5 text-xs shadow-sm">
-                <span class="font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Nhập Vial nhanh:</span>
+                <span class="font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Nhập nhanh số lọ:</span>
                 <div class="flex items-center gap-1">
                   <span class="text-slate-500 dark:text-slate-400">Khay (Rack):</span>
                   <input type="number" 
@@ -396,7 +396,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition shadow-sm flex items-center gap-1"
                         title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
                   <i class="fa-solid fa-check"></i>
-                  <span>Điền nhanh</span>
+                  <span>Điền Nhanh</span>
                 </button>
               </div>
             }
@@ -409,7 +409,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
             <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2">Nhóm tiền tố:</span>
             <button (click)="onPrefixFilterChanged('ALL')"
                     [class]="selectedPrefixFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition'">
-              Tất cả mẫu
+              Tất Cả Mẫu
             </button>
             @for (prefix of detectedPrefixes(); track prefix) {
               <button (click)="onPrefixFilterChanged(prefix)"

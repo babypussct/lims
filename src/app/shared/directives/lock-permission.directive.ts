@@ -58,7 +58,7 @@ export class LockPermissionDirective implements OnInit, OnDestroy {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        this.toast.show(`Cần quyền "${this.permission}" · Liên hệ Admin để được cấp`, 'warning');
+        this.toast.show(`Cần quyền "${this.permission}" · Liên hệ quản trị viên để được cấp`, 'warning');
       }
     };
 
@@ -105,7 +105,7 @@ export class LockPermissionDirective implements OnInit, OnDestroy {
       this.renderer.addClass(nativeEl, 'opacity-50');
       this.renderer.addClass(nativeEl, 'cursor-not-allowed');
       this.renderer.setStyle(nativeEl, 'pointer-events', 'auto');
-      this.renderer.setAttribute(nativeEl, 'title', `Cần quyền "${this.permission}" · Liên hệ Admin để được cấp`);
+      this.renderer.setAttribute(nativeEl, 'title', `Cần quyền "${this.permission}" · Liên hệ quản trị viên để được cấp`);
       this.renderer.setStyle(nativeEl, 'display', '');
     } else {
       this.renderer.setStyle(nativeEl, 'display', 'none');

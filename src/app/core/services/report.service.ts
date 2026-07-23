@@ -60,7 +60,7 @@ export class ReportService {
     if (!this.GAS_URL) {
       throw new Error(
         'Chưa cấu hình GAS Web App URL. ' +
-        'Vui lòng deploy Google Apps Script và paste URL vào environment.gasReportUrl.'
+        'Vui lòng triển khai Google Apps Script và điền URL vào environment.gasReportUrl.'
       );
     }
 

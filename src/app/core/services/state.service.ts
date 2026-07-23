@@ -68,7 +68,7 @@ export class StateService implements OnDestroy {
 
   // NEW: Categories
   categories = signal<CategoryItem[]>([
-    { id: 'reagent', name: 'Hóa chất (General)' },
+    { id: 'reagent', name: 'Hóa chất thông dụng' },
     { id: 'solvent', name: 'Dung môi (Solvent)' },
     { id: 'standard', name: 'Chất chuẩn (Standard)' },
     { id: 'consumable', name: 'Vật tư (Consumable)' },
@@ -87,7 +87,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.23-b16');
+  systemVersion = signal<string>('v26.07.23-b17');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -347,7 +347,7 @@ export class StateService implements OnDestroy {
 
         if (forceTime > localTime) {
           localStorage.setItem('lims_cache_purge_time', forceTime.toString());
-          this.toast.show('Quản trị viên vừa làm sạch Hệ thống. Đang kết nối lại sau 2 giây...', 'info');
+          this.toast.show('Quản trị viên vừa dọn dữ liệu hệ thống. Đang kết nối lại sau 2 giây...', 'info');
           setTimeout(() => {
             this.fb.purgeSystemCache();
           }, 2000);
@@ -634,7 +634,7 @@ export class StateService implements OnDestroy {
     }
   }
 
-  public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
+  public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Người dùng không xác định'; }
 
   // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndPrint, approveRequest, revokeApproval, etc.)
   // Omitted for brevity as no logic changed there

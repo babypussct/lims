@@ -8,7 +8,7 @@
                 </div>
                 <div>
                     <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Trạm Pha Chế</h2>
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Công cụ tính toán & Tương tác kho hóa chất.</p>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tính toán pha chế và cập nhật tồn kho hóa chất.</p>
                 </div>
             </div>
 
@@ -16,14 +16,14 @@
                 <button (click)="setSystemMode('sandbox')" 
                         class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
                         [class]="systemMode() === 'sandbox' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
-                    <i class="fa-solid fa-calculator"></i> Nháp (Sandbox)
+                    <i class="fa-solid fa-calculator"></i> Tính Thử
                 </button>
                 <button (click)="setSystemMode('real')" 
                         class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
                         [class]="systemMode() === 'real' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
                         [class.opacity-60]="!auth.canEditInventory() && systemMode() !== 'real'"
-                        [title]="auth.canEditInventory() ? 'Chế độ Thực (Trừ kho)' : 'Yêu cầu quyền Sửa Kho'">
-                    <i class="fa-solid fa-link"></i> Kho (Real)
+                        [title]="auth.canEditInventory() ? 'Dùng tồn kho thực tế' : 'Cần quyền sửa kho'">
+                    <i class="fa-solid fa-link"></i> Dùng tồn kho
                     @if(!auth.canEditInventory()) { <i class="fa-solid fa-lock text-[9px]"></i> }
                 </button>
             </div>
@@ -51,7 +51,7 @@
                     @if (systemMode() === 'real' && calcMode() !== 'mix' && calcMode() !== 'sample_prep') {
                         <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl border border-purple-100 dark:border-purple-800/30 space-y-2 animate-slide-up relative">
                             <label class="text-[10px] font-bold text-purple-800 dark:text-purple-300 uppercase flex items-center gap-2">
-                                <i class="fa-solid fa-search"></i> Chọn Hóa chất (Trừ kho)
+                                <i class="fa-solid fa-search"></i> Chọn hóa chất từ kho
                             </label>
                             
                             @if (!selectedItem()) {
@@ -166,7 +166,7 @@
                                     </div>
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="label">Nồng độ Đích (Target)</label>
+                                    <label class="label">Nồng độ đích</label>
                                     <div class="flex gap-2">
                                         <input type="number" min="0" step="any" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C2">
                                         <select [(ngModel)]="targetConcUnit" class="select-unit w-24">
@@ -192,7 +192,7 @@
                         <div class="card-input border-emerald-100 dark:border-emerald-800/30">
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
-                                    <label class="label">Nồng độ Chuẩn (Stock)</label>
+                                    <label class="label">Nồng độ dung dịch gốc</label>
                                     <div class="flex gap-2">
                                         <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-emerald-600 dark:text-emerald-400" placeholder="C_stock">
                                         <select [(ngModel)]="concUnit" class="select-unit w-24">
@@ -210,7 +210,7 @@
                                     </div>
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="label">Khối lượng / Thể tích Mẫu (Sample)</label>
+                                    <label class="label">Khối lượng hoặc thể tích mẫu</label>
                                     <div class="flex gap-2">
                                         <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="m/V">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
@@ -258,7 +258,7 @@
                                             <select [(ngModel)]="targetConcUnit" class="select-unit w-20 h-6 py-0 text-[10px]">
                                                 @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                             </select>
-                                            <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 px-2 py-1 rounded hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">+ Thêm điểm</button>
+                                            <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 px-2 py-1 rounded hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">+ Thêm Điểm</button>
                                         </div>
                                     </div>
                                     <div class="space-y-2">
@@ -300,8 +300,8 @@
                                     <div class="flex justify-between items-center mb-2">
                                         <label class="label mb-0">Thành phần</label>
                                         <div class="flex gap-2">
-                                            <button (click)="pasteFromExcel()" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-2 py-1 rounded transition border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1"><i class="fa-solid fa-paste"></i> Paste Excel</button>
-                                            <button (click)="addMixRow()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 px-2 py-1 rounded transition border border-indigo-200 dark:border-indigo-800/50">+ Thêm chất</button>
+                                            <button (click)="pasteFromExcel()" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-2 py-1 rounded transition border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1"><i class="fa-solid fa-paste"></i> Dán từ Excel</button>
+                                            <button (click)="addMixRow()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 px-2 py-1 rounded transition border border-indigo-200 dark:border-indigo-800/50">+ Thêm Chất</button>
                                         </div>
                                     </div>
                                     
@@ -387,7 +387,7 @@
                             <!-- Step 1 -->
                             <div class="card-input border-teal-100 dark:border-teal-800/30 animate-slide-up">
                                 <div class="px-4 py-2 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 text-xs font-bold uppercase flex justify-between items-center">
-                                    <span><i class="fa-solid fa-scale-balanced"></i> Bước 1: Mẫu & Chiết</span>
+                                    <span><i class="fa-solid fa-scale-balanced"></i> Bước 1: Mẫu và chiết</span>
                                     <span class="text-[9px] bg-white dark:bg-slate-800 px-2 rounded-full border border-teal-100 dark:border-teal-800/30">Start</span>
                                 </div>
                                 <div class="p-3 grid grid-cols-2 gap-3">
@@ -414,7 +414,7 @@
                             <!-- Step 2 -->
                             <div class="card-input border-cyan-100 dark:border-cyan-800/30 animate-slide-up">
                                 <div class="px-4 py-2 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 text-xs font-bold uppercase">
-                                    <i class="fa-solid fa-filter"></i> Bước 2: Làm sạch (Cleanup)
+                                    <i class="fa-solid fa-filter"></i> Bước 2: Làm sạch
                                 </div>
                                 <div class="p-3">
                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hút dịch làm sạch (V2)</label>
@@ -435,7 +435,7 @@
                             <!-- Step 3 -->
                             <div class="card-input border-sky-100 dark:border-sky-800/30 animate-slide-up">
                                 <div class="px-4 py-2 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400 text-xs font-bold uppercase">
-                                    <i class="fa-solid fa-vial"></i> Bước 3: Phân đoạn (Aliquot)
+                                    <i class="fa-solid fa-vial"></i> Bước 3: Lấy phần dịch
                                 </div>
                                 <div class="p-3">
                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hút đi cô đặc (V3)</label>
@@ -524,7 +524,7 @@
                                 <div class="w-full max-w-sm bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                                     <div class="flex items-center gap-2 mb-4 justify-center">
                                         <i class="fa-solid fa-calculator text-teal-500"></i>
-                                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Tính Nồng độ Mẫu</span>
+                                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Tính nồng độ mẫu</span>
                                     </div>
                                     
                                     <div class="flex items-center gap-3">
@@ -599,7 +599,7 @@
                                         <tr>
                                             <th class="px-4 py-3 rounded-l-lg">Điểm chuẩn</th>
                                             <th class="px-4 py-3 text-right">Lượng Hút (Stock)</th>
-                                            <th class="px-4 py-3 text-right rounded-r-lg">Thêm Dung môi</th>
+                                            <th class="px-4 py-3 text-right rounded-r-lg">Thêm dung môi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">

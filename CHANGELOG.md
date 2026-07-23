@@ -1,5 +1,22 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b17] - 23/07/2026
+
+### 🌐 Chuẩn Hóa Nội Dung Tiếng Việt và Hệ Thống Biểu Tượng
+
+#### ✍️ Văn Phong Giao Diện Nhất Quán
+- **Biên tập lại toàn bộ nội dung hiển thị:** Điều chỉnh các bản dịch máy móc thành câu chữ tự nhiên, rõ nghĩa và phù hợp với ngữ cảnh vận hành phòng thí nghiệm.
+- **Áp dụng Title Case có chọn lọc:** Menu, tiêu đề và nút chính dùng Title Case; phần mô tả, hướng dẫn và thông báo vẫn giữ văn phong câu tự nhiên để dễ đọc.
+- **Chuẩn hóa thuật ngữ chuyên môn:** Thống nhất cách gọi trên toàn hệ thống; giữ nguyên các ký hiệu phổ biến như SOP, CoA, QC, GS1 và CAS.
+
+#### 🎯 Biểu Tượng Đúng Ngữ Cảnh
+- **Đồng bộ biểu tượng điều hướng và thao tác:** Chọn lại icon theo đúng chức năng để người dùng nhận biết nhanh hơn.
+- **Khắc phục icon Font Awesome không hợp lệ:** Thay thế 6 tên icon không tồn tại và xác thực toàn bộ icon đang sử dụng với Font Awesome 6.4.0.
+
+#### ✅ Kiểm Tra Chất Lượng
+- **Build Angular thành công:** Xác nhận toàn bộ template và mã nguồn biên dịch bình thường.
+- **32 kiểm thử đạt:** Gồm 25 kiểm thử Standards và 7 kiểm thử Notifications.
+
 ## [v26.07.23-b16] - 23/07/2026
 
 ### 🔒 Chuyển Chế Độ Giao Diện Từ Ẩn Sang Khóa (🔒) Kèm Cấu Hình Bật/Tắt Toàn Hệ Thống

@@ -60,7 +60,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                <!-- Right: Approve Form -->
                <div class="flex-1 p-6 md:p-8 flex flex-col bg-white dark:bg-slate-900 overflow-y-auto">
                    <div class="flex justify-between items-center mb-6">
-                       <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Duyệt & Giao chuẩn</h3>
+                       <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Duyệt & Giao Chuẩn</h3>
                        <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
                    </div>
 
@@ -82,7 +82,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                    </div>
 
                    <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
-                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy bỏ</button>
+                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy Bỏ</button>
                        <button (click)="onApprove()" [disabled]="!approvePurpose() || isProcessing" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
                            @if(isProcessing) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                            @else { <i class="fa-solid fa-check-circle text-sm"></i> Xác nhận & Giao }
@@ -99,7 +99,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
           <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-red-50/50 dark:bg-red-900/10">
                   <h3 class="font-black text-red-600 dark:text-red-400 text-xl flex items-center gap-2">
-                      <i class="fa-solid fa-ban"></i> Từ chối yêu cầu
+                      <i class="fa-solid fa-ban"></i> Từ Chối Yêu Cầu
                   </h3>
                   <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-red-400 transition"><i class="fa-solid fa-times"></i></button>
               </div>
@@ -118,7 +118,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <div class="flex justify-end gap-3 mt-8">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
                       <button (click)="onReject()" [disabled]="!rejectReason().toString().trim() || isProcessing" class="px-8 py-3 bg-red-600 text-white font-bold text-base rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 dark:shadow-none transition disabled:opacity-50">
-                          Xác nhận từ chối
+                          Xác Nhận từ Chối
                       </button>
                   </div>
               </div>
@@ -208,7 +208,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
           <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-teal-50/50 dark:bg-teal-900/10">
                   <h3 class="font-black text-teal-600 dark:text-teal-400 text-xl flex items-center gap-2">
-                      <i class="fa-solid fa-vial-circle-check"></i> Ghi nhận đợt dùng
+                      <i class="fa-solid fa-vial-circle-check"></i> Ghi Nhận Đợt Dùng
                   </h3>
                   <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-teal-400 transition"><i class="fa-solid fa-times"></i></button>
               </div>
@@ -247,7 +247,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
                   <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-xl flex items-center gap-2">
-                      <i class="fa-solid fa-clipboard-check"></i> Xác nhận nhập kho trả
+                      <i class="fa-solid fa-clipboard-check"></i> Xác Nhận Nhập Kho Trả
                   </h3>
                   <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
               </div>
@@ -289,7 +289,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
                       <button (click)="onAdminReceive()" [disabled]="adminReceiveAmount() === null || adminReceiveAmount()! < minimumLoggedAmount() || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
-                          Hoàn tất tiếp nhận
+                          Hoàn Tất Tiếp Nhận
                       </button>
                   </div>
               </div>

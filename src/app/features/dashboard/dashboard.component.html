@@ -8,9 +8,9 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">
-                        Xin chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
+                        Xin Chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
                     </h1>
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng.</p>
                 </div>
             </div>
             
@@ -154,7 +154,7 @@
                         @if(priorityStandard(); as std) {
                             <h4 class="text-sm font-bold text-gray-800 dark:text-slate-100 truncate leading-tight mt-1" [title]="std.name">{{std.name}}</h4>
                         } @else {
-                            <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An toàn</h4>
+                            <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An Toàn</h4>
                         }
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewStandards()">
@@ -188,7 +188,7 @@
                 <div class="flex-1 flex flex-col" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()" [class.pointer-events-none]="!auth.canViewReports()">
                     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4">
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg shrink-0">Hiệu suất Phân tích</h6>
+                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg shrink-0">Hiệu Suất Phân Tích</h6>
                             <!-- SOP Active Filter Badge -->
                             @if(selectedSopFilter(); as activeSop) {
                                 <button (click)="selectedSopFilter.set(null)" 
@@ -229,7 +229,7 @@
                             <h4 class="text-xl font-black text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
                         </div>
                         <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                            <p class="text-[10px] font-bold text-slate-500 uppercase">TB Mẫu/Mẻ</p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Trung bình mẫu/mẻ</p>
                             <h4 class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
                         </div>
                     </div>
@@ -244,7 +244,7 @@
                             }
                         </div>
                         <div class="relative w-full h-full flex flex-col items-center justify-start min-h-0">
-                            <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full shrink-0">Phân bổ SOP</h6>
+                            <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full shrink-0">Phân Bổ SOP</h6>
                             @if(isLoading()) {
                                 <div class="flex items-center justify-center h-full w-full"><app-skeleton width="150px" height="150px" shape="circle"></app-skeleton></div>
                             } @else {
@@ -282,7 +282,7 @@
                 <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col min-h-0 border border-slate-100 dark:border-slate-700">
                     <div class="flex flex-col gap-3 mb-4 shrink-0">
                         <div class="flex items-center justify-between">
-                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base">Hoạt động gần đây</h6>
+                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base">Hoạt Động Gần Đây</h6>
                             <div class="relative w-1/2">
                                 <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                 <input type="text" [ngModel]="logSearchTerm()" (ngModelChange)="logSearchTerm.set($event)" placeholder="Tìm kiếm..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs rounded-lg pl-8 pr-2 py-1.5 focus:outline-none focus:border-blue-500 transition text-slate-700 dark:text-slate-300">
@@ -328,11 +328,11 @@
                                                             @if (log.requestId) {
                                                                 <div class="mt-2 flex gap-2">
                                                                     <button (click)="navTo('traceability/' + log.requestId)" class="text-[9px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 font-bold transition shadow-xs active:scale-95 flex items-center">
-                                                                        <i class="fa-solid fa-qrcode mr-1"></i> Truy xuất
+                                                                        <i class="fa-solid fa-qrcode mr-1"></i> Truy Xuất
                                                                     </button>
                                                                     @if (log.action && (log.action.includes('RESULT') || log.action === 'PUBLISH_RESULT_REPORT' || log.action === 'DIRECT_APPROVE' || log.action === 'APPROVE_REQUEST')) {
                                                                         <button (click)="navTo('results/' + log.requestId)" class="text-[9px] bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 px-2.5 py-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/55 font-bold transition shadow-xs active:scale-95 flex items-center">
-                                                                            <i class="fa-solid fa-vial mr-1"></i> Kết quả
+                                                                            <i class="fa-solid fa-vial mr-1"></i> Kết Quả
                                                                         </button>
                                                                     }
                                                                 </div>

@@ -230,12 +230,12 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           timestamp: serverTimestamp()
       });
 
-      // Gửi Broadcast (Push Notification) tới tất cả user
+      // Gửi Broadcast (thông báo đẩy) tới tất cả user
       await this.notificationCenter.publish({
           recipientUid: 'role:all',
           eventId: newRef.id,
           type: 'SYSTEM_UPDATE',
-          title: 'Thông báo Hệ thống',
+          title: 'Thông báo hệ thống',
           message: content,
           actionUrl: actionUrl,
           channels: ['inbox', 'push']
@@ -248,7 +248,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   async deleteSystemUpdate(id: string) {
       if (!await this.confirmationService.confirm({
-          message: 'Xóa bài đăng này và thu hồi thông báo trong Hộp thư? (Lưu ý: Thông báo Push đã phát trên thiết bị không thể thu hồi)',
+          message: 'Xóa bài đăng này và thu hồi thông báo trong Hộp thư? (Lưu ý: Thông báo đẩy đã phát trên thiết bị không thể thu hồi)',
           confirmText: 'Xóa & Thu hồi',
           isDangerous: true
       })) return;
@@ -337,7 +337,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       XLSX.writeFile(wb, fileName);
       this.archiverStatus.set('ready_to_delete');
     } catch (e) {
-      this.toast.show('Lỗi khi tạo file Excel.', 'error');
+      this.toast.show('Lỗi khi tạo tệp Excel.', 'error');
       this.archiverStatus.set('idle');
     }
   }
@@ -400,7 +400,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
                 reqsToRestore = XLSX.utils.sheet_to_json(workbook.Sheets['Requests']);
             }
             if (logsToRestore.length === 0 && reqsToRestore.length === 0) {
-                this.toast.show('Không tìm thấy dữ liệu hợp lệ trong file Excel.', 'error');
+                this.toast.show('Không tìm thấy dữ liệu hợp lệ trong tệp Excel.', 'error');
                 this.archiverStatus.set('idle');
                 return;
             }
@@ -441,7 +441,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           this.toast.show(`Không thể lưu cấu hình in: ${e?.message || e}`, 'error');
       }
   }
-  copyRules() { navigator.clipboard.writeText(this.firestoreRules()).then(() => this.toast.show('Đã copy Rules!')); }
+  copyRules() { navigator.clipboard.writeText(this.firestoreRules()).then(() => this.toast.show('Đã sao chép quy tắc!')); }
 
   async exportData() {
       try {
@@ -557,7 +557,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async emptyRecycleBin() {
-      if (!await this.confirmationService.confirm({ message: 'Thao tác này là KHÔNG THỂ PHỤC HỒI. Nó gửi lệnh ÉP TOÀN BỘ NHÂN VIÊN bị Reset App. Tiếp tục?', confirmText: 'DỌN RÁC NGAY', isDangerous: true })) return;
+      if (!await this.confirmationService.confirm({ message: 'Thao tác này là KHÔNG THỂ PHỤC HỒI. Nó gửi lệnh ÉP TOÀN BỘ NHÂN VIÊN phải khởi động lại ứng dụng. Tiếp tục?', confirmText: 'DỌN RÁC NGAY', isDangerous: true })) return;
 
       this.isRecycling.set(true);
       try {

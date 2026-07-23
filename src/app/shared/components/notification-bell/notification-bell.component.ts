@@ -53,7 +53,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
 
         <span class="text-[9.5px] font-bold transition-all duration-200"
               [class]="panel.isOpen() ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-400 dark:text-slate-500'">
-          Thông báo
+          Thông Báo
         </span>
       </button>
 

@@ -222,8 +222,8 @@ export class StatisticsComponent {
               
               if (sopId === 'all') {
                   const data = nxtRows.map((row: any, index: number) => ({
-                    'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
-                    'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
+                    'STT': index + 1, 'Mã định danh': row.id, 'Tên hàng': row.name, 'ĐVT': row.unit, 'Phân loại': row.category,
+                    'Tồn đầu kỳ': row.startStock, 'Nhập trong kỳ': row.importQty, 'Xuất trong kỳ': row.exportQty, 'Tồn cuối kỳ': row.endStock
                   }));
                   const ws = XLSX.utils.json_to_sheet([]);
                   XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO NHẬP - XUẤT - TỒN (KHO)"]], { origin: "A1" });
@@ -233,8 +233,8 @@ export class StatisticsComponent {
                   sheetsAdded.push("NXT");
               } else {
                   const data = nxtRows.map((row: any, index: number) => ({
-                    'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit,
-                    'Tổng Lượng Xuất': row.exportQty
+                    'STT': index + 1, 'Mã định danh': row.id, 'Tên hàng': row.name, 'ĐVT': row.unit,
+                    'Tổng lượng xuất': row.exportQty
                   }));
                   const ws = XLSX.utils.json_to_sheet([]);
                   XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`CHI TIẾT XUẤT KHO - ${this.getSelectedSopName()}`]], { origin: "A1" });
@@ -310,8 +310,8 @@ export class StatisticsComponent {
                       .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
                       .sort((a,b) => b.amount - a.amount);
                   const data = sortedData.map((row, i) => ({
-                      'STT': i + 1, 'Mã Hóa chất/Vật tư': row.name, 'Tên Hóa chất/Vật tư': row.displayName,
-                      'Tổng Tiêu Hao': parseFloat(row.amount.toFixed(3)), 'ĐVT': row.unit
+                      'STT': i + 1, 'Mã hóa chất/vật tư': row.name, 'Tên hóa chất/Vật tư': row.displayName,
+                      'Tổng tiêu hao': parseFloat(row.amount.toFixed(3)), 'ĐVT': row.unit
                   }));
                   const sheetTitle = type === 'specific_day' ? `TIÊU HAO - LỌC NGÀY ${specDay}` : "DỮ LIỆU TIÊU HAO HÓA CHẤT (TỔNG HỢP)";
                   const ws = XLSX.utils.json_to_sheet([]);
@@ -367,7 +367,7 @@ export class StatisticsComponent {
 
                   const sortedRows = Array.from(pivotMap.entries()).sort((a, b) => b[1].grandTotal - a[1].grandTotal);
                   const data = sortedRows.map(([id, val], i) => {
-                      const rowObj: any = { 'STT': i + 1, 'Mã': id, 'Tên': val.displayName, 'ĐVT': val.unit, 'Tổng Cộng': parseFloat(val.grandTotal.toFixed(3)) };
+                      const rowObj: any = { 'STT': i + 1, 'Mã': id, 'Tên': val.displayName, 'ĐVT': val.unit, 'Tổng cộng': parseFloat(val.grandTotal.toFixed(3)) };
                       sortedColumns.forEach(col => { rowObj[col] = parseFloat((val.totals[col] || 0).toFixed(3)); });
                       return rowObj;
                   });
@@ -429,7 +429,7 @@ export class StatisticsComponent {
               
               const sops = this.sopFrequencyData();
               const sopRows = sops.map((d: any, index: number) => ({
-                'STT': index + 1, 'Quy trình (SOP)': d.name, 'Số lần chạy': d.count, 'Tổng Mẫu': d.samples, 'Tổng QC': d.qcs, 'Tỷ trọng (%)': formatNum(d.percent)
+                'STT': index + 1, 'Quy trình (SOP)': d.name, 'Số lần chạy': d.count, 'Tổng số mẫu': d.samples, 'Tổng QC': d.qcs, 'Tỷ trọng (%)': formatNum(d.percent)
               }));
               const ws = XLSX.utils.json_to_sheet([]);
               XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO TẦN SUẤT QUY TRÌNH (SOP)"]], { origin: "A1" });
@@ -986,8 +986,8 @@ export class StatisticsComponent {
       // consumptionData uses item.name which is the Firestore document ID (item ID)
       const invByIdMap = new Map(this.state.inventory().map(i => [i.id, i.category]));
       const invByNameMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
-      const stdByIdMap = new Map(this.state.standards().map((s: any) => [s.id, 'Chuẩn đối chiếu']));
-      const stdByNameMap = new Map(this.state.standards().map((s: any) => [s.name, 'Chuẩn đối chiếu']));
+      const stdByIdMap = new Map(this.state.standards().map((s: any) => [s.id, 'Chất chuẩn đối chiếu']));
+      const stdByNameMap = new Map(this.state.standards().map((s: any) => [s.name, 'Chất chuẩn đối chiếu']));
       
       data.forEach(d => {
           // Priority: lookup by ID first (most reliable), then by display name as fallback

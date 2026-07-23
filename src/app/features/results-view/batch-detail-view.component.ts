@@ -51,8 +51,8 @@ import { MasterTargetService } from '../targets/master-target.service';
                 }
 
                 @if (run()?.parentMasterId) {
-                  <a [routerLink]="['/results', run().parentMasterId]" class="px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-extrabold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
-                    <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Đã gộp Master Ảo
+                  <a [routerLink]="['/results', run().parentMasterId]" class="px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-extrabold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
+                    <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Đã Gộp Mẻ Tổng Hợp
                   </a>
                 }
               </h3>
@@ -125,7 +125,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                 <i class="fa-solid fa-lock text-sm animate-pulse"></i>
               </div>
               <div>
-                <h4 class="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">Mẻ chạy đang được chỉnh sửa</h4>
+                <h4 class="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">Mẻ Chạy Đang Được Chỉnh Sửa</h4>
                 <p class="text-[11px] text-amber-650 dark:text-amber-300 font-semibold mt-0.5">
                   KTV <strong>{{ run()?.lockedByName }}</strong> đang chỉnh sửa mẻ này từ lúc <strong>{{ convertToDate(run()?.lockedAt) | date: 'HH:mm dd/MM/yyyy' }}</strong>. Số liệu hiển thị có thể thay đổi liên tục.
                 </p>
@@ -134,7 +134,7 @@ import { MasterTargetService } from '../targets/master-target.service';
             <button (click)="takeOverLock()"
                     class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-amber-500/10 cursor-pointer">
               <i class="fa-solid fa-unlock-keyhole"></i>
-              <span>Giành quyền chỉnh sửa</span>
+              <span>Giành Quyền Chỉnh Sửa</span>
             </button>
           </div>
         }
@@ -147,7 +147,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                     : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-table-cells text-sm"></i>
-            <span>Bảng kết quả</span>
+            <span>Bảng Kết Quả</span>
           </button>
           <button (click)="mobileActiveTab.set('pdf')"
                   [class]="mobileActiveTab() === 'pdf'
@@ -155,7 +155,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                     : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-file-pdf text-sm text-red-500"></i>
-            <span>PDF Preview</span>
+            <span>Xem Trước PDF</span>
           </button>
         </div>
 
@@ -168,7 +168,7 @@ import { MasterTargetService } from '../targets/master-target.service';
             <div class="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0">
               <div class="flex items-center gap-3 min-w-0">
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0 shrink-0">
-                  <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng kết quả chạy
+                  <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng Kết Quả Chạy
                 </h4>
                 
                 <!-- Prefix filter tabs -->
@@ -179,7 +179,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                               ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
                               : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                             class="transition duration-150 shrink-0">
-                      Tất cả
+                      Tất Cả
                     </button>
                     @for (prefix of detectedPrefixes(); track prefix) {
                       <button (click)="activeFilter.set(prefix)"
@@ -397,7 +397,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                   <i class="fa-solid fa-file-pdf text-5xl text-red-500"></i>
                   <div>
                     <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Báo cáo PDF đã sẵn sàng</p>
-                    <p class="text-xs text-slate-400 mt-1">Mở bằng PDF Preview để xác thực và xem an toàn.</p>
+                    <p class="text-xs text-slate-400 mt-1">Mở bản xem trước PDF để kiểm tra nội dung an toàn.</p>
                   </div>
                   <button (click)="openPdfInModal(getCurrentPdfUrl()!)"
                           class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
@@ -407,7 +407,7 @@ import { MasterTargetService } from '../targets/master-target.service';
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
                   <i class="fa-regular fa-file-pdf text-4xl"></i>
-                  <p class="text-sm font-medium">Chưa có PDF Preview nào cho tùy chọn này.</p>
+                  <p class="text-sm font-medium">Chưa có bản xem trước PDF cho tùy chọn này.</p>
                 </div>
               }
             </div>
@@ -419,17 +419,17 @@ import { MasterTargetService } from '../targets/master-target.service';
           <div class="w-20 h-20 bg-indigo-50 dark:bg-indigo-955/30 border border-indigo-100 dark:border-indigo-900/50 rounded-full flex items-center justify-center text-indigo-500 text-3xl mb-5 shadow-inner">
             <i class="fa-solid fa-file-pen"></i>
           </div>
-          <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa có kết quả phân tích</h4>
+          <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa Có Kết Quả Phân Tích</h4>
           <p class="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed font-medium">
             Mẻ chạy <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || run()?.id }}]</span> hiện chưa được nhập số liệu và đánh giá QC. Nhấn nút bên dưới để bắt đầu điền kết quả.
           </p>
           <div class="flex items-center gap-3">
             <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
-              Quay lại
+              Quay Lại
             </button>
             <button (click)="goToEditMode()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
               <i class="fa-solid fa-play text-xs"></i>
-              Truy cập UI Nhập Kết Quả
+              Mở Màn Hình Nhập Kết Quả
             </button>
           </div>
         </div>
@@ -439,12 +439,12 @@ import { MasterTargetService } from '../targets/master-target.service';
           <div class="w-16 h-16 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-full flex items-center justify-center text-red-500 text-2xl mb-4">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-          <h4 class="text-base font-extrabold text-slate-800 dark:text-slate-200 mb-1">Không tìm thấy mẻ phân tích</h4>
+          <h4 class="text-base font-extrabold text-slate-800 dark:text-slate-200 mb-1">Không Tìm Thấy Mẻ Phân Tích</h4>
           <p class="text-xs text-slate-400 dark:text-slate-500 mb-4 text-center max-w-sm">
             Không tìm thấy thông tin chi tiết hoặc cấu hình SOP tương ứng của mẻ chạy phân tích này.
           </p>
           <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-            Quay lại danh sách
+            Quay Lại Danh Sách
           </button>
         </div>
       }
@@ -466,12 +466,12 @@ import { MasterTargetService } from '../targets/master-target.service';
               <button (click)="viewTraceability()" 
                       class="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                <span>Mở trang</span>
+                <span>Mở Trang</span>
               </button>
               <button (click)="copyTraceabilityLink()" 
                       class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-355 rounded-xl text-xs font-bold active:scale-95 transition border border-slate-200/50">
                 <i class="fa-solid fa-copy"></i>
-                <span>Copy Link</span>
+                <span>Sao Chép Liên Kết</span>
               </button>
             </div>
 

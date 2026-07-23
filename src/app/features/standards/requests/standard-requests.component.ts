@@ -647,7 +647,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   'Tên hóa học': r.standardDetails?.chemical_name || '',
                   'Số lô (Lot)': r.lotNumber || '',
                   'Mã quản lý': r.standardDetails?.internal_id || '',
-                  'Mã Catalog (Product Code)': r.standardDetails?.product_code || '',
+                  'Mã catalog (mã sản phẩm)': r.standardDetails?.product_code || '',
                   'Số CAS': r.standardDetails?.cas_number || '',
                   'Độ tinh khiết': r.standardDetails?.purity || '',
                   'Hãng sản xuất': r.standardDetails?.manufacturer || '',
@@ -785,7 +785,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           this.exportCompleted.set(true);
       } catch (err) {
           console.error('Lỗi xuất Excel:', err);
-          this.toast.show('Lỗi xuất file Excel', 'error');
+          this.toast.show('Lỗi xuất tệp Excel', 'error');
       } finally {
           this.isExporting.set(false);
       }

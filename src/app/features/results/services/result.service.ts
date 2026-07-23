@@ -31,7 +31,7 @@ export class ResultService {
       }
       const data = metaSnap.data();
       if (!data['isVirtualMaster']) {
-        throw new Error('Chỉ được xóa mẻ Master Ảo (Mẻ gộp)');
+        throw new Error('Chỉ được xóa mẻ tổng hợp');
       }
 
       const childIds: string[] = data['childRequestIds'] || [];
@@ -433,7 +433,7 @@ export class ResultService {
               batch.set(childDetailRef, {
                 resultData: childResultData,
                 updatedAt: timestampStr,
-                updatedBy: userName + ' (via Master Sync)'
+                updatedBy: userName + ' (đồng bộ từ mẻ tổng hợp)'
               }, { merge: true });
             }
             
@@ -998,7 +998,7 @@ export class ResultService {
         throw new Error('Không thể nạp dữ liệu nháp của mẻ chạy!');
       }
 
-      // 1. Thu thập tất cả file in của bản hiện tại + các bản in trong lịch sử
+      // 1. Thu thập tất cả tệp in của bản hiện tại + các bản in trong lịch sử
       const filesToArchive: { pdfUrl?: string; docsUrl?: string }[] = [];
       if (currentDraft.pdfUrl || currentDraft.docsUrl) {
         filesToArchive.push({ pdfUrl: currentDraft.pdfUrl, docsUrl: currentDraft.docsUrl });

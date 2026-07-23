@@ -827,7 +827,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     if (!this.run()?.isVirtualMaster || this.isProcessing()) return;
     
     // Yêu cầu confirm
-    if (!confirm('Bạn có chắc chắn muốn gỡ gộp và xóa mẻ Master Ảo này không?\nDữ liệu kết quả mẫu đã nhập sẽ vẫn được giữ nguyên ở các mẻ con.')) {
+    if (!confirm('Bạn có chắc chắn muốn gỡ gộp và xóa mẻ tổng hợp này không?\nDữ liệu kết quả mẫu đã nhập sẽ vẫn được giữ nguyên ở các mẻ con.')) {
       return;
     }
 

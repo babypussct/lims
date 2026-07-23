@@ -24,7 +24,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                     <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
                         <i class="fa-solid fa-flask-vial text-indigo-600 dark:text-indigo-400"></i>
-                        {{ std() ? 'Cập nhật Chuẩn' : 'Thêm Chuẩn Mới' }}
+                        {{ std() ? 'Cập nhật chất chuẩn' : 'Thêm chất chuẩn mới' }}
                     </h3>
                     <button (click)="onClose()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
                 </div>
@@ -34,7 +34,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                         
                         <!-- SECTION 1: GENERAL INFO -->
                         <div class="space-y-4 fade-in">
-                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">1. Thông tin chung</h4>
+                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">1. Thông Tin Chung</h4>
                             <div>
                                 <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên thương mại (Commercial Name) <span class="text-red-500 dark:text-red-400">*</span></label>
                                 <input id="stdNameInput" formControlName="name" (input)="onNameChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: Sulfadiazine Standard">
@@ -59,7 +59,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 
                         <!-- SECTION 2: STOCK & STORAGE -->
                         <div class="space-y-4 fade-in">
-                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">2. Kho & Bảo quản</h4>
+                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">2. Kho & Bảo Quản</h4>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Điều kiện bảo quản</label>
@@ -72,7 +72,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                             </div>
                             
                             <div>
-                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
+                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã quản lý nội bộ</label>
                                 <input formControlName="internal_id" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
                             </div>
                             
@@ -90,7 +90,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 
                         <!-- SECTION 3: DOCS & EXPIRY -->
                         <div class="space-y-4 fade-in pb-4">
-                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">3. Hồ sơ & Hạn dùng</h4>
+                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">3. Hồ Sơ & Hạn Dùng</h4>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
@@ -109,7 +109,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                             </div>
                             
                             <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
+                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Tệp CoA (liên kết hoặc tải lên)</label>
                                 <div class="flex gap-2">
                                     <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
                                     @if(auth.currentUser()?.role === 'manager') {
@@ -123,7 +123,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                                         <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
                                     }
                                 </div>
-                                <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic"><i class="fa-brands fa-google-drive mr-0.5"></i> Nút Drive: upload tự động lên Google Drive, đặt tên theo chuẩn, gán link preview. <span class="text-blue-500 dark:text-blue-400">15GB free!</span></p>
+                                <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic"><i class="fa-brands fa-google-drive mr-0.5"></i> Nút Drive sẽ tự động tải tệp lên Google Drive, đặt tên theo quy ước và gắn liên kết xem trước. <span class="text-blue-500 dark:text-blue-400">Dung lượng miễn phí 15 GB.</span></p>
                             </div>
                         </div>
 
@@ -132,7 +132,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 
                 <!-- Footer Actions -->
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="onClose()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                    <button (click)="onClose()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
                     @if(!std()) {
                         <button (click)="saveStandard(true)" [disabled]="form.invalid || isProcessing()" class="px-5 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
@@ -141,7 +141,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                     }
                     <button (click)="saveStandard(false)" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
-                        @else { {{ std() ? 'Lưu Thay Đổi' : 'Tạo Mới' }} }
+                        @else { {{ std() ? 'Lưu thay đổi' : 'Tạo mới' }} }
                     </button>
                 </div>
             </div>
@@ -237,9 +237,9 @@ export class StandardsFormModalComponent {
     try {
         const url = await this.firebaseService.uploadFile('coa', file);
         this.form.patchValue({ certificate_ref: url });
-        this.toast.show('Upload COA thành công!');
+        this.toast.show('Tải CoA lên thành công!');
     } catch (e: any) { 
-        this.toast.show('Upload lỗi: ' + (e.message || 'Unknown'), 'error'); 
+        this.toast.show('Không thể tải CoA lên: ' + (e.message || 'Không xác định'), 'error');
     } finally { 
         this.isUploading.set(false);
         event.target.value = ''; 
@@ -260,12 +260,12 @@ export class StandardsFormModalComponent {
                 const lotNum = this.form.value.lot_number || 'NoLot';
                 const fileName = GoogleDriveService.generateFileName(stdName, lotNum, file.name);
 
-                this.toast.show(`Đang upload "${fileName}" lên Google Drive...`);
+                this.toast.show(`Đang tải "${fileName}" lên Google Drive...`);
                 const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
                 this.form.patchValue({ certificate_ref: previewUrl });
-                this.toast.show(`Upload Drive thành công! File: ${fileName}`);
+                this.toast.show(`Đã tải tệp lên Google Drive: ${fileName}`);
             } catch (e: any) {
-                this.toast.show('Upload Drive lỗi: ' + (e.message || 'Không xác định'), 'error');
+                this.toast.show('Không thể tải tệp lên Google Drive: ' + (e.message || 'Không xác định'), 'error');
             } finally {
                 this.isDriveUploading.set(false);
                 event.target.value = ''; 

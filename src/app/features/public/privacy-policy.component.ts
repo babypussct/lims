@@ -22,7 +22,7 @@ import { Router } from '@angular/router';
           </div>
           <button (click)="goBack()" 
                   class="self-start sm:self-auto px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm active:scale-95">
-            <i class="fa-solid fa-arrow-left"></i> Quay lại
+            <i class="fa-solid fa-arrow-left"></i> Quay Lại
           </button>
         </div>
 
@@ -38,14 +38,14 @@ import { Router } from '@angular/router';
 
           <div class="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 text-sm sm:text-base leading-relaxed">
             <p>
-              Chào mừng bạn đến với <strong>NAFIQPM6 LIMS Cloud</strong> (Hệ thống Quản lý Thông tin Phòng thí nghiệm). 
+              Chào mừng bạn đến với <strong>NAFIQPM6 LIMS Cloud</strong> (Hệ thống quản lý thông tin phòng thí nghiệm).
               Chúng tôi cam kết bảo vệ thông tin cá nhân và dữ liệu riêng tư của bạn. Chính sách bảo mật này giải thích cách ứng dụng của chúng tôi thu thập, sử dụng và bảo vệ thông tin khi bạn sử dụng các tính năng liên quan đến tài khoản và tích hợp API Google.
             </p>
 
             <!-- Section 1 -->
             <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800/80 my-8">
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-folder-open text-blue-500"></i> 1. Thu thập dữ liệu và Truy cập Google API
+                <i class="fa-solid fa-folder-open text-blue-500"></i> 1. Thu Thập Dữ Liệu và Truy Cập Google API
               </h3>
               <p class="mb-3">
                 Hệ thống của chúng tôi tích hợp với dịch vụ Google Drive để cung cấp tính năng lưu trữ và đồng bộ báo cáo phòng thí nghiệm. Cụ thể:
@@ -64,7 +64,7 @@ import { Router } from '@angular/router';
             <!-- Section 2 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-gears text-blue-500"></i> 2. Cách chúng tôi sử dụng dữ liệu của bạn
+                <i class="fa-solid fa-gears text-blue-500"></i> 2. Cách Chúng Tôi Sử Dụng Dữ Liệu của Bạn
               </h3>
               <p>
                 Dữ liệu truy cập thông qua tài khoản Google của bạn chỉ được sử dụng cho các mục đích chức năng cốt lõi sau:
@@ -79,7 +79,7 @@ import { Router } from '@angular/router';
             <!-- Section 3 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-lock text-blue-500"></i> 3. Lưu trữ và Bảo mật dữ liệu
+                <i class="fa-solid fa-lock text-blue-500"></i> 3. Lưu Trữ và Bảo Mật Dữ Liệu
               </h3>
               <p class="mb-3">
                 Chúng tôi áp dụng các tiêu chuẩn an ninh cao nhất để bảo vệ thông tin xác thực của bạn:
@@ -97,7 +97,7 @@ import { Router } from '@angular/router';
             <!-- Section 4 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-share-nodes text-blue-500"></i> 4. Chia sẻ thông tin với Bên thứ ba
+                <i class="fa-solid fa-share-nodes text-blue-500"></i> 4. Chia Sẻ Thông Tin với Bên Thứ Ba
               </h3>
               <p>
                 Chúng tôi tuyệt đối <strong>KHÔNG</strong> chia sẻ, bán, trao đổi hoặc chuyển giao thông tin cá nhân hay dữ liệu từ Google Drive của bạn cho bất kỳ bên thứ ba nào. Dữ liệu này chỉ thuộc sở hữu của bạn và chỉ phục vụ việc vận hành chức năng ứng dụng theo hành động thực tế của bạn.
@@ -107,7 +107,7 @@ import { Router } from '@angular/router';
             <!-- Section 5 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-user-xmark text-blue-500"></i> 5. Quyền kiểm soát và Thu hồi quyền truy cập
+                <i class="fa-solid fa-user-xmark text-blue-500"></i> 5. Quyền Kiểm Soát và Thu Hồi Quyền Truy Cập
               </h3>
               <p>
                 Bạn hoàn toàn có quyền kiểm soát tài khoản của mình. Bạn có thể thu hồi quyền truy cập Google Drive bất kỳ lúc nào bằng cách:
@@ -122,7 +122,7 @@ import { Router } from '@angular/router';
             <!-- Section 6 -->
             <div class="border-t border-slate-100 dark:border-slate-700/80 pt-6 mt-8">
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-envelope-open-text text-blue-500"></i> 6. Liên hệ hỗ trợ
+                <i class="fa-solid fa-envelope-open-text text-blue-500"></i> 6. Liên Hệ Hỗ Trợ
               </h3>
               <p>
                 Nếu bạn có bất kỳ câu hỏi nào liên quan đến Chính sách Bảo mật này hoặc các vấn đề kỹ thuật khác, vui lòng liên hệ quản trị viên:

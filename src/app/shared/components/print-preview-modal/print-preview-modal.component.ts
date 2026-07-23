@@ -19,7 +19,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <!-- HEADER (Hidden when printing) -->
                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 print-hidden-ui">
                     <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-print text-indigo-600"></i> Xem trước khi in (A4 Preview)
+                        <i class="fa-solid fa-print text-indigo-600"></i> Xem Trước khi In (A4 Preview)
                     </h3>
                     <div class="flex gap-2">
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 border border-slate-200">
@@ -39,7 +39,7 @@ import { ToastService } from '../../../core/services/toast.service';
                         
                         <!-- Toggle Options -->
                         <div class="space-y-3">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tùy chọn hiển thị</h4>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tùy Chọn Hiển Thị</h4>
                             
                             <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 transition">
                                 <span class="text-sm font-bold text-slate-700">Tiêu đề (Header)</span>
@@ -174,7 +174,7 @@ import { ToastService } from '../../../core/services/toast.service';
                             } @else {
                                 <i class="fa-solid fa-download"></i>
                                 <span class="hidden md:inline">TẢI TÀI LIỆU</span>
-                                <span class="inline md:hidden">Tải file</span>
+                                <span class="inline md:hidden">Tải File</span>
                             }
                         </button>
 
@@ -243,7 +243,7 @@ import { ToastService } from '../../../core/services/toast.service';
                             <button (click)="retryLoadBlob()"
                                     class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 active:scale-95">
                                 <i class="fa-solid fa-rotate-right"></i>
-                                <span>Xác thực & Tải lại</span>
+                                <span>Xác Thực & Tải Lại</span>
                             </button>
                             <p class="text-[11px] text-slate-400">
                                 Hoặc nhấn <strong class="text-indigo-500">TẢI TÀI LIỆU</strong> / <strong class="text-indigo-500">GOOGLE DOCS</strong> ở trên.
@@ -299,7 +299,7 @@ export class PrintPreviewModalComponent {
 
   private cloneContentToContainer(targetContainer: HTMLElement): void {
       const source = document.querySelector('app-print-layout');
-      if (!source) throw new Error('Preview element not found');
+      if (!source) throw new Error('Không tìm thấy nội dung cần xem trước.');
 
       const clone = source.cloneNode(true) as HTMLElement;
       const sourceCanvases = source.querySelectorAll('canvas');

@@ -66,7 +66,7 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
 
   async startCamera() {
     if (typeof Html5Qrcode === 'undefined') {
-        this.statusMsg.set('Lỗi: Thư viện Scanner chưa tải.');
+        this.statusMsg.set('Không thể mở máy quét vì thư viện quét mã chưa tải xong.');
         return;
     }
 

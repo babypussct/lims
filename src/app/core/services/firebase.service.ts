@@ -52,7 +52,7 @@ export class FirebaseService {
 
   async requestPushToken(): Promise<string | null> {
     if (!('Notification' in window)) {
-        throw new Error('Trình duyệt không hỗ trợ Push Notification. (Trên iOS, bạn phải chọn "Thêm vào Màn hình chính" - Add to Home Screen trước).');
+        throw new Error('Trình duyệt không hỗ trợ thông báo đẩy. Trên iOS, hãy thêm ứng dụng vào Màn hình chính trước.');
     }
 
     const permission = await Notification.requestPermission();

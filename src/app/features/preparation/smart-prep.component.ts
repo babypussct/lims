@@ -85,12 +85,12 @@ export class SmartPrepComponent {
   volUnits = VOL_UNITS;
   massUnits = MASS_UNITS;
   modes: {id: CalcMode, label: string, icon: string, color: string, activeClass: string}[] = [
-      { id: 'molar', label: 'Molar (Rắn)', icon: 'fa-weight-hanging', color: 'blue', activeClass: 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/20 dark:bg-blue-900/20' },
-      { id: 'dilution', label: 'Pha Loãng', icon: 'fa-droplet', color: 'orange', activeClass: 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50/20 dark:bg-orange-900/20' },
-      { id: 'spiking', label: 'Thêm Chuẩn', icon: 'fa-syringe', color: 'emerald', activeClass: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/20' },
-      { id: 'serial', label: 'Dãy Chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia', activeClass: 'border-fuchsia-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50/20 dark:bg-fuchsia-900/20' },
-      { id: 'mix', label: 'Pha Mix', icon: 'fa-blender', color: 'indigo', activeClass: 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50/20 dark:bg-indigo-900/20' },
-      { id: 'sample_prep', label: 'Xử lý Mẫu', icon: 'fa-vials', color: 'teal', activeClass: 'border-teal-500 text-teal-600 dark:text-teal-400 bg-teal-50/20 dark:bg-teal-900/20' }
+      { id: 'molar', label: 'Dung dịch mol từ chất rắn', icon: 'fa-weight-hanging', color: 'blue', activeClass: 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/20 dark:bg-blue-900/20' },
+      { id: 'dilution', label: 'Pha loãng', icon: 'fa-droplet', color: 'orange', activeClass: 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50/20 dark:bg-orange-900/20' },
+      { id: 'spiking', label: 'Thêm chuẩn', icon: 'fa-syringe', color: 'emerald', activeClass: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/20' },
+      { id: 'serial', label: 'Dãy chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia', activeClass: 'border-fuchsia-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50/20 dark:bg-fuchsia-900/20' },
+      { id: 'mix', label: 'Pha hỗn hợp', icon: 'fa-blender', color: 'indigo', activeClass: 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50/20 dark:bg-indigo-900/20' },
+      { id: 'sample_prep', label: 'Xử lý mẫu', icon: 'fa-vials', color: 'teal', activeClass: 'border-teal-500 text-teal-600 dark:text-teal-400 bg-teal-50/20 dark:bg-teal-900/20' }
   ];
 
   // --- STATE ---
@@ -205,7 +205,7 @@ export class SmartPrepComponent {
               this.mixItems.set(newItems);
               this.toast.show(`Đã import ${newItems.length} chất từ Clipboard`, 'success');
           } else {
-              this.toast.show('Không tìm thấy dữ liệu hợp lệ. Copy 3 cột: Tên | C_stock | C_target', 'error');
+              this.toast.show('Không tìm thấy dữ liệu hợp lệ. Hãy sao chép 3 cột: Tên | Nồng độ gốc | Nồng độ đích', 'error');
           }
       } catch (err) {
           this.toast.show('Lỗi đọc Clipboard. Hãy cấp quyền cho trình duyệt.', 'error');
@@ -549,7 +549,7 @@ export class SmartPrepComponent {
                       const amount = details[i].vStock;
                       if (mItem.invItem && amount > 0) {
                           const normalizedAmount = this.normalizeToStockUnit(amount, this.targetVolUnit(), mItem.invItem.unit);
-                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -normalizedAmount, 'Pha Mix (Smart Prep)');
+                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -normalizedAmount, 'Pha hỗn hợp tại trạm pha chế');
                       }
                   }
               } else if (this.calcMode() === 'serial') {
@@ -557,11 +557,11 @@ export class SmartPrepComponent {
                   const totalStock_uL = this.serialTotalStock();
                   const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
                   const normalizedAmount = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
-                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Smart Prep: Dãy chuẩn`);
+                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Trạm pha chế: Dãy chuẩn`);
               } else if (this.calcMode() !== 'sample_prep') {
                   const item = this.selectedItem()!;
                   const normalizedAmount = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
-                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Smart Prep: ${this.calcMode()}`);
+                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Trạm pha chế: ${this.calcMode()}`);
               }
               
               this.toast.show('Giao dịch thành công!', 'success');
@@ -598,14 +598,14 @@ export class SmartPrepComponent {
           const conc = `${this.formatNum(this.targetConc())} ${this.targetConcUnit()}`;
           labelText = `${name}\n${conc}\n${dateStr} - ${user}`;
       } else if (mode === 'spiking') {
-          labelText = `Mẫu Spike\n+${this.formatNum(this.targetConc())} ${this.targetConcUnit()}\n${dateStr} - ${user}`;
+          labelText = `Mẫu thêm chuẩn\n+${this.formatNum(this.targetConc())} ${this.targetConcUnit()}\n${dateStr} - ${user}`;
       } else if (mode === 'serial') {
           const item = this.selectedItem();
           const name = item ? item.name : 'Chuẩn';
           const points = this.serialResult();
           labelText = points.map((p, i) => `STD ${i+1}: ${name}\n${p.conc} ${this.targetConcUnit()}\n${dateStr} - ${user}`).join('\n\n');
       } else if (mode === 'mix') {
-          labelText = `Mix Chuẩn\n${this.mixItems().length} thành phần\n${dateStr} - ${user}`;
+          labelText = `Hỗn hợp chuẩn\n${this.mixItems().length} thành phần\n${dateStr} - ${user}`;
       } else if (mode === 'sample_prep') {
           labelText = `Mẫu xử lý\nf = ${this.formatNum(this.samplePrepFactor())}\n${dateStr} - ${user}`;
       }

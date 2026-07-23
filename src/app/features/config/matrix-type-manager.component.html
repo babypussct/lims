@@ -9,7 +9,7 @@
     
     <div class="flex items-center gap-3">
       <a routerLink="/config" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors">
-        Quay lại Config
+        Quay lại cấu hình
       </a>
       <button (click)="openAddModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -47,7 +47,7 @@
               <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 {{ item.name }}
                 @if (item.isDefault) {
-                  <span class="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-bold uppercase border border-amber-200 dark:border-amber-800">Mặc định</span>
+                  <span class="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-bold uppercase border border-amber-200 dark:border-amber-800">Mặc Định</span>
                 }
               </h3>
               <p class="text-xs text-slate-500 font-mono mt-0.5">{{ item.id }}</p>
@@ -62,7 +62,7 @@
       
       @if (matrices().length === 0) {
         <div class="col-span-full py-12 text-center text-slate-500">
-          Chưa có nền mẫu nào. Nhấn "Thêm Nền Mẫu" để tạo.
+          Chưa có nền mẫu nào. Nhấn "Thêm nền mẫu" để tạo.
         </div>
       }
     </div>
@@ -75,7 +75,7 @@
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
       <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
         <h3 class="font-bold text-lg text-slate-800 dark:text-white">
-          {{ isEditMode ? 'Sửa Nền Mẫu' : 'Thêm Nền Mẫu Mới' }}
+          {{ isEditMode ? 'Sửa Nền mẫu' : 'Thêm nền mẫu Mới' }}
         </h3>
         <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -84,7 +84,7 @@
       
       <div class="p-4 space-y-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Nền Mẫu *</label>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên nền mẫu *</label>
           <input type="text" [(ngModel)]="formData.name" (ngModelChange)="onNameChange()" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: Nước, Thực Phẩm...">
         </div>
         
@@ -92,7 +92,7 @@
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mã (ID) *</label>
           <input type="text" [(ngModel)]="formData.id" [disabled]="isEditMode" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg disabled:opacity-70 outline-none font-mono text-sm" placeholder="VD: water">
           @if (!isEditMode) {
-             <p class="text-xs text-slate-500 mt-1">Mã ID không thể thay đổi sau khi tạo.</p>
+             <p class="text-xs text-slate-500 mt-1">Mã định danh không thể thay đổi sau khi tạo.</p>
           }
         </div>
         
@@ -118,7 +118,7 @@
           @if (isSaving()) {
             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
           }
-          Lưu Nền Mẫu
+          Lưu nền mẫu
         </button>
       </div>
     </div>

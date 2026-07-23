@@ -18,7 +18,7 @@ import { StateService } from '../../../core/services/state.service';
              <tr>
                 <th class="px-4 py-3 w-10 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll.emit()" class="w-4 h-4 accent-indigo-600 dark:accent-indigo-500 cursor-pointer"></th>
                 <th class="px-4 py-3 w-[25%]">Định danh & Vị trí</th>
-                <th class="px-4 py-3 w-[20%]">Thông tin Lô/SX</th>
+                <th class="px-4 py-3 w-[20%]">Thông tin lô/sản xuất</th>
                 <th class="px-4 py-3 w-[15%]">Tồn kho & Bảo quản</th>
                 <th class="px-4 py-3 w-[15%]">Hạn dùng & Hồ sơ</th>
                 <th class="px-4 py-3 w-[10%] text-center">Trạng thái</th>
@@ -59,8 +59,8 @@ import { StateService } from '../../../core/services/state.service';
                        <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
                           <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
                           <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                              <span class="font-bold text-slate-400 dark:text-slate-500">LOT:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Click để copy" (click)="copyText.emit({text: std.lot_number || '', event: $event})">{{std.lot_number || '-'}}</span>
-                              <span class="font-bold text-slate-400 dark:text-slate-500">CODE:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Click để copy" (click)="copyText.emit({text: std.product_code || '', event: $event})">{{std.product_code || '-'}}</span>
+                              <span class="font-bold text-slate-400 dark:text-slate-500">LOT:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Nhấn để sao chép" (click)="copyText.emit({text: std.lot_number || '', event: $event})">{{std.lot_number || '-'}}</span>
+                              <span class="font-bold text-slate-400 dark:text-slate-500">CODE:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Nhấn để sao chép" (click)="copyText.emit({text: std.product_code || '', event: $event})">{{std.product_code || '-'}}</span>
                               @if(std.cas_number) { <span class="font-bold text-slate-400 dark:text-slate-500">CAS:</span><span class="font-mono text-slate-700 dark:text-slate-300">{{std.cas_number}}</span> }
                           </div>
                           <div class="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] flex items-center gap-2 text-slate-500 dark:text-slate-400">

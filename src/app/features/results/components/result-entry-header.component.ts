@@ -27,7 +27,7 @@ export class ResultEntryHeaderComponent {
   @Input() samplesPerReport: number | null = null;
   @Input() currentPdfUrl: string | null = null;
   @Input() currentDocsUrl: string | null = null;
-  @Input() printButtonLabel = 'Xuất Báo Cáo';
+  @Input() printButtonLabel = 'Xuất báo cáo';
 
   // ── Action Outputs ────────────────────────────────────────────────────────
   @Output() goBack = new EventEmitter<void>();

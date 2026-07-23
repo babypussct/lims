@@ -408,7 +408,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return;
       }
 
-      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (Admin).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (quản trị viên).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
           this.isProcessing.set(true);
           try {
               await this.stdService.deleteSelectedStandards(ids);
@@ -466,10 +466,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedData(this.importPreviewData());
-          this.toast.show('Import thành công!', 'success');
+          this.toast.show('Nhập dữ liệu thành công!', 'success');
           this.importPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Lỗi lưu import: ' + e.message, 'error');
+          this.toast.show('Không thể lưu dữ liệu nhập: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -480,10 +480,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedUsageLogs(this.importUsageLogPreviewData());
-          this.toast.show('Import nhật ký thành công!', 'success');
+          this.toast.show('Nhập nhật ký thành công!', 'success');
           this.importUsageLogPreviewData.set([]);
       } catch (e: any) {
-          this.toast.show('Lỗi lưu import nhật ký: ' + e.message, 'error');
+          this.toast.show('Không thể lưu nhật ký vừa nhập: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }
@@ -507,12 +507,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
               driveInput.click();
               return;
           }
-          this.toast.show('Không tìm thấy input upload', 'error');
+          this.toast.show('Không tìm thấy ô chọn tệp.', 'error');
       } else {
           // XÁC THỰC TRƯỚC: Nếu chưa có token, xác thực xong yêu cầu user nhấn lại để có user activation
           this.googleDriveService.authenticateSync(
               () => {
-                  this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Upload để chọn file.', 'success');
+                  this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Tải lên để chọn tệp.', 'success');
               },
               (err) => {
                   this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
@@ -533,7 +533,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.quickUploadStdId.set(std.id);
       try {
           const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-          this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+          this.toast.show(`Đang tải CoA lên cho "${std.name}"...`);
 
           // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
           const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
@@ -552,11 +552,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
           if (siblings.length > 1) {
               this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
           } else {
-              this.toast.show(`Upload CoA thành công! ${fileName}`);
+              this.toast.show(`Tải CoA lên thành công! ${fileName}`);
           }
       } catch (e: any) {
           console.error('Quick Drive upload error:', e);
-          this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+          this.toast.show('Không thể tải CoA lên: ' + (e.message || 'Không xác định'), 'error');
       } finally {
           this.quickUploadStdId.set('');
           this.quickUploadStd = null;
@@ -705,7 +705,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
       if (!text) return;
-      navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
+      navigator.clipboard.writeText(text).then(() => this.toast.show('Đã sao chép: ' + text));
   }
 
   goToReturn(std: ReferenceStandard) {
@@ -1119,11 +1119,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
           URL.revokeObjectURL(url);
 
           this.exportCompleted.set(true);
-          this.toast.show('Xuat file Excel thanh cong!', 'success');
+          this.toast.show('Xuat tệp Excel thanh cong!', 'success');
 
       } catch (err: any) {
           console.error('Loi xuat Excel:', err);
-          this.toast.show('Loi xuat file Excel: ' + (err.message || ''), 'error');
+          this.toast.show('Loi xuat tệp Excel: ' + (err.message || ''), 'error');
       } finally {
           this.isExporting.set(false);
       }

@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 /**
  * Quy tắc thống nhất cho tất cả SOP:
  *   Cột 1 – Tên điểm chuẩn : pt['loSo']   (VD: C0, C1, C2 … — KHÔNG thay đổi bằng bulk)
- *   Cột 2 – Số vial          : pt['vialNo'] (NƠI THAO TÁC BULK "Vial chuẩn")
+ *   Cột 2 – Số lọ          : pt['vialNo'] (NƠI THAO TÁC BULK "Vial chuẩn")
  *   Cột 3 – Nồng độ         : pt['hamLuong'] (VD: 0, 2, 5, 10, 20, 50)
  *
  * pointLabels[] — nếu có, hiển thị nhãn nồng độ tĩnh trên thẻ thay vì ô hamLuong
@@ -37,7 +37,7 @@ import { FormsModule } from '@angular/forms';
               <span [class]="'w-1.5 h-1.5 rounded-full ' + dotColor"></span>
             </div>
 
-            <!-- 3 Cột: Tên điểm | Số vial | Nồng độ -->
+            <!-- 3 Cột: Tên điểm | Số lọ | Nồng độ -->
             <div [class]="'grid gap-1.5 ' + ((pointLabels || []).length > 0 ? 'grid-cols-1' : 'grid-cols-3')">
 
               <!-- Cột 1: Tên điểm chuẩn (loSo) — chỉ hiển thị nếu pointLabels rỗng -->
@@ -54,9 +54,9 @@ import { FormsModule } from '@angular/forms';
                 </div>
               }
 
-              <!-- Cột 2: Số vial (vialNo) — LUÔN HIỂN THỊ, đây là nơi bulk điền -->
+              <!-- Cột 2: Số lọ (vialNo) — LUÔN HIỂN THỊ, đây là nơi bulk điền -->
               <div>
-                <label class="block text-[8px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-0.5">Số vial</label>
+                <label class="block text-[8px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-0.5">Số lọ</label>
                 <input type="text"
                        [(ngModel)]="pt['vialNo']"
                        (ngModelChange)="onPointsChanged()"
@@ -91,7 +91,7 @@ import { FormsModule } from '@angular/forms';
 export class SopCalibrationPointsComponent {
   @Input() title = 'Các Điểm Đường chuẩn';
   @Input() calibPoints: any[] = [];
-  /** Nhãn nồng độ tĩnh (VD: ['0 ppb','2 ppb'…]). Nếu có → ẩn cột Tên điểm & Nồng độ, chỉ edit Số vial. */
+  /** Nhãn nồng độ tĩnh (VD: ['0 ppb','2 ppb'…]). Nếu có → ẩn cột Tên điểm và nồng độ, chỉ edit Số lọ. */
   @Input() pointLabels: string[] = [];
   @Input() pointPrefix = 'C';
   @Input() suffixText = 'IS: 20 ppb';

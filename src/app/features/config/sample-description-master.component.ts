@@ -52,7 +52,7 @@ export class SampleDescriptionMasterComponent implements OnInit {
     try {
       this.items.set(await this.service.getAll());
     } catch (error: any) {
-      this.toast.show(`Không thể tải Master mô tả mẫu: ${error?.message || error}`, 'error');
+      this.toast.show(`Không thể tải danh mục mô tả mẫu: ${error?.message || error}`, 'error');
     } finally {
       this.loading.set(false);
     }
@@ -92,14 +92,14 @@ export class SampleDescriptionMasterComponent implements OnInit {
       return;
     }
     if (!/^[a-z0-9_]+$/.test(item.id)) {
-      this.toast.show('Mã ID phải dùng chữ thường không dấu, số và dấu gạch dưới (_), ví dụ: ca_tra.', 'error');
+      this.toast.show('Mã định danh phải dùng chữ thường không dấu, số và dấu gạch dưới (_), ví dụ: ca_tra.', 'error');
       return;
     }
     const duplicateId = this.items().find(existing =>
       existing.id === item.id && existing.id !== this.editingId()
     );
     if (duplicateId) {
-      this.toast.show(`Mã ID “${item.id}” đã được sử dụng cho “${duplicateId.name}”.`, 'error');
+      this.toast.show(`Mã định danh “${item.id}” đã được sử dụng cho “${duplicateId.name}”.`, 'error');
       return;
     }
     const duplicate = this.items().find(existing =>
@@ -113,7 +113,7 @@ export class SampleDescriptionMasterComponent implements OnInit {
     this.saving.set(true);
     try {
       await this.service.save(item, this.auth.currentUser()?.displayName || '');
-      this.toast.show('Đã lưu Master mô tả mẫu.', 'success');
+      this.toast.show('Đã lưu danh mục mô tả mẫu.', 'success');
       this.closeModal();
       await this.loadData();
     } catch (error: any) {
@@ -171,7 +171,7 @@ export class SampleDescriptionMasterComponent implements OnInit {
       this.toast.show(`Đã import ${preview.length} mô tả mẫu.`, 'success');
       await this.loadData();
     } catch (error: any) {
-      this.toast.show(`Không thể import: ${error?.message || error}`, 'error');
+      this.toast.show(`Không thể nhập dữ liệu: ${error?.message || error}`, 'error');
     } finally {
       this.saving.set(false);
     }
@@ -181,7 +181,7 @@ export class SampleDescriptionMasterComponent implements OnInit {
     try {
       const XLSX = await import('xlsx');
       const rows = this.items().map(item => ({
-        'Mã ID': item.id,
+        'Mã định danh': item.id,
         'Tên mô tả mẫu': item.name,
         'Bí danh': (item.aliases || []).join('; '),
         'Mô tả / Ghi chú': item.description || '',
@@ -206,7 +206,7 @@ export class SampleDescriptionMasterComponent implements OnInit {
     Object.entries(row).forEach(([rawKey, rawValue]) => {
       const key = normalizeText(rawKey);
       const value = String(rawValue ?? '').trim();
-      if ((key.includes('ma id') || key === 'id') && value) id = value;
+      if ((key.includes('ma id') || key.includes('ma dinh danh') || key === 'id') && value) id = value;
       else if ((key.includes('ten mo ta') || key === 'name' || key === 'ten') && value) name = value;
       else if (key.includes('bi danh') || key.includes('alias')) aliasesText = value;
       else if (key.includes('ghi chu') || key === 'mo ta' || key.includes('description')) description = value;

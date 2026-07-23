@@ -46,7 +46,7 @@ import { CommonModule } from '@angular/common';
                         </div>
                         <div>
                             <div class="text-sm font-black text-emerald-700 dark:text-emerald-400">Hoàn tất! File đã được tải xuống.</div>
-                            <div class="text-[11px] text-emerald-600 dark:text-emerald-500">Kiểm tra thư mục Downloads của bạn.</div>
+                            <div class="text-[11px] text-emerald-600 dark:text-emerald-500">Hãy kiểm tra thư mục Tải xuống.</div>
                         </div>
                     </div>
                 }
@@ -72,7 +72,7 @@ import { CommonModule } from '@angular/common';
                         <button disabled
                                 class="px-8 py-2.5 rounded-2xl font-black text-white bg-slate-400 dark:bg-slate-600 transition flex items-center gap-2 opacity-70 cursor-not-allowed">
                             <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            Đang xử lý...
+                            Đang Xử Lý...
                         </button>
                     }
                 </div>
@@ -82,12 +82,12 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class ExportModalComponent {
-  @Input() title = 'Xuất Báo cáo';
+  @Input() title = 'Xuất báo cáo';
   @Input() subtitle = '';
   @Input() dateRangeText = '';
   @Input() iconClass = 'fa-solid fa-file-export';
   @Input() footerText = '';
-  @Input() submitButtonText = 'Bắt đầu Xuất File';
+  @Input() submitButtonText = 'Xuất tệp';
   @Input() isExporting = false;
   @Input() isCompleted = false;
   @Input() isSubmitDisabled = false;

@@ -41,7 +41,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                 @if (activeTab() === 'general') {
                   <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
                 }
-                <span class="relative z-20">Báo cáo chung</span>
+                <span class="relative z-20">Báo Cáo Chung</span>
               </button>
               <button (click)="activeTab.set('prefix')"
                       class="flex-1 sm:flex-none relative px-6 py-2 text-xs font-bold rounded-lg transition-all duration-300 z-10 text-center cursor-pointer border-0"
@@ -55,7 +55,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                 @if (activeTab() === 'prefix') {
                   <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
                 }
-                <span class="relative z-20">Báo cáo theo nhóm</span>
+                <span class="relative z-20">Báo Cáo theo Nhóm</span>
               </button>
             </div>
           </div>
@@ -129,7 +129,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                   <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-mono font-bold border border-slate-200/50 dark:border-slate-700/50">{{ s }}</span>
                                 }
                                 <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold border border-indigo-200/50 dark:border-indigo-800/30 hover:bg-indigo-100 transition active:scale-95 border-0 cursor-pointer">
-                                  Thu gọn ▲
+                                  Thu Gọn ▲
                                 </button>
                               } @else {
                                 @let shortChips = getShortenedSampleChips(allChips);
@@ -142,7 +142,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                   </button>
                                 } @else if (allChips.length > shortChips.length) {
                                   <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold border border-indigo-200/50 dark:border-indigo-800/30 hover:bg-indigo-100 transition active:scale-95 border-0 cursor-pointer">
-                                    Chi tiết ▼
+                                    Chi Tiết ▼
                                   </button>
                                 }
                               }
@@ -225,7 +225,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                         <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-mono font-bold border border-slate-200/50 dark:border-slate-700/50">{{ s }}</span>
                                       }
                                       <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-bold border border-fuchsia-200/50 dark:border-fuchsia-800/30 hover:bg-fuchsia-100 transition active:scale-95 border-0 cursor-pointer">
-                                        Thu gọn ▲
+                                        Thu Gọn ▲
                                       </button>
                                     } @else {
                                       @let shortPrefChips = getShortenedSampleChips(prefChips);
@@ -238,7 +238,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                         </button>
                                       } @else if (prefChips.length > shortPrefChips.length) {
                                         <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-bold border border-fuchsia-200/50 dark:border-fuchsia-800/30 hover:bg-fuchsia-100 transition active:scale-95 border-0 cursor-pointer">
-                                          Chi tiết ▼
+                                          Chi Tiết ▼
                                         </button>
                                       }
                                     }
@@ -262,7 +262,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                 @if (runStatus === 'completed') {
                   <div class="bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl p-4 flex items-center justify-between gap-3">
                     <div>
-                      <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Mẻ hoàn thành nhưng chưa có file in</div>
+                      <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Mẻ hoàn thành nhưng chưa có tệp in</div>
                       <div class="text-[10px] text-slate-400 mt-0.5">Bản in chưa được tạo hoặc bị lỗi khi xuất.</div>
                     </div>
                     <button (click)="triggerCreateReport(undefined)"
@@ -281,7 +281,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
             <div class="space-y-2.5">
               <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-1.5">
-                <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Lịch sử phiên bản
+                <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Lịch Sử Phiên Bản
               </h4>
               
               @if (isLoadingHistory) {
@@ -338,7 +338,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                 <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-mono font-bold border border-slate-200/20 dark:border-slate-700/20">{{ s }}</span>
                               }
                               <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[8px] font-bold border border-slate-300/35 cursor-pointer hover:bg-slate-350 dark:hover:bg-slate-600 transition active:scale-95 border-0">
-                                Thu gọn ▲
+                                Thu Gọn ▲
                               </button>
                             } @else {
                               @let shortHist = getShortenedSampleChips(hist.includedSamples);
@@ -351,7 +351,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                 </button>
                               } @else if (hist.includedSamples.length > shortHist.length) {
                                 <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-150 dark:bg-slate-800/40 text-slate-500 dark:text-slate-450 text-[8px] font-semibold border border-slate-200/25 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 border-0">
-                                  Chi tiết ▼
+                                  Chi Tiết ▼
                                 </button>
                               }
                             }
@@ -374,7 +374,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
           <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-slate-50/30 dark:bg-slate-950/10">
             <button (click)="triggerCreateReport(undefined)"
                     class="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 rounded-xl transition active:scale-95 cursor-pointer border-0 bg-transparent">
-              <i class="fa-solid fa-pen-to-square text-[11px]"></i> Mở để chỉnh sửa
+              <i class="fa-solid fa-pen-to-square text-[11px]"></i> Mở để Chỉnh Sửa
             </button>
             <button (click)="closeModal()"
                     class="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition active:scale-95 cursor-pointer border-0">

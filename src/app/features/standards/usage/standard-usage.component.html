@@ -6,7 +6,7 @@
         <i class="fa-solid fa-clock-rotate-left text-base"></i>
       </div>
       <div>
-        <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Nhật ký dùng chuẩn</h2>
+        <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Nhật Ký Dùng Chuẩn</h2>
         <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Lịch sử tiêu thụ và sử dụng hóa chất chuẩn toàn hệ thống.</p>
       </div>
     </div>
@@ -48,7 +48,7 @@
           <option value="">Tất cả</option>
           <option value="usage">Sử dụng</option>
           <option value="return">Hoàn trả / Trừ kho</option>
-          <option value="import">Import Data</option>
+          <option value="import">Dữ liệu nhập từ tệp</option>
         </select>
       </div>
 
@@ -66,7 +66,7 @@
 
           @if (searchTerm() || fromDate() || toDate() || userFilter() || actionFilter()) {
             <button (click)="clearFilters()" class="px-4 py-2.5 text-slate-400 hover:text-red-500 font-bold text-sm transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20">
-              Xóa lọc
+              Xóa Lọc
             </button>
           }
         </div>
@@ -265,7 +265,7 @@
         <!-- EXPORT MODAL -->
         @if (showExportModal()) {
           <app-export-modal
-            title="Xuất Nhật ký dùng chuẩn"
+            title="Xuất nhật ký sử dụng chất chuẩn"
             [dateRangeText]="(fromDate() ? (fromDate() | date:'dd/MM/yyyy') : '') + (fromDate() || toDate() ? ' → ' : '') + (toDate() ? (toDate() | date:'dd/MM/yyyy') : '')"
             [isExporting]="isExporting()"
             [isCompleted]="exportCompleted()"
@@ -273,7 +273,7 @@
             (execute)="runExport()">
 
             <div class="px-5 pb-5 space-y-2 mt-4">
-              <!-- 1. Raw Data -->
+              <!-- 1. Dữ liệu gốc -->
               <div class="border rounded-2xl overflow-hidden transition-all"
                 [class]="exportType() === 'raw' ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-900/20' : 'border-slate-100 dark:border-slate-700'">
                 <button (click)="!isExporting() && exportType.set('raw'); exportCompleted.set(false)" [disabled]="isExporting()"
@@ -283,8 +283,8 @@
                     <i class="fa-solid fa-list"></i>
                   </div>
                   <div class="flex-1 text-left">
-                    <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'raw'">1. Nhật ký chi tiết (Raw Data)</div>
-                    <div class="text-[11px] text-slate-500">Toàn bộ lịch sử thao tác theo dòng thời gian</div>
+                    <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'raw'">1. Nhật Ký Chi Tiết</div>
+                    <div class="text-[11px] text-slate-500">Toàn Bộ Lịch Sử Thao Tác theo Dòng Thời Gian</div>
                   </div>
                 </button>
               </div>
@@ -299,8 +299,8 @@
                     <i class="fa-solid fa-flask"></i>
                   </div>
                   <div class="flex-1 text-left">
-                    <div class="text-sm font-black dark:text-slate-200" [class.text-emerald-700]="exportType() === 'standard'">2. Tổng hợp theo Hóa chất</div>
-                    <div class="text-[11px] text-slate-500">Tổng lượng dùng của từng mã hóa chất</div>
+                    <div class="text-sm font-black dark:text-slate-200" [class.text-emerald-700]="exportType() === 'standard'">2. Tổng Hợp theo Hóa Chất</div>
+                    <div class="text-[11px] text-slate-500">Tổng Lượng Dùng của Từng Mã Hóa Chất</div>
                   </div>
                 </button>
               </div>
@@ -315,8 +315,8 @@
                     <i class="fa-solid fa-users"></i>
                   </div>
                   <div class="flex-1 text-left">
-                    <div class="text-sm font-black dark:text-slate-200" [class.text-orange-700]="exportType() === 'user'">3. Tổng hợp theo Nhân viên</div>
-                    <div class="text-[11px] text-slate-500">Tần suất và tổng lượng dùng theo từng nhân viên</div>
+                    <div class="text-sm font-black dark:text-slate-200" [class.text-orange-700]="exportType() === 'user'">3. Tổng Hợp theo Nhân Viên</div>
+                    <div class="text-[11px] text-slate-500">Tần Suất và Tổng Lượng Dùng theo Từng Nhân Viên</div>
                   </div>
                 </button>
               </div>

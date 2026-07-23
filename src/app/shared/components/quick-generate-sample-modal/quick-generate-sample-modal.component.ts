@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
             
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <h3 class="font-black text-xl text-slate-800 mb-1">Tạo nhanh Mã Mẫu</h3>
+                    <h3 class="font-black text-xl text-slate-800 mb-1">Tạo Nhanh Mã Mẫu</h3>
                     <p class="text-sm text-slate-500">Tự động sinh danh sách mã mẫu theo quy tắc.</p>
                 </div>
                 <button (click)="close.emit()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition flex items-center justify-center">
@@ -61,7 +61,7 @@ import { FormsModule } from '@angular/forms';
             <div class="flex gap-3 mt-8">
                 <button (click)="close.emit()" class="flex-1 py-3 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm transition">Hủy</button>
                 <button (click)="generate()" [disabled]="!canGenerate()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Chèn vào danh sách
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Chèn vào Danh Sách
                 </button>
             </div>
         </div>

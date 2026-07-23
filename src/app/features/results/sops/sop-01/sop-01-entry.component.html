@@ -57,7 +57,7 @@
                     ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                 title="Chọn Thủy sản">
-                Thủy sản
+                Thủy Sản
               </button>
               <input type="text"
                 [(ngModel)]="draft.page1Data['loaiMau']"
@@ -77,7 +77,7 @@
                     ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                   title="Chọn Bình thường">
-                  Bình thường
+                  Bình Thường
                 </button>
                 <input type="text"
                   [(ngModel)]="draft.page1Data['tinhTrangMau']"
@@ -92,14 +92,14 @@
           <!-- 1.5. Section 7 Đường chuẩn -->
           <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
             <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-              <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> 7. Khai báo Đường chuẩn
+              <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> 7. Khai Báo Đường Chuẩn
             </h4>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div class="lg:col-span-5 space-y-3">
                 <div class="p-4 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl space-y-3 shadow-xs">
                   <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC & Tên tuỳ chỉnh
+                    <i class="fa-solid fa-flask-vial"></i> Cấu Hình Mẫu QC & Tên Tuỳ Chỉnh
                   </h5>
 
                   <div class="flex flex-col gap-2">
@@ -115,27 +115,27 @@
                         [(ngModel)]="draft.page1Data['hasSpikeSample']"
                         (ngModelChange)="onDataChanged()"
                         class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu SPIKE</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu thêm chuẩn</span>
                       </label>
                     <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
                       <input type="checkbox"
                         [(ngModel)]="draft.page1Data['hasSpikeNSample']"
                         (ngModelChange)="onDataChanged()"
                         class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu SPIKE_N</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu thêm chuẩn_N</span>
                       </label>
                     <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
                       <input type="checkbox"
                         [(ngModel)]="draft.page1Data['hasFinalSample']"
                         (ngModelChange)="onDataChanged()"
                         class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu FINAL</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu kiểm tra cuối mẻ</span>
                       </label>
                   </div>
 
                     <div class="grid grid-cols-2 gap-2.5">
                       <div>
-                        <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Blank</label>
+                        <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu trắng</label>
                         <input type="text"
                           [(ngModel)]="draft.page1Data['blankName']"
                           (ngModelChange)="onDataChanged()"
@@ -143,7 +143,7 @@
                           class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
                         </div>
                         <div>
-                          <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Spike</label>
+                          <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu thêm chuẩn</label>
                           <input type="text"
                             [(ngModel)]="draft.page1Data['spikeName']"
                             (ngModelChange)="onDataChanged()"
@@ -154,7 +154,7 @@
 
                         @if (draft.page1Data['hasCheckSample']) {
                           <div class="animate-fade-in">
-                            <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Check Sample</label>
+                            <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu kiểm tra</label>
                             <input type="text"
                               [(ngModel)]="draft.page1Data['checkSampleName']"
                               (ngModelChange)="onDataChanged()"
@@ -185,7 +185,7 @@
                   <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
                       <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới nhập kết quả (SOP-01 Spreadsheet)
+                        <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới Nhập Kết Quả (SOP-01 Spreadsheet)
                       </h4>
 
                       <div class="flex flex-wrap items-center gap-3">
@@ -197,7 +197,7 @@
                           class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-605 dark:bg-emerald-955/20 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-800/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                           title="Nhập kết quả tự động từ file excel Agilent MassHunter">
                           <i class="fa-solid fa-file-excel text-emerald-500"></i>
-                          <span>Nhập tệp MassHunter</span>
+                          <span>Nhập Tệp MassHunter</span>
                         </button>
                         <input #massHunterFileInput type="file" (change)="importMassHunterExcel($event)" accept=".xlsx" class="hidden">
 
@@ -237,19 +237,19 @@
                             class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                             title="Đặt toàn bộ các ô kết quả chưa điền là ND">
                             <i class="fa-solid fa-pen-clip text-amber-500"></i>
-                            <span>Điền ND ô trống</span>
+                            <span>Điền ND Ô Trống</span>
                           </button>
 
                           <button (click)="bulkClearAll()"
                             class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                             title="Xóa toàn bộ các ô kết quả của bảng">
                             <i class="fa-solid fa-trash-can text-rose-500"></i>
-                            <span>Xóa hết bảng</span>
+                            <span>Xóa Hết Bảng</span>
                           </button>
 
                           <!-- Quick Vial Rack Input for Fipronil -->
                           <div class="flex items-center gap-2 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
-                            <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập Vial nhanh:</span>
+                            <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập nhanh số lọ:</span>
                             <div class="flex items-center gap-1.5">
                               <span class="text-slate-450 dark:text-slate-500 font-bold">Rack:</span>
                               <input type="number"
@@ -278,7 +278,7 @@
                                     class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
                                     title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
                                     <i class="fa-solid fa-magic text-[10px]"></i>
-                                    <span>Điền nhanh</span>
+                                    <span>Điền Nhanh</span>
                                   </button>
                                 </div>
                               </div>

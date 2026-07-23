@@ -19,13 +19,13 @@ import { generateSlug } from '../../../shared/utils/utils';
                     <div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center">
                         <i class="fa-solid fa-user-shield"></i>
                     </div>
-                    Nhóm vai trò & Quyền hạn
+                    Nhóm Vai Trò & Quyền Hạn
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cấu hình các nhóm vai trò nghiệp vụ động để gán hàng loạt cho nhân viên.</p>
             </div>
             <div class="flex gap-2">
                 <button (click)="loadRoles()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-rotate"></i> Tải lại
+                    <i class="fa-solid fa-rotate"></i> Tải Lại
                 </button>
                 <button (click)="openAddModal()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95">
                     <i class="fa-solid fa-plus"></i> Thêm Vai Trò
@@ -74,7 +74,7 @@ import { generateSlug } from '../../../shared/utils/utils';
 
                     <div class="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
                         <button (click)="openEditModal(role)" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
-                            <i class="fa-solid fa-sliders"></i> Cấu hình
+                            <i class="fa-solid fa-sliders"></i> Cấu Hình
                         </button>
                         @if (!role.isSystemRole) {
                             <button (click)="deleteRole(role)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
@@ -122,7 +122,7 @@ import { generateSlug } from '../../../shared/utils/utils';
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Role Name -->
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Tên Vai Trò</label>
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Tên vai trò</label>
                                 <input type="text" formControlName="name" (input)="onNameInput()"
                                        class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm">
                                 @if (roleForm.get('name')?.touched && roleForm.get('name')?.errors?.['required']) {
@@ -132,7 +132,7 @@ import { generateSlug } from '../../../shared/utils/utils';
 
                             <!-- Role ID -->
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Mã Nhận Dạng (ID)</label>
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Mã nhận dạng (ID)</label>
                                 <input type="text" formControlName="id"
                                        class="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-600 dark:text-slate-400 outline-none cursor-not-allowed"
                                        readonly>
@@ -179,7 +179,7 @@ import { generateSlug } from '../../../shared/utils/utils';
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3 shrink-0">
                     <button (click)="closeModal()" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Đóng</button>
                     <button (click)="saveRole()" [disabled]="roleForm.invalid" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
                     </button>
                 </div>
             </div>
@@ -203,14 +203,14 @@ export class ConfigRolesComponent implements OnInit {
       { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },
       { val: PERMISSIONS.INVENTORY_EDIT,  label: 'Sửa Kho' },
       { val: PERMISSIONS.BATCH_RUN,       label: 'Chạy Batch & Pha Chế' },
-      { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem Chuẩn' },
-      { val: PERMISSIONS.STANDARD_REQUEST,label: 'Mượn Chuẩn' },
-      { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa Chuẩn' },
-      { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt & Giao Chuẩn' },
-      { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem Báo cáo Chuẩn' },
-      { val: PERMISSIONS.STANDARD_LOG_DELETE,label: 'Xoá Báo cáo Chuẩn' },
-      { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem Công thức' },
-      { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa Công thức' },
+      { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_REQUEST,label: 'Mượn chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt và cấp chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem báo cáo chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_LOG_DELETE,label: 'Xóa báo cáo chất chuẩn' },
+      { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem công thức' },
+      { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa công thức' },
       { val: PERMISSIONS.SOP_VIEW,        label: 'Xem SOP' },
       { val: PERMISSIONS.SOP_EDIT,        label: 'Sửa SOP' },
       { val: PERMISSIONS.SOP_APPROVE,     label: 'Duyệt SOP' },
@@ -220,7 +220,7 @@ export class ConfigRolesComponent implements OnInit {
 
   permissionGroups = [
     {
-      name: 'Kho & Hóa chất',
+      name: 'Kho và hóa chất',
       icon: 'fa-box-open',
       color: 'text-emerald-500',
       bg: 'bg-emerald-50 dark:bg-emerald-900/20',
@@ -229,27 +229,27 @@ export class ConfigRolesComponent implements OnInit {
       perms: [
         { val: PERMISSIONS.INVENTORY_VIEW, label: 'Xem Kho' },
         { val: PERMISSIONS.INVENTORY_EDIT, label: 'Sửa Kho (Thêm/Xoá/Nhập xuất)' },
-        { val: PERMISSIONS.BATCH_RUN, label: 'Pha chế & Tiêu hao (Smart Batch)' }
+        { val: PERMISSIONS.BATCH_RUN, label: 'Pha chế và lập mẻ phân tích' }
       ]
     },
     {
-      name: 'Chuẩn đối chiếu',
+      name: 'Chất chuẩn đối chiếu',
       icon: 'fa-vial-circle-check',
       color: 'text-indigo-500',
       bg: 'bg-indigo-50 dark:bg-indigo-900/20',
       border: 'border-indigo-100 dark:border-indigo-800/30',
       ring: 'var(--tw-colors-indigo-500, #6366f1)',
       perms: [
-        { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
-        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn Chuẩn' },
-        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin Chuẩn' },
-        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt & Giao nhận Chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký Chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xoá Yêu cầu/Nhật ký chuẩn' }
+        { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt và giao nhận chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký sử dụng chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xóa yêu cầu và nhật ký chất chuẩn' }
       ]
     },
     {
-      name: 'Quy trình SOP & Công thức',
+      name: 'Quy trình SOP và công thức',
       icon: 'fa-book-open',
       color: 'text-amber-500',
       bg: 'bg-amber-50 dark:bg-amber-900/20',
@@ -259,12 +259,12 @@ export class ConfigRolesComponent implements OnInit {
         { val: PERMISSIONS.SOP_VIEW, label: 'Xem SOP' },
         { val: PERMISSIONS.SOP_EDIT, label: 'Biên soạn SOP (Editor)' },
         { val: PERMISSIONS.SOP_APPROVE, label: 'Phê duyệt SOP (Approve)' },
-        { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem Công thức (Library)' },
-        { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa Công thức (Recipe)' }
+        { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem công thức (Library)' },
+        { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa công thức (Recipe)' }
       ]
     },
     {
-      name: 'Hệ thống & Báo cáo',
+      name: 'Hệ thống và báo cáo',
       icon: 'fa-server',
       color: 'text-slate-500',
       bg: 'bg-slate-50 dark:bg-slate-800/50',

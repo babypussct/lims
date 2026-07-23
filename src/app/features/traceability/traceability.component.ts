@@ -31,7 +31,7 @@ declare let QRious: any;
                     <i class="fa-solid fa-qrcode text-base"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Truy xuất Nguồn gốc</h2>
+                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Truy Xuất Nguồn Gốc</h2>
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Chi tiết nhật ký hoạt động và thông tin minh bạch.</p>
                 </div>
             </div>
@@ -47,7 +47,7 @@ declare let QRious: any;
                         <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
                             <i class="fa-solid fa-server text-sm"></i>
                         </div>
-                        <span class="text-slate-800 font-black tracking-wider uppercase text-sm">Truy Xuất Hồ Sơ LIMS</span>
+                        <span class="text-slate-800 font-black tracking-wider uppercase text-sm">Truy xuất hồ sơ LIMS</span>
                     </div>
                     
                     <div class="space-y-4 text-xs font-medium">
@@ -94,7 +94,7 @@ declare let QRious: any;
             <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm">
                 <div class="flex items-center gap-3 mb-2">
                     <i class="fa-solid fa-circle-exclamation text-red-500 text-xl"></i>
-                    <h3 class="text-lg font-bold text-red-800">Không tìm thấy dữ liệu</h3>
+                    <h3 class="text-lg font-bold text-red-800">Không Tìm Thấy Dữ Liệu</h3>
                 </div>
                 <p class="text-red-600 text-sm">{{errorMsg()}}</p>
             </div>
@@ -158,7 +158,7 @@ declare let QRious: any;
                     <!-- Premium Workflow Stepper -->
                     @if(logData()?.status; as status) {
                         <div class="mb-10 fade-in">
-                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Tiến độ quy trình LIMS</h4>
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Tiến Độ Quy Trình LIMS</h4>
                             <div class="flex flex-col sm:flex-row items-stretch gap-2">
                                 <!-- Step 1: Request -->
                                 <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
@@ -276,7 +276,7 @@ declare let QRious: any;
 
                         <!-- Right: Context Details -->
                         <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Chi tiết ngữ cảnh</h4>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Chi Tiết Ngữ Cảnh</h4>
                             
                             <div class="space-y-4">
                                 @if(logData()?.sopBasicInfo?.name || logData()?.printData?.sop?.name) {
@@ -364,7 +364,7 @@ declare let QRious: any;
                     <!-- Items List (If Batch Approval) -->
                     @if(logData()?.printData?.items) {
                         <div class="mt-8 pt-8 border-t border-slate-100">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Danh sách hóa chất sử dụng</h4>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Danh Sách Hóa Chất Sử Dụng</h4>
                             <div class="overflow-hidden rounded-xl border border-slate-200">
                                 <table class="w-full text-sm text-left">
                                     <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">

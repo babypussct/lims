@@ -15,7 +15,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
       <!-- 1. Metadata Form & Checkboxes -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
         <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-          <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> Thông tin chung & Đánh giá (Dạng 3B)
+          <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> Thông Tin Chung & Đánh Giá (Dạng 3B)
         </h4>
 
         <!-- Signature Dates -->
@@ -143,7 +143,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
           <div>
             <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
               <i class="fa-solid fa-flask-vial mr-2 text-fuchsia-500 text-sm"></i>
-              Bảng kết quả mẫu: <span class="font-mono text-fuchsia-600 dark:text-fuchsia-400 font-extrabold ml-1 bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">{{ activeSampleCode() }}</span>
+              Bảng Kết Quả Mẫu: <span class="font-mono text-fuchsia-600 dark:text-fuchsia-400 font-extrabold ml-1 bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">{{ activeSampleCode() }}</span>
             </h4>
             <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 tracking-wide">
               Tổng cộng {{ config.compounds?.length || 0 }} hoạt chất cần kiểm nghiệm.
@@ -157,20 +157,20 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
             <button (click)="sampleBulkFillND()" 
                     class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
               <i class="fa-solid fa-pen-nib text-amber-500"></i>
-              <span>Đặt tất cả ND</span>
+              <span>Đặt Tất Cả ND</span>
             </button>
 
             <button (click)="sampleBulkQC()" 
                     class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
               <i class="fa-solid fa-circle-check text-emerald-500"></i>
-              <span>Tất cả QC Đạt</span>
+              <span>Tất Cả QC Đạt</span>
             </button>
 
             <button (click)="copyActiveSampleToAll()" 
                     class="px-3.5 py-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
                     title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này">
               <i class="fa-solid fa-copy"></i>
-              <span>Sao chép mẫu cho cả mẻ</span>
+              <span>Sao Chép Mẫu cho Cả Mẻ</span>
             </button>
           </div>
         </div>

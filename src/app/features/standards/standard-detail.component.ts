@@ -364,7 +364,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     goToReturn() {
         this.router.navigate(['/standard-requests']);
-        this.toast.show('Chuyển đến trang Yêu cầu để hoàn trả', 'info');
+        this.toast.show('Chuyển đến trang Yêu cầu chất chuẩn để hoàn trả', 'info');
     }
 
     openEditModal() {
@@ -386,7 +386,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
         this.confirmation.confirm({
             message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
-            confirmText: 'Gửi Yêu cầu',
+            confirmText: 'Gửi yêu cầu',
             cancelText: 'Hủy'
         }).then(async (confirmed) => {
             if (!confirmed) return;
@@ -418,7 +418,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     copyText(text: string | undefined) {
         if (!text) return;
-        navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
+        navigator.clipboard.writeText(text).then(() => this.toast.show('Đã sao chép: ' + text));
     }
 
     openCoaPreview(url: string) {
@@ -446,13 +446,13 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             if (input) {
                 input.click();
             } else {
-                this.toast.show('Không tìm thấy input upload', 'error');
+                this.toast.show('Không tìm thấy ô chọn tệp.', 'error');
             }
         } else {
             // XÁC THỰC TRƯỚC: Nếu chưa có token, xác thực xong yêu cầu user nhấn lại để có user activation
             this.googleDriveService.authenticateSync(
                 () => {
-                    this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Upload để chọn file.', 'success');
+                    this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Tải lên để chọn tệp.', 'success');
                 },
                 (err) => {
                     this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
@@ -471,7 +471,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         try {
             this.isUploadingCoa.set(true);
             const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-            this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+            this.toast.show(`Đang tải CoA lên cho "${std.name}"...`);
 
             const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
@@ -493,11 +493,11 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             if (siblings.length > 1) {
                 this.toast.show(`Upload thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
             } else {
-                this.toast.show(`Upload CoA thành công!`);
+                this.toast.show(`Tải CoA lên thành công!`);
             }
         } catch (e: any) {
             console.error('Quick Drive upload error:', e);
-            this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+            this.toast.show('Không thể tải CoA lên: ' + (e.message || 'Không xác định'), 'error');
         } finally {
             this.isUploadingCoa.set(false);
             event.target.value = '';

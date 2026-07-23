@@ -146,7 +146,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                        @if(canAssign(std)) {
                                            @if(std.has_pending_request) {
                                                <button disabled class="w-auto px-3 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed border border-orange-200 dark:border-orange-800/50" title="Đang có người yêu cầu mượn">
-                                                   <i class="fa-solid fa-hourglass-half"></i> Chờ duyệt
+                                                   <i class="fa-solid fa-hourglass-half"></i> Chờ Duyệt
                                                </button>
                                            } @else if(canAssignStandards()) {
                                                <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: true})" class="w-auto px-3 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Gán cho mượn">
@@ -159,7 +159,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                            }
                                        } @else if (std.status === 'IN_USE' && (canAssignStandards() || std.current_holder_uid === currentUser()?.uid)) {
                                            <button (click)="$event.stopPropagation(); goToReturn.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Trả chuẩn">
-                                               <i class="fa-solid fa-rotate-left"></i> Trả chuẩn
+                                               <i class="fa-solid fa-rotate-left"></i> Trả Chuẩn
                                           </button>
                                        } @else if (std.status === 'DEPLETED' || std.current_amount <= 0) {
                                            @if (std.restock_requested) {
@@ -168,7 +168,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                </button>
                                            } @else if(canRequestStandards() || canAssignStandards()) {
                                                <button (click)="$event.stopPropagation(); openPurchaseRequestModal.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-500 shadow-md shadow-amber-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Đề nghị mua sắm">
-                                                   <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
+                                                   <i class="fa-solid fa-cart-plus"></i> Đề Nghị Mua
                                                </button>
                                            }
                                        }

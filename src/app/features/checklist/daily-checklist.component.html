@@ -15,7 +15,7 @@
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng theo dõi mẫu ngày</h1>
+              <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng theo Dõi Mẫu Ngày</h1>
               <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[9px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">Bảng quan sát KNV</span>
             </div>
             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Theo dõi ngày làm mẫu, chỉ tiêu thực hiện và tình trạng kết quả</p>
@@ -25,7 +25,7 @@
         <!-- When embedded, show a clean flat widget title line instead of a heavy box header -->
         <div class="flex items-center gap-2">
           <div class="w-1.5 h-4 bg-blue-600 rounded-full"></div>
-          <h2 class="text-base font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">Theo dõi mẫu & kết quả ngày</h2>
+          <h2 class="text-base font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">Theo Dõi Mẫu & Kết Quả Ngày</h2>
         </div>
       }
 
@@ -94,7 +94,7 @@
       @if (activeFilterCount() > 0) {
         <button type="button" (click)="clearFilters()"
                 class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-350 transition active:scale-95 text-xs font-bold whitespace-nowrap flex items-center gap-1.5 bg-white dark:bg-slate-800">
-          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Đặt lại
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Đặt Lại
         </button>
       }
     </div>
@@ -112,16 +112,16 @@
     @if (loading()) {
       <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-16 text-center px-4 cl-board-enter">
         <i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500 mb-3" aria-hidden="true"></i>
-        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Đang tải dữ liệu theo ngày</h2>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Đang Tải Dữ Liệu theo Ngày</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Đã nhận {{loadedBatchCount()}} mẻ phù hợp.</p>
       </section>
 
     } @else if (dataError()) {
       <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-red-100 dark:border-red-900/40 shadow-sm flex flex-col items-center justify-center py-14 text-center px-4 cl-board-enter">
         <i class="fa-solid fa-triangle-exclamation text-2xl text-red-500 mb-3" aria-hidden="true"></i>
-        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Không thể tải dữ liệu</h2>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Không Thể Tải Dữ Liệu</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{dataError()}}</p>
-        <button type="button" (click)="refreshData()" class="mt-3 h-9 px-4 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">Thử lại</button>
+        <button type="button" (click)="refreshData()" class="mt-3 h-9 px-4 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">Thử Lại</button>
       </section>
 
     } @else if (dayBatches().length === 0) {
@@ -130,8 +130,8 @@
         <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 flex items-center justify-center mb-3">
           <i class="fa-regular fa-calendar-xmark text-xl" aria-hidden="true"></i>
         </div>
-        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chưa có mẻ theo ngày phân tích này</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">Chỉ các mẻ có analysisDate hợp lệ và đã phê duyệt mới được hiển thị.</p>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chưa Có Mẻ theo Ngày Phân Tích Này</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">Chỉ các mẻ có ngày phân tích hợp lệ và đã phê duyệt mới được hiển thị.</p>
       </section>
 
     } @else if (boardBatches().length === 0) {
@@ -140,11 +140,11 @@
         <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-300 dark:text-blue-400 flex items-center justify-center mb-3">
           <i class="fa-solid fa-magnifying-glass text-lg" aria-hidden="true"></i>
         </div>
-        <h2 class="text-xs font-black text-slate-700 dark:text-slate-200">Không tìm thấy nhóm mẫu phù hợp</h2>
+        <h2 class="text-xs font-black text-slate-700 dark:text-slate-200">Không Tìm Thấy Nhóm Mẫu Phù Hợp</h2>
         <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Thử mã mẫu, tên SOP hoặc tên chỉ tiêu khác.</p>
         <button type="button" (click)="clearFilters()"
                 class="mt-3 h-8 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
-          Hiển thị toàn bộ
+          Hiển Thị Toàn Bộ
         </button>
       </section>
 
@@ -232,8 +232,8 @@
                           <div class="text-[10px] text-slate-400 mt-0.5">{{source.formattedSamples || 'Chưa xác định mã mẫu'}} · {{sourceBatchStatusLabel(source.status)}}</div>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
-                          <button type="button" (click)="copyBatchId(source.requestId)" class="h-7 px-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[9px] font-black text-slate-500 dark:text-slate-300 hover:text-blue-600"><i class="fa-regular fa-copy mr-1"></i>Copy</button>
-                          <button type="button" (click)="navigateToResult(source.requestId, source.status)" class="h-7 px-2 rounded-lg bg-blue-600 text-white text-[9px] font-black hover:bg-blue-700"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở kết quả</button>
+                          <button type="button" (click)="copyBatchId(source.requestId)" class="h-7 px-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[9px] font-black text-slate-500 dark:text-slate-300 hover:text-blue-600"><i class="fa-regular fa-copy mr-1"></i>Sao Chép</button>
+                          <button type="button" (click)="navigateToResult(source.requestId, source.status)" class="h-7 px-2 rounded-lg bg-blue-600 text-white text-[9px] font-black hover:bg-blue-700"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở Kết Quả</button>
                         </div>
                       </div>
                     }
@@ -333,7 +333,7 @@
           </div>
 
           <div class="mt-2.5 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[9px] font-semibold text-slate-400">
-            <span><i class="fa-solid fa-shield-check mr-1.5 text-emerald-500"></i>Dữ liệu truy vấn trực tiếp theo ngày kiểm nghiệm.</span>
+            <span><i class="fa-solid fa-shield-halved mr-1.5 text-emerald-500"></i>Dữ liệu truy vấn trực tiếp theo ngày kiểm nghiệm.</span>
             <span>Mỗi card là một SOP/phiên bản; các mẻ vật lý vẫn độc lập và mẫu chỉ được gom khi có cùng bộ chỉ tiêu.
               @if (lastLoadedAt(); as refreshedAt) { · Cập nhật {{formatTimestamp(refreshedAt)}} }
             </span>
@@ -470,7 +470,7 @@
       <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-sliders text-blue-600 text-sm"></i>
-          <h3 class="text-sm font-black uppercase tracking-wider">Cấu hình bản in</h3>
+          <h3 class="text-sm font-black uppercase tracking-wider">Cấu Hình Bản In</h3>
         </div>
         <button (click)="showPrintSettings.set(false)" class="text-slate-400 hover:text-slate-600 transition">
           <i class="fa-solid fa-xmark"></i>
@@ -539,12 +539,12 @@
       <div class="px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-750 flex justify-end gap-2 shrink-0">
         <button type="button" (click)="showPrintSettings.set(false)"
                 class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-750 transition active:scale-95 font-bold">
-          Hủy bỏ
+          Hủy Bỏ
         </button>
         <button type="button" (click)="executePrint()"
                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5 font-bold">
           <i class="fa-solid fa-print"></i>
-          Xác nhận in
+          Xác Nhận In
         </button>
       </div>
 

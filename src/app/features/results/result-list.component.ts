@@ -33,7 +33,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <i class="fa-solid fa-square-poll-vertical text-base"></i>
             </div>
             <div>
-              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Tra cứu & Quản lý Kết quả Mẻ Chạy</h2>
+              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Tra Cứu và Quản Lý Kết Quả Mẻ Chạy</h2>
               <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.</p>
             </div>
           </div>
@@ -98,7 +98,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ allApprovedRuns().length }}</div>
-              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ hoạt động</div>
+              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ Hoạt Động</div>
             </div>
           </button>
 
@@ -113,7 +113,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black leading-none tabular-nums" [class.text-amber-500]="pendingCount() > 0" [class.text-slate-800]="pendingCount() === 0" [class.dark:text-slate-100]="pendingCount() === 0">{{ pendingCount() }}</div>
-              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập</div>
+              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ Nhập</div>
             </div>
           </button>
 
@@ -129,7 +129,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <div class="text-left flex-1">
               <div class="flex items-baseline gap-1.5">
                 <span class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ averageCompletion() }}%</span>
-                <span class="text-[9px] font-bold text-emerald-500">hoàn thành</span>
+                <span class="text-[9px] font-bold text-emerald-500">Hoàn Thành</span>
               </div>
               <div class="w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden">
                 <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
@@ -220,7 +220,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             @if (hasActiveFilters()) {
               <button (click)="resetAllFilters()"
                       class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1 active:scale-95 shrink-0">
-                <i class="fa-solid fa-rotate-left text-[10px]"></i> Xóa lọc
+                <i class="fa-solid fa-rotate-left text-[10px]"></i> Xóa Lọc
               </button>
             }
           </div>
@@ -332,7 +332,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                           {{ getStatusText(run.id) }}
                         </span>
                         @if (run.isVirtualMaster) {
-                          <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
+                          <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Mẻ tổng hợp</span>
                         }
                         @if (run.parentMasterId) {
                           <a [routerLink]="['/results', run.parentMasterId]" (click)="$event.stopPropagation()" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-0.5" title="Mẻ này đã được gộp vào Master {{run.parentMasterId}}">
@@ -387,13 +387,13 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                       <button (click)="openReportHub(run); $event.stopPropagation()"
                               class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
                         <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                        <span>Báo cáo PDF</span>
+                        <span>Báo Cáo PDF</span>
                       </button>
                     }
                     <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
                             class="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40 rounded-xl text-xs font-black transition active:scale-95 duration-150 shadow-sm">
                       <i class="fa-solid text-[11px] fa-eye"></i>
-                      Chi tiết Mẻ chạy
+                      Chi Tiết Mẻ Chạy
                     </button>
                   </div>
                 </div>
@@ -404,7 +404,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                   </div>
                   <p class="text-slate-400 dark:text-slate-500 font-semibold text-sm">Không tìm thấy mẻ nào phù hợp.</p>
                   @if (hasActiveFilters()) {
-                    <button (click)="resetAllFilters()" class="mt-3 text-xs text-fuchsia-600 dark:text-fuchsia-400 font-black hover:underline">Xóa bộ lọc</button>
+                    <button (click)="resetAllFilters()" class="mt-3 text-xs text-fuchsia-600 dark:text-fuchsia-400 font-black hover:underline">Xóa Bộ Lọc</button>
                   }
                 </div>
               }
@@ -450,7 +450,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                             <span class="w-2 h-2 rounded-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} shrink-0"></span>
                             <span class="font-extrabold text-slate-800 dark:text-slate-150 text-xs">{{ run.sopName }}</span>
                             @if (run.isVirtualMaster) {
-                              <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
+                              <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Mẻ tổng hợp</span>
                             }
                             @if (isRunLocked(run)) {
                               <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
@@ -506,13 +506,13 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                               <button (click)="openReportHub(run); $event.stopPropagation()"
                                       class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 rounded-xl text-xs font-black transition active:scale-95">
                                 <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                                <span>Báo cáo PDF</span>
+                                <span>Báo Cáo PDF</span>
                               </button>
                             }
                             <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
                                     class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm whitespace-nowrap">
                               <i class="fa-solid fa-eye text-[10px]"></i>
-                              Chi tiết
+                              Chi Tiết
                             </button>
                           </div>
                         </td>
@@ -546,7 +546,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           <div class="flex items-center gap-2">
             <button (click)="cancelSelection()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-black transition active:scale-95">Hủy</button>
             <button (click)="openMergeModal()" class="px-4 py-1.5 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-md shadow-fuchsia-500/20 flex items-center gap-1.5">
-              <i class="fa-solid fa-code-merge rotate-90 text-[10px]"></i> Gộp mẻ chạy
+              <i class="fa-solid fa-code-merge rotate-90 text-[10px]"></i> Gộp Mẻ Chạy
             </button>
           </div>
         </div>
@@ -1472,13 +1472,13 @@ export class ResultListComponent implements OnInit, OnDestroy {
         batch.update(childRef, { parentMasterId: masterId });
       });
       
-      // 7. Tạo Audit Log
+      // 7. Tạo nhật ký kiểm tra
       const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
       batch.set(logRef, {
         id: logId,
         action: 'CREATE_VIRTUAL_MASTER',
-        details: `Đã tạo mẻ master ảo (gộp mẫu) cho ${masterId}`,
+        details: `Đã tạo mẻ tổng hợp (gộp mẫu) cho ${masterId}`,
         user: this.state.getCurrentUserName(),
         timestamp: new Date(),
         requestId: masterId,
@@ -1493,7 +1493,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       // Close modal and deselect
       this.closeMergeModal();
       this.cancelSelection();
-      this.toast.show(`Đã khởi tạo mẻ gộp Master "${masterId}" thành công!`, 'success');
+      this.toast.show(`Đã khởi tạo mẻ tổng hợp "${masterId}" thành công!`, 'success');
       
       // Save state before navigating
       try {

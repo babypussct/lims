@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-file-import text-emerald-600 dark:text-emerald-500"></i> Xác nhận Import
+                            <i class="fa-solid fa-file-import text-emerald-600 dark:text-emerald-500"></i> Xác Nhận Import
                         </h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra kỹ ngày tháng trước khi lưu.</p>
                     </div>
@@ -33,7 +33,7 @@ import { CommonModule } from '@angular/common';
                     <table class="w-full text-xs text-left border-collapse border border-slate-200 dark:border-slate-700">
                         <thead class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
                             <tr>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Tên Chuẩn</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Tên chất chuẩn</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700">Lô (Lot)</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 w-32">Ngày nhận (Gốc)</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 w-32">Kết quả (Hệ thống hiểu)</th>
@@ -62,7 +62,7 @@ import { CommonModule } from '@angular/common';
                 </div>
 
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                    <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
                     <button (click)="onConfirm()" [disabled]="isImporting()" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                         @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
                         @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
@@ -97,7 +97,7 @@ export class StandardsImportDataModalComponent {
                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-book-open text-teal-600 dark:text-teal-500"></i> Xác nhận Import Nhật ký
+                            <i class="fa-solid fa-book-open text-teal-600 dark:text-teal-500"></i> Xác Nhận Import Nhật Ký
                         </h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua.</p>
                     </div>
@@ -172,7 +172,7 @@ export class StandardsImportDataModalComponent {
                         <span class="text-red-500 dark:text-red-400">Lỗi: {{errorCount()}}</span>
                     </div>
                     <div class="flex gap-3">
-                        <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                        <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
                         <button (click)="onConfirm()" [disabled]="isImporting() || validCount() === 0" class="px-6 py-2.5 bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                             @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
                             @else { <i class="fa-solid fa-check"></i> Import Hợp lệ }

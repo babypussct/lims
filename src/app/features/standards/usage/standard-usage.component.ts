@@ -328,7 +328,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
 
   async deleteUsage(log: UsageLog) {
       if (!log.standardId || !log.id) {
-          this.toast.show('Dữ liệu log không hợp lệ để xóa.', 'error');
+          this.toast.show('Dữ liệu nhật ký không hợp lệ để xóa.', 'error');
           return;
       }
       
@@ -389,7 +389,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
                       'Tên hóa học': std?.chemical_name || '',
                       'Số CAS': log.cas_number || std?.cas_number || '',
                       'Mã quản lý': log.internalId || std?.internal_id || '',
-                      'Mã Catalog (Product Code)': std?.product_code || '',
+                      'Mã catalog (mã sản phẩm)': std?.product_code || '',
                       'Lot Number': log.lotNumber || std?.lot_number || '',
                       'Độ tinh khiết': std?.purity || '',
                       'Hãng sản xuất': log.manufacturer || std?.manufacturer || '',
@@ -413,7 +413,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
                   wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key] || '').length)) + 2
               }));
               ws['!cols'] = colWidths;
-              XLSX.utils.book_append_sheet(wb, ws, 'Raw Data');
+              XLSX.utils.book_append_sheet(wb, ws, 'Dữ liệu gốc');
           } 
           else if (this.exportType() === 'standard') {
               const summary: any = {};
@@ -434,10 +434,10 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
               });
               const exportData = Object.keys(summary).map((key, index) => ({
                   'STT': index + 1,
-                  'Hóa chất / Thuốc thử': summary[key].name,
+                  'Hóa chất và thuốc thử': summary[key].name,
                   'Số lô': summary[key].lot,
                   'Số lượt dùng': summary[key].count,
-                  'Tổng Lượng Dùng': summary[key].amount,
+                  'Tổng lượng dùng': summary[key].amount,
                   'Đơn vị': summary[key].unit
               }));
               const ws = XLSX.utils.json_to_sheet(exportData);
@@ -464,7 +464,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
           this.exportCompleted.set(true);
       } catch (err) {
           console.error('Lỗi khi xuất Excel:', err);
-          this.toast.show('Lỗi xuất file Excel', 'error');
+          this.toast.show('Lỗi xuất tệp Excel', 'error');
       } finally {
           this.isExporting.set(false);
       }

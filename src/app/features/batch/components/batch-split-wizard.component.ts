@@ -34,7 +34,7 @@ export interface SplitWizardState {
             <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                 <div>
                     <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-shuffle text-blue-600 dark:text-blue-400"></i> Phân tách & Chuyển Mẻ
+                        <i class="fa-solid fa-shuffle text-blue-600 dark:text-blue-400"></i> Phân Tách và Chuyển Mẻ
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Nguồn: <b>{{state().sourceBatchName}}</b></p>
                 </div>
@@ -43,9 +43,9 @@ export interface SplitWizardState {
 
             <!-- Steps Indicator -->
             <div class="flex border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
-                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 1 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">1. Chọn Mẫu</div>
-                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 2 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">2. Chọn Chỉ tiêu</div>
-                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 3 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">3. Chọn Quy trình</div>
+                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 1 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">1. Chọn mẫu</div>
+                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 2 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">2. Chọn chỉ tiêu</div>
+                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 3 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">3. Chọn quy trình</div>
             </div>
 
             <!-- Wizard Content -->
@@ -55,10 +55,10 @@ export interface SplitWizardState {
                 @if (state().step === 1) {
                     <div class="h-full flex flex-col gap-3 animate-fade-in">
                         <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn mẫu cần chuyển đi</h4>
+                            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn Mẫu Cần Chuyển Đi</h4>
                             <div class="text-xs space-x-2">
-                                <button (click)="selectAllSamples()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn hết</button>
-                                <button (click)="deselectAllSamples()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ chọn</button>
+                                <button (click)="selectAllSamples()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn Hết</button>
+                                <button (click)="deselectAllSamples()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ Chọn</button>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
@@ -79,10 +79,10 @@ export interface SplitWizardState {
                 @if (state().step === 2) {
                     <div class="h-full flex flex-col gap-3 animate-fade-in">
                         <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn chỉ tiêu cần thực hiện</h4>
+                            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn Chỉ Tiêu Cần Thực Hiện</h4>
                             <div class="text-xs space-x-2">
-                                <button (click)="selectAllTargets()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn hết</button>
-                                <button (click)="deselectAllTargets()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ chọn</button>
+                                <button (click)="selectAllTargets()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn Hết</button>
+                                <button (click)="deselectAllTargets()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ Chọn</button>
                             </div>
                         </div>
                         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 mb-2">
@@ -106,7 +106,7 @@ export interface SplitWizardState {
                 <!-- STEP 3: SELECT SOP -->
                 @if (state().step === 3) {
                     <div class="h-full flex flex-col gap-3 animate-fade-in">
-                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">Đề xuất Quy trình (SOP) phù hợp</h4>
+                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">Đề Xuất Quy Trình (SOP) Phù Hợp</h4>
                         <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
                             @for(sop of filteredSops(); track sop.id) {
                                 <div (click)="selectSop(sop.id)" 
@@ -131,7 +131,7 @@ export interface SplitWizardState {
                                 <div class="p-8 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                                     <i class="fa-solid fa-filter-circle-xmark text-3xl mb-3"></i>
                                     <p class="text-sm font-medium">Không tìm thấy SOP nào phủ hết các chỉ tiêu đã chọn.</p>
-                                    <button (click)="prevStep()" class="text-blue-600 dark:text-blue-400 font-bold hover:underline mt-4 text-sm bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg">Quay lại chọn ít chỉ tiêu hơn</button>
+                                    <button (click)="prevStep()" class="text-blue-600 dark:text-blue-400 font-bold hover:underline mt-4 text-sm bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg">Quay Lại Chọn Ít Chỉ Tiêu Hơn</button>
                                 </div>
                             }
                         </div>
@@ -144,7 +144,7 @@ export interface SplitWizardState {
             <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
                 @if (state().step > 1) {
                     <button (click)="prevStep()" class="px-5 py-3 md:py-2.5 text-slate-600 dark:text-slate-300 bg-slate-100 md:bg-transparent hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">
-                        <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Quay Lại
                     </button>
                 } @else {
                     <div></div>
@@ -154,13 +154,13 @@ export interface SplitWizardState {
                     <button (click)="nextStep()" 
                             [disabled]="(state().step === 1 && state().selectedSamples.size === 0) || (state().step === 2 && state().selectedTargets.size === 0)"
                             class="px-8 py-3 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        Tiếp tục <i class="fa-solid fa-arrow-right ml-1"></i>
+                        Tiếp Tục <i class="fa-solid fa-arrow-right ml-1"></i>
                     </button>
                 } @else {
                     <button (click)="confirm()" 
                             [disabled]="!state().selectedSopId"
                             class="px-8 py-3 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fa-solid fa-check mr-1"></i> Hoàn tất
+                        <i class="fa-solid fa-check mr-1"></i> Hoàn Tất
                     </button>
                 }
             </div>

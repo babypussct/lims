@@ -736,7 +736,7 @@ export class SmartBatchComponent {
       return this.singleSampleDescription()?.nameSnapshot || '';
   }
 
-  private createEmptyBlock(name = 'Nhóm Mẫu #1', matrixType?: string): JobBlock {
+  private createEmptyBlock(name = 'Nhóm mẫu 1', matrixType?: string): JobBlock {
       return {
           id: Date.now(),
           name,
@@ -794,7 +794,7 @@ export class SmartBatchComponent {
   // ... Block management helpers ...
   addBlock() {
       const defaultMatrix = this.availableMatrices().find(m => m.isDefault);
-      this.blocks.update(b => [...b, this.createEmptyBlock(`Nhóm Mẫu #${b.length + 1}`, defaultMatrix?.id)]);
+      this.blocks.update(b => [...b, this.createEmptyBlock(`Nhóm mẫu #${b.length + 1}`, defaultMatrix?.id)]);
   }
   removeBlock(index: number) { this.blocks.update(b => b.filter((_, i) => i !== index)); }
   duplicateBlock(index: number) {
@@ -802,7 +802,7 @@ export class SmartBatchComponent {
       const newBlock = {
           ...src,
           id: Date.now(),
-          name: src.name + ' (Copy)',
+          name: src.name + ' (bản sao)',
           selectedTargets: new Set(src.selectedTargets),
           sampleDescriptionMap: { ...src.sampleDescriptionMap }
       };
@@ -1199,7 +1199,7 @@ export class SmartBatchComponent {
                   bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
               );
 
-              const tags = ['Auto-Optimized'];
+              const tags = ['Đã tối ưu tự động'];
               const matrixTypes = new Set(bestFit.coverableTasks.map(t => t.matrixType).filter(m => !!m));
               matrixTypes.forEach(m => tags.push(this.getMatrixLabel(m)));
 
@@ -1633,7 +1633,7 @@ export class SmartBatchComponent {
       this.isProcessing.set(true);
       try {
           // Use Base Unit directly as per requirement
-          await this.invService.updateStock(state.id, state.currentStock, amount, 'Bù hàng (Smart Batch)');
+          await this.invService.updateStock(state.id, state.currentStock, amount, 'Điều chỉnh tồn kho khi lập mẻ');
           
           // Update Local Cache to reflect new stock immediately
           const newItem = { ...this.inventoryCache[state.id] };

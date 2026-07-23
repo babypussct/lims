@@ -21,21 +21,21 @@ import { Router } from '@angular/router';
         <div class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
             <div class="flex items-center gap-4">
                 <button (click)="goBack()" class="text-slate-500 hover:text-slate-800 text-sm font-bold flex items-center gap-2 transition">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Cấu hình</span>
+                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Cấu Hình</span>
                 </button>
                 <div class="h-6 w-px bg-slate-200"></div>
                 <div>
                     <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-book-medical text-indigo-600"></i> Thư viện Chỉ tiêu Gốc
+                        <i class="fa-solid fa-book-medical text-indigo-600"></i> Thư Viện Chỉ Tiêu Gốc
                     </h2>
-                    <p class="text-[10px] text-slate-500 mt-0.5 font-medium">Master Analyte Library</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5 font-medium">Danh mục chỉ tiêu gốc</p>
                 </div>
             </div>
             
             <div class="flex gap-2">
                 <!-- Migrate Button -->
                 <button (click)="migrateHyphenToUnderscore()" [disabled]="isProcessing()" class="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95 disabled:opacity-50">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Migrate Data (- to _)
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Migrate Data (- To _)
                 </button>
 
                 <!-- Export Button -->
@@ -50,7 +50,7 @@ import { Router } from '@angular/router';
                 <input #fileInput type="file" class="hidden" accept=".xlsx, .csv" (change)="onFileSelected($event)">
 
                 <button (click)="openModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-md transition flex items-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-plus"></i> Thêm Chỉ tiêu
+                    <i class="fa-solid fa-plus"></i> Thêm Chỉ Tiêu
                 </button>
             </div>
         </div>
@@ -73,8 +73,8 @@ import { Router } from '@angular/router';
                         <table class="w-full text-sm text-left border-collapse">
                             <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 font-bold">
                                 <tr>
-                                    <th class="px-4 py-3 border-b border-slate-100">Tên Chỉ tiêu / ID</th>
-                                    <th class="px-4 py-3 border-b border-slate-100">Thông tin Hóa học</th>
+                                    <th class="px-4 py-3 border-b border-slate-100">Tên chỉ tiêu / ID</th>
+                                    <th class="px-4 py-3 border-b border-slate-100">Thông tin hóa học</th>
                                     <th class="px-4 py-3 border-b border-slate-100 text-center">Đơn vị Chuẩn</th>
                                     <th class="px-4 py-3 border-b border-slate-100 text-right">Tác vụ</th>
                                 </tr>
@@ -125,7 +125,7 @@ import { Router } from '@angular/router';
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-slide-up">
                     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                         <h3 class="font-black text-slate-800 text-lg">
-                            {{ isEditing() ? 'Cập nhật Chỉ tiêu' : 'Thêm Chỉ tiêu Mới' }}
+                            {{ isEditing() ? 'Cập nhật chỉ tiêu' : 'Thêm chỉ tiêu mới' }}
                         </h3>
                         <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
                     </div>
@@ -133,12 +133,12 @@ import { Router } from '@angular/router';
                     <div class="p-6 overflow-y-auto">
                         <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                             <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên Chỉ tiêu <span class="text-red-500">*</span></label>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên chỉ tiêu <span class="text-red-500">*</span></label>
                                 <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-indigo-500 transition" placeholder="VD: Chloramphenicol">
                             </div>
                             
                             <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã ID (Slug)</label>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã định danh (tự tạo)</label>
                                 <input formControlName="id" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-indigo-500 transition bg-white" placeholder="Auto-generated hoặc tự điền...">
                             </div>
 
@@ -166,7 +166,7 @@ import { Router } from '@angular/router';
                             <div class="pt-4 flex justify-end gap-3">
                                 <button type="button" (click)="closeModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold text-xs transition">Hủy</button>
                                 <button type="submit" [disabled]="form.invalid || isProcessing()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50">
-                                    {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }}
+                                    {{ isEditing() ? 'Lưu thay đổi' : 'Tạo mới' }}
                                 </button>
                             </div>
                         </form>
@@ -181,7 +181,7 @@ import { Router } from '@angular/router';
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
                     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                         <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-file-import text-emerald-600"></i> Xem trước Import
+                            <i class="fa-solid fa-file-import text-emerald-600"></i> Xem Trước Import
                         </h3>
                         <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
                     </div>
@@ -198,8 +198,8 @@ import { Router } from '@angular/router';
                         <table class="w-full text-xs text-left">
                             <thead class="bg-slate-100 text-slate-500 font-bold uppercase sticky top-0">
                                 <tr>
-                                    <th class="p-3 border-b border-slate-200">Tên Chỉ tiêu</th>
-                                    <th class="p-3 border-b border-slate-200">Mã ID (Tự động)</th>
+                                    <th class="p-3 border-b border-slate-200">Tên chỉ tiêu</th>
+                                    <th class="p-3 border-b border-slate-200">Mã định danh (tự động)</th>
                                     <th class="p-3 border-b border-slate-200">CAS</th>
                                     <th class="p-3 border-b border-slate-200">Formula</th>
                                     <th class="p-3 border-b border-slate-200 text-center">Unit</th>
@@ -220,7 +220,7 @@ import { Router } from '@angular/router';
                     </div>
 
                     <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
                         <button (click)="confirmImport()" [disabled]="isProcessing()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
                             @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
@@ -278,7 +278,7 @@ export class MasterTargetManagerComponent implements OnInit {
               }
           };
 
-          console.log('Migrating Master Analytes...');
+          console.log('Đang chuyển đổi danh mục chỉ tiêu...');
           const analytesSnap = await getDocs(collection(db, `artifacts/${appId}/master_analytes`));
           for (const d of analytesSnap.docs) {
               const docId = d.id;
@@ -310,7 +310,7 @@ export class MasterTargetManagerComponent implements OnInit {
           }
           await commitBatch();
 
-          console.log('Migrating Target Groups...');
+          console.log('Đang chuyển đổi nhóm chỉ tiêu...');
           const tgSnap = await getDocs(collection(db, `artifacts/${appId}/target_groups`));
           for (const d of tgSnap.docs) {
               const data = d.data() as any;
@@ -641,7 +641,7 @@ export class MasterTargetManagerComponent implements OnInit {
           this.importPreview.set([]);
           this.loadData();
       } catch (e: any) {
-          this.toast.show('Lỗi lưu import: ' + e.message, 'error');
+          this.toast.show('Không thể lưu dữ liệu nhập: ' + e.message, 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -652,8 +652,8 @@ export class MasterTargetManagerComponent implements OnInit {
       try {
           const XLSX = await import('xlsx');
           const dataToExport = this.items().map(item => ({
-              'Mã ID': item.id,
-              'Tên Chỉ tiêu': item.name,
+              'Mã định danh': item.id,
+              'Tên chỉ tiêu': item.name,
               'Số CAS': item.cas_number || '',
               'Công thức hóa học': item.chemical_formula || '',
               'Đơn vị mặc định': item.default_unit || 'ppb',
@@ -662,7 +662,7 @@ export class MasterTargetManagerComponent implements OnInit {
 
           const ws = XLSX.utils.json_to_sheet(dataToExport);
           const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, "Master Analytes");
+          XLSX.utils.book_append_sheet(wb, ws, "Danh mục chỉ tiêu gốc");
 
           // Auto-adjust column width
           const maxLens = dataToExport.reduce((acc: any, row: any) => {
@@ -676,7 +676,7 @@ export class MasterTargetManagerComponent implements OnInit {
 
           const fileName = `LIMS_Master_Analytes.xlsx`;
           XLSX.writeFile(wb, fileName);
-          this.toast.show('Xuất file Excel thành công!', 'success');
+          this.toast.show('Xuất tệp Excel thành công!', 'success');
       } catch (e: any) {
           this.toast.show('Lỗi xuất file: ' + e.message, 'error');
       } finally {

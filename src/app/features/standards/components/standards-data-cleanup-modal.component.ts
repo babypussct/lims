@@ -36,7 +36,7 @@ interface CleanupGroup {
                         </div>
                         <div>
                             <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
-                                Công cụ Chuẩn hóa Dữ liệu (Data Cleanup)
+                                Công Cụ Chuẩn Hóa Dữ Liệu (Data Cleanup)
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tự động gom nhóm các chuẩn cùng Số CAS & đồng bộ Tên thương mại / Synonyms chuẩn quốc tế từ PubChem.</p>
                         </div>
@@ -98,7 +98,7 @@ interface CleanupGroup {
                         <!-- Action Buttons -->
                         <div class="flex items-center gap-2">
                             <button (click)="scanData()" [disabled]="isFetchingAll() || isProcessing()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 disabled:opacity-50">
-                                <i class="fa-solid fa-rotate"></i> Quét lại
+                                <i class="fa-solid fa-rotate"></i> Quét Lại
                             </button>
                             <button (click)="fetchPubchemForAll()" [disabled]="groups().length === 0 || isFetchingAll() || isProcessing()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 @if(isFetchingAll()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang quét... }
@@ -118,7 +118,7 @@ interface CleanupGroup {
                         <div class="py-16 text-center text-slate-400 dark:text-slate-500">
                             <i class="fa-solid fa-filter text-4xl mb-2 text-slate-300 dark:text-slate-700"></i>
                             <p class="font-bold text-sm">Không tìm thấy nhóm chuẩn nào phù hợp với bộ lọc.</p>
-                            <button (click)="searchQuery.set(''); statusFilter.set('all')" class="mt-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg hover:bg-indigo-100 transition">Xóa bộ lọc</button>
+                            <button (click)="searchQuery.set(''); statusFilter.set('all')" class="mt-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg hover:bg-indigo-100 transition">Xóa Bộ Lọc</button>
                         </div>
                     } @else {
                         <div class="flex-1 overflow-x-auto">
@@ -127,7 +127,7 @@ interface CleanupGroup {
                                     <tr>
                                         <th class="px-4 py-3 w-10 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 cursor-pointer rounded"></th>
                                         <th class="px-4 py-3 w-1/4">Nhóm (Số CAS / Tên cũ)</th>
-                                        <th class="px-4 py-3 w-1/4">Đề xuất Tên Thương Mại</th>
+                                        <th class="px-4 py-3 w-1/4">Tên thương mại đề xuất</th>
                                         <th class="px-4 py-3 w-1/3">Đề xuất Synonyms</th>
                                         <th class="px-4 py-3 w-[10%] text-center">Trạng thái</th>
                                     </tr>
@@ -197,7 +197,7 @@ interface CleanupGroup {
                         }
                     </div>
                     <div class="flex items-center gap-3">
-                        <button (click)="onClose()" [disabled]="isProcessing() || isFetchingAll()" class="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-xs transition disabled:opacity-50">Đóng bảng</button>
+                        <button (click)="onClose()" [disabled]="isProcessing() || isFetchingAll()" class="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-xs transition disabled:opacity-50">Đóng Bảng</button>
                         <button (click)="applyChanges()" [disabled]="selectedCount() === 0 || isProcessing() || isFetchingAll()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu Firebase... }
                             @else { <i class="fa-solid fa-floppy-disk"></i> Lưu & Ghi đè ({{selectedCount()}}) }

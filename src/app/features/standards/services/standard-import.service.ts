@@ -16,7 +16,7 @@ import { StandardCrudService } from './standard-crud.service';
 /**
  * StandardImportService — Import dữ liệu từ Excel.
  *
- * Bao gồm: parse file Excel chuẩn và nhật ký sử dụng,
+ * Bao gồm: parse tệp Excel chuẩn và nhật ký sử dụng,
  * preview trước khi lưu, batch-save vào Firestore.
  */
 @Injectable({ providedIn: 'root' })
@@ -89,7 +89,7 @@ export class StandardImportService {
 
       if (logAmount > 0) {
         let logDate = defaultDate;
-        let logUser = 'Import Data';
+        let logUser = 'Dữ liệu nhập từ tệp';
         if (dateMatch) {
           const rawDate = dateMatch[1];
           const dp = rawDate.split(/[\/\-\.]/);
@@ -109,13 +109,13 @@ export class StandardImportService {
           }
           logUser = logUser.replace(/[:\-]+$/, '').trim();
         }
-        return { date: logDate, user: logUser, amount_used: logAmount, purpose: 'Import Log' };
+        return { date: logDate, user: logUser, amount_used: logAmount, purpose: 'Nhật ký nhập từ tệp' };
       }
     }
 
     const cleanNum = parseFloat(str.replace(',', '.'));
     if (!isNaN(cleanNum) && cleanNum > 0) {
-      return { date: defaultDate, user: 'Import Data', amount_used: cleanNum, purpose: 'Import Log' };
+      return { date: defaultDate, user: 'Dữ liệu nhập từ tệp', amount_used: cleanNum, purpose: 'Nhật ký nhập từ tệp' };
     }
     return null;
   }
@@ -277,7 +277,7 @@ export class StandardImportService {
   async saveImportedData(data: ImportPreviewItem[]): Promise<void> {
     const validItems = (data || []).filter(item => item.isValid);
     if (validItems.length === 0) return;
-    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền import danh mục chuẩn.');
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền nhập danh mục chuẩn.');
 
     // Preflight every deterministic id before the first write. Re-imports never overwrite stock/workflow.
     const existing = new Map<string, ReferenceStandard>();
@@ -302,12 +302,12 @@ export class StandardImportService {
     if (conflicts.length) {
       conflicts.forEach(item => {
         item.mode = 'CONFLICT';
-        item.errorMessage = 'Lô đang có workflow mượn/trả; import bị chặn để bảo toàn tồn kho.';
+        item.errorMessage = 'Lô đang có quy trình mượn và trả nên không thể nhập dữ liệu, nhằm bảo toàn số lượng tồn.';
       });
       throw new Error(`Có ${conflicts.length} lô đang được mượn hoặc chờ duyệt. Không có dữ liệu nào được ghi.`);
     }
 
-    this.progressService.start('Đang lưu Chuẩn Đối Chiếu', 'Vui lòng không đóng trình duyệt', validItems.length);
+    this.progressService.start('Đang lưu chất chuẩn đối chiếu', 'Vui lòng không đóng trình duyệt', validItems.length);
     let batch = writeBatch(this.fb.db);
     let opCount = 0;
     const MAX_BATCH_SIZE = 400;
@@ -470,7 +470,7 @@ export class StandardImportService {
               unit: usageUnit,
               normalized_amount: normalizedAmount ?? undefined,
               normalized_unit: matchedStandard?.unit,
-              purpose: 'Import Log',
+              purpose: 'Nhật ký nhập từ tệp',
               timestamp: (parseStandardDate(prepDate) || Date.now()) + results.length,
               standardId: matchedStandard?.id, standardName: matchedStandard?.name,
               lotNumber: matchedStandard?.lot_number, cas_number: matchedStandard?.cas_number,
@@ -511,7 +511,7 @@ export class StandardImportService {
 
   async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]): Promise<void> {
     if (!data || data.length === 0) return;
-    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền import nhật ký sử dụng chuẩn.');
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền nhập nhật ký sử dụng chuẩn.');
     const validItems = data.filter(item => item.isValid && !item.isDuplicate && item.standard);
     if (validItems.length === 0) return;
 
@@ -568,7 +568,7 @@ export class StandardImportService {
               freshStandard.status === 'IN_USE' || freshStandard.current_request_id ||
               freshStandard.current_holder || freshStandard.has_pending_request
             ) {
-              throw new Error(`Chuẩn ${freshStandard.name} đang có workflow mượn/trả; không thể import nhật ký.`);
+              throw new Error(`Chất chuẩn ${freshStandard.name} đang có quy trình mượn và trả nên không thể nhập nhật ký.`);
             }
 
             // Read all deterministic log ids before any write to make retries/re-imports idempotent.

@@ -550,7 +550,7 @@ export class StandardRequestService {
       freshRequest = { ...reqDoc.data(), id: reqDoc.id } as StandardRequest;
       if (freshRequest._isDeleted || freshRequest.rolledBackAt) return;
       if ((freshRequest.usageLogs || []).length > 200) {
-        throw new Error('Yêu cầu có quá nhiều nhật ký để rollback an toàn trong một giao dịch.');
+        throw new Error('Yêu cầu có quá nhiều nhật ký để hoàn tác an toàn trong một giao dịch.');
       }
 
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${freshRequest.standardId}`);

@@ -22,7 +22,7 @@ import { Router } from '@angular/router';
           </div>
           <button (click)="goBack()" 
                   class="self-start sm:self-auto px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm active:scale-95">
-            <i class="fa-solid fa-arrow-left"></i> Quay lại
+            <i class="fa-solid fa-arrow-left"></i> Quay Lại
           </button>
         </div>
 
@@ -44,7 +44,7 @@ import { Router } from '@angular/router';
             <!-- Section 1 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-check text-blue-500"></i> 1. Chấp thuận điều khoản
+                <i class="fa-solid fa-check text-blue-500"></i> 1. Chấp Thuận Điều Khoản
               </h3>
               <p>
                 Việc truy cập, đăng ký tài khoản hoặc sử dụng bất kỳ tính năng nào của hệ thống LIMS Cloud đồng nghĩa với việc bạn đồng ý với các điều khoản này. Nếu bạn không đồng ý với bất kỳ phần nào, vui lòng ngừng sử dụng dịch vụ và ngắt kết nối tài khoản của mình.
@@ -54,7 +54,7 @@ import { Router } from '@angular/router';
             <!-- Section 2 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-user-shield text-blue-500"></i> 2. Đăng nhập và Bảo mật tài khoản
+                <i class="fa-solid fa-user-shield text-blue-500"></i> 2. Đăng Nhập và Bảo Mật Tài Khoản
               </h3>
               <ul class="list-disc pl-5 space-y-2">
                 <li>Người dùng có thể đăng nhập thông qua cơ chế xác thực an toàn bằng tài khoản Google (OAuth 2.0).</li>
@@ -66,7 +66,7 @@ import { Router } from '@angular/router';
             <!-- Section 3 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i> 3. Sử dụng dịch vụ liên kết Google Drive
+                <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i> 3. Sử Dụng Dịch Vụ Liên Kết Google Drive
               </h3>
               <p>
                 Khi bạn kích hoạt tính năng tích hợp Google Drive:
@@ -81,7 +81,7 @@ import { Router } from '@angular/router';
             <!-- Section 4 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-ban text-blue-500"></i> 4. Các hành vi bị cấm
+                <i class="fa-solid fa-ban text-blue-500"></i> 4. Các Hành Vi Bị Cấm
               </h3>
               <p>Khi sử dụng hệ thống LIMS Cloud, bạn cam kết KHÔNG thực hiện các hành vi sau:</p>
               <ul class="list-disc pl-5 mt-2 space-y-2">
@@ -94,7 +94,7 @@ import { Router } from '@angular/router';
             <!-- Section 5 -->
             <div>
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation text-blue-500"></i> 5. Giới hạn trách nhiệm pháp lý
+                <i class="fa-solid fa-triangle-exclamation text-blue-500"></i> 5. Giới Hạn Trách Nhiệm Pháp Lý
               </h3>
               <p>
                 Ứng dụng cung cấp công cụ lưu trữ dữ liệu thông qua bên thứ ba (Google Drive API). Chúng tôi không chịu trách nhiệm trong trường hợp:
@@ -108,7 +108,7 @@ import { Router } from '@angular/router';
             <!-- Section 6 -->
             <div class="border-t border-slate-100 dark:border-slate-700/80 pt-6 mt-8">
               <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-envelope-open-text text-blue-500"></i> 6. Thay đổi điều khoản và Liên hệ
+                <i class="fa-solid fa-envelope-open-text text-blue-500"></i> 6. Thay Đổi Điều Khoản và Liên Hệ
               </h3>
               <p>
                 Chúng tôi có quyền sửa đổi các điều khoản này vào bất kỳ lúc nào để phù hợp với quy định mới của pháp luật hoặc cập nhật kỹ thuật. Các thay đổi sẽ được công khai tại trang này.

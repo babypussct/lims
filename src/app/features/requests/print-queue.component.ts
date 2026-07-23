@@ -19,7 +19,7 @@ import { ToastService } from '../../core/services/toast.service';
     <div class="w-full space-y-6 pb-20 fade-in h-full flex flex-col">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <i class="fa-solid fa-print text-purple-500 dark:text-purple-400"></i> Hàng đợi In
+                <i class="fa-solid fa-print text-purple-500 dark:text-purple-400"></i> Hàng Đợi In
             </h2>
             
             <div class="flex gap-2">

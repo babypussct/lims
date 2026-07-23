@@ -35,7 +35,7 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
                     <i class="fa-solid fa-desktop"></i>
                 </div>
                 
-                <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đăng nhập Máy tính?</h2>
+                <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đăng Nhập Máy Tính?</h2>
                 <p class="text-sm text-slate-500 text-center mb-8 px-4">Xác nhận cấp quyền truy cập cho thiết bị mới.</p>
 
                 <!-- User Info Card -->

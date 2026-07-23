@@ -22,11 +22,11 @@ import { Router } from '@angular/router';
         <div class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
             <div class="flex items-center gap-4">
                 <button (click)="goBack()" class="text-slate-500 hover:text-slate-800 text-sm font-bold flex items-center gap-2 transition">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Cấu hình</span>
+                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Cấu Hình</span>
                 </button>
                 <div class="h-6 w-px bg-slate-200"></div>
                 <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-teal-600"></i> Quản lý Bộ Chỉ tiêu (Target Groups)
+                    <i class="fa-solid fa-layer-group text-teal-600"></i> Quản Lý Nhóm Chỉ Tiêu
                 </h2>
             </div>
             
@@ -82,11 +82,11 @@ import { Router } from '@angular/router';
                             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tên Bộ Chỉ tiêu <span class="text-red-500">*</span></label>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tên nhóm chỉ tiêu <span class="text-red-500">*</span></label>
                                         <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-teal-500 transition" placeholder="VD: Nhóm Kháng sinh (Sulfonamides)">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mã ID (Slug)</label>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mã định danh (tự tạo)</label>
                                         <input formControlName="id" class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 text-xs font-mono text-slate-600 outline-none" readonly>
                                     </div>
                                 </div>
@@ -100,18 +100,18 @@ import { Router } from '@angular/router';
                             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="font-bold text-slate-700 text-sm uppercase flex items-center gap-2">
-                                        <i class="fa-solid fa-list-ul text-teal-500"></i> Danh sách Chỉ tiêu
+                                        <i class="fa-solid fa-list-ul text-teal-500"></i> Danh Sách Chỉ Tiêu
                                     </h3>
                                     <div class="flex flex-wrap justify-end gap-2">
                                         <button type="button" (click)="openLibraryModal()" class="text-xs bg-teal-600 text-white hover:bg-teal-700 border border-teal-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
-                                            <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Thư viện Gốc
+                                            <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Danh Mục Gốc
                                         </button>
                                     </div>
                                 </div>
 
                                 <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
                                     <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>
-                                    Chỉ tiêu phải được chọn từ Target Master. Tên, mã ID và đơn vị được khóa theo Thư viện Gốc để tránh sai lệch dữ liệu hệ thống.
+                                    Chỉ tiêu phải được chọn từ danh mục chỉ tiêu gốc. Tên, mã ID và đơn vị được khóa theo danh mục gốc để tránh sai lệch dữ liệu hệ thống.
                                 </p>
 
                                 <div formArrayName="targets" class="space-y-2">
@@ -129,29 +129,29 @@ import { Router } from '@angular/router';
                                             <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-2">
                                                 <div class="md:col-span-4">
                                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 flex justify-between items-center gap-2">
-                                                        <span>Tên Chỉ tiêu</span>
+                                                        <span>Tên chỉ tiêu</span>
                                                         @if (masterItem) {
                                                             <div class="flex items-center gap-1">
                                                                 <span class="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-check-circle"></i> Khớp Thư viện</span>
                                                                 <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition flex items-center gap-1 whitespace-nowrap">
-                                                                    <i class="fa-solid fa-rotate"></i> Thay thế
+                                                                    <i class="fa-solid fa-rotate"></i> Thay Thế
                                                                 </button>
                                                             </div>
                                                         } @else {
                                                             <div class="flex items-center gap-1">
                                                                 <span class="text-[9px] bg-red-100 text-red-600 px-1 rounded flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation"></i> Không tồn tại</span>
-                                                                <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition whitespace-nowrap">Chọn lại</button>
+                                                                <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition whitespace-nowrap">Chọn Lại</button>
                                                             </div>
                                                         }
                                                     </label>
                                                     <input formControlName="name" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs font-bold text-slate-500 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-3">
-                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã ID (Locked)</label>
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã định danh (đã khóa)</label>
                                                     <input formControlName="id" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs font-mono text-slate-400 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-2">
-                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị (Master)</label>
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị theo danh mục gốc</label>
                                                     <input formControlName="unit" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs text-slate-500 outline-none cursor-not-allowed text-center">
                                                 </div>
                                                 <div class="md:col-span-3 grid grid-cols-2 gap-1">
@@ -170,7 +170,7 @@ import { Router } from '@angular/router';
                                         </div>
                                     } @empty {
                                         <div class="text-center py-8 text-slate-400 italic bg-white border border-dashed border-slate-200 rounded-xl">
-                                            Chưa có chỉ tiêu. Hãy chọn từ Thư viện Gốc.
+                                            Chưa có chỉ tiêu. Hãy chọn từ danh mục gốc.
                                         </div>
                                     }
                                 </div>
@@ -195,9 +195,9 @@ import { Router } from '@angular/router';
                         <div>
                             <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                                 <i class="fa-solid fa-book-medical text-teal-600"></i>
-                                {{replacingTargetIndex() === null ? 'Chọn từ Thư viện Gốc' : 'Thay thế Chỉ tiêu'}}
+                                {{replacingTargetIndex() === null ? 'Chọn từ danh mục gốc' : 'Thay thế Chỉ tiêu'}}
                             </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Tên, mã ID và đơn vị sẽ được lấy trực tiếp từ Target Master.</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Tên, mã ID và đơn vị sẽ được lấy trực tiếp từ danh mục chỉ tiêu gốc.</p>
                         </div>
                         <button (click)="showLibraryModal.set(false)" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
                     </div>
@@ -210,7 +210,7 @@ import { Router } from '@angular/router';
                                    placeholder="Tìm kiếm...">
                         </div>
                         @if(replacingTargetIndex() === null) {
-                            <button (click)="selectAllLibraryFiltered()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold whitespace-nowrap transition">Chọn hết</button>
+                            <button (click)="selectAllLibraryFiltered()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold whitespace-nowrap transition">Chọn Hết</button>
                         }
                     </div>
 
@@ -372,12 +372,12 @@ export class TargetGroupManagerComponent implements OnInit {
       }
 
       if (this.targets.length === 0) {
-          this.toast.show('Bộ chỉ tiêu phải có ít nhất một Target từ Thư viện Gốc.', 'error');
+          this.toast.show('Bộ chỉ tiêu phải có ít nhất một chỉ tiêu từ danh mục gốc.', 'error');
           return;
       }
 
       if (!this.areAllTargetsMatched()) {
-          this.toast.show('Có chỉ tiêu không tồn tại trong Target Master. Vui lòng Chọn lại trước khi lưu.', 'error');
+          this.toast.show('Có chỉ tiêu không tồn tại trong danh mục chỉ tiêu gốc. Vui lòng chọn lại trước khi lưu.', 'error');
           return;
       }
 
@@ -454,7 +454,7 @@ export class TargetGroupManagerComponent implements OnInit {
           this.libraryTargets.set(data);
           this.hydrateTargetsFromMaster();
       } catch(e) {
-          this.toast.show('Lỗi kết nối Master Library', 'error');
+          this.toast.show('Không thể kết nối đến danh mục chỉ tiêu gốc.', 'error');
       } finally {
           this.isLibraryLoading.set(false);
       }
@@ -564,7 +564,7 @@ export class TargetGroupManagerComponent implements OnInit {
       });
 
       if (addedCount > 0) {
-          this.toast.show(`Đã thêm ${addedCount} chỉ tiêu từ Master Library.`, 'success');
+          this.toast.show(`Đã thêm ${addedCount} chỉ tiêu từ danh mục chỉ tiêu gốc.`, 'success');
       } else {
           this.toast.show('Các chỉ tiêu đã chọn đều có sẵn trong danh sách.', 'info');
       }

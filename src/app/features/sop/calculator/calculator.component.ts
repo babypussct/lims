@@ -599,7 +599,7 @@ export class CalculatorComponent implements OnDestroy {
           try {
               const newSop: Sop = JSON.parse(JSON.stringify(sop));
               newSop.id = generateSlug(sop.name + '_copy_' + Date.now());
-              newSop.name = `${sop.name} (Copy)`;
+              newSop.name = `${sop.name} (bản sao)`;
               newSop.version = 1;
               newSop.lastModified = null;
               newSop.archivedAt = null;
@@ -625,7 +625,7 @@ export class CalculatorComponent implements OnDestroy {
           URL.revokeObjectURL(url);
           this.toast.show('Đã tải xuống SOP.');
       } catch (e) {
-          this.toast.show('Lỗi export JSON', 'error');
+          this.toast.show('Không thể xuất JSON', 'error');
       }
   }
 
@@ -644,12 +644,12 @@ export class CalculatorComponent implements OnDestroy {
               data.lastModified = null;
               data.archivedAt = null;
 
-              if(await this.confirmation.confirm({ message: `Import SOP: "${data.name}"?`, confirmText: 'Import' })) {
+              if(await this.confirmation.confirm({ message: `Nhập SOP: "${data.name}"?`, confirmText: 'Nhập' })) {
                   await this.sopService.saveSop(data);
-                  this.toast.show('Import thành công!', 'success');
+                  this.toast.show('Nhập dữ liệu thành công!', 'success');
               }
           } catch(err: any) {
-              this.toast.show('Lỗi Import: ' + err.message, 'error');
+              this.toast.show('Không thể nhập dữ liệu: ' + err.message, 'error');
           } finally {
               event.target.value = '';
           }

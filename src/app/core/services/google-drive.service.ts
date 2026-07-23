@@ -243,7 +243,7 @@ export class GoogleDriveService {
         this.currentErrorCallback = null;
         if (response.error) {
           if (response.error === 'access_denied') {
-            reject(new Error('Bạn đã từ chối quyền truy cập Google Drive. Hãy thử lại và nhấn "Allow".'));
+            reject(new Error('Bạn đã từ chối quyền truy cập Google Drive. Hãy thử lại và chọn "Cho phép".'));
           } else {
             reject(new Error(`Google Auth lỗi: ${response.error_description || response.error}`));
           }
@@ -527,12 +527,12 @@ export class GoogleDriveService {
         }
         if (res.status === 403) {
           throw new Error(
-            `Không có quyền upload vào thư mục Drive.\n` +
+            `Bạn không có quyền tải tệp lên thư mục Google Drive.\n` +
             `→ Kiểm tra thư mục LIMS_CoA_Files đã share "Editor" cho email bạn chưa.\n` +
             `→ Chi tiết: ${errMsg}`
           );
         }
-        throw new Error(`Upload Drive thất bại: ${errMsg}`);
+        throw new Error(`Không thể tải tệp lên Google Drive: ${errMsg}`);
       }
 
       const data = await res.json();

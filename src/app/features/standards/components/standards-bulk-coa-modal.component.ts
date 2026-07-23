@@ -19,7 +19,7 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                       <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50">
                           <i class="fa-solid fa-file-contract"></i>
                       </div>
-                      Trình ghép nối CoA Hàng loạt
+                      Trình Ghép Nối CoA Hàng Loạt
                   </h3>
                   <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Kiểm tra kết quả nhận diện tự động và tải tài liệu lên Google Drive.</p>
                </div>
@@ -75,9 +75,9 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                        <thead class="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase bg-slate-50 dark:bg-slate-900 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 shadow-sm">
                            <tr>
                                <th class="px-4 py-3 w-12 text-center">STT</th>
-                               <th class="px-4 py-3 w-[40%]">Tên File (CoA)</th>
-                               <th class="px-4 py-3 w-[40%]">Chuẩn đối chiếu Tự động Nhận diện</th>
-                               <th class="px-4 py-3 w-[15%] text-center">Trạng thái Upload</th>
+                               <th class="px-4 py-3 w-[40%]">Tên tệp CoA</th>
+                               <th class="px-4 py-3 w-[40%]">Chất chuẩn đối chiếu Tự động Nhận diện</th>
+                               <th class="px-4 py-3 w-[15%] text-center">Trạng thái tải lên</th>
                            </tr>
                        </thead>
                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -185,7 +185,7 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                        </button>
                    } @else {
                        <button (click)="cancel.emit()" [disabled]="isUploading" class="px-6 py-2.5 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition disabled:opacity-50">
-                           Hủy bỏ thao tác
+                           Hủy Bỏ Thao Tác
                        </button>
                        <button (click)="onConfirm()" [disabled]="isUploading || itemsToUpload() === 0" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50">
                            <i class="fa-solid fa-cloud-arrow-up"></i> Bắt đầu Tải lên ({{itemsToUpload()}})

@@ -28,7 +28,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                         <i class="fa-solid fa-gears text-base"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Cấu hình Hệ thống</h2>
+                        <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Cấu Hình Hệ Thống</h2>
                         <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản trị viên: {{auth.currentUser()?.displayName}}.</p>
                     </div>
                 </div>
@@ -45,19 +45,19 @@ import { ConfigRolesComponent } from './components/config-roles.component';
             <!-- TABS -->
             <div class="flex gap-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar whitespace-nowrap">
                 <button (click)="activeTab.set('profile')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'profile' ? 'border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-id-badge"></i> Hồ sơ cá nhân
+                    <i class="fa-solid fa-id-badge"></i> Hồ Sơ Cá Nhân
                 </button>
                 <button (click)="activeTab.set('general')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'general' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-server"></i> Hệ thống & Dữ liệu
+                    <i class="fa-solid fa-server"></i> Hệ Thống & Dữ Liệu
                 </button>
                 <button (click)="activeTab.set('safety')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'safety' ? 'border-orange-600 dark:border-orange-400 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-shield-halved"></i> Định mức & Tiêu hao
+                    <i class="fa-solid fa-shield-halved"></i> Định Mức & Tiêu Hao
                 </button>
                 <button (click)="activeTab.set('roles')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'roles' ? 'border-orange-600 dark:border-orange-400 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-user-shield"></i> Nhóm vai trò
+                    <i class="fa-solid fa-user-shield"></i> Nhóm Vai Trò
                 </button>
                 <button (click)="activeTab.set('users')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'users' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-users-gear"></i> Người dùng & Phân quyền
+                    <i class="fa-solid fa-users-gear"></i> Người Dùng & Phân Quyền
                 </button>
             </div>
 
@@ -117,7 +117,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                         <code class="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 truncate flex-1 bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 select-all">
                                             {{auth.currentUser()?.uid}}
                                         </code>
-                                        <button (click)="copyUid(auth.currentUser()?.uid || '')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-bold px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">Copy</button>
+                                        <button (click)="copyUid(auth.currentUser()?.uid || '')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-bold px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">Sao Chép</button>
                                     </div>
                                 </div>
                                 
@@ -131,7 +131,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                 <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 mt-4">
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Thông báo đẩy (PWA)</label>
                                     <button (click)="enableNotifications()" class="w-full text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 py-2 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
-                                        <i class="fa-regular fa-bell"></i> Cấp quyền Thông Báo
+                                        <i class="fa-regular fa-bell"></i> Cấp Quyền Thông Báo
                                     </button>
                                 </div>
                                 
@@ -201,13 +201,13 @@ export class ConfigComponent {
       { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },
       { val: PERMISSIONS.INVENTORY_EDIT,  label: 'Sửa Kho (Thêm/Xóa/Sửa)' },
       { val: PERMISSIONS.BATCH_RUN,       label: 'Chạy Batch & Pha Chế' },
-      { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem Chuẩn' },
-      { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa thông tin Chuẩn' },
-      { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt & Giao nhận Chuẩn' },
-      { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem Báo cáo/Nhật ký Chuẩn' },
-      { val: PERMISSIONS.STANDARD_LOG_DELETE,label: 'Xoá Yêu cầu/Nhật ký chuẩn' },
-      { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem Công thức' },
-      { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa Công thức (Library)' },
+      { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa thông tin chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt và giao nhận chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem Báo cáo/Nhật ký sử dụng chất chuẩn' },
+      { val: PERMISSIONS.STANDARD_LOG_DELETE,label: 'Xóa yêu cầu và nhật ký chất chuẩn' },
+      { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem công thức' },
+      { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa công thức (Library)' },
       { val: PERMISSIONS.SOP_VIEW,        label: 'Xem SOP' },
       { val: PERMISSIONS.SOP_EDIT,        label: 'Sửa SOP (Editor)' },
       { val: PERMISSIONS.SOP_APPROVE,     label: 'Duyệt (Approve)' },
@@ -217,7 +217,7 @@ export class ConfigComponent {
   ];
 
   hasPerm(u: any, p: string) { return u.permissions?.includes(p); }
-  copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã copy UID!')); }
+  copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã sao chép UID.')); }
 
   async saveMyAvatarStyle(style: string) {
       await this.state.saveMyAvatarStyle(style);

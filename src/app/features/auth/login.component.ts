@@ -42,7 +42,7 @@ declare let QRious: any;
                         <app-logo size="96px"></app-logo>
                     </div>
                     <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
-                    <p class="text-gray-500 dark:text-slate-400 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>
+                    <p class="text-gray-500 dark:text-slate-400 text-[13px] mt-2 font-medium">Hệ thống quản lý thông tin phòng thí nghiệm</p>
                 </div>
 
                 <!-- LOGOUT REASON NOTIFICATION -->
@@ -93,7 +93,7 @@ declare let QRious: any;
                             [class.text-fuchsia-600]="mode() === 'password'"
                             [class.dark:text-fuchsia-400]="mode() === 'password'"
                             [class.text-gray-500]="mode() !== 'password'">
-                        <i class="fa-solid fa-shield-halved mr-1"></i> Tài khoản
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Tài Khoản
                     </button>
                 </div>
 
@@ -158,7 +158,7 @@ declare let QRious: any;
                                     </div>
                                     <div class="space-y-1.5 text-slate-300">
                                         <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
-                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn Logout để bảo mật.</div>
+                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn đăng xuất để bảo mật.</div>
                                     </div>
                                 </div>
                             </div>
@@ -255,7 +255,7 @@ declare let QRious: any;
                                         </div>
                                         <div class="space-y-1.5 text-slate-300">
                                             <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
-                                            <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn Logout để bảo mật.</div>
+                                            <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn đăng xuất để bảo mật.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -280,7 +280,7 @@ declare let QRious: any;
                 <!-- LOGIN MODE: QR SHOW -->
                 @if (mode() === 'qr') {
                     <div class="animate-fade-in-up relative z-10 flex flex-col items-center text-center">
-                        <h2 class="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">Đăng nhập nhanh</h2>
+                        <h2 class="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">Đăng Nhập Nhanh</h2>
                         <p class="text-gray-500 dark:text-slate-400 text-[13px] mb-8 px-4">Sử dụng ứng dụng LIMS trên điện thoại để quét mã này.</p>
 
                         <div class="bg-white dark:bg-slate-800 p-3 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 relative group w-64 h-64 mx-auto flex items-center justify-center overflow-hidden">
@@ -311,7 +311,7 @@ declare let QRious: any;
                                     <div class="w-12 h-12 bg-red-50 dark:bg-red-950/50 text-red-500 rounded-full flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
                                     <span class="font-bold text-red-700 dark:text-red-400 text-sm">Lỗi kết nối</span>
                                     <span class="text-[11px] text-red-500/80 mt-1 mb-4">{{ errorMsg() }}</span>
-                                    <button (click)="generateSession()" class="px-4 py-2 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/50 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900 transition-colors">Thử lại</button>
+                                    <button (click)="generateSession()" class="px-4 py-2 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/50 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900 transition-colors">Thử Lại</button>
                                 </div>
                             }
                         </div>
@@ -357,8 +357,8 @@ declare let QRious: any;
                                         <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
                                     </div>
                                     <div class="space-y-1.5 text-slate-300">
-                                        <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành for máy cá nhân).</div>
-                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn Logout để bảo mật.</div>
+                                            <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
+                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn đăng xuất để bảo mật.</div>
                                     </div>
                                 </div>
                             </div>
@@ -549,7 +549,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       } catch (e: any) {
           console.error("QR Session Init Error:", e);
           if (e.code === 'permission-denied') {
-              this.errorMsg.set('Lỗi quyền truy cập! Vui lòng cập nhật Firestore Rules (xem Config).');
+              this.errorMsg.set('Không thể truy cập dữ liệu. Vui lòng kiểm tra quy tắc Firestore trong phần Cấu hình.');
           } else {
               this.errorMsg.set('Không thể tạo phiên kết nối. Vui lòng thử lại.');
           }

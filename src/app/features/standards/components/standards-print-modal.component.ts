@@ -88,16 +88,16 @@ interface RollPreset {
                                  <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Mẫu hiển thị</label>
                                  <div class="grid grid-cols-3 gap-2">
                                      <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-transparent': printTemplate() === 'standard', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'standard'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
-                                         <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Tiêu chuẩn</div>
-                                         <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Thông tin cơ bản</div>
+                                         <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Tiêu Chuẩn</div>
+                                         <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Thông Tin Cơ Bản</div>
                                      </button>
                                      <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-transparent': printTemplate() === 'detailed', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'detailed'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
-                                         <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Chi tiết</div>
-                                         <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Đầy đủ thông tin</div>
+                                         <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Chi Tiết</div>
+                                         <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Đầy Đủ Thông Tin</div>
                                      </button>
                                      <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-transparent': printTemplate() === 'qr', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'qr'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
-                                         <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Kèm mã QR</div>
-                                         <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Quét truy xuất nhanh</div>
+                                         <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Kèm Mã QR</div>
+                                         <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Quét Truy Xuất Nhanh</div>
                                      </button>
                                  </div>
                              </div>
@@ -144,7 +144,7 @@ interface RollPreset {
                                                  [class.text-indigo-600]="a4PaperType() === 'fullsheet'"
                                                  [class.dark:text-indigo-400]="a4PaperType() === 'fullsheet'"
                                                  class="flex-1 py-1.5 text-center text-[10px] font-extrabold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
-                                             Nguyên tấm tự cắt (Khuyên dùng)
+                                             Nguyên Tấm Tự Cắt (Khuyên Dùng)
                                          </button>
                                          <button (click)="a4PaperType.set('precut')"
                                                  [class.bg-white]="a4PaperType() === 'precut'"
@@ -153,7 +153,7 @@ interface RollPreset {
                                                  [class.text-indigo-600]="a4PaperType() === 'precut'"
                                                  [class.dark:text-indigo-400]="a4PaperType() === 'precut'"
                                                  class="flex-1 py-1.5 text-center text-[10px] font-extrabold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
-                                             Chia ô sẵn (Tomy)
+                                             Chia Ô Sẵn (Tomy)
                                          </button>
                                      </div>
                                      
@@ -282,7 +282,7 @@ interface RollPreset {
                      </div>
                      
                      <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                         <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+                         <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy Bỏ</button>
                          <button (click)="printLabel()" class="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-violet-500 text-white font-extrabold text-xs rounded-xl hover:shadow-lg hover:opacity-95 shadow-md shadow-indigo-150 dark:shadow-none transition flex items-center gap-2">
                              <i class="fa-solid fa-print"></i> Tiến Hành In Nhãn ({{ standardsToPrint().length * printCopies() }})
                          </button>

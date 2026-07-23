@@ -17,12 +17,12 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div>
                     <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
                         <div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center"><i class="fa-solid fa-percent"></i></div>
-                        Quy định Hao hụt (Safety Margin)
+                        Quy Định Hao Hụt (Safety Margin)
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cấu hình tỷ lệ hao hụt tự động dựa trên phân loại hóa chất.</p>
                 </div>
                 <button (click)="saveSafety()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition shadow-sm dark:shadow-none flex items-center gap-2">
-                    <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu hình
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
                 </button>
             </div>
 
@@ -41,8 +41,8 @@ import { ToastService } from '../../../core/services/toast.service';
             <!-- Category Rules Table -->
             <div>
                 <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quy tắc chi tiết theo Loại (Category)</h4>
-                    <button (click)="addSafetyRule()" class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Quy tắc</button>
+                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quy Tắc Chi Tiết theo Loại (Category)</h4>
+                    <button (click)="addSafetyRule()" class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Quy Tắc</button>
                 </div>
                 
                 <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -88,14 +88,14 @@ import { ToastService } from '../../../core/services/toast.service';
         <!-- Helper / Info Panel -->
         <div class="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 p-6">
             <h4 class="font-bold text-indigo-800 dark:text-indigo-400 text-sm mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-circle-info"></i> Hướng dẫn
+                <i class="fa-solid fa-circle-info"></i> Hướng Dẫn
             </h4>
             <ul class="text-xs text-slate-600 dark:text-slate-400 space-y-3 list-disc pl-4">
                 <li>
                     <b class="dark:text-slate-300">Mức mặc định:</b> Được áp dụng cho tất cả các chất không thuộc danh sách quy tắc riêng.
                 </li>
                 <li>
-                    <b class="dark:text-slate-300">Auto Mode:</b> Khi chạy Calculator hoặc Smart Batch, nếu bạn chọn chế độ hao hụt là "Auto" (hoặc để trống), hệ thống sẽ tra cứu bảng này.
+                    <b class="dark:text-slate-300">Chế độ tự động:</b> Khi chạy trình tính toán hoặc chức năng lập mẻ, nếu bạn chọn chế độ hao hụt là "Tự động" (hoặc để trống), hệ thống sẽ tra cứu bảng này.
                 </li>
                 <li>
                     <b class="dark:text-slate-300">Gợi ý thiết lập:</b>

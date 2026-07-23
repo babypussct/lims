@@ -106,7 +106,7 @@ declare let QRious: any;
                         <table class="main-table">
                             <thead>
                                 <tr>
-                                    <th class="th-name">Hóa chất / Vật tư</th>
+                                    <th class="th-name">Hóa chất và vật tư</th>
                                     <th class="th-amount">Lượng</th>
                                     <th class="th-unit">ĐV</th>
                                     <th class="th-note">Ghi chú</th>
@@ -367,7 +367,7 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
 
   getMarginDisplay(job: PrintJob): string {
       const val = job.margin !== undefined ? job.margin : (job.inputs['safetyMargin'] || 0);
-      if (val < 0) return 'Theo cấu hình (Auto)';
+      if (val < 0) return 'Theo cấu hình (tự động)';
       return `+${this.formatNum(val)}%`;
   }
 }

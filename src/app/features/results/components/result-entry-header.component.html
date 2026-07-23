@@ -12,8 +12,8 @@
         @if (run?.parentMasterId) {
           <a [routerLink]="['/results', run.parentMasterId]"
              class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
-             title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
-            <i class="fa-solid fa-link text-[7px] animate-pulse"></i> Đã gộp Master Ảo
+             title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
+            <i class="fa-solid fa-link text-[7px] animate-pulse"></i> Đã gộp mẻ tổng hợp
           </a>
         }
       </span>
@@ -37,7 +37,7 @@
                   [class.dark:bg-slate-750]="showRestoreMenu"
                   title="Khôi phục số liệu từ các bản in cũ">
             <i class="fa-solid fa-clock-rotate-left"></i>
-            <span class="hidden md:inline">Khôi phục bản cũ</span>
+            <span class="hidden md:inline">Khôi Phục Bản Cũ</span>
             <i class="fa-solid fa-chevron-down text-[9px] opacity-70 transition-transform duration-200"
                [class.rotate-180]="showRestoreMenu"></i>
           </button>
@@ -116,7 +116,7 @@
               [title]="autoSaveStatus === 'synced' ? 'Dữ liệu phân tích đã được tự động đồng bộ thời gian thực' : 'Lưu nháp số liệu hiện tại lên đám mây'">
         @if (autoSaveStatus === 'saving') {
           <i class="fa-solid fa-spinner fa-spin text-indigo-500 text-sm"></i>
-          <span class="text-[10px] uppercase tracking-wider font-black">Đang lưu...</span>
+          <span class="text-[10px] uppercase tracking-wider font-black">Đang Lưu...</span>
         } @else if (autoSaveStatus === 'synced') {
           <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
           <span class="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">
@@ -124,7 +124,7 @@
           </span>
         } @else if (autoSaveStatus === 'error') {
           <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
-          <span class="text-[10px] uppercase tracking-wider font-black">Lưu thất bại — thử lại</span>
+          <span class="text-[10px] uppercase tracking-wider font-black">Lưu Thất Bại — Thử Lại</span>
         } @else {
           <i class="fa-solid fa-cloud-arrow-up text-amber-500 animate-pulse text-sm"></i>
           <span class="text-[10px] uppercase tracking-wider font-black">
@@ -138,7 +138,7 @@
         <button (click)="openPdf.emit({ pdfUrl: currentPdfUrl, docsUrl: currentDocsUrl })"
                 class="px-4 py-2 text-xs font-bold text-red-655 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
           <i class="fa-solid fa-file-pdf"></i>
-          <span>Xem PDF Báo cáo</span>
+          <span>Xem Báo Cáo PDF</span>
         </button>
       }
 
@@ -149,7 +149,7 @@
           <input type="number"
                  [value]="samplesPerReport || ''"
                  (input)="samplesPerReportChange.emit($any($event.target).valueAsNumber || null)"
-                 placeholder="Auto"
+                 placeholder="Tự động"
                  class="w-12 bg-transparent border-none text-xs font-bold text-slate-700 dark:text-slate-300 focus:ring-0 p-0 text-center"
                  min="1" />
           <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">mẫu</span>
@@ -201,7 +201,7 @@
               <div class="flex items-center justify-between mb-3 md:hidden">
                 <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                   <i class="fa-solid fa-gear text-slate-400"></i>
-                  Thao tác nhanh
+                  Thao Tác Nhanh
                 </h3>
                 <button (click)="closeActionsMenu.emit()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-90">
                   <i class="fa-solid fa-xmark text-sm"></i>
@@ -211,7 +211,7 @@
               <!-- Section 1: Tài liệu & Báo cáo -->
               @if (currentPdfUrl || currentDocsUrl) {
                 <div class="px-3 py-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                  Báo cáo &amp; Tài liệu
+                  Báo cáo và tài liệu
                 </div>
                 @if (currentPdfUrl) {
                   <button (click)="openPdf.emit({ pdfUrl: currentPdfUrl, docsUrl: currentDocsUrl }); closeActionsMenu.emit()"
@@ -219,7 +219,7 @@
                     <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
                       <i class="fa-solid fa-file-pdf text-red-500"></i>
                     </div>
-                    <span>Xem PDF Báo cáo</span>
+                    <span>Xem Báo Cáo PDF</span>
                   </button>
                 }
                 <div class="border-t border-slate-200 dark:border-slate-800 my-2 mx-2"></div>
@@ -236,7 +236,7 @@
                   <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-unlock-keyhole text-amber-500"></i>
                   </div>
-                  <span>Mở khóa và chỉnh sửa</span>
+                  <span>Mở Khóa và Chỉnh Sửa</span>
                 </button>
               }
               <button (click)="closeActionsMenu.emit(); openResetModal.emit()"
@@ -245,7 +245,7 @@
                 <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
                   <i class="fa-solid fa-trash-can text-red-500"></i>
                 </div>
-                <span>Xóa hoàn toàn kết quả</span>
+                <span>Xóa Hoàn Toàn Kết Quả</span>
               </button>
 
               @if (run?.isVirtualMaster) {
@@ -255,7 +255,7 @@
                   <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-unlink text-rose-500"></i>
                   </div>
-                  <span>Gỡ gộp &amp; Xóa mẻ ảo</span>
+                  <span>Gỡ Gộp và Xóa Mẻ Ảo</span>
                 </button>
               }
 

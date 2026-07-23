@@ -26,7 +26,7 @@ import { StateService } from '../../core/services/state.service';
         <div class="flex justify-end mb-4 shrink-0">
             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
                 <button [appLockPermission]="'recipe_edit'" (click)="openModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-plus"></i> Tạo Công thức
+                    <i class="fa-solid fa-plus"></i> Tạo Công Thức
                 </button>
             }
         </div>
@@ -35,7 +35,7 @@ import { StateService } from '../../core/services/state.service';
             <div class="flex items-center justify-center h-64 bg-red-50 rounded-2xl border border-red-100">
                 <div class="text-center">
                     <i class="fa-solid fa-lock text-red-300 text-4xl mb-3"></i>
-                    <h3 class="text-red-800 font-bold text-lg">Không có quyền truy cập</h3>
+                    <h3 class="text-red-800 font-bold text-lg">Không Có Quyền Truy Cập</h3>
                     <p class="text-red-600 text-sm mt-1">Bạn không có quyền xem thư viện công thức.</p>
                 </div>
             </div>
@@ -79,7 +79,7 @@ import { StateService } from '../../core/services/state.service';
                 } @empty {
                     <div class="col-span-full py-20 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                         <i class="fa-solid fa-flask text-3xl mb-3 text-slate-300"></i>
-                        <p>Chưa có công thức nào. Nhấn "Tạo Công thức" để thêm mới.</p>
+                        <p>Chưa có công thức nào. Nhấn "Tạo công thức" để thêm mới.</p>
                     </div>
                 }
             </div>
@@ -92,7 +92,7 @@ import { StateService } from '../../core/services/state.service';
                     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                         <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                             <i class="fa-solid fa-flask text-purple-600"></i>
-                            {{ isEditing() ? 'Cập nhật Công thức' : 'Tạo Công thức Mới' }}
+                            {{ isEditing() ? 'Cập nhật công thức' : 'Tạo công thức Mới' }}
                         </h3>
                         <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
                     </div>
@@ -123,9 +123,9 @@ import { StateService } from '../../core/services/state.service';
                             <div>
                                 <div class="flex justify-between items-center mb-3">
                                     <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
-                                        <i class="fa-solid fa-layer-group text-slate-400"></i> Thành phần (Từ Kho)
+                                        <i class="fa-solid fa-layer-group text-slate-400"></i> Thành phần (từ kho)
                                     </label>
-                                    <button type="button" (click)="addIngredient()" class="text-xs bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition">+ Thêm dòng</button>
+                                    <button type="button" (click)="addIngredient()" class="text-xs bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition">+ Thêm Dòng</button>
                                 </div>
                                 
                                 <div formArrayName="ingredients" class="space-y-3">
@@ -170,8 +170,8 @@ import { StateService } from '../../core/services/state.service';
                     </div>
 
                     <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                        <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                        <button (click)="save()" [disabled]="form.invalid" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">Lưu Công thức</button>
+                        <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
+                        <button (click)="save()" [disabled]="form.invalid" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">Lưu Công Thức</button>
                     </div>
                 </div>
             </div>

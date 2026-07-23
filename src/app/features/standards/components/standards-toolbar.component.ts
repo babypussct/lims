@@ -14,7 +14,7 @@ import { StateService } from '../../../core/services/state.service';
               <i class="fa-solid fa-vial-circle-check text-base"></i>
           </div>
           <div>
-              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản lý Chuẩn Đối Chiếu</h2>
+              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản Lý Chất Chuẩn Đối Chiếu</h2>
               <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản lý danh sách chất chuẩn, in tem và cập nhật thông tin lô sản xuất.</p>
           </div>
       </div>
@@ -35,29 +35,29 @@ import { StateService } from '../../../core/services/state.service';
          @if(canEditStandards() || state.showLockedFeatures()) {
             <div class="relative group ml-1">
                 <button [appLockPermission]="'standard_edit'" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
-                    <i class="fa-solid fa-bars"></i> Chức năng <i class="fa-solid fa-caret-down"></i>
+                    <i class="fa-solid fa-bars"></i> Chức Năng <i class="fa-solid fa-caret-down"></i>
                 </button>
                 <div class="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden flex flex-col p-1">
                     <button [appLockPermission]="'standard_edit'" (click)="openAddModal.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-plus text-indigo-500 w-4"></i> Thêm mới
+                        <i class="fa-solid fa-plus text-indigo-500 w-4"></i> Thêm Mới
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     <button [appLockPermission]="'standard_edit'" (click)="fileInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Import Chuẩn
                     </button>
                     <button [appLockPermission]="'standard_edit'" (click)="usageLogFileInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import Nhật ký
+                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import Nhật Ký
                     </button>
                     <button [appLockPermission]="'standard_edit'" (click)="openCleanupModal.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn hóa dữ liệu
+                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn Hóa Dữ Liệu
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
-                    <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload CoA Hàng loạt</div>
+                    <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tải nhiều CoA lên</div>
                     <button [appLockPermission]="'standard_edit'" (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-folder-open text-amber-500 w-4 ml-2"></i> Từ Thư mục
+                        <i class="fa-solid fa-folder-open text-amber-500 w-4 ml-2"></i> Từ Thư Mục
                     </button>
                     <button [appLockPermission]="'standard_edit'" (click)="bulkCoaFilesInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-regular fa-images text-blue-500 w-4 ml-2"></i> Chọn Files
+                        <i class="fa-regular fa-images text-blue-500 w-4 ml-2"></i> Chọn Tệp
                     </button>
                 </div>
                 <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="onFileSelect($event, fileInput, 'standards')">
@@ -67,7 +67,7 @@ import { StateService } from '../../../core/services/state.service';
             </div>
          }
          <!-- Xuất Excel — hiển thị cho tất cả user, không cần phân quyền -->
-         <button (click)="openExportModal.emit()" title="Xuất danh sách đang lọc ra file Excel"
+         <button (click)="openExportModal.emit()" title="Xuất danh sách đang lọc ra tệp Excel"
              class="px-3 py-1.5 bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg shadow-sm shadow-emerald-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
              <i class="fa-solid fa-file-excel"></i> Xuất Excel
          </button>

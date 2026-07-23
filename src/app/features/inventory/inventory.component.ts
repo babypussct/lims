@@ -322,7 +322,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
       const query = cas || engName;
       
       if (!query) {
-          this.toast.show('Vui lòng nhập Tên Tiếng Anh hoặc mã CAS để tự động bắt GHS.', 'error');
+          this.toast.show('Vui lòng nhập Tên tiếng Anh hoặc mã CAS để tự động bắt GHS.', 'error');
           return;
       }
       

@@ -4,7 +4,7 @@
     <div class="min-w-0">
       <span class="block text-[10px] font-black text-violet-650 dark:text-violet-400 uppercase tracking-widest">Dạng nhập kết quả SOP 9.14</span>
       <span class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-        Đầy đủ: Form Check tất cả target · Rút gọn: dạng Spreadsheet
+        Đầy đủ: biểu mẫu kiểm tra tất cả chỉ tiêu · Rút gọn: dạng bảng
       </span>
     </div>
 
@@ -14,16 +14,16 @@
               [class]="draft.page1Data['printFormType'] !== 'formRutGon'
                 ? 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95'
                 : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
-        FORM ĐẦY ĐỦ
-        <span class="hidden sm:inline font-extrabold opacity-80">(CHECK - TẤT CẢ TARGET)</span>
+        BIỂU MẪU ĐẦY ĐỦ
+        <span class="hidden sm:inline font-extrabold opacity-80">(KIỂM TRA TẤT CẢ CHỈ TIÊU)</span>
       </button>
       <button type="button"
         (click)="setPrintFormMode('formRutGon')"
               [class]="draft.page1Data['printFormType'] === 'formRutGon'
                 ? 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95'
                 : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
-        FORM RÚT GỌN
-        <span class="hidden sm:inline font-extrabold opacity-80">(SPREADSHEET)</span>
+        BIỂU MẪU RÚT GỌN
+        <span class="hidden sm:inline font-extrabold opacity-80">(DẠNG BẢNG)</span>
       </button>
     </div>
   </div>
@@ -85,7 +85,7 @@
                     ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
               title="Chọn Thủy sản">
-            Thủy sản
+            Thủy Sản
           </button>
           <input type="text"
             [(ngModel)]="draft.page1Data['loaiMau']"
@@ -105,7 +105,7 @@
                     ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
               title="Chọn Bình thường">
-            Bình thường
+            Bình Thường
           </button>
           <input type="text"
             [(ngModel)]="draft.page1Data['tinhTrangMau']"
@@ -120,7 +120,7 @@
     <!-- 1.5. Section 7 Đường chuẩn -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in mt-6">
       <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-        <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> 7. Khai báo Đường chuẩn
+        <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> 7. Khai Báo Đường Chuẩn
       </h4>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -128,7 +128,7 @@
           <div class="lg:col-span-5 space-y-3 animate-fade-in">
             <div class="p-4 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl space-y-3 shadow-xs">
               <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC & Tên tuỳ chỉnh
+                <i class="fa-solid fa-flask-vial"></i> Cấu Hình Mẫu QC & Tên Tuỳ Chỉnh
               </h5>
               <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
                 <input type="checkbox"
@@ -139,7 +139,7 @@
               </label>
               <div class="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Blank</label>
+                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu trắng</label>
                   <input type="text"
                     [(ngModel)]="draft.page1Data['blankName']"
                     (ngModelChange)="onDataChanged()"
@@ -147,7 +147,7 @@
                     class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
                   </div>
                   <div>
-                    <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Spike</label>
+                    <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu thêm chuẩn</label>
                     <input type="text"
                       [(ngModel)]="draft.page1Data['spikeName']"
                       (ngModelChange)="onDataChanged()"
@@ -157,7 +157,7 @@
                   </div>
                   @if (draft.page1Data['hasCheckSample']) {
                     <div class="animate-fade-in">
-                      <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Check Sample</label>
+                      <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu kiểm tra</label>
                       <input type="text"
                         [(ngModel)]="draft.page1Data['checkSampleName']"
                         (ngModelChange)="onDataChanged()"
@@ -249,7 +249,7 @@
                 <div class="flex-1 min-w-[200px]">
                   <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
                     <i class="fa-solid fa-flask-vial mr-2 text-violet-500 text-sm"></i>
-                    Bảng kết quả mẫu: <span class="font-mono text-violet-600 dark:text-violet-400 font-extrabold ml-1 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-lg border border-violet-100 dark:border-violet-900/30">{{ activeSampleCode() }}</span>
+                    Bảng Kết Quả Mẫu: <span class="font-mono text-violet-600 dark:text-violet-400 font-extrabold ml-1 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-lg border border-violet-100 dark:border-violet-900/30">{{ activeSampleCode() }}</span>
                     <!-- Per-sample Volume Input -->
                     <div class="ml-4 flex items-center bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs normal-case">
                       <span class="bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[10px] font-bold text-slate-500 border-r border-slate-200 dark:border-slate-800">m =</span>
@@ -260,7 +260,7 @@
                           (ngModelChange)="onDataChanged()"
                           class="w-14 px-1 py-1 text-xs font-black text-indigo-650 dark:text-indigo-400 bg-transparent outline-none text-center focus:bg-indigo-50/50">
                         }
-                        <span class="pr-2 pl-1 text-[10px] font-bold text-slate-400 border-l border-slate-100 dark:border-slate-800">g</span>
+                        <span class="pr-2 pl-1 text-[10px] font-bold text-slate-400 border-l border-slate-100 dark:border-slate-800">G</span>
                       </div>
                     </h4>
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 tracking-wide">
@@ -283,14 +283,14 @@
                         type="button"
                         class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
                         <i class="fa-solid fa-pen-nib text-amber-500"></i>
-                        <span>Đặt tất cả ND</span>
+                        <span>Đặt Tất Cả ND</span>
                       </button>
                       <button (click)="copyActiveSampleToAll()"
                         type="button"
                         class="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
                         title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này">
                       <i class="fa-solid fa-copy"></i>
-                      <span>Sao chép mẫu cho cả mẻ</span>
+                      <span>Sao Chép Mẫu cho Cả Mẻ</span>
                     </button>
                   </div>
                 </div>
@@ -352,7 +352,7 @@
                 <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
                   <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
                     <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                      <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới nhập kết quả (SOP 9.14 Spreadsheet)
+                      <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới Nhập Kết Quả (SOP 9.14 Spreadsheet)
                     </h4>
                     <div class="flex flex-wrap items-center gap-3">
                       <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
@@ -362,7 +362,7 @@
                         class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-605 dark:bg-emerald-955/20 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-800/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                         title="Nhập kết quả tự động từ file excel Agilent MassHunter">
                       <i class="fa-solid fa-file-excel text-emerald-500"></i>
-                      <span>Nhập tệp MassHunter</span>
+                      <span>Nhập Tệp MassHunter</span>
                     </button>
                     <input #massHunterFileInput type="file" (change)="importMassHunterExcel($event)" accept=".xlsx" class="hidden">
                     <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-extrabold cursor-pointer select-none shadow-2xs">
@@ -398,17 +398,17 @@
                       class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                       title="Đặt toàn bộ các ô kết quả chưa điền là ND">
                       <i class="fa-solid fa-pen-clip text-amber-500"></i>
-                      <span>Điền ND ô trống</span>
+                      <span>Điền ND Ô Trống</span>
                     </button>
                     <button (click)="bulkClearAll()"
                       class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                       title="Xóa toàn bộ các ô kết quả của bảng">
                       <i class="fa-solid fa-trash-can text-rose-500"></i>
-                      <span>Xóa hết bảng</span>
+                      <span>Xóa Hết Bảng</span>
                     </button>
                     <!-- Quick Vial Rack Input for SOP 9.14 -->
                     <div class="flex items-center gap-2 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
-                      <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập Vial nhanh:</span>
+                      <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập nhanh số lọ:</span>
                       <div class="flex items-center gap-1.5">
                         <span class="text-slate-450 dark:text-slate-500 font-bold">Rack:</span>
                         <input type="number"
@@ -437,7 +437,7 @@
                               class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
                               title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
                             <i class="fa-solid fa-magic text-[10px]"></i>
-                            <span>Điền nhanh</span>
+                            <span>Điền Nhanh</span>
                           </button>
                         </div>
                       </div>

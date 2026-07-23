@@ -707,11 +707,11 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
                 this.progressService.complete();
                 this.toast.show('Nhập dữ liệu thành công và đã tải tệp Excel MassHunter gốc lên Google Drive!', 'success');
               } else {
-                throw new Error(uploadRes.error || 'Lỗi không thể tạo file trên Drive.');
+                throw new Error(uploadRes.error || 'Không thể tạo tệp trên Google Drive.');
               }
             } catch (err: any) {
               this.progressService.stop();
-              console.error('Lỗi upload Excel lên Drive:', err);
+              console.error('Không thể tải tệp Excel lên Google Drive:', err);
               this.toast.show('Đã nhập số liệu thành công nhưng không thể tải tệp Excel gốc lên Google Drive: ' + err.message, 'error');
             }
           };
@@ -722,7 +722,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
         }
 
       } catch (err: any) {
-        console.error('Lỗi khi đọc file Excel MassHunter:', err);
+        console.error('Lỗi khi đọc tệp Excel MassHunter:', err);
         this.toast.show('Có lỗi xảy ra khi đọc tệp Excel: ' + err.message, 'error');
       }
     };

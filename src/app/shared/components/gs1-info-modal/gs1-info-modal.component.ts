@@ -22,7 +22,7 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
                 <i class="fa-solid fa-barcode"></i>
               </div>
               <div>
-                <h3 class="font-bold text-slate-800 dark:text-white text-lg leading-tight">Thông tin GS1</h3>
+                <h3 class="font-bold text-slate-800 dark:text-white text-lg leading-tight">Thông Tin GS1</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Quét từ Data Matrix</p>
               </div>
             </div>
@@ -113,7 +113,7 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
                         [disabled]="qrService.scannedGs1Data()?.error || !qrService.scannedGs1Data()?.gtin"
                         class="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600">
                   <i class="fa-solid fa-boxes-stacked"></i>
-                  {{ matchedItem() ? 'Cập nhật Kho' : 'Nhập Kho Mới' }}
+                  {{ matchedItem() ? 'Cập nhật kho' : 'Thêm vào kho' }}
                 </button>
               </div>
             }

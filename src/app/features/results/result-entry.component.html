@@ -291,7 +291,7 @@
           Không thể tìm thấy mẻ chạy hoặc cấu hình tương ứng của chỉ tiêu này!
         </p>
         <button (click)="goBack()" class="mt-4 px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-xl text-xs font-bold">
-          Quay lại danh sách
+          Quay Lại Danh Sách
         </button>
       </div>
     }
@@ -305,7 +305,7 @@
           <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-lg">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-          <h3 class="text-base font-bold">Đưa mẻ về trạng thái ban đầu</h3>
+          <h3 class="text-base font-bold">Đưa Mẻ về Trạng Thái Ban Đầu</h3>
         </div>
         
         <p class="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
@@ -326,12 +326,12 @@
         <div class="flex gap-3">
           <button (click)="closeResetModal()" 
                   class="flex-1 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl transition">
-            Hủy bỏ
+            Hủy Bỏ
           </button>
           <button (click)="triggerResetResults()" 
                   [disabled]="resetConfirmText() !== 'XÓA' || isProcessing()"
                   class="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-40">
-            Xóa &amp; Khởi tạo lại
+            Xóa và Khởi Tạo Lại
           </button>
         </div>
       </div>

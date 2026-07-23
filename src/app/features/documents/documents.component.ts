@@ -73,7 +73,7 @@ type ViewMode = 'list' | 'grid';
                   class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold"
                   title="Làm mới dữ liệu">
             <i class="fa-solid fa-rotate-right" [class.fa-spin]="loading() && isOnline()"></i>
-            <span class="hidden sm:inline font-bold">Làm mới</span>
+            <span class="hidden sm:inline font-bold">Làm Mới</span>
           </button>
         </div>
       </div>
@@ -132,9 +132,9 @@ type ViewMode = 'list' | 'grid';
           <!-- Offline State -->
           <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
             <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400 flex items-center justify-center text-2xl mb-4">
-              <i class="fa-solid fa-wifi-slash"></i>
+              <i class="fa-solid fa-plug-circle-xmark"></i>
             </div>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Không có kết nối mạng</h3>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Không Có Kết Nối Mạng</h3>
             <p class="text-slate-500 dark:text-slate-400 text-sm max-w-sm">Vui lòng kiểm tra lại kết nối Internet để duyệt và tải tài liệu từ Google Drive.</p>
           </div>
         } @else {
@@ -144,10 +144,10 @@ type ViewMode = 'list' | 'grid';
               <div class="w-16 h-16 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-2xl mb-4">
                 <i class="fa-solid fa-triangle-exclamation"></i>
               </div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Lỗi tải dữ liệu</h3>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Lỗi Tải Dữ Liệu</h3>
               <p class="text-slate-500">{{ error() }}</p>
               <button (click)="forceRefresh()" class="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg transition-colors font-semibold">
-                Thử lại
+                Thử Lại
               </button>
             </div>
           }
@@ -156,7 +156,7 @@ type ViewMode = 'list' | 'grid';
           @if (!loading() && !error() && files().length === 0) {
             <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
               <i class="fa-regular fa-folder-open text-6xl text-slate-300 dark:text-slate-600 mb-4"></i>
-              <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Thư mục trống</h3>
+              <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Thư Mục Trống</h3>
               <p class="text-sm text-slate-400 mt-1">Không có tài liệu nào trong thư mục này.</p>
             </div>
           }
@@ -165,7 +165,7 @@ type ViewMode = 'list' | 'grid';
           @if (!loading() && !error() && files().length > 0 && displayFiles().length === 0) {
             <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
               <i class="fa-solid fa-search text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
-              <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Không tìm thấy kết quả</h3>
+              <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Không Tìm Thấy Kết Quả</h3>
               <p class="text-sm text-slate-400 mt-1">Thử tìm với từ khóa khác xem sao.</p>
             </div>
           }

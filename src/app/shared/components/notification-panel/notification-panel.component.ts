@@ -54,7 +54,7 @@ interface DateGroup {
               <i class="fa-solid fa-bell text-sm"></i>
             </div>
             <div>
-              <h2 class="font-bold text-slate-900 dark:text-slate-100 text-base leading-tight tracking-tight">Thông báo</h2>
+              <h2 class="font-bold text-slate-900 dark:text-slate-100 text-base leading-tight tracking-tight">Thông Báo</h2>
               <div class="flex items-center gap-1.5 mt-0.5">
                 @if (unreadCount() > 0) {
                   <span class="notif-unread-pill">
@@ -75,7 +75,7 @@ interface DateGroup {
                 class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-700 dark:hover:text-fuchsia-300
                        px-2.5 py-1.5 rounded-xl hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40 transition-all active:scale-95 flex items-center gap-1">
                 <i class="fa-solid fa-check-double text-[10px]"></i>
-                Đọc tất cả
+                Đọc Tất Cả
               </button>
             }
 
@@ -259,7 +259,7 @@ interface DateGroup {
             (click)="goToSettings()"
             class="text-[11px] font-bold text-fuchsia-600 hover:text-fuchsia-700 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 transition-colors flex items-center gap-1.5">
             <i class="fa-solid fa-gear text-[10px]"></i>
-            Cài đặt thông báo
+            Cài Đặt Thông Báo
           </button>
         </div>
       </div>
@@ -732,7 +732,7 @@ export class NotificationPanelComponent {
   emptyIcon = computed(() => {
     if (this.activeTab() === 'unread') return 'fa-circle-check';
     if (this.activeTab() === 'actionable') return 'fa-clipboard-check';
-    if (this.activeTab() === 'system') return 'fa-shield-check';
+    if (this.activeTab() === 'system') return 'fa-shield-halved';
     return 'fa-bell-slash';
   });
 

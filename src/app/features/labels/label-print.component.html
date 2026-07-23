@@ -18,7 +18,7 @@
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
                             [class]="printMode() === 'brother' ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-500 hover:border-red-200'">
                         <i class="fa-solid fa-tape text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">Máy in<br>Brother</span>
+                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">Máy In<br>Brother</span>
                         @if(printMode() === 'brother') { <div class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-bl-lg"></div> }
                     </button>
 
@@ -34,7 +34,7 @@
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
                             [class]="printMode() === 'plain_a4' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:border-emerald-200'">
                         <i class="fa-solid fa-scissors text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">A4 Trơn<br>(Cắt tay)</span>
+                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">A4 Trơn<br>(Cắt Tay)</span>
                         @if(printMode() === 'plain_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-emerald-500 rounded-bl-lg"></div> }
                     </button>
                 </div>
@@ -55,18 +55,18 @@
                     <div class="flex gap-2 mb-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
                         <input type="date" [ngModel]="fetchDate()" (ngModelChange)="fetchDate.set($event)" class="input-std py-1.5 text-xs flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
                         <button (click)="fetchFromRequests()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1 whitespace-nowrap">
-                            <i class="fa-solid fa-cloud-arrow-down"></i> Lấy mẫu
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Lấy Mẫu
                         </button>
                     </div>
 
                     <textarea [ngModel]="rawInput()" (ngModelChange)="onInputChanged($event)" 
                               class="w-full h-28 p-3 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-slate-400 outline-none resize-none shadow-inner bg-slate-50 focus:bg-white transition" 
-                              placeholder="Paste mã vào đây hoặc lấy từ yêu cầu..."></textarea>
+                              placeholder="Dán mã vào đây hoặc lấy từ yêu cầu..."></textarea>
                     <div class="flex gap-2 mt-2 justify-end">
-                        <button (click)="removeDuplicates()" class="text-[10px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-filter"></i> Lọc trùng</button>
-                        <button (click)="sortInput()" class="text-[10px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-arrow-down-a-z"></i> Sắp xếp</button>
+                        <button (click)="removeDuplicates()" class="text-[10px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-filter"></i> Lọc Trùng</button>
+                        <button (click)="sortInput()" class="text-[10px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-arrow-down-a-z"></i> Sắp Xếp</button>
                         <button (click)="clearInput()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
-                        <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
+                        <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu Thử</button>
                     </div>
                 </div>
 
@@ -214,7 +214,7 @@
                         <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-800 text-xs space-y-1">
                             <div class="font-bold flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> Mẹo khắc phục thừa giấy trắng:</div>
                             <ul class="list-disc pl-4 space-y-1 mt-1">
-                                <li><b>Trên App:</b> Giảm "Chiều dài 1 tem" và "Khoảng cách lề" (Trên/Dưới) xuống mức tối thiểu vừa đủ nội dung.</li>
+                                <li><b>Trên ứng dụng:</b> Giảm "Chiều dài 1 tem" và "Khoảng cách lề" (Trên/Dưới) xuống mức tối thiểu vừa đủ nội dung.</li>
                                 <li><b>Hộp thoại in (Trình duyệt):</b> Mục <b>Lề (Margins)</b> bắt buộc chọn <b>Không có (None)</b>. Tắt <b>Đầu trang & Chân trang</b>.</li>
                                 <li><b>Driver Brother (Windows/Mac):</b> Vào Printing Preferences, tìm mục <b>Margins / Feed Margin (Lề nạp giấy)</b> và chỉnh về <b>0mm</b> (hoặc mức nhỏ nhất 1.5mm).</li>
                             </ul>
@@ -227,7 +227,7 @@
                     <div class="space-y-4 animate-bounce-in">
                         <!-- Template Selection -->
                         <div>
-                            <label class="label-std">Mẫu giấy Decal (Tomy)</label>
+                            <label class="label-std">Mẫu giấy decal (Tomy)</label>
                             <select [ngModel]="selectedTomyId()" (ngModelChange)="onTomyChange($event)" class="input-std mb-2 bg-slate-50">
                                 @for (tmpl of tomyTemplates; track tmpl.id) {
                                     <option [value]="tmpl.id">{{tmpl.name}}</option>
@@ -261,7 +261,7 @@
                         <!-- Calibration -->
                         <div>
                             <button (click)="showAdvanced.set(!showAdvanced())" class="flex items-center justify-between w-full text-xs font-bold text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                <span><i class="fa-solid fa-ruler-combined mr-1"></i> Căn chỉnh lề (mm)</span>
+                                <span><i class="fa-solid fa-ruler-combined mr-1"></i> Căn Chỉnh Lề (Mm)</span>
                                 <i class="fa-solid" [class]="showAdvanced() ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
                             </button>
                             
@@ -372,7 +372,7 @@
                         <!-- Calibration -->
                         <div>
                             <button (click)="showAdvanced.set(!showAdvanced())" class="flex items-center justify-between w-full text-xs font-bold text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                <span><i class="fa-solid fa-ruler-combined mr-1"></i> Căn chỉnh & Viền</span>
+                                <span><i class="fa-solid fa-ruler-combined mr-1"></i> Căn Chỉnh & Viền</span>
                                 <i class="fa-solid" [class]="showAdvanced() ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
                             </button>
                             
@@ -454,13 +454,13 @@
                     <button (click)="printBrother()" [disabled]="rawInputCount() === 0" 
                             class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg shadow-red-200 transition font-bold flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group">
                         <i class="fa-solid fa-print text-lg group-hover:scale-110 transition-transform"></i> 
-                        <span>In ngay (Brother)</span>
+                        <span>In Ngay (Brother)</span>
                     </button>
                 } @else {
                     <button (click)="printA4()" [disabled]="rawInputCount() === 0" 
                             class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 transition font-bold flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group">
                         <i class="fa-solid fa-print text-lg group-hover:scale-110 transition-transform"></i> 
-                        <span>In ngay (A4)</span>
+                        <span>In Ngay (A4)</span>
                     </button>
                 }
             </div>

@@ -18,7 +18,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
                 <i class="fa-solid text-lg" [class]="confirmationService.state().isDangerous ? 'fa-triangle-exclamation' : 'fa-circle-question'"></i>
               </div>
               <div>
-                <h3 class="font-bold text-slate-800 mb-1">Xác nhận hành động</h3>
+                <h3 class="font-bold text-slate-800 mb-1">Xác Nhận Hành Động</h3>
                 <p class="text-sm text-slate-600 whitespace-pre-wrap">{{ confirmationService.state().message }}</p>
               </div>
             </div>

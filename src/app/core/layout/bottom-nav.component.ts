@@ -61,7 +61,7 @@ interface VisitedPage {
                         <app-logo size="96px"></app-logo>
                     </div>
                 </div>
-                <h3 class="text-white font-bold text-xl mb-2">Cài đặt LIMS Pro</h3>
+                <h3 class="text-white font-bold text-xl mb-2">Cài Đặt LIMS Pro</h3>
                 <p class="text-slate-300 text-sm mb-8">Thêm ứng dụng vào màn hình chính để sử dụng toàn màn hình và mượt mà hơn.</p>
 
                 <div class="bg-white/10 rounded-xl p-4 text-left space-y-4 mb-8 border border-white/10">
@@ -81,7 +81,7 @@ interface VisitedPage {
                 </div>
 
                 <div class="flex flex-col gap-3">
-                    <button (click)="toggleInstallGuide()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition active:scale-95">Đã hiểu</button>
+                    <button (click)="toggleInstallGuide()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition active:scale-95">Đã Hiểu</button>
                 </div>
 
                 <!-- Bounce Arrow pointing down -->
@@ -147,8 +147,8 @@ interface VisitedPage {
                         <i class="fa-solid fa-qrcode text-lg"></i> Quét Mã
                     </button>
                     @if(auth.canViewSop()) {
-                        <button (click)="navTo('/results', 'Nhập KQ', 'fa-square-poll-vertical')" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 font-bold text-sm shadow-sm active:scale-95 transition-transform border border-fuchsia-200 dark:border-fuchsia-800/50">
-                            <i class="fa-solid fa-square-poll-vertical text-lg"></i> Nhập KQ
+                        <button (click)="navTo('/results', 'Nhập kết quả', 'fa-square-poll-vertical')" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 font-bold text-sm shadow-sm active:scale-95 transition-transform border border-fuchsia-200 dark:border-fuchsia-800/50">
+                            <i class="fa-solid fa-square-poll-vertical text-lg"></i> Nhập Kết Quả
                         </button>
                     }
                 </div>
@@ -317,23 +317,23 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   pageTitle = computed(() => {
     const url = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
     const titles: Record<string, string> = {
-        'dashboard': 'Trang chủ',
-        'inventory': 'Kho Hóa chất',
-        'calculator': 'Vận hành SOP',
-        'requests': 'Quản lý Yêu cầu',
-        'stats': 'Báo cáo',
-        'config': 'Cấu hình',
-        'standards': 'Chuẩn đối chiếu',
-        'recipes': 'Thư viện Công thức',
+        'dashboard': 'Trang Chủ',
+        'inventory': 'Kho Hóa Chất',
+        'calculator': 'Vận Hành SOP',
+        'requests': 'Quản Lý Yêu Cầu',
+        'stats': 'Báo Cáo',
+        'config': 'Cấu Hình',
+        'standards': 'Chất Chuẩn Đối Chiếu',
+        'recipes': 'Thư Viện Công Thức',
         'prep': 'Trạm Pha Chế',
         'daily-checklist': 'Theo dõi mẫu ngày',
-        'smart-batch': 'Chạy Mẻ Smart',
+        'smart-batch': 'Lập Mẻ Phân Tích',
         'traceability': 'Truy xuất nguồn gốc',
-        'documents': 'Giao nhận mẫu',
-        'results': 'Kết quả phân tích',
+        'documents': 'Giao Nhận Mẫu',
+        'results': 'Kết Quả Phân Tích',
         'labels': 'In Tem Nhãn',
         'standard-requests': 'Yêu cầu chuẩn',
-        'standard-usage': 'Nhật ký chuẩn'
+        'standard-usage': 'Nhật Ký Chất Chuẩn'
     };
     return titles[url] || 'LIMS Cloud';
   });
@@ -363,7 +363,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   handleLockedItemClick(item: MenuItem) {
     this.haptic();
-    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ Admin để được cấp`, 'warning');
+    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ quản trị viên để được cấp`, 'warning');
   }
 
   toggleDarkMode() {
@@ -495,40 +495,40 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     const list: MenuGroup[] = [
       {
         id: 'operations',
-        title: 'Nghiệp vụ & Vận hành',
+        title: 'Nghiệp vụ và vận hành',
         accentClass: 'from-purple-500/15 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800/30',
         items: [
-          { id: 'inventory', name: 'Kho Hóa chất', icon: 'fa-boxes-stacked', path: '/inventory', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50', visible: canViewInv || showLocked, isLocked: !canViewInv, lockPermission: 'inventory_view' },
-          { id: 'calculator', name: 'Vận hành SOP', icon: 'fa-calculator', path: '/calculator', color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
-          { id: 'smart-batch', name: 'Chạy Mẻ Smart', icon: 'fa-wand-magic-sparkles', path: '/smart-batch', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
+          { id: 'inventory', name: 'Kho Hóa Chất', icon: 'fa-boxes-stacked', path: '/inventory', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50', visible: canViewInv || showLocked, isLocked: !canViewInv, lockPermission: 'inventory_view' },
+          { id: 'calculator', name: 'Vận Hành SOP', icon: 'fa-list-check', path: '/calculator', color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
+          { id: 'smart-batch', name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: '/smart-batch', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
           { id: 'prep', name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: '/prep', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
-          { id: 'documents', name: 'Giao nhận mẫu', icon: 'fa-folder-open', path: '/documents', color: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-800/50', visible: true, isLocked: false },
-          { id: 'results', name: 'Kết quả phân tích', icon: 'fa-vials', path: '/results', color: 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border-cyan-100 dark:border-cyan-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
-          { id: 'recipes', name: 'Công thức', icon: 'fa-book-bookmark', path: '/recipes', color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/50', visible: canViewRecipes || showLocked, isLocked: !canViewRecipes, lockPermission: 'recipe_view' },
+          { id: 'documents', name: 'Giao Nhận Mẫu', icon: 'fa-file-signature', path: '/documents', color: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-800/50', visible: true, isLocked: false },
+          { id: 'results', name: 'Kết Quả Phân Tích', icon: 'fa-vials', path: '/results', color: 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border-cyan-100 dark:border-cyan-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
+          { id: 'recipes', name: 'Công Thức', icon: 'fa-book-bookmark', path: '/recipes', color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/50', visible: canViewRecipes || showLocked, isLocked: !canViewRecipes, lockPermission: 'recipe_view' },
           { id: 'labels', name: 'In Tem Nhãn', icon: 'fa-barcode', path: '/labels', color: 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 border-sky-100 dark:border-sky-800/50', visible: canViewInv || showLocked, isLocked: !canViewInv, lockPermission: 'inventory_view' },
-          { id: 'stats', name: 'Báo cáo', icon: 'fa-chart-pie', path: '/stats', color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50', visible: canViewRep || showLocked, isLocked: !canViewRep, lockPermission: 'report_view' }
+          { id: 'stats', name: 'Báo Cáo', icon: 'fa-chart-pie', path: '/stats', color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50', visible: canViewRep || showLocked, isLocked: !canViewRep, lockPermission: 'report_view' }
         ]
       },
       {
         id: 'standards',
-        title: 'Chuẩn đối chiếu',
+        title: 'Chất Chuẩn Đối Chiếu',
         accentClass: 'from-amber-500/15 to-orange-500/15 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/30',
         items: [
-          { id: 'standards', name: 'Danh sách Chuẩn', icon: 'fa-vial-circle-check', path: '/standards', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: canViewStd || showLocked, isLocked: !canViewStd, lockPermission: 'standard_view' },
-          { id: 'standard-requests', name: 'Yêu cầu Chuẩn', icon: 'fa-clipboard-list', path: '/standard-requests', color: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/50', visible: canViewStd || showLocked, isLocked: !canViewStd, lockPermission: 'standard_view' },
-          { id: 'standard-usage', name: 'Nhật ký Chuẩn', icon: 'fa-book-open', path: '/standard-usage', color: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border-yellow-100 dark:border-yellow-800/50', visible: canViewStdLog || showLocked, isLocked: !canViewStdLog, lockPermission: 'standard_log_view' }
+          { id: 'standards', name: 'Danh Sách Chất Chuẩn', icon: 'fa-vial-circle-check', path: '/standards', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: canViewStd || showLocked, isLocked: !canViewStd, lockPermission: 'standard_view' },
+          { id: 'standard-requests', name: 'Yêu Cầu Chất Chuẩn', icon: 'fa-clipboard-list', path: '/standard-requests', color: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/50', visible: canViewStd || showLocked, isLocked: !canViewStd, lockPermission: 'standard_view' },
+          { id: 'standard-usage', name: 'Nhật Ký Sử Dụng Chất Chuẩn', icon: 'fa-book-open', path: '/standard-usage', color: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border-yellow-100 dark:border-yellow-800/50', visible: canViewStdLog || showLocked, isLocked: !canViewStdLog, lockPermission: 'standard_log_view' }
         ]
       },
       {
         id: 'system',
-        title: 'Hệ thống & Tiện ích',
+        title: 'Hệ thống và tiện ích',
         accentClass: 'from-slate-500/15 to-slate-700/15 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-800/30',
         items: [
           { id: 'scan', name: 'Quét QR', icon: 'fa-qrcode', action: () => this.startScan(), color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50', visible: true, isLocked: false },
-          { id: 'dark-mode', name: 'Giao diện', icon: 'fa-moon', action: () => this.toggleDarkMode(), color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', visible: true, isLocked: false },
-          { id: 'install-pwa', name: 'Cài App', icon: 'fa-download', action: () => this.toggleInstallGuide(), color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: true, isLocked: false },
-          { id: 'config', name: 'Cấu hình', icon: 'fa-gear', path: '/config', color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', visible: isManager || showLocked, isLocked: !isManager, lockPermission: 'role_manager' },
-          { id: 'logout', name: 'Đăng xuất', icon: 'fa-right-from-bracket', action: () => this.auth.logout(), color: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50', visible: true, isLocked: false }
+          { id: 'dark-mode', name: 'Giao Diện', icon: 'fa-moon', action: () => this.toggleDarkMode(), color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', visible: true, isLocked: false },
+          { id: 'install-pwa', name: 'Cài Ứng Dụng', icon: 'fa-download', action: () => this.toggleInstallGuide(), color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: true, isLocked: false },
+          { id: 'config', name: 'Cấu Hình', icon: 'fa-gear', path: '/config', color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', visible: isManager || showLocked, isLocked: !isManager, lockPermission: 'role_manager' },
+          { id: 'logout', name: 'Đăng Xuất', icon: 'fa-right-from-bracket', action: () => this.auth.logout(), color: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50', visible: true, isLocked: false }
         ]
       }
     ];
@@ -541,20 +541,20 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   bottomTabs = computed<BottomTab[]>(() => {
     const tabs: BottomTab[] = [];
-    tabs.push({ id: 'dashboard', name: 'Home', icon: 'fa-house', path: '/dashboard', activeColor: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30', visible: true });
+    tabs.push({ id: 'dashboard', name: 'Trang Chủ', icon: 'fa-house', path: '/dashboard', activeColor: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30', visible: true });
     if (this.auth.canViewInventory()) {
       tabs.push({ id: 'inventory', name: 'Kho', icon: 'fa-boxes-stacked', path: '/inventory', activeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30', visible: true });
     } else {
-      tabs.push({ id: 'documents', name: 'Giao nhận', icon: 'fa-folder-open', path: '/documents', activeColor: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30', visible: true });
+      tabs.push({ id: 'documents', name: 'Giao nhận', icon: 'fa-file-signature', path: '/documents', activeColor: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30', visible: true });
     }
     if (this.auth.canRunBatch()) {
-      tabs.push({ id: 'smart-batch', name: 'Chạy Mẻ', icon: 'fa-wand-magic-sparkles', path: '/smart-batch', activeColor: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30', visible: true });
+      tabs.push({ id: 'smart-batch', name: 'Lập mẻ', icon: 'fa-layer-group', path: '/smart-batch', activeColor: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30', visible: true });
     } else if (this.auth.canViewReports()) {
-      tabs.push({ id: 'stats', name: 'Báo cáo', icon: 'fa-chart-pie', path: '/stats', activeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30', visible: true });
+      tabs.push({ id: 'stats', name: 'Báo Cáo', icon: 'fa-chart-pie', path: '/stats', activeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30', visible: true });
     } else if (this.auth.canViewStandards()) {
       tabs.push({ id: 'standards', name: 'Chuẩn', icon: 'fa-vial-circle-check', path: '/standards', activeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30', visible: true });
     } else {
-      tabs.push({ id: 'documents', name: 'Giao nhận', icon: 'fa-folder-open', path: '/documents', activeColor: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30', visible: true });
+      tabs.push({ id: 'documents', name: 'Giao nhận', icon: 'fa-file-signature', path: '/documents', activeColor: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30', visible: true });
     }
     return tabs.slice(0, 3);
   });

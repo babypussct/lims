@@ -2,12 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.23-b16",
-    "title": "Chế Độ Khóa Giao Diện (🔒) & Cấu Hình Bật/Tắt Toàn Hệ Thống",
+    "version": "v26.07.23-b17",
+    "title": "Chuẩn Hóa Tiếng Việt và Biểu Tượng Toàn Hệ Thống",
     "features": [
-      "🔒 Khóa Chức Năng Thiếu Quyền: Chuyển các giao diện từ Ẩn sang Khóa (🔒) kèm tooltip và khôi phục tooltip gốc khi mở khóa.",
-      "⚙️ Bật/Tắt Khóa Toàn Hệ Thống: Cung cấp tùy chọn Admin BẬT/TẮT chế độ khóa tính năng kèm Dirty Tracking chống ghi đè.",
-      "🔔 Thu Hồi Thông Báo An Toàn: Thu hồi thông báo Hộp thư minh bạch và xử lý fail-safe bảo vệ bài đăng hệ thống."
+      "✍️ Biên Tập Lại Nội Dung Tiếng Việt Theo Ngữ Cảnh Phòng Thí Nghiệm",
+      "🔤 Áp Dụng Title Case Nhất Quán cho Menu, Tiêu Đề và Nút Chính",
+      "🎯 Đồng Bộ Biểu Tượng Font Awesome và Khắc Phục Toàn Bộ Icon Không Hợp Lệ"
     ]
   },
   "assetGroups": [

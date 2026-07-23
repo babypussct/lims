@@ -22,7 +22,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                         <i class="fa-solid fa-users-gear"></i>
                     </div>
                     <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg tracking-tight">
-                        Danh sách Người dùng & Phân quyền
+                        Danh Sách Người Dùng và Phân Quyền
                     </h3>
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -46,12 +46,12 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                 @if (hasActiveFilters()) {
                     <button (click)="resetFilters()" 
                             class="px-3 py-2 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-rose-200 dark:border-rose-800/40">
-                        <i class="fa-solid fa-filter-circle-xmark"></i> Xóa lọc
+                        <i class="fa-solid fa-filter-circle-xmark"></i> Xóa Lọc
                     </button>
                 }
 
                 <button (click)="loadUsers()" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-rotate"></i> Tải lại
+                    <i class="fa-solid fa-rotate"></i> Tải Lại
                 </button>
             </div>
         </div>
@@ -87,7 +87,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                     <button (click)="roleFilter.set('pending')" 
                             class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 relative"
                             [class]="roleFilter() === 'pending' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/40 hover:bg-orange-50 dark:hover:bg-orange-950/20'">
-                        <i class="fa-solid fa-hourglass-half text-[10px]"></i> Chờ duyệt
+                        <i class="fa-solid fa-hourglass-half text-[10px]"></i> Chờ Duyệt
                         <span class="px-1.5 py-0.2 rounded-full text-[10px]" [class]="roleFilter() === 'pending' ? 'bg-white/30 text-white' : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'">
                             {{pendingCount()}}
                         </span>
@@ -187,18 +187,18 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                         }
 
                         <button (click)="applyBatchRole()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
-                            Áp dụng
+                            Áp Dụng
                         </button>
                     </div>
 
                     <!-- Batch Save Button -->
                     <button (click)="saveBatchUsers()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 active:scale-95">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu tất cả đã chọn
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu Tất Cả Đã Chọn
                     </button>
 
                     <!-- Clear Selection -->
                     <button (click)="clearSelection()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition">
-                        Bỏ chọn
+                        Bỏ Chọn
                     </button>
                 </div>
             </div>
@@ -260,7 +260,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                                 </div>
 
                                 <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">{{u.email}}</div>
-                                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 w-fit" (click)="copyUid(u.uid)" title="Click để copy UID">
+                                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 w-fit" (click)="copyUid(u.uid)" title="Nhấn để sao chép UID">
                                     <i class="fa-regular fa-copy"></i> {{u.uid.substring(0,8)}}...
                                 </div>
                             </div>
@@ -286,7 +286,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                                     <button (click)="quickApprovePending(u)" 
                                             class="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0 flex items-center gap-1.5 active:scale-95"
                                             title="Duyệt nhanh tài khoản này thành Staff">
-                                        <i class="fa-solid fa-user-check"></i> Duyệt nhanh
+                                        <i class="fa-solid fa-user-check"></i> Duyệt Nhanh
                                     </button>
                                 }
                             </div>
@@ -323,7 +323,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                                 <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-2.5 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-xs transition rounded-xl flex items-center justify-between group">
                                     <div class="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
                                         <i class="fa-solid fa-sliders text-indigo-500 shrink-0"></i> 
-                                        <span class="truncate">Cấu hình Quyền ({{getUserPermissionsCount(u)}})</span>
+                                        <span class="truncate">Cấu hình quyền ({{getUserPermissionsCount(u)}})</span>
                                     </div>
                                     <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:text-indigo-500 transition-colors"></i>
                                 </button>
@@ -348,7 +348,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                         <div class="font-bold text-slate-600 dark:text-slate-400 text-sm">Không tìm thấy người dùng phù hợp với bộ lọc.</div>
                         <p class="text-xs text-slate-400 dark:text-slate-500">Thử thay đổi từ khóa tìm kiếm hoặc bấm nút bên dưới để đặt lại bộ lọc.</p>
                         <button (click)="resetFilters()" class="mt-1 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
-                            <i class="fa-solid fa-rotate-left"></i> Đặt lại tất cả bộ lọc
+                            <i class="fa-solid fa-rotate-left"></i> Đặt Lại Tất Cả Bộ Lọc
                         </button>
                     </div>
                 }
@@ -414,7 +414,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3">
                     <button (click)="closePermModal()" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Đóng</button>
                     <button (click)="saveUser(user); closePermModal()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
                     </button>
                 </div>
             </div>
@@ -510,7 +510,7 @@ export class ConfigUsersComponent implements OnInit {
 
   permissionGroups = [
     {
-      name: 'Quản lý Kho & Hóa chất',
+      name: 'Quản lý kho và hóa chất',
       icon: 'fa-box-open',
       color: 'text-emerald-500',
       bg: 'bg-emerald-50 dark:bg-emerald-900/20',
@@ -523,23 +523,23 @@ export class ConfigUsersComponent implements OnInit {
       ]
     },
     {
-      name: 'Chuẩn đối chiếu',
+      name: 'Chất chuẩn đối chiếu',
       icon: 'fa-vial-circle-check',
       color: 'text-indigo-500',
       bg: 'bg-indigo-50 dark:bg-indigo-900/20',
       border: 'border-indigo-100 dark:border-indigo-800/30',
       ring: 'var(--tw-colors-indigo-500, #6366f1)',
       perms: [
-        { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
-        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn Chuẩn' },
-        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin Chuẩn' },
-        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt & Giao nhận Chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký Chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xoá Yêu cầu/Nhật ký chuẩn' }
+        { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt và giao nhận chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký sử dụng chất chuẩn' },
+        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xóa yêu cầu và nhật ký chất chuẩn' }
       ]
     },
     {
-      name: 'Quy trình (SOP) & Công thức',
+      name: 'Quy trình SOP và công thức',
       icon: 'fa-book-open',
       color: 'text-amber-500',
       bg: 'bg-amber-50 dark:bg-amber-900/20',
@@ -549,12 +549,12 @@ export class ConfigUsersComponent implements OnInit {
         { val: PERMISSIONS.SOP_VIEW, label: 'Xem SOP' },
         { val: PERMISSIONS.SOP_EDIT, label: 'Biên soạn SOP' },
         { val: PERMISSIONS.SOP_APPROVE, label: 'Phê duyệt SOP' },
-        { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem Công thức' },
-        { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa Công thức' }
+        { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem công thức' },
+        { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa công thức' }
       ]
     },
     {
-      name: 'Hệ thống & Báo cáo',
+      name: 'Hệ thống và báo cáo',
       icon: 'fa-server',
       color: 'text-slate-500',
       bg: 'bg-slate-50 dark:bg-slate-800/50',
@@ -805,7 +805,7 @@ export class ConfigUsersComponent implements OnInit {
   updateRole(u: UserProfile, role: 'manager' | 'staff' | 'viewer' | 'pending') { 
       // SAFETY GUARD: Protect Super Admin account
       if (this.isSuperAdmin(u) && role !== 'manager') {
-          this.toast.show('👑 Không thể hạ cấp tài khoản Super Admin (oneloveonepeopleforever@gmail.com)!', 'error');
+          this.toast.show('Không thể hạ cấp tài khoản quản trị cao nhất.', 'error');
           return;
       }
 
@@ -813,7 +813,7 @@ export class ConfigUsersComponent implements OnInit {
       if (u.role === 'manager' && role !== 'manager') {
           const totalManagers = this.userList().filter(user => user.role === 'manager').length;
           if (totalManagers <= 1) {
-              this.toast.show('❌ Không thể hạ cấp Manager cuối cùng! Hệ thống phải duy trì ít nhất 1 Manager.', 'error');
+              this.toast.show('Không thể hạ cấp quản trị viên cuối cùng. Hệ thống phải có ít nhất một quản trị viên.', 'error');
               return;
           }
       }
@@ -870,5 +870,5 @@ export class ConfigUsersComponent implements OnInit {
       this.selectedUserForPerms.set(null);
   }
 
-  copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã copy UID!')); }
+  copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã sao chép UID.')); }
 }

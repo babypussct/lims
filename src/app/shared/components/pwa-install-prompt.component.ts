@@ -12,7 +12,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
       <!-- Nút Cài đặt PWA -->
       <div class="text-center">
           <button (click)="triggerInstall()" class="inline-flex items-center gap-2 px-4 py-2 bg-white/40 hover:bg-white/60 backdrop-blur-md rounded-full text-fuchsia-600 font-semibold text-[12px] transition-colors shadow-sm border border-white/50">
-              <i class="fa-solid fa-mobile-screen-button"></i> Hướng dẫn Cài đặt Ứng dụng
+              <i class="fa-solid fa-mobile-screen-button"></i> Hướng Dẫn Cài Đặt Ứng Dụng
           </button>
       </div>
 
@@ -86,7 +86,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
                                   <i class="fa-solid fa-display text-xl"></i>
                               </div>
                               <div>
-                                  <h4 class="font-bold text-gray-700 text-[15px] mb-2">Cài đặt trên Máy tính</h4>
+                                  <h4 class="font-bold text-gray-700 text-[15px] mb-2">Cài Đặt trên Máy Tính</h4>
                                   <p class="text-[13px] text-gray-500 leading-relaxed">
                                       @if (osType() === 'mac_safari') {
                                         Từ bản macOS Sonoma, bạn có thể cài app bằng cách chọn <strong>Tệp (File) > Thêm vào Dock</strong> trên menu của Safari.
@@ -96,7 +96,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
                                   </p>
                               </div>
                           </div>
-                          <button (click)="closeTooltip()" class="w-full mt-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors text-[13px]">Đã hiểu</button>
+                          <button (click)="closeTooltip()" class="w-full mt-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors text-[13px]">Đã Hiểu</button>
                       </div>
                   </div>
               }

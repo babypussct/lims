@@ -186,7 +186,7 @@ export interface MenuGroup {
                   <div class="p-2 space-y-1">
                       <button (click)="openAccountSettings()" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors text-left">
                           <i class="fa-solid fa-user-gear w-4 text-center"></i>
-                          <span>Cài đặt tài khoản</span>
+                          <span>Cài Đặt Tài Khoản</span>
                       </button>
                       <button (click)="toggleDarkMode()" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors text-left">
                           <i class="fa-solid w-4 text-center" [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
@@ -195,7 +195,7 @@ export interface MenuGroup {
                       <div class="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
                       <button (click)="auth.logout()" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left font-medium">
                           <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>
-                          <span>Đăng xuất</span>
+                          <span>Đăng Xuất</span>
                       </button>
                   </div>
               </div>
@@ -273,28 +273,28 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'overview',
       title: 'Tổng quan',
       items: [
-        { name: 'Báo cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], isLocked: !this.auth.canViewReports(), lockPermission: 'report_view' },
-        { name: 'Phiếu giao nhận mẫu', icon: 'fa-folder-open', path: 'documents', activeMatch: ['/documents'] }
+        { name: 'Báo Cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], isLocked: !this.auth.canViewReports(), lockPermission: 'report_view' },
+        { name: 'Phiếu Giao Nhận Mẫu', icon: 'fa-file-signature', path: 'documents', activeMatch: ['/documents'] }
       ]
     },
     {
       id: 'operation',
       title: 'Vận hành',
       items: [
-        { name: 'Chạy Mẻ (Smart)', icon: 'fa-wand-magic-sparkles', path: 'smart-batch', activeMatch: ['/smart-batch'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
-        { name: 'Vận hành (SOP)', icon: 'fa-play pl-0.5', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' },
+        { name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
+        { name: 'Vận hành (SOP)', icon: 'fa-list-check', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' },
         { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
-        { name: 'Quản lý Yêu cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view', hasBadge: true },
-        { name: 'Kết quả Phân tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' }
+        { name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view', hasBadge: true },
+        { name: 'Kết Quả Phân Tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' }
       ]
     },
     {
       id: 'storage',
       title: 'Lưu trữ',
       items: [
-        { name: 'Kho Hóa chất', icon: 'fa-boxes-stacked', path: 'inventory', activeMatch: ['/inventory', '/labels'], isLocked: !this.auth.canViewInventory(), lockPermission: 'inventory_view' },
-        { name: 'Chuẩn Đối chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], isLocked: !this.auth.canViewStandards(), lockPermission: 'standard_view' },
-        { name: 'Yêu cầu Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], isLocked: !this.auth.canViewStandards(), lockPermission: 'standard_view' },
+        { name: 'Kho Hóa Chất', icon: 'fa-boxes-stacked', path: 'inventory', activeMatch: ['/inventory', '/labels'], isLocked: !this.auth.canViewInventory(), lockPermission: 'inventory_view' },
+        { name: 'Chất Chuẩn Đối Chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], isLocked: !this.auth.canViewStandards(), lockPermission: 'standard_view' },
+        { name: 'Yêu Cầu Chất Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], isLocked: !this.auth.canViewStandards(), lockPermission: 'standard_view' },
         { name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], isLocked: !this.auth.canViewStandardLogs(), lockPermission: 'standard_log_view' }
       ]
     },
@@ -302,9 +302,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'system',
       title: 'Hệ thống',
       items: [
-        { name: 'Cấu hình Hệ thống', icon: 'fa-gears', path: 'config', activeMatch: ['/config'], isLocked: !this.auth.canManageSystem(), lockPermission: 'user_manage' },
-        { name: 'Nhóm Chỉ tiêu', icon: 'fa-bullseye', path: 'target-groups', activeMatch: ['/target-groups'], isLocked: !this.state.isAdmin(), lockPermission: 'role:manager' },
-        { name: 'Loại Ma trận', icon: 'fa-table-cells', path: 'matrix-types', activeMatch: ['/matrix-types'], isLocked: !this.state.isAdmin(), lockPermission: 'role:manager' }
+        { name: 'Cấu Hình Hệ Thống', icon: 'fa-gears', path: 'config', activeMatch: ['/config'], isLocked: !this.auth.canManageSystem(), lockPermission: 'user_manage' },
+        { name: 'Nhóm Chỉ Tiêu', icon: 'fa-bullseye', path: 'target-groups', activeMatch: ['/target-groups'], isLocked: !this.state.isAdmin(), lockPermission: 'role:manager' },
+        { name: 'Loại Ma Trận', icon: 'fa-table-cells', path: 'matrix-types', activeMatch: ['/matrix-types'], isLocked: !this.state.isAdmin(), lockPermission: 'role:manager' }
       ]
     }
   ]);
@@ -356,7 +356,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   handleLockedClick(item: MenuItem) {
-    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ Admin để được cấp`, 'warning');
+    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ quản trị viên để được cấp`, 'warning');
   }
 
   navigateTo(path: string) {

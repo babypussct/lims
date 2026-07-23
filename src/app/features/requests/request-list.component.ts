@@ -25,7 +25,7 @@ import { Router } from '@angular/router';
                     <i class="fa-solid fa-list-check text-base"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản lý Yêu cầu</h2>
+                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản Lý Yêu Cầu</h2>
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Phê duyệt yêu cầu và in phiếu pha chế.</p>
                 </div>
             </div>
@@ -41,7 +41,7 @@ import { Router } from '@angular/router';
                <button (click)="currentTab.set('approved')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'approved' ? 'bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                   <i class="fa-solid fa-check-double"></i> Lịch sử
+                   <i class="fa-solid fa-check-double"></i> Lịch Sử
                </button>
 
                <button (click)="currentTab.set('printing')" 
@@ -177,20 +177,20 @@ import { Router } from '@angular/router';
                                                 </button>
                                                 <button (click)="reject(req)" [disabled]="!!processingId()" 
                                                         class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-xmark"></i> Từ chối
+                                                    <i class="fa-solid fa-xmark"></i> Từ Chối
                                                 </button>
                                             } @else {
                                                 <button (click)="goToResults(req)" [disabled]="!!processingId()" 
                                                          class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-square-poll-vertical"></i> Nhập kết quả
+                                                    <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả
                                                 </button>
                                                 <button (click)="editApproved(req)" [disabled]="!!processingId()" 
                                                          class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-pen"></i> Chỉnh sửa
+                                                    <i class="fa-solid fa-pen"></i> Chỉnh Sửa
                                                 </button>
                                                 <button (click)="revoke(req)" [disabled]="!!processingId()" 
                                                          class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn tác
+                                                    <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn Tác
                                                 </button>
                                             }
                                         </div>
@@ -242,7 +242,7 @@ import { Router } from '@angular/router';
                                 <i class="fa-solid fa-triangle-exclamation text-xl animate-bounce"></i>
                             </div>
                             <div>
-                                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight">Xác nhận Hoàn tác & Hủy duyệt</h3>
+                                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight">Xác Nhận Hoàn Tác & Hủy Duyệt</h3>
                                 <p class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">SOP: {{ req.sopName }}</p>
                             </div>
                         </div>
@@ -261,7 +261,7 @@ import { Router } from '@angular/router';
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>
                                 <div class="flex-1">
-                                    <div class="text-sm font-black text-slate-800 dark:text-slate-200">Đưa về Chờ duyệt</div>
+                                    <div class="text-sm font-black text-slate-800 dark:text-slate-200">Đưa về Chờ Duyệt</div>
                                     <div class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">Trả lại kho và chuyển phiếu về trạng thái chờ phê duyệt để có thể sửa đổi hoặc duyệt lại.</div>
                                 </div>
                             </button>
@@ -273,7 +273,7 @@ import { Router } from '@angular/router';
                                     <i class="fa-solid fa-ban"></i>
                                 </div>
                                 <div class="flex-1">
-                                    <div class="text-sm font-black text-red-600 dark:text-red-400">Từ chối hoàn toàn</div>
+                                    <div class="text-sm font-black text-red-600 dark:text-red-400">Từ Chối Hoàn Toàn</div>
                                     <div class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">Trả lại kho và hủy bỏ hoàn toàn yêu cầu này (không thể phê duyệt lại).</div>
                                 </div>
                             </button>
@@ -284,7 +284,7 @@ import { Router } from '@angular/router';
                     <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-105 dark:border-slate-750/80 flex justify-end">
                         <button (click)="closeRevokeModal()" 
                                 class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition">
-                            Hủy thao tác
+                            Hủy Thao Tác
                         </button>
                     </div>
                 </div>
