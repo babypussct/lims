@@ -1,5 +1,38 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b20] - 23/07/2026
+
+### 🧪 Chuẩn Hóa Danh Pháp Chất Chuẩn An Toàn Theo Từng Nhóm CAS
+
+#### 📄 Phân Trang Một Nhóm CAS Mỗi Lần
+- **Giảm quá tải thông tin và nguy cơ chọn nhầm:** Data Cleanup chỉ hiển thị một nhóm CAS trên mỗi trang, có nút Nhóm trước/Nhóm sau, thanh tiến độ, tìm kiếm theo CAS/tên/mã quản lý/catalog và bộ lọc theo mức rủi ro.
+- **Duyệt riêng từng hồ sơ:** Mỗi lọ chất chuẩn có tên hiện tại, tên đề xuất, mã quản lý, catalog, đơn vị, quy cách và dạng sản phẩm để người dùng kiểm tra trước khi chọn lưu.
+- **Chỉ lưu nhóm đang hiển thị:** Loại bỏ thao tác ghi đè hàng loạt nhiều nhóm trên một màn hình; hỗ trợ “Lưu nhóm hiện tại” và “Lưu & nhóm sau”.
+
+#### 🛡️ Phân Tầng Rủi Ro và Bảo Toàn Danh Pháp
+- **Ba mức An toàn/Cần duyệt/Rủi ro cao:** Tự động nhận diện khác biệt về tên, đơn vị, dung dịch, hỗn hợp, đồng vị, muối và hydrat.
+- **Khóa áp dụng một tên chung khi không an toàn:** Nhóm có nhiều dạng sản phẩm, nồng độ, dung môi hoặc đơn vị khác nhau chỉ được chỉnh riêng từng hồ sơ, tránh làm mất thông tin sản phẩm.
+- **Chuẩn hóa ký hiệu khoa học:** Bảo toàn tiền tố, chữ viết tắt và công thức; thống nhất các đơn vị như `µg/mL`, `mg/L`, `mL`, đồng thời sửa lỗi mã hóa phổ biến như `ìg/mL`.
+- **Tách tên hóa chất và tên sản phẩm:** Tên PubChem được lưu làm tên hóa chất chuẩn hóa/tên đồng nghĩa, không tự động ghi đè nồng độ, dung môi hay dạng chuẩn trong tên sản phẩm.
+
+#### 🔎 Kiểm Tra CAS Trước Khi Tra PubChem
+- **Xác thực cấu trúc và chữ số kiểm tra CAS:** Chỉ CAS hợp lệ mới được gom nhóm và đối chiếu PubChem.
+- **Chặn dữ liệu không phải CAS:** `NA`, `N/A`, `CAS inside`, CAS dạng ngày và CAS có chú thích được tách khỏi quy trình để không gom nhầm các chất không liên quan.
+- **Phân tích trên dữ liệu thực tế:** 643 nhóm CAS hợp lệ được phân thành 495 nhóm an toàn, 123 nhóm cần duyệt và 25 nhóm rủi ro cao.
+
+#### ↩️ Hoàn Tác Theo Phiên
+- **Mỗi lần lưu tạo một phiên độc lập:** Hệ thống ghi ảnh chụp trước/sau, CAS, danh sách hồ sơ, người thực hiện và thời gian.
+- **Lịch sử trực quan:** Màn hình Hoàn tác cho phép xem tên trước/sau của từng hồ sơ và trạng thái phiên.
+- **Hoàn tác nguyên tử:** Toàn bộ phiên được khôi phục cùng lúc hoặc không thay đổi gì; không xảy ra tình trạng hoàn tác dở dang.
+- **Bảo vệ thay đổi mới:** Nếu bất kỳ hồ sơ nào đã được sửa sau phiên chuẩn hóa, hệ thống chặn hoàn tác để tránh ghi đè dữ liệu mới.
+- **Nhật ký không thể xóa:** Phiên chỉ được chuyển từ `APPLIED` sang `UNDONE`, bảo đảm khả năng truy vết.
+
+#### ✅ Kiểm Tra Chất Lượng
+- **Production build và lint thành công.**
+- **32 kiểm thử Standards và 11 kiểm thử Data Cleanup đạt:** Bao gồm quy tắc CAS, danh pháp hóa học, phân loại rủi ro và bảo vệ Firestore cho lịch sử hoàn tác.
+
+---
+
 ## [v26.07.23-b17] - 23/07/2026
 
 ### 🌐 Chuẩn Hóa Nội Dung Tiếng Việt và Hệ Thống Biểu Tượng

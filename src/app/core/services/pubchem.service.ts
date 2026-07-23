@@ -1,4 +1,7 @@
 import { Injectable } from '@angular/core';
+import { formatChemicalName, normalizeChemicalNames } from '../../shared/utils/chemical-name';
+
+export { formatChemicalName } from '../../shared/utils/chemical-name';
 
 export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, precautions: string[]}> = {
     'GHS01': { 
@@ -47,38 +50,6 @@ export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, pre
         precautions: ['Tránh thải trực tiếp ra môi trường.', 'Thu gom vật liệu tràn đổ đúng quy định an toàn hóa chất.']
     }
 };
-
-/**
- * Chuẩn hóa viết hoa chữ cái đầu cho tên hóa chất / tên thương mại theo đúng danh pháp
- * Ví dụ: "acetaminophen" -> "Acetaminophen", "SODIUM CHLORIDE" -> "Sodium Chloride", "1-propanol" -> "1-Propanol"
- */
-export function formatChemicalName(name: string): string {
-    if (!name || typeof name !== 'string') return '';
-    const trimmed = name.trim();
-    if (!trimmed) return '';
-
-    const isAllLower = trimmed === trimmed.toLowerCase();
-    const isAllUpper = trimmed === trimmed.toUpperCase();
-
-    let target = trimmed;
-    if (isAllUpper) {
-        target = trimmed.toLowerCase();
-    }
-
-    if (isAllLower || isAllUpper) {
-        // Viết hoa chữ cái đầu tiên của các từ (hỗ trợ dấu gạch nối, ngoặc đơn...)
-        target = target.replace(/(^|[\s\-\(])([a-z])/g, (match, prefix, char) => {
-            return prefix + char.toUpperCase();
-        });
-    } else {
-        // Nếu tên bắt đầu bằng chữ cái thường, viết hoa chữ cái đầu tiên
-        if (/^[a-z]/.test(target)) {
-            target = target.charAt(0).toUpperCase() + target.slice(1);
-        }
-    }
-
-    return target;
-}
 
 @Injectable({ providedIn: 'root' })
 export class PubchemService {
@@ -144,38 +115,36 @@ export class PubchemService {
     const sanitizedIdentifier = identifier.trim();
     
     try {
-      // Fetch synonyms which contains the most common name as first element
-      const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(sanitizedIdentifier)}/synonyms/JSON`);
-      if (!res.ok) return null;
-      const data = await res.json();
-      
-      if (data?.InformationList?.Information?.length > 0) {
-        const info = data.InformationList.Information[0];
-        const rawSynonyms: string[] = info.Synonym || [];
-        
-        if (rawSynonyms.length > 0) {
-            // Tìm tên chuẩn thương mại đầu tiên không phải số CAS hoặc mã CID thuần túy
-            const rawCommercial = rawSynonyms.find(s => {
-                const clean = s.trim();
-                return !/^\d+[\d\-]*$/.test(clean) && !/^cid\s*\d+/i.test(clean);
-            }) || rawSynonyms[0];
+      const encodedIdentifier = encodeURIComponent(sanitizedIdentifier);
 
-            // Định dạng viết hoa chữ cái đầu chuẩn danh pháp
-            const commercialName = formatChemicalName(rawCommercial);
-            
-            // Lọc loại bỏ mã và tên thương mại khỏi danh sách synonyms, chuẩn hóa định dạng từng tên
-            const synonyms = rawSynonyms
-                .filter(s => s.toLowerCase() !== commercialName.toLowerCase() && s.toLowerCase() !== sanitizedIdentifier.toLowerCase())
-                .map(s => formatChemicalName(s))
-                .slice(0, 50); // Cap at 50 synonyms to avoid massive data
-                
-            return {
-                commercialName,
-                synonyms
-            };
-        }
-      }
-      return null;
+      // PubChem Title is preferred over relying on the ordering of the synonym
+      // collection, which can also contain vendor names and registry codes.
+      const propertyRes = await fetch(
+        `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodedIdentifier}/property/Title,IUPACName/JSON`
+      );
+      const propertyData = propertyRes.ok ? await propertyRes.json() : null;
+      const properties = propertyData?.PropertyTable?.Properties?.[0] ?? {};
+
+      const synonymRes = await fetch(
+        `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodedIdentifier}/synonyms/JSON`
+      );
+      const synonymData = synonymRes.ok ? await synonymRes.json() : null;
+      const rawSynonyms: string[] = synonymData?.InformationList?.Information?.[0]?.Synonym ?? [];
+
+      const firstUsableSynonym = rawSynonyms.find(synonym => {
+        const clean = synonym.trim();
+        return !/^\d+[\d-]*$/u.test(clean) && !/^cid\s*\d+/iu.test(clean);
+      });
+      const rawPreferredName = properties.Title || firstUsableSynonym || properties.IUPACName;
+      const commercialName = formatChemicalName(rawPreferredName || '');
+      if (!commercialName) return null;
+
+      const synonyms = normalizeChemicalNames(
+        [properties.IUPACName || '', ...rawSynonyms],
+        [commercialName, sanitizedIdentifier]
+      ).slice(0, 50);
+
+      return { commercialName, synonyms };
     } catch (error) {
       console.warn(`PubChem API failed for ${sanitizedIdentifier}:`, error);
       return null;

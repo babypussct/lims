@@ -38,6 +38,17 @@ export interface ReferenceStandard {
   product_code?: string; // Catalog Code
   purity?: string; 
   chemical_name?: string;
+  /** Canonical chemical identity; product concentration/solvent stays in name. */
+  canonical_name?: string;
+  /** First product name captured before controlled nomenclature cleanup. */
+  original_name?: string;
+  name_source?: 'supplier' | 'coa' | 'pubchem' | 'manual' | 'cleanup';
+  cas_status?: 'valid' | 'missing' | 'placeholder' | 'date_corrupted' | 'annotated' | 'invalid';
+  standard_form?: 'neat' | 'solution' | 'mixture' | 'isotope' | 'salt_or_hydrate';
+  normalization_version?: string;
+  normalization_batch_id?: string;
+  normalized_at?: any;
+  normalized_by?: string;
   manufacturer?: string; 
   pack_size?: string; 
   lot_number?: string; 
@@ -166,6 +177,53 @@ export interface ImportPreviewItem {
     isValid: boolean;
     mode?: 'CREATE' | 'UPDATE_SAFE' | 'CONFLICT';
     errorMessage?: string;
+}
+
+export interface StandardNameUpdate {
+  standardId: string;
+  name: string;
+  chemicalName: string;
+  canonicalName?: string;
+  originalName?: string;
+  nameSource?: ReferenceStandard['name_source'];
+  casStatus?: ReferenceStandard['cas_status'];
+  standardForm?: ReferenceStandard['standard_form'];
+  normalizationVersion?: string;
+}
+
+export interface StandardNameSnapshot {
+  name: string;
+  chemical_name?: string;
+  canonical_name?: string;
+  original_name?: string;
+  name_source?: ReferenceStandard['name_source'];
+  cas_status?: ReferenceStandard['cas_status'];
+  standard_form?: ReferenceStandard['standard_form'];
+  normalization_version?: string;
+  normalization_batch_id?: string;
+  normalized_at?: any;
+  normalized_by?: string;
+}
+
+export interface StandardCleanupBatchChange {
+  standardId: string;
+  internalId?: string;
+  before: StandardNameSnapshot;
+  after: StandardNameSnapshot;
+}
+
+export interface StandardCleanupBatch {
+  id: string;
+  cas: string;
+  status: 'APPLIED' | 'UNDONE';
+  recordCount: number;
+  changes: StandardCleanupBatchChange[];
+  createdAt?: any;
+  createdBy?: string;
+  createdByName?: string;
+  undoneAt?: any;
+  undoneBy?: string;
+  undoneByName?: string;
 }
 
 export interface ImportUsageLogPreviewItem {

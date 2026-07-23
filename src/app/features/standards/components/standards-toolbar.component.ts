@@ -49,7 +49,7 @@ import { StateService } from '../../../core/services/state.service';
                         <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import Nhật Ký
                     </button>
                     <button [appLockPermission]="'standard_edit'" (click)="openCleanupModal.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn Hóa Dữ Liệu
+                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn Hóa Tên Chất Chuẩn
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tải nhiều CoA lên</div>

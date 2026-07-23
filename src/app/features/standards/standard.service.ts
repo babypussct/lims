@@ -18,7 +18,7 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService } from '../../core/services/auth.service';
 import { QueryDocumentSnapshot, QueryConstraint, Unsubscribe } from 'firebase/firestore';
 import {
-  ReferenceStandard, UsageLog, StandardsPage,
+  ReferenceStandard, StandardCleanupBatch, StandardNameUpdate, UsageLog, StandardsPage,
   ImportPreviewItem, ImportUsageLogPreviewItem,
   StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus
 } from '../../core/models/standard.model';
@@ -93,6 +93,15 @@ export class StandardService {
   }
   async updateStandard(std: ReferenceStandard): Promise<void> {
     return this.crud.updateStandard(std);
+  }
+  async updateStandardNames(updates: StandardNameUpdate[]): Promise<string> {
+    return this.crud.updateStandardNames(updates);
+  }
+  async getRecentStandardNameCleanupBatches(limitCount = 20): Promise<StandardCleanupBatch[]> {
+    return this.crud.getRecentStandardNameCleanupBatches(limitCount);
+  }
+  async undoStandardNameCleanupBatch(batchId: string): Promise<void> {
+    return this.crud.undoStandardNameCleanupBatch(batchId);
   }
   async quickUpdateField(stdId: string, fields: Record<string, unknown>): Promise<void> {
     return this.crud.quickUpdateField(stdId, fields);

@@ -30,6 +30,17 @@ test('requester stock writes can only reduce non-negative stock', () => {
   assert.match(rules, /request\.resource\.data\.current_amount <= resource\.data\.current_amount/);
 });
 
+test('cleanup batches are immutable except for the applied-to-undone transition', () => {
+  const cleanupBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/standard_cleanup_batches/{batchId}'),
+    rules.indexOf('// Yeu cau mua chuan')
+  );
+  assert.match(cleanupBlock, /resource\.data\.status == 'APPLIED'/);
+  assert.match(cleanupBlock, /request\.resource\.data\.status == 'UNDONE'/);
+  assert.match(cleanupBlock, /affectedKeys\(\)\.hasOnly/);
+  assert.match(cleanupBlock, /allow delete: if false/);
+});
+
 test('usage logs use tombstones instead of client-side physical deletes', () => {
   const usageBlock = rules.slice(
     rules.indexOf('match /artifacts/{appId}/standard_usages/{useId}'),

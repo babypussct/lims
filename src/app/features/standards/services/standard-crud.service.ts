@@ -6,7 +6,14 @@ import {
   serverTimestamp, deleteField, query, orderBy, limit, startAfter,
   where, QueryDocumentSnapshot, QueryConstraint, runTransaction
 } from 'firebase/firestore';
-import { ReferenceStandard, StandardsPage } from '../../../core/models/standard.model';
+import {
+  ReferenceStandard,
+  StandardCleanupBatch,
+  StandardCleanupBatchChange,
+  StandardNameSnapshot,
+  StandardNameUpdate,
+  StandardsPage,
+} from '../../../core/models/standard.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { generateSlug, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
@@ -29,7 +36,7 @@ export class StandardCrudService {
   // ─── Search Key ──────────────────────────────────────────────────────────────
   generateSearchKey(std: ReferenceStandard): string {
     const parts = [
-      std.name, std.chemical_name, std.internal_id,
+      std.name, std.canonical_name, std.original_name, std.chemical_name, std.internal_id,
       std.cas_number, std.product_code, std.lot_number,
       std.manufacturer, std.id
     ];
@@ -139,6 +146,222 @@ export class StandardCrudService {
     });
     await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
+  }
+
+  /**
+   * Atomically updates only nomenclature fields for Data Cleanup. Reading the
+   * current documents inside the transaction keeps every unrelated field intact
+   * and lets search_key be rebuilt from fresh data.
+   */
+  async updateStandardNames(updates: StandardNameUpdate[]): Promise<string> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền chuẩn hóa tên chất chuẩn.');
+
+    const uniqueUpdates = [...new Map(
+      updates
+        .filter(update => update.standardId && update.name.trim())
+        .map(update => [update.standardId, {
+          ...update,
+          name: update.name.trim(),
+          chemicalName: update.chemicalName.trim(),
+        }])
+    ).values()];
+
+    if (uniqueUpdates.length === 0) throw new Error('Không có tên chất chuẩn hợp lệ để cập nhật.');
+    if (uniqueUpdates.length > 400) {
+      throw new Error('Một nhóm chỉ được cập nhật tối đa 400 lọ để bảo đảm toàn vẹn dữ liệu.');
+    }
+
+    const refs = uniqueUpdates.map(update =>
+      doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${update.standardId}`)
+    );
+    const batchRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches`));
+    const currentUser = this.auth.currentUser();
+
+    await runTransaction(this.fb.db, async transaction => {
+      const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+      const missingIds = snapshots
+        .map((snapshot, index) => snapshot.exists() ? null : uniqueUpdates[index].standardId)
+        .filter((id): id is string => Boolean(id));
+      if (missingIds.length > 0) {
+        throw new Error(`Không tìm thấy ${missingIds.length} lọ chất chuẩn; chưa có dữ liệu nào được cập nhật.`);
+      }
+
+      const changes: StandardCleanupBatchChange[] = [];
+      snapshots.forEach((snapshot, index) => {
+        const update = uniqueUpdates[index];
+        const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+        const canonicalName = update.canonicalName?.trim() || fresh.canonical_name || '';
+        const originalName = fresh.original_name?.trim() || update.originalName?.trim() || fresh.name;
+        const after: StandardNameSnapshot = {
+          name: update.name,
+          chemical_name: update.chemicalName,
+          canonical_name: canonicalName,
+          original_name: originalName,
+          name_source: update.nameSource || 'cleanup',
+          cas_status: update.casStatus || fresh.cas_status || 'valid',
+          standard_form: update.standardForm || fresh.standard_form || 'neat',
+          normalization_version: update.normalizationVersion || '2026.07.1',
+          normalization_batch_id: batchRef.id,
+          normalized_by: currentUser?.displayName || currentUser?.uid || 'Hệ thống',
+        };
+        const updated = {
+          ...fresh,
+          ...after,
+        };
+        transaction.update(refs[index], sanitizeForFirebase({
+          ...after,
+          normalized_at: serverTimestamp(),
+          search_key: this.generateSearchKey(updated),
+          lastUpdated: serverTimestamp(),
+        }));
+        changes.push({
+          standardId: fresh.id,
+          internalId: fresh.internal_id,
+          before: this.snapshotStandardName(fresh),
+          after,
+        });
+      });
+
+      const casValues = [...new Set(snapshots.map(snapshot => String(snapshot.data()?.['cas_number'] || '').trim()).filter(Boolean))];
+      if (JSON.stringify(changes).length > 750_000) {
+        throw new Error('Ảnh chụp phiên chuẩn hóa quá lớn; hãy giảm số hồ sơ trong một lần lưu.');
+      }
+      transaction.set(batchRef, sanitizeForFirebase({
+        id: batchRef.id,
+        cas: casValues.length === 1 ? casValues[0] : 'NHIỀU CAS',
+        status: 'APPLIED',
+        recordCount: changes.length,
+        changes,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser?.uid || '',
+        createdByName: currentUser?.displayName || 'Người dùng',
+      }));
+    });
+
+    this.cache.invalidateLocalStandardsCache();
+    const maintenanceResults = await Promise.allSettled([
+      this.logGlobalActivity(
+        'NORMALIZE_STANDARD_NAMES',
+        `Chuẩn hóa tên cho ${uniqueUpdates.length} lọ chất chuẩn đối chiếu (phiên ${batchRef.id}).`
+      ),
+      this.fb.updateMetadata('standards'),
+    ]);
+    maintenanceResults.forEach(result => {
+      if (result.status === 'rejected') console.warn('[StandardCrudService] Post-cleanup maintenance failed:', result.reason);
+    });
+    return batchRef.id;
+  }
+
+  async getRecentStandardNameCleanupBatches(limitCount = 20): Promise<StandardCleanupBatch[]> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền xem lịch sử chuẩn hóa.');
+    const batchesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches`);
+    const snapshot = await getDocs(query(batchesRef, orderBy('createdAt', 'desc'), limit(Math.min(Math.max(limitCount, 1), 50))));
+    return snapshot.docs.map(item => ({ id: item.id, ...item.data() } as StandardCleanupBatch));
+  }
+
+  async undoStandardNameCleanupBatch(batchId: string): Promise<void> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền hoàn tác chuẩn hóa tên.');
+    if (!batchId?.trim()) throw new Error('Mã phiên hoàn tác không hợp lệ.');
+
+    const batchRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches/${batchId}`);
+    const currentUser = this.auth.currentUser();
+    await runTransaction(this.fb.db, async transaction => {
+      const batchSnapshot = await transaction.get(batchRef);
+      if (!batchSnapshot.exists()) throw new Error('Không tìm thấy phiên chuẩn hóa.');
+      const batch = { id: batchSnapshot.id, ...batchSnapshot.data() } as StandardCleanupBatch;
+      if (batch.status === 'UNDONE') throw new Error('Phiên này đã được hoàn tác trước đó.');
+      if (!Array.isArray(batch.changes) || batch.changes.length === 0) throw new Error('Phiên không có dữ liệu để hoàn tác.');
+      if (batch.changes.length > 400) throw new Error('Phiên vượt quá giới hạn hoàn tác an toàn.');
+
+      const refs = batch.changes.map(change =>
+        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${change.standardId}`)
+      );
+      const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+      const missingCount = snapshots.filter(snapshot => !snapshot.exists()).length;
+      if (missingCount > 0) throw new Error(`${missingCount} hồ sơ không còn tồn tại; chưa hoàn tác dữ liệu nào.`);
+
+      const conflictCount = snapshots.filter((snapshot, index) => {
+        const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+        return !this.matchesStandardNameSnapshot(fresh, batch.changes[index].after);
+      }).length;
+      if (conflictCount > 0) {
+        throw new Error(`${conflictCount} hồ sơ đã được sửa sau phiên này; hoàn tác bị chặn để tránh ghi đè thay đổi mới.`);
+      }
+
+      snapshots.forEach((snapshot, index) => {
+        const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+        const before = batch.changes[index].before;
+        const restored = {
+          ...fresh,
+          name: before.name,
+          chemical_name: before.chemical_name,
+          canonical_name: before.canonical_name,
+          original_name: before.original_name,
+          name_source: before.name_source,
+          cas_status: before.cas_status,
+          standard_form: before.standard_form,
+          normalization_version: before.normalization_version,
+          normalization_batch_id: before.normalization_batch_id,
+          normalized_at: before.normalized_at,
+          normalized_by: before.normalized_by,
+        } as ReferenceStandard;
+        transaction.update(refs[index], sanitizeForFirebase({
+          name: before.name,
+          chemical_name: before.chemical_name ?? deleteField(),
+          canonical_name: before.canonical_name ?? deleteField(),
+          original_name: before.original_name ?? deleteField(),
+          name_source: before.name_source ?? deleteField(),
+          cas_status: before.cas_status ?? deleteField(),
+          standard_form: before.standard_form ?? deleteField(),
+          normalization_version: before.normalization_version ?? deleteField(),
+          normalization_batch_id: before.normalization_batch_id ?? deleteField(),
+          normalized_at: before.normalized_at ?? deleteField(),
+          normalized_by: before.normalized_by ?? deleteField(),
+          search_key: this.generateSearchKey(restored),
+          lastUpdated: serverTimestamp(),
+        }));
+      });
+
+      transaction.update(batchRef, {
+        status: 'UNDONE',
+        undoneAt: serverTimestamp(),
+        undoneBy: currentUser?.uid || '',
+        undoneByName: currentUser?.displayName || 'Người dùng',
+      });
+    });
+
+    this.cache.invalidateLocalStandardsCache();
+    const maintenanceResults = await Promise.allSettled([
+      this.logGlobalActivity('UNDO_NORMALIZE_STANDARD_NAMES', `Hoàn tác phiên chuẩn hóa tên ${batchId}.`),
+      this.fb.updateMetadata('standards'),
+    ]);
+    maintenanceResults.forEach(result => {
+      if (result.status === 'rejected') console.warn('[StandardCrudService] Post-undo maintenance failed:', result.reason);
+    });
+  }
+
+  private snapshotStandardName(standard: ReferenceStandard): StandardNameSnapshot {
+    return sanitizeForFirebase({
+      name: standard.name,
+      chemical_name: standard.chemical_name,
+      canonical_name: standard.canonical_name,
+      original_name: standard.original_name,
+      name_source: standard.name_source,
+      cas_status: standard.cas_status,
+      standard_form: standard.standard_form,
+      normalization_version: standard.normalization_version,
+      normalization_batch_id: standard.normalization_batch_id,
+      normalized_at: standard.normalized_at,
+      normalized_by: standard.normalized_by,
+    });
+  }
+
+  private matchesStandardNameSnapshot(standard: ReferenceStandard, snapshot: StandardNameSnapshot): boolean {
+    const fields: (keyof StandardNameSnapshot)[] = [
+      'name', 'chemical_name', 'canonical_name', 'original_name', 'name_source',
+      'cas_status', 'standard_form', 'normalization_version', 'normalization_batch_id', 'normalized_by',
+    ];
+    return fields.every(field => (standard[field] ?? '') === (snapshot[field] ?? ''));
   }
 
   async quickUpdateField(stdId: string, fields: Record<string, any>): Promise<void> {

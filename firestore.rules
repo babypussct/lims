@@ -207,6 +207,22 @@ service cloud.firestore {
       }
     }
 
+    // Phien chuan hoa danh phap: luu snapshot bat bien va chi cho phep APPLIED -> UNDONE.
+    match /artifacts/{appId}/standard_cleanup_batches/{batchId} {
+      allow read: if hasPermission(appId, 'standard_edit');
+      allow create: if hasPermission(appId, 'standard_edit') &&
+        request.resource.data.status == 'APPLIED' &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow update: if hasPermission(appId, 'standard_edit') &&
+        resource.data.status == 'APPLIED' &&
+        request.resource.data.status == 'UNDONE' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'undoneAt', 'undoneBy', 'undoneByName'
+        ]) &&
+        request.resource.data.undoneBy == request.auth.uid;
+      allow delete: if false;
+    }
+
     // Yeu cau mua chuan (Purchase/Standard Requests)
     match /artifacts/{appId}/standard_requests/{reqId} {
       allow read: if canOperateStandards(appId) || hasPermission(appId, 'standard_log_view') ||

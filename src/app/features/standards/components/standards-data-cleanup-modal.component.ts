@@ -1,22 +1,46 @@
-import { Component, inject, signal, effect, input, output, computed, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ReferenceStandard } from '../../../core/models/standard.model';
-import { PubchemService, formatChemicalName } from '../../../core/services/pubchem.service';
-import { StandardService } from '../standard.service';
-import { ToastService } from '../../../core/services/toast.service';
+import { ReferenceStandard, StandardCleanupBatch } from '../../../core/models/standard.model';
 import { ProgressService } from '../../../core/services/progress.service';
+import { PubchemService } from '../../../core/services/pubchem.service';
+import { ToastService } from '../../../core/services/toast.service';
+import {
+  normalizeChemicalNames,
+  parseChemicalNames,
+  serializeChemicalNames,
+} from '../../../shared/utils/chemical-name';
+import {
+  assessCasNumber,
+  assessCleanupGroup,
+  CleanupRiskAssessment,
+  detectStandardForm,
+  formatStandardProductName,
+} from '../../../shared/utils/standard-cleanup';
+import { StandardService } from '../standard.service';
+
+type CleanupStatus = 'pending' | 'loading' | 'ready' | 'review' | 'success' | 'error';
+type CleanupFilter = 'all' | 'safe' | 'review' | 'blocked' | 'success';
+
+interface CleanupRecord {
+  standard: ReferenceStandard;
+  originalName: string;
+  suggestedName: string;
+  selected: boolean;
+  saved: boolean;
+}
 
 interface CleanupGroup {
-    id: string; // CAS number lowercased
-    standards: ReferenceStandard[];
-    cas: string;
-    originalNames: string[];
-    suggestedName: string;
-    suggestedSynonyms: string;
-    selected: boolean;
-    status: 'pending' | 'loading' | 'ready' | 'success' | 'error';
-    errorMsg?: string;
+  id: string;
+  cas: string;
+  records: CleanupRecord[];
+  originalNames: string[];
+  canonicalName: string;
+  canonicalSource: 'existing' | 'pubchem' | 'manual';
+  suggestedSynonyms: string;
+  risk: CleanupRiskAssessment;
+  status: CleanupStatus;
+  errorMsg?: string;
 }
 
 @Component({
@@ -24,190 +48,273 @@ interface CleanupGroup {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-      @if (isOpen()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/80 dark:border-slate-800 animate-slide-up">
-
-                <!-- Modal Header -->
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg shadow-sm">
-                            <i class="fa-solid fa-broom"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
-                                Công Cụ Chuẩn Hóa Dữ Liệu (Data Cleanup)
-                            </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tự động gom nhóm các chuẩn cùng Số CAS & đồng bộ Tên thương mại / Synonyms chuẩn quốc tế từ PubChem.</p>
-                        </div>
-                    </div>
-                    <button (click)="onClose()" [disabled]="isProcessing() || isFetchingAll()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fa-solid fa-times"></i>
-                    </button>
-                </div>
-
-                <!-- Stats Summary Banner -->
-                <div class="px-6 py-2.5 bg-indigo-50/60 dark:bg-indigo-950/30 border-b border-indigo-100/60 dark:border-indigo-900/30 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-bold">
-                            <i class="fa-solid fa-boxes-stacked text-indigo-500"></i> Tổng kho: <strong class="text-indigo-600 dark:text-indigo-400 font-extrabold">{{totalStandardsCount()}}</strong> lọ chuẩn
-                        </span>
-                        <span class="text-slate-300 dark:text-slate-700">|</span>
-                        <span class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
-                            <i class="fa-solid fa-object-group text-emerald-500"></i> Phân thành: <strong class="font-extrabold">{{groups().length}}</strong> nhóm CAS
-                        </span>
-                        @if (noCasCount() > 0) {
-                            <span class="text-slate-300 dark:text-slate-700">|</span>
-                            <span class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
-                                <i class="fa-solid fa-triangle-exclamation"></i> Không có CAS: <strong>{{noCasCount()}}</strong> lọ (đã bỏ qua)
-                            </span>
-                        }
-                    </div>
-                    <div class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">
-                        Đã chọn hợp lệ: <span class="text-indigo-600 dark:text-indigo-400 font-extrabold text-xs">{{selectedCount()}}</span> / {{groups().length}} nhóm
-                    </div>
-                </div>
-
-                <!-- Main Content Area -->
-                <div class="flex-1 overflow-y-auto p-0 custom-scrollbar bg-white dark:bg-slate-900 flex flex-col">
-
-                    <!-- Search & Action Toolbar -->
-                    <div class="p-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-                        <div class="flex items-center gap-2 flex-1 min-w-[280px]">
-                            <!-- Search input -->
-                            <div class="relative flex-1 max-w-sm">
-                                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-xs"></i>
-                                <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Tìm theo CAS, tên cũ, tên đề xuất..." class="w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition">
-                                @if (searchQuery()) {
-                                    <button (click)="searchQuery.set('')" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                }
-                            </div>
-
-                            <!-- Quick Status Filter Tabs -->
-                            <div class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg border border-slate-200/60 dark:border-slate-700 text-[11px] font-bold">
-                                <button (click)="statusFilter.set('all')" [class.bg-white]="statusFilter() === 'all'" [class.dark:bg-slate-700]="statusFilter() === 'all'" [class.shadow-xs]="statusFilter() === 'all'" [class.text-indigo-600]="statusFilter() === 'all'" [class.dark:text-indigo-400]="statusFilter() === 'all'" class="px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">Tất cả ({{groups().length}})</button>
-                                <button (click)="statusFilter.set('unnamed')" [class.bg-white]="statusFilter() === 'unnamed'" [class.dark:bg-slate-700]="statusFilter() === 'unnamed'" [class.shadow-xs]="statusFilter() === 'unnamed'" [class.text-amber-600]="statusFilter() === 'unnamed'" class="px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">Chưa tên ({{unnamedCount()}})</button>
-                                <button (click)="statusFilter.set('ready')" [class.bg-white]="statusFilter() === 'ready'" [class.dark:bg-slate-700]="statusFilter() === 'ready'" [class.shadow-xs]="statusFilter() === 'ready'" [class.text-emerald-600]="statusFilter() === 'ready'" class="px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">Sẵn sàng ({{readyCount()}})</button>
-                                <button (click)="statusFilter.set('error')" [class.bg-white]="statusFilter() === 'error'" [class.dark:bg-slate-700]="statusFilter() === 'error'" [class.shadow-xs]="statusFilter() === 'error'" [class.text-red-600]="statusFilter() === 'error'" class="px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">Lỗi ({{errorCount()}})</button>
-                                <button (click)="statusFilter.set('success')" [class.bg-white]="statusFilter() === 'success'" [class.dark:bg-slate-700]="statusFilter() === 'success'" [class.shadow-xs]="statusFilter() === 'success'" [class.text-emerald-700]="statusFilter() === 'success'" class="px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">Đã lưu ({{successCount()}})</button>
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex items-center gap-2">
-                            <button (click)="scanData()" [disabled]="isFetchingAll() || isProcessing()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 disabled:opacity-50">
-                                <i class="fa-solid fa-rotate"></i> Quét Lại
-                            </button>
-                            <button (click)="fetchPubchemForAll()" [disabled]="groups().length === 0 || isFetchingAll() || isProcessing()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                @if(isFetchingAll()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang quét... }
-                                @else { <i class="fa-solid fa-wand-magic-sparkles"></i> Gợi ý tất cả qua PubChem }
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Data Table -->
-                    @if (groups().length === 0) {
-                        <div class="py-20 text-center text-slate-400 dark:text-slate-500 italic">
-                            <i class="fa-solid fa-clipboard-check text-5xl mb-3 text-slate-300 dark:text-slate-700"></i>
-                            <p class="font-bold text-sm">Chưa có dữ liệu phân tích kho chuẩn.</p>
-                            <p class="text-xs text-slate-400 mt-1">Vui lòng kiểm tra lại bộ dữ liệu chuẩn trong hệ thống.</p>
-                        </div>
-                    } @else if (filteredGroups().length === 0) {
-                        <div class="py-16 text-center text-slate-400 dark:text-slate-500">
-                            <i class="fa-solid fa-filter text-4xl mb-2 text-slate-300 dark:text-slate-700"></i>
-                            <p class="font-bold text-sm">Không tìm thấy nhóm chuẩn nào phù hợp với bộ lọc.</p>
-                            <button (click)="searchQuery.set(''); statusFilter.set('all')" class="mt-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg hover:bg-indigo-100 transition">Xóa Bộ Lọc</button>
-                        </div>
-                    } @else {
-                        <div class="flex-1 overflow-x-auto">
-                            <table class="w-full text-sm text-left border-collapse">
-                                <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/90 sticky top-[65px] z-10 border-b border-slate-200 dark:border-slate-700 font-bold shadow-2xs">
-                                    <tr>
-                                        <th class="px-4 py-3 w-10 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 cursor-pointer rounded"></th>
-                                        <th class="px-4 py-3 w-1/4">Nhóm (Số CAS / Tên cũ)</th>
-                                        <th class="px-4 py-3 w-1/4">Tên thương mại đề xuất</th>
-                                        <th class="px-4 py-3 w-1/3">Đề xuất Synonyms</th>
-                                        <th class="px-4 py-3 w-[10%] text-center">Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                    @for (group of filteredGroups(); track group.id) {
-                                        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition group/row" [ngClass]="{'bg-indigo-50/40 dark:bg-indigo-900/15': group.selected}">
-                                            <td class="px-4 py-4 text-center align-top">
-                                                <input type="checkbox" [ngModel]="group.selected" (ngModelChange)="toggleGroupSelected(group.id, $event)" class="w-4 h-4 accent-indigo-600 cursor-pointer rounded mt-1">
-                                            </td>
-                                            <td class="px-4 py-4 align-top">
-                                                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-                                                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700">CAS: {{group.cas || 'Không có'}}</span>
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{{group.standards.length}} lọ</span>
-                                                </div>
-                                                <div class="text-xs text-slate-500 dark:text-slate-400">
-                                                    <div class="font-bold text-[11px] text-slate-600 dark:text-slate-300 mb-1">Các tên hiện dùng:</div>
-                                                    <ul class="list-disc pl-4 space-y-0.5 text-slate-600 dark:text-slate-400 text-[11px]">
-                                                        @for (name of group.originalNames; track name) {
-                                                            <li>{{name}}</li>
-                                                        }
-                                                    </ul>
-                                                </div>
-                                            </td>
-                                            <td class="px-4 py-4 align-top">
-                                                <div class="relative">
-                                                    <input type="text" [ngModel]="group.suggestedName" (ngModelChange)="updateSuggestedName(group.id, $event)" [class.border-amber-400]="!group.suggestedName" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition pr-12" placeholder="Nhập tên chuẩn thương mại...">
-                                                    @if (!group.suggestedName && group.status !== 'loading') {
-                                                        <button (click)="fetchGroupInfo(group)" class="absolute right-2 top-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 px-2 py-0.5 rounded text-[10px] font-extrabold transition border border-indigo-200 dark:border-indigo-800">API</button>
-                                                    } @else if (group.suggestedName) {
-                                                        <button (click)="updateSuggestedName(group.id, '')" class="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 text-xs px-1" title="Xóa tên">
-                                                            <i class="fa-solid fa-xmark"></i>
-                                                        </button>
-                                                    }
-                                                </div>
-                                                @if (!group.suggestedName) {
-                                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-semibold flex items-center gap-1">
-                                                        <i class="fa-solid fa-circle-exclamation"></i> Cần nhập tên đề xuất để ghi đè
-                                                    </p>
-                                                }
-                                            </td>
-                                            <td class="px-4 py-4 align-top">
-                                                <textarea [ngModel]="group.suggestedSynonyms" (ngModelChange)="updateSuggestedSynonyms(group.id, $event)" rows="3" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-600 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition resize-none custom-scrollbar" placeholder="Nhập synonyms cách nhau bởi dấu phẩy..."></textarea>
-                                            </td>
-                                            <td class="px-4 py-4 align-top text-center">
-                                                @if (group.status === 'pending') { <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-500 dark:text-slate-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-pause"></i> Chờ</span> }
-                                                @if (group.status === 'loading') { <span class="px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-xs text-blue-600 dark:text-blue-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> Đang lấy</span> }
-                                                @if (group.status === 'ready') { <span class="px-2 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950 text-xs text-emerald-600 dark:text-emerald-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-check"></i> Sẵn sàng</span> }
-                                                @if (group.status === 'success') { <span class="px-2 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-xs text-emerald-700 dark:text-emerald-300 font-extrabold inline-flex items-center gap-1"><i class="fa-solid fa-check-double"></i> Đã lưu</span> }
-                                                @if (group.status === 'error') { <span class="px-2 py-1 rounded-md bg-red-50 dark:bg-red-950 text-xs text-red-600 dark:text-red-400 font-bold inline-flex items-center gap-1" [title]="group.errorMsg"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi</span> }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-
-                <!-- Footer Actions -->
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex flex-wrap justify-between gap-3 shrink-0 items-center">
-                    <div class="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 font-bold">
-                        <i class="fa-solid fa-shield-halved text-amber-500"></i>
-                        <span>Chú ý: Dữ liệu thật sẽ bị ghi đè. Hãy kiểm tra kỹ trước khi lưu.</span>
-                        @if (totalSelectedCount() > selectedCount()) {
-                            <span class="text-amber-500 font-normal">({{totalSelectedCount() - selectedCount()}} nhóm chưa điền tên sẽ bị bỏ qua)</span>
-                        }
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button (click)="onClose()" [disabled]="isProcessing() || isFetchingAll()" class="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-xs transition disabled:opacity-50">Đóng Bảng</button>
-                        <button (click)="applyChanges()" [disabled]="selectedCount() === 0 || isProcessing() || isFetchingAll()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu Firebase... }
-                            @else { <i class="fa-solid fa-floppy-disk"></i> Lưu & Ghi đè ({{selectedCount()}}) }
-                        </button>
-                    </div>
-                </div>
+    @if (isOpen()) {
+      <div class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[94vh] border border-slate-200/80 dark:border-slate-800 animate-slide-up">
+          <header class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex justify-between items-start gap-4 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div class="min-w-0">
+                <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Chuẩn Hóa Danh Pháp Chất Chuẩn</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mỗi trang chỉ hiển thị một nhóm CAS; tên sản phẩm được duyệt riêng cho từng hồ sơ.</p>
+              </div>
             </div>
-         </div>
-      }
-  `
+            <button (click)="onClose()" [disabled]="isProcessing()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 transition disabled:opacity-50 shrink-0" aria-label="Đóng">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </header>
+
+          <section class="px-5 sm:px-6 py-2.5 bg-indigo-50/60 dark:bg-indigo-950/30 border-b border-indigo-100/60 dark:border-indigo-900/30 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold shrink-0">
+            <span class="text-slate-700 dark:text-slate-200"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-1"></i>{{totalStandardsCount()}} hồ sơ</span>
+            <span class="text-emerald-700 dark:text-emerald-400"><i class="fa-solid fa-object-group mr-1"></i>{{groups().length}} CAS hợp lệ</span>
+            @if (placeholderCasCount() > 0) {
+              <span class="text-amber-700 dark:text-amber-400" title="NA, N/A, CAS inside và nhãn giữ chỗ"><i class="fa-solid fa-ban mr-1"></i>{{placeholderCasCount()}} nhãn CAS giữ chỗ</span>
+            }
+            @if (dateCorruptedCasCount() > 0) {
+              <span class="text-red-700 dark:text-red-400" title="CAS có dấu hiệu bị chuyển thành ngày"><i class="fa-solid fa-calendar-xmark mr-1"></i>{{dateCorruptedCasCount()}} CAS dạng ngày</span>
+            }
+            @if (invalidCasCount() > 0) {
+              <span class="text-red-700 dark:text-red-400"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{invalidCasCount()}} CAS lỗi khác</span>
+            }
+            @if (missingCasCount() > 0) {
+              <span class="text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-minus mr-1"></i>{{missingCasCount()}} chưa có CAS</span>
+            }
+          </section>
+
+          <section class="px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="relative flex-1 min-w-[240px] max-w-md">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" [ngModel]="searchQuery()" (ngModelChange)="setSearchQuery($event)" placeholder="Tìm CAS, tên, mã quản lý hoặc catalog..." class="w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/40">
+                @if (searchQuery()) {
+                  <button (click)="setSearchQuery('')" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1" aria-label="Xóa tìm kiếm"><i class="fa-solid fa-xmark"></i></button>
+                }
+              </div>
+              <div class="flex items-center gap-2">
+                <button (click)="openHistory()" [disabled]="isProcessing()" class="px-3 py-2 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold text-xs rounded-lg hover:bg-amber-100 transition disabled:opacity-50">
+                  <i class="fa-solid fa-clock-rotate-left mr-1"></i>Hoàn tác ({{activeBatchCount()}})
+                </button>
+                <button (click)="scanData()" [disabled]="isProcessing()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">
+                  <i class="fa-solid fa-rotate mr-1"></i>Quét lại
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[11px] font-bold">
+              <button (click)="setFilter('all')" [class]="filterClass('all')">Tất cả ({{groups().length}})</button>
+              <button (click)="setFilter('safe')" [class]="filterClass('safe')">An toàn ({{safeCount()}})</button>
+              <button (click)="setFilter('review')" [class]="filterClass('review')">Cần duyệt ({{mediumRiskCount()}})</button>
+              <button (click)="setFilter('blocked')" [class]="filterClass('blocked')">Rủi ro cao ({{highRiskCount()}})</button>
+              <button (click)="setFilter('success')" [class]="filterClass('success')">Đã lưu ({{successCount()}})</button>
+            </div>
+          </section>
+
+          @if (showHistory()) {
+            <section class="absolute inset-0 z-30 bg-white dark:bg-slate-900 flex flex-col">
+              <header class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/20 flex items-start justify-between gap-4 shrink-0">
+                <div>
+                  <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg"><i class="fa-solid fa-clock-rotate-left text-amber-500 mr-2"></i>Lịch Sử Chuẩn Hóa & Hoàn Tác</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Mỗi lần lưu là một phiên độc lập. Hoàn tác bị chặn nếu hồ sơ đã được sửa sau phiên đó.</p>
+                </div>
+                <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 disabled:opacity-50" aria-label="Đóng lịch sử"><i class="fa-solid fa-times"></i></button>
+              </header>
+              <div class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-slate-50/60 dark:bg-slate-950/30">
+                @if (isLoadingHistory()) {
+                  <div class="py-20 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><p class="text-xs font-bold">Đang tải lịch sử...</p></div>
+                } @else if (cleanupHistory().length === 0) {
+                  <div class="py-20 text-center text-slate-400"><i class="fa-solid fa-clock text-4xl mb-3 text-slate-300 dark:text-slate-700"></i><p class="text-sm font-bold">Chưa có phiên chuẩn hóa nào.</p></div>
+                } @else {
+                  <div class="space-y-3 max-w-4xl mx-auto">
+                    @for (batch of cleanupHistory(); track batch.id) {
+                      <article class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                          <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                              <span class="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">CAS {{batch.cas}}</span>
+                              <span class="px-2 py-0.5 rounded-full text-[10px] font-black" [ngClass]="batch.status === 'APPLIED' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'">{{batch.status === 'APPLIED' ? 'Có thể hoàn tác' : 'Đã hoàn tác'}}</span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-200">{{batch.recordCount}} hồ sơ · {{batch.createdByName || 'Người dùng'}} · {{formatBatchDate(batch.createdAt)}}</p>
+                            <p class="text-[10px] text-slate-400 mt-1 font-mono">Phiên {{batch.id}}</p>
+                          </div>
+                          <button (click)="undoBatch(batch)" [disabled]="batch.status !== 'APPLIED' || undoingBatchId() !== null" class="px-3 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                            @if (undoingBatchId() === batch.id) { <i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang hoàn tác }
+                            @else { <i class="fa-solid fa-rotate-left mr-1"></i>Hoàn tác phiên }
+                          </button>
+                        </div>
+                        <details class="mt-3 border-t border-slate-100 dark:border-slate-800 pt-2">
+                          <summary class="cursor-pointer text-[11px] font-bold text-slate-500 dark:text-slate-400">Xem thay đổi trước/sau</summary>
+                          <div class="mt-2 space-y-2">
+                            @for (change of batch.changes; track change.standardId) {
+                              <div class="grid sm:grid-cols-[100px_1fr_24px_1fr] gap-2 items-start text-[11px] rounded-lg bg-slate-50 dark:bg-slate-800/60 p-2.5">
+                                <strong class="text-slate-600 dark:text-slate-300">{{change.internalId || change.standardId}}</strong>
+                                <span class="text-red-600 dark:text-red-400 break-words">{{change.before.name}}</span>
+                                <i class="fa-solid fa-arrow-right text-slate-400 mt-0.5"></i>
+                                <span class="text-emerald-700 dark:text-emerald-400 break-words">{{change.after.name}}</span>
+                              </div>
+                            }
+                          </div>
+                        </details>
+                      </article>
+                    }
+                  </div>
+                }
+              </div>
+              <footer class="px-5 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end">
+                <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold disabled:opacity-50">Quay lại chuẩn hóa</button>
+              </footer>
+            </section>
+          }
+
+          <main class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/30">
+            @if (groups().length === 0) {
+              <div class="py-20 text-center text-slate-400">
+                <i class="fa-solid fa-clipboard-check text-5xl mb-3 text-slate-300 dark:text-slate-700"></i>
+                <p class="font-bold text-sm">Chưa có hồ sơ với số CAS hợp lệ.</p>
+                <p class="text-xs mt-1">Các nhãn giữ chỗ và CAS lỗi đã được chặn khỏi quy trình chuẩn hóa.</p>
+              </div>
+            } @else if (!currentGroup()) {
+              <div class="py-16 text-center text-slate-400">
+                <i class="fa-solid fa-filter text-4xl mb-2 text-slate-300 dark:text-slate-700"></i>
+                <p class="font-bold text-sm">Không có nhóm CAS phù hợp bộ lọc.</p>
+                <button (click)="clearFilters()" class="mt-3 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg">Xóa bộ lọc</button>
+              </div>
+            } @else {
+              @let group = currentGroup()!;
+              <div class="p-4 sm:p-6 space-y-4">
+                <nav class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm" aria-label="Phân trang nhóm CAS">
+                  <button (click)="previousPage()" [disabled]="currentPageIndex() === 0 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-chevron-left mr-1"></i>Nhóm trước
+                  </button>
+                  <div class="text-center min-w-0">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Nhóm {{currentPageIndex() + 1}} / {{filteredGroups().length}}</div>
+                    <div class="text-sm font-black text-indigo-600 dark:text-indigo-400 font-mono truncate">CAS {{group.cas}}</div>
+                  </div>
+                  <button (click)="nextPage()" [disabled]="currentPageIndex() >= filteredGroups().length - 1 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    Nhóm sau<i class="fa-solid fa-chevron-right ml-1"></i>
+                  </button>
+                </nav>
+                <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full bg-indigo-500 transition-all" [style.width.%]="pageProgress()"></div>
+                </div>
+
+                <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                  <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-mono text-xs font-black">{{group.cas}}</span>
+                        <span class="px-2 py-1 rounded-full text-[10px] font-black" [ngClass]="riskBadgeClass(group.risk.level)">{{riskLabel(group.risk.level)}}</span>
+                        <span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold">{{group.records.length}} hồ sơ</span>
+                        @if (group.status === 'success') {
+                          <span class="px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold"><i class="fa-solid fa-check-double mr-1"></i>Đã lưu toàn nhóm</span>
+                        }
+                      </div>
+                      <ul class="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                        @for (reason of group.risk.reasons; track reason) {
+                          <li><i class="fa-solid fa-circle-info mr-1.5" [ngClass]="riskTextClass(group.risk.level)"></i>{{reason}}</li>
+                        }
+                      </ul>
+                    </div>
+                    <button (click)="fetchGroupInfo(group)" [disabled]="group.status === 'loading' || isProcessing()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm disabled:opacity-50">
+                      @if (group.status === 'loading') { <i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang tra cứu }
+                      @else { <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Tra PubChem nhóm này }
+                    </button>
+                  </div>
+
+                  <div class="p-4 sm:p-5 grid lg:grid-cols-2 gap-4 bg-slate-50/60 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                      <label class="block text-[11px] font-black text-slate-600 dark:text-slate-300 mb-1.5">Tên hóa chất chuẩn hóa</label>
+                      <input type="text" [ngModel]="group.canonicalName" (ngModelChange)="updateCanonicalName(group.id, $event)" placeholder="PubChem hoặc tên đã được chuyên gia duyệt" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                      <p class="text-[10px] text-slate-400 mt-1">Trường này mô tả hóa chất; không thay thế nồng độ, dung môi hay dạng sản phẩm.</p>
+                    </div>
+                    <div class="flex flex-col justify-end gap-2">
+                      <button (click)="applyCanonicalToCurrentGroup()" [disabled]="!group.risk.canApplyCanonicalToAll || !group.canonicalName.trim() || isProcessing()" class="w-full px-3 py-2.5 rounded-lg text-xs font-bold border transition disabled:opacity-45 disabled:cursor-not-allowed bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100">
+                        <i class="fa-solid fa-arrow-down-wide-short mr-1"></i>Áp dụng tên chuẩn cho toàn nhóm an toàn
+                      </button>
+                      @if (!group.risk.canApplyCanonicalToAll) {
+                        <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold"><i class="fa-solid fa-lock mr-1"></i>Đã khóa áp dụng một tên chung vì nhóm có nguy cơ mất thông tin sản phẩm.</p>
+                      }
+                    </div>
+                  </div>
+
+                  <details class="border-b border-slate-100 dark:border-slate-800">
+                    <summary class="px-4 sm:px-5 py-3 cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <i class="fa-solid fa-tags mr-1.5 text-indigo-500"></i>Tên đồng nghĩa và tên tìm kiếm
+                    </summary>
+                    <div class="px-4 sm:px-5 pb-4">
+                      <textarea [ngModel]="group.suggestedSynonyms" (ngModelChange)="updateSuggestedSynonyms(group.id, $event)" rows="3" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" placeholder="Mỗi tên một dòng; không tách dấu phẩy trong danh pháp."></textarea>
+                    </div>
+                  </details>
+
+                  <div class="p-4 sm:p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <div>
+                        <h4 class="font-black text-sm text-slate-800 dark:text-slate-100">Duyệt từng hồ sơ trong nhóm</h4>
+                        <p class="text-[10px] text-slate-400">Chỉ các hồ sơ được đánh dấu mới được lưu.</p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button (click)="normalizeCurrentGroupTypography()" [disabled]="isProcessing()" class="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-text-height mr-1"></i>Chuẩn hóa kiểu chữ</button>
+                        <button (click)="toggleAllCurrentRecords()" [disabled]="isProcessing()" class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">{{allCurrentRecordsSelected() ? 'Bỏ chọn nhóm' : 'Chọn hồ sơ nhóm này'}}</button>
+                      </div>
+                    </div>
+
+                    <div class="space-y-3">
+                      @for (record of group.records; track record.standard.id) {
+                        <article class="rounded-xl border p-3 sm:p-4 transition" [ngClass]="record.selected ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/40 dark:bg-indigo-950/15' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
+                          <div class="flex items-start gap-3">
+                            <input type="checkbox" [ngModel]="record.selected" (ngModelChange)="toggleRecord(group.id, record.standard.id, $event)" class="w-4 h-4 accent-indigo-600 mt-1 shrink-0" [attr.aria-label]="'Chọn ' + record.originalName">
+                            <div class="flex-1 min-w-0 grid lg:grid-cols-[minmax(190px,0.8fr)_minmax(260px,1.2fr)] gap-3">
+                              <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                                  <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{record.standard.internal_id || record.standard.id}}</span>
+                                  @if (record.standard.product_code) { <span class="text-[10px] text-slate-400 font-mono">{{record.standard.product_code}}</span> }
+                                  @if (record.saved) { <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold"><i class="fa-solid fa-check mr-0.5"></i>Đã lưu</span> }
+                                </div>
+                                <p class="text-[11px] text-slate-400 mb-0.5">Tên hiện tại</p>
+                                <p class="text-xs font-bold text-slate-700 dark:text-slate-200 break-words">{{record.originalName}}</p>
+                                <div class="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                                  <span><strong>Đơn vị:</strong> {{record.standard.unit || '—'}}</span>
+                                  <span><strong>Quy cách:</strong> {{record.standard.pack_size || '—'}}</span>
+                                  <span><strong>Dạng:</strong> {{formLabel(record.originalName)}}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <label class="block text-[11px] font-black text-slate-600 dark:text-slate-300 mb-1.5">Tên sản phẩm sau chuẩn hóa</label>
+                                <input type="text" [ngModel]="record.suggestedName" (ngModelChange)="updateRecordName(group.id, record.standard.id, $event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50" [class.border-amber-400]="!record.suggestedName.trim()">
+                                @if (record.suggestedName.trim() !== record.originalName.trim()) {
+                                  <p class="text-[10px] mt-1 text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-arrow-right mr-1"></i>Có thay đổi; kiểm tra nồng độ, dung môi và dạng chất trước khi chọn.</p>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  </div>
+                </section>
+              </div>
+            }
+          </main>
+
+          <footer class="px-4 sm:px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap justify-between gap-3 items-center shrink-0">
+            <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu nhóm CAS đang hiển thị · Đã chọn <strong class="text-indigo-600 dark:text-indigo-400">{{currentSelectedCount()}}</strong> hồ sơ
+            </div>
+            <div class="flex items-center gap-2">
+              <button (click)="onClose()" [disabled]="isProcessing()" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-bold text-xs disabled:opacity-50">Đóng</button>
+              <button (click)="applyCurrentGroup(false)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
+                @if (isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i>Đang lưu }
+                @else { <i class="fa-solid fa-floppy-disk"></i>Lưu nhóm hiện tại }
+              </button>
+              <button (click)="applyCurrentGroup(true)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 hidden sm:flex items-center gap-1.5">
+                Lưu & nhóm sau<i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    }
+  `,
 })
 export class StandardsDataCleanupModalComponent {
   isOpen = input<boolean>(false);
@@ -220,287 +327,408 @@ export class StandardsDataCleanupModalComponent {
   private progressService = inject(ProgressService);
 
   groups = signal<CleanupGroup[]>([]);
-  isFetchingAll = signal(false);
   isProcessing = signal(false);
-
-  // Search & Filter
   searchQuery = signal('');
-  statusFilter = signal<'all' | 'unnamed' | 'ready' | 'success' | 'error'>('all');
-  noCasCount = signal(0);
+  statusFilter = signal<CleanupFilter>('all');
+  pageIndex = signal(0);
   totalStandardsCount = signal(0);
+  missingCasCount = signal(0);
+  placeholderCasCount = signal(0);
+  dateCorruptedCasCount = signal(0);
+  invalidCasCount = signal(0);
+  showHistory = signal(false);
+  cleanupHistory = signal<StandardCleanupBatch[]>([]);
+  isLoadingHistory = signal(false);
+  undoingBatchId = signal<string | null>(null);
+
+  filteredGroups = computed(() => {
+    const query = this.searchQuery().trim().toLocaleLowerCase('vi-VN');
+    const filter = this.statusFilter();
+    return this.groups().filter(group => {
+      const matchesFilter = filter === 'all'
+        || (filter === 'safe' && group.risk.level === 'low' && group.status !== 'success')
+        || (filter === 'review' && group.risk.level === 'medium' && group.status !== 'success')
+        || (filter === 'blocked' && group.risk.level === 'high' && group.status !== 'success')
+        || (filter === 'success' && group.status === 'success');
+      if (!matchesFilter) return false;
+      if (!query) return true;
+      return group.cas.toLocaleLowerCase('vi-VN').includes(query)
+        || group.canonicalName.toLocaleLowerCase('vi-VN').includes(query)
+        || group.records.some(record => [
+          record.originalName,
+          record.suggestedName,
+          record.standard.internal_id,
+          record.standard.product_code,
+        ].some(value => value?.toLocaleLowerCase('vi-VN').includes(query)));
+    });
+  });
+
+  currentPageIndex = computed(() => Math.min(this.pageIndex(), Math.max(0, this.filteredGroups().length - 1)));
+  currentGroup = computed(() => this.filteredGroups()[this.currentPageIndex()] ?? null);
+  pageProgress = computed(() => this.filteredGroups().length === 0 ? 0 : ((this.currentPageIndex() + 1) / this.filteredGroups().length) * 100);
+  safeCount = computed(() => this.groups().filter(group => group.risk.level === 'low').length);
+  mediumRiskCount = computed(() => this.groups().filter(group => group.risk.level === 'medium').length);
+  highRiskCount = computed(() => this.groups().filter(group => group.risk.level === 'high').length);
+  successCount = computed(() => this.groups().filter(group => group.status === 'success').length);
+  activeBatchCount = computed(() => this.cleanupHistory().filter(batch => batch.status === 'APPLIED').length);
+  currentSelectedCount = computed(() => this.currentGroup()?.records.filter(record => record.selected && record.suggestedName.trim()).length ?? 0);
+  allCurrentRecordsSelected = computed(() => {
+    const records = this.currentGroup()?.records ?? [];
+    return records.length > 0 && records.every(record => record.selected);
+  });
 
   constructor() {
-    // Untracked auto-scan to prevent infinite reactive effect loops
     effect(() => {
       const open = this.isOpen();
-      if (open) {
+      const count = this.allStandards().length;
+      if (open && count > 0) {
         untracked(() => {
-          if (this.allStandards().length > 0 && this.groups().length === 0) {
-            this.scanData();
-          }
+          if (this.groups().length === 0) this.scanData();
+          if (this.cleanupHistory().length === 0 && !this.isLoadingHistory()) void this.loadCleanupHistory();
         });
       }
     });
   }
 
-  // Filtered list computed
-  filteredGroups = computed(() => {
-    let list = this.groups();
-    const query = this.searchQuery().trim().toLowerCase();
-    const filter = this.statusFilter();
+  scanData(source: ReferenceStandard[] = this.allStandards()): void {
+    const active = source.filter(standard => !standard._isDeleted);
+    const grouped = new Map<string, ReferenceStandard[]>();
+    const counts = { missing: 0, placeholder: 0, date_corrupted: 0, annotated: 0, invalid: 0 };
 
-    if (query) {
-      list = list.filter(g =>
-        g.cas.toLowerCase().includes(query) ||
-        g.suggestedName.toLowerCase().includes(query) ||
-        g.suggestedSynonyms.toLowerCase().includes(query) ||
-        g.originalNames.some(n => n.toLowerCase().includes(query))
-      );
-    }
-
-    if (filter === 'unnamed') {
-      list = list.filter(g => !g.suggestedName.trim());
-    } else if (filter === 'ready') {
-      list = list.filter(g => g.status === 'ready');
-    } else if (filter === 'success') {
-      list = list.filter(g => g.status === 'success');
-    } else if (filter === 'error') {
-      list = list.filter(g => g.status === 'error');
-    }
-
-    return list;
-  });
-
-  // Valid selected groups (must have selected = true AND a non-empty suggestedName)
-  validSelectedGroups = computed(() => this.groups().filter(g => g.selected && g.suggestedName.trim().length > 0));
-  selectedCount = computed(() => this.validSelectedGroups().length);
-  totalSelectedCount = computed(() => this.groups().filter(g => g.selected).length);
-
-  // Accurate Status counts
-  unnamedCount = computed(() => this.groups().filter(g => !g.suggestedName.trim()).length);
-  readyCount = computed(() => this.groups().filter(g => g.status === 'ready').length);
-  errorCount = computed(() => this.groups().filter(g => g.status === 'error').length);
-  successCount = computed(() => this.groups().filter(g => g.status === 'success').length);
-
-  isAllSelected(): boolean {
-      const visible = this.filteredGroups();
-      return visible.length > 0 && visible.every(g => g.selected);
-  }
-
-  toggleAll() {
-      const visibleIds = new Set(this.filteredGroups().map(g => g.id));
-      const allSelected = this.isAllSelected();
-      this.groups.update(groups =>
-        groups.map(g => visibleIds.has(g.id) ? { ...g, selected: !allSelected } : g)
-      );
-  }
-
-  toggleGroupSelected(groupId: string, selected: boolean) {
-      this.groups.update(grps =>
-        grps.map(g => g.id === groupId ? { ...g, selected } : g)
-      );
-  }
-
-  updateSuggestedName(groupId: string, newName: string) {
-      this.groups.update(grps =>
-        grps.map(g => {
-          if (g.id !== groupId) return g;
-          const trimmed = newName.trim();
-          const hasName = trimmed.length > 0;
-          return {
-            ...g,
-            suggestedName: newName,
-            status: hasName ? (g.status === 'pending' || g.status === 'error' ? 'ready' : g.status) : 'pending',
-            selected: hasName ? true : g.selected
-          };
-        })
-      );
-  }
-
-  updateSuggestedSynonyms(groupId: string, newSynonyms: string) {
-      this.groups.update(grps =>
-        grps.map(g => g.id === groupId ? { ...g, suggestedSynonyms: newSynonyms } : g)
-      );
-  }
-
-  onClose() {
-      if (!this.isProcessing() && !this.isFetchingAll()) {
-          this.closeModal.emit();
-          setTimeout(() => {
-              this.groups.set([]);
-              this.searchQuery.set('');
-              this.statusFilter.set('all');
-          }, 300);
+    active.forEach(standard => {
+      const cas = assessCasNumber(standard.cas_number);
+      if (cas.quality !== 'valid') {
+        counts[cas.quality]++;
+        return;
       }
+      if (!cas.normalizedCas) return;
+      const bucket = grouped.get(cas.normalizedCas) ?? [];
+      bucket.push(standard);
+      grouped.set(cas.normalizedCas, bucket);
+    });
+
+    const groups = [...grouped.entries()].map(([cas, standards]): CleanupGroup => {
+      const originalNames = [...new Map(
+        standards.map(item => item.name.trim()).filter(Boolean).map(name => [name.toLocaleLowerCase('en-US'), name])
+      ).values()];
+      const risk = assessCleanupGroup(standards);
+      const canonicalName = standards.find(item => item.canonical_name?.trim())?.canonical_name?.trim()
+        || (risk.level === 'low' ? formatStandardProductName(originalNames[0] ?? '') : '');
+      const existingAliases = standards.flatMap(item => parseChemicalNames(item.chemical_name ?? ''));
+
+      return {
+        id: cas,
+        cas,
+        records: standards.map(standard => ({
+          standard,
+          originalName: standard.name.trim(),
+          suggestedName: formatStandardProductName(standard.name),
+          selected: false,
+          saved: false,
+        })),
+        originalNames,
+        canonicalName,
+        canonicalSource: 'existing',
+        suggestedSynonyms: normalizeChemicalNames(existingAliases, [canonicalName, cas]).join('\n'),
+        risk,
+        status: risk.level === 'low' ? 'ready' : 'review',
+      };
+    });
+
+    groups.sort((a, b) => {
+      const riskOrder = { high: 0, medium: 1, low: 2 };
+      return riskOrder[a.risk.level] - riskOrder[b.risk.level]
+        || b.records.length - a.records.length
+        || a.cas.localeCompare(b.cas);
+    });
+
+    this.groups.set(groups);
+    this.totalStandardsCount.set(active.length);
+    this.missingCasCount.set(counts.missing);
+    this.placeholderCasCount.set(counts.placeholder);
+    this.dateCorruptedCasCount.set(counts.date_corrupted);
+    this.invalidCasCount.set(counts.annotated + counts.invalid);
+    this.pageIndex.set(0);
   }
 
-  scanData() {
-      const data = this.allStandards();
-      const activeStandards = data.filter(std => !std._isDeleted);
-      const grouped = new Map<string, ReferenceStandard[]>();
-      let withCas = 0;
-      let withoutCas = 0;
-
-      activeStandards.forEach(std => {
-          if (std.cas_number && std.cas_number.trim()) {
-              withCas++;
-              const cas = std.cas_number.trim().toLowerCase();
-              if (!grouped.has(cas)) grouped.set(cas, []);
-              grouped.get(cas)!.push(std);
-          } else {
-              withoutCas++;
-          }
-      });
-
-      this.noCasCount.set(withoutCas);
-      this.totalStandardsCount.set(activeStandards.length);
-
-      const result: CleanupGroup[] = [];
-      grouped.forEach((standards, casKey) => {
-          const originalNames = Array.from(new Set(standards.map(s => s.name?.trim()).filter(Boolean)));
-
-          const currentSyns = new Set<string>();
-          standards.forEach(s => {
-              if (s.chemical_name) {
-                  s.chemical_name.split(',').map(x => x.trim()).filter(Boolean).forEach(x => currentSyns.add(x));
-              }
-          });
-          originalNames.slice(1).forEach(n => currentSyns.add(n));
-
-          result.push({
-              id: casKey,
-              cas: standards[0].cas_number!,
-              standards,
-              originalNames,
-              suggestedName: '',
-              suggestedSynonyms: Array.from(currentSyns).join(', '),
-              selected: false,
-              status: 'pending'
-          });
-      });
-
-      // Sort by number of duplicates (highest first)
-      result.sort((a, b) => b.standards.length - a.standards.length);
-      this.groups.set(result);
+  setSearchQuery(value: string): void {
+    this.searchQuery.set(value);
+    this.pageIndex.set(0);
   }
 
-  async fetchGroupInfo(group: CleanupGroup) {
-      if (group.status === 'loading') return;
+  setFilter(filter: CleanupFilter): void {
+    this.statusFilter.set(filter);
+    this.pageIndex.set(0);
+  }
 
-      this.groups.update(grps =>
-          grps.map(g => g.id === group.id ? { ...g, status: 'loading' } : g)
-      );
+  clearFilters(): void {
+    this.searchQuery.set('');
+    this.statusFilter.set('all');
+    this.pageIndex.set(0);
+  }
 
+  async openHistory(): Promise<void> {
+    this.showHistory.set(true);
+    await this.loadCleanupHistory();
+  }
+
+  async loadCleanupHistory(): Promise<void> {
+    this.isLoadingHistory.set(true);
+    try {
+      this.cleanupHistory.set(await this.standardService.getRecentStandardNameCleanupBatches(20));
+    } catch (error) {
+      console.error('Load cleanup history failed', error);
+      this.toast.show('Không thể tải lịch sử chuẩn hóa.', 'error');
+    } finally {
+      this.isLoadingHistory.set(false);
+    }
+  }
+
+  formatBatchDate(value: any): string {
+    if (!value) return 'Đang đồng bộ';
+    const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Không rõ thời gian' : date.toLocaleString('vi-VN');
+  }
+
+  async undoBatch(batch: StandardCleanupBatch): Promise<void> {
+    if (batch.status !== 'APPLIED' || this.undoingBatchId()) return;
+    if (!confirm(`Hoàn tác phiên ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về tên và metadata trước khi chuẩn hóa.`)) return;
+
+    this.undoingBatchId.set(batch.id);
+    try {
+      await this.standardService.undoStandardNameCleanupBatch(batch.id);
+      const freshStandards = await this.standardService.fetchAllAndCache();
+      this.scanData(freshStandards);
+      await this.loadCleanupHistory();
+      this.toast.show(`Đã hoàn tác phiên ${batch.id}.`, 'success');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Không thể hoàn tác phiên chuẩn hóa.';
+      this.toast.show(message, 'error');
+    } finally {
+      this.undoingBatchId.set(null);
+    }
+  }
+
+  filterClass(filter: CleanupFilter): string {
+    const active = this.statusFilter() === filter;
+    return `px-3 py-1.5 rounded-lg whitespace-nowrap transition ${active
+      ? 'bg-indigo-600 text-white shadow-sm'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`;
+  }
+
+  previousPage(): void {
+    this.pageIndex.update(index => Math.max(0, index - 1));
+  }
+
+  nextPage(): void {
+    this.pageIndex.update(index => Math.min(this.filteredGroups().length - 1, index + 1));
+  }
+
+  riskLabel(level: CleanupRiskAssessment['level']): string {
+    return level === 'low' ? 'An toàn' : level === 'medium' ? 'Cần duyệt' : 'Rủi ro cao';
+  }
+
+  riskBadgeClass(level: CleanupRiskAssessment['level']): string {
+    if (level === 'low') return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300';
+    if (level === 'medium') return 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300';
+    return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
+  }
+
+  riskTextClass(level: CleanupRiskAssessment['level']): string {
+    return level === 'low' ? 'text-emerald-500' : level === 'medium' ? 'text-amber-500' : 'text-red-500';
+  }
+
+  formLabel(name: string): string {
+    const labels = {
+      neat: 'Chất riêng',
+      solution: 'Dung dịch',
+      mixture: 'Hỗn hợp',
+      isotope: 'Đồng vị',
+      salt_or_hydrate: 'Muối/Hydrat',
+    };
+    return labels[detectStandardForm(name)];
+  }
+
+  updateCanonicalName(groupId: string, value: string): void {
+    this.updateGroup(groupId, group => ({ ...group, canonicalName: value, canonicalSource: 'manual' }));
+  }
+
+  updateSuggestedSynonyms(groupId: string, value: string): void {
+    this.updateGroup(groupId, group => ({ ...group, suggestedSynonyms: value }));
+  }
+
+  updateRecordName(groupId: string, standardId: string, value: string): void {
+    this.updateGroup(groupId, group => ({
+      ...group,
+      records: group.records.map(record => record.standard.id === standardId
+        ? { ...record, suggestedName: value, selected: Boolean(value.trim()), saved: false }
+        : record),
+      status: group.risk.level === 'low' ? 'ready' : 'review',
+    }));
+  }
+
+  toggleRecord(groupId: string, standardId: string, selected: boolean): void {
+    this.updateGroup(groupId, group => ({
+      ...group,
+      records: group.records.map(record => record.standard.id === standardId ? { ...record, selected } : record),
+    }));
+  }
+
+  toggleAllCurrentRecords(): void {
+    const group = this.currentGroup();
+    if (!group) return;
+    const selected = !this.allCurrentRecordsSelected();
+    this.updateGroup(group.id, current => ({
+      ...current,
+      records: current.records.map(record => ({ ...record, selected: selected && Boolean(record.suggestedName.trim()) })),
+    }));
+  }
+
+  normalizeCurrentGroupTypography(): void {
+    const group = this.currentGroup();
+    if (!group) return;
+    let changed = 0;
+    this.updateGroup(group.id, current => ({
+      ...current,
+      records: current.records.map(record => {
+        const suggestedName = formatStandardProductName(record.originalName);
+        const hasChanged = suggestedName !== record.originalName;
+        if (hasChanged) changed++;
+        return { ...record, suggestedName, selected: hasChanged, saved: false };
+      }),
+    }));
+    this.toast.show(changed > 0 ? `Đã chọn ${changed} hồ sơ có thay đổi kiểu chữ/ký hiệu.` : 'Nhóm này chưa có thay đổi kiểu chữ.', 'info');
+  }
+
+  applyCanonicalToCurrentGroup(): void {
+    const group = this.currentGroup();
+    if (!group?.risk.canApplyCanonicalToAll || !group.canonicalName.trim()) return;
+    const canonicalName = formatStandardProductName(group.canonicalName);
+    this.updateGroup(group.id, current => ({
+      ...current,
+      canonicalName,
+      canonicalSource: 'manual',
+      records: current.records.map(record => ({ ...record, suggestedName: canonicalName, selected: true, saved: false })),
+      status: 'ready',
+    }));
+  }
+
+  async fetchGroupInfo(group: CleanupGroup): Promise<void> {
+    if (group.status === 'loading') return;
+    this.updateGroup(group.id, current => ({ ...current, status: 'loading', errorMsg: undefined }));
+    try {
       const info = await this.pubchemService.getChemicalInfo(group.cas);
+      if (!info?.commercialName) {
+        this.updateGroup(group.id, current => ({
+          ...current,
+          status: 'review',
+          errorMsg: 'PubChem không tìm thấy tên; dữ liệu sản phẩm hiện tại được giữ nguyên.',
+        }));
+        this.toast.show(`PubChem không tìm thấy CAS ${group.cas}.`, 'info');
+        return;
+      }
 
-      this.groups.update(grps =>
-          grps.map(g => {
-              if (g.id !== group.id) return g;
-
-              if (info && info.commercialName) {
-                  const synSet = new Set<string>();
-                  if (g.suggestedSynonyms) g.suggestedSynonyms.split(',').map(x => x.trim()).filter(Boolean).forEach(x => synSet.add(x));
-
-                  g.originalNames.forEach(n => {
-                      if (n.toLowerCase() !== info.commercialName.toLowerCase()) synSet.add(n);
-                  });
-
-                  info.synonyms.slice(0, 5).forEach(s => synSet.add(s));
-
-                  return {
-                      ...g,
-                      suggestedName: formatChemicalName(info.commercialName),
-                      suggestedSynonyms: Array.from(synSet).map(s => formatChemicalName(s)).join(', '),
-                      status: 'ready',
-                      selected: true
-                  };
-              } else {
-                  const rawFallback = (!g.suggestedName && g.originalNames.length > 0) ? g.originalNames[0] : g.suggestedName;
-                  const fallbackName = formatChemicalName(rawFallback);
-                  return {
-                      ...g,
-                      suggestedName: fallbackName,
-                      status: fallbackName ? 'ready' : 'error',
-                      errorMsg: info ? undefined : 'PubChem API không tìm thấy CAS này',
-                      selected: fallbackName ? true : g.selected
-                  };
-              }
-          })
-      );
+      const canonicalName = formatStandardProductName(info.commercialName);
+      this.updateGroup(group.id, current => ({
+        ...current,
+        canonicalName,
+        canonicalSource: 'pubchem',
+        suggestedSynonyms: normalizeChemicalNames([
+          ...parseChemicalNames(current.suggestedSynonyms),
+          ...info.synonyms.slice(0, 8),
+        ], [canonicalName, current.cas]).join('\n'),
+        status: current.risk.level === 'low' ? 'ready' : 'review',
+      }));
+      this.toast.show('Đã lấy tên hóa chất chuẩn. Tên sản phẩm chưa bị ghi đè.', 'success');
+    } catch (error) {
+      console.error('PubChem lookup failed', error);
+      this.updateGroup(group.id, current => ({ ...current, status: 'error', errorMsg: 'Không thể kết nối PubChem.' }));
+      this.toast.show('Không thể kết nối PubChem.', 'error');
+    }
   }
 
-  async fetchPubchemForAll() {
-      if (this.groups().length === 0) return;
-      this.isFetchingAll.set(true);
+  async applyCurrentGroup(goNext: boolean): Promise<void> {
+    const group = this.currentGroup();
+    if (!group) return;
+    const selected = group.records.filter(record => record.selected && record.suggestedName.trim());
+    if (selected.length === 0) return;
 
-      this.progressService.start('Đang tải dữ liệu từ PubChem', 'Vui lòng đợi', this.groups().length);
+    const riskWarning = group.risk.level === 'high'
+      ? '\nĐây là nhóm rủi ro cao; mỗi hồ sơ sẽ giữ đề xuất tên riêng.'
+      : '';
+    if (!confirm(`Lưu ${selected.length} hồ sơ trong nhóm CAS ${group.cas}?${riskWarning}\n\nChỉ trường danh pháp và metadata chuẩn hóa được cập nhật.`)) return;
 
-      try {
-          for (let i = 0; i < this.groups().length; i++) {
-              const group = this.groups()[i];
-              if (group.status !== 'ready' && group.status !== 'success') {
-                 this.progressService.update(i + 1, `Đang xử lý CAS: ${group.cas}`);
-                 await this.fetchGroupInfo(group);
-                 await new Promise(r => setTimeout(r, 200));
-              }
-          }
-          this.toast.show('Hoàn tất quét API PubChem. Vui lòng kiểm tra Bảng Đề xuất trước khi lưu.', 'info');
-      } catch (error) {
-          console.error('Error in fetchPubchemForAll:', error);
-          this.toast.show('Có lỗi xảy ra khi truy vấn API PubChem.', 'error');
-      } finally {
-          this.progressService.complete();
-          this.isFetchingAll.set(false);
+    this.isProcessing.set(true);
+    const pageBeforeSave = this.currentPageIndex();
+    this.progressService.start('Đang lưu nhóm CAS', group.cas, selected.length);
+    try {
+      const batchId = await this.standardService.updateStandardNames(selected.map((record, index) => {
+        this.progressService.update(index + 1, record.standard.internal_id || record.standard.id);
+        const normalizedName = formatStandardProductName(record.suggestedName);
+        const aliases = normalizeChemicalNames([
+          ...parseChemicalNames(group.suggestedSynonyms),
+          group.canonicalName,
+          record.originalName,
+        ], [normalizedName, group.cas]);
+        return {
+          standardId: record.standard.id,
+          name: normalizedName,
+          chemicalName: serializeChemicalNames(aliases),
+          canonicalName: formatStandardProductName(group.canonicalName),
+          originalName: record.originalName,
+          nameSource: group.canonicalSource === 'pubchem'
+            ? 'pubchem' as const
+            : (group.canonicalSource === 'manual' ? 'manual' as const : 'cleanup' as const),
+          casStatus: 'valid' as const,
+          standardForm: detectStandardForm(normalizedName),
+          normalizationVersion: '2026.07.1',
+        };
+      }));
+
+      const savedIds = new Set(selected.map(record => record.standard.id));
+      this.updateGroup(group.id, current => {
+        const records = current.records.map(record => savedIds.has(record.standard.id)
+          ? {
+              ...record,
+              originalName: formatStandardProductName(record.suggestedName),
+              suggestedName: formatStandardProductName(record.suggestedName),
+              selected: false,
+              saved: true,
+            }
+          : record);
+        return {
+          ...current,
+          records,
+          status: records.every(record => record.saved) ? 'success' : (current.risk.level === 'low' ? 'ready' : 'review'),
+          errorMsg: undefined,
+        };
+      });
+      await this.loadCleanupHistory();
+      this.toast.show(`Đã lưu ${selected.length} hồ sơ trong CAS ${group.cas} · phiên ${batchId}.`, 'success');
+      if (goNext) {
+        const stillVisible = this.filteredGroups().some(item => item.id === group.id);
+        const targetPage = stillVisible ? pageBeforeSave + 1 : pageBeforeSave;
+        this.pageIndex.set(Math.min(targetPage, Math.max(0, this.filteredGroups().length - 1)));
       }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Không thể lưu nhóm CAS.';
+      this.updateGroup(group.id, current => ({ ...current, status: 'error', errorMsg: message }));
+      this.toast.show(message, 'error');
+    } finally {
+      this.progressService.complete();
+      this.isProcessing.set(false);
+    }
   }
 
-  async applyChanges() {
-      const selectedGroups = this.validSelectedGroups();
-      if (selectedGroups.length === 0) return;
+  onClose(): void {
+    if (this.isProcessing()) return;
+    this.closeModal.emit();
+    this.groups.set([]);
+    this.showHistory.set(false);
+    this.clearFilters();
+  }
 
-      if (!confirm(`Bạn sắp ghi đè dữ liệu cho ${selectedGroups.length} nhóm hóa chất.\nHành động me này sẽ cập nhật trực tiếp lên Firebase.\n\nTiếp tục?`)) return;
-
-      this.isProcessing.set(true);
-      this.progressService.start('Đang lưu dữ liệu...', 'Cập nhật Firebase', selectedGroups.length);
-
-      let success = 0;
-      let fails = 0;
-
-      try {
-          for (let i = 0; i < selectedGroups.length; i++) {
-              const group = selectedGroups[i];
-              this.progressService.update(i + 1, `Đang cập nhật: ${group.suggestedName}`);
-              try {
-                  const updates = group.standards.map(std => {
-                      const updatedStd = { ...std };
-                      updatedStd.name = group.suggestedName.trim();
-                      updatedStd.chemical_name = group.suggestedSynonyms.trim();
-                      return this.standardService.updateStandard(updatedStd);
-                  });
-
-                  await Promise.all(updates);
-
-                  this.groups.update(grps =>
-                      grps.map(g => g.id === group.id ? { ...g, status: 'success', selected: false } : g)
-                  );
-                  success++;
-              } catch (e: any) {
-                  console.error('Update failed for group', group.id, e);
-                  fails++;
-                  this.groups.update(grps =>
-                      grps.map(g => g.id === group.id ? { ...g, status: 'error', errorMsg: e.message } : g)
-                  );
-              }
-          }
-
-          if (fails > 0) {
-              this.toast.show(`Hoàn tất: ${success} nhóm thành công, ${fails} lỗi.`, 'error');
-          } else {
-              this.toast.show(`Thành công! Đã ghi đè ${success} nhóm chuẩn.`, 'success');
-          }
-      } finally {
-          this.progressService.complete();
-          this.isProcessing.set(false);
-      }
+  private updateGroup(groupId: string, updater: (group: CleanupGroup) => CleanupGroup): void {
+    this.groups.update(groups => groups.map(group => group.id === groupId ? updater(group) : group));
   }
 }
