@@ -192,12 +192,14 @@ export class StandardCrudService {
         const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
         const canonicalName = update.canonicalName?.trim() || fresh.canonical_name || '';
         const originalName = fresh.original_name?.trim() || update.originalName?.trim() || fresh.name;
+        const casNumber = update.casNumber?.trim() || fresh.cas_number || '';
         const after: StandardNameSnapshot = {
           name: update.name,
+          cas_number: casNumber,
           chemical_name: update.chemicalName,
           canonical_name: canonicalName,
           original_name: originalName,
-          name_source: update.nameSource || 'cleanup',
+          name_source: update.nameSource || fresh.name_source || 'cleanup',
           cas_status: update.casStatus || fresh.cas_status || 'valid',
           standard_form: update.standardForm || fresh.standard_form || 'neat',
           normalization_version: update.normalizationVersion || '2026.07.1',
@@ -222,7 +224,7 @@ export class StandardCrudService {
         });
       });
 
-      const casValues = [...new Set(snapshots.map(snapshot => String(snapshot.data()?.['cas_number'] || '').trim()).filter(Boolean))];
+      const casValues = [...new Set(changes.map(change => String(change.after.cas_number || '').trim()).filter(Boolean))];
       if (JSON.stringify(changes).length > 750_000) {
         throw new Error('Ảnh chụp phiên chuẩn hóa quá lớn; hãy giảm số hồ sơ trong một lần lưu.');
       }
@@ -291,6 +293,7 @@ export class StandardCrudService {
       snapshots.forEach((snapshot, index) => {
         const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
         const before = batch.changes[index].before;
+        const hasCasSnapshot = Object.prototype.hasOwnProperty.call(before, 'cas_number');
         const restored = {
           ...fresh,
           name: before.name,
@@ -305,7 +308,8 @@ export class StandardCrudService {
           normalized_at: before.normalized_at,
           normalized_by: before.normalized_by,
         } as ReferenceStandard;
-        transaction.update(refs[index], sanitizeForFirebase({
+        if (hasCasSnapshot) restored.cas_number = before.cas_number;
+        const restoreData: Record<string, any> = {
           name: before.name,
           chemical_name: before.chemical_name ?? deleteField(),
           canonical_name: before.canonical_name ?? deleteField(),
@@ -319,7 +323,9 @@ export class StandardCrudService {
           normalized_by: before.normalized_by ?? deleteField(),
           search_key: this.generateSearchKey(restored),
           lastUpdated: serverTimestamp(),
-        }));
+        };
+        if (hasCasSnapshot) restoreData['cas_number'] = before.cas_number ?? deleteField();
+        transaction.update(refs[index], sanitizeForFirebase(restoreData));
       });
 
       transaction.update(batchRef, {
@@ -343,6 +349,7 @@ export class StandardCrudService {
   private snapshotStandardName(standard: ReferenceStandard): StandardNameSnapshot {
     return sanitizeForFirebase({
       name: standard.name,
+      cas_number: standard.cas_number,
       chemical_name: standard.chemical_name,
       canonical_name: standard.canonical_name,
       original_name: standard.original_name,
@@ -361,6 +368,7 @@ export class StandardCrudService {
       'name', 'chemical_name', 'canonical_name', 'original_name', 'name_source',
       'cas_status', 'standard_form', 'normalization_version', 'normalization_batch_id', 'normalized_by',
     ];
+    if (Object.prototype.hasOwnProperty.call(snapshot, 'cas_number')) fields.push('cas_number');
     return fields.every(field => (standard[field] ?? '') === (snapshot[field] ?? ''));
   }
 

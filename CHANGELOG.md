@@ -1,5 +1,30 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b21] - 23/07/2026
+
+### 🧹 Điều Chỉnh CAS Lỗi Trực Tiếp Trong Data Cleanup
+
+#### 🗂️ Ba Danh Sách Lỗi Có Thể Xử Lý
+- **Không còn chỉ hiển thị số lượng:** Các thống kê `128 nhãn CAS giữ chỗ`, `32 CAS dạng ngày` và `3 CAS lỗi khác` trở thành tab mở trực tiếp danh sách hồ sơ tương ứng.
+- **Một hồ sơ trên mỗi trang:** Có nút Hồ sơ trước/Hồ sơ sau, thanh tiến độ và tìm kiếm theo CAS, tên, mã quản lý, catalog hoặc lot để tránh quá tải và chọn nhầm.
+- **Hướng dẫn theo nguyên nhân:** Nhãn giữ chỗ và CAS dạng ngày yêu cầu đối chiếu CoA/nhãn gốc; CAS chứa chú thích chỉ được đề xuất khi tìm thấy đúng một CAS hợp lệ.
+
+#### ✅ Xác Thực và Đối Chiếu Trước Khi Lưu
+- **Kiểm tra tức thời:** CAS điều chỉnh phải đúng cấu trúc và chữ số checksum; hệ thống chuẩn hóa dấu gạch trước khi cho phép lưu.
+- **Tra cứu PubChem riêng từng hồ sơ:** Hiển thị tên tìm thấy để người dùng so sánh với sản phẩm nhưng không tự động đổi tên chất chuẩn.
+- **Không suy đoán danh sách đa CAS:** Dữ liệu chứa nhiều CAS không bị tự chọn CAS đầu tiên làm đại diện.
+
+#### ↩️ Lưu và Hoàn Tác An Toàn
+- **Mỗi lần sửa CAS là một phiên:** Chỉ hồ sơ đang hiển thị được cập nhật; khóa tìm kiếm và trạng thái CAS được đồng bộ trong cùng giao dịch.
+- **Ảnh chụp trước/sau bao gồm CAS:** Lịch sử hiển thị CAS cũ và mới; hoàn tác nguyên tử khôi phục cả CAS, danh pháp và metadata.
+- **Tương thích phiên cũ:** Các phiên b20 chưa chụp trường CAS vẫn hoàn tác bình thường và không thể xóa nhầm CAS hiện tại.
+
+#### ✅ Kiểm Tra Chất Lượng
+- **Production build và lint thành công.**
+- **12 kiểm thử Data Cleanup đạt:** Bổ sung kiểm thử đề xuất CAS từ chú thích và chặn suy đoán khi dữ liệu chứa nhiều CAS.
+
+---
+
 ## [v26.07.23-b20] - 23/07/2026
 
 ### 🧪 Chuẩn Hóa Danh Pháp Chất Chuẩn An Toàn Theo Từng Nhóm CAS

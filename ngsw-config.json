@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.23-b20",
+    "version": "v26.07.23-b21",
     "title": "Chuẩn Hóa Tiếng Việt và Biểu Tượng Toàn Hệ Thống",
     "features": [
       "✍️ Biên Tập Lại Nội Dung Tiếng Việt Theo Ngữ Cảnh Phòng Thí Nghiệm",

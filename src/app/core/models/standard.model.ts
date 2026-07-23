@@ -183,6 +183,8 @@ export interface StandardNameUpdate {
   standardId: string;
   name: string;
   chemicalName: string;
+  /** Normalized CAS replacement. Omitted when the cleanup only changes nomenclature. */
+  casNumber?: string;
   canonicalName?: string;
   originalName?: string;
   nameSource?: ReferenceStandard['name_source'];
@@ -193,6 +195,7 @@ export interface StandardNameUpdate {
 
 export interface StandardNameSnapshot {
   name: string;
+  cas_number?: string;
   chemical_name?: string;
   canonical_name?: string;
   original_name?: string;

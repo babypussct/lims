@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.07.23-b20",
+  "version": "26.07.23-b21",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",

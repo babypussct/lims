@@ -5,6 +5,7 @@ import {
   assessCleanupGroup,
   detectStandardForm,
   formatStandardProductName,
+  suggestCasCorrection,
 } from './standard-cleanup';
 
 test('classifies valid, placeholder, date-corrupted and annotated CAS values', () => {
@@ -13,6 +14,13 @@ test('classifies valid, placeholder, date-corrupted and annotated CAS values', (
   assert.equal(assessCasNumber('5/7/80').quality, 'date_corrupted');
   assert.equal(assessCasNumber('441296-91-9 (anion)').quality, 'annotated');
   assert.equal(assessCasNumber('108-95-3').quality, 'invalid');
+});
+
+test('suggests one checksum-valid CAS from an annotation but never guesses a list', () => {
+  assert.equal(suggestCasCorrection('441296-91-9 (anion)'), '441296-91-9');
+  assert.equal(suggestCasCorrection('CAS inside'), '');
+  assert.equal(suggestCasCorrection('5/7/80'), '');
+  assert.equal(suggestCasCorrection('86996-87-4, 87038-53-7'), '');
 });
 
 test('normalizes measurement typography while preserving product descriptors', () => {

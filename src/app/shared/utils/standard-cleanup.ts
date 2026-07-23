@@ -62,6 +62,20 @@ export function assessCasNumber(value: string | null | undefined): CasAssessment
   };
 }
 
+/**
+ * Extracts a correction only when the source contains exactly one CAS-shaped
+ * token and that token passes the checksum. Ambiguous lists are never guessed.
+ */
+export function suggestCasCorrection(value: string | null | undefined): string {
+  const matches = value?.match(/(?<!\d)\d{2,7}[\s\u2012-\u2015-]+\d{2}[\s\u2012-\u2015-]+\d(?!\d)/gu) ?? [];
+  const valid = [...new Set(
+    matches
+      .map(candidate => assessCasNumber(candidate).normalizedCas)
+      .filter((candidate): candidate is string => Boolean(candidate))
+  )];
+  return valid.length === 1 ? valid[0] : '';
+}
+
 /** Normalizes measurement typography without changing the chemical identity. */
 export function normalizeProductNameTypography(value: string): string {
   return value

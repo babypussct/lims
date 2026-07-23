@@ -13,14 +13,18 @@ import {
 import {
   assessCasNumber,
   assessCleanupGroup,
+  CasAssessment,
   CleanupRiskAssessment,
   detectStandardForm,
   formatStandardProductName,
+  suggestCasCorrection,
 } from '../../../shared/utils/standard-cleanup';
 import { StandardService } from '../standard.service';
 
 type CleanupStatus = 'pending' | 'loading' | 'ready' | 'review' | 'success' | 'error';
 type CleanupFilter = 'all' | 'safe' | 'review' | 'blocked' | 'success';
+type CleanupWorkspace = 'valid' | 'placeholder' | 'date_corrupted' | 'invalid';
+type CasIssueKind = Exclude<CleanupWorkspace, 'valid'>;
 
 interface CleanupRecord {
   standard: ReferenceStandard;
@@ -43,6 +47,16 @@ interface CleanupGroup {
   errorMsg?: string;
 }
 
+interface CasIssueRecord {
+  standard: ReferenceStandard;
+  kind: CasIssueKind;
+  originalCas: string;
+  suggestedCas: string;
+  assessment: CasAssessment;
+  lookupName?: string;
+  lookupStatus: 'idle' | 'loading' | 'found' | 'not_found' | 'error';
+}
+
 @Component({
   selector: 'app-standards-data-cleanup-modal',
   standalone: true,
@@ -57,8 +71,8 @@ interface CleanupGroup {
                 <i class="fa-solid fa-shield-halved"></i>
               </div>
               <div class="min-w-0">
-                <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Chuẩn Hóa Danh Pháp Chất Chuẩn</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mỗi trang chỉ hiển thị một nhóm CAS; tên sản phẩm được duyệt riêng cho từng hồ sơ.</p>
+                <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Chuẩn Hóa Danh Pháp & CAS Chất Chuẩn</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mỗi trang chỉ hiển thị một nhóm CAS hoặc một hồ sơ lỗi để giảm nguy cơ điều chỉnh nhầm.</p>
               </div>
             </div>
             <button (click)="onClose()" [disabled]="isProcessing()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 transition disabled:opacity-50 shrink-0" aria-label="Đóng">
@@ -68,15 +82,15 @@ interface CleanupGroup {
 
           <section class="px-5 sm:px-6 py-2.5 bg-indigo-50/60 dark:bg-indigo-950/30 border-b border-indigo-100/60 dark:border-indigo-900/30 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold shrink-0">
             <span class="text-slate-700 dark:text-slate-200"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-1"></i>{{totalStandardsCount()}} hồ sơ</span>
-            <span class="text-emerald-700 dark:text-emerald-400"><i class="fa-solid fa-object-group mr-1"></i>{{groups().length}} CAS hợp lệ</span>
+            <button (click)="setWorkspace('valid')" class="text-emerald-700 dark:text-emerald-400 hover:underline"><i class="fa-solid fa-object-group mr-1"></i>{{groups().length}} CAS hợp lệ</button>
             @if (placeholderCasCount() > 0) {
-              <span class="text-amber-700 dark:text-amber-400" title="NA, N/A, CAS inside và nhãn giữ chỗ"><i class="fa-solid fa-ban mr-1"></i>{{placeholderCasCount()}} nhãn CAS giữ chỗ</span>
+              <button (click)="setWorkspace('placeholder')" class="text-amber-700 dark:text-amber-400 hover:underline" title="Mở danh sách NA, N/A, CAS inside và nhãn giữ chỗ"><i class="fa-solid fa-ban mr-1"></i>{{placeholderCasCount()}} nhãn CAS giữ chỗ</button>
             }
             @if (dateCorruptedCasCount() > 0) {
-              <span class="text-red-700 dark:text-red-400" title="CAS có dấu hiệu bị chuyển thành ngày"><i class="fa-solid fa-calendar-xmark mr-1"></i>{{dateCorruptedCasCount()}} CAS dạng ngày</span>
+              <button (click)="setWorkspace('date_corrupted')" class="text-red-700 dark:text-red-400 hover:underline" title="Mở danh sách CAS có dấu hiệu bị chuyển thành ngày"><i class="fa-solid fa-calendar-xmark mr-1"></i>{{dateCorruptedCasCount()}} CAS dạng ngày</button>
             }
             @if (invalidCasCount() > 0) {
-              <span class="text-red-700 dark:text-red-400"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{invalidCasCount()}} CAS lỗi khác</span>
+              <button (click)="setWorkspace('invalid')" class="text-red-700 dark:text-red-400 hover:underline" title="Mở danh sách CAS sai cấu trúc, checksum hoặc có chú thích"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{invalidCasCount()}} CAS lỗi khác</button>
             }
             @if (missingCasCount() > 0) {
               <span class="text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-minus mr-1"></i>{{missingCasCount()}} chưa có CAS</span>
@@ -102,12 +116,20 @@ interface CleanupGroup {
               </div>
             </div>
             <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[11px] font-bold">
-              <button (click)="setFilter('all')" [class]="filterClass('all')">Tất cả ({{groups().length}})</button>
-              <button (click)="setFilter('safe')" [class]="filterClass('safe')">An toàn ({{safeCount()}})</button>
-              <button (click)="setFilter('review')" [class]="filterClass('review')">Cần duyệt ({{mediumRiskCount()}})</button>
-              <button (click)="setFilter('blocked')" [class]="filterClass('blocked')">Rủi ro cao ({{highRiskCount()}})</button>
-              <button (click)="setFilter('success')" [class]="filterClass('success')">Đã lưu ({{successCount()}})</button>
+              <button (click)="setWorkspace('valid')" [class]="workspaceClass('valid')">Danh pháp CAS hợp lệ ({{groups().length}})</button>
+              <button (click)="setWorkspace('placeholder')" [class]="workspaceClass('placeholder')">Nhãn giữ chỗ ({{placeholderCasCount()}})</button>
+              <button (click)="setWorkspace('date_corrupted')" [class]="workspaceClass('date_corrupted')">CAS dạng ngày ({{dateCorruptedCasCount()}})</button>
+              <button (click)="setWorkspace('invalid')" [class]="workspaceClass('invalid')">CAS lỗi khác ({{invalidCasCount()}})</button>
             </div>
+            @if (workspace() === 'valid') {
+              <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[11px] font-bold">
+                <button (click)="setFilter('all')" [class]="filterClass('all')">Tất cả ({{groups().length}})</button>
+                <button (click)="setFilter('safe')" [class]="filterClass('safe')">An toàn ({{safeCount()}})</button>
+                <button (click)="setFilter('review')" [class]="filterClass('review')">Cần duyệt ({{mediumRiskCount()}})</button>
+                <button (click)="setFilter('blocked')" [class]="filterClass('blocked')">Rủi ro cao ({{highRiskCount()}})</button>
+                <button (click)="setFilter('success')" [class]="filterClass('success')">Đã lưu ({{successCount()}})</button>
+              </div>
+            }
           </section>
 
           @if (showHistory()) {
@@ -148,9 +170,15 @@ interface CleanupGroup {
                             @for (change of batch.changes; track change.standardId) {
                               <div class="grid sm:grid-cols-[100px_1fr_24px_1fr] gap-2 items-start text-[11px] rounded-lg bg-slate-50 dark:bg-slate-800/60 p-2.5">
                                 <strong class="text-slate-600 dark:text-slate-300">{{change.internalId || change.standardId}}</strong>
-                                <span class="text-red-600 dark:text-red-400 break-words">{{change.before.name}}</span>
+                                <span class="text-red-600 dark:text-red-400 break-words">
+                                  {{change.before.name}}
+                                  @if (change.before.cas_number !== change.after.cas_number) { <small class="block font-mono mt-1">CAS {{change.before.cas_number || 'Trống'}}</small> }
+                                </span>
                                 <i class="fa-solid fa-arrow-right text-slate-400 mt-0.5"></i>
-                                <span class="text-emerald-700 dark:text-emerald-400 break-words">{{change.after.name}}</span>
+                                <span class="text-emerald-700 dark:text-emerald-400 break-words">
+                                  {{change.after.name}}
+                                  @if (change.before.cas_number !== change.after.cas_number) { <small class="block font-mono mt-1">CAS {{change.after.cas_number || 'Trống'}}</small> }
+                                </span>
                               </div>
                             }
                           </div>
@@ -167,7 +195,86 @@ interface CleanupGroup {
           }
 
           <main class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/30">
-            @if (groups().length === 0) {
+            @if (workspace() !== 'valid') {
+              @if (!currentCasIssue()) {
+                <div class="py-20 text-center text-slate-400">
+                  <i class="fa-solid fa-clipboard-check text-5xl mb-3 text-emerald-400"></i>
+                  <p class="font-bold text-sm">Không còn hồ sơ trong nhóm {{workspaceLabel()}}.</p>
+                  <button (click)="setWorkspace('valid')" class="mt-3 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg">Quay lại CAS hợp lệ</button>
+                </div>
+              } @else {
+                @let issue = currentCasIssue()!;
+                @let assessment = currentCasAssessment();
+                <div class="p-4 sm:p-6 space-y-4 max-w-4xl mx-auto">
+                  <nav class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm" aria-label="Phân trang hồ sơ CAS lỗi">
+                    <button (click)="previousPage()" [disabled]="currentPageIndex() === 0 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <i class="fa-solid fa-chevron-left mr-1"></i>Hồ sơ trước
+                    </button>
+                    <div class="text-center min-w-0">
+                      <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{{workspaceLabel()}} · {{currentPageIndex() + 1}} / {{filteredCasIssues().length}}</div>
+                      <div class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{issue.standard.internal_id || issue.standard.id}}</div>
+                    </div>
+                    <button (click)="nextPage()" [disabled]="currentPageIndex() >= filteredCasIssues().length - 1 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      Hồ sơ sau<i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                  </nav>
+                  <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                    <div class="h-full bg-indigo-500 transition-all" [style.width.%]="pageProgress()"></div>
+                  </div>
+
+                  <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
+                      <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{issue.standard.internal_id || issue.standard.id}}</span>
+                        @if (issue.standard.product_code) { <span class="text-[10px] text-slate-400 font-mono">Catalog {{issue.standard.product_code}}</span> }
+                        @if (issue.standard.lot_number) { <span class="text-[10px] text-slate-400 font-mono">Lot {{issue.standard.lot_number}}</span> }
+                      </div>
+                      <h4 class="font-black text-base text-slate-800 dark:text-slate-100 break-words">{{issue.standard.name}}</h4>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{issueGuidance(issue.kind)}}</p>
+                    </div>
+
+                    <div class="p-4 sm:p-5 grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5">Dữ liệu CAS hiện tại</label>
+                        <div class="min-h-[42px] px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 font-mono text-sm font-bold break-words">{{issue.originalCas || 'Trống'}}</div>
+                        <p class="text-[10px] text-red-600 dark:text-red-400 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>{{issue.assessment.reason}}</p>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-black text-slate-600 dark:text-slate-300 mb-1.5">CAS điều chỉnh</label>
+                        <div class="flex gap-2">
+                          <input type="text" [ngModel]="issue.suggestedCas" (ngModelChange)="updateCasSuggestion($event)" placeholder="Ví dụ: 108-95-2" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border rounded-lg p-2.5 font-mono text-sm font-black text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50" [ngClass]="assessment.quality === 'valid' ? 'border-emerald-400 dark:border-emerald-700' : 'border-slate-300 dark:border-slate-700'">
+                          <button (click)="fetchCurrentCasInfo()" [disabled]="assessment.quality !== 'valid' || issue.lookupStatus === 'loading' || isProcessing()" class="px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-40" title="Đối chiếu CAS với PubChem">
+                            @if (issue.lookupStatus === 'loading') { <i class="fa-solid fa-spinner fa-spin"></i> }
+                            @else { <i class="fa-solid fa-magnifying-glass"></i> }
+                          </button>
+                        </div>
+                        <div class="mt-1.5 flex items-start justify-between gap-2">
+                          <p class="text-[10px]" [ngClass]="assessment.quality === 'valid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
+                            <i class="fa-solid mr-1" [ngClass]="assessment.quality === 'valid' ? 'fa-circle-check' : 'fa-circle-info'"></i>{{assessment.reason}}
+                          </p>
+                          @if (assessment.normalizedCas && assessment.normalizedCas !== issue.suggestedCas.trim()) {
+                            <button (click)="useNormalizedCas()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">Dùng {{assessment.normalizedCas}}</button>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    @if (issue.lookupStatus !== 'idle') {
+                      <div class="mx-4 sm:mx-5 mb-5 rounded-xl border p-3 text-xs" [ngClass]="issue.lookupStatus === 'found' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900' : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900'">
+                        @if (issue.lookupStatus === 'found') {
+                          <p class="font-black text-emerald-700 dark:text-emerald-300"><i class="fa-solid fa-database mr-1"></i>PubChem: {{issue.lookupName}}</p>
+                          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Hãy so sánh với tên sản phẩm trước khi lưu; kết quả này không tự đổi tên chất chuẩn.</p>
+                        } @else if (issue.lookupStatus === 'not_found') {
+                          <p class="font-bold text-amber-700 dark:text-amber-300">PubChem không tìm thấy CAS này. Kiểm tra lại CoA trước khi lưu.</p>
+                        } @else if (issue.lookupStatus === 'error') {
+                          <p class="font-bold text-amber-700 dark:text-amber-300">Không thể kết nối PubChem. CAS vẫn phải vượt checksum để được lưu.</p>
+                        }
+                      </div>
+                    }
+                  </section>
+                </div>
+              }
+            } @else if (groups().length === 0) {
               <div class="py-20 text-center text-slate-400">
                 <i class="fa-solid fa-clipboard-check text-5xl mb-3 text-slate-300 dark:text-slate-700"></i>
                 <p class="font-bold text-sm">Chưa có hồ sơ với số CAS hợp lệ.</p>
@@ -297,19 +404,35 @@ interface CleanupGroup {
           </main>
 
           <footer class="px-4 sm:px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap justify-between gap-3 items-center shrink-0">
-            <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-              <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu nhóm CAS đang hiển thị · Đã chọn <strong class="text-indigo-600 dark:text-indigo-400">{{currentSelectedCount()}}</strong> hồ sơ
-            </div>
-            <div class="flex items-center gap-2">
-              <button (click)="onClose()" [disabled]="isProcessing()" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-bold text-xs disabled:opacity-50">Đóng</button>
-              <button (click)="applyCurrentGroup(false)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
-                @if (isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i>Đang lưu }
-                @else { <i class="fa-solid fa-floppy-disk"></i>Lưu nhóm hiện tại }
-              </button>
-              <button (click)="applyCurrentGroup(true)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 hidden sm:flex items-center gap-1.5">
-                Lưu & nhóm sau<i class="fa-solid fa-chevron-right"></i>
-              </button>
-            </div>
+            @if (workspace() === 'valid') {
+              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu nhóm CAS đang hiển thị · Đã chọn <strong class="text-indigo-600 dark:text-indigo-400">{{currentSelectedCount()}}</strong> hồ sơ
+              </div>
+              <div class="flex items-center gap-2">
+                <button (click)="onClose()" [disabled]="isProcessing()" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-bold text-xs disabled:opacity-50">Đóng</button>
+                <button (click)="applyCurrentGroup(false)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
+                  @if (isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i>Đang lưu }
+                  @else { <i class="fa-solid fa-floppy-disk"></i>Lưu nhóm hiện tại }
+                </button>
+                <button (click)="applyCurrentGroup(true)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 hidden sm:flex items-center gap-1.5">
+                  Lưu & nhóm sau<i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            } @else {
+              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu một hồ sơ · CAS phải đúng cấu trúc và checksum
+              </div>
+              <div class="flex items-center gap-2">
+                <button (click)="onClose()" [disabled]="isProcessing()" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-bold text-xs disabled:opacity-50">Đóng</button>
+                <button (click)="applyCurrentCas(false)" [disabled]="!canSaveCurrentCas() || isProcessing()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
+                  @if (isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i>Đang lưu }
+                  @else { <i class="fa-solid fa-floppy-disk"></i>Lưu CAS điều chỉnh }
+                </button>
+                <button (click)="applyCurrentCas(true)" [disabled]="!canSaveCurrentCas() || isProcessing()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 hidden sm:flex items-center gap-1.5">
+                  Lưu & hồ sơ sau<i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            }
           </footer>
         </div>
       </div>
@@ -327,6 +450,8 @@ export class StandardsDataCleanupModalComponent {
   private progressService = inject(ProgressService);
 
   groups = signal<CleanupGroup[]>([]);
+  casIssues = signal<CasIssueRecord[]>([]);
+  workspace = signal<CleanupWorkspace>('valid');
   isProcessing = signal(false);
   searchQuery = signal('');
   statusFilter = signal<CleanupFilter>('all');
@@ -340,6 +465,7 @@ export class StandardsDataCleanupModalComponent {
   cleanupHistory = signal<StandardCleanupBatch[]>([]);
   isLoadingHistory = signal(false);
   undoingBatchId = signal<string | null>(null);
+  private currentStandards: ReferenceStandard[] = [];
 
   filteredGroups = computed(() => {
     const query = this.searchQuery().trim().toLocaleLowerCase('vi-VN');
@@ -363,9 +489,38 @@ export class StandardsDataCleanupModalComponent {
     });
   });
 
-  currentPageIndex = computed(() => Math.min(this.pageIndex(), Math.max(0, this.filteredGroups().length - 1)));
-  currentGroup = computed(() => this.filteredGroups()[this.currentPageIndex()] ?? null);
-  pageProgress = computed(() => this.filteredGroups().length === 0 ? 0 : ((this.currentPageIndex() + 1) / this.filteredGroups().length) * 100);
+  filteredCasIssues = computed(() => {
+    const workspace = this.workspace();
+    if (workspace === 'valid') return [];
+    const query = this.searchQuery().trim().toLocaleLowerCase('vi-VN');
+    return this.casIssues().filter(issue => {
+      if (issue.kind !== workspace) return false;
+      if (!query) return true;
+      return [
+        issue.originalCas,
+        issue.suggestedCas,
+        issue.standard.name,
+        issue.standard.internal_id,
+        issue.standard.product_code,
+        issue.standard.lot_number,
+      ].some(value => value?.toLocaleLowerCase('vi-VN').includes(query));
+    });
+  });
+
+  currentPageCount = computed(() => this.workspace() === 'valid'
+    ? this.filteredGroups().length
+    : this.filteredCasIssues().length);
+  currentPageIndex = computed(() => Math.min(this.pageIndex(), Math.max(0, this.currentPageCount() - 1)));
+  currentGroup = computed(() => this.workspace() === 'valid' ? this.filteredGroups()[this.currentPageIndex()] ?? null : null);
+  currentCasIssue = computed(() => this.workspace() === 'valid' ? null : this.filteredCasIssues()[this.currentPageIndex()] ?? null);
+  currentCasAssessment = computed(() => assessCasNumber(this.currentCasIssue()?.suggestedCas));
+  canSaveCurrentCas = computed(() => {
+    const issue = this.currentCasIssue();
+    const assessment = this.currentCasAssessment();
+    return Boolean(issue && assessment.quality === 'valid' && assessment.normalizedCas
+      && assessment.normalizedCas !== issue.originalCas.trim());
+  });
+  pageProgress = computed(() => this.currentPageCount() === 0 ? 0 : ((this.currentPageIndex() + 1) / this.currentPageCount()) * 100);
   safeCount = computed(() => this.groups().filter(group => group.risk.level === 'low').length);
   mediumRiskCount = computed(() => this.groups().filter(group => group.risk.level === 'medium').length);
   highRiskCount = computed(() => this.groups().filter(group => group.risk.level === 'high').length);
@@ -390,15 +545,31 @@ export class StandardsDataCleanupModalComponent {
     });
   }
 
-  scanData(source: ReferenceStandard[] = this.allStandards()): void {
-    const active = source.filter(standard => !standard._isDeleted);
+  scanData(source?: ReferenceStandard[], resetPage = true): void {
+    const selectedSource = source ?? (this.currentStandards.length > 0 ? this.currentStandards : this.allStandards());
+    this.currentStandards = selectedSource;
+    const active = selectedSource.filter(standard => !standard._isDeleted);
     const grouped = new Map<string, ReferenceStandard[]>();
+    const issues: CasIssueRecord[] = [];
     const counts = { missing: 0, placeholder: 0, date_corrupted: 0, annotated: 0, invalid: 0 };
 
     active.forEach(standard => {
       const cas = assessCasNumber(standard.cas_number);
       if (cas.quality !== 'valid') {
         counts[cas.quality]++;
+        if (cas.quality !== 'missing') {
+          const kind: CasIssueKind = cas.quality === 'placeholder'
+            ? 'placeholder'
+            : (cas.quality === 'date_corrupted' ? 'date_corrupted' : 'invalid');
+          issues.push({
+            standard,
+            kind,
+            originalCas: standard.cas_number?.trim() ?? '',
+            suggestedCas: suggestCasCorrection(standard.cas_number),
+            assessment: cas,
+            lookupStatus: 'idle',
+          });
+        }
         return;
       }
       if (!cas.normalizedCas) return;
@@ -443,11 +614,20 @@ export class StandardsDataCleanupModalComponent {
     });
 
     this.groups.set(groups);
+    this.casIssues.set(issues.sort((a, b) =>
+      (a.standard.internal_id || a.standard.id).localeCompare(b.standard.internal_id || b.standard.id, 'vi')
+    ));
     this.totalStandardsCount.set(active.length);
     this.missingCasCount.set(counts.missing);
     this.placeholderCasCount.set(counts.placeholder);
     this.dateCorruptedCasCount.set(counts.date_corrupted);
     this.invalidCasCount.set(counts.annotated + counts.invalid);
+    if (resetPage) this.pageIndex.set(0);
+  }
+
+  setWorkspace(workspace: CleanupWorkspace): void {
+    this.workspace.set(workspace);
+    this.statusFilter.set('all');
     this.pageIndex.set(0);
   }
 
@@ -492,7 +672,7 @@ export class StandardsDataCleanupModalComponent {
 
   async undoBatch(batch: StandardCleanupBatch): Promise<void> {
     if (batch.status !== 'APPLIED' || this.undoingBatchId()) return;
-    if (!confirm(`Hoàn tác phiên ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về tên và metadata trước khi chuẩn hóa.`)) return;
+    if (!confirm(`Hoàn tác phiên ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về CAS, tên và metadata trước khi chuẩn hóa.`)) return;
 
     this.undoingBatchId.set(batch.id);
     try {
@@ -516,12 +696,19 @@ export class StandardsDataCleanupModalComponent {
       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`;
   }
 
+  workspaceClass(workspace: CleanupWorkspace): string {
+    const active = this.workspace() === workspace;
+    return `px-3 py-1.5 rounded-lg whitespace-nowrap border transition ${active
+      ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`;
+  }
+
   previousPage(): void {
     this.pageIndex.update(index => Math.max(0, index - 1));
   }
 
   nextPage(): void {
-    this.pageIndex.update(index => Math.min(this.filteredGroups().length - 1, index + 1));
+    this.pageIndex.update(index => Math.min(Math.max(0, this.currentPageCount() - 1), index + 1));
   }
 
   riskLabel(level: CleanupRiskAssessment['level']): string {
@@ -547,6 +734,111 @@ export class StandardsDataCleanupModalComponent {
       salt_or_hydrate: 'Muối/Hydrat',
     };
     return labels[detectStandardForm(name)];
+  }
+
+  workspaceLabel(workspace: CleanupWorkspace = this.workspace()): string {
+    const labels: Record<CleanupWorkspace, string> = {
+      valid: 'CAS hợp lệ',
+      placeholder: 'Nhãn CAS giữ chỗ',
+      date_corrupted: 'CAS dạng ngày',
+      invalid: 'CAS lỗi khác',
+    };
+    return labels[workspace];
+  }
+
+  issueGuidance(kind: CasIssueKind): string {
+    if (kind === 'placeholder') {
+      return 'Nhãn giữ chỗ không xác định được danh tính hóa học. Hãy đối chiếu CoA hoặc nhãn gốc rồi nhập CAS chính xác.';
+    }
+    if (kind === 'date_corrupted') {
+      return 'Excel có thể đã chuyển CAS thành ngày. Không thể khôi phục đáng tin cậy từ giá trị này; phải đối chiếu nguồn gốc.';
+    }
+    return 'CAS sai cấu trúc, checksum hoặc đang chứa chú thích. Chỉ đề xuất tự động khi tìm thấy đúng một CAS hợp lệ.';
+  }
+
+  updateCasSuggestion(value: string): void {
+    const issue = this.currentCasIssue();
+    if (!issue) return;
+    this.casIssues.update(issues => issues.map(item => item.standard.id === issue.standard.id
+      ? {
+          ...item,
+          suggestedCas: value,
+          lookupName: undefined,
+          lookupStatus: 'idle',
+        }
+      : item));
+  }
+
+  useNormalizedCas(): void {
+    const normalized = this.currentCasAssessment().normalizedCas;
+    if (normalized) this.updateCasSuggestion(normalized);
+  }
+
+  async fetchCurrentCasInfo(): Promise<void> {
+    const issue = this.currentCasIssue();
+    const assessment = this.currentCasAssessment();
+    if (!issue || assessment.quality !== 'valid' || !assessment.normalizedCas) return;
+    this.updateCasIssue(issue.standard.id, current => ({ ...current, lookupStatus: 'loading', lookupName: undefined }));
+    try {
+      const info = await this.pubchemService.getChemicalInfo(assessment.normalizedCas);
+      if (!info?.commercialName) {
+        this.updateCasIssue(issue.standard.id, current => ({ ...current, lookupStatus: 'not_found', lookupName: undefined }));
+        return;
+      }
+      this.updateCasIssue(issue.standard.id, current => ({
+        ...current,
+        lookupStatus: 'found',
+        lookupName: formatStandardProductName(info.commercialName),
+      }));
+    } catch (error) {
+      console.error('CAS correction PubChem lookup failed', error);
+      this.updateCasIssue(issue.standard.id, current => ({ ...current, lookupStatus: 'error', lookupName: undefined }));
+    }
+  }
+
+  async applyCurrentCas(goNext: boolean): Promise<void> {
+    const issue = this.currentCasIssue();
+    const assessment = this.currentCasAssessment();
+    if (!issue || assessment.quality !== 'valid' || !assessment.normalizedCas) return;
+    const normalizedCas = assessment.normalizedCas;
+    if (!confirm(
+      `Sửa CAS cho ${issue.standard.internal_id || issue.standard.id}?\n\n`
+      + `${issue.originalCas || 'Trống'}  →  ${normalizedCas}\n\n`
+      + 'Thay đổi được lưu thành một phiên và có thể hoàn tác.'
+    )) return;
+
+    const pageBeforeSave = this.currentPageIndex();
+    const workspaceBeforeSave = this.workspace();
+    this.isProcessing.set(true);
+    this.progressService.start('Đang sửa CAS', issue.standard.internal_id || issue.standard.id, 1);
+    try {
+      const batchId = await this.standardService.updateStandardNames([{
+        standardId: issue.standard.id,
+        name: issue.standard.name,
+        chemicalName: issue.standard.chemical_name ?? '',
+        casNumber: normalizedCas,
+        canonicalName: issue.standard.canonical_name,
+        originalName: issue.standard.original_name || issue.standard.name,
+        nameSource: issue.standard.name_source,
+        casStatus: 'valid',
+        standardForm: issue.standard.standard_form || detectStandardForm(issue.standard.name),
+        normalizationVersion: '2026.07.2',
+      }]);
+      this.progressService.update(1, normalizedCas);
+      const freshStandards = await this.standardService.fetchAllAndCache();
+      this.workspace.set(workspaceBeforeSave);
+      this.scanData(freshStandards, false);
+      const nextIndex = goNext ? pageBeforeSave : Math.min(pageBeforeSave, Math.max(0, this.currentPageCount() - 1));
+      this.pageIndex.set(Math.min(nextIndex, Math.max(0, this.currentPageCount() - 1)));
+      await this.loadCleanupHistory();
+      this.toast.show(`Đã sửa CAS thành ${normalizedCas} · phiên ${batchId}.`, 'success');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Không thể lưu CAS đã sửa.';
+      this.toast.show(message, 'error');
+    } finally {
+      this.progressService.complete();
+      this.isProcessing.set(false);
+    }
   }
 
   updateCanonicalName(groupId: string, value: string): void {
@@ -724,11 +1016,18 @@ export class StandardsDataCleanupModalComponent {
     if (this.isProcessing()) return;
     this.closeModal.emit();
     this.groups.set([]);
+    this.casIssues.set([]);
+    this.currentStandards = [];
+    this.workspace.set('valid');
     this.showHistory.set(false);
     this.clearFilters();
   }
 
   private updateGroup(groupId: string, updater: (group: CleanupGroup) => CleanupGroup): void {
     this.groups.update(groups => groups.map(group => group.id === groupId ? updater(group) : group));
+  }
+
+  private updateCasIssue(standardId: string, updater: (issue: CasIssueRecord) => CasIssueRecord): void {
+    this.casIssues.update(issues => issues.map(issue => issue.standard.id === standardId ? updater(issue) : issue));
   }
 }
