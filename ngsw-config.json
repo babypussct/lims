@@ -2,12 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.22-b10",
-    "title": "Tối Ưu Căn Chỉnh Logo & Nút Nút Mở Rộng Sidebar (Collapsed Mode)",
+    "version": "v26.07.23-b16",
+    "title": "Chế Độ Khóa Giao Diện (🔒) & Cấu Hình Bật/Tắt Toàn Hệ Thống",
     "features": [
-      "🎨 Căn Giữa Logo Khi Thu Gọn Sidebar: Khắc phục triệt để lỗi Logo bị chèn lệch hẳn sang bên trái khi ở trạng thái thu gọn.",
-      "🔘 Nút Mở Rộng Nổi Viền Nút Bấm: Chuyển nút mở rộng (>>) thành nút nổi hình tròn tinh tế ngay trên đường viền Sidebar, tạo điểm nhấn hiện đại.",
-      "✨ Căn Chỉnh Đồng Bộ: Giúp Logo, Icon Menu và Avatar tài khoản xếp thẳng hàng hoàn hảo khi Sidebar ở dạng thu gọn 80px."
+      "🔒 Khóa Chức Năng Thiếu Quyền: Chuyển các giao diện từ Ẩn sang Khóa (🔒) kèm tooltip và khôi phục tooltip gốc khi mở khóa.",
+      "⚙️ Bật/Tắt Khóa Toàn Hệ Thống: Cung cấp tùy chọn Admin BẬT/TẮT chế độ khóa tính năng kèm Dirty Tracking chống ghi đè.",
+      "🔔 Thu Hồi Thông Báo An Toàn: Thu hồi thông báo Hộp thư minh bạch và xử lý fail-safe bảo vệ bài đăng hệ thống."
     ]
   },
   "assetGroups": [

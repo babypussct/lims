@@ -1,4 +1,3 @@
-
 import { Component, inject, input, output, effect, signal, computed, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -22,7 +21,7 @@ import { Subscription } from 'rxjs';
 import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
 import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 import { TargetService } from '../../targets/target.service';
 import { SampleDescriptionMap } from '../../../core/models/sample-description.model';
 import { subsetSampleDescriptionMap } from '../../../shared/utils/sample-description.utils';
@@ -30,7 +29,7 @@ import { subsetSampleDescriptionMap } from '../../../shared/utils/sample-descrip
 @Component({
   selector: 'app-calculator',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent, HasPermissionDirective],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent, LockPermissionDirective],
   templateUrl: './calculator.component.html'
 })
 export class CalculatorComponent implements OnDestroy {
@@ -41,18 +40,17 @@ export class CalculatorComponent implements OnDestroy {
   canEditSop() { return this.auth.canEditSop(); }
   private fb: FormBuilder = inject(FormBuilder);
   public state = inject(StateService);
-  private auth = inject(AuthService);
+  public auth = inject(AuthService);
+  public toast = inject(ToastService);
+  public confirmation = inject(ConfirmationService);
+  public printService = inject(PrintService);
+  public sopService = inject(SopService);
+  public router = inject(Router);
+  public route = inject(ActivatedRoute);
   private invService = inject(InventoryService); 
   private recipeService = inject(RecipeService);
   private calcService = inject(CalculatorService);
-  private sopService = inject(SopService);
   private targetService = inject(TargetService);
-  private router: Router = inject(Router);
-  private route: ActivatedRoute = inject(ActivatedRoute);
-  private toast = inject(ToastService);
-  private confirmation = inject(ConfirmationService);
-  private printService = inject(PrintService);
-  
   activeSop = computed(() => this.sopInput() || this.state.selectedSop());
   libraryTab = signal<'sops' | 'recipes'>('sops');
   searchTerm = signal('');

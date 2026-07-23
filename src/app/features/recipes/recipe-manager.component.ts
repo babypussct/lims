@@ -12,17 +12,20 @@ import { InventoryItem } from '../../core/models/inventory.model';
 import { generateSlug, UNIT_OPTIONS, formatNum } from '../../shared/utils/utils';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 
+import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
+import { StateService } from '../../core/services/state.service';
+
 @Component({
   selector: 'app-recipe-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective],
   template: `
     <div class="flex flex-col flex-1 min-h-0 fade-in relative pb-10">
         
         <!-- Header Actions (No title, title is in tabs) -->
         <div class="flex justify-end mb-4 shrink-0">
-            @if(auth.canEditRecipes()) {
-                <button (click)="openModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2 active:scale-95">
+            @if(auth.canEditRecipes() || state.showLockedFeatures()) {
+                <button [appLockPermission]="'recipe_edit'" (click)="openModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2 active:scale-95">
                     <i class="fa-solid fa-plus"></i> Tạo Công thức
                 </button>
             }
@@ -45,12 +48,12 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs
                             <span class="bg-purple-50 text-purple-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-100">
                                 {{recipe.baseUnit}}
                             </span>
-                            @if(auth.canEditRecipes()) {
+                            @if(auth.canEditRecipes() || state.showLockedFeatures()) {
                                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition duration-200">
-                                    <button (click)="openModal(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition shadow-sm">
+                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition shadow-sm">
                                         <i class="fa-solid fa-pen text-[10px]"></i>
                                     </button>
-                                    <button (click)="deleteRecipe(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition shadow-sm">
+                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition shadow-sm">
                                         <i class="fa-solid fa-trash text-[10px]"></i>
                                     </button>
                                 </div>
@@ -180,6 +183,7 @@ export class RecipeManagerComponent implements OnInit, OnDestroy {
   recipeService = inject(RecipeService);
   inventoryService = inject(InventoryService);
   auth = inject(AuthService);
+  state = inject(StateService);
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   fb: FormBuilder = inject(FormBuilder);

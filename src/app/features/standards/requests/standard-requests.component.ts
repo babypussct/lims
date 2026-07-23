@@ -12,23 +12,22 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Unsubscribe } from 'firebase/firestore';
 import { StandardRequestService } from '../services/standard-request.service';
 import { isFefoCandidate } from '../../../shared/utils/standard-fefo';
+import { RequestsKanbanComponent } from './components/requests-kanban.component';
+import { RequestsTableComponent } from './components/requests-table.component';
+import { CreateRequestDrawerComponent } from './components/create-request-drawer.component';
+import { RequestsActionModalsComponent, ActionModalMode } from './components/requests-action-modals.component';
+import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
+import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 
 function removeAccents(str: string): string {
     if (!str) return '';
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
-import { RequestsKanbanComponent } from './components/requests-kanban.component';
-import { RequestsTableComponent } from './components/requests-table.component';
-import { CreateRequestDrawerComponent } from './components/create-request-drawer.component';
-import { RequestsActionModalsComponent, ActionModalMode } from './components/requests-action-modals.component';
-import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, HasPermissionDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective],
   providers: [DatePipe],
   templateUrl: './standard-requests.component.html'
 })
@@ -176,11 +175,11 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       const isAdmin = this.auth.canAssignStandards();
       
       const filtered = isAdmin ? reqs : reqs.filter(r => r.requestedBy === currentUser?.uid);
-      const now = Date.now();
       
       return {
           ALL: filtered.length,
           PENDING_APPROVAL: filtered.filter(r => r.status === 'PENDING_APPROVAL').length,
+          APPROVED: filtered.filter(r => r.status === 'IN_PROGRESS').length,
           IN_PROGRESS: filtered.filter(r => r.status === 'IN_PROGRESS').length,
           PENDING_RETURN: filtered.filter(r => r.status === 'PENDING_RETURN').length,
           COMPLETED: filtered.filter(r => r.status === 'COMPLETED').length,
@@ -189,7 +188,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    // Pha 1: Delta Load — apply localStorage ngay
     const cachedRequests = this.requestService.getRequestsFromCache();
     if (cachedRequests.length > 0 && this.requests().length === 0) {
         this.requests.set(cachedRequests.filter(r => !(r as any)._isDeleted));
@@ -201,7 +199,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
         this.allStandards.set(stds);
     }
 
-    // Pha 2: Live Listener Singleton — chia sẻ với StandardsComponent nếu đã mở
     this.unregisterLiveListener = this.stdService.listenToStandards((stds) => {
         if (stds) {
             this.allStandards.set([...stds]);
@@ -210,7 +207,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Chỉ remove callback khỏi singleton listener — KHÔNG dừng listener
     if (this.unregisterRequests) this.unregisterRequests();
     if (this.unregisterLiveListener) this.unregisterLiveListener();
     if (this.purchaseReqUnsub) this.purchaseReqUnsub();
@@ -219,9 +215,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   // --- Purchase Requests Logic (Admin) ---
   openAdminPurchaseRequests() {
       if (!this.auth.canAssignStandards()) return;
-      this.loadingAdminRequests.set(true);
-      this.showPurchaseRequestsAdminModal.set(true);
-      setTimeout(() => this.loadingAdminRequests.set(false), 300);
   }
 
   closeAdminPurchaseRequests() {

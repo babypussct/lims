@@ -18,7 +18,6 @@ import {
     sortStandardsByFefo
 } from '../../shared/utils/standard-fefo';
 
-// Modals
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
@@ -27,12 +26,20 @@ import { PrintService } from '../../core/services/print.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
+import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
 
 @Component({
   selector: 'app-standard-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsAssignModalComponent, HasPermissionDirective],
+  imports: [
+      CommonModule,
+      FormsModule,
+      StandardsFormModalComponent,
+      StandardsPrintModalComponent,
+      StandardsPurchaseModalComponent,
+      StandardsAssignModalComponent,
+      LockPermissionDirective
+  ],
   templateUrl: './standard-detail.component.html'
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {
@@ -66,20 +73,20 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     standard = signal<ReferenceStandard | null>(null);
     isLoading = signal(true);
     notFound = signal(false);
-    
+
     usageLogs = signal<UsageLog[]>([]);
     loadingHistory = signal(false);
     isProcessing = signal(false);
     allStandardsCache = signal<ReferenceStandard[]>([]);
-    
+
     activeTab = signal<'usage' | 'related'>('usage');
-    
+
     // Modals state
     showEditModal = signal(false);
     showPrintModal = signal(false);
     showPurchaseModal = signal(false);
     showAssignModal = signal(false);
-    
+
     isAssignMode = signal(true);
     userList = signal<UserProfile[]>([]);
 
@@ -95,7 +102,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         if (!std) return null;
         if (std.date_opened) return std.date_opened;
-        
+
         const logs = this.usageLogs();
         if (logs && logs.length > 0) {
             const earliestLog = logs.reduce((min, log) => {
@@ -254,7 +261,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
                     const minTime = new Date(min.date).getTime();
                     return logTime < minTime ? log : min;
                 }, logs[0]);
-                
+
                 this.autoHealDateOpened(std.id, earliestLog.date);
             }
         } catch (error) {
@@ -268,7 +275,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         try {
             const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, id);
             await updateDoc(ref, { date_opened: date, lastUpdated: serverTimestamp() });
-            
+
             // Cập nhật lại UI local (dù delta sync cũng sẽ bắt được nhưng cập nhật luôn cho mượt)
             this.standard.update(s => s ? { ...s, date_opened: date } : s);
             console.log(`[Self-Heal] Đã cập nhật ngầm date_opened thành ${date} cho chuẩn ${id}`);
@@ -278,7 +285,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     // --- NAVIGATION & ACTIONS ---
-    
+
     goBack() {
         this.router.navigate(['/standards']);
     }
@@ -291,7 +298,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         if (this.isProcessing() || !this.standard()) return;
         this.isAssignMode.set(isAssign);
         this.showAssignModal.set(true);
-        
+
         if (isAssign && this.userList().length === 0) {
             try {
                 const users = await this.firebaseService.getAllUsers();
@@ -304,7 +311,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async confirmAssign(data: {userId: string, userName: string, purpose: string, expectedAmount: number | null}) {
         const std = this.standard();
-        
+
         if (!std || !data.userId || !data.purpose) {
             this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
             return;
@@ -343,7 +350,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
             this.toast.show(this.isAssignMode() ? 'Đã gán chuẩn thành công' : 'Đã gửi yêu cầu mượn chuẩn', 'success');
             this.showAssignModal.set(false);
-            
+
             // Xử lý reload trạng thái
             if (this.standardId()) {
                 this.loadStandardData(this.standardId());
@@ -376,20 +383,20 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async requestCoa(std: ReferenceStandard) {
         if (this.isProcessing() || std.coa_requested_by || !this.canRequestCoa()) return;
-        
+
         this.confirmation.confirm({
             message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
             confirmText: 'Gửi Yêu cầu',
             cancelText: 'Hủy'
         }).then(async (confirmed) => {
             if (!confirmed) return;
-            
+
             this.isProcessing.set(true);
             try {
                 // Optimistic UI update to prevent immediate double clicks
                 const uid = this.auth.currentUser()?.uid;
                 this.standard.update(s => s ? { ...s, coa_requested_by: uid } : s);
-                
+
                 await this.stdService.requestCoa(std);
                 this.toast.show('Đã thông báo yêu cầu bổ sung CoA đến Quản trị viên.', 'success');
             } catch (e: any) {
@@ -423,12 +430,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     async deleteLog(log: UsageLog, stdId: string) {
         if (!log.id) return;
         if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
-            try { 
-                await this.stdService.deleteUsageLog(stdId, log.id); 
-                this.toast.show('Đã xóa', 'success'); 
-                await this.loadHistory(stdId); 
-            } catch (e: any) { 
-                this.toast.show('Lỗi: ' + e.message, 'error'); 
+            try {
+                await this.stdService.deleteUsageLog(stdId, log.id);
+                this.toast.show('Đã xóa', 'success');
+                await this.loadHistory(stdId);
+            } catch (e: any) {
+                this.toast.show('Lỗi: ' + e.message, 'error');
             }
         }
     }

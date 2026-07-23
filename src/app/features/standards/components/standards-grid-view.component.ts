@@ -1,14 +1,16 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
+import { StateService } from '../../../core/services/state.service';
 import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpiryTimeLeft, getStandardStatus, canAssign, getExpiryBarClass } from '../../../shared/utils/utils';
 
 @Component({
   selector: 'app-standards-grid-view',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent],
+  imports: [CommonModule, SkeletonComponent, LockPermissionDirective],
   template: `
     <div class="p-4 bg-slate-50/30 dark:bg-slate-900/50">
        @if (isLoading() && allStandardsLength() === 0) { 
@@ -129,15 +131,15 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <i class="fa-solid fa-file-pdf text-xs"></i>
                                            </button>
                                        } @else if(currentUser()?.role === 'manager') {
-                                           <button (click)="$event.stopPropagation(); triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Upload CoA qua Google Drive">
+                                           <button (click)="$event.stopPropagation(); triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Upload CoA qua Google Drive">
                                                @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin text-xs"></i> } @else { <i class="fa-brands fa-google-drive text-xs"></i> }
                                            </button>
                                        }
                                        <button (click)="$event.stopPropagation(); viewHistory.emit(std)" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Lịch sử">
                                            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                                        </button>
-                                       @if(canEditStandards()) {
-                                           <button (click)="$event.stopPropagation(); openPrintModal.emit(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
+                                       @if(canEditStandards() || state.showLockedFeatures()) {
+                                           <button [appLockPermission]="'standard_edit'" (click)="$event.stopPropagation(); openPrintModal.emit(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
                                                <i class="fa-solid fa-print text-xs"></i>
                                            </button>
                                        }
@@ -182,6 +184,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
   `
 })
 export class StandardsGridViewComponent {
+  state = inject(StateService);
   items = input.required<ReferenceStandard[]>();
   isLoading = input<boolean>(false);
   allStandardsLength = input<number>(0);

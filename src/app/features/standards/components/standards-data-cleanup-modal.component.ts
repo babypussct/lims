@@ -27,7 +27,7 @@ interface CleanupGroup {
       @if (isOpen()) {
          <div class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
             <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/80 dark:border-slate-800 animate-slide-up">
-                
+
                 <!-- Modal Header -->
                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                     <div class="flex items-center gap-3">
@@ -70,7 +70,7 @@ interface CleanupGroup {
 
                 <!-- Main Content Area -->
                 <div class="flex-1 overflow-y-auto p-0 custom-scrollbar bg-white dark:bg-slate-900 flex flex-col">
-                    
+
                     <!-- Search & Action Toolbar -->
                     <div class="p-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 shadow-xs">
                         <div class="flex items-center gap-2 flex-1 min-w-[280px]">
@@ -199,7 +199,7 @@ interface CleanupGroup {
                     <div class="flex items-center gap-3">
                         <button (click)="onClose()" [disabled]="isProcessing() || isFetchingAll()" class="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-xs transition disabled:opacity-50">Đóng bảng</button>
                         <button (click)="applyChanges()" [disabled]="selectedCount() === 0 || isProcessing() || isFetchingAll()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu Firebase... } 
+                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu Firebase... }
                             @else { <i class="fa-solid fa-floppy-disk"></i> Lưu & Ghi đè ({{selectedCount()}}) }
                         </button>
                     </div>
@@ -296,7 +296,7 @@ export class StandardsDataCleanupModalComponent {
   }
 
   toggleGroupSelected(groupId: string, selected: boolean) {
-      this.groups.update(grps => 
+      this.groups.update(grps =>
         grps.map(g => g.id === groupId ? { ...g, selected } : g)
       );
   }
@@ -358,8 +358,8 @@ export class StandardsDataCleanupModalComponent {
       const result: CleanupGroup[] = [];
       grouped.forEach((standards, casKey) => {
           const originalNames = Array.from(new Set(standards.map(s => s.name?.trim()).filter(Boolean)));
-          
-          let currentSyns = new Set<string>();
+
+          const currentSyns = new Set<string>();
           standards.forEach(s => {
               if (s.chemical_name) {
                   s.chemical_name.split(',').map(x => x.trim()).filter(Boolean).forEach(x => currentSyns.add(x));
@@ -386,27 +386,27 @@ export class StandardsDataCleanupModalComponent {
 
   async fetchGroupInfo(group: CleanupGroup) {
       if (group.status === 'loading') return;
-      
+
       this.groups.update(grps =>
           grps.map(g => g.id === group.id ? { ...g, status: 'loading' } : g)
       );
 
       const info = await this.pubchemService.getChemicalInfo(group.cas);
-      
+
       this.groups.update(grps =>
           grps.map(g => {
               if (g.id !== group.id) return g;
 
               if (info && info.commercialName) {
-                  let synSet = new Set<string>();
+                  const synSet = new Set<string>();
                   if (g.suggestedSynonyms) g.suggestedSynonyms.split(',').map(x => x.trim()).filter(Boolean).forEach(x => synSet.add(x));
-                  
+
                   g.originalNames.forEach(n => {
                       if (n.toLowerCase() !== info.commercialName.toLowerCase()) synSet.add(n);
                   });
 
                   info.synonyms.slice(0, 5).forEach(s => synSet.add(s));
-                  
+
                   return {
                       ...g,
                       suggestedName: formatChemicalName(info.commercialName),
@@ -432,7 +432,7 @@ export class StandardsDataCleanupModalComponent {
   async fetchPubchemForAll() {
       if (this.groups().length === 0) return;
       this.isFetchingAll.set(true);
-      
+
       this.progressService.start('Đang tải dữ liệu từ PubChem', 'Vui lòng đợi', this.groups().length);
 
       try {
@@ -477,9 +477,9 @@ export class StandardsDataCleanupModalComponent {
                       updatedStd.chemical_name = group.suggestedSynonyms.trim();
                       return this.standardService.updateStandard(updatedStd);
                   });
-                  
+
                   await Promise.all(updates);
-                  
+
                   this.groups.update(grps =>
                       grps.map(g => g.id === group.id ? { ...g, status: 'success', selected: false } : g)
                   );

@@ -15,7 +15,8 @@ export interface MenuItem {
   icon: string;
   path: string;
   activeMatch: string[];
-  hidden?: boolean;
+  isLocked?: boolean;
+  lockPermission?: string;
   hasBadge?: boolean;
 }
 
@@ -36,16 +37,16 @@ export interface MenuGroup {
            [class.-translate-x-full]="!state.sidebarOpen()"
            [class.md:translate-x-0]="true"
            [class.translate-x-0]="state.sidebarOpen()">
-      
+
       <!-- 1. Brand -->
       <div class="h-16 flex items-center shrink-0 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300 relative"
            [class.px-4]="!state.sidebarCollapsed()"
            [class.px-0]="state.sidebarCollapsed()"
            [class.justify-between]="!state.sidebarCollapsed()"
            [class.justify-center]="state.sidebarCollapsed()">
-         
+
          <!-- Logo + Brand Name (Click to Home) -->
-         <div (click)="goHome()" 
+         <div (click)="goHome()"
               class="flex items-center gap-3 cursor-pointer group select-none min-w-0"
               [class.mx-auto]="state.sidebarCollapsed()"
               title="Về Trang chủ (Dashboard)">
@@ -62,20 +63,20 @@ export interface MenuGroup {
          <!-- Controls: Collapse toggle on Desktop & Close on Mobile -->
          @if (!state.sidebarCollapsed()) {
              <div class="flex items-center gap-1 shrink-0 ml-auto">
-                 <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()" 
+                 <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()"
                          class="hidden md:flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 active:scale-95 transition-all"
                          title="Thu gọn Sidebar">
                      <i class="fa-solid fa-angles-left text-xs"></i>
                  </button>
-                 
-                 <button (click)="state.closeSidebar(); $event.stopPropagation()" 
+
+                 <button (click)="state.closeSidebar(); $event.stopPropagation()"
                          class="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 active:bg-gray-200 dark:active:bg-slate-700">
                      <i class="fa-solid fa-times"></i>
                  </button>
              </div>
          } @else {
              <!-- Floating Pill Expand Button on Sidebar Border when Collapsed (Desktop) -->
-             <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()" 
+             <button (click)="state.toggleSidebarCollapse(); $event.stopPropagation()"
                      class="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:scale-110 active:scale-95 transition-all z-50"
                      title="Mở rộng Sidebar">
                  <i class="fa-solid fa-angles-right text-[10px]"></i>
@@ -85,7 +86,7 @@ export interface MenuGroup {
 
       <!-- 2. GLOBAL ACTION: SCAN -->
       <div class="px-4 mt-2 mb-2 md:hidden">
-          <button (click)="qrService.startScan()" 
+          <button (click)="qrService.startScan()"
                   class="w-full flex items-center justify-center gap-2 bg-slate-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white p-3 rounded-xl shadow-md shadow-slate-300 dark:shadow-none transition-all active:scale-95 group overflow-hidden relative">
               <i class="fa-solid fa-qrcode text-lg relative z-10 group-hover:scale-110 transition-transform"></i>
               @if (!state.sidebarCollapsed()) {
@@ -100,11 +101,11 @@ export interface MenuGroup {
 
       <!-- 3. Modules Menu -->
       <div class="px-3 py-3 shrink-0 flex-1 overflow-y-auto custom-scrollbar">
-         
+
          @for (group of menuGroups(); track group.id) {
              <!-- Group Header (Accordion Toggle) -->
              @if (!state.sidebarCollapsed()) {
-                 <div (click)="toggleGroup(group.id)" 
+                 <div (click)="toggleGroup(group.id)"
                       class="px-3 pt-5 pb-2 flex justify-between items-center cursor-pointer group/header hover:bg-slate-100/80 dark:hover:bg-slate-800/60 rounded-xl transition-all duration-200 mt-1 select-none">
                      <div class="flex items-center gap-2">
                          <div class="w-1.5 h-1.5 rounded-full bg-fuchsia-400/60 dark:bg-fuchsia-500/40"></div>
@@ -125,36 +126,48 @@ export interface MenuGroup {
              <div class="space-y-1.5 transition-all duration-300 overflow-hidden mt-1"
                   [ngClass]="(!state.sidebarCollapsed() && !expandedGroups()[group.id]) ? 'max-h-0 opacity-0 mt-0' : 'max-h-[1000px] opacity-100'">
                  @for (item of group.items; track item.path) {
-                     @if(!item.hidden) {
-                         <div (click)="navigateTo(item.path)" 
-                              class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-[0.97] relative select-none"
-                              [ngClass]="isActive(item.activeMatch) 
-                                ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200/60 dark:border-fuchsia-800/30 shadow-sm' 
-                                : 'border border-transparent hover:bg-slate-100/80 dark:hover:bg-slate-800/40 hover:border-slate-200/50 dark:hover:border-slate-700/50 hover:shadow-sm'"
-                              [title]="state.sidebarCollapsed() ? item.name : ''">
-                            
-                            @if(isActive(item.activeMatch)) {
+                     @if(!item.isLocked || state.showLockedFeatures()) {
+                         <div (click)="item.isLocked ? handleLockedClick(item) : navigateTo(item.path)"
+                              class="group flex items-center px-3 py-3.5 rounded-xl transition-all duration-200 ease-in-out relative select-none"
+                              [ngClass]="[
+                                item.isLocked ? 'cursor-not-allowed opacity-50 bg-slate-50/40 dark:bg-slate-800/20' : 'cursor-pointer active:scale-[0.97]',
+                                !item.isLocked && isActive(item.activeMatch)
+                                  ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200/60 dark:border-fuchsia-800/30 shadow-sm'
+                                  : 'border border-transparent hover:bg-slate-100/80 dark:hover:bg-slate-800/40 hover:border-slate-200/50 dark:hover:border-slate-700/50 hover:shadow-sm'
+                              ]"
+                              [title]="state.sidebarCollapsed() ? (item.isLocked ? item.name + ' (🔒 Đã khóa)' : item.name) : ''">
+
+                            @if(!item.isLocked && isActive(item.activeMatch)) {
                                 <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 bg-fuchsia-500 dark:bg-fuchsia-400 rounded-r-full shadow-sm shadow-fuchsia-300 dark:shadow-none"></div>
                             }
-                            
+
                             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 relative"
                                  [class.mx-auto]="state.sidebarCollapsed()"
-                                 [ngClass]="isActive(item.activeMatch) 
-                                   ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm' 
+                                 [class.opacity-40]="item.isLocked"
+                                 [ngClass]="!item.isLocked && isActive(item.activeMatch)
+                                   ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm'
                                    : 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 group-hover:shadow-sm group-hover:scale-110'">
                                <i class="fa-solid {{item.icon}} text-xs"></i>
-                               @if(item.hasBadge && state.sidebarCollapsed() && requestsCount() > 0) {
+                               @if(!item.isLocked && item.hasBadge && state.sidebarCollapsed() && requestsCount() > 0) {
                                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
                                }
+                               @if(item.isLocked && state.sidebarCollapsed()) {
+                                    <i class="fa-solid fa-lock text-[8px] text-amber-500 absolute -top-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-0.5 border border-slate-200 dark:border-slate-700"></i>
+                               }
                             </div>
-                            
+
                             @if (!state.sidebarCollapsed()) {
                                 <div class="flex-1 flex justify-between items-center ml-3 fade-in">
-                                    <span class="text-[13px] font-semibold transition-colors duration-200" [ngClass]="isActive(item.activeMatch) ? 'text-fuchsia-700 dark:text-fuchsia-300 font-bold' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'">
+                                    <span class="text-[13px] font-semibold transition-colors duration-200"
+                                          [class.text-slate-400]="item.isLocked"
+                                          [ngClass]="!item.isLocked && isActive(item.activeMatch) ? 'text-fuchsia-700 dark:text-fuchsia-300 font-bold' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'">
                                         {{item.name}}
                                     </span>
-                                    @if(item.hasBadge && requestsCount() > 0) {
+                                    @if(!item.isLocked && item.hasBadge && requestsCount() > 0) {
                                         <span class="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">{{requestsCount()}}</span>
+                                    }
+                                    @if(item.isLocked) {
+                                        <i class="fa-solid fa-lock text-[9px] text-amber-500 dark:text-amber-400/80 ml-auto"></i>
                                     }
                                 </div>
                             }
@@ -192,13 +205,13 @@ export interface MenuGroup {
           @if(!state.sidebarCollapsed()) {
               <div class="flex items-center gap-3 fade-in cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-2 -mx-2 rounded-xl transition-colors" (click)="toggleProfileMenu()">
                   <div class="relative shrink-0">
-                      <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)" 
-                           class="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 object-cover" 
+                      <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+                           class="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 object-cover"
                            alt="User">
                       <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900"
                             [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"
                             [title]="isOnline() ? 'Online' : 'Offline'"></span>
-                      
+
                       <!-- Notification Badge -->
                       <div class="hidden md:block absolute -top-1 -right-1">
                           <app-notification-bell [asBadge]="true"></app-notification-bell>
@@ -214,12 +227,12 @@ export interface MenuGroup {
               </div>
           } @else {
               <div class="flex justify-center relative cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-2 -mx-2 rounded-xl transition-colors" (click)="toggleProfileMenu()">
-                  <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)" 
-                       class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 object-cover" 
+                  <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+                       class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 object-cover"
                        title="Tài khoản">
                   <span class="absolute bottom-2 right-1 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900"
                         [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"></span>
-                  
+
                   <!-- Notification Badge -->
                   <div class="hidden md:block absolute -top-1 -right-1">
                       <app-notification-bell [asBadge]="true"></app-notification-bell>
@@ -240,7 +253,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   isOnline = signal(navigator.onLine);
   profileMenuOpen = signal(false);
-  
+
   // Trạng thái mảng nhóm
   expandedGroups = signal<Record<string, boolean>>({
     'overview': true,
@@ -260,7 +273,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'overview',
       title: 'Tổng quan',
       items: [
-        { name: 'Báo cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], hidden: !this.auth.canViewReports() },
+        { name: 'Báo cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], isLocked: !this.auth.canViewReports(), lockPermission: 'report_view' },
         { name: 'Phiếu giao nhận mẫu', icon: 'fa-folder-open', path: 'documents', activeMatch: ['/documents'] }
       ]
     },
@@ -268,21 +281,30 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'operation',
       title: 'Vận hành',
       items: [
-        { name: 'Chạy Mẻ (Smart)', icon: 'fa-wand-magic-sparkles', path: 'smart-batch', activeMatch: ['/smart-batch'], hidden: !this.auth.canViewSop() },
-        { name: 'Vận hành (SOP)', icon: 'fa-play pl-0.5', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], hidden: !this.auth.canViewSop() },
-        { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], hidden: !this.auth.canViewInventory() },
-        { name: 'Quản lý Yêu cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], hidden: !this.auth.canViewSop(), hasBadge: true },
-        { name: 'Kết quả Phân tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], hidden: !this.auth.canViewSop() }
+        { name: 'Chạy Mẻ (Smart)', icon: 'fa-wand-magic-sparkles', path: 'smart-batch', activeMatch: ['/smart-batch'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
+        { name: 'Vận hành (SOP)', icon: 'fa-play pl-0.5', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' },
+        { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
+        { name: 'Quản lý Yêu cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view', hasBadge: true },
+        { name: 'Kết quả Phân tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' }
       ]
     },
     {
       id: 'storage',
       title: 'Lưu trữ',
       items: [
-        { name: 'Kho Hóa chất', icon: 'fa-boxes-stacked', path: 'inventory', activeMatch: ['/inventory', '/labels'], hidden: !this.auth.canViewInventory() },
-        { name: 'Chuẩn Đối chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], hidden: !this.auth.canViewStandards() },
-        { name: 'Yêu cầu Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], hidden: !this.auth.canViewStandards() },
-        { name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], hidden: !this.auth.canViewStandardLogs() }
+        { name: 'Kho Hóa chất', icon: 'fa-boxes-stacked', path: 'inventory', activeMatch: ['/inventory', '/labels'], isLocked: !this.auth.canViewInventory(), lockPermission: 'inventory_view' },
+        { name: 'Chuẩn Đối chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], isLocked: !this.auth.canViewStandards(), lockPermission: 'standard_view' },
+        { name: 'Yêu cầu Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], isLocked: !this.auth.canViewStandards(), lockPermission: 'standard_view' },
+        { name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], isLocked: !this.auth.canViewStandardLogs(), lockPermission: 'standard_log_view' }
+      ]
+    },
+    {
+      id: 'system',
+      title: 'Hệ thống',
+      items: [
+        { name: 'Cấu hình Hệ thống', icon: 'fa-gears', path: 'config', activeMatch: ['/config'], isLocked: !this.auth.canManageSystem(), lockPermission: 'user_manage' },
+        { name: 'Nhóm Chỉ tiêu', icon: 'fa-bullseye', path: 'target-groups', activeMatch: ['/target-groups'], isLocked: !this.state.isAdmin(), lockPermission: 'role:manager' },
+        { name: 'Loại Ma trận', icon: 'fa-table-cells', path: 'matrix-types', activeMatch: ['/matrix-types'], isLocked: !this.state.isAdmin(), lockPermission: 'role:manager' }
       ]
     }
   ]);
@@ -333,16 +355,20 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.state.closeSidebar();
   }
 
+  handleLockedClick(item: MenuItem) {
+    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ Admin để được cấp`, 'warning');
+  }
+
   navigateTo(path: string) {
       this.router.navigate(['/' + path]);
       this.state.closeSidebar();
-      
+
       if (path !== 'calculator' && path !== 'editor') {
           this.state.selectedSop.set(null);
       }
   }
 
-  isActive(paths: string[]): boolean { 
+  isActive(paths: string[]): boolean {
       return paths.some(p => this.router.url.includes(p));
   }
 }

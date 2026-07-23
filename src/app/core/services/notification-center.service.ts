@@ -126,4 +126,8 @@ export class NotificationCenterService {
     this.seenEvents.set(eventId, now);
     return false;
   }
+
+  async deleteBroadcastByGroupId(groupId: string): Promise<void> {
+    return this.inbox.deleteBroadcastByGroupId(groupId);
+  }
 }

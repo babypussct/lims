@@ -1,4 +1,4 @@
-    <div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 overflow-hidden">
+<div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 overflow-hidden">
       <!-- Header Area -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
         <div class="flex items-center gap-3">
@@ -15,59 +15,66 @@
              <button (click)="openExportModal()" class="group px-4 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
                 <i class="fa-solid fa-file-excel text-sm group-hover:scale-110 transition-transform"></i> Xuất Excel
              </button>
-             <!-- Removed @if -->
-                 @if(canOperateStandards()) {
+             @if(canOperateStandards()) {
                  <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                      <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu Mua sắm
                      @if (pendingPurchaseRequestsCount() > 0) {
                         <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
                      }
                  </button>
-                 }
-              <button *appHasPermission="'standard_request'" (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
+             }
+             <button [appLockPermission]="'standard_request'" (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                 <i class="fa-solid fa-plus-circle text-base group-hover:rotate-90 transition-transform"></i> Tạo Yêu cầu Mới
              </button>
         </div>
       </div>
 
-      <!-- Mini Dashboard -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mx-2 mt-4 fade-in">
-         <!-- Card 1: Need Approval -->
-         <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/40 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
-             <div>
-                 <p class="text-xs font-black tracking-widest text-amber-600/70 dark:text-amber-400/80 uppercase mb-1">Cần Duyệt</p>
-                 <h4 class="text-3xl font-black text-amber-600 dark:text-amber-400 leading-none">{{statusCounts().PENDING_APPROVAL}}</h4>
-             </div>
-             <div class="w-12 h-12 rounded-2xl bg-amber-100/50 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl backdrop-blur-md border border-amber-200/50 dark:border-amber-800/50 shadow-inner">
-                 <i class="fa-solid fa-clipboard-check"></i>
-             </div>
-         </div>
+      <!-- Mini Dashboard Stats Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 shrink-0">
+          <!-- Card 1: Pending Approval -->
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/40 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+              <div>
+                  <p class="text-xs font-black tracking-widest text-amber-600/70 dark:text-amber-400/80 uppercase mb-1">Chờ Duyệt</p>
+                  <h4 class="text-3xl font-black text-amber-600 dark:text-amber-400 leading-none">{{statusCounts().PENDING_APPROVAL}}</h4>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-amber-100/50 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl backdrop-blur-md border border-amber-200/50 dark:border-amber-800/50 shadow-inner">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+              </div>
+          </div>
 
+          <!-- Card 2: Pending Handover -->
+          <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/40 dark:to-teal-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+              <div>
+                  <p class="text-xs font-black tracking-widest text-emerald-600/70 dark:text-emerald-400/80 uppercase mb-1">Chờ Cấp Phát</p>
+                  <h4 class="text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none">{{statusCounts().APPROVED}}</h4>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-100/50 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl backdrop-blur-md border border-emerald-200/50 dark:border-emerald-800/50 shadow-inner">
+                  <i class="fa-solid fa-box-open"></i>
+              </div>
+          </div>
 
-         <!-- Card 3: Pending Return -->
-         <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/40 dark:to-pink-900/20 border border-fuchsia-200/50 dark:border-fuchsia-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
-             <div>
-                 <p class="text-xs font-black tracking-widest text-fuchsia-600/70 dark:text-fuchsia-400/80 uppercase mb-1">Chờ Admin Nhận</p>
-                 <h4 class="text-3xl font-black text-fuchsia-600 dark:text-fuchsia-400 leading-none">{{statusCounts().PENDING_RETURN}}</h4>
-             </div>
-             <div class="w-12 h-12 rounded-2xl bg-fuchsia-100/50 dark:bg-fuchsia-900/60 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center text-xl backdrop-blur-md border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-inner">
-                 <i class="fa-solid fa-truck-ramp-box"></i>
-             </div>
-         </div>
+          <!-- Card 3: Pending Return -->
+          <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/40 dark:to-pink-900/20 border border-fuchsia-200/50 dark:border-fuchsia-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+              <div>
+                  <p class="text-xs font-black tracking-widest text-fuchsia-600/70 dark:text-fuchsia-400/80 uppercase mb-1">Chờ Admin Nhận</p>
+                  <h4 class="text-3xl font-black text-fuchsia-600 dark:text-fuchsia-400 leading-none">{{statusCounts().PENDING_RETURN}}</h4>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-fuchsia-100/50 dark:bg-fuchsia-900/60 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center text-xl backdrop-blur-md border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-inner">
+                  <i class="fa-solid fa-truck-ramp-box"></i>
+              </div>
+          </div>
 
-         <!-- Card 4: In Use Lab -->
-         <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/40 dark:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
-             <div>
-                 <p class="text-xs font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/80 uppercase mb-1">Đang Dùng</p>
-                 <h4 class="text-3xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{{statusCounts().IN_PROGRESS}}</h4>
-             </div>
-             <div class="w-12 h-12 rounded-2xl bg-indigo-100/50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl backdrop-blur-md border border-indigo-200/50 dark:border-indigo-800/50 shadow-inner">
-                 <i class="fa-solid fa-flask-vial"></i>
-             </div>
-         </div>
+          <!-- Card 4: In Use Lab -->
+          <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/40 dark:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+              <div>
+                  <p class="text-xs font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/80 uppercase mb-1">Đang Dùng</p>
+                  <h4 class="text-3xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{{statusCounts().IN_PROGRESS}}</h4>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-indigo-100/50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl backdrop-blur-md border border-indigo-200/50 dark:border-indigo-800/50 shadow-inner">
+                  <i class="fa-solid fa-flask-vial"></i>
+              </div>
+          </div>
       </div>
-
-      <!-- Main Section: List & Filter -->
       <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-0">
           
           <!-- Modern Tab Filters & Search -->

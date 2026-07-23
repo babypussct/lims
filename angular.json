@@ -35,6 +35,7 @@
             ],
             "scripts": [],
             "allowedCommonJsDependencies": [
+              "exceljs",
               "jspdf",
               "html2canvas",
               "chart.js",

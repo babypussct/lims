@@ -7,13 +7,19 @@ import { StateService } from '../services/state.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 import { LogoComponent } from '../../shared/components/logo.component';
+import { ToastService } from '../services/toast.service';
 import { filter } from 'rxjs/operators';
 
 interface MenuItem {
+  id?: string;
   name: string;
   icon: string;
-  action: () => void;
-  visible: boolean;
+  path?: string;
+  color?: string;
+  action?: () => void;
+  visible?: boolean;
+  isLocked?: boolean;
+  lockPermission?: string;
   isActive?: boolean;
   customClass?: string;
   isSpecial?: boolean;
@@ -57,7 +63,7 @@ interface VisitedPage {
                 </div>
                 <h3 class="text-white font-bold text-xl mb-2">Cài đặt LIMS Pro</h3>
                 <p class="text-slate-300 text-sm mb-8">Thêm ứng dụng vào màn hình chính để sử dụng toàn màn hình và mượt mà hơn.</p>
-                
+
                 <div class="bg-white/10 rounded-xl p-4 text-left space-y-4 mb-8 border border-white/10">
                     <div class="flex items-center gap-4">
                         <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">1</div>
@@ -77,7 +83,7 @@ interface VisitedPage {
                 <div class="flex flex-col gap-3">
                     <button (click)="toggleInstallGuide()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition active:scale-95">Đã hiểu</button>
                 </div>
-                
+
                 <!-- Bounce Arrow pointing down -->
                 <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-white/50 animate-bounce">
                     <i class="fa-solid fa-arrow-down text-2xl"></i>
@@ -89,11 +95,11 @@ interface VisitedPage {
     <!-- MENU OVERLAY (Bottom Sheet) -->
     @if (showMenu() || isClosing()) {
         <!-- Backdrop -->
-        <div class="fixed inset-0 z-[45] bg-black/60 backdrop-blur-sm transition-opacity duration-250 ease-out" 
-             [class.opacity-0]="isClosing()" 
+        <div class="fixed inset-0 z-[45] bg-black/60 backdrop-blur-sm transition-opacity duration-250 ease-out"
+             [class.opacity-0]="isClosing()"
              [class.opacity-100]="!isClosing()"
              (click)="closeMenu()"></div>
-             
+
         <!-- Bottom Sheet Panel -->
         <div class="fixed bottom-0 right-0 left-0 z-[50] bg-white dark:bg-slate-900 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.2)] border-t border-slate-200 dark:border-slate-800 overflow-hidden origin-bottom transition-transform duration-250 ease-out"
              [class.animate-slide-up]="!isClosing()"
@@ -102,15 +108,15 @@ interface VisitedPage {
              (touchstart)="onTouchStartPanel($event)"
              (touchmove)="onTouchMovePanel($event)"
              (touchend)="onTouchEndPanel()">
-             
+
             <!-- Drag indicator -->
             <div class="w-full flex justify-center pt-3 pb-1" (click)="closeMenu()">
                 <div class="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
             </div>
-            
+
             <!-- User Profile Header -->
             <div class="px-5 pb-3 pt-1 flex items-center gap-3 active:scale-[0.98] transition-transform" (click)="navTo('/config')">
-                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)" 
+                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
                      class="w-11 h-11 rounded-full border-2 border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 object-cover">
                 <div class="flex-1 min-w-0">
                     <div class="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{{auth.currentUser()?.displayName}}</div>
@@ -135,7 +141,7 @@ interface VisitedPage {
                        }
                     </div>
                 }
-                
+
                 <div class="flex gap-3">
                     <button (click)="startScan()" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white font-bold text-sm shadow-md active:scale-95 transition-transform">
                         <i class="fa-solid fa-qrcode text-lg"></i> Quét Mã
@@ -161,10 +167,16 @@ interface VisitedPage {
                                 <div class="grid grid-cols-4 gap-x-2 gap-y-4">
                                     @for (item of group.items; track item.name) {
                                         @if (!item.isSpecial) {
-                                            <button (click)="item.action()" class="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform">
+                                            <button (click)="item.isLocked ? handleLockedItemClick(item) : (item.action ? item.action() : (item.path ? navTo(item.path, item.name, item.icon) : null))"
+                                                    [class.opacity-50]="item.isLocked"
+                                                    [class.grayscale]="item.isLocked"
+                                                    [class.cursor-not-allowed]="item.isLocked"
+                                                    class="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform relative">
                                                 <div class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-xl transition-all border relative"
-                                                     [ngClass]="item.isActive ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-md scale-105 border-transparent' : (item.customClass || group.accentClass) + ' bg-gradient-to-tr shadow-sm'">
-                                                     
+                                                     [ngClass]="item.isLocked
+                                                       ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-700/50'
+                                                       : (item.isActive ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-md scale-105 border-transparent' : (item.customClass || group.accentClass) + ' bg-gradient-to-tr shadow-sm')">
+
                                                     @if (item.isActive && state.darkMode()) {
                                                       <i class="fa-solid {{item.icon}}"></i>
                                                     } @else if (item.isActive && !state.darkMode()) {
@@ -172,9 +184,15 @@ interface VisitedPage {
                                                     } @else {
                                                       <i class="fa-solid {{item.icon}}"></i>
                                                     }
+
+                                                    @if(item.isLocked) {
+                                                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+                                                            <i class="fa-solid fa-lock text-[8px] text-amber-500"></i>
+                                                        </span>
+                                                    }
                                                 </div>
                                                 <span class="text-[10px] font-bold text-center leading-tight px-0.5"
-                                                      [ngClass]="item.isActive ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'">
+                                                      [ngClass]="item.isLocked ? 'text-slate-400 dark:text-slate-500' : (item.isActive ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400')">
                                                     {{item.name}}
                                                 </span>
                                             </button>
@@ -195,7 +213,7 @@ interface VisitedPage {
 
     <!-- MAIN BOTTOM BAR -->
     <div class="fixed bottom-0 left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 shadow-[0_-8px_30px_-6px_rgba(0,0,0,0.1)] dark:shadow-none z-[40] md:hidden pb-safe">
-      
+
       <!-- Page Breadcrumb Label -->
       <div class="absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none fade-in">
           <div class="bg-slate-800 dark:bg-slate-700 text-white text-[9px] font-bold px-3 py-0.5 rounded-full shadow-md uppercase tracking-wider border border-slate-600">
@@ -204,7 +222,7 @@ interface VisitedPage {
       </div>
 
       <div class="flex items-center justify-around h-[72px] px-1 relative pt-1">
-        
+
         <!-- Tabs 0 and 1 -->
         @for (tab of bottomTabs().slice(0, 2); track tab.id) {
             <button (click)="navTo(tab.path, tab.name, tab.icon)" class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform relative">
@@ -212,9 +230,9 @@ interface VisitedPage {
                    [class]="isActive(tab.path) ? tab.activeColor + ' shadow-inner scale-105' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
                 <i class="fa-solid {{tab.icon}} text-[1.1rem] transition-transform duration-300" [class.-translate-y-0.5]="isActive(tab.path)"></i>
               </div>
-              <span class="text-[9px] font-bold transition-colors" 
+              <span class="text-[9px] font-bold transition-colors"
                     [ngClass]="isActive(tab.path) ? tab.activeColor.split(' ')[0] : 'text-slate-400 dark:text-slate-500'">{{ tab.name }}</span>
-              
+
               <!-- Active Dot -->
               @if (isActive(tab.path)) {
                  <div class="absolute bottom-0.5 w-1 h-1 rounded-full animate-fade-in" [ngClass]="tab.activeColor.split(' ')[0].replace('text-', 'bg-')"></div>
@@ -234,9 +252,9 @@ interface VisitedPage {
                    [class]="isActive(tab.path) ? tab.activeColor + ' shadow-inner scale-105' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
                 <i class="fa-solid {{tab.icon}} text-[1.1rem] transition-transform duration-300" [class.-translate-y-0.5]="isActive(tab.path)"></i>
               </div>
-              <span class="text-[9px] font-bold transition-colors" 
+              <span class="text-[9px] font-bold transition-colors"
                     [ngClass]="isActive(tab.path) ? tab.activeColor.split(' ')[0] : 'text-slate-400 dark:text-slate-500'">{{ tab.name }}</span>
-              
+
               <!-- Active Dot -->
               @if (isActive(tab.path)) {
                  <div class="absolute bottom-0.5 w-1 h-1 rounded-full animate-fade-in" [ngClass]="tab.activeColor.split(' ')[0].replace('text-', 'bg-')"></div>
@@ -249,13 +267,13 @@ interface VisitedPage {
           <div class="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300"
                [class]="showMenu() ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-md scale-105' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
             <i class="fa-solid text-[1.1rem] transition-transform duration-300" [class]="showMenu() ? 'fa-xmark rotate-90' : 'fa-bars'"></i>
-            
+
             <!-- Badge -->
             @if (requestsCount() > 0 && !showMenu()) {
                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
             }
           </div>
-          <span class="text-[9px] font-bold transition-colors" 
+          <span class="text-[9px] font-bold transition-colors"
                 [class]="showMenu() ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'">{{ showMenu() ? 'Đóng' : 'Menu' }}</span>
         </button>
 
@@ -266,7 +284,7 @@ interface VisitedPage {
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   `]
@@ -276,6 +294,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   qrService = inject(QrGlobalService);
   auth = inject(AuthService);
+  toast = inject(ToastService);
   getAvatarUrl = getAvatarUrl;
 
   showMenu = signal(false);
@@ -287,7 +306,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   private touchStartY = 0;
   private currentY = 0;
   dragTransform = signal(0);
-  
+
   // Recently visited
   recentlyVisited = signal<VisitedPage[]>([]);
 
@@ -342,6 +361,11 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     }
   }
 
+  handleLockedItemClick(item: MenuItem) {
+    this.haptic();
+    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ Admin để được cấp`, 'warning');
+  }
+
   toggleDarkMode() {
     this.haptic();
     this.state.toggleDarkMode();
@@ -386,7 +410,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     this.closeMenu();
     this.showInstallGuide.set(false);
     this.router.navigate([path]);
-    
+
     if (name && icon && path !== '/dashboard') {
       this.saveToRecentlyVisited({ name, path, icon });
     }
@@ -405,7 +429,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     recent.unshift(page);
     // Keep max 3
     if (recent.length > 3) recent.pop();
-    
+
     this.recentlyVisited.set(recent);
     try {
       localStorage.setItem('lims_recently_visited', JSON.stringify(recent));
@@ -431,7 +455,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     if (this.touchStartY === 0 || this.isClosing()) return;
     this.currentY = e.touches[0].clientY;
     const deltaY = this.currentY - this.touchStartY;
-    
+
     // Only drag down
     if (deltaY > 0) {
       // Add slight resistance
@@ -444,75 +468,67 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   onTouchEndPanel() {
     if (this.touchStartY === 0 || this.isClosing()) return;
     const deltaY = this.currentY - this.touchStartY;
-    
+
     if (deltaY > 80) {
       this.closeMenu();
     } else {
       // Snap back
       this.dragTransform.set(0);
     }
-    
+
     this.touchStartY = 0;
     this.currentY = 0;
   }
 
   // --- COMPUTED GROUPS & TABS ---
   menuGroups = computed<MenuGroup[]>(() => {
+    const showLocked = this.state.showLockedFeatures();
+    const canViewInv = this.auth.canViewInventory();
+    const canViewSop = this.auth.canViewSop();
+    const canRunBatch = this.auth.canRunBatch();
+    const canViewStd = this.auth.canViewStandards();
+    const canViewStdLog = this.auth.hasPermission('standard_log_view');
+    const canViewRecipes = this.auth.canViewRecipes();
+    const canViewRep = this.auth.canViewReports();
+    const isManager = this.auth.currentUser()?.role === 'manager';
+
     const list: MenuGroup[] = [
       {
         id: 'operations',
         title: 'Nghiệp vụ & Vận hành',
         accentClass: 'from-purple-500/15 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800/30',
         items: [
-          { name: 'Pha Chế', icon: 'fa-flask-vial', action: () => this.navTo('/prep', 'Pha Chế', 'fa-flask-vial'), visible: this.auth.canViewInventory(), isActive: this.isActive('/prep') },
-          { name: 'Vận hành', icon: 'fa-play pl-0.5', action: () => this.navTo('/calculator', 'Vận hành', 'fa-play'), visible: this.auth.canViewSop(), isActive: this.isActive('/calculator') },
-          { name: 'Duyệt', icon: 'fa-clipboard-list', action: () => this.navTo('/requests', 'Duyệt', 'fa-clipboard-list'), visible: this.auth.canViewSop(), isActive: this.isActive('/requests') },
-          { name: 'Nhập KQ', icon: 'fa-square-poll-vertical', action: () => this.navTo('/results', 'Nhập KQ', 'fa-square-poll-vertical'), visible: this.auth.canViewSop(), isActive: this.isActive('/results') },
-          { name: 'Giao nhận', icon: 'fa-folder-open', action: () => this.navTo('/documents', 'Giao nhận', 'fa-folder-open'), visible: true, isActive: this.isActive('/documents') }
+          { id: 'inventory', name: 'Kho Hóa chất', icon: 'fa-boxes-stacked', path: '/inventory', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50', visible: canViewInv || showLocked, isLocked: !canViewInv, lockPermission: 'inventory_view' },
+          { id: 'calculator', name: 'Vận hành SOP', icon: 'fa-calculator', path: '/calculator', color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
+          { id: 'smart-batch', name: 'Chạy Mẻ Smart', icon: 'fa-wand-magic-sparkles', path: '/smart-batch', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
+          { id: 'prep', name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: '/prep', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
+          { id: 'documents', name: 'Giao nhận mẫu', icon: 'fa-folder-open', path: '/documents', color: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-800/50', visible: true, isLocked: false },
+          { id: 'results', name: 'Kết quả phân tích', icon: 'fa-vials', path: '/results', color: 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border-cyan-100 dark:border-cyan-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
+          { id: 'recipes', name: 'Công thức', icon: 'fa-book-bookmark', path: '/recipes', color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/50', visible: canViewRecipes || showLocked, isLocked: !canViewRecipes, lockPermission: 'recipe_view' },
+          { id: 'labels', name: 'In Tem Nhãn', icon: 'fa-barcode', path: '/labels', color: 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 border-sky-100 dark:border-sky-800/50', visible: canViewInv || showLocked, isLocked: !canViewInv, lockPermission: 'inventory_view' },
+          { id: 'stats', name: 'Báo cáo', icon: 'fa-chart-pie', path: '/stats', color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50', visible: canViewRep || showLocked, isLocked: !canViewRep, lockPermission: 'report_view' }
         ]
       },
       {
-        id: 'storage',
-        title: 'Lưu trữ & Chuẩn',
-        accentClass: 'from-teal-500/15 to-emerald-500/15 text-teal-600 dark:text-teal-400 border-teal-200/50 dark:border-teal-800/30',
+        id: 'standards',
+        title: 'Chuẩn đối chiếu',
+        accentClass: 'from-amber-500/15 to-orange-500/15 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/30',
         items: [
-          { name: 'Kho', icon: 'fa-boxes-stacked', action: () => this.navTo('/inventory', 'Kho', 'fa-boxes-stacked'), visible: this.auth.canViewInventory(), isActive: this.isActive('/inventory') },
-          { name: 'Chuẩn', icon: 'fa-vial-circle-check', action: () => this.navTo('/standards', 'Chuẩn', 'fa-vial-circle-check'), visible: this.auth.canViewStandards(), isActive: this.isActive('/standards') },
-          { name: 'YC Chuẩn', icon: 'fa-clipboard-check', action: () => this.navTo('/standard-requests', 'YC Chuẩn', 'fa-clipboard-check'), visible: this.auth.canViewStandards(), isActive: this.isActive('/standard-requests') },
-          { name: 'NK Chuẩn', icon: 'fa-clock-rotate-left', action: () => this.navTo('/standard-usage', 'NK Chuẩn', 'fa-clock-rotate-left'), visible: this.auth.canViewStandardLogs(), isActive: this.isActive('/standard-usage') }
-        ]
-      },
-      {
-        id: 'tools',
-        title: 'Công cụ & Tiện ích',
-        accentClass: 'from-amber-500/15 to-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-200/50 dark:border-orange-800/30',
-        items: [
-          { name: 'Quét Mã', icon: 'fa-qrcode', action: () => this.startScan(), visible: true, isSpecial: true },
-          { name: 'In Tem', icon: 'fa-tag', action: () => this.navTo('/labels', 'In Tem', 'fa-tag'), visible: this.auth.canViewInventory(), isActive: this.isActive('/labels') },
-          { name: 'Công thức', icon: 'fa-scroll', action: () => this.navTo('/recipes', 'Công thức', 'fa-scroll'), visible: this.auth.canViewRecipes(), isActive: this.isActive('/recipes') },
-          { name: 'Báo cáo', icon: 'fa-chart-pie', action: () => this.navTo('/stats', 'Báo cáo', 'fa-chart-pie'), visible: this.auth.canViewReports(), isActive: this.isActive('/stats') }
+          { id: 'standards', name: 'Danh sách Chuẩn', icon: 'fa-vial-circle-check', path: '/standards', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: canViewStd || showLocked, isLocked: !canViewStd, lockPermission: 'standard_view' },
+          { id: 'standard-requests', name: 'Yêu cầu Chuẩn', icon: 'fa-clipboard-list', path: '/standard-requests', color: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/50', visible: canViewStd || showLocked, isLocked: !canViewStd, lockPermission: 'standard_view' },
+          { id: 'standard-usage', name: 'Nhật ký Chuẩn', icon: 'fa-book-open', path: '/standard-usage', color: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border-yellow-100 dark:border-yellow-800/50', visible: canViewStdLog || showLocked, isLocked: !canViewStdLog, lockPermission: 'standard_log_view' }
         ]
       },
       {
         id: 'system',
-        title: 'Hệ thống & Thiết lập',
-        accentClass: 'from-slate-500/15 to-slate-700/15 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-700/50',
+        title: 'Hệ thống & Tiện ích',
+        accentClass: 'from-slate-500/15 to-slate-700/15 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-800/30',
         items: [
-          { name: 'Cấu hình', icon: 'fa-gears', action: () => this.navTo('/config'), visible: this.auth.canManageSystem(), isActive: this.isActive('/config') },
-          { 
-            name: this.state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối', 
-            icon: this.state.darkMode() ? 'fa-sun' : 'fa-moon', 
-            action: () => this.toggleDarkMode(), 
-            visible: true 
-          },
-          { name: 'Cài App', icon: 'fa-apple', action: () => this.toggleInstallGuide(), visible: true },
-          { 
-            name: 'Thoát', 
-            icon: 'fa-power-off', 
-            action: () => this.auth.logout(), 
-            visible: true,
-            customClass: 'from-red-500/10 to-rose-500/10 text-red-600 dark:text-red-400 border-red-200/50 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20'
-          }
+          { id: 'scan', name: 'Quét QR', icon: 'fa-qrcode', action: () => this.startScan(), color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50', visible: true, isLocked: false },
+          { id: 'dark-mode', name: 'Giao diện', icon: 'fa-moon', action: () => this.toggleDarkMode(), color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', visible: true, isLocked: false },
+          { id: 'install-pwa', name: 'Cài App', icon: 'fa-download', action: () => this.toggleInstallGuide(), color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: true, isLocked: false },
+          { id: 'config', name: 'Cấu hình', icon: 'fa-gear', path: '/config', color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700', visible: isManager || showLocked, isLocked: !isManager, lockPermission: 'role_manager' },
+          { id: 'logout', name: 'Đăng xuất', icon: 'fa-right-from-bracket', action: () => this.auth.logout(), color: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50', visible: true, isLocked: false }
         ]
       }
     ];
@@ -525,31 +541,21 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   bottomTabs = computed<BottomTab[]>(() => {
     const tabs: BottomTab[] = [];
-    
-    // 1. Dashboard (Always)
     tabs.push({ id: 'dashboard', name: 'Home', icon: 'fa-house', path: '/dashboard', activeColor: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30', visible: true });
-    
-    // 2. Inventory OR Documents
     if (this.auth.canViewInventory()) {
       tabs.push({ id: 'inventory', name: 'Kho', icon: 'fa-boxes-stacked', path: '/inventory', activeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30', visible: true });
     } else {
       tabs.push({ id: 'documents', name: 'Giao nhận', icon: 'fa-folder-open', path: '/documents', activeColor: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30', visible: true });
     }
-
-    // 3. Smart Batch OR Stats
-    if (this.auth.canViewSop()) {
+    if (this.auth.canRunBatch()) {
       tabs.push({ id: 'smart-batch', name: 'Chạy Mẻ', icon: 'fa-wand-magic-sparkles', path: '/smart-batch', activeColor: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30', visible: true });
     } else if (this.auth.canViewReports()) {
       tabs.push({ id: 'stats', name: 'Báo cáo', icon: 'fa-chart-pie', path: '/stats', activeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30', visible: true });
     } else if (this.auth.canViewStandards()) {
       tabs.push({ id: 'standards', name: 'Chuẩn', icon: 'fa-vial-circle-check', path: '/standards', activeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30', visible: true });
     } else {
-      // Fallback
       tabs.push({ id: 'documents', name: 'Giao nhận', icon: 'fa-folder-open', path: '/documents', activeColor: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30', visible: true });
     }
-
-    // Ensure we don't exceed 3 tabs to keep layout balanced
     return tabs.slice(0, 3);
   });
-
 }

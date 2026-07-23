@@ -1,8 +1,8 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start animate-fade-in">
-        
+
         <!-- LEFT COLUMN -->
         <div class="space-y-6">
-            
+
             <!-- 1. MASTER DATA -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
@@ -42,20 +42,20 @@
                     </h3>
                     <button (click)="saveCategories()" class="text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm dark:shadow-none">Lưu</button>
                 </div>
-                
+
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between items-center mb-1">
                         <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Danh sách (Mã : Tên hiển thị)</span>
                         <button (click)="addCategory()" class="text-[9px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 px-2 py-1 rounded font-bold transition">+ Thêm</button>
                     </div>
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2 italic">Cảnh báo: Nếu đổi mã ID, dữ liệu cũ sẽ không bị mất dữ liệu nhưng cần cập nhật hàng loạt để hiển thị đúng nhóm (Khuyên dùng: Chỉ sửa Label).</div>
-                    
+
                     <div class="space-y-2 border border-slate-100 dark:border-slate-700/50 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/20">
                         @for (cat of categoriesLocal(); track $index) {
                             <div class="flex flex-col sm:flex-row gap-2 sm:items-center group">
                                 <div class="flex gap-2 flex-1">
-                                    <input [(ngModel)]="cat.id" class="w-1/3 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 sm:py-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition shadow-sm sm:shadow-none" placeholder="ID (VD: reagent)">
-                                    <input [(ngModel)]="cat.name" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 sm:py-1 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition shadow-sm sm:shadow-none" placeholder="Tên hiển thị (VD: Hóa chất)">
+                                    <input [(ngModel)]="cat.id" (ngModelChange)="onCategoryChange()" class="w-1/3 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 sm:py-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition shadow-sm sm:shadow-none" placeholder="ID (VD: reagent)">
+                                    <input [(ngModel)]="cat.name" (ngModelChange)="onCategoryChange()" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 sm:py-1 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition shadow-sm sm:shadow-none" placeholder="Tên hiển thị (VD: Hóa chất)">
                                 </div>
                                 <button (click)="removeCategory($index)" class="w-full sm:w-6 h-8 sm:h-6 shrink-0 flex items-center justify-center text-slate-400 dark:text-slate-500 sm:text-slate-300 sm:dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 transition sm:rounded-full sm:hover:bg-slate-100 sm:dark:hover:bg-slate-700 border border-slate-200 sm:border-transparent dark:border-slate-600 bg-white sm:bg-transparent dark:bg-slate-800 rounded shadow-sm sm:shadow-none"><i class="fa-solid fa-trash text-[10px] sm:text-[10px]"></i> <span class="sm:hidden ml-2 text-xs font-bold">Xóa</span></button>
                             </div>
@@ -73,21 +73,21 @@
                     </h3>
                     <button (click)="savePrintConfig()" class="text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm dark:shadow-none">Lưu</button>
                 </div>
-                
+
                 <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
                     <div>
                         <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Hiển thị Khung Ký Tên</div>
                         <div class="text-[10px] text-slate-400 dark:text-slate-500">Thêm mục "Xác nhận / Ký tên" vào cuối phiếu</div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" [(ngModel)]="printConfig().showSignature" class="sr-only peer">
+                        <input type="checkbox" [(ngModel)]="printConfig().showSignature" (ngModelChange)="onPrintConfigChange()" class="sr-only peer">
                         <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 dark:peer-checked:bg-purple-500"></div>
                     </label>
                 </div>
 
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Footer Text (Cam kết cuối phiếu)</label>
-                    <textarea [(ngModel)]="printConfig().footerText" rows="2" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-800 focus:border-purple-500 dark:focus:border-purple-500 outline-none resize-none transition" placeholder="Nội dung chân trang..."></textarea>
+                    <textarea [(ngModel)]="printConfig().footerText" (ngModelChange)="onPrintConfigChange()" rows="2" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-800 focus:border-purple-500 dark:focus:border-purple-500 outline-none resize-none transition" placeholder="Nội dung chân trang..."></textarea>
                 </div>
             </div>
 
@@ -99,10 +99,10 @@
                         Thông báo Hệ thống
                     </h3>
                 </div>
-                
+
                 <div class="flex flex-col gap-2">
                     <textarea [(ngModel)]="newUpdateContent" rows="2" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-800 focus:border-orange-500 outline-none resize-none transition" placeholder="Nhập nội dung thông báo mới cho người dùng..."></textarea>
-                    
+
                     <div class="flex items-center gap-2">
                         <div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400"><i class="fa-solid fa-link"></i></div>
                         <input [(ngModel)]="newUpdateActionUrl" type="text" class="flex-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-800 focus:border-orange-500 outline-none transition" placeholder="Link đính kèm (URL tuỳ chọn, vd: /reports)...">
@@ -152,21 +152,21 @@
 
         <!-- RIGHT COLUMN -->
         <div class="space-y-6">
-            
+
             <!-- 3. SYSTEM & AVATAR -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
                     <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center"><i class="fa-solid fa-sliders"></i></div>
                     Giao diện & Phiên bản
                 </h3>
-                
+
                 <!-- Avatar Style Selector -->
                 <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
                     <div>
                         <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Phong cách mặc định của Hệ thống</div>
                         <div class="text-[10px] text-slate-400 dark:text-slate-500">Áp dụng cho người chưa tùy chỉnh cá nhân</div>
                     </div>
-                    <select [ngModel]="state.avatarStyle()" (ngModelChange)="saveAvatarStyle($event)" 
+                    <select [ngModel]="state.avatarStyle()" (ngModelChange)="saveAvatarStyle($event)"
                             class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 outline-none focus:border-blue-500 dark:focus:border-blue-500 cursor-pointer">
                         <option value="google">📷 Ảnh Google (Chất lượng cao)</option>
                         <option value="bottts-neutral">🤖 Robot (Bottts Neutral)</option>
@@ -186,6 +186,30 @@
                 </div>
             </div>
 
+            <!-- 3.1. FEATURE VISIBILITY (LOCKING VS HIDING) -->
+            @if (state.currentUser()?.role === 'manager') {
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
+                            <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div>
+                            Hiển thị Tính năng Bị khóa
+                        </h3>
+                        <button (click)="saveShowLockedFeaturesConfig()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm dark:shadow-none">Lưu</button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Chế độ Hiển thị Khóa 🔒</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-[240px]">Khi BẬT: Mọi người dùng sẽ thấy toàn bộ menu/tính năng với icon 🔒 thay vì bị ẩn hoàn toàn.</div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" [(ngModel)]="showLockedFeaturesLocal" (ngModelChange)="onShowLockedFeaturesChange()" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 dark:peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+                </div>
+            }
+
             <!-- 3.5. MAINTENANCE MODE -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-center">
@@ -195,14 +219,14 @@
                     </h3>
                     <button (click)="saveMaintenanceConfig()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm dark:shadow-none">Lưu</button>
                 </div>
-                
+
                 <div class="flex items-center justify-between p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl border border-rose-100 dark:border-rose-900/30">
                     <div>
                         <div class="text-xs font-bold text-rose-700 dark:text-rose-400">Chế độ Bảo trì (Maintenance Mode)</div>
                         <div class="text-[10px] text-rose-600/80 dark:text-rose-500/80 mt-0.5 max-w-[200px]">Bật để chặn toàn bộ thao tác của nhân viên (Ngoại trừ Manager).</div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input type="checkbox" [(ngModel)]="maintenanceModeLocal" class="sr-only peer">
+                        <input type="checkbox" [(ngModel)]="maintenanceModeLocal" (ngModelChange)="onMaintenanceModeChange()" class="sr-only peer">
                         <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600 dark:peer-checked:bg-rose-500"></div>
                     </label>
                 </div>
@@ -230,7 +254,7 @@
                     <div class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-slate-300 flex items-center justify-center"><i class="fa-solid fa-shield-cat"></i></div>
                     An toàn Dữ liệu
                 </h3>
-                
+
                 <div class="grid grid-cols-2 gap-2">
                     <button (click)="exportData()" class="p-2 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 transition">
                         <i class="fa-solid fa-download"></i> Backup JSON
@@ -301,7 +325,7 @@
                         <input type="file" class="hidden" accept=".xlsx" (change)="importArchiverData($event)">
                     </label>
                 </div>
-                
+
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-slate-600 dark:text-slate-400">Dọn bản ghi cũ hơn:</span>
                     <select [(ngModel)]="archiverDays" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold outline-none cursor-pointer">
@@ -370,7 +394,7 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                
+
                 <!-- Modal Body -->
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 relative bg-slate-50/30 dark:bg-slate-900/20">
                     @if(isRecycling()) {
@@ -425,7 +449,7 @@
                 <!-- Modal Footer -->
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col md:flex-row justify-between gap-4 items-center">
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 font-bold md:w-1/2 leading-relaxed">
-                        <i class="fa-solid fa-triangle-exclamation text-orange-500 mr-1"></i> Tính năng Dọn rác sẽ <span class="text-rose-500">XÓA CỨNG (DeleteDoc)</span> toàn bộ danh sách ở trên khỏi Cloud và ép các nhân viên khác làm mới (F5) toàn bộ ứng dụng. 
+                        <i class="fa-solid fa-triangle-exclamation text-orange-500 mr-1"></i> Tính năng Dọn rác sẽ <span class="text-rose-500">XÓA CỨNG (DeleteDoc)</span> toàn bộ danh sách ở trên khỏi Cloud và ép các nhân viên khác làm mới (F5) toàn bộ ứng dụng.
                     </div>
                     <div class="flex gap-2 w-full md:w-auto shrink-0">
                         <button (click)="showRecycleBin.set(false)" class="flex-1 md:flex-none px-4 py-2 bg-white dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl transition shadow-sm">Đóng</button>

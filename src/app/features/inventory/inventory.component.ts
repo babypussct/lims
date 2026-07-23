@@ -20,11 +20,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { LabelPrintComponent } from '../labels/label-print.component';
 import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.service';
 import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
+import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent, HasPermissionDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent, HasPermissionDirective, LockPermissionDirective],
   templateUrl: './inventory.component.html',
   styles: [`
     @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }

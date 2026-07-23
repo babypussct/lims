@@ -45,7 +45,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   firebaseService = inject(FirebaseService);
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
-  sanitizer: DomSanitizer = inject(DomSanitizer); 
+  sanitizer: DomSanitizer = inject(DomSanitizer);
   router = inject(Router);
   googleDriveService = inject(GoogleDriveService);
   printService = inject(PrintService);
@@ -122,7 +122,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       let data = this.allStandards().filter(item => !item._isDeleted && (item.status as any) !== 'DELETED');
       const term = this.searchTerm().trim().toLowerCase();
       const widgetFilter = this.activeWidgetFilter();
-      
+
       // 1. WIDGET FILTER
       if (widgetFilter !== 'all') {
           const now = new Date();
@@ -135,10 +135,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
               if (widgetFilter === 'low_stock') {
                   return (item.current_amount / (item.initial_amount || 1)) <= 0.2;
               }
-              
+
               if (!item.expiry_date) return false;
               const expDate = new Date(item.expiry_date).getTime();
-              
+
               if (widgetFilter === 'expired') {
                   return expDate < today;
               }
@@ -156,7 +156,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (term) {
           const normalize = (s: any) => s ? String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
           const searchTerms = term.split('+').map(t => normalize(t.trim())).filter(t => t.length > 0);
-          
+
           data = data.filter(item => {
               // Cover ALL information of the standard by concatenating all values
               // Additionally, format YYYY-MM-DD dates as DD/MM/YYYY so user can search exactly what they see
@@ -171,7 +171,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                       return normalize(str);
                   })
                   .join(' ');
-                  
+
               return searchTerms.every(t => searchStr.includes(t));
           });
 
@@ -196,7 +196,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
               case 'received_desc': return (b.received_date || '').localeCompare(a.received_date || '');
               case 'expiry_asc': return (a.expiry_date || '9999').localeCompare(b.expiry_date || '9999');
               case 'expiry_desc': return (b.expiry_date || '').localeCompare(a.expiry_date || '');
-              case 'updated_desc': 
+              case 'updated_desc':
                   const ta = (a.lastUpdated?.seconds || 0);
                   const tb = (b.lastUpdated?.seconds || 0);
                   return tb - ta;
@@ -272,14 +272,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
   historyStd = signal<ReferenceStandard | null>(null);
   historyLogs = signal<UsageLog[]>([]);
   loadingHistory = signal(false);
-  
+
   showModal = signal(false);
   isEditing = signal(false);
-  
+
   showAssignModal = signal(false);
   isAssignMode = signal(true);
   userList = signal<UserProfile[]>([]);
-  
+
   showPrintModal = signal(false);
 
   // Bulk CoA Upload State
@@ -294,7 +294,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   constructor() {
       this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(term => {
-          this.searchTerm.set(term); 
+          this.searchTerm.set(term);
           // Reset pagination on search
           this.displayLimit.set(50);
       });
@@ -307,7 +307,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       });
   }
 
-  ngOnInit() { 
+  ngOnInit() {
       this.isLoading.set(true);
       // Pre-load Google Drive SDK script in background so when user interacts, we don't block for network request
       this.googleDriveService.ensureInitialized().catch(e => console.warn('GIS preload deferred:', e));
@@ -318,15 +318,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (cached && cached.length > 0) {
           this.allStandards.set(cached);
       }
-      
+
       this.snapshotUnsub = this.stdService.listenToStandards((items) => {
           this.allStandards.set([...items]);
           this.isLoading.set(false);
       });
   }
 
-  ngOnDestroy() { 
-      this.searchSubject.complete(); 
+  ngOnDestroy() {
+      this.searchSubject.complete();
       if (this.snapshotUnsub) this.snapshotUnsub();
       this.mobileMediaQuery.removeEventListener('change', this.onMediaChange);
   }
@@ -375,22 +375,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
   onSearchInput(val: string) { this.searchSubject.next(val); }
   onSortChange(val: string) { this.sortOption.set(val); }
 
-  openAddModal() { 
-      this.isEditing.set(false); 
+  openAddModal() {
+      this.isEditing.set(false);
       this.selectedStd.set(null);
-      this.showModal.set(true); 
+      this.showModal.set(true);
   }
-  
-  openEditModal(std: ReferenceStandard) { 
-      if (!this.auth.canEditStandards()) return; 
+
+  openEditModal(std: ReferenceStandard) {
+      if (!this.auth.canEditStandards()) return;
       this.selectedStd.set(std);
-      this.isEditing.set(true); 
-      this.showModal.set(true); 
+      this.isEditing.set(true);
+      this.showModal.set(true);
   }
-  
-  closeModal() { 
+
+  closeModal() {
       if (!this.isProcessing()) {
-          this.showModal.set(false); 
+          this.showModal.set(false);
       }
   }
 
@@ -407,15 +407,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.toast.show(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt.`, 'error');
           return;
       }
-      
+
       if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (Admin).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
           this.isProcessing.set(true);
-          try { 
-              await this.stdService.deleteSelectedStandards(ids); 
-              this.toast.show(`Đã ẩn ${ids.length} chuẩn. Lịch sử sử dụng vẫn được giữ lại.`, 'success'); 
+          try {
+              await this.stdService.deleteSelectedStandards(ids);
+              this.toast.show(`Đã ẩn ${ids.length} chuẩn. Lịch sử sử dụng vẫn được giữ lại.`, 'success');
               this.selectedIds.set(new Set());
-          } catch(e: any) { 
-              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+          } catch(e: any) {
+              this.toast.show('Lỗi xóa: ' + e.message, 'error');
           } finally {
               this.isProcessing.set(false);
           }
@@ -493,7 +493,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   triggerQuickDriveUpload(std: ReferenceStandard, event: Event) {
       event.stopPropagation();
       this.quickUploadStd = std;
-      
+
       if (this.googleDriveService.hasValidToken) {
           const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
           if (input) {
@@ -576,7 +576,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
         if (!file.name.toLowerCase().match(/\.(pdf|jpeg|jpg|png|webp|bmp|doc|docx)$/)) continue;
 
         const nameLower = file.name.toLowerCase();
-        
+
         // Match logic: Generate suggested standards sorted by global similarity score
         const scoredStandards = standards.map(s => {
             const score = calculateSimilarityScore(nameLower, s);
@@ -586,8 +586,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
         // Top ones first, fallback to alphabetical on tie
         scoredStandards.sort((a, b) => b.score - a.score || (a.std.name || '').localeCompare(b.std.name || ''));
         const suggestedStandards = scoredStandards.map(ss => ({ std: ss.std, score: ss.score }));
-        
-        // Define matched standard as top 1 IF the score is reasonably high enough 
+
+        // Define matched standard as top 1 IF the score is reasonably high enough
         // (to avoid forcing a match when nothing is actually similar)
         let matched: ReferenceStandard | null = null;
         let matchScore = 0;
@@ -605,7 +605,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
             status: 'pending'
         });
      }
-     
+
      if (newItems.length > 0) {
          this.bulkCoaItems.set(newItems);
          this.showBulkCoaModal.set(true);
@@ -643,7 +643,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           async () => {
               this.isBulkUploading.set(true);
               this.bulkUploadComplete.set(false);
-              
+
               this.progressService.start('Đang tải lên CoA hàng loạt', 'Vui lòng không đóng trình duyệt', toUpload.length);
               let processed = 0;
 
@@ -651,16 +651,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   for (const item of toUpload) {
                       processed++;
                       this.progressService.update(processed, `Đang xử lý tải lên cho chuẩn ${item.matchedStandard?.name}`);
-                      
+
                       item.status = 'uploading';
                       this.bulkCoaItems.set([...items]); // Trigger UI update
-                      
+
                       const std = item.matchedStandard!;
                       const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', item.file.name);
-                      
+
                       try {
                           const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
-                          
+
                           // Tìm tất cả các chuẩn cùng Tên và Số Lô (1-to-N matching)
                           const lot = (std.lot_number || '').trim().toLowerCase();
                           const siblings = lot
@@ -721,9 +721,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (this.isProcessing()) return;
       this.selectedStd.set(std);
       this.isAssignMode.set(isAssign);
-      
+
       this.showAssignModal.set(true);
-      
+
       if (isAssign && this.userList().length === 0) {
           try {
               const users = await this.firebaseService.getAllUsers();
@@ -736,7 +736,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   async confirmAssign(data: {userId: string, userName: string, purpose: string, expectedAmount: number | null}) {
       const std = this.selectedStd();
-      
+
       if (!std || !data.userId || !data.purpose) {
           this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
           return;
@@ -761,10 +761,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
               totalAmountUsed: 0
           };
 
-          // If it's "Assign Mode", it implies an admin is giving it to someone, 
+          // If it's "Assign Mode", it implies an admin is giving it to someone,
           // but we still follow the request workflow for tracking.
           await this.stdService.createRequest(request, this.isAssignMode());
-          
+
           if (this.isAssignMode()) {
               // Automatically dispense if assigning directly
               await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
@@ -772,7 +772,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           } else {
               this.toast.show('Đã gửi yêu cầu mượn chuẩn', 'success');
           }
-          
+
           this.showAssignModal.set(false);
       } catch (error: any) {
           this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
@@ -807,28 +807,28 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   async viewHistory(std: ReferenceStandard) {
-      this.historyStd.set(std); 
-      this.loadingHistory.set(true); 
-      try { 
-          const logs = await this.stdService.getUsageHistory(std.id); 
-          this.historyLogs.set(logs); 
-      } finally { 
-          this.loadingHistory.set(false); 
-      } 
+      this.historyStd.set(std);
+      this.loadingHistory.set(true);
+      try {
+          const logs = await this.stdService.getUsageHistory(std.id);
+          this.historyLogs.set(logs);
+      } finally {
+          this.loadingHistory.set(false);
+      }
   }
 
   async deleteLog(log: UsageLog) {
       if (this.isProcessing()) return;
       if (!this.historyStd() || !log.id) return;
-      
+
       if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
           this.isProcessing.set(true);
-          try { 
-              await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); 
-              this.toast.show('Đã xóa', 'success'); 
-              await this.viewHistory(this.historyStd()!); 
-          } catch (e: any) { 
-              this.toast.show('Lỗi: ' + e.message, 'error'); 
+          try {
+              await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id);
+              this.toast.show('Đã xóa', 'success');
+              await this.viewHistory(this.historyStd()!);
+          } catch (e: any) {
+              this.toast.show('Lỗi: ' + e.message, 'error');
           } finally {
               this.isProcessing.set(false);
           }
@@ -1079,7 +1079,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
               }
           });
 
-          const summaryDefs: Array<{ chi: string; gia: string | number; bg?: string; fg?: string; bold?: boolean }> = [
+          const summaryDefs: { chi: string; gia: string | number; bg?: string; fg?: string; bold?: boolean }[] = [
               { chi: 'Tong so chuan trong danh sach loc',   gia: allFiltered.length },
               { chi: 'So chuan xuat trong bao cao nay',     gia: items.length, bold: true },
               { chi: 'So nhom co chuan thay the trong kho', gia: groupsWithRep, bg: 'FFEEF2FF', fg: 'FF3730A3', bold: true },
@@ -1153,7 +1153,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       });
   }
 
-  private buildExportGroups(items: ReferenceStandard[]): Array<{ primary: ReferenceStandard; replacements: ReferenceStandard[] }> {
+  private buildExportGroups(items: ReferenceStandard[]): { primary: ReferenceStandard; replacements: ReferenceStandard[] }[] {
       const allStds = this.allStandards();
       const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
       return items.map(item => {

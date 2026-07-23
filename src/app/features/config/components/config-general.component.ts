@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,7 +6,7 @@ import { FirebaseService } from '../../../core/services/firebase.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { StateService } from '../../../core/services/state.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
-import { CategoryItem } from '../../../core/models/config.model';
+import { CategoryItem, PrintConfig } from '../../../core/models/config.model';
 import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy } from 'firebase/firestore';
@@ -23,6 +23,65 @@ import { NotificationCenterService } from '../../../core/services/notification-c
 export class ConfigGeneralComponent implements OnInit, OnDestroy {
   fb = inject(FirebaseService);
   state = inject(StateService);
+
+  isCategoriesDirty = signal(false);
+  isPrintConfigDirty = signal(false);
+  isMaintenanceModeDirty = signal(false);
+  isShowLockedFeaturesDirty = signal(false);
+
+  constructor() {
+    effect(() => {
+      const v = this.state.systemVersion();
+      if (!this.versionControl.dirty) {
+        this.versionControl.setValue(v, { emitEvent: false });
+      }
+    });
+    effect(() => {
+      const m = this.state.maintenanceMode();
+      if (!this.isMaintenanceModeDirty()) {
+        this.maintenanceModeLocal.set(m);
+      }
+    });
+    effect(() => {
+      const msg = this.state.maintenanceMessage() || '';
+      if (!this.maintenanceMessageLocal.dirty) {
+        this.maintenanceMessageLocal.setValue(msg, { emitEvent: false });
+      }
+    });
+    effect(() => {
+      const st = this.state.maintenanceScheduledTime() || '';
+      if (!this.maintenanceScheduledTimeLocal.dirty) {
+        this.maintenanceScheduledTimeLocal.setValue(st, { emitEvent: false });
+      }
+    });
+    effect(() => {
+      const s = this.state.showLockedFeatures();
+      if (!this.isShowLockedFeaturesDirty()) {
+        this.showLockedFeaturesLocal.set(s);
+      }
+    });
+    effect(() => {
+      const cats = this.state.categories();
+      if (!this.isCategoriesDirty()) {
+        this.categoriesLocal.set(JSON.parse(JSON.stringify(cats)));
+      }
+    });
+    effect(() => {
+      const cfg = this.state.printConfig();
+      if (cfg && !this.isPrintConfigDirty()) {
+        this.printConfig.set(JSON.parse(JSON.stringify(cfg)));
+      }
+    });
+  }
+
+  onMaintenanceModeChange() {
+    this.isMaintenanceModeDirty.set(true);
+  }
+
+  onShowLockedFeaturesChange() {
+    this.isShowLockedFeaturesDirty.set(true);
+  }
+
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   inventoryService = inject(InventoryService);
@@ -31,107 +90,68 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   notificationService = inject(NotificationService);
   notificationCenter = inject(NotificationCenterService);
 
-  versionControl = new FormControl(''); 
-  maintenanceModeLocal = signal<boolean>(false);
+  versionControl = new FormControl('');
+  maintenanceModeLocal = signal(false);
   maintenanceMessageLocal = new FormControl('');
   maintenanceScheduledTimeLocal = new FormControl('');
-  printConfig = this.state.printConfig;
-  
+  showLockedFeaturesLocal = signal(false);
   categoriesLocal = signal<CategoryItem[]>([]);
-  storageEstimate = signal<{ totalDocs: number, estimatedSizeKB: number, details: any } | null>(null);
 
-  archiverDays = signal<number>(180);
+  editingCategory = signal<CategoryItem | null>(null);
+  showCategoryModal = signal(false);
+  newCategoryName = '';
+  newCategoryCode = '';
+  newCategoryDescription = '';
+
+  archiverData = signal<any>(null);
   archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
-  archiverData = signal<{logs: any[], requests: any[]}>({logs: [], requests: []});
-
-  showRecycleBin = signal<boolean>(false);
+  archiverDays = signal(180);
+  storageEstimate = signal<{ totalDocs: number; estimatedSizeKB: number; details: any } | null>(null);
+  printConfig = signal<PrintConfig>({
+    showSignature: true,
+    footerText: ''
+  });
+  isRecycling = signal(false);
+  showRecycleBin = signal(false);
   recycleItems = signal<any[]>([]);
-  isRecycling = signal<boolean>(false);
 
   firestoreRules = computed(() => {
     const appId = this.fb.APP_ID;
-    return `rules_version = '2';
-service cloud.firestore {
+    return `service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper: kiểm tra user có role 'manager' không
-    function isManager() { 
-      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
+    function isManager() {
+      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) &&
              'role' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
-             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
+             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager';
     }
-    // Helper: kiểm tra user có quyền duyệt chuẩn
-    // LƯU Ý: permissions là Firestore Array => phải dùng hasAny(), KHÔNG dùng 'in' (chỉ cho Map keys)
     function isApprover() {
-      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
+      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) &&
              'permissions' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
              get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions.hasAny(['standard_approve']);
     }
-    // Helper: user đã đăng nhập
     function isAuth() { return request.auth != null; }
 
     match /artifacts/${appId} {
-        // Auth sessions: public (dùng cho shared workstations)
         match /auth_sessions/{sessionId} { allow read, write: if true; }
-
-        // Users: mọi người đăng nhập đều đọc được (avatar, tên)
-        // Ghi: chỉ manager hoặc chính chủ tài khoản
-        match /users/{userId} { 
-          allow read: if isAuth(); 
-          allow write: if isAuth() && (isManager() || request.auth.uid == userId); 
+        match /users/{userId} {
+          allow read: if isAuth();
+          allow write: if isAuth() && (isManager() || request.auth.uid == userId);
         }
-
-        // SOP Recipes
         match /recipes/{recipeId} { allow read, write: if isAuth(); }
-
-        // Công khai đọc (Truy xuất nguồn gốc QR), cần đăng nhập để ghi
         match /logs/{logId}      { allow read: if true; allow write: if isAuth(); }
         match /print_jobs/{jobId}{ allow read: if true; allow write: if isAuth(); }
-        match /requests/{reqId}  { 
-          allow read: if true; 
-          allow write: if isAuth(); 
-          
-          match /history/{version} {
-            allow read, write: if isAuth();
-          }
+        match /requests/{reqId}  {
+          allow read: if true;
+          allow write: if isAuth();
+          match /history/{version} { allow read, write: if isAuth(); }
         }
-
-        // === STANDARD REQUESTS: SCOPED BY ROLE ===
-        // PHÂN BIỆT list (query collection) vs get (đọc 1 doc):
-        // - list: Firestore KHÔNG có resource.data => không thể check requestedBy
-        //   => isAuth() là đủ vì app-level đã đảm bảo query đúng (manager query all, user query by uid)
-        // - get: có resource.data => kiểm tra requestedBy được
         match /standard_requests/{reqId} {
-          // LIST (query collection): không có resource.data, dùng isAuth() đơn giản
-          // App-level đảm bảo: manager/approver query by status, user query by requestedBy+status
           allow list: if isAuth();
-
-          // GET (đọc 1 document cụ thể): kiểm tra ownership hoặc quyền
-          allow get: if isAuth() && (
-            isManager() || isApprover() ||
-            resource.data.requestedBy == request.auth.uid
-          );
-          
-          // Khi tạo mới: người tạo phải đúng với thông tin đăng nhập (trừ khi là Manager/Approver tạo dùm)
-          allow create: if isAuth() && (
-            isManager() || isApprover() ||
-            request.resource.data.requestedBy == request.auth.uid
-          );
-          
-          // Khi cập nhật: chỉ được cập nhật request của mình và KHÔNG được đổi quyền sở hữu sang người khác
-          allow update: if isAuth() && (
-            isManager() || isApprover() ||
-            (resource.data.requestedBy == request.auth.uid && request.resource.data.requestedBy == request.auth.uid)
-          );
-          
-          // Khi xóa: chỉ được xóa request của mình
-          allow delete: if isAuth() && (
-            isManager() || isApprover() ||
-            resource.data.requestedBy == request.auth.uid
-          );
+          allow get: if isAuth() && (isManager() || isApprover() || resource.data.requestedBy == request.auth.uid);
+          allow create: if isAuth() && (isManager() || isApprover() || request.resource.data.requestedBy == request.auth.uid);
+          allow update: if isAuth() && (isManager() || isApprover() || (resource.data.requestedBy == request.auth.uid && request.resource.data.requestedBy == request.auth.uid));
+          allow delete: if isAuth() && (isManager() || isApprover() || resource.data.requestedBy == request.auth.uid);
         }
-
-        // Các collections còn lại: cần đăng nhập (inventory, SOPs, config, ...)
-        // KHÔNG dùng wildcard rộng để tránh override rule ở trên
         match /inventory/{docId}            { allow read, write: if isAuth(); }
         match /inventory/{docId}/history/{historyId} { allow read, write: if isAuth(); }
         match /sops/{docId}                 { allow read, write: if isAuth(); }
@@ -149,9 +169,6 @@ service cloud.firestore {
         match /target_groups/{docId}        { allow read, write: if isAuth(); }
         match /sample_description_master/{docId} { allow read: if isAuth(); allow write: if isManager(); }
         match /results_details/{docId}      { allow read, write: if isAuth(); }
-
-        // Fallback an toàn: từ chối tất cả những gì không được liệt kê
-        // (Bỏ wildcard cũ: match /{document=**} { allow read, write: if isAuth(); })
     }
   }
 }`;
@@ -164,11 +181,16 @@ service cloud.firestore {
   systemUpdatesSub: any;
 
   ngOnInit() {
-    this.versionControl.setValue(this.state.systemVersion()); 
+    this.versionControl.setValue(this.state.systemVersion());
     this.maintenanceModeLocal.set(this.state.maintenanceMode());
     this.maintenanceMessageLocal.setValue(this.state.maintenanceMessage());
     this.maintenanceScheduledTimeLocal.setValue(this.state.maintenanceScheduledTime() || '');
+    this.showLockedFeaturesLocal.set(this.state.showLockedFeatures());
     this.categoriesLocal.set(JSON.parse(JSON.stringify(this.state.categories())));
+    this.printConfig.set(this.state.printConfig() || {
+      showSignature: true,
+      footerText: ''
+    });
     this.listenSystemUpdates();
   }
 
@@ -197,7 +219,7 @@ service cloud.firestore {
       if (!this.newUpdateContent.trim()) return;
       const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
       const newRef = doc(updatesRef);
-      
+
       const content = this.newUpdateContent.trim();
       const actionUrl = this.newUpdateActionUrl.trim();
 
@@ -219,88 +241,57 @@ service cloud.firestore {
           channels: ['inbox', 'push']
       });
 
-      this.toast.show('Đã đăng và Broadcast thông báo tới tất cả người dùng!', 'success');
       this.newUpdateContent = '';
       this.newUpdateActionUrl = '';
+      this.toast.show('Đã đăng thông báo hệ thống!');
   }
 
   async deleteSystemUpdate(id: string) {
-      if (await this.confirmationService.confirm({ message: 'Bạn muốn xóa thông báo này? Lưu ý: Tác vụ này cũng sẽ thu hồi thông báo đẩy tương ứng trên máy của tất cả người dùng.', confirmText: 'Thu hồi & Xóa' })) {
-          const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates/${id}`);
-          await deleteDoc(ref);
-          await this.notificationService.deleteBroadcastByGroupId(id);
-          this.toast.show('Đã xóa và thu hồi thông báo từ tất cả người dùng', 'info');
-      }
-  }
+      if (!await this.confirmationService.confirm({
+          message: 'Xóa bài đăng này và thu hồi thông báo trong Hộp thư? (Lưu ý: Thông báo Push đã phát trên thiết bị không thể thu hồi)',
+          confirmText: 'Xóa & Thu hồi',
+          isDangerous: true
+      })) return;
 
-  async saveVersion() {
-      const val = this.versionControl.value;
-      if (val) {
-          await this.state.saveSystemVersion(val);
-          this.toast.show('Đã cập nhật phiên bản!');
-      }
-  }
-
-  async saveAvatarStyle(style: string) {
-      await this.state.saveAvatarStyle(style);
-      this.toast.show('Đã cập nhật giao diện Avatar!');
-  }
-
-  async saveMaintenanceConfig() {
-      const msg = this.maintenanceMessageLocal.value || 'Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.';
-      const scheduledVal = this.maintenanceScheduledTimeLocal.value || null;
-      await this.state.saveMaintenanceConfig(this.maintenanceModeLocal(), msg, scheduledVal);
-      
-      if (this.maintenanceModeLocal()) {
-          this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'info', true);
-      } else if (scheduledVal) {
-          const formatted = new Date(scheduledVal).toLocaleString('vi-VN');
-          this.toast.show(`Đã hẹn giờ bảo trì vào lúc ${formatted}`, 'info');
-      } else {
-          this.toast.show('Đã cập nhật cấu hình bảo trì thành công!', 'success');
-      }
-  }
-
-  clearScheduledTime() {
-      this.maintenanceScheduledTimeLocal.setValue('');
-      this.toast.show('Đã xóa thời gian hẹn giờ bảo trì. Nhấn Lưu để áp dụng.', 'info');
-  }
-
-  async loadUsage() {
       try {
-          const estimate = await this.fb.getStorageEstimate();
-          this.storageEstimate.set(estimate);
-      } catch (e) { this.toast.show('Lỗi tính dung lượng.', 'error'); }
-  }
+        await this.notificationCenter.deleteBroadcastByGroupId(id);
+      } catch (e) {
+        console.error('Revoke broadcast error:', e);
+        this.toast.show('Không thể thu hồi thông báo qua API. Bài đăng hệ thống CHƯA bị xóa để bạn có thể thử lại.', 'error');
+        return;
+      }
 
-  savePrintConfig() { this.state.savePrintConfig(this.printConfig()); }
-  copyRules() { navigator.clipboard.writeText(this.firestoreRules()).then(() => this.toast.show('Đã copy Rules!')); }
-  
-  async exportData() {
       try {
-          const data = await this.fb.exportData();
-          const json = JSON.stringify(data, null, 2);
-          const blob = new Blob([json], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = `LIMS_Backup_${this.fb.APP_ID}.json`; a.click(); URL.revokeObjectURL(url);
-          this.toast.show('Đã tải backup.');
-      } catch (e) { this.toast.show('Backup lỗi', 'error'); }
-  }
-
-  async importData(event: any) {
-      const file = event.target.files[0]; if (!file) return;
-      if (await this.confirmationService.confirm({ message: 'Restore sẽ GHI ĐÈ dữ liệu. Tiếp tục?', confirmText: 'Restore', isDangerous: true })) {
-          const reader = new FileReader();
-          reader.onload = async (e: any) => {
-              try { await this.fb.importData(JSON.parse(e.target.result)); this.toast.show('Restore thành công!', 'success'); setTimeout(() => window.location.reload(), 1000); } 
-              catch (err) { this.toast.show('File lỗi', 'error'); }
-          };
-          reader.readAsText(file);
+        await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates/${id}`));
+        this.toast.show('Đã xóa bài đăng hệ thống và thu hồi thông báo trong Hộp thư thành công.', 'success');
+      } catch (e: any) {
+        console.error('deleteDoc error:', e);
+        this.toast.show(`Đã thu hồi thông báo Hộp thư nhưng không thể xóa bài đăng khỏi Firestore: ${e?.message || e}`, 'error');
       }
   }
 
-  addCategory() { this.categoriesLocal.update(c => [...c, { id: '', name: '' }]); }
-  removeCategory(index: number) { this.categoriesLocal.update(c => c.filter((_, i) => i !== index)); }
+  saveAvatarStyle(event: any) {
+      const style = typeof event === 'string' ? event : event?.target?.value;
+      if (style) {
+          this.state.saveAvatarStyle(style);
+          this.toast.show('Đã cập nhật kiểu avatar.', 'success');
+      }
+  }
+
+  addCategory() {
+      this.isCategoriesDirty.set(true);
+      this.categoriesLocal.update(c => [...c, { id: '', name: '' }]);
+  }
+  removeCategory(index: number) {
+      this.isCategoriesDirty.set(true);
+      this.categoriesLocal.update(c => c.filter((_, i) => i !== index));
+  }
+  onCategoryChange() {
+      this.isCategoriesDirty.set(true);
+  }
+  onPrintConfigChange() {
+      this.isPrintConfigDirty.set(true);
+  }
   async saveCategories() {
       const validCategories = this.categoriesLocal().filter(c => c.id && c.id.trim() && c.name && c.name.trim());
       if (validCategories.length === 0) {
@@ -308,6 +299,7 @@ service cloud.firestore {
           return;
       }
       await this.state.saveCategoriesConfig(validCategories);
+      this.isCategoriesDirty.set(false);
       this.toast.show('Đã cập nhật danh mục phân loại.', 'success');
   }
 
@@ -316,17 +308,13 @@ service cloud.firestore {
     try {
       const logs = await this.fb.fetchOldData('logs', this.archiverDays());
       const requests = await this.fb.fetchOldData('requests', this.archiverDays());
-      
       this.archiverData.set({logs, requests});
-      
       if (logs.length === 0 && requests.length === 0) {
         this.toast.show('Không có dữ liệu cũ nào được tìm thấy.', 'info');
         this.archiverStatus.set('idle');
         return;
       }
-      
       this.exportArchiverToExcel(logs, requests);
-      
     } catch (e) {
       this.toast.show('Lỗi khi tải dữ liệu cũ.', 'error');
       this.archiverStatus.set('idle');
@@ -345,10 +333,8 @@ service cloud.firestore {
         const wsReqs = XLSX.utils.json_to_sheet(requests);
         XLSX.utils.book_append_sheet(wb, wsReqs, "Requests");
       }
-      
       const fileName = `LIMS_Archive_${this.archiverDays()}days_${new Date().getTime()}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      
       this.archiverStatus.set('ready_to_delete');
     } catch (e) {
       this.toast.show('Lỗi khi tạo file Excel.', 'error');
@@ -363,9 +349,8 @@ service cloud.firestore {
 
   async confirmDeleteArchiver() {
     const data = this.archiverData();
-    if (data.logs.length === 0 && data.requests.length === 0) return;
-    
-    const count = data.logs.length + data.requests.length;
+    if (!data || (data.logs?.length === 0 && data.requests?.length === 0)) return;
+    const count = (data.logs?.length || 0) + (data.requests?.length || 0);
     if (!await this.confirmationService.confirm({
       message: `CẢNH BÁO: Tác vụ này sẽ XÓA VĨNH VIỄN ${count} bản ghi cũ khỏi Firebase. Bạn CHẮC CHẮN MÌNH ĐÃ TẢI LƯU TRỮ CHƯA?`,
       confirmText: 'XÓA THẬT KỸ',
@@ -374,16 +359,16 @@ service cloud.firestore {
 
     this.archiverStatus.set('deleting');
     try {
-      if (data.logs.length > 0) {
-        await this.fb.deleteDocsInBatch('logs', data.logs.map(d => d.id));
+      if (data.logs?.length > 0) {
+        await this.fb.deleteDocsInBatch('logs', data.logs.map((d: any) => d.id));
       }
-      if (data.requests.length > 0) {
-        await this.fb.deleteDocsInBatch('requests', data.requests.map(d => d.id));
+      if (data.requests?.length > 0) {
+        await this.fb.deleteDocsInBatch('requests', data.requests.map((d: any) => d.id));
       }
       this.toast.show(`Thành công! Đã dọn dẹp ${count} bản ghi cũ rác.`, 'success');
       this.archiverStatus.set('idle');
       this.archiverData.set({logs: [], requests: []});
-      this.loadUsage(); // Cập nhật lại số liệu
+      this.loadUsage();
     } catch (e) {
       this.toast.show('Lỗi khi xóa dữ liệu.', 'error');
       this.archiverStatus.set('ready_to_delete');
@@ -393,7 +378,6 @@ service cloud.firestore {
   async importArchiverData(event: any) {
     const file = event.target.files[0];
     if (!file) return;
-
     if (!await this.confirmationService.confirm({
         message: `Bạn chuẩn bị khôi phục lại dữ liệu từ File Excel: ${file.name}. Quá trình này sẽ nạp lại các bản ghi cũ lên hệ thống (có thể tốn thời gian). Bạn chắc chắn chứ?`,
         confirmText: 'Bắt đầu Nạp'
@@ -401,45 +385,31 @@ service cloud.firestore {
         event.target.value = '';
         return;
     }
-
     this.archiverStatus.set('restoring');
-
     const reader = new FileReader();
     reader.onload = async (e: any) => {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            
             let logsToRestore: any[] = [];
             let reqsToRestore: any[] = [];
-
             if (workbook.SheetNames.includes('Logs')) {
-                const ws = workbook.Sheets['Logs'];
-                logsToRestore = XLSX.utils.sheet_to_json(ws);
+                logsToRestore = XLSX.utils.sheet_to_json(workbook.Sheets['Logs']);
             }
             if (workbook.SheetNames.includes('Requests')) {
-                const ws = workbook.Sheets['Requests'];
-                reqsToRestore = XLSX.utils.sheet_to_json(ws);
+                reqsToRestore = XLSX.utils.sheet_to_json(workbook.Sheets['Requests']);
             }
-
             if (logsToRestore.length === 0 && reqsToRestore.length === 0) {
                 this.toast.show('Không tìm thấy dữ liệu hợp lệ trong file Excel.', 'error');
                 this.archiverStatus.set('idle');
                 return;
             }
-
             let restoredCount = 0;
-            if (logsToRestore.length > 0) {
-                restoredCount += await this.fb.restoreArchivedData('logs', logsToRestore);
-            }
-            if (reqsToRestore.length > 0) {
-                restoredCount += await this.fb.restoreArchivedData('requests', reqsToRestore);
-            }
-
+            if (logsToRestore.length > 0) restoredCount += await this.fb.restoreArchivedData('logs', logsToRestore);
+            if (reqsToRestore.length > 0) restoredCount += await this.fb.restoreArchivedData('requests', reqsToRestore);
             this.toast.show(`Thành công! Đã nạp lại ${restoredCount} bản ghi vào hệ thống.`, 'success');
             this.archiverStatus.set('idle');
             this.loadUsage();
-
         } catch (err) {
             this.toast.show('Lỗi định dạng File Excel.', 'error');
             this.archiverStatus.set('idle');
@@ -451,8 +421,67 @@ service cloud.firestore {
         this.toast.show('Không thể đọc file.', 'error');
         this.archiverStatus.set('idle');
         event.target.value = '';
-    }
+    };
     reader.readAsArrayBuffer(file);
+  }
+
+  async loadUsage() {
+      try {
+          const estimate = await this.fb.getStorageEstimate();
+          this.storageEstimate.set(estimate);
+      } catch (e) { this.toast.show('Lỗi tính dung lượng.', 'error'); }
+  }
+
+  async savePrintConfig() {
+      try {
+          await this.state.savePrintConfig(this.printConfig());
+          this.isPrintConfigDirty.set(false);
+          this.toast.show('Đã lưu cấu hình in thành công.', 'success');
+      } catch (e: any) {
+          this.toast.show(`Không thể lưu cấu hình in: ${e?.message || e}`, 'error');
+      }
+  }
+  copyRules() { navigator.clipboard.writeText(this.firestoreRules()).then(() => this.toast.show('Đã copy Rules!')); }
+
+  async exportData() {
+      try {
+          const data = await this.fb.exportData();
+          const json = JSON.stringify(data, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = `LIMS_Backup_${this.fb.APP_ID}.json`; a.click(); URL.revokeObjectURL(url);
+          this.toast.show('Đã tải backup.');
+      } catch (e) { this.toast.show('Backup lỗi', 'error'); }
+  }
+
+  async importData(event: any) {
+      const file = event.target.files[0]; if (!file) return;
+      if (await this.confirmationService.confirm({ message: 'Restore sẽ GHI ĐÈ dữ liệu. Tiếp tục?', confirmText: 'Restore', isDangerous: true })) {
+          const reader = new FileReader();
+          reader.onload = async (e: any) => {
+              try { await this.fb.importData(JSON.parse(e.target.result)); this.toast.show('Restore thành công!', 'success'); setTimeout(() => window.location.reload(), 1000); }
+              catch (err) { this.toast.show('File lỗi', 'error'); }
+          };
+          reader.readAsText(file);
+      }
+  }
+
+  async saveMaintenanceConfig() {
+      const msg = this.maintenanceMessageLocal.value || 'Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.';
+      const scheduledVal = this.maintenanceScheduledTimeLocal.value || null;
+      await this.state.saveMaintenanceConfig(this.maintenanceModeLocal(), msg, scheduledVal);
+      this.isMaintenanceModeDirty.set(false);
+      this.maintenanceMessageLocal.markAsPristine();
+      this.maintenanceScheduledTimeLocal.markAsPristine();
+
+      if (this.maintenanceModeLocal()) {
+          this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'info', true);
+      } else if (scheduledVal) {
+          const formatted = new Date(scheduledVal).toLocaleString('vi-VN');
+          this.toast.show(`Đã hẹn giờ bảo trì vào lúc ${formatted}`, 'info');
+      } else {
+          this.toast.show('Đã cập nhật cấu hình bảo trì thành công!', 'success');
+      }
   }
 
   async openRecycleBin() {
@@ -488,6 +517,23 @@ service cloud.firestore {
       }
   }
 
+  async saveShowLockedFeaturesConfig() {
+      await this.state.saveShowLockedFeaturesConfig(this.showLockedFeaturesLocal());
+      this.isShowLockedFeaturesDirty.set(false);
+      this.toast.show(
+        this.showLockedFeaturesLocal()
+          ? 'Đã BẬT chế độ hiển thị tính năng bị khóa (🔒) cho toàn hệ thống!'
+          : 'Đã TẮT chế độ hiển thị tính năng bị khóa (quay lại chế độ ẩn mặc định).',
+        'info'
+      );
+  }
+
+  clearScheduledTime() {
+      this.maintenanceScheduledTimeLocal.setValue('');
+      this.maintenanceScheduledTimeLocal.markAsDirty();
+      this.toast.show('Đã xóa thời gian hẹn giờ bảo trì. Nhấn Lưu để áp dụng.', 'info');
+  }
+
   async restoreRecycleItem(item: any) {
       if (!await this.confirmationService.confirm({ message: `Bạn muốn khôi phục dữ liệu: ${item.name}?`, confirmText: 'Khôi phục' })) return;
       this.isRecycling.set(true);
@@ -499,7 +545,7 @@ service cloud.firestore {
           }
           this.toast.show('Đã khôi phục thành công!');
           this.recycleItems.update(list => list.filter(i => i !== item));
-          
+
           if (item.type === 'inventory') await this.fb.updateMetadata('inventory');
           if (item.type === 'standard') await this.fb.updateMetadata('standards');
       } catch (e) {
@@ -512,25 +558,25 @@ service cloud.firestore {
 
   async emptyRecycleBin() {
       if (!await this.confirmationService.confirm({ message: 'Thao tác này là KHÔNG THỂ PHỤC HỒI. Nó gửi lệnh ÉP TOÀN BỘ NHÂN VIÊN bị Reset App. Tiếp tục?', confirmText: 'DỌN RÁC NGAY', isDangerous: true })) return;
-      
+
       this.isRecycling.set(true);
       try {
           const BATCH_SIZE = 400;
           let batch = writeBatch(this.fb.db);
           let opCount = 0;
-          
+
           const items = this.recycleItems();
           for (const item of items) {
               const path = item.type === 'inventory' ? `artifacts/${this.fb.APP_ID}/inventory/${item.id}` : `artifacts/${this.fb.APP_ID}/reference_standards/${item.id}`;
               batch.delete(doc(this.fb.db, path));
               opCount++;
-              
+
               if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
           }
           if (opCount > 0) await batch.commit();
-          
+
           await this.fb.adminForceSyncCache();
-          
+
           this.toast.show('Đã xóa vĩnh viễn rác và phát tín hiệu F5.');
           this.recycleItems.set([]);
           setTimeout(() => this.showRecycleBin.set(false), 500);

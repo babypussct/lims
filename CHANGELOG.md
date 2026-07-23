@@ -1,5 +1,29 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b16] - 23/07/2026
+
+### 🔒 Chuyển Chế Độ Giao Diện Từ Ẩn Sang Khóa (🔒) Kèm Cấu Hình Bật/Tắt Toàn Hệ Thống
+
+#### 🎯 Chế độ Khóa Giao Diện (Lock Permission Directive)
+- **Chuyển đổi các chức năng thiếu quyền từ "Ẩn" sang "Khóa" (🔒)**:
+  Thay vì ẩn hoàn toàn làm người dùng hiểu lầm là hệ thống không có tính năng đó, giao diện nay hiển thị rõ các nút bấm/phân hệ bị hạn chế kèm icon 🔒, mờ nhẹ và tooltip giải thích chi tiết lý do thiếu quyền.
+- **Bảo tồn Tooltip gốc khi được cấp quyền**:
+  Khi người dùng có đủ quyền truy cập, thuộc tính `title` nguyên bản của các nút bấm (như *"In nhãn"*, *"Sửa SOP"*, *"Xuất dữ liệu"*) sẽ được khôi phục tự động.
+
+#### ⚙️ Cấu Hình Công Tắc Bật/Tắt Hiển Thị Khóa Toàn Hệ Thống & Quy Trình Phát Hành
+- **Công tắc Admin chủ động (Show Locked Features)**:
+  Bổ sung tùy chọn trong phần Cấu hình Chung giúp Quản trị viên (Manager) chủ động BẬT hoặc TẮT chế độ hiển thị tính năng khóa trên toàn hệ thống (BẬT: hiện icon 🔒; TẮT: quay về ẩn giao diện như cũ).
+- **Bảo vệ dữ liệu đang nhập (Dirty Tracking)**:
+  Toàn bộ Form Cấu hình được trang bị cơ chế theo dõi cờ Dirty. Các tín hiệu Realtime `onSnapshot` từ máy khác sẽ không bao giờ ghi đè lên nội dung đang nhập dở của Admin.
+- **Bắt buộc Quy trình Đồng bộ Đủ 5 Tệp Phiên Bản (Mandatory 5-File Synchronization)**:
+  Mọi thao tác Build/Release/Push code đều được tự động rà soát và đồng bộ đủ 5 tệp (`package.json`, `ngsw-config.json`, `state.service.ts`, `metadata.json`, `CHANGELOG.md`).
+
+#### 🔔 Thu Hồi Broadcast Thông Báo An Toàn & Khắc Phục Lỗi
+- **Thu hồi thông báo Hộp thư & Xử lý lỗi Fail-safe**:
+  Khi Admin xóa tin tức hệ thống, API thu hồi sẽ xóa sạch bản ghi thông báo trong Hộp thư của người dùng trước khi dọn dẹp bài đăng. Nếu có lỗi mạng/API, bài đăng được giữ nguyên trong Firestore để Admin bấm thử lại.
+
+---
+
 ## [v26.07.22-b10] - 22/07/2026
 
 ### 🎨 Tối Ưu Căn Chỉnh Giao Diện Header Sidebar Khi Thu Gọn

@@ -269,7 +269,7 @@
                         <i class="fa-solid fa-paper-plane"></i> Gửi Yêu Cầu Duyệt
                       </button>
 
-                      <button *appHasPermission="'sop_approve'" (click)="approveAndCreatePrintJob(currentSop)" [disabled]="isProcessing() || form().invalid" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition hover:from-emerald-600 hover:to-teal-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <button [appLockPermission]="'sop_approve'" (click)="approveAndCreatePrintJob(currentSop)" [disabled]="isProcessing() || form().invalid" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition hover:from-emerald-600 hover:to-teal-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... }
                         @else { <i class="fa-solid fa-check-double"></i> Duyệt & In Phiếu Ngay }
                       </button>
@@ -459,8 +459,8 @@
                     [class]="libraryTab() === 'sops' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'">
                     <i class="fa-solid fa-file-lines"></i> Quy trình (SOPs)
                   </button>
-                  @if(canViewRecipes()) {
-                    <button (click)="libraryTab.set('recipes')"
+                  @if(canViewRecipes() || state.showLockedFeatures()) {
+                    <button [appLockPermission]="'recipe_view'" (click)="libraryTab.set('recipes')"
                       class="pb-3 text-sm font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide px-2"
                       [class]="libraryTab() === 'recipes' ? 'border-purple-600 text-purple-700 dark:text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'">
                       <i class="fa-solid fa-flask"></i> Công thức (Recipes)
@@ -479,14 +479,14 @@
                         placeholder="Tìm kiếm SOP...">
                       </div>
 
-                      @if(canEditSop()) {
+                      @if(canEditSop() || state.showLockedFeatures()) {
                         <div class="flex gap-2 self-end md:self-auto">
-                          <button (click)="importFileInput.click()" class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 px-4 py-2 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95" title="Import SOP từ file JSON">
+                          <button [appLockPermission]="'sop_edit'" (click)="importFileInput.click()" class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 px-4 py-2 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95" title="Import SOP từ file JSON">
                             <i class="fa-solid fa-file-import"></i> <span class="hidden md:inline">Import</span>
                           </button>
                           <input #importFileInput type="file" class="hidden" accept=".json" (change)="importSop($event)">
 
-                          <button (click)="createNew()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 shrink-0 active:scale-95">
+                          <button [appLockPermission]="'sop_edit'" (click)="createNew()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 shrink-0 active:scale-95">
                             <i class="fa-solid fa-plus"></i> <span class="hidden md:inline">Tạo mới</span>
                           </button>
                         </div>
@@ -507,11 +507,11 @@
                               @if (activeMenuSopId() === sop.id) {
                                 <div class="absolute top-8 right-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 w-48 z-30 animate-slide-up overflow-hidden" (click)="$event.stopPropagation()">
                                   <button (click)="exportSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-download text-emerald-500 w-4"></i> Export JSON</button>
-                                  @if(canEditSop()) {
-                                    <button (click)="duplicateSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-copy text-purple-500 w-4"></i> Nhân bản</button>
-                                    <button (click)="editDirect(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-pen text-blue-500 w-4"></i> Chỉnh sửa</button>
+                                  @if(canEditSop() || state.showLockedFeatures()) {
+                                    <button [appLockPermission]="'sop_edit'" (click)="duplicateSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-copy text-purple-500 w-4"></i> Nhân bản</button>
+                                    <button [appLockPermission]="'sop_edit'" (click)="editDirect(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-pen text-blue-500 w-4"></i> Chỉnh sửa</button>
                                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-                                    <button (click)="softDeleteSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition"><i class="fa-solid fa-box-archive w-4"></i> Lưu trữ</button>
+                                    <button [appLockPermission]="'sop_edit'" (click)="softDeleteSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition"><i class="fa-solid fa-box-archive w-4"></i> Lưu trữ</button>
                                   }
                                 </div>
                               }

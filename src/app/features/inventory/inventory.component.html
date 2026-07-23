@@ -72,7 +72,7 @@
                         </select>
                     </div>
                     <!-- Desktop Add Button (Hidden on Mobile) -->
-                    <button *appHasPermission="'inventory_edit'" (click)="openModal()" class="hidden md:flex bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase shadow-sm dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition items-center gap-2">
+                    <button [appLockPermission]="'inventory_edit'" (click)="openModal()" class="hidden md:flex bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase shadow-sm dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition items-center gap-2">
                         <i class="fa-solid fa-plus"></i> Thêm
                     </button>
                 </div>
@@ -136,7 +136,7 @@
                                             <span class="text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-1 rounded">{{state.categoriesMap().get(item.category || '') || item.category}}</span>
                                         </div>
                                     </div>
-                                    <div *appHasPermission="'inventory_edit'" class="flex items-center justify-end" (click)="$event.stopPropagation()">
+                                    <div [appLockPermission]="'inventory_edit'" class="flex items-center justify-end" (click)="$event.stopPropagation()">
                                         <div class="flex items-center gap-2">
                                             <input #quickInputMobile type="text" inputmode="text" [disabled]="isProcessing()" class="w-24 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 rounded-lg text-center focus:border-fuchsia-500 dark:focus:border-fuchsia-500 outline-none font-bold text-slate-700 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-900/50" [placeholder]="'+/- (' + item.unit + ')'" (keyup.enter)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''">
                                             <button (click)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''" class="h-8 px-3 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none text-[11px] font-bold gap-1.5"><i class="fa-solid fa-bolt"></i> Nhanh</button>
@@ -304,7 +304,7 @@
 
       <!-- MOBILE FAB (ADD BUTTON) -->
       @if (activeTab() === 'list') {
-          <button *appHasPermission="'inventory_edit'" (click)="openModal()" class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-full shadow-lg shadow-slate-400 dark:shadow-none flex items-center justify-center z-30 transition-transform active:scale-90 animate-bounce-in">
+          <button [appLockPermission]="'inventory_edit'" (click)="openModal()" class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-full shadow-lg shadow-slate-400 dark:shadow-none flex items-center justify-center z-30 transition-transform active:scale-90 animate-bounce-in">
               <i class="fa-solid fa-plus text-xl"></i>
           </button>
       }

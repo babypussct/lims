@@ -83,14 +83,16 @@ export class StateService implements OnDestroy {
 
   // NEW: Avatar Style Preference (Default: bottts-neutral for modern look)
   avatarStyle = signal<string>('bottts-neutral');
-  
+
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.22-b10');
+  systemVersion = signal<string>('v26.07.23-b16');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
+  showLockedFeatures = signal<boolean>(false);
+  private sysConfigSub?: Unsubscribe;
 
   selectedSop = signal<Sop | null>(null);
   editingSop = signal<Sop | null>(null);
@@ -180,6 +182,10 @@ export class StateService implements OnDestroy {
   private cleanupListeners() {
     this.listeners.forEach(unsub => unsub());
     this.listeners = [];
+    if (this.sysConfigSub) {
+      this.sysConfigSub();
+      this.sysConfigSub = undefined;
+    }
     if (this._unregisterStdReqListener) {
       this._unregisterStdReqListener();
       this._unregisterStdReqListener = undefined;
@@ -403,6 +409,20 @@ export class StateService implements OnDestroy {
       const serverVersion = metaSnap.exists() ? metaSnap.data()['lastUpdated'] || 0 : 0;
       const localVersion = Number(localStorage.getItem(this.CONFIG_VERSION_KEY) || 0);
 
+      // Tự động đăng ký listener realtime cho system config (bảo trì, khóa tính năng)
+      if (!this.sysConfigSub) {
+        this.sysConfigSub = onSnapshot(doc(this.fb.db, base, 'system'), (snap) => {
+          if (snap.exists()) {
+            const d = snap.data();
+            if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
+            if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
+            if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
+            if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
+            this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
+          }
+        });
+      }
+
       // Nếu có cache và server chưa cập nhật gì mới => Dừng lại, dùng toàn bộ local cache!
       // (Tiết kiệm 4 lượt Reads mỗi lần bật app)
       if (hasCache && serverVersion > 0 && localVersion >= serverVersion) {
@@ -428,6 +448,7 @@ export class StateService implements OnDestroy {
         if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
         if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
         if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
+        if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
         this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
       }
 
@@ -455,6 +476,7 @@ export class StateService implements OnDestroy {
       if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
       if (cache.system?.['maintenanceMode'] !== undefined) this.maintenanceMode.set(cache.system['maintenanceMode']);
       if (cache.system?.['maintenanceMessage']) this.maintenanceMessage.set(cache.system['maintenanceMessage']);
+      if (cache.system?.['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(cache.system['showLockedFeatures']);
       this.maintenanceScheduledTime.set(cache.system?.['maintenanceScheduledTime'] || null);
       return true;
     } catch (_) { return false; /* ignore stale/corrupt cache */ }
@@ -566,12 +588,12 @@ export class StateService implements OnDestroy {
 
   async saveMaintenanceConfig(mode: boolean, message: string, scheduledTime: string | null = null) {
     const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
-    await setDoc(ref, { 
-      maintenanceMode: mode, 
+    await setDoc(ref, {
+      maintenanceMode: mode,
       maintenanceMessage: message,
       maintenanceScheduledTime: scheduledTime
     }, { merge: true });
-    
+
     // Ghi nhận Audit Log
     let details = mode ? `Bật chế độ bảo trì. Nội dung: "${message}"` : 'Tắt chế độ bảo trì.';
     if (scheduledTime) {
@@ -580,6 +602,18 @@ export class StateService implements OnDestroy {
     }
     await this.logMaintenanceActivity(mode ? 'MAINTENANCE_ON' : 'MAINTENANCE_OFF', details);
 
+    await this.updateConfigMetadata();
+    await this.loadConfig();
+  }
+
+  async saveShowLockedFeaturesConfig(showLocked: boolean) {
+    const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+    await setDoc(ref, {
+      showLockedFeatures: showLocked
+    }, { merge: true });
+
+    this.showLockedFeatures.set(showLocked);
+    await this.logMaintenanceActivity(showLocked ? 'SHOW_LOCKED_ON' : 'SHOW_LOCKED_OFF', showLocked ? 'Bật hiển thị tính năng khóa toàn hệ thống' : 'Tắt hiển thị tính năng khóa toàn hệ thống');
     await this.updateConfigMetadata();
     await this.loadConfig();
   }
@@ -967,11 +1001,11 @@ export class StateService implements OnDestroy {
         for (let i = 0; i < existingItems.length; i++) { transaction.update(invRefs[i], { stock: increment(existingItems[i].amount), lastUpdated: serverTimestamp() }); }
 
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        
-        const updates: any = { 
-          status: targetStatus, 
-          approvedAt: deleteField(), 
-          lastUpdated: serverTimestamp() 
+
+        const updates: any = {
+          status: targetStatus,
+          approvedAt: deleteField(),
+          lastUpdated: serverTimestamp()
         };
         if (targetStatus === 'rejected') {
           updates.rejectedAt = serverTimestamp();
@@ -980,14 +1014,14 @@ export class StateService implements OnDestroy {
 
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
-        transaction.set(logRef, { 
-          action: targetStatus === 'rejected' ? 'REVOKE_AND_REJECT' : 'REVOKE_APPROVE', 
-          details: `${actionText}: ${req.sopName}`, 
-          timestamp: serverTimestamp(), 
-          lastUpdated: serverTimestamp(), 
-          user: this.getCurrentUserName(), 
-          printable: false, 
-          requestId: req.id 
+        transaction.set(logRef, {
+          action: targetStatus === 'rejected' ? 'REVOKE_AND_REJECT' : 'REVOKE_APPROVE',
+          details: `${actionText}: ${req.sopName}`,
+          timestamp: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+          user: this.getCurrentUserName(),
+          printable: false,
+          requestId: req.id
         });
       });
       this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
