@@ -91,7 +91,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.23-b23');
+  systemVersion = signal<string>('v26.07.23-b24');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -944,7 +944,7 @@ export class StateService implements OnDestroy {
           createdBy: this.getCurrentUserName()
         });
 
-        transaction.set(logRef, {
+        transaction.set(logRef, sanitizeForFirebase({
           action: 'DIRECT_APPROVE',
           details: `Duyệt trực tiếp và đưa vào hàng đợi in SOP: ${sop.name}`,
           timestamp: serverTimestamp(),
@@ -958,7 +958,7 @@ export class StateService implements OnDestroy {
             category: sop.category,
             ref: sop.ref
           }
-        });
+        }));
       });
       if (options.showSuccessToast !== false) {
         this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
@@ -1064,7 +1064,7 @@ export class StateService implements OnDestroy {
             createdBy: this.getCurrentUserName()
           });
 
-          transaction.set(logRef, {
+          transaction.set(logRef, sanitizeForFirebase({
             action: 'APPROVE_REQUEST',
             details: `Duyệt yêu cầu: ${req.sopName}`,
             timestamp: serverTimestamp(),
@@ -1078,11 +1078,11 @@ export class StateService implements OnDestroy {
               category: sop.category,
               ref: sop.ref
             }
-          });
+          }));
         } else {
-          transaction.set(logRef, {
+          transaction.set(logRef, sanitizeForFirebase({
             action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), lastUpdated: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
-          });
+          }));
         }
       });
       this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
@@ -1114,7 +1114,7 @@ export class StateService implements OnDestroy {
 
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
-        transaction.set(logRef, {
+        transaction.set(logRef, sanitizeForFirebase({
           action: targetStatus === 'rejected' ? 'REVOKE_AND_REJECT' : 'REVOKE_APPROVE',
           details: `${actionText}: ${req.sopName}`,
           timestamp: serverTimestamp(),
@@ -1122,7 +1122,7 @@ export class StateService implements OnDestroy {
           user: this.getCurrentUserName(),
           printable: false,
           requestId: req.id
-        });
+        }));
       });
       this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
@@ -1250,7 +1250,7 @@ export class StateService implements OnDestroy {
           createdBy: this.getCurrentUserName()
         });
 
-        transaction.set(logRef, {
+        transaction.set(logRef, sanitizeForFirebase({
           action: 'EDIT_REQUEST',
           details: `Chỉnh sửa phiếu: ${req.sopName}`,
           timestamp: serverTimestamp(),
@@ -1266,7 +1266,7 @@ export class StateService implements OnDestroy {
             category: sop.category,
             ref: sop.ref
           }
-        });
+        }));
       });
       this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');
       return true;

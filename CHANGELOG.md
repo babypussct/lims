@@ -1,5 +1,16 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b24] - 23/07/2026
+
+### ✅ Sửa Lỗi Lưu Mẻ Sau Khi Chỉnh Sửa
+
+#### 🧾 Ghi Nhật Ký Ổn Định Hơn
+- **Sửa lỗi Firestore báo `undefined`:** Khi SOP thiếu thông tin phụ như mã tham chiếu, hệ thống vẫn lưu chỉnh sửa mẻ bình thường.
+- **Tự làm sạch dữ liệu trước khi ghi log:** Nhật ký duyệt, hoàn tác và sửa mẻ không còn gửi giá trị rỗng không hợp lệ lên Firestore.
+- **Giữ nguyên luồng in mới:** Sau khi sửa mẻ, phiếu in cũ vẫn được thay bằng phiếu in mới như thiết kế.
+
+---
+
 ## [v26.07.23-b23] - 23/07/2026
 
 ### ⚡ SmartBatch Nhanh Hơn, Sửa Mẻ Dễ Hơn
