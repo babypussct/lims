@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
@@ -15,7 +15,7 @@ import { isFefoCandidate } from '../../../shared/utils/standard-fefo';
 import { RequestsKanbanComponent } from './components/requests-kanban.component';
 import { RequestsTableComponent } from './components/requests-table.component';
 import { CreateRequestDrawerComponent } from './components/create-request-drawer.component';
-import { RequestsActionModalsComponent, ActionModalMode } from './components/requests-action-modals.component';
+import { RequestsActionModalsComponent } from './components/requests-action-modals.component';
 import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
 import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 
@@ -24,12 +24,15 @@ function removeAccents(str: string): string {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
+type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminReceive' | null;
+
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective],
   providers: [DatePipe],
-  templateUrl: './standard-requests.component.html'
+  templateUrl: './standard-requests.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StandardRequestsComponent implements OnInit, OnDestroy {
   stdService = inject(StandardService);

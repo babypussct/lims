@@ -192,6 +192,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
+        this.state.ensureUserInfoCacheListener();
         // Subscribe to route params to handle navigation between related standards
         this.routeSub = this.route.paramMap.subscribe(params => {
             const id = params.get('id');

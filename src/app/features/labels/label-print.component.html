@@ -490,9 +490,9 @@
                             <!-- Continuous Strip Simulation -->
                             <div id="brother-preview-strip" class="bg-white shadow-xl flex flex-col items-center"
                                  [style.width.mm]="brotherWidth()" [style.min-height.mm]="100">
-                                @for (page of brotherPages(); track $index) {
+                                @for (page of brotherPreviewPages(); track $index) {
                                     <div class="w-full relative overflow-hidden box-border"
-                                         [style.height.mm]="actualBrotherPageHeight()"
+                                         [style.height.mm]="brotherPreviewPageHeight()"
                                          [class.border-b]="isBrotherFixed()"
                                          [class.border-dashed]="isBrotherFixed()"
                                          [class.border-slate-600]="isBrotherFixed()">
@@ -542,13 +542,19 @@
                                 }
                             </div>
                         </div>
+                        @if (hiddenBrotherPreviewLabelCount() > 0) {
+                            <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800 shadow-sm">
+                                Preview đang hiển thị nhanh {{rawInputCount() - hiddenBrotherPreviewLabelCount()}}/{{rawInputCount()}} tem để tránh lag.
+                                <button type="button" (click)="showFullPreview.set(true)" class="ml-2 underline decoration-amber-400 underline-offset-2 hover:text-amber-950">Hiện tất cả</button>
+                            </div>
+                        }
                         <div class="h-4 bg-slate-800 rounded-b-lg shadow-lg" [style.width.mm]="brotherWidth() + 8"></div> <!-- Printer Slot Visual -->
                     </div>
                 }
 
                 <!-- B. TOMY A4 & PLAIN A4 PREVIEW -->
                 @if (printMode() === 'tomy_a4' || printMode() === 'plain_a4') {
-                    @for (page of pages(); track page.pageIndex) {
+                    @for (page of previewPages(); track page.pageIndex) {
                         <div id="label-page-{{page.pageIndex}}" 
                              class="bg-white shadow-2xl relative transition-all duration-300 box-border overflow-hidden ring-1 ring-slate-900/5" 
                              [style.width.mm]="layoutDims().pageW"
@@ -616,6 +622,13 @@
                                     Page {{page.pageIndex + 1}} (A4)
                                 </span>
                             </div>
+                        </div>
+                    }
+                    @if (hiddenPreviewPageCount() > 0) {
+                        <div class="mx-auto max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-bold text-amber-800 shadow-sm">
+                            Preview đang hiển thị {{previewPages().length}}/{{pages().length}} trang đầu để giữ màn hình mượt.
+                            <button type="button" (click)="showFullPreview.set(true)" class="ml-2 underline decoration-amber-400 underline-offset-2 hover:text-amber-950">Hiện tất cả</button>
+                            <div class="mt-1 text-[10px] font-semibold text-amber-700">Khi bấm in, hệ thống vẫn in đủ toàn bộ dữ liệu.</div>
                         </div>
                     }
                 }

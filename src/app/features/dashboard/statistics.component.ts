@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, effect, ElementRef, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
@@ -9,7 +9,6 @@ import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/uti
 import { Log } from '../../core/models/log.model';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
-import Chart from 'chart.js/auto'; // STANDARD IMPORT
 
 interface NxtReportItem {
   id: string;
@@ -26,7 +25,8 @@ interface NxtReportItem {
   selector: 'app-statistics',
   standalone: true,
   imports: [CommonModule, FormsModule, DateRangeFilterComponent, ExportModalComponent],
-  templateUrl: './statistics.component.html'
+  templateUrl: './statistics.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StatisticsComponent {
   state = inject(StateService);
@@ -44,7 +44,7 @@ export class StatisticsComponent {
       if (action === 'RESET_RESULT_DATA') return 'Reset số liệu mẻ';
       if (action === 'RESTORE_RESULT_BACKUP') return 'Khôi phục từ bản backup';
       if (action === 'RESTORE_RESULT_VERSION') return 'Rollback phiên bản cũ';
-      if (action === 'DIRECT_APPROVE') return 'Duyệt trực tiếp SOP';
+      if (action === 'DIRECT_APPROVE') return 'Duyệt & xếp hàng in';
 
       if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'Yêu cầu mượn chuẩn';
       if (action === 'APPROVE_STANDARD_REQUEST') return 'Duyệt mượn chuẩn';
@@ -73,6 +73,7 @@ export class StatisticsComponent {
   private barChart: any = null;
   private pieChart: any = null;
   private lineChart: any = null;
+  private chartLoader?: Promise<any>;
 
   isLoading = signal(false);
   hasGenerated = signal(false);
@@ -619,6 +620,8 @@ export class StatisticsComponent {
   excludeMargin = signal<boolean>(false);
 
   constructor() {
+    this.state.ensureApprovedRequestsListener();
+    this.state.ensureActivityFeedListeners();
     // Load on-demand (listeners removed for Spark Free optimization)
     this.state.loadAllStandardRequests();
     this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
@@ -923,6 +926,7 @@ export class StatisticsComponent {
   async createConsumptionBarChart() {
       const canvas = this.barChartCanvas()?.nativeElement;
       if (!canvas) return;
+      const Chart = await this.loadChart();
       if (this.barChart) this.barChart.destroy();
       
       const ctx = canvas.getContext('2d');
@@ -959,7 +963,7 @@ export class StatisticsComponent {
                   y: { 
                       grid: { display: false },
                       ticks: {
-                          callback: function(value: any) {
+                          callback: function(this: any, value: any): string {
                               const label = this.getLabelForValue(value);
                               return (label && label.length > 30) ? label.substring(0, 27) + '...' : label;
                           },
@@ -974,6 +978,7 @@ export class StatisticsComponent {
   async createCategoryPieChart() {
       const canvas = this.pieChartCanvas()?.nativeElement;
       if (!canvas) return;
+      const Chart = await this.loadChart();
       if (this.pieChart) this.pieChart.destroy();
       
       const ctx = canvas.getContext('2d');
@@ -1024,6 +1029,7 @@ export class StatisticsComponent {
   async createConsumptionLineChart() {
       const canvas = this.lineChartCanvas()?.nativeElement;
       if (!canvas) return;
+      const Chart = await this.loadChart();
       if (this.lineChart) this.lineChart.destroy();
       
       const ctx = canvas.getContext('2d');
@@ -1077,5 +1083,26 @@ export class StatisticsComponent {
               }
           }
       });
+  }
+
+  private loadChart(): Promise<any> {
+      this.chartLoader ??= import('chart.js').then(m => {
+          m.Chart.register(
+              m.BarController,
+              m.LineController,
+              m.DoughnutController,
+              m.CategoryScale,
+              m.LinearScale,
+              m.PointElement,
+              m.LineElement,
+              m.BarElement,
+              m.ArcElement,
+              m.Filler,
+              m.Tooltip,
+              m.Legend
+          );
+          return m.Chart;
+      });
+      return this.chartLoader;
   }
 }

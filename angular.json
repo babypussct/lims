@@ -46,6 +46,7 @@
               "pdfmake",
               "jsbarcode",
               "qrcode",
+              "dijkstrajs",
               "core-js"
             ]
           },

@@ -62,16 +62,24 @@ import { ConfigRolesComponent } from './components/config-roles.component';
             </div>
 
             @if (activeTab() === 'general') {
-                <app-config-general></app-config-general>
+                @defer {
+                    <app-config-general></app-config-general>
+                }
             }
             @if (activeTab() === 'safety') {
-                <app-config-safety></app-config-safety>
+                @defer {
+                    <app-config-safety></app-config-safety>
+                }
             }
             @if (activeTab() === 'roles') {
-                <app-config-roles></app-config-roles>
+                @defer {
+                    <app-config-roles></app-config-roles>
+                }
             }
             @if (activeTab() === 'users') {
-                <app-config-users></app-config-users>
+                @defer {
+                    <app-config-users></app-config-users>
+                }
             }
             @if (activeTab() === 'profile') {
                 <ng-container *ngTemplateOutlet="profileCard"></ng-container>

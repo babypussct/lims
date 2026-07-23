@@ -1,8 +1,6 @@
 import { Component, output, OnDestroy, AfterViewInit, signal, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-declare let Html5Qrcode: any;
-declare let Html5QrcodeSupportedFormats: any;
+import { ensureHtml5Qrcode } from '../../utils/external-script-loader';
 
 @Component({
   selector: 'app-qr-scanner',
@@ -65,8 +63,16 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
   }
 
   async startCamera() {
-    if (typeof Html5Qrcode === 'undefined') {
-        this.statusMsg.set('Không thể mở máy quét vì thư viện quét mã chưa tải xong.');
+    let Html5Qrcode: any;
+    let Html5QrcodeSupportedFormats: any;
+
+    try {
+        const qrLib = await ensureHtml5Qrcode();
+        Html5Qrcode = qrLib.Html5Qrcode;
+        Html5QrcodeSupportedFormats = qrLib.Html5QrcodeSupportedFormats;
+    } catch (err: any) {
+        console.error("Scanner library load error:", err);
+        this.statusMsg.set('Không thể tải thư viện quét mã. Vui lòng kiểm tra kết nối mạng.');
         return;
     }
 

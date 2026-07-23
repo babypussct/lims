@@ -15,8 +15,7 @@ import { getSampleDescriptionSnapshot } from '../../shared/utils/sample-descript
 import { TargetService } from '../targets/target.service';
 import { TargetGroup } from '../../core/models/sop.model';
 import { classifyTargetScope, buildTargetScopePresentation, TargetScopePresentation } from '../targets/target-scope-classifier';
-
-declare let QRious: any;
+import { ensureQrious } from '../../shared/utils/external-script-loader';
 
 @Component({
   selector: 'app-traceability',
@@ -490,6 +489,7 @@ export class TraceabilityComponent implements OnInit {
   });
 
   async ngOnInit() {
+      this.state.ensureUserInfoCacheListener();
       if (this.id) {
           this.loadData(this.id);
       } else {
@@ -536,7 +536,7 @@ export class TraceabilityComponent implements OnInit {
           'DRAFT_REQUEST': 'Phiếu yêu cầu lưu nháp',
           'EDIT_REQUEST': 'Chỉnh sửa phiếu yêu cầu',
           'PRINT_JOB_RECORD': 'Lưu trữ phiếu in',
-          'DIRECT_APPROVE': 'Duyệt & In trực tiếp',
+          'DIRECT_APPROVE': 'Duyệt & xếp hàng in',
           'APPROVE_REQUEST': 'Duyệt yêu cầu',
           'REVOKE_APPROVE': 'Hoàn tác phê duyệt',
           
@@ -744,14 +744,22 @@ export class TraceabilityComponent implements OnInit {
           }
           
           this.logData.set(log);
-          setTimeout(() => this.generateQr(log.id), 100);
+          setTimeout(() => void this.generateQr(log.id), 100);
       };
 
       getStatusAndHydrate();
   }
 
-  generateQr(text: string) {
-      if (typeof QRious === 'undefined' || !this.qrCanvas()) return;
+  async generateQr(text: string) {
+      if (!this.qrCanvas()) return;
+      let QRious: any;
+      try {
+          QRious = await ensureQrious();
+      } catch (e) {
+          console.warn('QR library load error:', e);
+          return;
+      }
+      if (!QRious || !this.qrCanvas()) return;
       
       // Use same URL structure as print layout
       const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';

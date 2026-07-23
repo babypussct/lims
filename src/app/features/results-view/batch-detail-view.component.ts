@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
-declare let QRious: any;
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ResultService } from '../results/services/result.service';
@@ -12,6 +11,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from '../results/config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
+import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { resolveCompoundDisplayName, isCompoundAssigned } from '../results/shared/compound-id-resolver';
 import { MasterTargetService } from '../targets/master-target.service';
 
@@ -507,7 +507,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     effect(() => {
       const canvas = this.qrCanvas();
       if (canvas) {
-        this.generateQrCode();
+        void this.generateQrCode();
       }
     });
   }
@@ -1171,8 +1171,16 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  generateQrCode() {
-    if (typeof QRious === 'undefined' || !this.qrCanvas()) return;
+  async generateQrCode() {
+    if (!this.qrCanvas()) return;
+    let QRious: any;
+    try {
+      QRious = await ensureQrious();
+    } catch (e) {
+      console.warn('QR library load error:', e);
+      return;
+    }
+    if (!QRious || !this.qrCanvas()) return;
     const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
     new QRious({
       element: this.qrCanvas()!.nativeElement,
@@ -1184,8 +1192,15 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
   openQrModal() {
     this.isQrModalOpen.set(true);
-    setTimeout(() => {
-      if (typeof QRious !== 'undefined' && this.qrModalCanvas()) {
+    setTimeout(async () => {
+      let QRious: any;
+      try {
+        QRious = await ensureQrious();
+      } catch (e) {
+        console.warn('QR library load error:', e);
+        return;
+      }
+      if (QRious && this.qrModalCanvas()) {
         const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
         new QRious({
           element: this.qrModalCanvas()!.nativeElement,

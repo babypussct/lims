@@ -1,6 +1,7 @@
 
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
@@ -90,9 +91,12 @@ import { ToastService } from '../../core/services/toast.service';
                                             <i class="fa-solid fa-print"></i>
                                         </button>
                                         @if (state.isAdmin()) {
-                                        <button (click)="deleteSingle(log)" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-md transition" title="Xóa phiếu này">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
+                                            <button (click)="editBatch(log)" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 p-2 rounded-md transition" title="Sửa mẻ trước khi in">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button (click)="deleteSingle(log)" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-md transition" title="Xóa phiếu này">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
                                         }
                                     </td>
                                 </tr>
@@ -118,6 +122,7 @@ export class PrintQueueComponent implements OnInit {
   printService = inject(PrintService);
   fb = inject(FirebaseService);
   toast = inject(ToastService);
+  router = inject(Router);
   
   isLoading = signal(true);
   isPrinting = signal(false);
@@ -125,6 +130,7 @@ export class PrintQueueComponent implements OnInit {
   formatDate = formatDate;
 
   ngOnInit() {
+      this.state.ensureLogsListener();
       if (this.state.printableLogs().length > 0) {
           this.isLoading.set(false);
       } else {
@@ -174,7 +180,7 @@ export class PrintQueueComponent implements OnInit {
                   ...log.printData,
                   date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
                   user: log.user,
-                  requestId: log.id 
+                  requestId: log.requestId || log.printData.requestId || log.id
               });
           } else if (log.printJobId) {
               jobIdsToFetch.push(log.printJobId);
@@ -200,7 +206,7 @@ export class PrintQueueComponent implements OnInit {
                               ...data,
                               date: originalLog.timestamp.toDate ? originalLog.timestamp.toDate() : new Date(originalLog.timestamp),
                               user: originalLog.user,
-                              requestId: relatedLogId
+                              requestId: originalLog.requestId || relatedLogId
                           });
                       }
                   });
@@ -247,6 +253,14 @@ export class PrintQueueComponent implements OnInit {
   async deleteSingle(log: Log) {
     const sopName = log.sopBasicInfo?.name || log.printData?.sop.name || 'phiếu';
     await this.state.deletePrintLog(log.id, sopName, log.printJobId);
+  }
+
+  editBatch(log: Log) {
+    if (!log.requestId) {
+      this.toast.show('Phiếu in cũ chưa có mã mẻ liên kết để chỉnh sửa.', 'warning');
+      return;
+    }
+    this.router.navigate(['/calculator'], { queryParams: { editRequestId: log.requestId } });
   }
 
   async deleteSelected() {

@@ -15,7 +15,6 @@ import { QrGlobalService } from '../../core/services/qr-global.service'; // Impo
 import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
-import Chart from 'chart.js/auto'; 
 
 interface PriorityStandard {
     name: string;
@@ -235,7 +234,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       'RESET_RESULT_DATA': 'đã reset số liệu kết quả',
       'RESTORE_RESULT_BACKUP': 'đã khôi phục số liệu lưu trữ',
       'RESTORE_RESULT_VERSION': 'đã khôi phục phiên bản cũ',
-      'DIRECT_APPROVE': 'đã duyệt trực tiếp SOP',
+      'DIRECT_APPROVE': 'đã duyệt và đưa phiếu vào hàng đợi in',
       'EDIT_REQUEST': 'đã chỉnh sửa phiếu yêu cầu',
       'REQUEST_STANDARD': 'đã yêu cầu mượn chuẩn',
       'CREATE_STANDARD_REQUEST': 'đã yêu cầu mượn chuẩn',
@@ -528,6 +527,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   private _chartDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private _lastDarkMode: boolean | null = null;
+  private chartLoader?: Promise<any>;
 
   constructor() {
       effect(() => {
@@ -546,6 +546,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+      if (this.auth.canViewReports()) {
+          this.state.ensureApprovedRequestsListener();
+          this.state.ensureActivityFeedListeners();
+      }
       this.isLoading.set(true);
 
       // 2. Tải thông tin chuẩn sắp hết hạn
@@ -634,9 +638,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async initChart() {
+      if (!this.auth.canViewReports()) return;
       const canvas = this.chartCanvas()?.nativeElement;
       const dCanvas = this.doughnutChartCanvas()?.nativeElement;
       if (!canvas || !dCanvas) return;
+      const Chart = await this.loadChart();
 
       const isDark = this.state.darkMode();
       
@@ -899,7 +905,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
               options: {
                   responsive: true, maintainAspectRatio: false,
                   cutout: '70%',
-                  onClick: (event, elements, chart) => {
+                  onClick: (event: any, elements: any[], chart: any) => {
                       if (elements && elements.length > 0) {
                           const index = elements[0].index;
                           const label = chart.data.labels?.[index] as string;
@@ -985,5 +991,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action.includes('CREATE')) return 'đã tạo mới';
       if (action.includes('DELETE')) return 'đã xóa'; 
       return 'đã cập nhật';
+  }
+
+  private loadChart(): Promise<any> {
+      this.chartLoader ??= import('chart.js').then(m => {
+          m.Chart.register(
+              m.BarController,
+              m.LineController,
+              m.DoughnutController,
+              m.CategoryScale,
+              m.LinearScale,
+              m.PointElement,
+              m.LineElement,
+              m.BarElement,
+              m.ArcElement,
+              m.Filler,
+              m.Tooltip,
+              m.Legend
+          );
+          return m.Chart;
+      });
+      return this.chartLoader;
   }
 }

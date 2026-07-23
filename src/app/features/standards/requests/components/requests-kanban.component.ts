@@ -79,8 +79,11 @@ import { AuthService } from '../../../../core/services/auth.service';
           <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 rounded-lg text-sm font-black">{{ pendingApprovalReqs().length }}</span>
         </div>
         <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
-          @for (req of pendingApprovalReqs(); track req.id) {
+          @for (req of visiblePendingApprovalReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
+          }
+          @if (pendingApprovalReqs().length > visiblePendingApprovalReqs().length) {
+            <ng-container *ngTemplateOutlet="showMoreTemplate; context: { hidden: pendingApprovalReqs().length - visiblePendingApprovalReqs().length }"></ng-container>
           }
           @if (pendingApprovalReqs().length === 0) {
             <div class="p-6 text-center text-slate-400 text-sm font-bold italic border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">Không có yêu cầu</div>
@@ -100,8 +103,11 @@ import { AuthService } from '../../../../core/services/auth.service';
           <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-500 rounded-lg text-sm font-black">{{ inProgressReqs().length }}</span>
         </div>
         <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
-          @for (req of inProgressReqs(); track req.id) {
+          @for (req of visibleInProgressReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
+          }
+          @if (inProgressReqs().length > visibleInProgressReqs().length) {
+            <ng-container *ngTemplateOutlet="showMoreTemplate; context: { hidden: inProgressReqs().length - visibleInProgressReqs().length }"></ng-container>
           }
           @if (inProgressReqs().length === 0) {
             <div class="p-6 text-center text-slate-400 text-sm font-bold italic border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">Không có yêu cầu</div>
@@ -121,8 +127,11 @@ import { AuthService } from '../../../../core/services/auth.service';
           <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-sm font-black">{{ pendingReturnReqs().length }}</span>
         </div>
         <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
-          @for (req of pendingReturnReqs(); track req.id) {
+          @for (req of visiblePendingReturnReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
+          }
+          @if (pendingReturnReqs().length > visiblePendingReturnReqs().length) {
+            <ng-container *ngTemplateOutlet="showMoreTemplate; context: { hidden: pendingReturnReqs().length - visiblePendingReturnReqs().length }"></ng-container>
           }
           @if (pendingReturnReqs().length === 0) {
             <div class="p-6 text-center text-slate-400 text-sm font-bold italic border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">Không có yêu cầu</div>
@@ -161,6 +170,15 @@ import { AuthService } from '../../../../core/services/auth.service';
       }
 
     </div>
+
+    <ng-template #showMoreTemplate let-hidden="hidden">
+      <button type="button"
+              (click)="showMoreCards()"
+              class="w-full rounded-2xl border border-dashed border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/20 px-3 py-3 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
+        <i class="fa-solid fa-angles-down mr-1"></i>
+        Xem thêm — còn {{hidden}} thẻ
+      </button>
+    </ng-template>
 
     <!-- REUSABLE CARD TEMPLATE -->
     <ng-template #cardTemplate let-req>
@@ -291,11 +309,15 @@ export class RequestsKanbanComponent {
 
   Date = Date;
   @Input() currentFilter = 'ALL';
+  cardLimit = signal(60);
 
   pendingApprovalReqs = computed(() => this._requests().filter(r => r.status === 'PENDING_APPROVAL'));
   inProgressReqs = computed(() => this._requests().filter(r => r.status === 'IN_PROGRESS'));
   pendingReturnReqs = computed(() => this._requests().filter(r => r.status === 'PENDING_RETURN'));
   completedReqs = computed(() => this._requests().filter(r => ['COMPLETED', 'REJECTED'].includes(r.status)));
+  visiblePendingApprovalReqs = computed(() => this.pendingApprovalReqs().slice(0, this.cardLimit()));
+  visibleInProgressReqs = computed(() => this.inProgressReqs().slice(0, this.cardLimit()));
+  visiblePendingReturnReqs = computed(() => this.pendingReturnReqs().slice(0, this.cardLimit()));
   
   // Chỉ lấy 30 thẻ hoàn tất mới nhất (sắp xếp descending by returnDate / updatedAt)
   limitedCompletedReqs = computed(() => {
@@ -310,5 +332,9 @@ export class RequestsKanbanComponent {
   isExpOverdue(expiryDate?: string | null): boolean {
     if (!expiryDate) return false;
     return new Date(expiryDate).getTime() < Date.now();
+  }
+
+  showMoreCards(): void {
+    this.cardLimit.update(limit => limit + 60);
   }
 }

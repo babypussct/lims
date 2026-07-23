@@ -34,6 +34,10 @@ export class StateService implements OnDestroy {
   private targetService = inject(TargetService);
 
   private listeners: Unsubscribe[] = [];
+  private initGeneration = 0;
+  private approvedRunsSub?: Unsubscribe;
+  private logsSub?: Unsubscribe;
+  private usersInfoSub?: Unsubscribe;
   /** Singleton request listener — unregister callback (không hủy listener) */
   private _unregisterStdReqListener?: () => void;
 
@@ -87,7 +91,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.23-b22');
+  systemVersion = signal<string>('v26.07.23-b23');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -180,8 +184,12 @@ export class StateService implements OnDestroy {
   }
 
   private cleanupListeners() {
+    this.initGeneration++;
     this.listeners.forEach(unsub => unsub());
     this.listeners = [];
+    this.approvedRunsSub = undefined;
+    this.logsSub = undefined;
+    this.usersInfoSub = undefined;
     if (this.sysConfigSub) {
       this.sysConfigSub();
       this.sysConfigSub = undefined;
@@ -205,9 +213,21 @@ export class StateService implements OnDestroy {
 
   async initData() {
     this.cleanupListeners();
+    const initGeneration = this.initGeneration;
     this.permissionError.set(false);
 
+    const isCurrentInit = () => initGeneration === this.initGeneration;
+    const addListener = (unsub: Unsubscribe) => {
+      if (!isCurrentInit()) {
+        unsub();
+        return false;
+      }
+      this.listeners.push(unsub);
+      return true;
+    };
+
     const handleError = (source: string) => (error: any) => {
+      if (!isCurrentInit()) return;
       console.warn(`${source} listener error:`, error.message);
       if (error.code === 'permission-denied') {
         this.permissionError.set(true);
@@ -229,25 +249,27 @@ export class StateService implements OnDestroy {
             items.push({ id: d.id, ...data } as InventoryItem);
           }
         });
+        if (!isCurrentInit()) return;
         this.inventory.set(items);
       }, handleError('Inventory'));
-      this.listeners.push(invSub);
+      addListener(invSub);
     }
 
     // 2. SOPs Listener
     if (this.auth.hasPermission('sop_view')) {
       const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
         const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
+        if (!isCurrentInit()) return;
         this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
       }, handleError('SOPs'));
-      this.listeners.push(sopSub);
+      addListener(sopSub);
     }
 
     // 3. Requests Listeners
     if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
       const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')),
-        (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
-      this.listeners.push(reqSub);
+        (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); if (!isCurrentInit()) return; this.requests.set(items); }, handleError('Requests'));
+      addListener(reqSub);
     }
 
     // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
@@ -257,6 +279,7 @@ export class StateService implements OnDestroy {
     // (tránh tạo listener trùng lặp — tiết kiệm ~89% reads)
     {
       const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
+      if (!isCurrentInit()) return;
       const reqService = this.injector.get(StandardRequestService);
 
       if (this._unregisterStdReqListener) this._unregisterStdReqListener();
@@ -267,79 +290,49 @@ export class StateService implements OnDestroy {
         ? ['PENDING_APPROVAL', 'PENDING_RETURN']
         : ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'];
 
-      this._unregisterStdReqListener = reqService.startRequestsListener((reqs) => {
+      const unregisterStdReqListener = reqService.startRequestsListener((reqs) => {
+        if (!isCurrentInit()) return;
         this.standardRequests.set(
           reqs.filter(r => !r._isDeleted && validStatuses.includes(r.status))
         );
       });
+      if (isCurrentInit()) {
+        this._unregisterStdReqListener = unregisterStdReqListener;
+      } else {
+        unregisterStdReqListener();
+        return;
+      }
     }
 
     // OPTIMIZED: allStandardRequests is now loaded on-demand via loadAllStandardRequests()
     // Call it from statistics.component.ts / standard-requests page as needed
 
-    const approvedRunsConfig: DeltaSyncConfig = {
-      cacheKey: `lims_approved_requests_cache_${this.fb.APP_ID}`,
-      cursorKey: `lims_approved_requests_cursor_${this.fb.APP_ID}`,
-      collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
-      maxCacheSize: 100, // Safe limit for localStorage
-      orderByField: 'approvedAt',
-      orderDirection: 'desc',
-      queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed', 'pending', 'rejected'])]
-    };
+    // Approved/result runs feed — now started on-demand via ensureApprovedRequestsListener().
+    // This avoids opening the broad result-history stream for users/routes that do not need it.
 
-    if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run') || this.auth.canViewReports()) {
-      const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
-        this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
-      });
-      this.listeners.push(appSub);
-    }
-
-    // 4. Logs Listener — OPTIMIZED: migrated to DeltaSyncService singleton listener (caching 200 logs)
-    const logsSyncConfig: DeltaSyncConfig = {
-      cacheKey: `lims_logs_cache_${this.fb.APP_ID}`,
-      cursorKey: `lims_logs_cursor_${this.fb.APP_ID}`,
-      collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
-      maxCacheSize: 200,
-      orderByField: 'timestamp',
-      orderDirection: 'desc'
-    };
-
-    const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
-      this.logs.set(items);
-      this.printableLogs.set(items.filter(l => l.printable === true));
-    });
-    this.listeners.push(logSub);
+    // 4. Logs Listener — now started on-demand via ensureLogsListener()
+    // Avoid opening activity/print-feed stream for every route immediately after login.
 
     // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
     try {
       const statSnap = await getDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'));
+      if (!isCurrentInit()) return;
       if (statSnap.exists()) this.stats.set(statSnap.data() as { totalSopsRun: number; totalItemsUsed: number });
     } catch (e) { console.warn('Stats load error:', e); }
 
     // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
-    await this.loadConfig();
+    await this.loadConfig(initGeneration);
+    if (!isCurrentInit()) return;
 
-    // 6.5. Users Info Cache for Avatar Rendering in Logs
-    const usersSub = onSnapshot(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), (s) => {
-        const cacheMap = new Map<string, {avatarStyle: string, photoURL: string}>();
-        s.forEach(d => {
-            const data = d.data();
-            if (data['displayName']) {
-                cacheMap.set(data['displayName'], {
-                    avatarStyle: data['avatarStyle'] || this.avatarStyle(),
-                    photoURL: data['photoURL'] || ''
-                });
-            }
-        });
-        this.usersInfoCache.set(cacheMap);
-    }, handleError('Users Cache'));
-    this.listeners.push(usersSub);
+    // 6.5. Users Info Cache — now started on-demand via ensureUserInfoCacheListener()
+    // Avatar cache is only needed on log/detail screens.
 
     // 7. System Force Reload Listener & Delta Sync Architecture
     let isFirstMetaLoad = true;
     let lastSyncTimes: Record<string, number> = {};
 
     const sysMetaSub = onSnapshot(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system/metadata`), (docSnap) => {
+      if (!isCurrentInit()) return;
       if (docSnap.exists()) {
         const data = docSnap.data();
         const forceTime = data['force_clear_cache_time'] || 0;
@@ -382,7 +375,8 @@ export class StateService implements OnDestroy {
           lastSyncTimes['config'] = data['config'];
           const wasMaintenance = this.maintenanceMode();
           // Tự động tải lại cấu hình ngầm để nhận trạng thái bảo trì hoặc cấu hình mới nhất
-          this.loadConfig().then(() => {
+          this.loadConfig(initGeneration).then(() => {
+            if (!isCurrentInit()) return;
             if (wasMaintenance === this.maintenanceMode()) {
               this.toast.show('⚙️ Cấu hình hệ thống đã được cập nhật.', 'success');
             }
@@ -390,21 +384,117 @@ export class StateService implements OnDestroy {
         }
       }
     }, handleError('System Metadata'));
-    this.listeners.push(sysMetaSub);
+    addListener(sysMetaSub);
+  }
+
+  ensureLogsListener(): void {
+    if (this.logsSub || !this.auth.currentUser()) return;
+    const initGeneration = this.initGeneration;
+    const isCurrentInit = () => initGeneration === this.initGeneration;
+
+    const logsSyncConfig: DeltaSyncConfig = {
+      cacheKey: `lims_logs_cache_${this.fb.APP_ID}`,
+      cursorKey: `lims_logs_cursor_${this.fb.APP_ID}`,
+      collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
+      maxCacheSize: 200,
+      orderByField: 'timestamp',
+      orderDirection: 'desc'
+    };
+
+    const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
+      if (!isCurrentInit()) return;
+      this.logs.set(items);
+      this.printableLogs.set(items.filter(l => l.printable === true));
+    });
+
+    this.logsSub = () => {
+      logSub();
+      this.logsSub = undefined;
+    };
+    this.listeners.push(this.logsSub);
+  }
+
+  ensureApprovedRequestsListener(): void {
+    if (this.approvedRunsSub || !this.auth.currentUser()) return;
+    if (!(this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run') || this.auth.canViewReports())) return;
+
+    const initGeneration = this.initGeneration;
+    const isCurrentInit = () => initGeneration === this.initGeneration;
+
+    const approvedRunsConfig: DeltaSyncConfig = {
+      cacheKey: `lims_approved_requests_cache_${this.fb.APP_ID}`,
+      cursorKey: `lims_approved_requests_cursor_${this.fb.APP_ID}`,
+      collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
+      maxCacheSize: 100, // Safe limit for localStorage
+      orderByField: 'approvedAt',
+      orderDirection: 'desc',
+      queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed', 'pending', 'rejected'])]
+    };
+
+    const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
+      if (!isCurrentInit()) return;
+      this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
+    });
+
+    this.approvedRunsSub = () => {
+      appSub();
+      this.approvedRunsSub = undefined;
+    };
+    this.listeners.push(this.approvedRunsSub);
+  }
+
+  ensureUserInfoCacheListener(): void {
+    if (this.usersInfoSub || !this.auth.currentUser()) return;
+    const initGeneration = this.initGeneration;
+    const isCurrentInit = () => initGeneration === this.initGeneration;
+
+    const usersSub = onSnapshot(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), (s) => {
+        const cacheMap = new Map<string, {avatarStyle: string, photoURL: string}>();
+        s.forEach(d => {
+            const data = d.data();
+            if (data['displayName']) {
+                cacheMap.set(data['displayName'], {
+                    avatarStyle: data['avatarStyle'] || this.avatarStyle(),
+                    photoURL: data['photoURL'] || ''
+                });
+            }
+        });
+        if (!isCurrentInit()) return;
+        this.usersInfoCache.set(cacheMap);
+    }, (error: any) => {
+      if (!isCurrentInit()) return;
+      console.warn('Users Cache listener error:', error.message);
+      if (error.code === 'permission-denied') this.permissionError.set(true);
+    });
+
+    this.usersInfoSub = () => {
+      usersSub();
+      this.usersInfoSub = undefined;
+    };
+    this.listeners.push(this.usersInfoSub);
+  }
+
+  ensureActivityFeedListeners(): void {
+    this.ensureLogsListener();
+    this.ensureUserInfoCacheListener();
   }
 
   // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
   private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
   private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
 
-  async loadConfig(): Promise<void> {
+  async loadConfig(initGeneration?: number): Promise<void> {
+    const isLoadActive = () => initGeneration === undefined || initGeneration === this.initGeneration;
+
     // Instant: apply from localStorage cache first (0 reads)
     const hasCache = this._applyConfigFromCache();
+    if (!isLoadActive()) return;
 
     // Background: fetch only '_metadata' to check if we need to download everything
     try {
       const base = `artifacts/${this.fb.APP_ID}/config`;
       const metaSnap = await getDoc(doc(this.fb.db, base, '_metadata'));
+      if (!isLoadActive()) return;
 
       const serverVersion = metaSnap.exists() ? metaSnap.data()['lastUpdated'] || 0 : 0;
       const localVersion = Number(localStorage.getItem(this.CONFIG_VERSION_KEY) || 0);
@@ -412,6 +502,7 @@ export class StateService implements OnDestroy {
       // Tự động đăng ký listener realtime cho system config (bảo trì, khóa tính năng)
       if (!this.sysConfigSub) {
         this.sysConfigSub = onSnapshot(doc(this.fb.db, base, 'system'), (snap) => {
+          if (!isLoadActive()) return;
           if (snap.exists()) {
             const d = snap.data();
             if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
@@ -436,6 +527,7 @@ export class StateService implements OnDestroy {
         getDoc(doc(this.fb.db, base, 'categories')),
         getDoc(doc(this.fb.db, base, 'system')),
       ]);
+      if (!isLoadActive()) return;
 
       if (printSnap.exists()) this.printConfig.set(printSnap.data() as PrintConfig);
       if (safetySnap.exists()) this.safetyConfig.set(safetySnap.data() as SafetyConfig);
@@ -636,7 +728,7 @@ export class StateService implements OnDestroy {
 
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Người dùng không xác định'; }
 
-  // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndPrint, approveRequest, revokeApproval, etc.)
+  // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndQueuePrint, approveRequest, revokeApproval, etc.)
   // Omitted for brevity as no logic changed there
 
   private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
@@ -774,7 +866,13 @@ export class StateService implements OnDestroy {
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
 
-  async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<{ logId: string, printJobId: string } | null> {
+  async directApproveAndQueuePrint(
+    sop: Sop,
+    calculatedItems: CalculatedItem[],
+    formInputs: any,
+    invMap: Record<string, InventoryItem> = {},
+    options: { showSuccessToast?: boolean } = {}
+  ): Promise<{ logId: string, printJobId: string } | null> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
     if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
       this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi duyệt.', 'error');
@@ -848,7 +946,7 @@ export class StateService implements OnDestroy {
 
         transaction.set(logRef, {
           action: 'DIRECT_APPROVE',
-          details: `Duyệt trực tiếp SOP: ${sop.name}`,
+          details: `Duyệt trực tiếp và đưa vào hàng đợi in SOP: ${sop.name}`,
           timestamp: serverTimestamp(),
           lastUpdated: serverTimestamp(),
           user: this.getCurrentUserName(),
@@ -862,7 +960,9 @@ export class StateService implements OnDestroy {
           }
         });
       });
-      this.toast.show(`Duyệt thành công yêu cầu "${sop.name}"`, 'success');
+      if (options.showSuccessToast !== false) {
+        this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
+      }
       return { logId: logRef.id, printJobId: printJobRef.id };
 
     } catch (e: any) {
@@ -1040,6 +1140,12 @@ export class StateService implements OnDestroy {
       const oldItems = req.items;
       const newItems = this.mapToRequestItems(calculatedItems, invMap);
       const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
+      const previousPrintableLogDocs = (await getDocs(query(
+        collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'),
+        where('requestId', '==', req.id),
+        where('printable', '==', true)
+      ))).docs;
+      const editDiff = this.buildRequestEditDiff(req, formInputs, newItems);
 
       // Calculate inventory diff
       const inventoryDiff: Record<string, number> = {};
@@ -1116,6 +1222,18 @@ export class StateService implements OnDestroy {
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
 
+        previousPrintableLogDocs.forEach(logDoc => {
+          transaction.update(logDoc.ref, {
+            printable: false,
+            supersededBy: logId,
+            lastUpdated: serverTimestamp()
+          });
+          const oldPrintJobId = logDoc.data()['printJobId'];
+          if (oldPrintJobId) {
+            transaction.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', oldPrintJobId));
+          }
+        });
+
         const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const printData: PrintData = {
           sop,
@@ -1138,9 +1256,11 @@ export class StateService implements OnDestroy {
           timestamp: serverTimestamp(),
           lastUpdated: serverTimestamp(),
           user: this.getCurrentUserName(),
+          diff: editDiff,
           printable: true,
           printJobId: printJobRef.id,
           requestId: req.id,
+          supersedesLogIds: previousPrintableLogDocs.map(d => d.id),
           sopBasicInfo: {
             name: sop.name,
             category: sop.category,
@@ -1154,6 +1274,42 @@ export class StateService implements OnDestroy {
       this.toast.show(e.message, 'error');
       return false;
     }
+  }
+
+  private buildRequestEditDiff(req: Request, formInputs: any, newItems: RequestItem[]) {
+    const diff: { field: string; oldValue: any; newValue: any }[] = [];
+    const add = (field: string, oldValue: any, newValue: any) => {
+      if (JSON.stringify(oldValue ?? null) !== JSON.stringify(newValue ?? null)) {
+        diff.push({ field, oldValue: oldValue ?? null, newValue: newValue ?? null });
+      }
+    };
+
+    add('analysisDate', req.analysisDate, formInputs.analysisDate);
+    add('sampleList', req.sampleList || [], formInputs.sampleList || []);
+    add('targetIds', [...(req.targetIds || [])].sort(), [...(formInputs.targetIds || [])].sort());
+    add('sampleTargetMap', req.sampleTargetMap || {}, formInputs.sampleTargetMap || {});
+    add('sampleDescriptionMap', req.sampleDescriptionMap || req.inputs?.sampleDescriptionMap || {}, formInputs.sampleDescriptionMap || {});
+    add('margin', req.margin ?? req.inputs?.safetyMargin, formInputs.safetyMargin);
+
+    const ignoredInputKeys = new Set(['analysisDate', 'safetyMargin', 'sampleList', 'targetIds', 'sampleTargetMap', 'sampleDescriptionMap', 'explicitGroupId']);
+    const oldInputs = req.inputs || {};
+    const inputKeys = new Set([...Object.keys(oldInputs), ...Object.keys(formInputs || {})]);
+    inputKeys.forEach(key => {
+      if (!ignoredInputKeys.has(key)) add(`input.${key}`, oldInputs[key], formInputs[key]);
+    });
+
+    const summarizeItems = (items: RequestItem[]) => Object.fromEntries(
+      [...items].sort((a, b) => a.name.localeCompare(b.name)).map(item => [
+        item.name,
+        {
+          amount: Math.round(Number(item.amount || 0) * 1000000) / 1000000,
+          unit: item.stockUnit || item.unit || ''
+        }
+      ])
+    );
+    add('inventoryItems', summarizeItems(req.items || []), summarizeItems(newItems || []));
+
+    return diff;
   }
 
   async rejectRequest(req: Request) {

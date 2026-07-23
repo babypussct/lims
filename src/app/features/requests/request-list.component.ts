@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
@@ -31,20 +31,20 @@ import { Router } from '@angular/router';
             </div>
             
             <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto max-w-full scrollbar-none shrink-0 self-stretch sm:self-start">
-               <button (click)="currentTab.set('pending')" 
+               <button (click)="setCurrentTab('pending')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'pending' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-clock"></i> Chờ duyệt 
                    @if(state.requests().length > 0) { <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 rounded-md text-[10px]">{{state.requests().length}}</span> }
                </button>
                
-               <button (click)="currentTab.set('approved')" 
+               <button (click)="setCurrentTab('approved')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'approved' ? 'bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-check-double"></i> Lịch Sử
                </button>
 
-               <button (click)="currentTab.set('printing')" 
+               <button (click)="setCurrentTab('printing')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'printing' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-print"></i> Hàng đợi In
@@ -69,7 +69,13 @@ import { Router } from '@angular/router';
             
             <!-- TAB: PRINT QUEUE -->
             @if (currentTab() === 'printing') {
-                <app-print-queue class="h-full block"></app-print-queue>
+                @defer {
+                    <app-print-queue class="h-full block"></app-print-queue>
+                } @placeholder {
+                    <div class="h-full rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 text-sm font-bold">
+                        Đang tải hàng đợi in...
+                    </div>
+                }
             } 
             
             <!-- TAB: LISTS (Pending / Approved) -->
@@ -306,7 +312,8 @@ import { Router } from '@angular/router';
     .scale-in {
       animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RequestListComponent implements OnInit {
   state = inject(StateService);
@@ -326,6 +333,7 @@ export class RequestListComponent implements OnInit {
   endDate = signal<string>(this.getToday());
 
   ngOnInit() {
+      this.ensureDataForCurrentTab();
       // Check data loaded
       if(this.state.requests().length > 0) {
           this.isLoading.set(false);
@@ -400,6 +408,19 @@ export class RequestListComponent implements OnInit {
           await this.state.approveRequest({ ...req, analysisDate });
       } finally {
           this.processingId.set(null);
+      }
+  }
+
+  setCurrentTab(tab: 'pending' | 'approved' | 'printing') {
+      this.currentTab.set(tab);
+      this.ensureDataForCurrentTab();
+  }
+
+  private ensureDataForCurrentTab() {
+      if (this.currentTab() === 'approved') {
+          this.state.ensureApprovedRequestsListener();
+      } else if (this.currentTab() === 'printing') {
+          this.state.ensureLogsListener();
       }
   }
 

@@ -7,10 +7,8 @@ import {
   getCountFromServer, where, orderBy, writeBatch as batchWrite,
   Timestamp, serverTimestamp, clearIndexedDbPersistence, terminate
 } from 'firebase/firestore';
-import { 
-  getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL 
-} from 'firebase/storage';
-import { getMessaging, getToken, Messaging } from 'firebase/messaging';
+import type { FirebaseStorage } from 'firebase/storage';
+import type { Messaging } from 'firebase/messaging';
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
@@ -21,9 +19,9 @@ import { environment } from '../../../environments/environment';
 export class FirebaseService {
   public app: FirebaseApp;
   public db: Firestore;
-  public storage: FirebaseStorage;
   public messaging: Messaging | null = null;
   public APP_ID: string;
+  private storage: FirebaseStorage | null = null;
 
   private readonly APP_ID_KEY = 'lims_app_id';
 
@@ -37,17 +35,24 @@ export class FirebaseService {
       experimentalForceLongPolling: true
     });
 
-    this.storage = getStorage(this.app);
-    
-    try {
-      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        this.messaging = getMessaging(this.app);
-      }
-    } catch (e) {
-      console.warn('Firebase Messaging not supported:', e);
-    }
-    
     this.APP_ID = localStorage.getItem(this.APP_ID_KEY) || 'lims-cloud-fixed';
+  }
+
+  async getMessagingInstance(): Promise<Messaging | null> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+        return null;
+    }
+
+    if (this.messaging) return this.messaging;
+
+    try {
+        const { getMessaging } = await import('firebase/messaging');
+        this.messaging = getMessaging(this.app);
+        return this.messaging;
+    } catch (e) {
+        console.warn('Firebase Messaging not supported:', e);
+        return null;
+    }
   }
 
   async requestPushToken(): Promise<string | null> {
@@ -60,15 +65,13 @@ export class FirebaseService {
         throw new Error(`Quyền bị từ chối (trạng thái: ${permission}). Hãy kiểm tra Cài đặt thiết bị.`);
     }
 
-    if (!this.messaging) {
-        try {
-            this.messaging = getMessaging(this.app);
-        } catch (e: any) {
-            throw new Error('Thiết bị không hỗ trợ Firebase Messaging: ' + e.message);
-        }
+    const messaging = await this.getMessagingInstance();
+    if (!messaging) {
+        throw new Error('Thiết bị không hỗ trợ Firebase Messaging.');
     }
 
     try {
+        const { getToken } = await import('firebase/messaging');
         let swReg = await navigator.serviceWorker.getRegistration();
         if (!swReg) {
             console.log('[FirebaseService] Service Worker chưa được đăng ký (có thể do Angular đang đợi app stable). Đăng ký thủ công...');
@@ -78,7 +81,7 @@ export class FirebaseService {
             throw new Error('Chưa tìm thấy Service Worker. Hãy tải lại trang web.');
         }
 
-        const token = await getToken(this.messaging, {
+        const token = await getToken(messaging, {
             vapidKey: environment.firebase.vapidKey,
             serviceWorkerRegistration: swReg
         });
@@ -96,11 +99,16 @@ export class FirebaseService {
 
   // --- Storage ---
   async uploadFile(folder: string, file: File): Promise<string> {
+    const { getStorage, ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
     const timestamp = Date.now();
     // Sanitize filename
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const path = `artifacts/${this.APP_ID}/${folder}/${timestamp}_${safeName}`;
     
+    if (!this.storage) {
+        this.storage = getStorage(this.app);
+    }
+
     const storageRef = ref(this.storage, path);
     await uploadBytes(storageRef, file);
     return await getDownloadURL(storageRef);

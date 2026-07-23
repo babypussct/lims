@@ -8,8 +8,7 @@ import { Unsubscribe } from 'firebase/firestore';
 import { PwaInstallPromptComponent } from '../../shared/components/pwa-install-prompt.component';
 import { StateService } from '../../core/services/state.service';
 import { LogoComponent } from '../../shared/components/logo.component';
-
-declare let QRious: any;
+import { ensureQrious } from '../../shared/utils/external-script-loader';
 
 @Component({
   selector: 'app-login',
@@ -533,7 +532,8 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       this.qrStatus.set('waiting');
 
       // 2. Display QR: ID|Key
-      if (typeof QRious !== 'undefined') {
+      try {
+          const QRious = await ensureQrious();
           const qrData = `${this.currentSessionId}|${this.currentSecretKey}`;
           new QRious({
               element: this.qrCanvas.nativeElement,
@@ -541,6 +541,10 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
               size: 256,
               level: 'M'
           });
+      } catch (e) {
+          console.error('QR library load error:', e);
+          this.errorMsg.set('Không thể tải thư viện tạo mã QR. Vui lòng kiểm tra kết nối mạng.');
+          return;
       }
 
       // 3. Create Session in Firestore (Handshake)

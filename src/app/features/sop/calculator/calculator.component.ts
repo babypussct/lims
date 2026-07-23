@@ -23,8 +23,23 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
 import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
 import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 import { TargetService } from '../../targets/target.service';
-import { SampleDescriptionMap } from '../../../core/models/sample-description.model';
-import { subsetSampleDescriptionMap } from '../../../shared/utils/sample-description.utils';
+import { SampleDescriptionMap, SampleDescriptionMaster, SampleDescriptionSnapshot } from '../../../core/models/sample-description.model';
+import { getSampleDescriptionSnapshot, setSampleDescriptionSnapshot, subsetSampleDescriptionMap } from '../../../shared/utils/sample-description.utils';
+import { SampleDescriptionMasterService } from '../../config/sample-description-master.service';
+
+interface EditInfoChange {
+  label: string;
+  before: string;
+  after: string;
+}
+
+interface EditInventoryDiff {
+  name: string;
+  unit: string;
+  before: number;
+  after: number;
+  diff: number;
+}
 
 @Component({
   selector: 'app-calculator',
@@ -51,6 +66,7 @@ export class CalculatorComponent implements OnDestroy {
   private recipeService = inject(RecipeService);
   private calcService = inject(CalculatorService);
   private targetService = inject(TargetService);
+  private sampleDescriptionMasterService = inject(SampleDescriptionMasterService);
   activeSop = computed(() => this.sopInput() || this.state.selectedSop());
   libraryTab = signal<'sops' | 'recipes'>('sops');
   searchTerm = signal('');
@@ -63,6 +79,12 @@ export class CalculatorComponent implements OnDestroy {
   sampleListText = signal('');
   sampleCount = signal(0);
   preservedSampleDescriptionMap = signal<SampleDescriptionMap>({});
+  availableSampleDescriptions = signal<SampleDescriptionMaster[]>([]);
+  sampleDescriptionCount = computed(() => {
+      const map = this.preservedSampleDescriptionMap();
+      return this.samplesList().filter(sample => Boolean(getSampleDescriptionSnapshot(map, sample))).length;
+  });
+  private sampleDescriptionLoadPromise?: Promise<void>;
   selectedTargets = signal<Set<string>>(new Set());
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
@@ -182,6 +204,104 @@ export class CalculatorComponent implements OnDestroy {
      }
      return Array.from(warnings).sort();
   });
+  editInfoChanges = computed<EditInfoChange[]>(() => {
+      const req = this.editingRequest();
+      if (!req) return [];
+
+      const payload = this.getPayloadData();
+      const changes: EditInfoChange[] = [];
+      const addChange = (label: string, before: unknown, after: unknown) => {
+          const beforeText = this.formatPreviewValue(before);
+          const afterText = this.formatPreviewValue(after);
+          if (beforeText !== afterText) {
+              changes.push({ label, before: beforeText, after: afterText });
+          }
+      };
+
+      addChange('Ngày kiểm nghiệm', req.analysisDate || '', payload.analysisDate || '');
+      addChange('Số mẫu', req.sampleList?.length || 0, payload.sampleList?.length || 0);
+      addChange('Danh sách mẫu', req.sampleList || [], payload.sampleList || []);
+      addChange('Số chỉ tiêu', req.targetIds?.length || 0, payload.targetIds?.length || 0);
+
+      const oldSampleTargetMap = req.sampleTargetMap || {};
+      const newSampleTargetMap = payload.sampleTargetMap || {};
+      if (JSON.stringify(this.normalizeMapForCompare(oldSampleTargetMap)) !== JSON.stringify(this.normalizeMapForCompare(newSampleTargetMap))) {
+          changes.push({ label: 'Chỉ tiêu từng mẫu', before: 'Thiết lập cũ', after: 'Đã thay đổi' });
+      }
+
+      const oldDescriptionMap = req.sampleDescriptionMap || req.inputs?.sampleDescriptionMap || {};
+      const newDescriptionMap = payload.sampleDescriptionMap || {};
+      if (JSON.stringify(this.normalizeMapForCompare(oldDescriptionMap)) !== JSON.stringify(this.normalizeMapForCompare(newDescriptionMap))) {
+          changes.push({ label: 'Mô tả mẫu', before: `${Object.keys(oldDescriptionMap).length} mẫu`, after: `${Object.keys(newDescriptionMap).length} mẫu` });
+      }
+
+      const ignoredKeys = new Set(['analysisDate', 'safetyMargin', 'sampleList', 'targetIds', 'sampleTargetMap', 'sampleDescriptionMap', 'explicitGroupId']);
+      const oldInputs = req.inputs || {};
+      const inputKeys = new Set([
+          ...Object.keys(oldInputs),
+          ...Object.keys(payload)
+      ]);
+      inputKeys.forEach(key => {
+          if (ignoredKeys.has(key)) return;
+          addChange(`Thông số: ${key}`, oldInputs[key], payload[key]);
+      });
+
+      addChange('Safety margin', req.margin ?? oldInputs.safetyMargin ?? '', payload.safetyMargin ?? '');
+      return changes;
+  });
+  editInventoryDiff = computed<EditInventoryDiff[]>(() => {
+      const req = this.editingRequest();
+      if (!req) return [];
+
+      const oldMap = new Map<string, { name: string; unit: string; amount: number }>();
+      (req.items || []).forEach(item => {
+          const current = oldMap.get(item.name);
+          oldMap.set(item.name, {
+              name: item.displayName || item.name,
+              unit: item.stockUnit || item.unit || '',
+              amount: (current?.amount || 0) + Number(item.amount || 0)
+          });
+      });
+
+      const newMap = new Map<string, { name: string; unit: string; amount: number }>();
+      this.calculatedItems().forEach(item => {
+          if (item.isComposite) {
+              (item.breakdown || []).forEach(sub => {
+                  const current = newMap.get(sub.name);
+                  newMap.set(sub.name, {
+                      name: sub.displayName || this.localInventoryMap()[sub.name]?.name || sub.name,
+                      unit: sub.stockUnit || sub.unit || '',
+                      amount: (current?.amount || 0) + Number(sub.totalNeed || 0)
+                  });
+              });
+          } else {
+              const current = newMap.get(item.name);
+              newMap.set(item.name, {
+                  name: item.displayName || this.localInventoryMap()[item.name]?.name || item.name,
+                  unit: item.stockUnit || item.unit || '',
+                  amount: (current?.amount || 0) + Number(item.stockNeed || 0)
+              });
+          }
+      });
+
+      return Array.from(new Set([...oldMap.keys(), ...newMap.keys()]))
+          .map(id => {
+              const oldItem = oldMap.get(id);
+              const newItem = newMap.get(id);
+              const before = oldItem?.amount || 0;
+              const after = newItem?.amount || 0;
+              return {
+                  name: newItem?.name || oldItem?.name || id,
+                  unit: newItem?.unit || oldItem?.unit || '',
+                  before,
+                  after,
+                  diff: Math.round((after - before) * 1000000) / 1000000
+              };
+          })
+          .filter(row => Math.abs(row.diff) > 0.000001)
+          .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+  });
+  hasEditChanges = computed(() => this.editInfoChanges().length > 0 || this.editInventoryDiff().length > 0);
   safetyMargin = signal<number>(10);
   formatNum = formatNum;
   formatDate = formatDate;
@@ -192,7 +312,11 @@ export class CalculatorComponent implements OnDestroy {
     this.targetService.getAllGroups().then(groups => this.targetGroups.set(groups));
 
     this.route.queryParams.subscribe(params => {
-        this.editRequestIdSignal.set(params['editRequestId'] || null);
+        const editRequestId = params['editRequestId'] || null;
+        if (editRequestId) {
+            this.state.ensureApprovedRequestsListener();
+        }
+        this.editRequestIdSignal.set(editRequestId);
     });
 
     effect(() => {
@@ -281,6 +405,9 @@ export class CalculatorComponent implements OnDestroy {
                 this.sampleCount.set(0);
             }
             this.preservedSampleDescriptionMap.set(editingReq.sampleDescriptionMap || editingReq.inputs?.sampleDescriptionMap || {});
+            if (editingReq.sampleList?.length) {
+                void this.ensureSampleDescriptionsLoaded();
+            }
             
             if (editingReq.targetIds) {
                 this.selectedTargets.set(new Set(editingReq.targetIds));
@@ -365,6 +492,9 @@ export class CalculatorComponent implements OnDestroy {
       this.sampleListText.set(val);
       const lines = val.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       this.sampleCount.set(lines.length);
+      if (lines.length > 0) {
+          void this.ensureSampleDescriptionsLoaded();
+      }
       if (this.form().contains('n_sample') && lines.length > 0) {
           this.form().patchValue({ n_sample: lines.length });
       }
@@ -389,6 +519,53 @@ export class CalculatorComponent implements OnDestroy {
           // Re-run calculations since custom targets affect chemical needs
           this.runCalculation(this.activeSop()!, this.form().value);
       }
+  }
+
+  getSampleDescriptionName(sampleCode: string): string {
+      return getSampleDescriptionSnapshot(this.preservedSampleDescriptionMap(), sampleCode)?.nameSnapshot || '';
+  }
+
+  updateSampleDescription(sampleCode: string, value: string) {
+      const snapshot = this.resolveDescriptionSnapshot(value);
+      this.preservedSampleDescriptionMap.update(map => setSampleDescriptionSnapshot(map, sampleCode, snapshot));
+  }
+
+  applyDescriptionToAllSamples(sourceSampleCode: string) {
+      const snapshot = getSampleDescriptionSnapshot(this.preservedSampleDescriptionMap(), sourceSampleCode);
+      this.preservedSampleDescriptionMap.update(map => {
+          let next = map;
+          for (const sample of this.samplesList()) {
+              if (sample !== sourceSampleCode) {
+                  next = setSampleDescriptionSnapshot(next, sample, snapshot);
+              }
+          }
+          return next;
+      });
+  }
+
+  private resolveDescriptionSnapshot(value: string): SampleDescriptionSnapshot | undefined {
+      const name = String(value || '').trim();
+      if (!name) return undefined;
+      const normalized = normalizeDescription(name);
+      const master = this.availableSampleDescriptions().find(item =>
+          normalizeDescription(item.name) === normalized
+          || (item.aliases || []).some(alias => normalizeDescription(alias) === normalized)
+      );
+      return master
+          ? { masterId: master.id, nameSnapshot: master.name }
+          : { nameSnapshot: name };
+  }
+
+  private ensureSampleDescriptionsLoaded(): Promise<void> {
+      if (this.sampleDescriptionLoadPromise) return this.sampleDescriptionLoadPromise;
+
+      this.sampleDescriptionLoadPromise = this.sampleDescriptionMasterService.getActive()
+          .then(items => this.availableSampleDescriptions.set(items))
+          .catch(() => {
+              this.toast.show('Không thể tải gợi ý mô tả mẫu; vẫn có thể nhập tự do.', 'info');
+          });
+
+      return this.sampleDescriptionLoadPromise;
   }
 
   toggleTarget(id: string) {
@@ -509,6 +686,22 @@ export class CalculatorComponent implements OnDestroy {
       }
 
       return payload;
+  }
+
+  private formatPreviewValue(value: unknown): string {
+      if (Array.isArray(value)) return value.join(', ');
+      if (value === undefined || value === null || value === '') return '—';
+      return String(value);
+  }
+
+  private normalizeMapForCompare(map: Record<string, any>): Record<string, any> {
+      return Object.keys(map || {})
+          .sort()
+          .reduce((acc, key) => {
+              const value = map[key];
+              acc[key] = Array.isArray(value) ? [...value].sort() : value;
+              return acc;
+          }, {} as Record<string, any>);
   }
 
   async fetchData(sop: Sop) {
@@ -680,21 +873,13 @@ export class CalculatorComponent implements OnDestroy {
     }
   }
 
-  async approveAndCreatePrintJob(sop: Sop) {
+  async approveAndQueuePrintJob(sop: Sop) {
     if (!this.auth.canApprove()) return;
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
     try {
         const payload = this.getPayloadData();
-        const result = await this.state.directApproveAndPrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
-        if (result) {
-            const job: PrintJob = {
-              sop: sop, inputs: payload, margin: payload.safetyMargin, items: this.calculatedItems(),
-              date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: payload.analysisDate,
-              requestId: result.logId 
-            };
-            this.printService.openPreview([job]); // UPDATED: Use Preview
-        }
+        await this.state.directApproveAndQueuePrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
     } catch (e: any) { } finally {
         this.isProcessing.set(false);
     }
@@ -758,4 +943,12 @@ export class CalculatorComponent implements OnDestroy {
       this.toast.show(`Đã thêm ${samples.length} mẫu vào danh sách.`, 'success');
       this.closeQuickGenerateModal();
   }
+}
+
+function normalizeDescription(value: string): string {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
 }

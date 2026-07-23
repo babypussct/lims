@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StandardRequest } from '../../../../core/models/standard.model';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -28,7 +28,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                         </tr>
                     }
                 } @else {
-                    @for (req of requests; track req.id) {
+                    @for (req of visibleRequests(); track req.id) {
                         <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
                             <td class="px-6 py-5">
                                     <div class="flex flex-col gap-3">
@@ -173,7 +173,19 @@ import { AuthService } from '../../../../core/services/auth.service';
                             </td>
                         </tr>
                     } 
-                    @if (requests.length === 0) { 
+                    @if (requests.length > visibleRequests().length) {
+                        <tr>
+                            <td colspan="6" class="px-6 py-5 text-center">
+                                <button type="button"
+                                        (click)="loadMore()"
+                                        class="px-5 py-2 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
+                                    <i class="fa-solid fa-angles-down mr-1"></i>
+                                    Xem thêm {{Math.min(tableLimitStep, requests.length - visibleRequests().length)}} dòng — còn {{requests.length - visibleRequests().length}}
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (requests.length === 0) {
                         <tr>
                             <td colspan="6" class="px-6 py-24 text-center">
                                 <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-slate-200 dark:text-slate-800 border-2 border-dashed border-slate-100 dark:border-slate-800">
@@ -210,8 +222,19 @@ export class RequestsTableComponent {
     return this.auth.canAssignStandards() && !!user && req.requestedBy !== user.uid;
   }
 
-  @Input() requests: StandardRequest[] = [];
+  @Input() set requests(value: StandardRequest[]) {
+    this._requests.set(value || []);
+    this.tableLimit.set(this.tableLimitStep);
+  }
+  get requests(): StandardRequest[] {
+    return this._requests();
+  }
   @Input() isLoading = false;
+  readonly Math = Math;
+  readonly tableLimitStep = 80;
+  tableLimit = signal(this.tableLimitStep);
+  private _requests = signal<StandardRequest[]>([]);
+  visibleRequests = computed(() => this._requests().slice(0, this.tableLimit()));
 
   @Output() navigateToStandard = new EventEmitter<string>();
   @Output() actionApprove = new EventEmitter<StandardRequest>();
@@ -223,6 +246,10 @@ export class RequestsTableComponent {
   @Output() actionDelete = new EventEmitter<StandardRequest>();
 
   Date = Date;
+
+  loadMore(): void {
+    this.tableLimit.update(limit => limit + this.tableLimitStep);
+  }
 
 
 

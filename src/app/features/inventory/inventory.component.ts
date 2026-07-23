@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, effect, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -31,7 +31,8 @@ import { LockPermissionDirective } from '../../shared/directives/lock-permission
     @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventoryComponent implements OnInit, OnDestroy {
   state = inject(StateService);
@@ -81,7 +82,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
       }
 
       // 3. Sắp xếp mới nhất lên đầu
-      return items.sort((a, b) => {
+      return [...items].sort((a, b) => {
           const timeA = a.lastUpdated?.seconds || 0;
           const timeB = b.lastUpdated?.seconds || 0;
           return timeB - timeA;

@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, Input, OnDestroy, ViewChild, ViewEncapsulation, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import * as QRCode from 'qrcode';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
@@ -766,6 +765,7 @@ export class DailyChecklistComponent implements OnDestroy {
   private readonly dataService = inject(DailyChecklistDataService);
   private readonly toast = inject(ToastService);
   private readonly targetService = inject(TargetService);
+  private qrLibLoader?: Promise<any>;
 
   readonly selectedDate = signal(toLocalDateInputValue());
   readonly dateRequests = signal<Request[]>([]);
@@ -1228,6 +1228,11 @@ export class DailyChecklistComponent implements OnDestroy {
     this.router.navigate(['/results-view', requestId]);
   }
 
+  editBatch(requestId: string): void {
+    if (!requestId) return;
+    this.router.navigate(['/calculator'], { queryParams: { editRequestId: requestId } });
+  }
+
   private async prepareBatchQrCodes(): Promise<void> {
     const current = this.qrCodeDataUrls();
     const missingIds = this.boardBatches()
@@ -1235,6 +1240,7 @@ export class DailyChecklistComponent implements OnDestroy {
       .filter(requestId => requestId && !current[requestId]);
     if (missingIds.length === 0) return;
 
+    const QRCode = await this.loadQrLib();
     const generated = await Promise.all(missingIds.map(async requestId => {
       const url = this.buildTraceabilityUrl(requestId);
       const dataUrl = await QRCode.toDataURL(url, {
@@ -1246,6 +1252,11 @@ export class DailyChecklistComponent implements OnDestroy {
       return [requestId, dataUrl] as const;
     }));
     this.qrCodeDataUrls.update(values => ({ ...values, ...Object.fromEntries(generated) }));
+  }
+
+  private async loadQrLib(): Promise<any> {
+    this.qrLibLoader ??= import('qrcode');
+    return this.qrLibLoader;
   }
 
   private buildTraceabilityUrl(requestId: string): string {

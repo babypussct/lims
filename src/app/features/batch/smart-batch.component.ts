@@ -1,5 +1,6 @@
 
-import { Component, inject, signal, computed, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, effect } from '@angular/core';
+import { Router } from '@angular/router';
 import { getCanonicalId, normalizeSampleCode, resolveTargetMasterInfo } from '../results/shared/compound-id-resolver';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +15,6 @@ import { MatrixTypeService } from '../config/matrix-type.service';
 import { MasterDeviceService } from '../config/master-device.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
-import { PrintService, PrintJob } from '../../core/services/print.service';
 import { formatNum, generateSlug, formatSampleList } from '../../shared/utils/utils';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Recipe } from '../../core/models/recipe.model';
@@ -146,18 +146,19 @@ import { BatchSplitWizardComponent } from './components/batch-split-wizard.compo
   selector: 'app-smart-batch',
   standalone: true,
   imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent, BatchSplitWizardComponent],
-  templateUrl: './smart-batch.component.html'
+  templateUrl: './smart-batch.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SmartBatchComponent {
   state = inject(StateService);
   auth = inject(AuthService);
+  router = inject(Router);
   calculator = inject(CalculatorService);
   recipeService = inject(RecipeService);
   targetService = inject(TargetService); 
   invService = inject(InventoryService);
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
-  printService = inject(PrintService);
   matrixTypeService = inject(MatrixTypeService);
   masterDeviceService = inject(MasterDeviceService);
   sampleDescriptionMasterService = inject(SampleDescriptionMasterService);
@@ -185,20 +186,15 @@ export class SmartBatchComponent {
   availableMatrices = signal<MatrixType[]>([]);
   availableDevices = signal<MasterDevice[]>([]);
   availableSampleDescriptions = signal<SampleDescriptionMaster[]>([]);
+  matrixById = computed(() => new Map(this.availableMatrices().map(matrix => [matrix.id, matrix])));
+  private blockSamplesCache = new Map<number, { rawSamples: string; samples: string[] }>();
+  private blockDescriptionCountCache = new Map<number, {
+      rawSamples: string;
+      sampleDescriptionMap: SampleDescriptionMap;
+      count: number;
+  }>();
 
   constructor() {
-      this.matrixTypeService.getAll().then(m => {
-          this.availableMatrices.set(m);
-          const defaultMatrix = m.find(x => x.isDefault);
-          if (defaultMatrix && this.blocks().length === 1 && !this.blocks()[0].matrixType) {
-              this.updateBlockMatrix(0, defaultMatrix.id);
-          }
-      });
-      this.masterDeviceService.getAll().then(d => this.availableDevices.set(d));
-      this.sampleDescriptionMasterService.getActive()
-        .then(items => this.availableSampleDescriptions.set(items))
-        .catch(() => this.toast.show('Không thể tải gợi ý mô tả mẫu; vẫn có thể nhập tự do.', 'info'));
-      
       effect(() => {
           const activeIds = new Set(this.activeSops().map(s => s.id));
           
@@ -227,6 +223,7 @@ export class SmartBatchComponent {
   
   private inventoryCache: Record<string, InventoryItem> = {};
   private recipeCache: Record<string, Recipe> = {};
+  private setupDataLoadPromise?: Promise<void>;
   
   sampleSearchTerm = signal('');
   
@@ -678,12 +675,17 @@ export class SmartBatchComponent {
   }
 
   getBlockSamples(block: JobBlock): string[] {
+      const cached = this.blockSamplesCache.get(block.id);
+      if (cached && cached.rawSamples === block.rawSamples) return cached.samples;
+
       const unique = new Map<string, string>();
       block.rawSamples.split('\n').map(sample => sample.trim()).filter(Boolean).forEach(sample => {
           const key = normalizeSampleCode(sample);
           if (key && !unique.has(key)) unique.set(key, sample);
       });
-      return Array.from(unique.values());
+      const samples = Array.from(unique.values());
+      this.blockSamplesCache.set(block.id, { rawSamples: block.rawSamples, samples });
+      return samples;
   }
 
   getBlockSampleDescription(block: JobBlock, sampleCode: string): string {
@@ -691,7 +693,24 @@ export class SmartBatchComponent {
   }
 
   getBlockDescriptionCount(block: JobBlock): number {
-      return this.getBlockSamples(block).filter(sample => Boolean(getSampleDescriptionSnapshot(block.sampleDescriptionMap, sample))).length;
+      const cached = this.blockDescriptionCountCache.get(block.id);
+      if (
+          cached
+          && cached.rawSamples === block.rawSamples
+          && cached.sampleDescriptionMap === block.sampleDescriptionMap
+      ) {
+          return cached.count;
+      }
+
+      const count = this.getBlockSamples(block)
+          .filter(sample => Boolean(getSampleDescriptionSnapshot(block.sampleDescriptionMap, sample)))
+          .length;
+      this.blockDescriptionCountCache.set(block.id, {
+          rawSamples: block.rawSamples,
+          sampleDescriptionMap: block.sampleDescriptionMap,
+          count
+      });
+      return count;
   }
 
   updateBlockSampleDescription(index: number, sampleCode: string, value: string): void {
@@ -841,12 +860,12 @@ export class SmartBatchComponent {
 
   getMatrixLabel(id?: string): string {
       if (!id) return '';
-      return this.availableMatrices().find(m => m.id === id)?.name || id;
+      return this.matrixById().get(id)?.name || id;
   }
 
   getMatrixColor(id?: string): string {
       if (!id) return '#94a3b8';
-      return this.availableMatrices().find(m => m.id === id)?.color || '#94a3b8';
+      return this.matrixById().get(id)?.color || '#94a3b8';
   }
 
   // --- PREVIEW PANEL METHODS ---
@@ -932,10 +951,35 @@ export class SmartBatchComponent {
   selectMode(mode: 'multiple' | 'single') {
       this.smartBatchMode.set(mode);
       this.step.set(1);
+      void this.ensureSetupDataLoaded();
+  }
+
+  openSopCalculator() {
+      this.router.navigate(['/calculator']);
   }
 
   goBackToStep0() {
       this.step.set(0);
+  }
+
+  private ensureSetupDataLoaded(): Promise<void> {
+      if (this.setupDataLoadPromise) return this.setupDataLoadPromise;
+
+      this.setupDataLoadPromise = Promise.all([
+          this.matrixTypeService.getAll().then(m => {
+              this.availableMatrices.set(m);
+              const defaultMatrix = m.find(x => x.isDefault);
+              if (defaultMatrix && this.blocks().length === 1 && !this.blocks()[0].matrixType) {
+                  this.updateBlockMatrix(0, defaultMatrix.id);
+              }
+          }),
+          this.masterDeviceService.getAll().then(d => this.availableDevices.set(d)),
+          this.sampleDescriptionMasterService.getActive()
+            .then(items => this.availableSampleDescriptions.set(items))
+            .catch(() => this.toast.show('Không thể tải gợi ý mô tả mẫu; vẫn có thể nhập tự do.', 'info'))
+      ]).then(() => undefined);
+
+      return this.setupDataLoadPromise;
   }
 
   // --- GROUP MODAL ---
@@ -1884,10 +1928,10 @@ export class SmartBatchComponent {
           return;
       }
       
-      if (await this.confirmation.confirm({ message: `Xác nhận tạo ${this.batches().length} phiếu yêu cầu và trừ kho ngay lập tức?`, confirmText: 'Duyệt & Xem Phiếu' })) {
+      if (await this.confirmation.confirm({ message: `Xác nhận tạo ${this.batches().length} phiếu yêu cầu, trừ kho ngay lập tức và đưa phiếu vào hàng đợi in?`, confirmText: 'Duyệt & Xếp Hàng In' })) {
           this.isProcessing.set(true);
           const inventoryMap = this.state.inventoryMap();
-          const jobs: PrintJob[] = [];
+          let queuedCount = 0;
           
           try {
               for (const batch of this.batches()) {
@@ -1921,19 +1965,14 @@ export class SmartBatchComponent {
                         ? batch.tasks[0].sourceGroupId
                         : undefined
                   };
-                  const res = await this.state.directApproveAndPrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap);
+                  const res = await this.state.directApproveAndQueuePrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap, { showSuccessToast: false });
                   if (res) {
-                      jobs.push({
-                          sop: batch.sop, inputs: finalInputs, margin: batch.safetyMargin, items: batch.resourceImpact,
-                          date: new Date(), user: this.state.getCurrentUserName(),
-                          analysisDate: finalInputs.analysisDate, requestId: res.logId
-                      });
+                      queuedCount++;
                   }
               }
               
-                  if (jobs.length > 0) {
-                  this.printService.openPreview(jobs);
-                  this.toast.show('Hoàn tất! Đang mở xem trước.', 'success');
+              if (queuedCount > 0) {
+                  this.toast.show(`Hoàn tất! Đã duyệt ${queuedCount} mẻ và đưa phiếu vào hàng đợi in.`, 'success');
                   this.reset();
               }
           } catch (e: any) {

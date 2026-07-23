@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -36,7 +36,8 @@ import { ExportModalComponent } from '../../shared/components/export-modal/expor
   standalone: true,
   imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, ExportModalComponent],
   providers: [DatePipe],
-  templateUrl: './standards.component.html'
+  templateUrl: './standards.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StandardsComponent implements OnInit, OnDestroy {
   state = inject(StateService);

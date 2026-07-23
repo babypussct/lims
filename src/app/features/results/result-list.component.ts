@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
 import { Router, RouterModule } from '@angular/router';
@@ -40,7 +40,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
           <!-- Status Filter Tabs -->
           <div class="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-2xl shadow-inner shrink-0 overflow-x-auto max-w-full scrollbar-none self-stretch sm:self-start lg:self-auto">
-            <button (click)="filterStatus.set('all')"
+            <button (click)="setStatusFilter('all')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'all'
                       ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-sm'
@@ -50,7 +50,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                 <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('all')}}</span>
               }
             </button>
-            <button (click)="filterStatus.set('pending')"
+            <button (click)="setStatusFilter('pending')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'pending'
                       ? 'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 shadow-sm border border-amber-100/60 dark:border-amber-900/20'
@@ -60,7 +60,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                 <span class="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('pending')}}</span>
               }
             </button>
-            <button (click)="filterStatus.set('draft')"
+            <button (click)="setStatusFilter('draft')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'draft'
                       ? 'bg-indigo-50 dark:bg-indigo-955/20 text-indigo-700 dark:text-indigo-400 shadow-sm border border-indigo-100/60 dark:border-indigo-900/20'
@@ -70,7 +70,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                 <span class="bg-indigo-100 dark:bg-indigo-955/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('draft')}}</span>
               }
             </button>
-            <button (click)="filterStatus.set('completed')"
+            <button (click)="setStatusFilter('completed')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'completed'
                       ? 'bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 shadow-sm border border-emerald-100/60 dark:border-emerald-900/20'
@@ -88,7 +88,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
         ══════════════════════════════════════════════════════ -->
         <div class="flex flex-wrap items-stretch gap-3 mb-5">
           <!-- KPI: Tổng mẻ hoạt động -->
-          <button (click)="filterStatus.set('all'); selectedSopId.set('all')"
+          <button (click)="showAllRuns()"
                class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-200 active:scale-[0.98] min-w-[130px]"
                [class.ring-2]="filterStatus() === 'all' && selectedSopId() === 'all'"
                [class.ring-blue-500]="filterStatus() === 'all' && selectedSopId() === 'all'"
@@ -103,7 +103,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           </button>
 
           <!-- KPI: Chờ nhập -->
-          <button (click)="filterStatus.set('pending')"
+          <button (click)="setStatusFilter('pending')"
                class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 transition-all duration-200 active:scale-[0.98] min-w-[130px]"
                [class.ring-2]="filterStatus() === 'pending'"
                [class.ring-amber-500]="filterStatus() === 'pending'"
@@ -118,7 +118,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           </button>
 
           <!-- KPI: Hiệu suất -->
-          <button (click)="filterStatus.set('completed')"
+          <button (click)="setStatusFilter('completed')"
                class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-800 transition-all duration-200 active:scale-[0.98] min-w-[160px]"
                [class.ring-2]="filterStatus() === 'completed'"
                [class.ring-emerald-500]="filterStatus() === 'completed'"
@@ -143,7 +143,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <div class="flex items-center gap-1.5 flex-wrap">
               @for (item of sopDistribution(); track item.id) {
                 <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-150 hover:scale-105 active:scale-95 {{ item.textClass }} {{ item.bgClass }}"
-                        (click)="selectedSopId.set(selectedSopId() === item.id ? 'all' : item.id)"
+                        (click)="toggleSopFilter(item.id)"
                         [class.ring-2]="selectedSopId() === item.id"
                         [class.ring-violet-500]="selectedSopId() === item.id">
                   {{ item.name }}: <span class="font-black">{{ item.count }}</span>
@@ -172,7 +172,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                      placeholder="Tìm theo Mã mẻ, SOP, Mã số mẫu, Analyst..."
                      class="w-full pl-8 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-400 dark:text-slate-200 font-semibold transition placeholder:text-slate-350 dark:placeholder:text-slate-600">
               @if (searchText()) {
-                <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                <button (click)="clearSearch()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
                   <i class="fa-solid fa-circle-xmark text-xs"></i>
                 </button>
               }
@@ -267,12 +267,16 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <!-- Date Range -->
               <div class="flex flex-col gap-1 sm:col-span-2">
                 <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Khoảng thời gian (Ngày duyệt)</label>
-                <app-date-range-filter
-                    [initStart]="startDate()"
-                    [initEnd]="endDate()"
-                    containerClass="bg-transparent p-0 border-0 shadow-none w-full gap-3"
-                    (dateChange)="onDateRangeChange($event)">
-                </app-date-range-filter>
+                @defer (when showAdvancedFilters()) {
+                  <app-date-range-filter
+                      [initStart]="startDate()"
+                      [initEnd]="endDate()"
+                      containerClass="bg-transparent p-0 border-0 shadow-none w-full gap-3"
+                      (dateChange)="onDateRangeChange($event)">
+                  </app-date-range-filter>
+                } @placeholder {
+                  <div class="h-9 rounded-xl bg-slate-100/70 dark:bg-slate-900/60"></div>
+                }
               </div>
             </div>
           }
@@ -300,7 +304,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           <!-- ─── GRID VIEW ─── -->
           @if (viewMode() === 'grid') {
             <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-              @for (run of displayedRuns(); track run.id) {
+              @for (run of paginatedRuns(); track run.id) {
                 <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-250 flex flex-col overflow-hidden relative cursor-pointer"
                      (click)="enterResults(run.id)"
                      [class.ring-2]="lastSelectedRequestId() === run.id"
@@ -325,9 +329,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                         }
                         <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide border">
                           <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                            'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
-                            'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
-                            'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                            'bg-emerald-500': runStatusMap()[run.id] === 'completed',
+                            'bg-indigo-500': runStatusMap()[run.id] === 'draft',
+                            'bg-amber-500': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
                           }"></span>
                           {{ getStatusText(run.id) }}
                         </span>
@@ -340,7 +344,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                           </a>
                         }
                         @if (isRunLocked(run)) {
-                          <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
+                          <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
                             <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
                           </span>
                         }
@@ -358,7 +362,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
                     @if (run.isVirtualMaster && run.childRequestIds) {
                       <div class="text-[9px] text-fuchsia-500 dark:text-fuchsia-400 font-bold mb-2 flex items-center gap-1 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 px-2 py-1 rounded-lg border border-fuchsia-100/30 dark:border-fuchsia-900/20 select-none w-fit">
-                        <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
+                        <i class="fa-solid fa-link text-[8px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
                       </div>
                     }
 
@@ -429,7 +433,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
-                    @for (run of displayedRuns(); track run.id) {
+                    @for (run of paginatedRuns(); track run.id) {
                       <tr [ngClass]="{'bg-fuchsia-50/20 dark:bg-fuchsia-950/10 border-l-2 border-l-fuchsia-500': lastSelectedRequestId() === run.id}"
                           class="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors text-slate-700 dark:text-slate-300 cursor-pointer"
                           (click)="enterResults(run.id)">
@@ -453,7 +457,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                               <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Mẻ tổng hợp</span>
                             }
                             @if (isRunLocked(run)) {
-                              <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
+                              <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
                                 <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
                               </span>
                             }
@@ -492,9 +496,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                         <td class="p-4 text-center">
                           <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide border">
                             <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                              'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
-                              'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
-                              'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                              'bg-emerald-500': runStatusMap()[run.id] === 'completed',
+                              'bg-indigo-500': runStatusMap()[run.id] === 'draft',
+                              'bg-amber-500': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
                             }"></span>
                             {{ getStatusText(run.id) }}
                           </span>
@@ -530,6 +534,38 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               </div>
             </div>
           }
+
+          @if (displayedRuns().length > pageSize) {
+            <div class="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm">
+              <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                Hiển thị <span class="font-black text-slate-800 dark:text-slate-100">{{ pageStartIndex() }}</span>
+                -
+                <span class="font-black text-slate-800 dark:text-slate-100">{{ pageEndIndex() }}</span>
+                / {{ displayedRuns().length }} mẻ
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button (click)="previousPage()"
+                        [disabled]="activePage() === 1"
+                        class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
+                  <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                </button>
+                @for (page of visiblePageNumbers(); track page) {
+                  <button (click)="setPage(page)"
+                          class="min-w-8 h-8 px-2 rounded-xl border text-[11px] font-black transition"
+                          [class]="activePage() === page
+                            ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-fuchsia-300 dark:hover:border-fuchsia-800'">
+                    {{ page }}
+                  </button>
+                }
+                <button (click)="nextPage()"
+                        [disabled]="activePage() === totalPages()"
+                        class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
+                  <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
+              </div>
+            </div>
+          }
         }
 
       </div><!-- end scrollable area -->
@@ -555,34 +591,43 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
       <!-- ══════════════════════════════════════════════════════
            MERGE MODAL
       ══════════════════════════════════════════════════════ -->
-      <app-merge-runs-modal
-        [isOpen]="showMergeModal()"
-        [selectedRuns]="getSelectedRuns()"
-        [masterCurveRunId]="masterCurveRunId()"
-        [unifiedDateString]="unifiedDateString()"
-        [customMasterId]="customMasterId()"
-        (close)="closeMergeModal()"
-        (masterCurveRunIdChange)="masterCurveRunId.set($event)"
-        (unifiedDateStringChange)="unifiedDateString.set($event)"
-        (customMasterIdChange)="customMasterId.set($event)"
-        (merge)="executeMerge()">
-      </app-merge-runs-modal>
+      @if (showMergeModal()) {
+        @defer {
+          <app-merge-runs-modal
+            [isOpen]="showMergeModal()"
+            [selectedRuns]="getSelectedRuns()"
+            [masterCurveRunId]="masterCurveRunId()"
+            [unifiedDateString]="unifiedDateString()"
+            [customMasterId]="customMasterId()"
+            (close)="closeMergeModal()"
+            (masterCurveRunIdChange)="masterCurveRunId.set($event)"
+            (unifiedDateStringChange)="unifiedDateString.set($event)"
+            (customMasterIdChange)="customMasterId.set($event)"
+            (merge)="executeMerge()">
+          </app-merge-runs-modal>
+        }
+      }
 
       <!-- ══════════════════════════════════════════════════════
            REPORT HUB MODAL
       ══════════════════════════════════════════════════════ -->
-      <app-report-hub-modal
-        [isOpen]="showReportHubModal()"
-        [run]="selectedRequestForReport()"
-        [historyList]="selectedRequestHistoryList()"
-        [isLoadingHistory]="isLoadingHistory()"
-        [runStatus]="selectedRequestForReport() ? runStatusMap()[selectedRequestForReport().id] : ''"
-        (close)="closeReportHub()"
-        (createReport)="enterResults($event.requestId, $event.prefix, true); closeReportHub()"
-        (previewPdf)="openPdfPreview($event.pdfUrl, $event.docsUrl, $event.prefix, $event.version, $event.publishedBy, $event.publishedAt); closeReportHub()">
-      </app-report-hub-modal>
+      @if (showReportHubModal()) {
+        @defer {
+          <app-report-hub-modal
+            [isOpen]="showReportHubModal()"
+            [run]="selectedRequestForReport()"
+            [historyList]="selectedRequestHistoryList()"
+            [isLoadingHistory]="isLoadingHistory()"
+            [runStatus]="selectedRequestForReport() ? runStatusMap()[selectedRequestForReport().id] : ''"
+            (close)="closeReportHub()"
+            (createReport)="enterResults($event.requestId, $event.prefix, true); closeReportHub()"
+            (previewPdf)="openPdfPreview($event.pdfUrl, $event.docsUrl, $event.prefix, $event.version, $event.publishedBy, $event.publishedAt); closeReportHub()">
+          </app-report-hub-modal>
+        }
+      }
     </div>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResultListComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
@@ -597,6 +642,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   isLoading = signal(true);
   filterStatus = signal<'all' | 'pending' | 'draft' | 'completed'>('all');
+  readonly pageSize = 24;
+  currentPage = signal<number>(1);
 
   // Advanced Filters State
   searchText = signal<string>('');
@@ -937,17 +984,16 @@ export class ResultListComponent implements OnInit, OnDestroy {
   });
 
   lastSelectedRequestId = signal<string | null>(null);
-  currentScrollTop = 0;
-  private scrollListenerRef?: any;
 
   saveState() {
     try {
       const scrollContainer = document.querySelector('main .overflow-y-auto');
-      const scrollTop = (scrollContainer && scrollContainer.scrollTop > 0) ? scrollContainer.scrollTop : this.currentScrollTop;
+      const scrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
       const stateToSave = {
         viewMode: this.viewMode(),
         filterStatus: this.filterStatus(),
+        currentPage: this.activePage(),
         searchText: this.searchText(),
         selectedSopId: this.selectedSopId(),
         selectedAnalyst: this.selectedAnalyst(),
@@ -971,6 +1017,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         const state = JSON.parse(saved);
         if (state.viewMode) this.viewMode.set(state.viewMode);
         if (state.filterStatus) this.filterStatus.set(state.filterStatus);
+        if (state.currentPage) this.currentPage.set(state.currentPage);
         if (state.searchText !== undefined) this.searchText.set(state.searchText);
         if (state.selectedSopId) this.selectedSopId.set(state.selectedSopId);
         if (state.selectedAnalyst) this.selectedAnalyst.set(state.selectedAnalyst);
@@ -979,7 +1026,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
         if (state.endDate) this.endDate.set(state.endDate);
         if (state.isMergeModeActive !== undefined) this.isMergeModeActive.set(state.isMergeModeActive);
         if (state.selectedRunsMap) this.selectedRunsMap.set(state.selectedRunsMap);
-        if (state.scrollTop) this.currentScrollTop = state.scrollTop;
       }
       
       const lastId = sessionStorage.getItem('lims_last_selected_request_id');
@@ -1004,7 +1050,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
           const scrollContainer = document.querySelector('main .overflow-y-auto');
           if (scrollContainer) {
             scrollContainer.scrollTop = state.scrollTop;
-            this.currentScrollTop = state.scrollTop;
           }
         }
       }
@@ -1014,30 +1059,17 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.state.ensureApprovedRequestsListener();
     this.restoreState();
     this.isLoading.set(false);
-    
-    // Bind scroll listener dynamically to track scrolling in real-time
+
     setTimeout(() => {
-      const container = document.querySelector('main .overflow-y-auto');
-      if (container) {
-        this.scrollListenerRef = () => {
-          this.currentScrollTop = container.scrollTop;
-        };
-        container.addEventListener('scroll', this.scrollListenerRef, { passive: true });
-      }
       this.restoreScrollPosition();
     }, 100);
   }
 
   ngOnDestroy() {
     this.saveState();
-    if (this.scrollListenerRef) {
-      const container = document.querySelector('main .overflow-y-auto');
-      if (container) {
-        container.removeEventListener('scroll', this.scrollListenerRef);
-      }
-    }
     if (this.reportHubSubscription) {
       this.reportHubSubscription();
     }
@@ -1119,6 +1151,55 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
     return list;
   });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.displayedRuns().length / this.pageSize)));
+
+  activePage = computed(() => Math.min(Math.max(this.currentPage(), 1), this.totalPages()));
+
+  paginatedRuns = computed(() => {
+    const start = (this.activePage() - 1) * this.pageSize;
+    return this.displayedRuns().slice(start, start + this.pageSize);
+  });
+
+  pageStartIndex = computed(() => {
+    const total = this.displayedRuns().length;
+    return total === 0 ? 0 : ((this.activePage() - 1) * this.pageSize) + 1;
+  });
+
+  pageEndIndex = computed(() => Math.min(this.activePage() * this.pageSize, this.displayedRuns().length));
+
+  visiblePageNumbers = computed(() => {
+    const total = this.totalPages();
+    const active = this.activePage();
+    const start = Math.max(1, Math.min(active - 2, total - 4));
+    const end = Math.min(total, start + 4);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  });
+
+  setPage(page: number) {
+    this.currentPage.set(Math.min(Math.max(page, 1), this.totalPages()));
+    this.scrollResultsToTop();
+  }
+
+  previousPage() {
+    this.setPage(this.activePage() - 1);
+  }
+
+  nextPage() {
+    this.setPage(this.activePage() + 1);
+  }
+
+  private resetPaging() {
+    this.currentPage.set(1);
+    this.scrollResultsToTop();
+  }
+
+  private scrollResultsToTop() {
+    setTimeout(() => {
+      const scrollContainer = document.querySelector('main .overflow-y-auto');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
+    }, 0);
+  }
 
   // Đếm số lượng mẻ theo bộ lọc (áp dụng các bộ lọc nâng cao)
   filteredCount(status: 'all' | 'pending' | 'draft' | 'completed'): number {
@@ -1231,21 +1312,46 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   // Event handlers cho bộ lọc nâng cao
+  setStatusFilter(status: 'all' | 'pending' | 'draft' | 'completed') {
+    this.filterStatus.set(status);
+    this.resetPaging();
+  }
+
+  showAllRuns() {
+    this.filterStatus.set('all');
+    this.selectedSopId.set('all');
+    this.resetPaging();
+  }
+
+  toggleSopFilter(sopId: string) {
+    this.selectedSopId.set(this.selectedSopId() === sopId ? 'all' : sopId);
+    this.resetPaging();
+  }
+
+  clearSearch() {
+    this.searchText.set('');
+    this.resetPaging();
+  }
+
   onSearchInput(event: Event) {
     this.searchText.set((event.target as HTMLInputElement).value);
+    this.resetPaging();
   }
 
   onSopChange(event: any) {
     this.selectedSopId.set(event.target.value);
+    this.resetPaging();
   }
 
   onAnalystChange(event: any) {
     this.selectedAnalyst.set(event.target.value);
+    this.resetPaging();
   }
 
   onDateRangeChange(range: { start: string, end: string, label: string }) {
     this.startDate.set(range.start);
     this.endDate.set(range.end);
+    this.resetPaging();
   }
 
   toggleMergeMode() {
@@ -1270,6 +1376,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.selectedAnalyst.set('all');
     this.startDate.set('');
     this.endDate.set('');
+    this.resetPaging();
   }
 
   // Option C selection and merging handlers

@@ -310,8 +310,8 @@
       }
 
       <!-- MODAL (Responsive Bottom Sheet) -->
-      @defer (when showModal()) {
-         @if (showModal()) {
+      @if (showModal()) {
+         @defer {
             <div class="fixed inset-0 z-[99] flex items-end md:items-center justify-center bg-black/30 dark:bg-black/50 backdrop-blur-sm fade-in" (click)="closeModal()">
                 <!-- Dynamic classes for Bottom Sheet on Mobile vs Center Modal on Desktop -->
                 <div class="bg-white dark:bg-slate-800 w-full md:max-w-2xl overflow-hidden flex flex-col animate-slide-up shadow-2xl dark:shadow-none

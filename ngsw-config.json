@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.23-b22",
-    "notesVersion": "v26.07.23-b22",
-    "title": "Data Cleanup: Điều Chỉnh CAS Lỗi & Hoàn Tác Theo Phiên",
+    "version": "v26.07.23-b23",
+    "notesVersion": "v26.07.23-b23",
+    "title": "SmartBatch: Sửa Mẻ Nhanh & Tối Ưu Tốc Độ",
     "features": [
-      "📄 Phân Trang Theo Từng Nhóm CAS hoặc Từng Hồ Sơ Lỗi, Giảm Quá Tải và Nguy Cơ Chọn Nhầm",
-      "🧹 Mở Trực Tiếp 128 Nhãn Giữ Chỗ, 32 CAS Dạng Ngày và 3 CAS Lỗi Khác để Điều Chỉnh",
-      "✅ Kiểm Tra Cấu Trúc, Checksum và Đối Chiếu PubChem Trước Khi Lưu CAS",
-      "↩️ Hoàn Tác Theo Phiên Cho Cả Danh Pháp, CAS và Metadata Chuẩn Hóa"
+      "⚡ Mở màn hình nhanh hơn nhờ tải thư viện nặng khi thật sự cần",
+      "🧪 SmartBatch là luồng chính; SOP Calculator chuyển thành nút tính nhanh trong SmartBatch",
+      "✏️ Sửa mẻ trực tiếp từ Hàng đợi In, Quản lý Yêu cầu và Daily Checklist trên Dashboard",
+      "🖨️ Sau khi duyệt mẻ, phiếu được đưa vào Hàng đợi In; không bật hộp thoại in ngay"
     ]
   },
   "assetGroups": [

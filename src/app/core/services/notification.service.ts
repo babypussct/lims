@@ -6,7 +6,6 @@ import {
     collection, doc, updateDoc, writeBatch,
     query, where, onSnapshot, Unsubscribe, deleteDoc, arrayUnion
 } from 'firebase/firestore';
-import { onMessage } from 'firebase/messaging';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
 
 // Notifications older than 90 days are auto-cleaned up on listener start
@@ -34,6 +33,7 @@ export class NotificationService {
 
     private unsub?: Unsubscribe;
     private fcmUnsub?: () => void;
+    private foregroundGeneration = 0;
     private _allItems: AppNotification[] = [];
 
     private readonly _onSwMessage = (event: MessageEvent) => {
@@ -113,8 +113,24 @@ export class NotificationService {
         }
 
         // Listen for foreground FCM messages
-        if (this.fb.messaging) {
-            this.fcmUnsub = onMessage(this.fb.messaging, (payload) => {
+        const foregroundGeneration = ++this.foregroundGeneration;
+        void this.startForegroundMessaging(foregroundGeneration);
+
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', this._onSwMessage);
+        }
+    }
+
+    private async startForegroundMessaging(foregroundGeneration: number) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+        const messaging = await this.fb.getMessagingInstance();
+        if (foregroundGeneration !== this.foregroundGeneration) return;
+
+        if (messaging) {
+            const { onMessage } = await import('firebase/messaging');
+            if (foregroundGeneration !== this.foregroundGeneration) return;
+            this.fcmUnsub = onMessage(messaging, (payload) => {
                 console.log('[NotificationService] Foreground message received:', payload);
                 this.foregroundMessage.set({
                     eventId: payload.data?.['eventId'],
@@ -125,13 +141,10 @@ export class NotificationService {
                 });
             });
         }
-
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('message', this._onSwMessage);
-        }
     }
 
     stopListener() {
+        this.foregroundGeneration++;
         if (this.unsub) { this.unsub(); this.unsub = undefined; }
         if (this.fcmUnsub) { this.fcmUnsub(); this.fcmUnsub = undefined; }
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {

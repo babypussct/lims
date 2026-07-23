@@ -282,7 +282,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
       title: 'Vận hành',
       items: [
         { name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
-        { name: 'Vận hành (SOP)', icon: 'fa-list-check', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' },
         { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
         { name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view', hasBadge: true },
         { name: 'Kết Quả Phân Tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' }

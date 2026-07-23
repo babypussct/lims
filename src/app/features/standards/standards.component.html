@@ -98,55 +98,92 @@
       </div>
 
       <!-- ADD/EDIT MODAL -->
-      <app-standards-form-modal [isOpen]="showModal()" [std]="isEditing() ? selectedStd() : null" [allStandards]="allStandards()" (closeModal)="closeModal()"></app-standards-form-modal>
+      @if (showModal()) {
+        @defer {
+          <app-standards-form-modal [isOpen]="showModal()" [std]="isEditing() ? selectedStd() : null" [allStandards]="allStandards()" (closeModal)="closeModal()"></app-standards-form-modal>
+        }
+      }
 
       <!-- IMPORT PREVIEW MODAL -->
-      <app-standards-import-data-modal [data]="importPreviewData()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmImport()"></app-standards-import-data-modal>
+      @if (importPreviewData().length > 0) {
+        @defer {
+          <app-standards-import-data-modal [data]="importPreviewData()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmImport()"></app-standards-import-data-modal>
+        }
+      }
 
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
-      <app-standards-import-usage-modal [data]="importUsageLogPreviewData()" [validCount]="validUsageLogsCount()" [duplicateCount]="duplicateUsageLogsCount()" [errorCount]="errorUsageLogsCount()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmUsageLogImport()"></app-standards-import-usage-modal>
+      @if (importUsageLogPreviewData().length > 0) {
+        @defer {
+          <app-standards-import-usage-modal [data]="importUsageLogPreviewData()" [validCount]="validUsageLogsCount()" [duplicateCount]="duplicateUsageLogsCount()" [errorCount]="errorUsageLogsCount()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmUsageLogImport()"></app-standards-import-usage-modal>
+        }
+      }
 
       <!-- BULK COA MODAL -->
-      <app-standards-bulk-coa-modal [isOpen]="showBulkCoaModal()" [items]="bulkCoaItems()" [allStandards]="allStandards()" [isUploading]="isBulkUploading()" [uploadComplete]="bulkUploadComplete()" (cancel)="cancelBulkCoa()" (confirm)="confirmBulkCoaUpload()"></app-standards-bulk-coa-modal>
+      @if (showBulkCoaModal()) {
+        @defer {
+          <app-standards-bulk-coa-modal [isOpen]="showBulkCoaModal()" [items]="bulkCoaItems()" [allStandards]="allStandards()" [isUploading]="isBulkUploading()" [uploadComplete]="bulkUploadComplete()" (cancel)="cancelBulkCoa()" (confirm)="confirmBulkCoaUpload()"></app-standards-bulk-coa-modal>
+        }
+      }
 
       <!-- DATA CLEANUP MODAL -->
-      <app-standards-data-cleanup-modal [isOpen]="showDataCleanupModal()" [allStandards]="allStandards()" (closeModal)="showDataCleanupModal.set(false)"></app-standards-data-cleanup-modal>
+      @if (showDataCleanupModal()) {
+        @defer {
+          <app-standards-data-cleanup-modal [isOpen]="showDataCleanupModal()" [allStandards]="allStandards()" (closeModal)="showDataCleanupModal.set(false)"></app-standards-data-cleanup-modal>
+        }
+      }
 
-      <app-standards-assign-modal
-          [isOpen]="showAssignModal()"
-          [std]="selectedStd()"
-          [isAssignMode]="isAssignMode()"
-          [userList]="userList()"
-          [isProcessing]="isProcessing()"
-          [currentUserUid]="auth.currentUser()?.uid || ''"
-          [currentUserName]="auth.currentUser()?.displayName || ''"
-          [sameName]="sameNameAsSelected()"
-          (closeModal)="showAssignModal.set(false)"
-          (confirm)="confirmAssign($event)">
-      </app-standards-assign-modal>
+      @if (showAssignModal()) {
+        @defer {
+          <app-standards-assign-modal
+              [isOpen]="showAssignModal()"
+              [std]="selectedStd()"
+              [isAssignMode]="isAssignMode()"
+              [userList]="userList()"
+              [isProcessing]="isProcessing()"
+              [currentUserUid]="auth.currentUser()?.uid || ''"
+              [currentUserName]="auth.currentUser()?.displayName || ''"
+              [sameName]="sameNameAsSelected()"
+              (closeModal)="showAssignModal.set(false)"
+              (confirm)="confirmAssign($event)">
+          </app-standards-assign-modal>
+        }
+      }
 
       <!-- PRINT MODAL -->
-      <app-standards-print-modal [isOpen]="showPrintModal()" [std]="selectedStd()" [standards]="selectedStandardsToPrint()" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
+      @if (showPrintModal()) {
+        @defer {
+          <app-standards-print-modal [isOpen]="showPrintModal()" [std]="selectedStd()" [standards]="selectedStandardsToPrint()" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
+        }
+      }
 
       <!-- HISTORY MODAL -->
-      <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
+      @if (historyStd()) {
+        @defer {
+          <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
+        }
+      }
 
       <!-- PURCHASE REQUEST MODAL -->
-      <app-standards-purchase-modal [isOpen]="showPurchaseRequestModal()" [selectedStd]="selectedPurchaseStd()" (closeModal)="closePurchaseRequestModal()"></app-standards-purchase-modal>
+      @if (showPurchaseRequestModal()) {
+        @defer {
+          <app-standards-purchase-modal [isOpen]="showPurchaseRequestModal()" [selectedStd]="selectedPurchaseStd()" (closeModal)="closePurchaseRequestModal()"></app-standards-purchase-modal>
+        }
+      }
 
       <!-- EXPORT EXCEL MODAL -->
       @if (showExportModal()) {
-        <app-export-modal
-          title="Xuất danh sách chất chuẩn"
-          iconClass="fa-solid fa-file-excel"
-          submitButtonText="Xuất tệp"
-          [subtitle]="exportSubtitle()"
-          [footerText]="exportItems().length + ' chuẩn sẽ được xuất' + (exportGroupCount() > 0 ? ' - ' + exportGroupCount() + ' nhóm có chuẩn thay thế' : '') + ' - 2 sheet: ' + (exportType() === 'expiry' ? 'Báo cáo' : 'Chi tiết') + ' + Tổng hợp'"
-          [isExporting]="isExporting()"
-          [isCompleted]="exportCompleted()"
-          [isSubmitDisabled]="exportItems().length === 0"
-          (close)="showExportModal.set(false)"
-          (execute)="runExport()">
+        @defer {
+          <app-export-modal
+            title="Xuất danh sách chất chuẩn"
+            iconClass="fa-solid fa-file-excel"
+            submitButtonText="Xuất tệp"
+            [subtitle]="exportSubtitle()"
+            [footerText]="exportItems().length + ' chuẩn sẽ được xuất' + (exportGroupCount() > 0 ? ' - ' + exportGroupCount() + ' nhóm có chuẩn thay thế' : '') + ' - 2 sheet: ' + (exportType() === 'expiry' ? 'Báo cáo' : 'Chi tiết') + ' + Tổng hợp'"
+            [isExporting]="isExporting()"
+            [isCompleted]="exportCompleted()"
+            [isSubmitDisabled]="exportItems().length === 0"
+            (close)="showExportModal.set(false)"
+            (execute)="runExport()">
 
           <div class="px-5 pb-5 space-y-3 mt-4">
 
@@ -219,7 +256,8 @@
             </div>
 
           </div>
-        </app-export-modal>
+          </app-export-modal>
+        }
       }
 
     </div>

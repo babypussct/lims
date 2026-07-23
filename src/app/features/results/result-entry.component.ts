@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild, effect, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -6,8 +6,6 @@ import { StateService } from '../../core/services/state.service';
 import { ResultService } from './services/result.service';
 import { MasterTargetService } from '../targets/master-target.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
-import { ResultEntryType2Component } from './result-entry-type2.component';
-import { ResultEntryType3bComponent } from './result-entry-type3b.component';
 import { ToastService } from '../../core/services/toast.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import {
@@ -23,19 +21,6 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { SopDraftFactoryService } from './services/sop-draft-factory.service';
-
-// Isolated SOP presentational components
-import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
-import { Sop1767857760184EntryComponent } from './sops/sop-1767857760184/sop-1767857760184-entry.component';
-import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
-import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
-import { SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent } from './sops/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry.component';
-import { SopLanHuuCoEntryComponent } from './sops/sop-lan-huu-co/sop-lan-huu-co-entry.component';
-import { Sop1767856825928EntryComponent } from './sops/sop-1767856825928/sop-1767856825928-entry.component';
-import { SopTbvtvTrongNuocGcmsmsEntryComponent } from './sops/sop-tbvtv-trong-nuoc-gcmsms/sop-tbvtv-trong-nuoc-gcmsms-entry.component';
-import { SopTbvtvThucPhamGcmsmsEntryComponent } from './sops/sop-tbvtv-thuc-pham-gcmsms/sop-tbvtv-thuc-pham-gcmsms-entry.component';
-import { SopChloroformEntryComponent } from './sops/sop-chloroform/sop-chloroform-entry.component';
-import { SopNhomIEntryComponent } from './sops/sop-nhom-i/sop-nhom-i-entry.component';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -51,6 +36,7 @@ import { ResultRunMetadataComponent } from './components/result-run-metadata.com
 import { ResultEntryStatusBannerComponent } from './components/result-entry-status-banner.component';
 import { ResultActiveReportsPanelComponent } from './components/result-active-reports-panel.component';
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
+import { SopEntryOutletComponent } from './components/sop-entry-outlet.component';
 
 type AutoSaveStatus = 'synced' | 'modified' | 'saving' | 'error';
 
@@ -66,32 +52,18 @@ interface AutoSaveEnvelope {
   imports: [
     CommonModule, 
     RouterModule,
-    ResultEntryType2Component, 
-    ResultEntryType3bComponent, 
     SkeletonComponent,
-    Sop01EntryComponent,
-    Sop1767857760184EntryComponent,
-    Sop03EntryComponent,
-    SopDefaultType2EntryComponent,
-    SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent,
-    SopLanHuuCoEntryComponent,
-    Sop1767856825928EntryComponent,
-    SopNhomIEntryComponent,
-    SopTbvtvTrongNuocGcmsmsEntryComponent,
-    SopTbvtvThucPhamGcmsmsEntryComponent,
-    SopChloroformEntryComponent,
     // Refactored sub-components
     ResultPrefixTabsComponent,
     ResultRunMetadataComponent,
     ResultEntryStatusBannerComponent,
     ResultActiveReportsPanelComponent,
-    ResultEntryHeaderComponent
+    ResultEntryHeaderComponent,
+    SopEntryOutletComponent
   ],
   templateUrl: './result-entry.component.html'
 })
 export class ResultEntryComponent implements OnInit, OnDestroy {
-  @ViewChild('type2Grid') type2Grid?: ResultEntryType2Component;
-  @ViewChild('sop03Grid') sop03Grid?: Sop03EntryComponent;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private state = inject(StateService);

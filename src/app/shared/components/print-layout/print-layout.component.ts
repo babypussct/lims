@@ -5,8 +5,7 @@ import { PrintJob } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
 import { formatDate, formatNum, formatSampleList } from '../../utils/utils';
 import { formatSampleDescriptions } from '../../utils/sample-description.utils';
-
-declare let QRious: any;
+import { ensureQrious } from '../../utils/external-script-loader';
 
 @Component({
   selector: 'app-print-layout',
@@ -312,11 +311,18 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
     return groups;
   }
 
-  ngAfterViewInit() { setTimeout(() => this.generateQRCodes(), 100); }
-  ngOnChanges(changes: SimpleChanges) { if (changes['options'] || changes['jobs']) setTimeout(() => this.generateQRCodes(), 100); }
+  ngAfterViewInit() { setTimeout(() => void this.generateQRCodes(), 100); }
+  ngOnChanges(changes: SimpleChanges) { if (changes['options'] || changes['jobs']) setTimeout(() => void this.generateQRCodes(), 100); }
 
-  generateQRCodes() {
-    if (typeof QRious === 'undefined') return;
+  async generateQRCodes() {
+    let QRious: any;
+    try {
+      QRious = await ensureQrious();
+    } catch (e) {
+      console.warn('QR library load error:', e);
+      return;
+    }
+    if (!QRious) return;
     const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
     this.qrCanvases?.forEach(canvasRef => {
         const canvas = canvasRef.nativeElement;

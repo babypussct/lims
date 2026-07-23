@@ -264,7 +264,8 @@
 
         <!-- EXPORT MODAL -->
         @if (showExportModal()) {
-          <app-export-modal
+          @defer {
+            <app-export-modal
             title="Xuất nhật ký sử dụng chất chuẩn"
             [dateRangeText]="(fromDate() ? (fromDate() | date:'dd/MM/yyyy') : '') + (fromDate() || toDate() ? ' → ' : '') + (toDate() ? (toDate() | date:'dd/MM/yyyy') : '')"
             [isExporting]="isExporting()"
@@ -321,6 +322,7 @@
                 </button>
               </div>
             </div>
-          </app-export-modal>
+            </app-export-modal>
+          }
         }
       </div>

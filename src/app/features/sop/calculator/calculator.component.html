@@ -55,6 +55,49 @@
                   class="w-full p-3 text-xs font-mono border border-blue-200 dark:border-blue-800/50 rounded-lg focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 outline-none bg-white dark:bg-slate-900 min-h-[80px] resize-y placeholder-blue-300/50 dark:placeholder-blue-700/50 text-slate-800 dark:text-slate-200"
                 placeholder="Dán mã mẫu vào đây (mỗi mã 1 dòng)..."></textarea>
                 <p class="text-[9px] text-blue-400 dark:text-blue-500 mt-1 italic text-right">* Tự động cập nhật số lượng mẫu bên dưới.</p>
+
+                @if (samplesList().length > 0) {
+                  <div class="mt-3 pt-3 border-t border-blue-100 dark:border-blue-800/40">
+                    <div class="flex items-center justify-between mb-2">
+                      <label class="text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <i class="fa-solid fa-tags"></i> Mô tả mẫu
+                      </label>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 border border-fuchsia-100 dark:border-fuchsia-800/50">
+                        {{sampleDescriptionCount()}}/{{samplesList().length}} mẫu
+                      </span>
+                    </div>
+
+                    <datalist id="calculator-sample-description-options">
+                      @for (description of availableSampleDescriptions(); track description.id) {
+                        <option [value]="description.name"></option>
+                      }
+                    </datalist>
+
+                    <div class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                      @for (sample of samplesList(); track sample) {
+                        <div class="bg-white dark:bg-slate-900/70 border border-blue-100 dark:border-blue-800/40 rounded-xl p-2.5 shadow-sm">
+                          <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <div class="text-[10px] font-mono font-black text-indigo-700 dark:text-indigo-400 truncate">
+                              <i class="fa-solid fa-vial mr-1"></i>{{sample}}
+                            </div>
+                            @if (getSampleDescriptionName(sample)) {
+                              <button type="button" (click)="applyDescriptionToAllSamples(sample)"
+                                class="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 border border-fuchsia-100 dark:border-fuchsia-800/50 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition">
+                                Áp dụng tất cả
+                              </button>
+                            }
+                          </div>
+                          <input [ngModel]="getSampleDescriptionName(sample)"
+                            (ngModelChange)="updateSampleDescription(sample, $event)"
+                            [ngModelOptions]="{standalone: true}"
+                            list="calculator-sample-description-options"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-400 focus:bg-white dark:focus:bg-slate-900 transition"
+                            placeholder="VD: Nước uống, rau, thịt, mẫu QC...">
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
 
               <!-- 2. TARGET SELECTION -->
@@ -251,6 +294,60 @@
                   <div class="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3 shrink-0">
                     <!-- Action Buttons -->
                     @if (editingRequest()) {
+                      <div class="rounded-2xl border border-blue-100 dark:border-blue-800/50 bg-white dark:bg-slate-900/60 p-3 shadow-sm space-y-3">
+                        <div class="flex items-start gap-2">
+                          <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-code-compare text-xs"></i>
+                          </div>
+                          <div class="min-w-0">
+                            <div class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Xem trước thay đổi</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                              Khi lưu, hệ thống sẽ cập nhật mẻ, điều chỉnh tồn kho theo chênh lệch và tạo lại phiếu trong hàng đợi in.
+                            </div>
+                          </div>
+                        </div>
+
+                        @if (!hasEditChanges()) {
+                          <div class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/40 px-3 py-2 rounded-xl">
+                            <i class="fa-solid fa-circle-check mr-1"></i> Chưa phát hiện thay đổi so với mẻ hiện tại.
+                          </div>
+                        } @else {
+                          @if (editInfoChanges().length > 0) {
+                            <div class="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                              @for (change of editInfoChanges(); track change.label) {
+                                <div class="text-[10px] rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-2">
+                                  <div class="font-black text-slate-700 dark:text-slate-200">{{change.label}}</div>
+                                  <div class="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mt-1 text-slate-500 dark:text-slate-400">
+                                    <span class="truncate" [title]="change.before">{{change.before}}</span>
+                                    <i class="fa-solid fa-arrow-right text-blue-400 text-[9px]"></i>
+                                    <span class="truncate font-bold text-blue-700 dark:text-blue-300" [title]="change.after">{{change.after}}</span>
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          }
+
+                          @if (editInventoryDiff().length > 0) {
+                            <div class="border-t border-slate-100 dark:border-slate-700 pt-2 space-y-1">
+                              <div class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase">Chênh lệch tồn kho</div>
+                              <div class="space-y-1 max-h-28 overflow-y-auto custom-scrollbar pr-1">
+                                @for (row of editInventoryDiff(); track row.name) {
+                                  <div class="flex items-center justify-between gap-2 text-[10px] px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                    <span class="font-bold text-slate-700 dark:text-slate-200 truncate">{{row.name}}</span>
+                                    <span class="font-mono font-black shrink-0"
+                                          [class.text-red-600]="row.diff > 0"
+                                          [class.dark:text-red-400]="row.diff > 0"
+                                          [class.text-emerald-600]="row.diff < 0"
+                                          [class.dark:text-emerald-400]="row.diff < 0">
+                                      {{row.diff > 0 ? '+' : ''}}{{formatNum(row.diff)}} {{row.unit}}
+                                    </span>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+                        }
+                      </div>
                       <button (click)="goToResultsEntry()" [disabled]="isProcessing()" class="w-full bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50">
                         <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả Ngay
                       </button>
@@ -269,9 +366,9 @@
                         <i class="fa-solid fa-paper-plane"></i> Gửi Yêu Cầu Duyệt
                       </button>
 
-                      <button [appLockPermission]="'sop_approve'" (click)="approveAndCreatePrintJob(currentSop)" [disabled]="isProcessing() || form().invalid" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition hover:from-emerald-600 hover:to-teal-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <button [appLockPermission]="'sop_approve'" (click)="approveAndQueuePrintJob(currentSop)" [disabled]="isProcessing() || form().invalid" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition hover:from-emerald-600 hover:to-teal-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... }
-                        @else { <i class="fa-solid fa-check-double"></i> Duyệt & In Phiếu Ngay }
+                        @else { <i class="fa-solid fa-check-double"></i> Duyệt & Đưa Vào Hàng Đợi In }
                       </button>
                     }
                   </div>

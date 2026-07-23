@@ -6,8 +6,6 @@ import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import JsBarcode from 'jsbarcode';
-import * as QRCode from 'qrcode';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
@@ -82,6 +80,15 @@ export class LabelPrintComponent implements AfterViewInit {
   
   // Input Debounce
   private inputSubject = new Subject<string>();
+  private barcodeLibLoader?: Promise<any>;
+  private qrLibLoader?: Promise<any>;
+  private barcodeImageCache = new Map<string, string>();
+  private barcodeImagePending = new Map<string, Promise<string>>();
+  private barcodeCacheVersion = signal(0);
+  private readonly maxBarcodeCacheSize = 300;
+  private readonly maxPreviewPages = 3;
+  private readonly maxBrotherPreviewCells = 80;
+  private readonly transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
   // Fetch Data State
   fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
@@ -118,6 +125,7 @@ export class LabelPrintComponent implements AfterViewInit {
   gapY = signal<number>(2);
   skippedCells = signal<number>(0);
   showAdvanced = signal(false);
+  showFullPreview = signal(false);
 
   // GS1 Config
   gs1Domain = signal<string>('https://nafiqpm6.vercel.app');
@@ -194,6 +202,7 @@ export class LabelPrintComponent implements AfterViewInit {
   });
 
   constructor() {
+      this.state.ensureApprovedRequestsListener();
       // Setup Debounce for Input
       this.inputSubject.pipe(
           debounceTime(300),
@@ -360,6 +369,7 @@ export class LabelPrintComponent implements AfterViewInit {
       this.saveCurrentProfile();
       
       this.printMode.set(mode);
+      this.resetPreviewLimit();
       
       // Load profile for new mode
       this.loadProfile(mode);
@@ -471,16 +481,22 @@ export class LabelPrintComponent implements AfterViewInit {
       } else {
           this.rawInput.set(newSamples);
       }
+      this.resetPreviewLimit();
       
       this.toast.show(`Đã thêm ${samples.size} mã mẫu từ ngày ${targetDate}`, 'success');
   }
 
   onInputChanged(val: string) {
+      this.resetPreviewLimit();
       this.inputSubject.next(val);
   }
 
-  updateInput(val: string) { this.rawInput.set(val); }
+  updateInput(val: string) {
+      this.resetPreviewLimit();
+      this.rawInput.set(val);
+  }
   clearInput() { 
+      this.resetPreviewLimit();
       this.rawInput.set(''); 
       this.inputSubject.next('');
   }
@@ -489,6 +505,7 @@ export class LabelPrintComponent implements AfterViewInit {
       const labels = this.parseInput(this.rawInput());
       const unique = [...new Set(labels)];
       const newVal = unique.join('\n');
+      this.resetPreviewLimit();
       this.rawInput.set(newVal);
       this.inputSubject.next(newVal);
       this.toast.show(`Đã lọc bỏ ${labels.length - unique.length} mã trùng lặp`, 'success');
@@ -498,6 +515,7 @@ export class LabelPrintComponent implements AfterViewInit {
       const labels = this.parseInput(this.rawInput());
       const sorted = labels.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
       const newVal = sorted.join('\n');
+      this.resetPreviewLimit();
       this.rawInput.set(newVal);
       this.inputSubject.next(newVal);
       this.toast.show('Đã sắp xếp danh sách A-Z', 'success');
@@ -505,8 +523,13 @@ export class LabelPrintComponent implements AfterViewInit {
 
   addExample() {
       const ex = Array.from({length: 15}, (_, i) => `STD-${(i+1).toString().padStart(3,'0')}`).join('\n');
+      this.resetPreviewLimit();
       this.rawInput.set(ex);
       this.inputSubject.next(ex);
+  }
+
+  private resetPreviewLimit() {
+      if (this.showFullPreview()) this.showFullPreview.set(false);
   }
 
   adjustZoom(delta: number) {
@@ -594,21 +617,131 @@ export class LabelPrintComponent implements AfterViewInit {
       return pages;
   });
 
+  previewPages = computed<LabelPage[]>(() => {
+      const pages = this.pages();
+      if (this.showFullPreview()) return pages;
+      return pages.slice(0, this.maxPreviewPages);
+  });
+
+  hiddenPreviewPageCount = computed(() => {
+      if (this.showFullPreview()) return 0;
+      return Math.max(0, this.pages().length - this.previewPages().length);
+  });
+
+  brotherPreviewPages = computed<string[][]>(() => {
+      const pages = this.brotherPages();
+      if (this.showFullPreview() || pages.length === 0) return pages;
+
+      if (this.isBrotherFixed()) {
+          return pages.slice(0, this.maxPreviewPages);
+      }
+
+      const cols = Math.max(1, this.brotherCols());
+      const maxRows = Math.max(1, Math.ceil(this.maxBrotherPreviewCells / cols));
+      const maxCells = maxRows * cols;
+      return [pages[0].slice(0, maxCells)];
+  });
+
+  brotherPreviewPageHeight = computed(() => {
+      if (this.showFullPreview() || this.isBrotherFixed()) return this.actualBrotherPageHeight();
+
+      const firstPreviewPage = this.brotherPreviewPages()[0] || [];
+      const rows = Math.max(1, Math.ceil(firstPreviewPage.length / Math.max(1, this.brotherCols())));
+      return this.brotherLabelHeight() * rows;
+  });
+
+  hiddenBrotherPreviewLabelCount = computed(() => {
+      if (this.showFullPreview()) return 0;
+      const renderedLabels = this.brotherPreviewPages().flat().filter(Boolean).length;
+      return Math.max(0, this.rawInputCount() - renderedLabels);
+  });
+
   generateBarcode(text: string): string {
-      if (!text) return '';
-      
-      const format = this.displayFormat();
-      if (format === 'qrcode' || format === 'qrcode_text' || format === 'qrcode_hybrid') {
-          try {
-              let qrText = text;
-              if (format === 'qrcode_hybrid') {
-                  const domain = this.gs1Domain().replace(/\/$/, '');
-                  const gtin = this.gs1Gtin();
-                  // We use the text as LIMS ID. We don't have lot/expiry here easily, 
-                  // but we can construct the basic URL.
-                  qrText = `${domain}/01/${gtin}?240=${encodeURIComponent(text)}`;
+      this.barcodeCacheVersion();
+      if (!text || this.displayFormat() === 'text') return '';
+
+      const key = this.getBarcodeCacheKey(text);
+      const cached = this.barcodeImageCache.get(key);
+      if (cached) return cached;
+
+      void this.getBarcodeDataUrl(text).catch(e => {
+          console.error('Barcode preview error:', e);
+      });
+
+      return this.transparentPixel;
+  }
+
+  private getBarcodeCacheKey(text: string): string {
+      return [
+          text,
+          this.displayFormat(),
+          this.barcodeWidth(),
+          this.barcodeHeight(),
+          this.gs1Domain(),
+          this.gs1Gtin()
+      ].join('|');
+  }
+
+  private isQrFormat(format = this.displayFormat()): boolean {
+      return format === 'qrcode' || format === 'qrcode_text' || format === 'qrcode_hybrid';
+  }
+
+  private getQrPayload(text: string, format = this.displayFormat()): string {
+      if (format !== 'qrcode_hybrid') return text;
+
+      const domain = this.gs1Domain().replace(/\/$/, '');
+      const gtin = this.gs1Gtin();
+      // We use the text as LIMS ID. We don't have lot/expiry here easily,
+      // but we can construct the basic URL.
+      return `${domain}/01/${gtin}?240=${encodeURIComponent(text)}`;
+  }
+
+  private async loadBarcodeLib(): Promise<any> {
+      this.barcodeLibLoader ??= import('jsbarcode').then(module => module.default || module);
+      return this.barcodeLibLoader;
+  }
+
+  private async loadQrLib(): Promise<any> {
+      this.qrLibLoader ??= import('qrcode');
+      return this.qrLibLoader;
+  }
+
+  private async getBarcodeDataUrl(text: string): Promise<string> {
+      if (!text || this.displayFormat() === 'text') return '';
+
+      const key = this.getBarcodeCacheKey(text);
+      const cached = this.barcodeImageCache.get(key);
+      if (cached) return cached;
+
+      const pending = this.barcodeImagePending.get(key);
+      if (pending) return pending;
+
+      const promise = this.createBarcodeDataUrl(text)
+          .then(dataUrl => {
+              if (dataUrl) {
+                  this.barcodeImageCache.set(key, dataUrl);
+                  if (this.barcodeImageCache.size > this.maxBarcodeCacheSize) {
+                      const oldestKey = this.barcodeImageCache.keys().next().value;
+                      if (oldestKey) this.barcodeImageCache.delete(oldestKey);
+                  }
+                  this.barcodeCacheVersion.update(version => version + 1);
               }
-              const qrcode = QRCode.create(qrText, { errorCorrectionLevel: 'M' });
+              return dataUrl;
+          })
+          .finally(() => {
+              this.barcodeImagePending.delete(key);
+          });
+
+      this.barcodeImagePending.set(key, promise);
+      return promise;
+  }
+
+  private async createBarcodeDataUrl(text: string): Promise<string> {
+      const format = this.displayFormat();
+      if (this.isQrFormat(format)) {
+          try {
+              const QRCode = await this.loadQrLib();
+              const qrcode = QRCode.create(this.getQrPayload(text, format), { errorCorrectionLevel: 'M' });
               const canvas = document.createElement('canvas');
               const size = qrcode.modules.size;
               const scale = Math.max(1, Math.floor(this.barcodeWidth() * 2)); // Use barcodeWidth as scale factor
@@ -618,11 +751,11 @@ export class LabelPrintComponent implements AfterViewInit {
               canvas.height = actualSize * scale;
               const ctx = canvas.getContext('2d');
               if (!ctx) return '';
-              
+
               // Fill background
               ctx.fillStyle = '#ffffff';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
-              
+
               // Draw modules
               ctx.fillStyle = '#000000';
               for (let row = 0; row < size; row++) {
@@ -640,6 +773,7 @@ export class LabelPrintComponent implements AfterViewInit {
       }
 
       try {
+          const JsBarcode = await this.loadBarcodeLib();
           const canvas = document.createElement('canvas');
           JsBarcode(canvas, text, {
               format: "CODE128",
@@ -654,6 +788,15 @@ export class LabelPrintComponent implements AfterViewInit {
           console.error('Barcode error:', e);
           return '';
       }
+  }
+
+  private escapeHtml(value: string): string {
+      return value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
   }
 
   // --- HELPER: Print HTML via hidden iframe (bypass popup blocker) ---
@@ -709,7 +852,7 @@ export class LabelPrintComponent implements AfterViewInit {
   }
 
   // --- BROTHER PRINTING LOGIC ---
-  printBrother() {
+  async printBrother() {
       const pages = this.brotherPages();
       if (pages.length === 0) return;
 
@@ -800,23 +943,24 @@ export class LabelPrintComponent implements AfterViewInit {
 
       let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
       
-      pages.forEach(page => {
+      for (const page of pages) {
           htmlContent += `<div class="page-container">`;
-          page.forEach(label => {
+          for (const label of page) {
               htmlContent += `<div class="cell"><div class="label-content">`;
               if (label) {
+                  const safeLabel = this.escapeHtml(label);
                   if (this.displayFormat() !== 'text') {
-                      const barcodeSrc = this.generateBarcode(label);
+                      const barcodeSrc = await this.getBarcodeDataUrl(label);
                       htmlContent += `<img src="${barcodeSrc}" style="height: ${this.barcodeHeight()}px; max-width: 100%; object-fit: contain;" />`;
                   }
                   if (this.displayFormat() !== 'barcode' && this.displayFormat() !== 'qrcode') {
-                      htmlContent += `<div class="label-text" style="${(this.displayFormat() === 'barcode_text' || this.displayFormat() === 'qrcode_text' || this.displayFormat() === 'qrcode_hybrid') ? 'margin-top: 2px;' : ''}">${label}</div>`;
+                      htmlContent += `<div class="label-text" style="${(this.displayFormat() === 'barcode_text' || this.displayFormat() === 'qrcode_text' || this.displayFormat() === 'qrcode_hybrid') ? 'margin-top: 2px;' : ''}">${safeLabel}</div>`;
                   }
               }
               htmlContent += `</div></div>`;
-          });
+          }
           htmlContent += `</div>`;
-      });
+      }
 
       htmlContent += `</body></html>`;
 
@@ -824,7 +968,7 @@ export class LabelPrintComponent implements AfterViewInit {
   }
 
   // --- A4 PRINTING LOGIC (Direct Window Print) ---
-  printA4() {
+  async printA4() {
       const pages = this.pages();
       const validPages = pages.filter(p => p.cells.some(c => !c.isEmpty) || p.pageIndex === 0);
       
@@ -916,35 +1060,36 @@ export class LabelPrintComponent implements AfterViewInit {
 
       let htmlContent = `<html><head><title>Print A4 Labels</title><style>${css}</style></head><body>`;
       
-      validPages.forEach(page => {
+      for (const page of validPages) {
           htmlContent += `<div class="page"><div class="grid">`;
-          page.cells.forEach(cell => {
+          for (const cell of page.cells) {
               if (cell.isEmpty) {
                   htmlContent += `<div class="cell" style="opacity: 0;"></div>`;
               } else {
                   htmlContent += `<div class="cell">`;
-                  cell.subLabels.forEach((label, idx) => {
+                  for (const [idx, label] of cell.subLabels.entries()) {
                       const isLast = idx === cell.subLabels.length - 1;
                       htmlContent += `
                         <div class="sub-label" ${!isLast ? '' : 'style="border-bottom: none;"'}>
                             <div class="label-content">
                       `;
                       if (label) {
+                          const safeLabel = this.escapeHtml(label);
                           if (this.displayFormat() !== 'text') {
-                              const barcodeSrc = this.generateBarcode(label);
+                              const barcodeSrc = await this.getBarcodeDataUrl(label);
                               htmlContent += `<img src="${barcodeSrc}" style="height: ${this.barcodeHeight()}px; max-width: 100%; object-fit: contain;" />`;
                           }
                           if (this.displayFormat() !== 'barcode' && this.displayFormat() !== 'qrcode') {
-                              htmlContent += `<span class="text" style="${(this.displayFormat() === 'barcode_text' || this.displayFormat() === 'qrcode_text' || this.displayFormat() === 'qrcode_hybrid') ? 'margin-top: 2px;' : ''}">${label}</span>`;
+                              htmlContent += `<span class="text" style="${(this.displayFormat() === 'barcode_text' || this.displayFormat() === 'qrcode_text' || this.displayFormat() === 'qrcode_hybrid') ? 'margin-top: 2px;' : ''}">${safeLabel}</span>`;
                           }
                       }
                       htmlContent += `</div></div>`;
-                  });
+                  }
                   htmlContent += `</div>`;
               }
-          });
+          }
           htmlContent += `</div></div>`;
-      });
+      }
 
       htmlContent += `</body></html>`;
 

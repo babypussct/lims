@@ -10,7 +10,6 @@ import { CategoryItem, PrintConfig } from '../../../core/models/config.model';
 import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy } from 'firebase/firestore';
-import * as XLSX from 'xlsx';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 
@@ -114,6 +113,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   isRecycling = signal(false);
   showRecycleBin = signal(false);
   recycleItems = signal<any[]>([]);
+  private xlsxLoader?: Promise<typeof import('xlsx')>;
 
   firestoreRules = computed(() => {
     const appId = this.fb.APP_ID;
@@ -314,16 +314,17 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
         this.archiverStatus.set('idle');
         return;
       }
-      this.exportArchiverToExcel(logs, requests);
+      await this.exportArchiverToExcel(logs, requests);
     } catch (e) {
       this.toast.show('Lỗi khi tải dữ liệu cũ.', 'error');
       this.archiverStatus.set('idle');
     }
   }
 
-  private exportArchiverToExcel(logs: any[], requests: any[]) {
+  private async exportArchiverToExcel(logs: any[], requests: any[]) {
     this.archiverStatus.set('exporting');
     try {
+      const XLSX = await this.loadXlsx();
       const wb = XLSX.utils.book_new();
       if (logs.length > 0) {
         const wsLogs = XLSX.utils.json_to_sheet(logs);
@@ -390,6 +391,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     reader.onload = async (e: any) => {
         try {
             const data = new Uint8Array(e.target.result);
+            const XLSX = await this.loadXlsx();
             const workbook = XLSX.read(data, { type: 'array' });
             let logsToRestore: any[] = [];
             let reqsToRestore: any[] = [];
@@ -423,6 +425,11 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
         event.target.value = '';
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  private loadXlsx(): Promise<typeof import('xlsx')> {
+    this.xlsxLoader ??= import('xlsx');
+    return this.xlsxLoader;
   }
 
   async loadUsage() {

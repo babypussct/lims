@@ -1,5 +1,31 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.23-b23] - 23/07/2026
+
+### ⚡ SmartBatch Nhanh Hơn, Sửa Mẻ Dễ Hơn
+
+#### 🚀 Tối Ưu Tốc Độ Mở Ứng Dụng
+- **Tải nhẹ hơn lúc đăng nhập:** Nhiều thư viện nặng chỉ được tải khi người dùng thật sự dùng tới.
+- **Giảm lắng nghe dữ liệu không cần thiết:** Hệ thống chỉ mở một số luồng dữ liệu khi vào đúng màn hình.
+- **Các màn hình lớn mượt hơn:** SmartBatch, kết quả, kho, chất chuẩn và báo cáo được tối ưu lại để giảm giật lag.
+
+#### 🧪 SmartBatch Là Luồng Chính
+- **Ẩn SOP Calculator khỏi thanh điều hướng:** SmartBatch là nơi lập mẻ chính; Calculator vẫn còn để tính nhanh khi cần.
+- **Thêm nút “Tính nhanh SOP” trong SmartBatch:** Người dùng vẫn mở Calculator nhanh mà không làm rối menu chính.
+- **Sau duyệt chỉ đưa vào Hàng đợi In:** Không còn tự bật hộp thoại in ngay sau khi duyệt mẻ.
+
+#### ✏️ Sửa Mẻ Sai Thông Tin Nhanh Hơn
+- **Sửa từ nhiều nơi:** Có thể sửa mẻ từ Quản lý Yêu cầu, Hàng đợi In và Daily Checklist trên Dashboard.
+- **Xem trước thay đổi trước khi lưu:** Hiển thị thông tin đổi và chênh lệch tồn kho để tránh nhầm.
+- **Không cần nhập lý do hay tick xác nhận:** Flow gọn hơn, phù hợp thao tác sửa nhanh trước khi in.
+- **Tự thay phiếu in cũ:** Khi lưu bản sửa, phiếu in cũ rời khỏi hàng đợi và phiếu mới được tạo lại.
+
+#### 🏷️ Bổ Sung Mô Tả Mẫu
+- **SOP Calculator có trường mô tả mẫu:** Nhập mô tả cho từng mẫu và áp dụng nhanh cho toàn bộ danh sách.
+- **Mô tả được giữ theo mẻ:** Thông tin mô tả đi cùng request, phiếu in và luồng sửa mẻ.
+
+---
+
 ## [v26.07.23-b22] - 23/07/2026
 
 ### 📣 Đồng Bộ “Nội Dung Nâng Cấp” Trên UI
