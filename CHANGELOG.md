@@ -1,5 +1,21 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.24-b25] - 24/07/2026
+
+### 🧭 Daily Checklist Dễ Xem Hơn, Dashboard Có Nhật Ký Hơn
+
+#### 📋 Theo Dõi Mẫu Gọn Hơn
+- **Mẫu có tiền tố hiển thị trước:** Trong “Mẫu thực hiện”, các mã như `U0108` được xếp trước mã không tiền tố như `0108`.
+- **Bỏ QR khỏi Daily Checklist:** Nút in không còn tạo QR, bản in nhẹ hơn và không còn lỗi tạo QR.
+- **In bảng nhanh hơn:** Bỏ bước chờ ảnh QR trước khi mở in.
+
+#### 👤 Hoạt Động Gần Đây Cho Nhân Viên
+- **Không còn trắng dữ liệu:** Nhân viên thấy được hoạt động phù hợp với quyền và hoạt động do chính mình tạo.
+- **Tải nhật ký đúng thời điểm:** Dashboard mở luồng nhật ký sau khi quyền người dùng đã sẵn sàng.
+- **Giữ lọc quyền an toàn:** Nhật ký của người khác vẫn chỉ hiện khi người dùng có quyền xem module tương ứng.
+
+---
+
 ## [v26.07.23-b24] - 23/07/2026
 
 ### ✅ Sửa Lỗi Lưu Mẻ Sau Khi Chỉnh Sửa

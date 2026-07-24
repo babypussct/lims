@@ -227,14 +227,14 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
             sourceRequestIds: Array.from(sample.sourceRequestIds)
           };
         })
-        .sort((a, b) => naturalCompare(a.sampleId, b.sampleId));
+        .sort((a, b) => compareDailySampleIds(a.sampleId, b.sampleId));
       const sampleIds = samples.map(sample => sample.sampleId);
       const describedSamples = samples.filter(sample => sample.description);
       return {
         ...group,
         samples,
         sampleIds,
-        formattedSamples: formatSampleList(sampleIds),
+        formattedSamples: formatSampleList(sampleIds, { prefixFirst: true }),
         ...(() => {
           if (describedSamples.length === 0) {
             return { formattedDescriptions: '', hasMultipleDescriptions: false };
@@ -260,7 +260,7 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
             };
           }
           const formatted = Array.from(descMap.entries()).map(([desc, sIds]) => {
-            return `${formatSampleList(sIds)} (${desc})`;
+            return `${formatSampleList(sIds, { prefixFirst: true })} (${desc})`;
           }).join(' · ');
           return { formattedDescriptions: formatted, hasMultipleDescriptions: true };
         })(),
@@ -292,8 +292,8 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
         status: batch.status,
         approvedAt: batch.approvedAt,
         ownerName: batch.ownerName,
-        sampleIds: batch.samples.map(sample => sample.sampleId),
-        formattedSamples: formatSampleList(batch.samples.map(sample => sample.sampleId))
+        sampleIds: batch.samples.map(sample => sample.sampleId).sort(compareDailySampleIds),
+        formattedSamples: formatSampleList(batch.samples.map(sample => sample.sampleId), { prefixFirst: true })
       })),
       physicalBatchCount: sortedSources.length,
       statusCounts,
@@ -327,4 +327,11 @@ function uniqueSampleCodes(values: string[]): string[] {
 
 function normalizeDescription(value: string): string {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function compareDailySampleIds(a: string, b: string): number {
+  const aHasPrefix = /^[a-zA-Z]/.test(String(a || '').trim());
+  const bHasPrefix = /^[a-zA-Z]/.test(String(b || '').trim());
+  if (aHasPrefix !== bHasPrefix) return aHasPrefix ? -1 : 1;
+  return naturalCompare(a, b);
 }

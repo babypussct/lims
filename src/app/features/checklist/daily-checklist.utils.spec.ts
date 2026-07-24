@@ -205,6 +205,19 @@ test('LIMS sample codes with a fixed two-digit suffix stay compact for large bat
   assert.equal(view.groups[0].formattedSamples, 'L0115 -> L5015');
 });
 
+test('daily checklist shows prefixed sample codes before non-prefixed sample codes', () => {
+  const overviews = buildApprovedBatchOverviews([
+    request({
+      sampleList: ['0108', 'U0108', '0208', 'U0208'],
+      targetIds: ['T1']
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+  const [view] = buildDailyBatchViews(overviews);
+
+  assert.deepEqual(view.groups[0].sampleIds, ['U0108', 'U0208', '0108', '0208']);
+  assert.equal(view.groups[0].formattedSamples, 'U0108; U0208; 0108; 0208');
+});
+
 test('missing analysisDate is not silently replaced by approval date', () => {
   assert.equal(getRequestDateValue(request({ analysisDate: undefined })), '');
   assert.equal(toDate({ seconds: 1_752_624_000 })?.getTime(), 1_752_624_000_000);

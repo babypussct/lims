@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.23-b24",
-    "notesVersion": "v26.07.23-b24",
-    "title": "Sửa Lỗi Lưu Mẻ Sau Khi Chỉnh Sửa",
+    "version": "v26.07.24-b25",
+    "notesVersion": "v26.07.24-b25",
+    "title": "Daily Checklist Dễ Xem Hơn, Dashboard Có Nhật Ký Hơn",
     "features": [
-      "✅ Sửa lỗi không lưu được mẻ khi SOP thiếu một số thông tin phụ",
-      "🧾 Nhật ký sửa mẻ tự làm sạch dữ liệu trước khi ghi",
-      "🖨️ Giữ ổn định luồng tạo lại phiếu in sau khi chỉnh sửa mẻ"
+      "📋 Mẫu có tiền tố được xếp trước mẫu không tiền tố trong Daily Checklist",
+      "👤 Nhân viên không còn bị trắng mục Hoạt Động Gần Đây",
+      "🖨️ Bỏ tạo QR khi in Daily Checklist để thao tác nhẹ và ổn định hơn"
     ]
   },
   "assetGroups": [

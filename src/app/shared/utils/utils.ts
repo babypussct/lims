@@ -174,7 +174,10 @@ export function naturalCompare(a: string, b: string): number {
  * Smartly compresses a list of samples.
  * Uses '->' (ASCII) instead of unicode arrow to ensure PDF compatibility.
  */
-export function formatSampleList(samplesInput: string[] | Set<string> | undefined | null): string {
+export function formatSampleList(
+    samplesInput: string[] | Set<string> | undefined | null,
+    options: { prefixFirst?: boolean } = {}
+): string {
     if (!samplesInput) return '';
     
     let samples: string[] = [];
@@ -246,6 +249,10 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
         const bp = b.parts;
         if (ap.isStandard && bp.isStandard) {
             if (ap.prefix !== bp.prefix) {
+                if (options.prefixFirst) {
+                    if (!ap.prefix && bp.prefix) return 1;
+                    if (ap.prefix && !bp.prefix) return -1;
+                }
                 return ap.prefix.localeCompare(bp.prefix);
             }
             if (ap.suffix !== bp.suffix) {

@@ -140,21 +140,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       const isManager = this.auth.currentUser()?.role === 'manager';
       if (!isManager) {
-          const canViewInv = this.auth.canViewInventory();
-          const canViewStd = this.auth.canViewStandards();
-          const canViewSop = this.auth.canViewSop() || this.auth.canRunBatch();
-          const canViewSystem = this.auth.canManageSystem() || this.auth.canViewReports();
-
-          logs = logs.filter(l => {
-              const act = l.action || '';
-              if (act.includes('STOCK')) return canViewInv;
-              if (act.includes('STANDARD')) return canViewStd;
-              if (act.includes('RESULT') || act === 'PUBLISH_RESULT_REPORT' || act === 'CREATE_VIRTUAL_MASTER' || act === 'EDIT_REQUEST' || act === 'DIRECT_APPROVE' || act === 'APPROVE_REQUEST') {
-                  return canViewSop;
-              }
-              if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return canViewSystem;
-              return true;
-          });
+          logs = logs.filter(l => this.canViewActivityLog(l));
       }
 
       logs = logs.slice(0, 50); // Fetch up to 50 logs for filtering after application of permissions filter
@@ -173,9 +159,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
           logs = logs.filter(l => {
               if (category === 'APPROVE') return l.action.includes('APPROVE') && !l.action.includes('STANDARD') && !l.action.includes('RESULT');
               if (category === 'STOCK') return l.action.includes('STOCK');
-              if (category === 'STANDARD') return l.action.includes('STANDARD');
-              if (category === 'SOP') return l.action.includes('RESULT') || l.action === 'PUBLISH_RESULT_REPORT';
-              if (category === 'SYSTEM') return !l.action.includes('APPROVE') && !l.action.includes('STOCK') && !l.action.includes('STANDARD') && !l.action.includes('RESULT');
+              if (category === 'STANDARD') return this.isStandardLogAction(l.action);
+              if (category === 'SOP') return this.isSopLogAction(l.action);
+              if (category === 'SYSTEM') return !l.action.includes('APPROVE') && !l.action.includes('STOCK') && !this.isStandardLogAction(l.action) && !this.isSopLogAction(l.action);
               return true;
           });
       }
@@ -214,7 +200,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action.includes('STOCK')) {
           return { icon: 'fa-box-open', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' };
       }
-      if (action.includes('STANDARD')) {
+      if (this.isStandardLogAction(action)) {
           return { icon: 'fa-flask', bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' };
       }
       if (action === 'PUBLISH_RESULT_REPORT') {
@@ -242,8 +228,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
       'REJECT_STANDARD_REQUEST': 'đã từ chối mượn chuẩn',
       'REPORT_RETURN_STANDARD': 'đã báo cáo trả chuẩn',
       'RETURN_STANDARD': 'đã nhận lại chuẩn',
-      'ASSIGN_STANDARD': 'đã gán chuẩn cho mượn'
+      'ASSIGN_STANDARD': 'đã gán chuẩn cho mượn',
+      'LOG_USAGE_STANDARD': 'đã khai báo sử dụng chuẩn',
+      'REQUEST_COA': 'đã yêu cầu bổ sung CoA'
   };
+
+  private isStandardLogAction(action: string): boolean {
+      return action.includes('STANDARD') || action.includes('COA');
+  }
+
+  private isSopLogAction(action: string): boolean {
+      return action.includes('RESULT')
+          || action === 'PUBLISH_RESULT_REPORT'
+          || action === 'CREATE_VIRTUAL_MASTER'
+          || action === 'EDIT_REQUEST'
+          || action === 'DIRECT_APPROVE'
+          || action === 'APPROVE_REQUEST';
+  }
+
+  private canViewActivityLog(log: { action?: string; user?: string }): boolean {
+      const currentName = this.auth.currentUser()?.displayName;
+      if (currentName && log.user === currentName) return true;
+
+      const act = log.action || '';
+      if (act.includes('STOCK')) return this.auth.canViewInventory();
+      if (this.isStandardLogAction(act)) return this.auth.canViewStandards();
+      if (this.isSopLogAction(act)) return this.auth.canViewSop() || this.auth.canRunBatch();
+      if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return this.auth.canManageSystem() || this.auth.canViewReports();
+      return true;
+  }
 
   private getLocalYYYYMMDD(d: Date): string {
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -254,21 +267,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       let logs = this.state.logs();
       const isManager = this.auth.currentUser()?.role === 'manager';
       if (!isManager) {
-          const canViewInv = this.auth.canViewInventory();
-          const canViewStd = this.auth.canViewStandards();
-          const canViewSop = this.auth.canViewSop() || this.auth.canRunBatch();
-          const canViewSystem = this.auth.canManageSystem() || this.auth.canViewReports();
-
-          logs = logs.filter(l => {
-              const act = l.action || '';
-              if (act.includes('STOCK')) return canViewInv;
-              if (act.includes('STANDARD')) return canViewStd;
-              if (act.includes('RESULT') || act === 'PUBLISH_RESULT_REPORT' || act === 'CREATE_VIRTUAL_MASTER' || act === 'EDIT_REQUEST' || act === 'DIRECT_APPROVE' || act === 'APPROVE_REQUEST') {
-                  return canViewSop;
-              }
-              if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return canViewSystem;
-              return true;
-          });
+          logs = logs.filter(l => this.canViewActivityLog(l));
       }
 
       return logs.filter(l => {
@@ -543,13 +542,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
               this._chartDebounceTimer = setTimeout(() => this.initChart(), 300);
           }
       });
+
+      effect(() => {
+          const user = this.auth.currentUser();
+          const permissions = this.auth.userPermissions();
+          if (!user || permissions.length === 0) return;
+
+          if (this.auth.canViewReports()) {
+              this.state.ensureApprovedRequestsListener();
+          }
+          this.state.ensureActivityFeedListeners();
+      });
   }
 
   async ngOnInit() {
-      if (this.auth.canViewReports()) {
-          this.state.ensureApprovedRequestsListener();
-          this.state.ensureActivityFeedListeners();
-      }
       this.isLoading.set(true);
 
       // 2. Tải thông tin chuẩn sắp hết hạn

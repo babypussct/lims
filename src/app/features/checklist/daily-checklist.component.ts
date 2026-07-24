@@ -544,12 +544,6 @@ interface AvailableDateOption {
         background: #f8fafc !important;
       }
 
-      body.daily-checklist-printing #print-container .cl-print-compact-head .cl-print-qr {
-        width: 14mm !important;
-        height: 14mm !important;
-        flex-basis: 14mm !important;
-      }
-
       body.daily-checklist-printing #print-container .cl-print-compact-index {
         display: flex !important;
         align-items: center !important;
@@ -677,14 +671,6 @@ interface AvailableDateOption {
         gap: 2.5mm !important;
       }
 
-      body.daily-checklist-printing #print-container .cl-print-qr {
-        display: block !important;
-        width: 18mm !important;
-        height: 18mm !important;
-        flex: 0 0 18mm !important;
-        object-fit: contain !important;
-      }
-
       body.daily-checklist-printing #print-container .cl-print-batch-info {
         min-width: 0 !important;
         flex: 1 1 auto !important;
@@ -693,13 +679,6 @@ interface AvailableDateOption {
       body.daily-checklist-printing #print-container .cl-print-sop {
         font-weight: 700 !important;
         color: #334155 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-qr-label {
-        margin-top: 1.2mm !important;
-        color: #64748b !important;
-        font-size: 7pt !important;
-        font-weight: 600 !important;
       }
 
       body.daily-checklist-printing #print-container .cl-print-meta,
@@ -765,7 +744,6 @@ export class DailyChecklistComponent implements OnDestroy {
   private readonly dataService = inject(DailyChecklistDataService);
   private readonly toast = inject(ToastService);
   private readonly targetService = inject(TargetService);
-  private qrLibLoader?: Promise<any>;
 
   readonly selectedDate = signal(toLocalDateInputValue());
   readonly dateRequests = signal<Request[]>([]);
@@ -790,8 +768,6 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly openSourceBatchCardKeys = signal<Set<string>>(new Set());
   readonly viewMode = signal<DailyBatchViewMode>(this.loadStoredViewMode());
   readonly batchGridWidth = signal(0);
-  readonly qrCodeDataUrls = signal<Record<string, string>>({});
-  readonly preparingQrCodes = signal(false);
   readonly availableTargetGroups = signal<TargetGroup[]>([]);
   readonly openTargetDetailKeys = signal<Set<string>>(new Set());
 
@@ -1080,18 +1056,9 @@ export class DailyChecklistComponent implements OnDestroy {
     return 'Chưa có KQ';
   }
 
-  async printDocument(): Promise<void> {
+  printDocument(): void {
     if (this.boardBatches().length === 0) return;
-    this.preparingQrCodes.set(true);
-    try {
-      await this.prepareBatchQrCodes();
-      this.showPrintSettings.set(true);
-    } catch (error) {
-      console.error('[DailySampleTracker] QR generation failed:', error);
-      this.toast.show('Không thể tạo mã QR truy xuất cho bản in.', 'error');
-    } finally {
-      this.preparingQrCodes.set(false);
-    }
+    this.showPrintSettings.set(true);
   }
 
   executePrint(): void {
@@ -1146,11 +1113,6 @@ export class DailyChecklistComponent implements OnDestroy {
 
       printContainer.innerHTML = '';
       printContainer.appendChild(clone);
-
-      const qrImages = Array.from(printContainer.querySelectorAll<HTMLImageElement>('img.cl-print-qr'));
-      await Promise.all(qrImages.map(image => image.complete
-        ? Promise.resolve()
-        : image.decode().catch(() => undefined)));
 
       const cleanupPrintMode = () => {
         document.body.classList.remove('daily-checklist-printing', 'print-portrait-mode', 'print-landscape-mode');
@@ -1209,10 +1171,6 @@ export class DailyChecklistComponent implements OnDestroy {
     }
   }
 
-  getBatchQrCode(requestId: string): string {
-    return this.qrCodeDataUrls()[requestId] || '';
-  }
-
   formatTimestamp(date: Date): string {
     return new Intl.DateTimeFormat('vi-VN', {
       hour: '2-digit',
@@ -1231,36 +1189,6 @@ export class DailyChecklistComponent implements OnDestroy {
   editBatch(requestId: string): void {
     if (!requestId) return;
     this.router.navigate(['/calculator'], { queryParams: { editRequestId: requestId } });
-  }
-
-  private async prepareBatchQrCodes(): Promise<void> {
-    const current = this.qrCodeDataUrls();
-    const missingIds = this.boardBatches()
-      .flatMap(batch => batch.sourceBatches.map(source => source.requestId))
-      .filter(requestId => requestId && !current[requestId]);
-    if (missingIds.length === 0) return;
-
-    const QRCode = await this.loadQrLib();
-    const generated = await Promise.all(missingIds.map(async requestId => {
-      const url = this.buildTraceabilityUrl(requestId);
-      const dataUrl = await QRCode.toDataURL(url, {
-        errorCorrectionLevel: 'M',
-        margin: 1,
-        width: 192,
-        color: { dark: '#000000', light: '#ffffff' }
-      });
-      return [requestId, dataUrl] as const;
-    }));
-    this.qrCodeDataUrls.update(values => ({ ...values, ...Object.fromEntries(generated) }));
-  }
-
-  private async loadQrLib(): Promise<any> {
-    this.qrLibLoader ??= import('qrcode');
-    return this.qrLibLoader;
-  }
-
-  private buildTraceabilityUrl(requestId: string): string {
-    return `${window.location.origin}${window.location.pathname}#/traceability/${encodeURIComponent(requestId)}`;
   }
 
   private targetDetailKey(requestId: string, signature: string): string {

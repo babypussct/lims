@@ -37,9 +37,12 @@ export class StateService implements OnDestroy {
   private initGeneration = 0;
   private approvedRunsSub?: Unsubscribe;
   private logsSub?: Unsubscribe;
+  private personalLogsSub?: Unsubscribe;
   private usersInfoSub?: Unsubscribe;
   /** Singleton request listener — unregister callback (không hủy listener) */
   private _unregisterStdReqListener?: () => void;
+  private globalLogsCache: Log[] = [];
+  private personalLogsCache: Log[] = [];
 
   // --- DATA SIGNALS ---
   inventory = signal<InventoryItem[]>([]);
@@ -91,7 +94,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.23-b24');
+  systemVersion = signal<string>('v26.07.24-b25');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -189,7 +192,10 @@ export class StateService implements OnDestroy {
     this.listeners = [];
     this.approvedRunsSub = undefined;
     this.logsSub = undefined;
+    this.personalLogsSub = undefined;
     this.usersInfoSub = undefined;
+    this.globalLogsCache = [];
+    this.personalLogsCache = [];
     if (this.sysConfigSub) {
       this.sysConfigSub();
       this.sysConfigSub = undefined;
@@ -403,8 +409,8 @@ export class StateService implements OnDestroy {
 
     const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
       if (!isCurrentInit()) return;
-      this.logs.set(items);
-      this.printableLogs.set(items.filter(l => l.printable === true));
+      this.globalLogsCache = items;
+      this.publishActivityLogs();
     });
 
     this.logsSub = () => {
@@ -412,6 +418,55 @@ export class StateService implements OnDestroy {
       this.logsSub = undefined;
     };
     this.listeners.push(this.logsSub);
+  }
+
+  ensurePersonalLogsListener(): void {
+    const displayName = this.auth.currentUser()?.displayName;
+    if (this.personalLogsSub || !this.auth.currentUser() || !displayName) return;
+    const initGeneration = this.initGeneration;
+    const isCurrentInit = () => initGeneration === this.initGeneration;
+
+    const personalSub = onSnapshot(
+      query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`), where('user', '==', displayName)),
+      (snapshot) => {
+        if (!isCurrentInit()) return;
+        const items: Log[] = [];
+        snapshot.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
+        this.personalLogsCache = items;
+        this.publishActivityLogs();
+      },
+      (error: any) => {
+        if (!isCurrentInit()) return;
+        console.warn('Personal Logs listener error:', error.message);
+      }
+    );
+
+    this.personalLogsSub = () => {
+      personalSub();
+      this.personalLogsSub = undefined;
+    };
+    this.listeners.push(this.personalLogsSub);
+  }
+
+  private publishActivityLogs(): void {
+    const merged = new Map<string, Log>();
+    [...this.globalLogsCache, ...this.personalLogsCache].forEach(log => {
+      if (log?.id) merged.set(log.id, log);
+    });
+    const logs = Array.from(merged.values()).sort((a, b) => this.getLogTime(b) - this.getLogTime(a));
+    this.logs.set(logs);
+    this.printableLogs.set(logs.filter(l => l.printable === true));
+  }
+
+  private getLogTime(log: Log): number {
+    const value = log.timestamp;
+    if (!value) return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value.toMillis === 'function') return value.toMillis();
+    if (typeof value.toDate === 'function') return value.toDate().getTime();
+    if (typeof value.seconds === 'number') return value.seconds * 1000;
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   ensureApprovedRequestsListener(): void {
@@ -476,6 +531,9 @@ export class StateService implements OnDestroy {
 
   ensureActivityFeedListeners(): void {
     this.ensureLogsListener();
+    if (!this.auth.canViewReports()) {
+      this.ensurePersonalLogsListener();
+    }
     this.ensureUserInfoCacheListener();
   }
 
