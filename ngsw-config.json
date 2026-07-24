@@ -4,11 +4,12 @@
   "appData": {
     "version": "v26.07.24-b02",
     "notesVersion": "v26.07.24-b02",
-    "title": "Nâng Cấp Đếm Ngược Cập Nhật & Nút Để Sau",
+    "title": "Mở Khóa Trạm Pha Chế, Chuẩn Hóa Cảnh Báo & Đếm Ngược Cập Nhật",
     "features": [
+      "🔓 Mở khóa Trạm Pha Chế ở chế độ Sandbox cho toàn bộ nhân viên",
+      "🛡️ Chuẩn hóa toàn bộ thông báo từ chối quyền sang tiếng Việt thống nhất",
       "⏳ Đếm ngược 30s tự động tạm dừng ở 10s nếu máy không tương tác, tiếp tục đếm khi di chuột/chạm",
-      "⏸️ Thêm nút Để Sau cho phép bỏ qua cập nhật tạm thời",
-      "🔔 Banner thông báo cố định nhắc nhở cập nhật nhanh khi đã đóng popup"
+      "⏸️ Nút Để Sau & Banner cố định nhắc nhở cập nhật nhanh khi đã đóng popup"
     ]
   },
   "assetGroups": [
