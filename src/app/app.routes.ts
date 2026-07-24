@@ -33,9 +33,7 @@ export const routes: Routes = [
   },
   {
     path: 'prep',
-    loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent),
-    canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.BATCH_RUN } // Pha chế = tiêu hao kho thực tế
+    loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent)
   },
   {
     path: 'inventory',

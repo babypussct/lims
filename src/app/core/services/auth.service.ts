@@ -49,6 +49,26 @@ export const PERMISSIONS = {
   BYPASS_MAINTENANCE: 'bypass_maintenance' // Quyền truy cập khi bảo trì (Whitelist)
 };
 
+export const PERMISSION_NAMES: Record<string, string> = {
+  [PERMISSIONS.INVENTORY_VIEW]: 'Xem Kho',
+  [PERMISSIONS.INVENTORY_EDIT]: 'Sửa Kho',
+  [PERMISSIONS.STANDARD_VIEW]: 'Xem Chất Chuẩn',
+  [PERMISSIONS.STANDARD_EDIT]: 'Sửa Chất Chuẩn',
+  [PERMISSIONS.STANDARD_APPROVE]: 'Duyệt Chuẩn',
+  [PERMISSIONS.STANDARD_LOG_VIEW]: 'Xem Nhật Ký Chuẩn',
+  [PERMISSIONS.STANDARD_LOG_DELETE]: 'Xóa Nhật Ký Chuẩn',
+  [PERMISSIONS.RECIPE_VIEW]: 'Xem Công Thức',
+  [PERMISSIONS.RECIPE_EDIT]: 'Sửa Công Thức',
+  [PERMISSIONS.SOP_VIEW]: 'Xem SOP & Nhập KQ',
+  [PERMISSIONS.SOP_EDIT]: 'Sửa SOP',
+  [PERMISSIONS.SOP_APPROVE]: 'Duyệt SOP',
+  [PERMISSIONS.BATCH_RUN]: 'Vận Hành Mẻ',
+  [PERMISSIONS.REPORT_VIEW]: 'Xem Báo Cáo',
+  [PERMISSIONS.USER_MANAGE]: 'Quản Lý Hệ Thống',
+  [PERMISSIONS.STANDARD_REQUEST]: 'Mượn Chuẩn',
+  [PERMISSIONS.BYPASS_MAINTENANCE]: 'Vượt Bảo Trì'
+};
+
 export const DEFAULT_ROLES = {
   role_staff_default: {
     name: 'Nhân viên mặc định',
@@ -530,6 +550,10 @@ export class AuthService {
   hasPermission(perm: string): boolean {
     const perms = this.userPermissions();
     return perms.includes('*') || perms.includes(perm);
+  }
+
+  getPermissionName(permCode: string): string {
+    return PERMISSION_NAMES[permCode] || permCode;
   }
 
   private async syncRolesConfig() {

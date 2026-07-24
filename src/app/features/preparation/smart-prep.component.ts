@@ -153,7 +153,7 @@ export class SmartPrepComponent {
 
   setSystemMode(mode: SystemMode) { 
       if (mode === 'real' && !this.auth.canEditInventory()) {
-          this.toast.show('Bạn cần quyền "Sửa Kho" để sử dụng chế độ Thực.', 'error');
+          this.toast.show('Cần quyền "Sửa Kho" · Liên hệ quản trị viên để được cấp', 'error');
           return;
       }
       this.systemMode.set(mode); 

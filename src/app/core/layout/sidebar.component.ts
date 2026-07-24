@@ -282,7 +282,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       title: 'Vận hành',
       items: [
         { name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
-        { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], isLocked: !this.auth.canRunBatch(), lockPermission: 'batch_run' },
+        { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], isLocked: false },
         { name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view', hasBadge: true },
         { name: 'Kết Quả Phân Tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], isLocked: !this.auth.canViewSop(), lockPermission: 'sop_view' }
       ]
@@ -355,7 +355,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   handleLockedClick(item: MenuItem) {
-    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ quản trị viên để được cấp`, 'warning');
+    const permName = item.lockPermission ? (this.auth.getPermissionName(item.lockPermission) || item.lockPermission) : 'đặc biệt';
+    this.toast.show(`Cần quyền "${permName}" · Liên hệ quản trị viên để được cấp`, 'warning');
   }
 
   navigateTo(path: string) {

@@ -58,7 +58,8 @@ export class LockPermissionDirective implements OnInit, OnDestroy {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        this.toast.show(`Cần quyền "${this.permission}" · Liên hệ quản trị viên để được cấp`, 'warning');
+        const permName = this.auth.getPermissionName(this.permission) || this.permission;
+        this.toast.show(`Cần quyền "${permName}" · Liên hệ quản trị viên để được cấp`, 'warning');
       }
     };
 

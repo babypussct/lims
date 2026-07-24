@@ -363,7 +363,8 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   handleLockedItemClick(item: MenuItem) {
     this.haptic();
-    this.toast.show(`Cần quyền "${item.lockPermission}" · Liên hệ quản trị viên để được cấp`, 'warning');
+    const permName = item.lockPermission ? (this.auth.getPermissionName(item.lockPermission) || item.lockPermission) : 'đặc biệt';
+    this.toast.show(`Cần quyền "${permName}" · Liên hệ quản trị viên để được cấp`, 'warning');
   }
 
   toggleDarkMode() {
@@ -500,7 +501,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
         items: [
           { id: 'inventory', name: 'Kho Hóa Chất', icon: 'fa-boxes-stacked', path: '/inventory', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50', visible: canViewInv || showLocked, isLocked: !canViewInv, lockPermission: 'inventory_view' },
           { id: 'smart-batch', name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: '/smart-batch', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
-          { id: 'prep', name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: '/prep', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: canRunBatch || showLocked, isLocked: !canRunBatch, lockPermission: 'batch_run' },
+          { id: 'prep', name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: '/prep', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50', visible: true, isLocked: false },
           { id: 'documents', name: 'Giao Nhận Mẫu', icon: 'fa-file-signature', path: '/documents', color: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-800/50', visible: true, isLocked: false },
           { id: 'results', name: 'Kết Quả Phân Tích', icon: 'fa-vials', path: '/results', color: 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border-cyan-100 dark:border-cyan-800/50', visible: canViewSop || showLocked, isLocked: !canViewSop, lockPermission: 'sop_view' },
           { id: 'recipes', name: 'Công Thức', icon: 'fa-book-bookmark', path: '/recipes', color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/50', visible: canViewRecipes || showLocked, isLocked: !canViewRecipes, lockPermission: 'recipe_view' },

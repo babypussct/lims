@@ -2,7 +2,8 @@
 
 1. **Định dạng Phiên bản Tự động (Format: `vYY.MM.DD-bXX`):**
    - Phiên bản được tạo tự động theo ngày hiện tại và số lượt build trong ngày.
-   - Ví dụ: `v26.07.21-b01` (Lần build 1), `v26.07.21-b02` (Lần build 2). Sang ngày mới sẽ tự động reset về `v26.07.22-b01`.
+   - **Quy tắc reset ngày mới:** Chỉ số `-bXX` biểu thị lượt build *trong ngày*, không phải số thứ tự tích lũy toàn hệ thống. Sang ngày mới, lượt build đầu tiên BẮT BUỘC reset về `-b01` (ví dụ: ngày 23/07 dừng ở `v26.07.23-b24`, sang ngày 24/07 lần build 1 PHẢI là `v26.07.24-b01`, không được cộng dồn thành `b25`).
+   - LUÔN chạy lệnh `npm run sync-version` để phát sinh số phiên bản tự động. Tuyệt đối KHÔNG gõ tay hoặc nối tiếp số `-b` của ngày cũ.
 
 2. **BẮT BUỘC Đồng bộ Đủ 5 Tệp Phiên Bản (Mandatory 5-File Synchronization):**
    Mọi thao tác liên quan đến tạo phiên bản mới, gộp phiên bản hay cập nhật release note PHẢI đồng thời cập nhật đủ 5 tệp sau (tuyệt đối không chỉ cập nhật duy nhất `CHANGELOG.md`):

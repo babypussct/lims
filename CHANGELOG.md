@@ -1,5 +1,24 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.24-b02] - 24/07/2026
+
+### 🧭 Mở Khóa Trạm Pha Chế, Chuẩn Hóa Cảnh Báo & Đếm Ngược Cập Nhật
+
+#### 🔓 Mở Khóa Trạm Pha Chế Cho Nhân Viên Thông Thường
+- **Khả dụng cho mọi người:** Trạm Pha Chế giờ đây cho phép toàn bộ nhân viên truy cập để sử dụng công cụ tính toán (Sandbox) mà không bị chặn ở menu.
+- **Vẫn bảo mật kho:** Chế độ Thực (có trừ kho và in tem) vẫn yêu cầu người dùng phải có quyền Sửa Kho mới có thể thao tác. Hệ thống tự động từ chối nếu không đủ quyền.
+
+#### 🔔 Chuẩn Hóa Thông Báo Cảnh Báo Phân Quyền
+- **Đồng bộ tiếng Việt:** Các thông báo lỗi rải rác trên toàn hệ thống (bị chặn ở trang, bị chặn ở menu, hoặc khi bấm nút) đã được đồng bộ về một định dạng thống nhất: `Cần quyền "[Tên Quyền]" · Liên hệ quản trị viên để được cấp`.
+- **Dễ hiểu hơn:** Dịch mã quyền nội bộ sang ngôn ngữ người dùng để thông báo lỗi rõ ràng và thân thiện.
+
+#### ⏳ Đếm Ngược Tự Động Thông Minh & Nút Để Sau
+- **Tạm dừng khi không có tương tác:** Bộ đếm 30s đếm ngược tới 10s sẽ tự động tạm dừng nếu máy tính không có hoạt động (di chuột, chạm màn hình, gõ phím).
+- **Tiếp tục khi có người quay lại:** Khi người dùng quay lại thao tác với máy, đếm ngược sẽ tiếp tục nốt 10s còn lại để đảm bảo người dùng kịp đọc nội dung cập nhật.
+- **Nút Để Sau & Banner cố định:** Cho phép đóng popup để tiếp tục công việc và hiển thị banner nhỏ ở góc dưới màn hình có nút "Cập nhật" nhanh.
+
+---
+
 ## [v26.07.24-b25] - 24/07/2026
 
 ### 🧭 Daily Checklist Dễ Xem Hơn, Dashboard Có Nhật Ký Hơn

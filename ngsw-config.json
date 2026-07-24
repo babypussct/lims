@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.24-b25",
-    "notesVersion": "v26.07.24-b25",
-    "title": "Daily Checklist Dễ Xem Hơn, Dashboard Có Nhật Ký Hơn",
+    "version": "v26.07.24-b02",
+    "notesVersion": "v26.07.24-b02",
+    "title": "Nâng Cấp Đếm Ngược Cập Nhật & Nút Để Sau",
     "features": [
-      "📋 Mẫu có tiền tố được xếp trước mẫu không tiền tố trong Daily Checklist",
-      "👤 Nhân viên không còn bị trắng mục Hoạt Động Gần Đây",
-      "🖨️ Bỏ tạo QR khi in Daily Checklist để thao tác nhẹ và ổn định hơn"
+      "⏳ Đếm ngược 30s tự động tạm dừng ở 10s nếu máy không tương tác, tiếp tục đếm khi di chuột/chạm",
+      "⏸️ Thêm nút Để Sau cho phép bỏ qua cập nhật tạm thời",
+      "🔔 Banner thông báo cố định nhắc nhở cập nhật nhanh khi đã đóng popup"
     ]
   },
   "assetGroups": [

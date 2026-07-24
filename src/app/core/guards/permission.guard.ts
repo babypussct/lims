@@ -35,7 +35,8 @@ export const permissionGuard: CanActivateFn = (route, state) => {
 
   // 4. Check Specific Permission
   if (requiredPermission && !auth.hasPermission(requiredPermission)) {
-    toast.show(`Yêu cầu quyền: ${requiredPermission}`, 'error');
+    const permName = auth.getPermissionName(requiredPermission) || requiredPermission;
+    toast.show(`Cần quyền "${permName}" · Liên hệ quản trị viên để được cấp`, 'error');
     router.navigate(['/403'], { queryParams: { required: requiredPermission, from: state.url } });
     return false;
   }

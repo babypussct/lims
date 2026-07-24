@@ -96,7 +96,7 @@ import { filter } from 'rxjs/operators';
         <app-progress-overlay></app-progress-overlay>
       }
 
-      @if (hasNewVersion()) {
+      @if (hasNewVersion() && !isUpdateModalDismissed()) {
         <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm no-print p-4 md:p-6">
            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 md:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 animate-fade-in">
               
@@ -104,14 +104,20 @@ import { filter } from 'rxjs/operators';
                 <!-- SVG Circular Progress -->
                 <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="47" class="fill-slate-50 dark:fill-slate-800/50 stroke-slate-200 dark:stroke-slate-700/50" stroke-width="2"></circle>
-                  <circle cx="50" cy="50" r="47" class="fill-none stroke-blue-600 transition-all duration-1000 ease-linear" stroke-width="3" stroke-linecap="round" 
+                  <circle cx="50" cy="50" r="47" class="fill-none transition-all duration-1000 ease-linear" stroke-width="3" stroke-linecap="round"
+                          [class]="isCountdownPaused() ? 'stroke-amber-400' : 'stroke-blue-600'"
                           [style.stroke-dasharray]="'296'" 
                           [style.stroke-dashoffset]="296 - (updateCountdown() / 30) * 296"></circle>
                 </svg>
                 <!-- Icon inside -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-700 dark:text-slate-300 z-10">
-                  <i class="fa-solid fa-cloud-arrow-down text-2xl md:text-3xl"></i>
-                  <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 opacity-60">{{ updateCountdown() }}s</span>
+                  @if (isCountdownPaused()) {
+                    <i class="fa-solid fa-pause text-2xl md:text-3xl text-amber-400"></i>
+                    <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 text-amber-400">{{ updateCountdown() }}s</span>
+                  } @else {
+                    <i class="fa-solid fa-cloud-arrow-down text-2xl md:text-3xl"></i>
+                    <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 opacity-60">{{ updateCountdown() }}s</span>
+                  }
                 </div>
               </div>
 
@@ -142,19 +148,49 @@ import { filter } from 'rxjs/operators';
                  </p>
               }
               
+              <!-- Primary CTA -->
               <button (click)="window_reload()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
                 <i class="fa-solid fa-arrows-rotate"></i> Áp Dụng Cập Nhật
               </button>
-              
-              <div class="mt-4 text-center">
-                 <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-circle-notch fa-spin opacity-70"></i>
-                    Tự động áp dụng sau {{ updateCountdown() }} giây
-                 </span>
+
+              <!-- Secondary: Dismiss -->
+              <button (click)="dismissUpdate()" class="w-full mt-2.5 py-2.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded-xl text-xs font-medium transition-colors">
+                Để sau
+              </button>
+
+              <div class="mt-3 text-center">
+                 @if (isCountdownPaused()) {
+                   <span class="text-[11px] text-amber-500 dark:text-amber-400 font-medium flex items-center justify-center gap-2">
+                     <i class="fa-solid fa-hand-pointer opacity-70"></i>
+                     Đang tạm dừng · Di chuột hoặc chạm để tiếp tục đếm
+                   </span>
+                 } @else {
+                   <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
+                     <i class="fa-solid fa-circle-notch fa-spin opacity-70"></i>
+                     Tự động áp dụng sau {{ updateCountdown() }} giây
+                   </span>
+                 }
               </div>
            </div>
         </div>
-      } @else if (isMaintenanceActive() && auth.currentUser() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
+      }
+
+      <!-- Banner nhắc nhở khi user đã bấm "Để sau" -->
+      @if (hasNewVersion() && isUpdateModalDismissed()) {
+        <div class="fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-[200] no-print animate-slide-up">
+          <div class="flex items-center gap-3 bg-slate-800 dark:bg-slate-700 text-white text-xs font-medium px-4 py-3 rounded-2xl shadow-xl border border-slate-600 max-w-sm w-[calc(100vw-2rem)]">
+            <div class="w-7 h-7 shrink-0 bg-blue-500/20 rounded-full flex items-center justify-center">
+              <i class="fa-solid fa-cloud-arrow-down text-blue-400 text-sm"></i>
+            </div>
+            <span class="flex-1 leading-snug text-slate-200">Có phiên bản mới đang chờ được cài đặt</span>
+            <button (click)="window_reload()" class="shrink-0 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+              Cập nhật
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (isMaintenanceActive() && auth.currentUser() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
         <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md no-print p-4">
            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-rose-500/30 animate-bounce-in">
               <div class="w-20 h-20 bg-rose-100 dark:bg-rose-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-500 animate-pulse">
@@ -460,6 +496,8 @@ export class AppComponent implements OnDestroy {
   private touchStartY = 0;
   isPulling = signal(false);
   hasNewVersion = signal(false);
+  isUpdateModalDismissed = signal(false);
+  isCountdownPaused = signal(false);
   updateCountdown = signal(30);
   updateVersion = signal<string | null>(null);
   updateTitle = signal<string | null>(null);
@@ -467,6 +505,7 @@ export class AppComponent implements OnDestroy {
   private _updateTimer: any;
   private _swCheckInterval: any;
   private _maintenanceTimer: ReturnType<typeof setTimeout> | undefined;
+  private _boundInteractionHandler: (() => void) | null = null;
 
   currentTime = signal<number>(Date.now());
 
@@ -506,6 +545,7 @@ export class AppComponent implements OnDestroy {
     clearInterval(this._swCheckInterval);
     clearTimeout(this._maintenanceTimer);
     clearInterval(this._updateTimer);
+    this._removeInteractionHandler();
   }
 
   // Kiểm tra build mới ngay khi user quay lại tab (từ bất kỳ ứng dụng nào khác)
@@ -597,19 +637,63 @@ export class AppComponent implements OnDestroy {
 
   startUpdateCountdown() {
     this.updateCountdown.set(30);
+    this.isCountdownPaused.set(false);
     clearInterval(this._updateTimer);
+    this._removeInteractionHandler();
+
     this.ngZone.runOutsideAngular(() => {
       this._updateTimer = setInterval(() => {
         this.ngZone.run(() => {
+          // Nếu đang tạm dừng thì bỏ qua tick này
+          if (this.isCountdownPaused()) return;
+
           const current = this.updateCountdown() - 1;
           this.updateCountdown.set(current);
+
+          // Khi đếm xuống 10s: kiểm tra có tương tác không, nếu không thì tạm dừng
+          if (current === 10) {
+            this.isCountdownPaused.set(true);
+            this._setupInteractionHandler();
+          }
+
           if (current <= 0) {
             clearInterval(this._updateTimer);
+            this._removeInteractionHandler();
             this.window_reload();
           }
         });
       }, 1000);
     });
+  }
+
+  private _setupInteractionHandler() {
+    this._removeInteractionHandler(); // Tránh đăng ký 2 lần
+    this._boundInteractionHandler = () => {
+      this.ngZone.run(() => {
+        if (this.isCountdownPaused()) {
+          this.isCountdownPaused.set(false);
+          this._removeInteractionHandler();
+        }
+      });
+    };
+    document.addEventListener('mousemove', this._boundInteractionHandler, { once: true });
+    document.addEventListener('keydown', this._boundInteractionHandler, { once: true });
+    document.addEventListener('touchstart', this._boundInteractionHandler, { once: true });
+  }
+
+  private _removeInteractionHandler() {
+    if (this._boundInteractionHandler) {
+      document.removeEventListener('mousemove', this._boundInteractionHandler);
+      document.removeEventListener('keydown', this._boundInteractionHandler);
+      document.removeEventListener('touchstart', this._boundInteractionHandler);
+      this._boundInteractionHandler = null;
+    }
+  }
+
+  dismissUpdate() {
+    clearInterval(this._updateTimer);
+    this._removeInteractionHandler();
+    this.isUpdateModalDismissed.set(true);
   }
 
   // Dùng trong template cho nút "Tải lại ngay" trong Toast
