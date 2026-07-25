@@ -147,6 +147,72 @@ export class StandardUsageService {
     });
   }
 
+  // ─── Backfill Usage Log (Manager — nhập bù lịch sử, ngày tùy chỉnh) ──────────
+  async recordBackfillUsage(
+    stdId: string,
+    log: UsageLog,
+    actorUserId: string,
+    actorUserName: string
+  ): Promise<void> {
+    const currentUser = this.auth.currentUser();
+    if (!currentUser || !this.auth.canEditStandards()) {
+      throw new Error('Bạn không có quyền nhập bù nhật ký sử dụng chuẩn.');
+    }
+    const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+    const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
+    const newLogRef = doc(logsRef);
+
+    await runTransaction(this.fb.db, async (transaction) => {
+      const stdDoc = await transaction.get(stdRef);
+      if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
+      const stdData = stdDoc.data() as ReferenceStandard;
+
+      // Không chặn IN_USE — đây là nhập bù hồi ký
+      const currentAmount = stdData.current_amount || 0;
+      const stockUnit = stdData.unit || 'mg';
+      const usageUnit = log.unit || stockUnit;
+      const amountToDeduct = normalizePositiveStandardAmount(log.amount_used, usageUnit, stockUnit, 'Lượng sử dụng');
+
+      const newAmount = currentAmount - amountToDeduct;
+      if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho! Hiện còn ${formatNum(currentAmount)} ${stockUnit}.`);
+
+      const updateData: Record<string, any> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
+      if (newAmount <= 0 || log.isDepleted) updateData['status'] = 'DEPLETED';
+
+      log.id = newLogRef.id;
+      log.standardId = stdData.id;
+      log.standardName = stdData.name;
+      log.lotNumber = stdData.lot_number;
+      log.cas_number = stdData.cas_number;
+      log.internalId = stdData.internal_id;
+      log.manufacturer = stdData.manufacturer;
+      log.user = actorUserName || actorUserId || 'Không rõ';
+      log.normalized_amount = amountToDeduct;
+      log.normalized_unit = stockUnit;
+      // Audit trail: ai đã nhập bù
+      (log as any)['backfilledByUid'] = currentUser.uid;
+      (log as any)['backfilledByName'] = currentUser.displayName || currentUser.email || '';
+      (log as any)['isBackfill'] = true;
+
+      const newLogDate = log.date.split('T')[0];
+      const existingDateOpened = stdData.date_opened || '';
+      if (!existingDateOpened || newLogDate < existingDateOpened) {
+        updateData['date_opened'] = newLogDate;
+      }
+
+      transaction.update(stdRef, updateData);
+      transaction.set(newLogRef, log);
+      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+      transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
+    });
+
+    await this.crud.logGlobalActivity(
+      'BACKFILL_USAGE_LOG',
+      `Nhập bù nhật ký ${log.amount_used}${log.unit || ''} cho ${actorUserName} — chuẩn: ${stdId}`,
+      stdId
+    );
+  }
+
   // ─── Log Usage For Request ────────────────────────────────────────────────────
   async logUsageForRequest(
     requestId: string, standardId: string, amount: number,

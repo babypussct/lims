@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.24-b02",
+    "version": "v26.07.25-b01",
     "notesVersion": "v26.07.24-b02",
     "title": "Mở Khóa Trạm Pha Chế, Chuẩn Hóa Cảnh Báo & Đếm Ngược Cập Nhật",
     "features": [

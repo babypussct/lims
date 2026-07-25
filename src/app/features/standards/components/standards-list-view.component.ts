@@ -130,6 +130,7 @@ import { StateService } from '../../../core/services/state.service';
                              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                  <button (click)="viewHistory.emit(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i></button>
                                  @if(canEditStandards() || state.showLockedFeatures()) { <button [appLockPermission]="'standard_edit'" (click)="openEditModal.emit(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition" title="Sửa"><i class="fa-solid fa-pen text-[10px]"></i></button> }
+                                 @if(canEditStandards() || state.showLockedFeatures()) { <button [appLockPermission]="'standard_edit'" (click)="openBackfillModal.emit(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/50 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition" title="Nhập bù nhật ký sử dụng"><i class="fa-solid fa-pen-to-square text-[10px]"></i></button> }
                              </div>
                           </div>
                        </td>
@@ -166,6 +167,7 @@ export class StandardsListViewComponent {
   openPrintModal = output<ReferenceStandard>();
   viewHistory = output<ReferenceStandard>();
   openEditModal = output<ReferenceStandard>();
+  openBackfillModal = output<ReferenceStandard>();
 
   // Helpers exposed to template
   Math = Math;

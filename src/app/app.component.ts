@@ -1,4 +1,3 @@
-
 import { ChangeDetectionStrategy, Component, inject, computed, effect, signal, HostListener, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
@@ -14,6 +13,7 @@ import { LoginComponent } from './features/auth/login.component';
 import { NotificationPanelComponent } from './shared/components/notification-panel/notification-panel.component';
 import { ProgressOverlayComponent } from './shared/components/progress-overlay/progress-overlay.component';
 import { ToastHostComponent } from './shared/components/toast-host/toast-host.component';
+import { ChangelogModalComponent } from './shared/components/changelog-modal/changelog-modal.component';
 
 import { StateService } from './core/services/state.service';
 import { AuthService } from './core/services/auth.service';
@@ -26,6 +26,7 @@ import { ConfirmationService } from './core/services/confirmation.service';
 import { NotificationPanelService } from './core/services/notification-panel.service';
 import { ProgressService } from './core/services/progress.service';
 import { QrGlobalService } from './core/services/qr-global.service';
+import { ChangelogService } from './core/services/changelog.service';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 
@@ -46,7 +47,8 @@ import { filter } from 'rxjs/operators';
     NotificationPanelComponent,
     ProgressOverlayComponent,
     ToastHostComponent,
-    LogoComponent
+    LogoComponent,
+    ChangelogModalComponent
   ],
   template: `
     @if (isPrintMode()) {
@@ -72,6 +74,9 @@ import { filter } from 'rxjs/operators';
       }
 
       <app-toast-host></app-toast-host>
+      @defer (when changelogService.isOpen()) {
+        <app-changelog-modal></app-changelog-modal>
+      }
 
       <!-- Loaders & Modals -->
       @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
@@ -344,6 +349,7 @@ export class AppComponent implements OnDestroy {
   notificationPanel = inject(NotificationPanelService);
   progressService = inject(ProgressService);
   qrService = inject(QrGlobalService);
+  changelogService = inject(ChangelogService);
   swUpdate = inject(SwUpdate);
   private ngZone = inject(NgZone);
 
@@ -351,7 +357,7 @@ export class AppComponent implements OnDestroy {
   currentUrl = signal<string>('');
   isPublicRoute = computed(() => {
     const url = this.currentUrl();
-    return url.startsWith('/privacy-policy') || url.startsWith('/terms-of-service');
+    return url.startsWith('/privacy-policy') || url.startsWith('/terms-of-service') || url.startsWith('/changelog');
   });
   year = new Date().getFullYear();
 

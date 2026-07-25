@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { Unsubscribe } from 'firebase/firestore';
 import { PwaInstallPromptComponent } from '../../shared/components/pwa-install-prompt.component';
 import { StateService } from '../../core/services/state.service';
+import { ChangelogService } from '../../core/services/changelog.service';
 import { LogoComponent } from '../../shared/components/logo.component';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
 
@@ -376,10 +377,14 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
             
             <!-- Footer -->
             <div class="text-center mt-6 text-[11px] font-medium text-gray-400 mb-8 select-none">
-                <div class="mb-2 flex items-center justify-center gap-3 no-print">
+                <div class="mb-2 flex flex-wrap items-center justify-center gap-3 no-print">
                     <a routerLink="/privacy-policy" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Chính sách bảo mật</a>
                     <span class="text-gray-300 dark:text-slate-700">&bull;</span>
                     <a routerLink="/terms-of-service" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Điều khoản sử dụng</a>
+                    <span class="text-gray-300 dark:text-slate-700">&bull;</span>
+                    <button type="button" (click)="changelogService.open()" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold flex items-center gap-1 inline-flex">
+                        <i class="fa-solid fa-scroll text-blue-500"></i> Nhật ký cập nhật
+                    </button>
                 </div>
                 &copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
                 <span class="text-gray-400/80 dark:text-gray-500">NAFIQPM6 Laboratory Information Management System Cloud &bull; {{state.systemVersion()}}</span>
@@ -431,6 +436,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   auth = inject(AuthService);
   toast = inject(ToastService);
   state = inject(StateService);
+  changelogService = inject(ChangelogService);
   
   mode = signal<'google' | 'password' | 'qr'>('google');
   logoutReason = signal<string | null>(null);

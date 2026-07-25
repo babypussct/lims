@@ -39,90 +39,121 @@ import { Router } from '@angular/router';
           <div class="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 space-y-6 text-sm sm:text-base leading-relaxed">
             <p>
               Chào mừng bạn đến với <strong>NAFIQPM6 LIMS Cloud</strong> (Hệ thống quản lý thông tin phòng thí nghiệm).
-              Chúng tôi cam kết bảo vệ thông tin cá nhân và dữ liệu riêng tư của bạn. Chính sách bảo mật này giải thích cách ứng dụng của chúng tôi thu thập, sử dụng và bảo vệ thông tin khi bạn sử dụng các tính năng liên quan đến tài khoản và tích hợp API Google.
+              Chúng tôi cam kết bảo vệ tuyệt đối thông tin cá nhân và dữ liệu riêng tư của bạn. Chính sách bảo mật này giải thích chi tiết và minh bạch cách ứng dụng thu thập, sử dụng và bảo vệ dữ liệu khi bạn sử dụng các tính năng liên quan đến tài khoản và tích hợp Google API.
             </p>
 
+            <!-- HIGHLIGHT SUMMARY BOX FOR USERS & GOOGLE VERIFICATION TEAM -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-blue-950/40 p-6 rounded-3xl border-2 border-blue-200 dark:border-blue-800/60 shadow-sm my-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md">
+                  <i class="fa-solid fa-circle-check text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-base font-extrabold text-blue-950 dark:text-blue-200 m-0">Tóm Tắt Cam Kết Bảo Mật (Google OAuth Summary)</h3>
+                  <p class="text-xs text-blue-700 dark:text-blue-300 font-semibold m-0">Dành cho Người Dùng & Đội ngũ Kiểm duyệt Google Cloud</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-semibold">
+                <div class="bg-white/80 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-blue-100 dark:border-blue-900/50">
+                  <span class="text-blue-600 dark:text-blue-400 font-bold block mb-1">🔑 Phạm Vi Truy Cập (Scope)</span>
+                  <code class="text-[11px] bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-mono font-bold border border-blue-200 dark:border-blue-800">drive.file</code>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 mb-0 leading-normal">Chỉ thao tác với tệp do chính ứng dụng này tạo ra.</p>
+                </div>
+                <div class="bg-white/80 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-blue-100 dark:border-blue-900/50">
+                  <span class="text-blue-600 dark:text-blue-400 font-bold block mb-1">📂 Nơi Lưu Trữ (Storage)</span>
+                  <span class="text-slate-800 dark:text-slate-200 font-bold">Thư mục Phòng Lab</span>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 mb-0 leading-normal">Lưu trực tiếp vào thư mục dùng chung được cấp quyền.</p>
+                </div>
+                <div class="bg-white/80 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-blue-100 dark:border-blue-900/50">
+                  <span class="text-blue-600 dark:text-blue-400 font-bold block mb-1">🛡️ Chia Sẻ Dữ Liệu</span>
+                  <span class="text-emerald-600 dark:text-emerald-400 font-bold">Cam Kết 0% Chia Sẻ</span>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 mb-0 leading-normal">Không bán, truyền hay lưu trữ dữ liệu sang bên thứ ba.</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Section 1 -->
-            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800/80 my-8">
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-folder-open text-blue-500"></i> 1. Thu Thập Dữ Liệu và Truy Cập Google API
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-folder-open text-blue-600"></i> 1. Thu Thập Dữ Liệu và Phạm Vi Truy Cập Google API
               </h3>
               <p class="mb-3">
-                Hệ thống của chúng tôi tích hợp với dịch vụ Google Drive để cung cấp tính năng lưu trữ và đồng bộ báo cáo phòng thí nghiệm. Cụ thể:
+                Hệ thống của chúng tôi tích hợp dịch vụ Google Drive API để phục vụ tính năng lưu trữ báo cáo kiểm nghiệm. Cụ thể:
               </p>
-              <ul class="list-disc pl-5 space-y-2">
+              <ul class="list-disc pl-5 space-y-3">
                 <li>
-                  <strong>Phạm vi truy cập (Scopes):</strong> Ứng dụng yêu cầu quyền <code>https://www.googleapis.com/auth/drive.file</code>. 
-                  Quyền này chỉ cho phép ứng dụng đọc, ghi, chỉnh sửa và xóa các tệp tin hoặc thư mục được tạo ra bởi chính ứng dụng này trên Google Drive của bạn.
+                  <strong>Phạm vi truy cập (OAuth Scope):</strong> Ứng dụng chỉ yêu cầu quyền 
+                  <code class="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-mono font-bold border border-blue-200 dark:border-blue-800">https://www.googleapis.com/auth/drive.file</code>. 
+                  Quyền này <strong>KHÔNG</strong> cho phép ứng dụng đọc hoặc xem toàn bộ Google Drive của bạn, mà <strong>chỉ giới hạn</strong> đọc, ghi và cập nhật các tệp tin được tạo bởi chính ứng dụng này.
                 </li>
                 <li>
-                  <strong>Tệp tin truy cập:</strong> Ứng dụng chỉ tương tác với các tệp tin báo cáo, chứng chỉ chất lượng hoặc các tài liệu chuẩn hóa dạng Excel/PDF do người dùng tải lên hoặc được tạo tự động bởi tính năng in ấn của hệ thống.
+                  <strong>Loại tệp tin tương tác:</strong> Ứng dụng chỉ tạo và làm việc với các tệp tin báo cáo kết quả thí nghiệm, chứng chỉ chất lượng (CoA) hoặc biểu mẫu SOP dưới dạng tệp Excel/PDF do người dùng chọn xuất.
                 </li>
               </ul>
             </div>
 
             <!-- Section 2 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-gears text-blue-500"></i> 2. Cách Chúng Tôi Sử Dụng Dữ Liệu của Bạn
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-gears text-blue-600"></i> 2. Mục Đích Sử Dụng Dữ Liệu
               </h3>
               <p>
-                Dữ liệu truy cập thông qua tài khoản Google của bạn chỉ được sử dụng cho các mục đích chức năng cốt lõi sau:
+                Dữ liệu truy cập thông qua Google OAuth chỉ được sử dụng phục vụ các chức năng nghiệp vụ cốt lõi sau:
               </p>
               <ul class="list-disc pl-5 mt-2 space-y-2">
-                <li>Tải các biểu mẫu báo cáo tiêu chuẩn từ Google Drive xuống hệ thống để xử lý dữ liệu.</li>
-                <li>Lưu trữ tạm thời hoặc lâu dài các kết quả phân tích phòng thí nghiệm dưới dạng tệp Excel hoặc PDF trên Google Drive cá nhân của bạn để phục vụ mục đích in ấn hoặc chia sẻ.</li>
-                <li>Đọc cấu hình tiêu chuẩn dạng JSON được lưu giữ trên Drive để đồng bộ hóa quy trình phân tích.</li>
+                <li>Tải các mẫu báo cáo tiêu chuẩn từ Google Drive xuống ứng dụng để xử lý tính toán.</li>
+                <li>Lưu trữ các kết quả phân tích phòng thí nghiệm dưới dạng tệp Excel hoặc PDF trực tiếp vào thư mục dùng chung của phòng thí nghiệm được phân quyền để phục vụ mục đích in ấn, tra cứu và lưu trữ hồ sơ.</li>
+                <li>Đọc cấu hình tiêu chuẩn dạng JSON trên Drive để đồng bộ quy trình phân tích.</li>
               </ul>
             </div>
 
             <!-- Section 3 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-lock text-blue-500"></i> 3. Lưu Trữ và Bảo Mật Dữ Liệu
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-lock text-blue-600"></i> 3. Lưu Trữ và Bảo Mật Dữ Liệu
               </h3>
               <p class="mb-3">
-                Chúng tôi áp dụng các tiêu chuẩn an ninh cao nhất để bảo vệ thông tin xác thực của bạn:
+                Chúng tôi áp dụng tiêu chuẩn an ninh cao nhất để bảo vệ thông tin xác thực của bạn:
               </p>
               <ul class="list-disc pl-5 space-y-2">
                 <li>
-                  <strong>Mã thông báo truy cập (Access Token):</strong> Mã truy cập Google OAuth được xử lý trực tiếp trong trình duyệt của người dùng (Client-Side). Chúng tôi <strong>KHÔNG</strong> truyền, lưu trữ hay chia sẻ mã này trên bất kỳ máy chủ trung gian nào của chúng tôi hoặc bên thứ ba.
+                  <strong>Mã thông báo truy cập (Access Token):</strong> Mã truy cập Google OAuth được xử lý trực tiếp trong trình duyệt của người dùng (Client-Side) hoặc cookie bảo mật mã hóa. Chúng tôi <strong>KHÔNG</strong> truyền, lưu trữ hay chia sẻ mã này trên bất kỳ máy chủ trung gian nào của bên thứ ba.
                 </li>
                 <li>
-                  <strong>Dữ liệu tệp tin:</strong> Toàn bộ tài liệu báo cáo của bạn được lưu trực tiếp trên tài khoản Google Drive cá nhân của bạn. Ứng dụng không sao lưu dữ liệu này ở các máy chủ khác ngoại trừ các cơ sở dữ liệu nội bộ được bảo mật phục vụ vận hành.
+                  <strong>Dữ liệu tệp tin:</strong> Toàn bộ tài liệu báo cáo của bạn được lưu trực tiếp vào thư mục lưu trữ dùng chung của phòng thí nghiệm được cấp quyền. Ứng dụng không sao lưu dữ liệu này ở các máy chủ khác ngoại trừ các cơ sở dữ liệu nội bộ được bảo mật phục vụ vận hành.
                 </li>
               </ul>
             </div>
 
             <!-- Section 4 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-share-nodes text-blue-500"></i> 4. Chia Sẻ Thông Tin với Bên Thứ Ba
+            <div class="bg-emerald-50/50 dark:bg-emerald-950/20 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 my-6">
+              <h3 class="text-lg font-extrabold text-emerald-900 dark:text-emerald-200 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-shield-cat text-emerald-600"></i> 4. Cam Kết Không Chia Sẻ Thông Tin
               </h3>
-              <p>
-                Chúng tôi tuyệt đối <strong>KHÔNG</strong> chia sẻ, bán, trao đổi hoặc chuyển giao thông tin cá nhân hay dữ liệu từ Google Drive của bạn cho bất kỳ bên thứ ba nào. Dữ liệu này chỉ thuộc sở hữu của bạn và chỉ phục vụ việc vận hành chức năng ứng dụng theo hành động thực tế của bạn.
+              <p class="m-0 text-slate-700 dark:text-slate-300">
+                Chúng tôi tuyệt đối <strong>KHÔNG</strong> chia sẻ, bán, trao đổi hoặc chuyển giao thông tin cá nhân hay dữ liệu từ Google Drive của bạn cho bất kỳ bên thứ ba nào. Dữ liệu này chỉ thuộc sở hữu của phòng thí nghiệm và chỉ phục vụ việc vận hành chức năng ứng dụng theo hành động thực tế của bạn.
               </p>
             </div>
 
             <!-- Section 5 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-user-xmark text-blue-500"></i> 5. Quyền Kiểm Soát và Thu Hồi Quyền Truy Cập
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-user-xmark text-blue-600"></i> 5. Quyền Kiểm Soát và Thu Hồi Quyền Truy Cập
               </h3>
               <p>
-                Bạn hoàn toàn có quyền kiểm soát tài khoản của mình. Bạn có thể thu hồi quyền truy cập Google Drive bất kỳ lúc nào bằng cách:
+                Bạn có toàn quyền kiểm soát tài khoản của mình. Bạn có thể thu hồi quyền truy cập Google Drive bất kỳ lúc nào bằng cách:
               </p>
               <ol class="list-decimal pl-5 mt-2 space-y-2">
-                <li>Truy cập trang cài đặt bảo mật tài khoản Google của bạn tại: <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener" class="text-blue-600 hover:underline">My Account Permissions</a>.</li>
+                <li>Truy cập trang cài đặt bảo mật tài khoản Google của bạn tại: <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener" class="text-blue-600 font-bold hover:underline">My Account Permissions</a>.</li>
                 <li>Chọn ứng dụng <strong>NAFIQPM6 LIMS Cloud</strong>.</li>
                 <li>Nhấn nút <strong>Xóa quyền truy cập (Remove Access)</strong>.</li>
               </ol>
             </div>
 
             <!-- Section 6 -->
-            <div class="border-t border-slate-100 dark:border-slate-700/80 pt-6 mt-8">
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-envelope-open-text text-blue-500"></i> 6. Liên Hệ Hỗ Trợ
+            <div class="border-t border-slate-200 dark:border-slate-700/80 pt-6 mt-8">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-envelope-open-text text-blue-600"></i> 6. Liên Hệ Hỗ Trợ
               </h3>
               <p>
                 Nếu bạn có bất kỳ câu hỏi nào liên quan đến Chính sách Bảo mật này hoặc các vấn đề kỹ thuật khác, vui lòng liên hệ quản trị viên:

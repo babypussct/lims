@@ -157,6 +157,9 @@ export class StandardService {
   async recordUsage(stdId: string, log: UsageLog): Promise<void> {
     return this.usage.recordUsage(stdId, log);
   }
+  async recordBackfillUsage(stdId: string, log: UsageLog, actorUserId: string, actorUserName: string): Promise<void> {
+    return this.usage.recordBackfillUsage(stdId, log, actorUserId, actorUserName);
+  }
   async logUsageForRequest(
     requestId: string, standardId: string, amount: number,
     unit: string, purpose: string, userId: string, userName: string

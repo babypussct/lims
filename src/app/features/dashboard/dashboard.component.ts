@@ -1,4 +1,3 @@
-
 import { ChangeDetectionStrategy, Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -50,6 +49,7 @@ interface KanbanColumn {
 }
 
 import { DailyChecklistComponent } from '../checklist/daily-checklist.component';
+import { ChangelogService } from '../../core/services/changelog.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -66,12 +66,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   auth = inject(AuthService); 
   router: Router = inject(Router);
   toast = inject(ToastService);
-  qrService = inject(QrGlobalService); // Injected Global Service
+  qrService = inject(QrGlobalService);
+  changelogService = inject(ChangelogService);
 
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
   formatSampleList = formatSampleList;
-  
+
   isLoading = signal(true);
   lowStockItems = computed(() => {
       return this.state.inventory().filter(i => i.stock <= (i.threshold || 5));

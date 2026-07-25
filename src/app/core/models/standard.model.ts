@@ -24,6 +24,7 @@ export interface UsageLog {
   lastUpdated?: any;
   _isDeleted?: boolean;
   requestId?: string;
+  isDepleted?: boolean;
   rolledBackAt?: number;
   rolledBackBy?: string;
 }

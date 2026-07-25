@@ -15,6 +15,14 @@
             </div>
             
             <div class="flex gap-2 items-center">
+                <!-- Compact Changelog Button -->
+                <button (click)="changelogService.open()" 
+                        title="Xem nhật ký cập nhật phiên bản hệ thống"
+                        class="px-3.5 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-850 dark:to-slate-750 hover:from-blue-100 hover:to-indigo-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-slate-600 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                    <i class="fa-solid fa-sparkles text-amber-500 animate-pulse text-[13px]"></i>
+                    <span>Nhật Ký {{state.systemVersion()}}</span>
+                </button>
+
                 <!-- Calls Global Service (Hidden on md and larger screens) -->
                 <button (click)="qrService.startScan()" class="md:hidden px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-qrcode"></i> Quét Mã

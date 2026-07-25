@@ -1,0 +1,189 @@
+import { Component, inject, computed, signal, HostListener } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ChangelogService, LATEST_CHANGELOG, ChangelogItem } from '../../../core/services/changelog.service';
+import { StateService } from '../../../core/services/state.service';
+
+@Component({
+  selector: 'app-changelog-modal',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    @if (changelogService.isOpen()) {
+      <div (click)="onBackdropClick($event)" 
+           class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print cursor-pointer">
+        
+        <!-- Modal Card Container -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in cursor-default"
+             (click)="$event.stopPropagation()">
+          
+          <!-- Modal Header -->
+          <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-purple-50/50 dark:from-slate-850 dark:to-slate-900">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20 shrink-0">
+                <i class="fa-solid fa-scroll text-lg"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-black text-slate-800 dark:text-white tracking-tight leading-none">Nhật Ký Cập Nhật</h3>
+                  <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    {{ state.systemVersion() }}
+                  </span>
+                </div>
+                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Lịch sử nâng cấp & cải tiến hệ thống LIMS Cloud</p>
+              </div>
+            </div>
+            
+            <button (click)="changelogService.close()" 
+                    title="Đóng (Esc)"
+                    class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition active:scale-95">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </div>
+
+          <!-- Search / Filter Bar -->
+          <div class="px-6 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1">
+              <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs pl-1"></i>
+              <input type="text" [(ngModel)]="searchQuery" 
+                     placeholder="Tìm kiếm tính năng, phiên bản (ví dụ: b02, SmartBatch...)..."
+                     class="w-full bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none">
+              @if (searchQuery()) {
+                <button (click)="searchQuery.set('')" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                  <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+              }
+            </div>
+            
+            @if (!searchQuery()) {
+              <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                Top 3 bản mới nhất
+              </span>
+            }
+          </div>
+
+          <!-- Modal Body (Timeline List) -->
+          <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+            @for (item of filteredList(); track item.version) {
+              <div class="relative pl-6 border-l-2 border-blue-500/30 dark:border-blue-500/20 last:border-l-0">
+                <!-- Timeline Dot -->
+                <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm"></div>
+
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-black font-mono bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800">
+                      {{ item.version }}
+                    </span>
+                    <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-calendar-check mr-1"></i>{{ item.date }}</span>
+                  </div>
+                </div>
+
+                <h4 class="text-sm font-extrabold text-slate-800 dark:text-white mb-2 leading-snug">{{ item.title }}</h4>
+
+                @if (item.highlights && item.highlights.length > 0) {
+                  <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 mb-3">
+                    <ul class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      @for (hl of item.highlights; track hl) {
+                        <li class="flex items-start gap-2">
+                          <i class="fa-solid fa-sparkles text-amber-500 text-[10px] mt-1 shrink-0"></i>
+                          <span>{{ hl }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                @if (item.features && item.features.length > 0) {
+                  <div class="mb-2">
+                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mb-1">🚀 Tính Năng Mới</span>
+                    <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                      @for (f of item.features; track f) { <li>{{ f }}</li> }
+                    </ul>
+                  </div>
+                }
+
+                @if (item.improvements && item.improvements.length > 0) {
+                  <div class="mb-2">
+                    <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block mb-1">⚡ Tối Ưu & Cải Tiến</span>
+                    <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                      @for (imp of item.improvements; track imp) { <li>{{ imp }}</li> }
+                    </ul>
+                  </div>
+                }
+
+                @if (item.fixes && item.fixes.length > 0) {
+                  <div class="mb-2">
+                    <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block mb-1">🐛 Sửa Lỗi</span>
+                    <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                      @for (fix of item.fixes; track fix) { <li>{{ fix }}</li> }
+                    </ul>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (filteredList().length === 0) {
+              <div class="text-center py-10 text-slate-400 dark:text-slate-500">
+                <i class="fa-solid fa-scroll text-3xl mb-2 opacity-50 block"></i>
+                <p class="text-xs font-semibold">Không tìm thấy bản ghi phù hợp từ khóa "{{ searchQuery() }}"</p>
+              </div>
+            }
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between gap-4">
+            <button (click)="navigateToFullChangelog()" 
+                    class="text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Xem Toàn Bộ Lịch Sử
+            </button>
+
+            <button (click)="changelogService.close()" 
+                    class="px-5 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-sm">
+              Đóng
+            </button>
+          </div>
+
+        </div>
+      </div>
+    }
+  `
+})
+export class ChangelogModalComponent {
+  changelogService = inject(ChangelogService);
+  state = inject(StateService);
+  router = inject(Router);
+
+  searchQuery = signal<string>('');
+
+  /** Show Top 3 latest versions in Modal Popup, or search within top 3 */
+  filteredList = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    if (!q) {
+      return LATEST_CHANGELOG;
+    }
+    return LATEST_CHANGELOG.filter(item => 
+      item.version.toLowerCase().includes(q) ||
+      item.title.toLowerCase().includes(q) ||
+      (item.highlights && item.highlights.some(h => h.toLowerCase().includes(q))) ||
+      (item.features && item.features.some(f => f.toLowerCase().includes(q))) ||
+      (item.fixes && item.fixes.some(fx => fx.toLowerCase().includes(q)))
+    );
+  });
+
+  @HostListener('document:keydown.escape')
+  onEscKey() {
+    if (this.changelogService.isOpen()) {
+      this.changelogService.close();
+    }
+  }
+
+  onBackdropClick(event: MouseEvent) {
+    this.changelogService.close();
+  }
+
+  navigateToFullChangelog() {
+    this.changelogService.close();
+    this.router.navigate(['/changelog']);
+  }
+}

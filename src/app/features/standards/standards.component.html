@@ -58,7 +58,8 @@
                     (openPurchaseRequestModal)="openPurchaseRequestModal($event)"
                     (openPrintModal)="openPrintModal($event)"
                     (viewHistory)="viewHistory($event)"
-                    (openEditModal)="openEditModal($event)">
+                    (openEditModal)="openEditModal($event)"
+                    (openBackfillModal)="openBackfillModal($event)">
                  </app-standards-list-view>
              } @else {
                  <app-standards-grid-view
@@ -160,6 +161,20 @@
       @if (historyStd()) {
         @defer {
           <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
+        }
+      }
+
+      <!-- BACKFILL USAGE LOG MODAL -->
+      @if (showBackfillModal()) {
+        @defer {
+          <app-standards-backfill-modal
+            [isOpen]="showBackfillModal()"
+            [std]="selectedBackfillStd()"
+            [userList]="userList()"
+            [isProcessing]="isProcessing()"
+            (closeModal)="showBackfillModal.set(false)"
+            (confirm)="confirmBackfill($event)">
+          </app-standards-backfill-modal>
         }
       }
 

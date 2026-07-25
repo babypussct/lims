@@ -30,11 +30,12 @@ import { StandardsListViewComponent } from './components/standards-list-view.com
 import { StandardsGridViewComponent } from './components/standards-grid-view.component';
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
 import { StandardsDataCleanupModalComponent } from './components/standards-data-cleanup-modal.component';
+import { StandardsBackfillModalComponent, BackfillData } from './components/standards-backfill-modal.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -290,6 +291,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
   bulkUploadComplete = signal(false);
 
   showDataCleanupModal = signal(false);
+
+  // --- Backfill Usage Log State (Manager) ---
+  showBackfillModal = signal(false);
+  selectedBackfillStd = signal<ReferenceStandard | null>(null);
 
   formatNum = formatNum;
 
@@ -833,6 +838,49 @@ export class StandardsComponent implements OnInit, OnDestroy {
           } finally {
               this.isProcessing.set(false);
           }
+      }
+  }
+
+  // --- Backfill Usage Log (Manager) ---
+  async openBackfillModal(std: ReferenceStandard) {
+      if (this.isProcessing()) return;
+      this.selectedBackfillStd.set(std);
+      this.showBackfillModal.set(true);
+      if (this.userList().length === 0) {
+          try {
+              const users = await this.firebaseService.getAllUsers();
+              this.userList.set(users);
+          } catch (error) {
+              console.error('Error fetching users:', error);
+          }
+      }
+  }
+
+  async confirmBackfill(data: BackfillData) {
+      const std = this.selectedBackfillStd();
+      if (!std || this.isProcessing()) return;
+
+      this.isProcessing.set(true);
+      try {
+          // Tạo timestamp từ ngày nhập: đặt vào 12:00:00 để tránh nhầm timezone
+          const dateObj = new Date(data.date + 'T12:00:00');
+          const log = {
+              date: data.date + 'T12:00:00',
+              timestamp: dateObj.getTime(),
+              amount_used: data.amountUsed,
+              unit: data.unit,
+              purpose: data.purpose,
+              user: data.userName,
+              isDepleted: data.isDepleted
+          };
+          await this.stdService.recordBackfillUsage(std.id, log as any, data.userId, data.userName);
+          this.toast.show(`Đã ghi nhật ký ${data.amountUsed} ${data.unit} cho ${data.userName} ngày ${data.date.split('-').reverse().join('/')}`, 'success');
+          this.showBackfillModal.set(false);
+          this.selectedBackfillStd.set(null);
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
       }
   }
 

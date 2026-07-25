@@ -1,5 +1,20 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.25-b01] - 25/07/2026
+
+### 🧪 Nhập Bù Nhật Ký Sử Dụng Chuẩn Ngược Ngày & Tự Động Đánh Dấu Hết Hàng
+
+#### 📝 Nhập Bù Nhật Ký Cho Quản Lý
+- **Ghi nhận sử dụng bổ sung:** Quản lý kho chất chuẩn có thể nhập bù nhật ký sử dụng cho bất kỳ nhân viên nào với ngày sử dụng tùy chỉnh trong quá khứ (không vượt quá ngày hiện tại).
+- **Hỗ trợ khi chuẩn đang mượn:** Hệ thống cho phép nhập bù hồi ký lịch sử ngay cả khi lọ chuẩn đang ở trạng thái mượn/sử dụng.
+- **Chọn nhanh mục đích:** Tích hợp sẵn các thẻ chọn nhanh mục đích sử dụng (# Pha Chuẩn Mới, # Kiểm Tra Định Kỳ, # Ngoại Kiểm, # Nghiên Cứu Phát Triển, # Kiểm Nghiệm Mẫu).
+
+#### ⚡ Nút Tối Đa & Đánh Dấu Hết Hàng Tự Động
+- **Nút "Tối đa":** Thêm nút chọn nhanh lượng tồn còn lại tối đa ngay bên cạnh ô nhập số lượng, giúp điền chính xác toàn bộ lượng còn lại trong 1 cú nhấp.
+- **Tự động đánh dấu hết hàng:** Khi bấm nút "Tối đa" hoặc nhập lượng dùng bằng tồn kho, hệ thống tự động tích chọn "Đánh dấu chuẩn đã sử dụng hết" và chuyển trạng thái lọ chuẩn sang Hết Hàng (Depleted).
+
+---
+
 ## [v26.07.24-b02] - 24/07/2026
 
 ### 🧭 Mở Khóa Trạm Pha Chế, Chuẩn Hóa Cảnh Báo & Đếm Ngược Cập Nhật

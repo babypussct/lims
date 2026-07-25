@@ -42,49 +42,49 @@ import { Router } from '@angular/router';
             </p>
 
             <!-- Section 1 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-check text-blue-500"></i> 1. Chấp Thuận Điều Khoản
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-check text-blue-600"></i> 1. Chấp Thuận Điều Khoản
               </h3>
-              <p>
+              <p class="m-0">
                 Việc truy cập, đăng ký tài khoản hoặc sử dụng bất kỳ tính năng nào của hệ thống LIMS Cloud đồng nghĩa với việc bạn đồng ý với các điều khoản này. Nếu bạn không đồng ý với bất kỳ phần nào, vui lòng ngừng sử dụng dịch vụ và ngắt kết nối tài khoản của mình.
               </p>
             </div>
 
             <!-- Section 2 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-user-shield text-blue-500"></i> 2. Đăng Nhập và Bảo Mật Tài Khoản
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-blue-600"></i> 2. Đăng Nhập và Bảo Mật Tài Khoản
               </h3>
-              <ul class="list-disc pl-5 space-y-2">
-                <li>Người dùng có thể đăng nhập thông qua cơ chế xác thực an toàn bằng tài khoản Google (OAuth 2.0).</li>
+              <ul class="list-disc pl-5 space-y-2 m-0">
+                <li>Người dùng đăng nhập thông qua cơ chế xác thực an toàn bằng tài khoản Google (OAuth 2.0).</li>
                 <li>Bạn chịu trách nhiệm bảo mật thông tin đăng nhập tài khoản Google của mình và không cho phép bên thứ ba truy cập trái phép vào tài khoản của bạn để thao tác trên hệ thống LIMS.</li>
                 <li>Mọi hoạt động được thực hiện dưới tài khoản đã đăng nhập của bạn sẽ được ghi nhận là hoạt động hợp pháp của chính bạn.</li>
               </ul>
             </div>
 
             <!-- Section 3 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i> 3. Sử Dụng Dịch Vụ Liên Kết Google Drive
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up text-blue-600"></i> 3. Sử Dụng Dịch Vụ Liên Kết Google Drive
               </h3>
-              <p>
+              <p class="mb-2">
                 Khi bạn kích hoạt tính năng tích hợp Google Drive:
               </p>
-              <ul class="list-disc pl-5 mt-2 space-y-2">
-                <li>Ứng dụng sẽ được cấp quyền truy cập hạn chế (chỉ đối với các tệp tin do ứng dụng tạo ra).</li>
-                <li>Bạn đồng ý rằng các tệp báo cáo phân tích, tài liệu nội bộ sẽ được lưu trữ trực tiếp trên tài khoản Google Drive cá nhân của bạn.</li>
+              <ul class="list-disc pl-5 space-y-2 m-0">
+                <li>Ứng dụng chỉ được cấp quyền truy cập hạn chế phạm vi <code class="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-mono font-bold border border-blue-200 dark:border-blue-800">drive.file</code> (chỉ đối với các tệp tin do ứng dụng tạo ra).</li>
+                <li>Bạn đồng ý rằng các tệp báo cáo phân tích, tài liệu nội bộ sẽ được lưu trữ trực tiếp vào thư mục lưu trữ dùng chung của phòng thí nghiệm được phân quyền.</li>
                 <li>Bạn có toàn quyền xóa, di chuyển hoặc thu hồi quyền truy cập này bất cứ lúc nào thông qua trang quản lý tài khoản Google.</li>
               </ul>
             </div>
 
             <!-- Section 4 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-ban text-blue-500"></i> 4. Các Hành Vi Bị Cấm
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-ban text-blue-600"></i> 4. Các Hành Vi Bị Cấm
               </h3>
-              <p>Khi sử dụng hệ thống LIMS Cloud, bạn cam kết KHÔNG thực hiện các hành vi sau:</p>
-              <ul class="list-disc pl-5 mt-2 space-y-2">
+              <p class="mb-2">Khi sử dụng hệ thống LIMS Cloud, bạn cam kết KHÔNG thực hiện các hành vi sau:</p>
+              <ul class="list-disc pl-5 space-y-2 m-0">
                 <li>Tải lên hệ thống hoặc liên kết Drive các tệp tin chứa virus, mã độc hoặc phần mềm độc hại gây ảnh hưởng đến hệ thống.</li>
                 <li>Cố gắng truy cập trái phép hoặc phá hoại cơ sở dữ liệu của phòng thí nghiệm hoặc của người dùng khác.</li>
                 <li>Sử dụng thông tin và biểu mẫu của hệ thống vào các mục đích phi pháp hoặc trái với quy định bảo mật của phòng thí nghiệm.</li>
@@ -92,23 +92,23 @@ import { Router } from '@angular/router';
             </div>
 
             <!-- Section 5 -->
-            <div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation text-blue-500"></i> 5. Giới Hạn Trách Nhiệm Pháp Lý
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-blue-600"></i> 5. Giới Hạn Trách Nhiệm Pháp Lý
               </h3>
-              <p>
+              <p class="mb-2">
                 Ứng dụng cung cấp công cụ lưu trữ dữ liệu thông qua bên thứ ba (Google Drive API). Chúng tôi không chịu trách nhiệm trong trường hợp:
               </p>
-              <ul class="list-disc pl-5 mt-2 space-y-2">
+              <ul class="list-disc pl-5 space-y-2 m-0">
                 <li>Người dùng tự ý xóa hoặc thay đổi tệp tin trên Google Drive dẫn đến mất mát hoặc hỏng dữ liệu trong hệ thống LIMS.</li>
                 <li>Sự cố kết nối hoặc gián đoạn dịch vụ từ phía nhà cung cấp dịch vụ máy chủ đám mây của Google nằm ngoài tầm kiểm soát của chúng tôi.</li>
               </ul>
             </div>
 
             <!-- Section 6 -->
-            <div class="border-t border-slate-100 dark:border-slate-700/80 pt-6 mt-8">
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-envelope-open-text text-blue-500"></i> 6. Thay Đổi Điều Khoản và Liên Hệ
+            <div class="border-t border-slate-200 dark:border-slate-700/80 pt-6 mt-8">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-envelope-open-text text-blue-600"></i> 6. Thay Đổi Điều Khoản và Liên Hệ
               </h3>
               <p>
                 Chúng tôi có quyền sửa đổi các điều khoản này vào bất kỳ lúc nào để phù hợp với quy định mới của pháp luật hoặc cập nhật kỹ thuật. Các thay đổi sẽ được công khai tại trang này.

@@ -191,6 +191,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public/terms-of-service.component').then(m => m.TermsOfServiceComponent)
   },
   {
+    path: 'changelog',
+    loadComponent: () => import('./features/public/changelog.component').then(m => m.ChangelogComponent)
+  },
+  {
     path: '**',
     redirectTo: 'dashboard'
   }
