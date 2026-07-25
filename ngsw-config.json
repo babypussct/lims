@@ -3,13 +3,13 @@
   "index": "/index.html",
   "appData": {
     "version": "v26.07.25-b01",
-    "notesVersion": "v26.07.24-b02",
-    "title": "Mở Khóa Trạm Pha Chế, Chuẩn Hóa Cảnh Báo & Đếm Ngược Cập Nhật",
+    "notesVersion": "v26.07.25-b01",
+    "title": "Nhập Bù Nhật Ký Sử Dụng Chuẩn Ngược Ngày & Tự Động Đánh Dấu Hết Hàng",
     "features": [
-      "🔓 Mở khóa Trạm Pha Chế ở chế độ Sandbox cho toàn bộ nhân viên",
-      "🛡️ Chuẩn hóa toàn bộ thông báo từ chối quyền sang tiếng Việt thống nhất",
-      "⏳ Đếm ngược 30s tự động tạm dừng ở 10s nếu máy không tương tác, tiếp tục đếm khi di chuột/chạm",
-      "⏸️ Nút Để Sau & Banner cố định nhắc nhở cập nhật nhanh khi đã đóng popup"
+      "📝 Cho phép Quản lý nhập bù nhật ký sử dụng chất chuẩn ngược ngày trong quá khứ",
+      "🔓 Hỗ trợ nhập bù hồi ký kể cả khi chất chuẩn đang ở trạng thái mượn",
+      "⚡ Nút Tối Đa tự động điền toàn bộ lượng tồn kho còn lại của lọ chuẩn",
+      "📦 Tự động tích chọn và cập nhật trạng thái Hết Hàng (Depleted) khi dùng hết"
     ]
   },
   "assetGroups": [
