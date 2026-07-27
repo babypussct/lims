@@ -1,13 +1,15 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, viewChild, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, viewChild, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ResultService } from '../results/services/result.service';
 import { PrintService } from '../../core/services/print.service';
 import { ToastService } from '../../core/services/toast.service';
+import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from '../results/config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
@@ -228,47 +230,72 @@ import { MasterTargetService } from '../targets/master-target.service';
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                    @for (comp of config()?.compounds; track comp; let idx = $index) {
-                      <tr [ngClass]="{ 'opacity-50 bg-slate-50/30 dark:bg-slate-900/30': !isTargetAssigned(activeSampleCode(), comp) }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    @for (comp of assignedCompounds(); track comp; let idx = $index) {
+                      <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td class="py-3 px-4 text-center font-mono text-sm text-slate-400">
-                          @if (isTargetAssigned(activeSampleCode(), comp)) { {{ idx + 1 }} } @else { <i class="fa-solid fa-lock text-[10px]"></i> }
+                          {{ idx + 1 }}
                         </td>
                         <td class="py-3 px-4 font-bold text-sm text-slate-700 dark:text-slate-200">
                           {{ getCompoundDisplayName(comp) }}
                         </td>
                         <td class="py-3 px-4 text-center">
-                          @if (isTargetAssigned(activeSampleCode(), comp)) {
-                            <span [class.text-amber-500]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" class="text-sm">
-                              <i class="fa-regular" [class.fa-square-check]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" [class.fa-square]="!(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']"></i>
-                            </span>
-                          } @else {
-                            <span class="text-slate-300 dark:text-slate-600">—</span>
-                          }
+                          <span [class.text-amber-500]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" class="text-sm">
+                            <i class="fa-regular" [class.fa-square-check]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" [class.fa-square]="!(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']"></i>
+                          </span>
                         </td>
                         <td class="py-3 px-4 text-center font-mono font-semibold text-sm text-slate-800 dark:text-slate-200">
-                          @if (isTargetAssigned(activeSampleCode(), comp)) {
-                            {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '—' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : '—' }}
-                          } @else {
-                            <span class="text-slate-300 dark:text-slate-600 font-normal select-none">—</span>
-                          }
+                          {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '—' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : '—' }}
                         </td>
                         <!-- QC statuses badges -->
                         @for (qcNum of ['1', '2', '3']; track qcNum) {
                           <td class="py-3 px-4 text-center">
-                            @if (isTargetAssigned(activeSampleCode(), comp)) {
-                              @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Đạt') {
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Đạt</span>
-                              } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Không đạt') {
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-rose-100/50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400">K.Đạt</span>
-                              } @else {
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 select-none">—</span>
-                              }
+                            @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Đạt') {
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Đạt</span>
+                            } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Không đạt') {
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-rose-100/50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400">K.Đạt</span>
                             } @else {
-                              <span class="text-slate-300 dark:text-slate-600 select-none">—</span>
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 select-none">—</span>
                             }
                           </td>
                         }
                       </tr>
+                    }
+                    @if (unassignedCompounds().length > 0) {
+                      <tr class="border-t-2 border-dashed border-slate-200 dark:border-slate-700">
+                        <td [attr.colspan]="7" class="py-2.5 px-4 bg-slate-50/60 dark:bg-slate-900/40">
+                          <button (click)="showAllTargets.set(!showAllTargets())"
+                                  class="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                            <i class="fa-solid text-[9px] transition-transform duration-200"
+                               [class.fa-chevron-down]="!showAllTargets()"
+                               [class.fa-chevron-up]="showAllTargets()"></i>
+                            <span>{{ showAllTargets() ? 'Ẩn bớt chỉ tiêu không chỉ định' : 'Hiện thêm ' + unassignedCompounds().length + ' chỉ tiêu không chỉ định' }}</span>
+                            <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded text-[9px] font-mono">
+                              {{ unassignedCompounds().length }}
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                    @if (showAllTargets()) {
+                      @for (comp of unassignedCompounds(); track comp) {
+                        <tr class="opacity-45 bg-slate-50/30 dark:bg-slate-900/30 hover:opacity-75 transition-opacity">
+                          <td class="py-3 px-4 text-center font-mono text-sm text-slate-400">
+                            <i class="fa-solid fa-lock text-[10px]"></i>
+                          </td>
+                          <td class="py-3 px-4 font-bold text-sm text-slate-700 dark:text-slate-200">
+                            {{ getCompoundDisplayName(comp) }}
+                          </td>
+                          <td class="py-3 px-4 text-center"><span class="text-slate-300 dark:text-slate-600">—</span></td>
+                          <td class="py-3 px-4 text-center font-mono font-semibold text-sm text-slate-800 dark:text-slate-200">
+                            <span class="text-slate-300 dark:text-slate-600 font-normal select-none">—</span>
+                          </td>
+                          @for (qcNum of ['1', '2', '3']; track qcNum) {
+                            <td class="py-3 px-4 text-center">
+                              <span class="text-slate-300 dark:text-slate-600 select-none">—</span>
+                            </td>
+                          }
+                        </tr>
+                      }
                     }
                   </tbody>
                 </table>
@@ -289,9 +316,20 @@ import { MasterTargetService } from '../targets/master-target.service';
                         <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">HS Pha loãng</th>
                       }
 
-                      @for (col of activeColumns(); track col) {
+                      @for (col of visibleColumns(); track col) {
                         <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[140px]">
                           {{ columnDisplayNames()[col] || col }}
+                        </th>
+                      }
+                      @if (hiddenColumns().length > 0) {
+                        <th class="py-3.5 px-3 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">
+                          <button (click)="showAllTargets.set(!showAllTargets())"
+                                  class="inline-flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition whitespace-nowrap">
+                            <i class="fa-solid"
+                               [class.fa-plus-circle]="!showAllTargets()"
+                               [class.fa-minus-circle]="showAllTargets()"></i>
+                            <span>{{ showAllTargets() ? 'Thu gọn' : '+' + hiddenColumns().length + ' cột' }}</span>
+                          </button>
                         </th>
                       }
                       
@@ -330,13 +368,18 @@ import { MasterTargetService } from '../targets/master-target.service';
                           </td>
                         }
 
-                        @for (col of activeColumns(); track col) {
+                        @for (col of visibleColumns(); track col) {
                           <td class="py-3 px-5 text-center font-mono font-semibold text-sm text-slate-700 dark:text-slate-200">
                             @if (isTargetAssigned(row.key, col)) {
                               {{ getRowDataValue(row.key, col) !== '' ? (getRowDataValue(row.key, col) === 'N/A' ? '—' : getRowDataValue(row.key, col)) : '—' }}
                             } @else {
                               <span class="text-slate-300 dark:text-slate-600 font-normal select-none">—</span>
                             }
+                          </td>
+                        }
+                        @if (hiddenColumns().length > 0) {
+                          <td class="py-3 px-3 text-center text-[10px] text-slate-300 dark:text-slate-600 select-none">
+                            {{ showAllTargets() ? '' : '...' }}
                           </td>
                         }
 
@@ -363,7 +406,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                 
                 @if (availableReports().length > 1 && activeFilter() === 'ALL') {
                   <select [ngModel]="selectedPdfPrefix()" 
-                          (ngModelChange)="selectedPdfPrefix.set($event)"
+                          (ngModelChange)="selectReport($event)"
                           class="bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm">
                     @for (report of availableReports(); track report.key) {
                       <option [value]="report.key">{{ report.label }}</option>
@@ -373,8 +416,8 @@ import { MasterTargetService } from '../targets/master-target.service';
               </div>
               
               <div class="flex items-center gap-3">
-                @if (getCurrentDocsUrl()) {
-                  <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
+                @if (currentDocsUrl()) {
+                  <a [href]="currentDocsUrl()" target="_blank" rel="noopener noreferrer"
                      class="px-2.5 py-1 text-[10px] font-bold text-slate-650 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg border border-slate-200/60 dark:border-slate-700/80 transition flex items-center gap-1.5 no-underline shadow-xs cursor-pointer"
                      title="Mở Google Docs gốc để xem/chỉnh sửa ở cửa sổ mới">
                     <i class="fa-solid fa-file-word text-blue-500"></i>
@@ -382,8 +425,8 @@ import { MasterTargetService } from '../targets/master-target.service';
                   </a>
                 }
 
-                @if (getCurrentPdfUrl()) {
-                  <button (click)="openPdfInModal(getCurrentPdfUrl()!)" 
+                @if (currentPdfUrl()) {
+                  <button (click)="openPdfInModal(currentPdfUrl()!)" 
                           class="p-2 -mr-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition active:scale-90" title="Mở PDF toàn màn hình (Modal hệ thống)">
                     <i class="fa-solid fa-expand text-sm lg:text-base"></i>
                   </button>
@@ -392,18 +435,57 @@ import { MasterTargetService } from '../targets/master-target.service';
             </div>
 
             <div class="flex-1 bg-slate-100/50 dark:bg-slate-950/50 flex flex-col relative">
-              @if (getCurrentPdfUrl()) {
-                <div class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                  <i class="fa-solid fa-file-pdf text-5xl text-red-500"></i>
-                  <div>
-                    <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Báo cáo PDF đã sẵn sàng</p>
-                    <p class="text-xs text-slate-400 mt-1">Mở bản xem trước PDF để kiểm tra nội dung an toàn.</p>
+              @if (currentPdfUrl()) {
+                @if (isInlinePdfLoading()) {
+                  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/40">
+                      <i class="fa-solid fa-circle-notch fa-spin text-xl text-indigo-500"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Đang tải PDF...</p>
+                      <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Tải dữ liệu từ Google Drive qua proxy</p>
+                    </div>
                   </div>
-                  <button (click)="openPdfInModal(getCurrentPdfUrl()!)"
-                          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
-                    <i class="fa-solid fa-expand mr-2"></i>MỞ PDF PREVIEW
-                  </button>
-                </div>
+                } @else if (inlinePdfNeedsAuth()) {
+                  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center border border-amber-100 dark:border-amber-900/40">
+                      <i class="fa-solid fa-key text-2xl text-amber-500"></i>
+                    </div>
+                    <div>
+                      <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Cần xác thực Google Drive</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">Phiên xác thực đã hết hạn. Xác thực lại để xem PDF trực tiếp trong trang.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button (click)="beginInlinePdfAuth()"
+                              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
+                        <i class="fa-solid fa-rotate-right mr-1.5"></i>Xác thực & tải lại
+                      </button>
+                      <button (click)="openPdfInModal(currentPdfUrl()!)"
+                              class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition active:scale-95">
+                        Mở modal
+                      </button>
+                    </div>
+                  </div>
+                } @else if (inlinePdfError()) {
+                  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-500"></i>
+                    <div>
+                      <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Không thể tải PDF trực tiếp</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Bạn vẫn có thể mở bằng modal hệ thống.</p>
+                    </div>
+                    <button (click)="openPdfInModal(currentPdfUrl()!)"
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
+                      <i class="fa-solid fa-expand mr-1.5"></i>Mở qua hệ thống
+                    </button>
+                  </div>
+                } @else if (inlinePdfSafeUrl()) {
+                  <iframe [src]="inlinePdfSafeUrl()!" class="w-full h-full border-none bg-white flex-1"></iframe>
+                } @else {
+                  <div class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+                    <i class="fa-solid fa-file-pdf text-4xl text-red-400 animate-pulse"></i>
+                    <p class="text-xs text-slate-400">Đang chuẩn bị PDF...</p>
+                  </div>
+                }
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
                   <i class="fa-regular fa-file-pdf text-4xl"></i>
@@ -495,6 +577,8 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
   private auth = inject(AuthService);
+  private sanitizer = inject(DomSanitizer);
+  private googleDriveService = inject(GoogleDriveService);
 
   requestId = '';
   isLoading = signal(true);
@@ -509,6 +593,17 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       if (canvas) {
         void this.generateQrCode();
       }
+    });
+
+    effect(() => {
+      this.activeSampleCode();
+      this.activeFilter();
+      untracked(() => this.showAllTargets.set(false));
+    });
+
+    effect(() => {
+      const pdfUrl = this.currentPdfUrl();
+      untracked(() => this.startInlinePdfLoad(pdfUrl));
     });
   }
 
@@ -528,8 +623,16 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   selectedPdfPrefix = signal<string>('');
   activeViewTab = signal<'grid' | 'qr'>('grid');
   mobileActiveTab = signal<'grid' | 'pdf'>('grid');
+  showAllTargets = signal(false);
+
+  inlinePdfBlobUrl = signal<string | null>(null);
+  isInlinePdfLoading = signal(false);
+  inlinePdfError = signal(false);
+  inlinePdfNeedsAuth = signal(false);
 
   private unsubscribeFromDraft?: () => void;
+  private hasInitializedReportSelection = false;
+  private inlinePdfLoadSeq = 0;
 
   // Detected prefixes list
   detectedPrefixes = computed(() => {
@@ -569,6 +672,42 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     );
   });
 
+  assignedCompounds = computed<string[]>(() => {
+    const conf = this.config();
+    if (!conf?.compounds || conf.formType !== 'type3b') return [];
+    return conf.compounds.filter((comp: string) => this.isTargetAssigned(this.activeSampleCode(), comp));
+  });
+
+  unassignedCompounds = computed<string[]>(() => {
+    const conf = this.config();
+    if (!conf?.compounds || conf.formType !== 'type3b') return [];
+    return conf.compounds.filter((comp: string) => !this.isTargetAssigned(this.activeSampleCode(), comp));
+  });
+
+  assignedColumns = computed<string[]>(() => {
+    const cols = this.activeColumns();
+    if (!cols.length) return [];
+
+    const realSamples = this.getType2DisplayRows().filter(row => !row.isQC);
+    if (realSamples.length === 0) return cols;
+
+    return cols.filter(col => realSamples.some(row => this.isTargetAssigned(row.key, col)));
+  });
+
+  hiddenColumns = computed<string[]>(() => {
+    const assigned = new Set(this.assignedColumns());
+    return this.activeColumns().filter(col => !assigned.has(col));
+  });
+
+  visibleColumns = computed<string[]>(() => {
+    return this.showAllTargets() ? this.activeColumns() : this.assignedColumns();
+  });
+
+  inlinePdfSafeUrl = computed<SafeResourceUrl | null>(() => {
+    const url = this.inlinePdfBlobUrl();
+    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+  });
+
   // Dynamic checkbox checklist
   checkboxList = computed<{ key: string; label: string }[]>(() => {
     const conf = this.config();
@@ -585,6 +724,11 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       this.toast.show('Không tìm thấy ID mẻ chạy!', 'error');
       this.router.navigate(['/results-view']);
       return;
+    }
+
+    const initialPrefix = this.route.snapshot.queryParamMap.get('prefix');
+    if (initialPrefix !== null) {
+      this.activeFilter.set(initialPrefix);
     }
 
     // Load master Targets/Analytes
@@ -618,10 +762,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
             this.configKey.set(resolvedKey);
             this.draft.set(draftDoc);
             
-            // Set initial selected PDF prefix
-            if (this.detectedPrefixes().length > 0) {
-               this.selectedPdfPrefix.set(this.detectedPrefixes()[0]);
-            }
+            this.ensureSelectedReport();
 
             // Build custom columns labels map
             this.buildColumnDisplayNames();
@@ -636,6 +777,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (this.unsubscribeFromDraft) {
       this.unsubscribeFromDraft();
     }
+    this.cleanupInlinePdf();
   }
 
   buildColumnDisplayNames() {
@@ -744,7 +886,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return key.startsWith('qc');
   }
 
-  availableReports = computed(() => {
+  private collectReports(): Map<string, any> {
     const d = this.draft();
     const r = this.run();
     const reportsMap = new Map<string, any>();
@@ -752,7 +894,8 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     // Load reports from draft first
     if (d?.reports) {
       Object.entries(d.reports).forEach(([key, value]) => {
-         reportsMap.set(key, value);
+        const reportId = (value as any)?.id || key;
+        reportsMap.set(reportId, { ...(value as any), id: reportId });
       });
     }
 
@@ -760,13 +903,15 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (r) {
        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
        if (runReports) {
-          Object.entries(runReports).forEach(([key, value]) => {
-             if (!reportsMap.has(key)) {
-                reportsMap.set(key, value);
-             } else {
-                const existing = reportsMap.get(key);
-                reportsMap.set(key, { 
+           Object.entries(runReports).forEach(([key, value]) => {
+              const reportId = (value as any)?.id || key;
+              if (!reportsMap.has(reportId)) {
+                reportsMap.set(reportId, { ...(value as any), id: reportId });
+              } else {
+                const existing = reportsMap.get(reportId);
+                reportsMap.set(reportId, {
                    ...existing, 
+                   id: existing.id || reportId,
                    pdfViewUrl: existing.pdfViewUrl || (value as any).pdfViewUrl, 
                    pdfUrl: existing.pdfUrl || (value as any).pdfUrl,
                    docsUrl: existing.docsUrl || (value as any).docsUrl
@@ -776,19 +921,144 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
        }
     }
 
+    return reportsMap;
+  }
+
+  availableReports = computed(() => {
+    const reportsMap = this.collectReports();
+
     // Convert map to array for UI
     return Array.from(reportsMap.entries()).map(([key, value]: [string, any]) => {
       const prefixValue = value?.prefix || key;
       const normalizedPrefix = prefixValue === '_NO_PREFIX_' ? '' : prefixValue;
-      const displayLabel = normalizedPrefix === '' ? 'Không tiền tố' : `Tiền tố ${normalizedPrefix}`;
       return {
-        key: normalizedPrefix,
-        label: displayLabel,
-        fileName: value.fileName,
+        key: value?.id || key,
+        prefix: normalizedPrefix,
+        label: this.getReportSampleLabel(value, normalizedPrefix),
+        fileName: value.pdfFileName || value.fileName,
         url: value.pdfViewUrl || value.pdfUrl || null,
-        docsUrl: value.docsUrl || null
+        docsUrl: value.docsUrl || null,
+        version: value.version || 0
       };
+    }).sort((a, b) => {
+      if (a.prefix !== b.prefix) return a.prefix.localeCompare(b.prefix);
+      return (b.version || 0) - (a.version || 0);
     });
+  });
+
+  private getReportSampleLabel(report: any, prefix: string): string {
+    const samples = this.getReportSamples(report, prefix);
+    return samples.length > 0 ? formatSampleList(samples) : 'Chưa rõ mẫu';
+  }
+
+  private getReportSamples(report: any, prefix: string): string[] {
+    if (Array.isArray(report?.includedSamples) && report.includedSamples.length > 0) {
+      return [...report.includedSamples].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    }
+
+    if (report?.samples && typeof report.samples === 'object') {
+      const samples = Object.keys(report.samples).filter(sample => report.samples[sample]?.included !== false);
+      if (samples.length > 0) {
+        return samples.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+      }
+    }
+
+    const r = this.run();
+    const sampleList = r?.sampleList || [];
+    if (prefix === 'ALL') return [...sampleList];
+
+    return sampleList.filter((sample: string) => {
+      const startsWithLetter = /^[a-zA-Z]/.test(sample);
+      const samplePrefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+      return samplePrefix === prefix;
+    });
+  }
+
+  selectReport(reportId: string) {
+    this.selectedPdfPrefix.set(reportId);
+    this.hasInitializedReportSelection = true;
+  }
+
+  private ensureSelectedReport() {
+    const available = this.availableReports();
+    if (available.length === 0) return;
+
+    const selected = this.selectedPdfPrefix();
+    const selectedStillExists = available.some(report => report.key === selected);
+    if (this.hasInitializedReportSelection && selectedStillExists) return;
+
+    const activeFilter = this.activeFilter();
+    const preferred = activeFilter !== 'ALL'
+      ? available.find(report => report.prefix === activeFilter)
+      : null;
+
+    this.selectedPdfPrefix.set((preferred || available[0]).key);
+    this.hasInitializedReportSelection = true;
+  }
+
+  private findReportById(reportId: string | null | undefined): any | null {
+    if (!reportId) return null;
+    return this.collectReports().get(reportId) || null;
+  }
+
+  private findLatestReportByPrefix(prefix: string): any | null {
+    return this.availableReports()
+      .filter(report => report.prefix === prefix)
+      .sort((a, b) => (b.version || 0) - (a.version || 0))
+      .map(report => this.findReportById(report.key))
+      .find(Boolean) || null;
+  }
+
+  currentPdfUrl = computed<string | null>(() => {
+    const activeFilter = this.activeFilter();
+    const d = this.draft();
+    const r = this.run();
+    if (!d) return null;
+
+    if (activeFilter !== 'ALL') {
+      const report = this.findLatestReportByPrefix(activeFilter);
+      return report?.pdfViewUrl || report?.pdfUrl || null;
+    }
+
+    const selectedReport = this.findReportById(this.selectedPdfPrefix());
+    let url = selectedReport?.pdfViewUrl || selectedReport?.pdfUrl || null;
+    if (url) return url;
+
+    url = d.pdfViewUrl || (d as any).pdfUrl || null;
+    if (url) return url;
+
+    if (r) {
+      url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl
+        || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
+    }
+    if (url) return url;
+
+    return this.availableReports()[0]?.url || null;
+  });
+
+  currentDocsUrl = computed<string | null>(() => {
+    const activeFilter = this.activeFilter();
+    const d = this.draft();
+    const r = this.run();
+    if (!d) return null;
+
+    if (activeFilter !== 'ALL') {
+      const report = this.findLatestReportByPrefix(activeFilter);
+      return report?.docsUrl ? getSafeGoogleUrl(report.docsUrl, 'doc') : null;
+    }
+
+    const selectedReport = this.findReportById(this.selectedPdfPrefix());
+    let url = selectedReport?.docsUrl || null;
+    if (!url) {
+      url = d.docsUrl || null;
+    }
+    if (!url && r) {
+      url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
+    }
+    if (!url) {
+      url = this.availableReports()[0]?.docsUrl || null;
+    }
+    return url ? getSafeGoogleUrl(url, 'doc') : null;
   });
 
   getType2DisplayRows(): any[] {
@@ -978,116 +1248,89 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   }
 
   getCurrentPdfUrl(): string | null {
-    const activeFilter = this.activeFilter();
-    let url: string | null = null;
-    const d = this.draft();
-    const r = this.run();
-    if (!d) return null;
-
-    if (activeFilter === 'ALL') {
-      const selected = this.selectedPdfPrefix();
-      if (selected !== null && selected !== undefined) {
-         const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
-         // Lấy từ draft
-         if (d.reports && d.reports[reportKey]) {
-           url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
-         }
-         // Hoặc lấy từ run
-         if (!url && r) {
-           const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-           if (runReports && runReports[reportKey]) {
-             url = runReports[reportKey].pdfViewUrl || runReports[reportKey].pdfUrl || null;
-           }
-         }
-      }
-      
-      // Fallback chung
-      if (!url) {
-        url = d.pdfViewUrl || (d as any).pdfUrl || null;
-        if (!url && r) {
-          url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl
-             || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
-        }
-        // Fallback to first available report if selected one doesn't exist
-        if (!url) {
-          const available = this.availableReports();
-          if (available.length > 0) {
-            url = available[0].url;
-            // Optionally auto-select it in the UI if it was invalid
-            if (this.selectedPdfPrefix() !== available[0].key) {
-               // Schedule a microtask to update signal to avoid ExpressionChangedAfterItHasBeenCheckedError
-               setTimeout(() => this.selectedPdfPrefix.set(available[0].key), 0);
-            }
-          }
-        }
-      }
-    } else {
-      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      if (d.reports && d.reports[reportKey]) {
-        url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
-      }
-      if (!url && r) {
-        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-        if (runReports && runReports[reportKey]) {
-          url = runReports[reportKey].pdfViewUrl || runReports[reportKey].pdfUrl || null;
-        }
-      }
-    }
-    return url;
+    return this.currentPdfUrl();
   }
 
 
   getCurrentDocsUrl(): string | null {
-    const activeFilter = this.activeFilter();
-    let url: string | null = null;
-    const d = this.draft();
-    const r = this.run();
-    if (!d) return null;
+    return this.currentDocsUrl();
+  }
 
-    if (activeFilter === 'ALL') {
-      const selected = this.selectedPdfPrefix();
-      if (selected !== null && selected !== undefined) {
-         const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
-         // Lấy từ draft
-         if (d.reports && d.reports[reportKey]) {
-           url = d.reports[reportKey].docsUrl || null;
-         }
-         // Hoặc lấy từ run
-         if (!url && r) {
-           const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-           if (runReports && runReports[reportKey]) {
-             url = runReports[reportKey].docsUrl || null;
-           }
-         }
+  private startInlinePdfLoad(pdfUrl: string | null) {
+    const seq = ++this.inlinePdfLoadSeq;
+    this.cleanupInlinePdf();
+    if (!pdfUrl) {
+      this.isInlinePdfLoading.set(false);
+      return;
+    }
+
+    void this.loadPdfBlob(pdfUrl, seq);
+  }
+
+  private async loadPdfBlob(pdfUrl: string, seq: number) {
+    const fileId = this.extractFileId(pdfUrl);
+    if (!fileId) {
+      if (seq === this.inlinePdfLoadSeq) {
+        this.inlinePdfBlobUrl.set(pdfUrl);
       }
-      
-      // Fallback chung
-      if (!url) {
-        url = d.docsUrl || null;
-        if (!url && r) {
-          url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
-        }
-        // Fallback to first available report if selected one doesn't exist
-        if (!url) {
-          const available = this.availableReports();
-          if (available.length > 0) {
-            url = available[0].docsUrl;
-          }
-        }
+      return;
+    }
+
+    this.isInlinePdfLoading.set(true);
+    this.inlinePdfError.set(false);
+    this.inlinePdfNeedsAuth.set(false);
+    try {
+      const rawBlob = await this.googleDriveService.downloadFile(fileId);
+      const blob = new Blob([rawBlob], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(blob);
+      if (seq === this.inlinePdfLoadSeq && this.currentPdfUrl() === pdfUrl) {
+        this.inlinePdfBlobUrl.set(blobUrl);
+      } else {
+        URL.revokeObjectURL(blobUrl);
       }
-    } else {
-      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      if (d.reports && d.reports[reportKey]) {
-        url = d.reports[reportKey].docsUrl || null;
+    } catch (err: any) {
+      if (seq !== this.inlinePdfLoadSeq) return;
+      if (err?.code === 'oauth_required') {
+        this.inlinePdfNeedsAuth.set(true);
+      } else {
+        console.error('[InlinePDF] Failed to load PDF blob:', err);
+        this.inlinePdfError.set(true);
       }
-      if (!url && r) {
-        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-        if (runReports && runReports[reportKey]) {
-          url = runReports[reportKey].docsUrl || null;
-        }
+    } finally {
+      if (seq === this.inlinePdfLoadSeq) {
+        this.isInlinePdfLoading.set(false);
       }
     }
-    return url ? getSafeGoogleUrl(url, 'doc') : null;
+  }
+
+  private extractFileId(url: string): string | null {
+    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileDMatch?.[1]) return fileDMatch[1];
+
+    const genericDMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (genericDMatch?.[1]) return genericDMatch[1];
+
+    try {
+      const urlObj = new URL(url);
+      return urlObj.searchParams.get('id');
+    } catch {
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      return idMatch?.[1] || null;
+    }
+  }
+
+  private cleanupInlinePdf() {
+    const current = this.inlinePdfBlobUrl();
+    if (current?.startsWith('blob:')) {
+      URL.revokeObjectURL(current);
+    }
+    this.inlinePdfBlobUrl.set(null);
+    this.inlinePdfError.set(false);
+    this.inlinePdfNeedsAuth.set(false);
+  }
+
+  beginInlinePdfAuth() {
+    this.googleDriveService.beginRedirectAuth();
   }
 
 

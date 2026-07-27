@@ -2,14 +2,15 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.27-b02",
-    "notesVersion": "v26.07.27-b02",
-    "title": "Nâng Cấp Module Kết Quả Phân Tích & Chuẩn Hóa Changelog",
+    "version": "v26.07.27-b03",
+    "notesVersion": "v26.07.27-b03",
+    "title": "Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Số Liệu Kho Chuẩn",
     "features": [
-      "🧾 Thêm kiểm tra trước khi tạo báo cáo PDF để phát hiện thiếu mẫu, thiếu ngày ký, thiếu kết quả/ND và mẫu đã từng in",
-      "📚 Lưu lịch sử publish/restore theo report ID, hỗ trợ khôi phục đúng phiên bản theo prefix hoặc phiếu tách",
-      "🔒 Siết readonly cho SOP Results, đặc biệt SOP-01 và luồng import MassHunter",
-      "🕘 Thêm timeline phiên bản trong panel báo cáo và tự chuyển mẻ hoàn tất sang màn xem PDF"
+      "📄 Xem báo cáo PDF trực tiếp mượt mà, tự động cập nhật đúng phiếu khi chuyển đổi bộ lọc",
+      "🔍 Tự động kiểm tra đủ chữ ký, kết quả & R² trước khi in báo cáo; hỗ trợ xem lịch sử 5 phiên bản",
+      "🔒 Tự động khóa chế độ Chỉ Xem cho các mẻ phân tích đã hoàn tất để tránh sửa nhầm dữ liệu",
+      "🧪 Hiển thị lượng chất chuẩn với 2 chữ số thập phân chuẩn GLP (12.50g), hỗ trợ nhập bù nhật ký & nút chọn nhanh Tối đa",
+      "⚡ Tăng tốc độ phản hồi hệ thống và tối ưu bộ nhớ trình duyệt cho máy tính phòng thí nghiệm"
     ]
   },
   "assetGroups": [

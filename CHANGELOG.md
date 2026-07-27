@@ -1,5 +1,28 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.27-b03] - 27/07/2026
+
+### ⚡ Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Kho Chất Chuẩn
+
+#### 📄 Xem Báo Cáo PDF Trực Tiếp & Mượt Mà (Module Kết quả)
+- **Tải báo cáo nhanh & ổn định:** Xem trực tiếp file PDF báo cáo kết quả phân tích trên giao diện mà không cần tải file về máy. Tự động hỗ trợ nút đăng nhập lại nếu phiên truy cập Google Drive bị hết hạn.
+- **Cập nhật báo cáo theo bộ lọc ngay lập tức:** Khi Kiểm nghiệm viên chuyển đổi bộ lọc nhóm mẫu hoặc chọn phiếu báo cáo, giao diện sẽ cập nhật ngay báo cáo tương ứng.
+- **Tối ưu bộ nhớ máy tính:** Tự động giải phóng dữ liệu báo cáo sau khi đóng panel, giúp máy tính phòng thí nghiệm hoạt động mượt mà khi làm việc liên tục.
+
+#### 🔍 Kiểm Tra An Toàn Trước Khi Xuất Báo Cáo & Lịch Sử Phiên Bản
+- **Cảnh báo thiếu dữ liệu trước khi in:** Hệ thống tự động rà soát chữ ký Kiểm nghiệm viên/Người thẩm tra, thông tin kết quả (ND/số liệu) và hệ số R² trước khi phát hành file PDF để tránh in nhầm báo cáo thiếu.
+- **Xem lại và khôi phục 5 phiên bản báo cáo:** Dễ dàng tra cứu lại lịch sử các lần xuất báo cáo trước đây và khôi phục chính xác từng phiếu báo cáo ngay cả khi mẻ phân tích được tách thành nhiều phiếu riêng.
+
+#### 🔒 Khóa Chế Độ Xem Cho Mẻ Đã Hoàn Tất
+- **Tránh vô tình sửa nhầm dữ liệu:** Tất cả các phiếu nhập SOP (như SOP-01, SOP-03, SOP Chloroform, SOP mặc định Type 2 & Type 3B) tự động chuyển sang chế độ **Chỉ Xem** khi mẻ phân tích đã hoàn tất.
+- **Mở đúng giao diện làm việc:** Mẻ phân tích đã duyệt mở mặc định ở màn hình xem báo cáo PDF. Kiểm nghiệm viên chỉ vào form chỉnh sửa khi chủ động chọn nút chỉnh sửa.
+
+#### 🧪 Quy Chuẩn Định Dạng Kho Chất Chuẩn & Yêu Cầu (GLP)
+- **Đồng nhất 2 chữ số thập phân chuẩn GLP:** Toàn bộ số liệu tồn kho, lượng mượn/xuất dùng và lượng trả chất chuẩn đều hiển thị rõ ràng với 2 chữ số thập phân (ví dụ: `12.50 g`, `10.00 mL`).
+- **Nhập bù nhật ký & Nút chọn nhanh "Tối đa":** Cho phép Quản lý kho ghi nhận bù nhật ký sử dụng chất chuẩn trong quá khứ và hỗ trợ nút "Tối đa" để tự động điền hết lượng tồn và đánh dấu hết hàng.
+
+---
+
 ## [v26.07.27-b02] - 27/07/2026
 
 ### 🧾 Nâng Cấp Module Kết Quả Phân Tích & Chuẩn Hóa Changelog

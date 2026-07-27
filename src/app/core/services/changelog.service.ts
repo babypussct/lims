@@ -13,6 +13,28 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.27-b03',
+    date: '27/07/2026',
+    title: 'Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Kho Chất Chuẩn',
+    highlights: [
+      'Xem trực tiếp file PDF báo cáo kết quả phân tích mượt mà trên giao diện, tự động hỗ trợ xác thực lại Google Drive khi hết hạn.',
+      'Cập nhật ngay báo cáo tương ứng khi chuyển đổi bộ lọc nhóm mẫu hoặc chọn phiếu báo cáo.',
+      'Khóa tự động chế độ Chỉ Xem cho các mẻ phân tích đã hoàn tất để bảo vệ dữ liệu và mở mặc định ở màn hình xem báo cáo.'
+    ],
+    features: [
+      'Xem báo cáo PDF trực tiếp & mượt mà với cơ chế nạp Blob và tự động thu hồi bộ nhớ sau khi đóng panel.',
+      'Rà soát tự động trước khi xuất báo cáo (chữ ký, kết quả ND/số liệu, R²) và hỗ trợ xem/khôi phục 5 phiên bản báo cáo.',
+      'Hiển thị lượng chất chuẩn với 2 chữ số thập phân chuẩn GLP (12.50 g), hỗ trợ nhập bù nhật ký & nút chọn nhanh Tối đa.'
+    ],
+    improvements: [
+      'Tối ưu bộ nhớ máy tính phòng thí nghiệm bằng cách giải phóng dữ liệu blob PDF khi người dùng chuyển trang hoặc đóng tab.',
+      'Mẻ phân tích đã duyệt mở mặc định ở màn hình xem báo cáo PDF, giữ lối chỉnh sửa chủ động qua nút Chỉnh sửa.'
+    ],
+    fixes: [
+      'Khắc phục hiển thị sai nhãn tiền tố report và xử lý triệt để liên kết báo cáo khi xem mẻ phân tích theo từng nhóm mẫu.'
+    ]
+  },
+  {
     version: 'v26.07.27-b02',
     date: '27/07/2026',
     title: 'Nâng Cấp Module Kết Quả Phân Tích & Chuẩn Hóa Changelog',
