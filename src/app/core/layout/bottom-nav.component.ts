@@ -9,6 +9,7 @@ import { NotificationBellComponent } from '../../shared/components/notification-
 import { LogoComponent } from '../../shared/components/logo.component';
 import { ToastService } from '../services/toast.service';
 import { filter } from 'rxjs/operators';
+import { ROUTE_TITLES } from './navigation.config';
 
 interface MenuItem {
   id?: string;
@@ -235,7 +236,7 @@ interface VisitedPage {
 
               <!-- Active Dot -->
               @if (isActive(tab.path)) {
-                 <div class="absolute bottom-0.5 w-1 h-1 rounded-full animate-fade-in" [ngClass]="tab.activeColor.split(' ')[0].replace('text-', 'bg-')"></div>
+                 <div class="absolute bottom-0.5 w-4 h-1 rounded-full animate-fade-in" [ngClass]="tab.activeColor.split(' ')[0].replace('text-', 'bg-')"></div>
               }
             </button>
         }
@@ -257,7 +258,7 @@ interface VisitedPage {
 
               <!-- Active Dot -->
               @if (isActive(tab.path)) {
-                 <div class="absolute bottom-0.5 w-1 h-1 rounded-full animate-fade-in" [ngClass]="tab.activeColor.split(' ')[0].replace('text-', 'bg-')"></div>
+                 <div class="absolute bottom-0.5 w-4 h-1 rounded-full animate-fade-in" [ngClass]="tab.activeColor.split(' ')[0].replace('text-', 'bg-')"></div>
               }
             </button>
         }
@@ -316,26 +317,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   // Computed page label
   pageTitle = computed(() => {
     const url = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
-    const titles: Record<string, string> = {
-        'dashboard': 'Trang Chủ',
-        'inventory': 'Kho Hóa Chất',
-        'calculator': 'Vận Hành SOP',
-        'requests': 'Quản Lý Yêu Cầu',
-        'stats': 'Báo Cáo',
-        'config': 'Cấu Hình',
-        'standards': 'Chất Chuẩn Đối Chiếu',
-        'recipes': 'Thư Viện Công Thức',
-        'prep': 'Trạm Pha Chế',
-        'daily-checklist': 'Theo dõi mẫu ngày',
-        'smart-batch': 'Lập Mẻ Phân Tích',
-        'traceability': 'Truy xuất nguồn gốc',
-        'documents': 'Giao Nhận Mẫu',
-        'results': 'Kết Quả Phân Tích',
-        'labels': 'In Tem Nhãn',
-        'standard-requests': 'Yêu cầu chuẩn',
-        'standard-usage': 'Nhật Ký Chất Chuẩn'
-    };
-    return titles[url] || 'LIMS Cloud';
+    return ROUTE_TITLES[url] || 'LIMS Cloud';
   });
 
   private routerSub: any;

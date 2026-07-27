@@ -176,7 +176,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                 <!-- Prefix filter tabs -->
                 @if (detectedPrefixes().length > 1) {
                   <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800/80 ml-2 overflow-x-auto max-w-[200px] sm:max-w-none custom-scrollbar shrink-0">
-                    <button (click)="activeFilter.set('ALL')"
+                    <button (click)="changeActiveFilter('ALL')"
                             [class]="activeFilter() === 'ALL'
                               ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
                               : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
@@ -184,7 +184,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                       Tất Cả
                     </button>
                     @for (prefix of detectedPrefixes(); track prefix) {
-                      <button (click)="activeFilter.set(prefix)"
+                      <button (click)="changeActiveFilter(prefix)"
                               [class]="activeFilter() === prefix
                                 ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
                                 : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
@@ -404,7 +404,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                   <i class="fa-solid fa-file-pdf mr-2.5 text-red-500"></i> PDF PREVIEW
                 </h4>
                 
-                @if (availableReports().length > 1 && activeFilter() === 'ALL') {
+                @if (availableReports().length > 1) {
                   <select [ngModel]="selectedPdfPrefix()" 
                           (ngModelChange)="selectReport($event)"
                           class="bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm">
@@ -489,7 +489,7 @@ import { MasterTargetService } from '../targets/master-target.service';
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
                   <i class="fa-regular fa-file-pdf text-4xl"></i>
-                  <p class="text-sm font-medium">Chưa có bản xem trước PDF cho tùy chọn này.</p>
+                  <p class="text-sm font-medium">{{ pdfPreviewEmptyMessage() }}</p>
                 </div>
               }
             </div>
@@ -974,26 +974,81 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  changeActiveFilter(prefix: string) {
+    this.activeFilter.set(prefix);
+    this.showAllTargets.set(false);
+
+    if (prefix === 'ALL') {
+      const overallReport = this.findOverallReportMeta();
+      this.selectedPdfPrefix.set(overallReport?.key || '');
+      this.hasInitializedReportSelection = true;
+      return;
+    }
+
+    const matchingReport = this.findLatestReportMetaByPrefix(prefix);
+    this.selectedPdfPrefix.set(matchingReport?.key || '');
+    this.hasInitializedReportSelection = true;
+  }
+
   selectReport(reportId: string) {
     this.selectedPdfPrefix.set(reportId);
     this.hasInitializedReportSelection = true;
+
+    const selectedReport = this.findReportMetaById(reportId);
+    if (selectedReport && selectedReport.prefix !== this.activeFilter()) {
+      this.activeFilter.set(selectedReport.prefix);
+      this.showAllTargets.set(false);
+    }
   }
 
   private ensureSelectedReport() {
     const available = this.availableReports();
-    if (available.length === 0) return;
+    if (available.length === 0) {
+      if (this.activeFilter() === 'ALL' && this.getRootPdfUrl()) {
+        this.selectedPdfPrefix.set('');
+        this.hasInitializedReportSelection = true;
+      }
+      return;
+    }
 
     const selected = this.selectedPdfPrefix();
-    const selectedStillExists = available.some(report => report.key === selected);
-    if (this.hasInitializedReportSelection && selectedStillExists) return;
-
     const activeFilter = this.activeFilter();
-    const preferred = activeFilter !== 'ALL'
-      ? available.find(report => report.prefix === activeFilter)
-      : null;
+    const selectedMeta = selected ? this.findReportMetaById(selected) : null;
+    const selectionMatchesFilter = selectedMeta
+      ? selectedMeta.prefix === activeFilter
+      : activeFilter === 'ALL' && !!this.getRootPdfUrl();
 
-    this.selectedPdfPrefix.set((preferred || available[0]).key);
+    if (this.hasInitializedReportSelection && selectionMatchesFilter) return;
+
+    if (activeFilter !== 'ALL') {
+      const preferred = this.findLatestReportMetaByPrefix(activeFilter);
+      this.selectedPdfPrefix.set(preferred?.key || '');
+      this.hasInitializedReportSelection = true;
+      return;
+    }
+
+    const overallReport = this.findOverallReportMeta();
+    if (overallReport || this.getRootPdfUrl()) {
+      this.selectedPdfPrefix.set(overallReport?.key || '');
+      this.hasInitializedReportSelection = true;
+      return;
+    }
+
+    const firstPrefixReport = available.find(report => report.prefix !== 'ALL');
+    if (firstPrefixReport) {
+      this.activeFilter.set(firstPrefixReport.prefix);
+      this.selectedPdfPrefix.set(firstPrefixReport.key);
+      this.hasInitializedReportSelection = true;
+      return;
+    }
+
+    this.selectedPdfPrefix.set('');
     this.hasInitializedReportSelection = true;
+  }
+
+  private findReportMetaById(reportId: string | null | undefined): any | null {
+    if (!reportId) return null;
+    return this.availableReports().find(report => report.key === reportId) || null;
   }
 
   private findReportById(reportId: string | null | undefined): any | null {
@@ -1001,64 +1056,87 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return this.collectReports().get(reportId) || null;
   }
 
-  private findLatestReportByPrefix(prefix: string): any | null {
+  private findLatestReportMetaByPrefix(prefix: string): any | null {
     return this.availableReports()
       .filter(report => report.prefix === prefix)
-      .sort((a, b) => (b.version || 0) - (a.version || 0))
-      .map(report => this.findReportById(report.key))
-      .find(Boolean) || null;
+      .sort((a, b) => (b.version || 0) - (a.version || 0))[0] || null;
+  }
+
+  private findLatestReportByPrefix(prefix: string): any | null {
+    const selected = this.findReportMetaById(this.selectedPdfPrefix());
+    const reportMeta = selected?.prefix === prefix ? selected : this.findLatestReportMetaByPrefix(prefix);
+    return reportMeta ? this.findReportById(reportMeta.key) : null;
+  }
+
+  private findOverallReportMeta(): any | null {
+    return this.findLatestReportMetaByPrefix('ALL');
+  }
+
+  private getRootPdfUrl(): string | null {
+    const d = this.draft();
+    const r = this.run();
+    if (!d) return null;
+
+    return d.pdfViewUrl || (d as any).pdfUrl
+      || r?.analysisResultSummary?.pdfViewUrl || r?.analysisResultSummary?.pdfUrl
+      || r?.analysisResult?.pdfViewUrl || r?.analysisResult?.pdfUrl
+      || null;
+  }
+
+  private getRootDocsUrl(): string | null {
+    const d = this.draft();
+    const r = this.run();
+    if (!d) return null;
+
+    return d.docsUrl
+      || r?.analysisResultSummary?.docsUrl
+      || r?.analysisResult?.docsUrl
+      || null;
   }
 
   currentPdfUrl = computed<string | null>(() => {
     const activeFilter = this.activeFilter();
-    const d = this.draft();
-    const r = this.run();
-    if (!d) return null;
+    if (!this.draft()) return null;
 
     if (activeFilter !== 'ALL') {
       const report = this.findLatestReportByPrefix(activeFilter);
       return report?.pdfViewUrl || report?.pdfUrl || null;
     }
 
+    const selectedMeta = this.findReportMetaById(this.selectedPdfPrefix());
     const selectedReport = this.findReportById(this.selectedPdfPrefix());
-    let url = selectedReport?.pdfViewUrl || selectedReport?.pdfUrl || null;
+    let url = selectedMeta?.prefix === 'ALL'
+      ? selectedReport?.pdfViewUrl || selectedReport?.pdfUrl || null
+      : null;
     if (url) return url;
 
-    url = d.pdfViewUrl || (d as any).pdfUrl || null;
+    url = this.getRootPdfUrl();
     if (url) return url;
 
-    if (r) {
-      url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl
-        || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
-    }
-    if (url) return url;
-
-    return this.availableReports()[0]?.url || null;
+    return null;
   });
 
   currentDocsUrl = computed<string | null>(() => {
     const activeFilter = this.activeFilter();
-    const d = this.draft();
-    const r = this.run();
-    if (!d) return null;
+    if (!this.draft()) return null;
 
     if (activeFilter !== 'ALL') {
       const report = this.findLatestReportByPrefix(activeFilter);
       return report?.docsUrl ? getSafeGoogleUrl(report.docsUrl, 'doc') : null;
     }
 
+    const selectedMeta = this.findReportMetaById(this.selectedPdfPrefix());
     const selectedReport = this.findReportById(this.selectedPdfPrefix());
-    let url = selectedReport?.docsUrl || null;
-    if (!url) {
-      url = d.docsUrl || null;
-    }
-    if (!url && r) {
-      url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
-    }
-    if (!url) {
-      url = this.availableReports()[0]?.docsUrl || null;
-    }
+    let url = selectedMeta?.prefix === 'ALL' ? selectedReport?.docsUrl || null : null;
+    if (!url) url = this.getRootDocsUrl();
     return url ? getSafeGoogleUrl(url, 'doc') : null;
+  });
+
+  pdfPreviewEmptyMessage = computed(() => {
+    if (this.activeFilter() === 'ALL' && this.detectedPrefixes().length > 1) {
+      return 'Chưa có PDF toàn mẻ. Chọn một tiền tố để xem PDF tương ứng.';
+    }
+    return 'Chưa có bản xem trước PDF cho phạm vi đang chọn.';
   });
 
   getType2DisplayRows(): any[] {

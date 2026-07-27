@@ -11,6 +11,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
  * Modes:
  *  - asBadge:       Badge nhỏ gắn góc trên Avatar (Sidebar footer) — [Xác nhận giữ nguyên]
  *  - bottomNavMode: Tab thông báo trên thanh di động (Mobile Bottom Nav)
+ *  - railMode:      Icon action trong Navigation Rail desktop
  *  - Default:       Nút vuông độc lập bo góc
  */
 @Component({
@@ -55,6 +56,35 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
               [class]="panel.isOpen() ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-400 dark:text-slate-500'">
           Thông Báo
         </span>
+      </button>
+
+    } @else if (railMode) {
+
+      <!-- ════ NAVIGATION RAIL ACTION (Desktop) ════ -->
+      <button
+        id="notif-bell-rail"
+        (click)="onToggle($event)"
+        [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
+        class="relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-95 select-none"
+        [ngClass]="panel.isOpen()
+          ? 'bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-950/30'
+          : 'text-slate-400 hover:text-white hover:bg-white/10'">
+
+        <i class="fa-solid fa-bell text-[15px] relative z-10"
+           [class.bell-gentle-swing]="unreadCount() > 0 && !panel.isOpen()"></i>
+
+        @if (unreadCount() > 0) {
+          <span class="absolute top-1 right-1 flex h-[18px] w-[18px] items-center justify-center z-20">
+            <span class="bell-soft-pulse absolute inline-flex h-full w-full rounded-full opacity-65"
+                  [class]="hasActionableUnread() ? 'bg-amber-400' : 'bg-red-400'"></span>
+            <span class="relative inline-flex rounded-full h-[18px] w-[18px] text-white text-[9px] font-black items-center justify-center border-2 border-slate-950 shadow-sm"
+                  [ngClass]="hasActionableUnread()
+                    ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/40'
+                    : 'bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/40'">
+              {{ unreadCount() > 9 ? '9+' : unreadCount() }}
+            </span>
+          </span>
+        }
       </button>
 
     } @else if (asBadge) {
@@ -212,6 +242,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
 export class NotificationBellComponent {
   @Input() asBadge       = false;
   @Input() bottomNavMode = false;
+  @Input() railMode      = false;
 
   panel         = inject(NotificationPanelService);
   notifications = inject(NotificationService);

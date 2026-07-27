@@ -872,18 +872,17 @@ export class NotificationPanelComponent {
   }
 
   /**
-   * Vị trí Popover desktop (Anchor tại vị trí nút Bell góc dưới sidebar):
-   * - left: sát bên phải sidebar + 12px margin
+   * Vị trí Popover desktop (Anchor theo app shell navigation mới):
+   * - expanded: rail 64px + panel 224px
+   * - compact: rail 64px
+   * - left: sát bên phải navigation + 12px margin
    * - bottom: 12px cách mép dưới viewport
    */
   get panelPos(): { left: string; bottom: string } {
     if (typeof window === 'undefined' || window.innerWidth < 768) {
       return { left: '0px', bottom: '0px' };
     }
-    const sidebarEl = document.querySelector('aside');
-    const w = sidebarEl
-      ? sidebarEl.getBoundingClientRect().width
-      : (this.state.sidebarCollapsed() ? 80 : 256);
+    const w = this.state.sidebarCollapsed() ? 64 : 288;
     return { left: `${w + 12}px`, bottom: '12px' };
   }
 

@@ -13,6 +13,27 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.27-b04',
+    date: '27/07/2026',
+    title: 'Thiết Kế Lại App Shell UI/UX Đồng Bộ Hệ Thống',
+    highlights: [
+      'Thanh điều hướng Desktop mới (App Header): Breadcrumbs động, Tìm kiếm/Quét mã nhanh (Ctrl+K), Badge Online/Offline, Dark Mode toggle và Profile Pill.',
+      'Nâng cấp Sidebar Navigation: Xóa nút floating toggle, thêm tooltip hover, active indicator phát sáng và Glassmorphism Rail.',
+      'Tối ưu Mobile: Active tab pill rõ ràng hơn và đồng bộ tiêu đề trang với Desktop Header.'
+    ],
+    features: [
+      'Tạo component AppHeaderComponent hoàn toàn mới: Breadcrumbs, Search (⌘K), Online/Offline status, Dark Mode, Notification Bell, Profile dropdown.',
+      'Bản đồ ROUTE_TITLES & ROUTE_ICONS dùng chung cho toàn hệ thống (25+ routes).',
+      'Nút thu gọn sidebar tích hợp tại header Navigation Panel thay cho nút floating cũ.'
+    ],
+    improvements: [
+      'Tooltip popover cho mỗi shortcut icon khi Rail thu gọn, giúp nhận biết tính năng mà không cần đoán icon.',
+      'Active pill indicator với glow effect trên Navigation Rail và Panel.',
+      'Nâng cấp nền Rail sang backdrop-blur-xl glassmorphism tạo chiều sâu hiện đại.',
+      'Bottom Nav active indicator chuyển từ chấm tròn sang pill ngang (w-4) rõ ràng hơn.'
+    ]
+  },
+  {
     version: 'v26.07.27-b03',
     date: '27/07/2026',
     title: 'Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Kho Chất Chuẩn',

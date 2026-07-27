@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.27-b03",
+    "version": "v26.07.27-b05",
     "notesVersion": "v26.07.27-b03",
     "title": "Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Số Liệu Kho Chuẩn",
     "features": [

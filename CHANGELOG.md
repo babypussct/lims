@@ -1,5 +1,32 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.27-b04] - 27/07/2026
+
+### 🎨 Thiết Kế Lại App Shell UI/UX Đồng Bộ Hệ Thống
+
+#### 🆕 Thanh Điều Hướng Desktop Mới (App Header)
+- **Breadcrumbs động:** Hiển thị tự động icon và tiêu đề trang tương ứng theo route hiện tại, hỗ trợ định vị nhanh vị trí đang làm việc trong hệ thống.
+- **Tìm kiếm & Quét mã nhanh:** Nút tìm kiếm tích hợp phím tắt `Ctrl + K` (hoặc `⌘K`), khởi động quét mã QR/Barcode tức thì từ bất kỳ trang nào.
+- **Trạng thái kết nối trực tuyến:** Badge Online/Offline với hiệu ứng animated dot, giúp người dùng nhận biết trạng thái mạng ngay trên thanh điều hướng.
+- **Chuyển đổi giao diện Sáng/Tối:** Nút toggle Dark Mode tích hợp trực tiếp trên header, phản hồi mượt mà với hiệu ứng xoay icon.
+- **Profile Pill & Menu Tài Khoản:** Hiển thị avatar, tên và vai trò người dùng dạng pill bo góc. Click mở dropdown menu gồm: Cài đặt tài khoản, Nhật ký thay đổi, Dark Mode và Đăng xuất.
+
+#### 🧭 Nâng Cấp Sidebar Navigation (Desktop)
+- **Xóa nút floating toggle:** Loại bỏ nút hình tròn chơ vơ giữa màn hình, thay bằng nút thu gọn tích hợp gọn gàng trong header của Navigation Panel.
+- **Tooltip hover chuyên nghiệp:** Khi sidebar thu gọn, di chuột qua từng icon shortcut trên Rail sẽ hiện tooltip nhỏ chứa tên trang tương ứng.
+- **Active indicator nổi bật:** Thêm thanh pill phát sáng màu fuchsia và hiệu ứng glow cho các icon đang active trên Navigation Rail.
+- **Glassmorphism Rail:** Nâng cấp nền Rail sang `backdrop-blur-xl` và hiệu ứng trong suốt tạo chiều sâu hiện đại.
+
+#### 📱 Tối Ưu Mobile Bottom Navigation
+- **Active tab pill:** Nâng cấp chỉ báo tab đang chọn từ chấm tròn nhỏ sang pill ngang rõ ràng hơn.
+- **Đồng bộ tiêu đề trang:** Thanh nhãn breadcrumb trên Bottom Nav sử dụng chung nguồn dữ liệu tiêu đề với Desktop Header.
+
+#### ⚙️ Chuẩn Hóa Dữ Liệu Điều Hướng
+- **Single source of truth:** Tạo bản đồ `ROUTE_TITLES` và `ROUTE_ICONS` dùng chung cho toàn bộ Header, Sidebar, Bottom Nav và Breadcrumbs (25+ routes).
+- **Loại bỏ hardcode trùng lặp:** Xóa map tiêu đề hardcoded trong Bottom Nav, thay bằng import từ `navigation.config.ts`.
+
+---
+
 ## [v26.07.27-b03] - 27/07/2026
 
 ### ⚡ Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Kho Chất Chuẩn
