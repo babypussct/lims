@@ -74,12 +74,12 @@
 
               <!-- Các bản cũ -->
               @for (hist of historyList; track hist.version + '_' + (hist.prefix || '')) {
-                @if (hist.version !== draft?.version || hist.prefix) {
+                @if (hist.version !== draft?.version || (hist.prefix && hist.prefix !== 'ALL')) {
                   <div class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 flex items-center justify-between gap-2 border-b border-slate-100/60 dark:border-slate-800/50 last:border-b-0">
-                    <div (click)="restoreVersion.emit({ version: hist.version, prefix: hist.prefix })"
+                    <div (click)="restoreVersion.emit({ version: hist.version, prefix: hist.prefix, reportId: hist.reportId || hist._id })"
                          class="flex-1 min-w-0 cursor-pointer group/item">
                       <span class="font-bold text-slate-700 dark:text-slate-200 text-xs block group-hover/item:underline">
-                        Bản v{{ hist.version }} {{ hist.prefix ? (hist.prefix === '_NO_PREFIX_' ? '(Không tiền tố)' : '(' + hist.prefix + ')') : '' }}
+                        Bản v{{ hist.version }} {{ hist.prefix && hist.prefix !== 'ALL' ? (hist.prefix === '_NO_PREFIX_' ? '(Không tiền tố)' : '(' + hist.prefix + ')') : '' }}
                         @if (hist.status === 'archived') {
                           <span class="text-[9px] text-slate-400 dark:text-slate-500 font-normal ml-1">(đã lưu trữ)</span>
                         }

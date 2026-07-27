@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.25-b01",
-    "notesVersion": "v26.07.25-b01",
-    "title": "Nhập Bù Nhật Ký Sử Dụng Chuẩn Ngược Ngày & Tự Động Đánh Dấu Hết Hàng",
+    "version": "v26.07.27-b02",
+    "notesVersion": "v26.07.27-b02",
+    "title": "Nâng Cấp Module Kết Quả Phân Tích & Chuẩn Hóa Changelog",
     "features": [
-      "📝 Cho phép Quản lý nhập bù nhật ký sử dụng chất chuẩn ngược ngày trong quá khứ",
-      "🔓 Hỗ trợ nhập bù hồi ký kể cả khi chất chuẩn đang ở trạng thái mượn",
-      "⚡ Nút Tối Đa tự động điền toàn bộ lượng tồn kho còn lại của lọ chuẩn",
-      "📦 Tự động tích chọn và cập nhật trạng thái Hết Hàng (Depleted) khi dùng hết"
+      "🧾 Thêm kiểm tra trước khi tạo báo cáo PDF để phát hiện thiếu mẫu, thiếu ngày ký, thiếu kết quả/ND và mẫu đã từng in",
+      "📚 Lưu lịch sử publish/restore theo report ID, hỗ trợ khôi phục đúng phiên bản theo prefix hoặc phiếu tách",
+      "🔒 Siết readonly cho SOP Results, đặc biệt SOP-01 và luồng import MassHunter",
+      "🕘 Thêm timeline phiên bản trong panel báo cáo và tự chuyển mẻ hoàn tất sang màn xem PDF"
     ]
   },
   "assetGroups": [

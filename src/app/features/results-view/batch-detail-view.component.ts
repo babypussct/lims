@@ -51,7 +51,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                 }
 
                 @if (run()?.parentMasterId) {
-                  <a [routerLink]="['/results', run().parentMasterId]" class="px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-extrabold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
+                  <a [routerLink]="['/results-view', run().parentMasterId]" class="px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-extrabold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
                     <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Đã Gộp Mẻ Tổng Hợp
                   </a>
                 }
@@ -778,9 +778,11 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
     // Convert map to array for UI
     return Array.from(reportsMap.entries()).map(([key, value]: [string, any]) => {
-      const displayLabel = key === '_NO_PREFIX_' ? 'Không tiền tố' : `Tiền tố ${key}`;
+      const prefixValue = value?.prefix || key;
+      const normalizedPrefix = prefixValue === '_NO_PREFIX_' ? '' : prefixValue;
+      const displayLabel = normalizedPrefix === '' ? 'Không tiền tố' : `Tiền tố ${normalizedPrefix}`;
       return {
-        key: key === '_NO_PREFIX_' ? '' : key,
+        key: normalizedPrefix,
         label: displayLabel,
         fileName: value.fileName,
         url: value.pdfViewUrl || value.pdfUrl || null,
@@ -1149,7 +1151,9 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
   goToEditMode() {
     this.router.navigate(['/results', this.requestId], {
-      queryParams: this.activeFilter() !== 'ALL' ? { prefix: this.activeFilter() } : {}
+      queryParams: this.activeFilter() !== 'ALL'
+        ? { prefix: this.activeFilter(), edit: '1' }
+        : { edit: '1' }
     });
   }
 

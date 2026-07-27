@@ -12,6 +12,7 @@ import {
     parseStandardDate,
     sortStandardsByFefo
 } from '../../../../shared/utils/standard-fefo';
+import { formatNum } from '../../../../shared/utils/utils';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -117,7 +118,7 @@ function removeAccents(str: string): string {
                                                          }
                                                      } @else {
                                                          <div class="text-sm font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                                             {{std.current_amount}} <span class="text-[11px] text-emerald-500 uppercase">{{std.unit}}</span>
+                                                              {{formatNum(std.current_amount)}} <span class="text-[11px] text-emerald-500 uppercase">{{std.unit}}</span>
                                                          </div>
                                                          @if(isFefoTopForName(std)) {
                                                              <span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/50 whitespace-nowrap">
@@ -303,6 +304,8 @@ export class CreateRequestDrawerComponent {
       purpose: ['', Validators.required]
     });
   }
+
+  formatNum = formatNum;
 
   // Filter UI logic
   filteredAvailableStandards = computed(() => {

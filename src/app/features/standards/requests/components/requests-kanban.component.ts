@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, computed, inject, signal } from
 import { CommonModule } from '@angular/common';
 import { StandardRequest } from '../../../../core/models/standard.model';
 import { AuthService } from '../../../../core/services/auth.service';
+import { formatNum } from '../../../../shared/utils/utils';
 
 @Component({
   selector: 'app-requests-kanban',
@@ -220,7 +221,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                   @if(req.standardDetails?.internal_id) {
                     <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-md font-black text-xs border border-indigo-200 dark:border-indigo-700 shadow-sm shrink-0 uppercase">{{req.standardDetails.internal_id}}</span>
                   }
-                  <span class="font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
+                  <span class="font-black text-slate-700 dark:text-slate-300">{{formatNum(req.standardDetails?.current_amount ?? 0)}}{{req.standardDetails?.unit}}</span>
                   <span class="text-slate-400">•</span>
                   <span class="font-bold text-slate-600 dark:text-slate-400 break-words">{{req.standardDetails?.location || '?'}}</span>
               </div>
@@ -231,7 +232,7 @@ import { AuthService } from '../../../../core/services/auth.service';
         @if(req.totalAmountUsed) {
           <div class="flex items-center justify-between gap-2 bg-rose-50/80 dark:bg-rose-900/10 px-3 py-2 rounded-xl border border-rose-100/80 dark:border-rose-900/40 mt-1 shadow-sm">
               <span class="text-xs font-black tracking-widest text-rose-500/80 dark:text-rose-400/80 uppercase"><i class="fa-solid fa-droplet mr-1.5"></i>Tổng đã dùng</span>
-              <span class="text-sm font-black text-rose-600 dark:text-rose-400">{{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
+              <span class="text-sm font-black text-rose-600 dark:text-rose-400">{{formatNum(req.totalAmountUsed)}} {{req.standardDetails?.unit || ''}}</span>
           </div>
         }
 
@@ -308,6 +309,7 @@ export class RequestsKanbanComponent {
   @Output() actionDelete = new EventEmitter<StandardRequest>();
 
   Date = Date;
+  formatNum = formatNum;
   @Input() currentFilter = 'ALL';
   cardLimit = signal(60);
 

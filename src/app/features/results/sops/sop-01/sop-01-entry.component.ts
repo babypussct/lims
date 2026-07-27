@@ -23,6 +23,7 @@ export class Sop01EntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Input() publishedSampleSet: Set<string> | null = null;
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
@@ -131,6 +132,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   onHasCheckSampleChange() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['hasCheckSample']) {
       this.draft.page1Data['qcKiemTraNoiBo'] = true;
     } else {
@@ -140,6 +142,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   applyBulkVials() {
+    if (this.isReadOnly) return;
     const rackStart = parseInt(String(this.bulkRackStart), 10);
     const vialStart = parseInt(String(this.bulkVialStartFip), 10);
     const perRack = parseInt(String(this.bulkVialsPerRack), 10);
@@ -190,6 +193,7 @@ export class Sop01EntryComponent implements OnInit {
 
   // ── Helper cho Mã Hồ Sơ ───────────────────────────────────────────────────
   autoFillMaHoSo() {
+    if (this.isReadOnly) return;
     // Format mã mẫu: [tiền tố chữ cái (tuỳ chọn)] + [2 số XX] + [2 số hậu tố = ngày]
     // Ví dụ: U0108 → tiền tố U, XX=01, ngày=08
     //        0108  → không tiền tố, XX=01, ngày=08
@@ -217,6 +221,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     this.draftChanged.emit(this.draft);
   }
 
@@ -293,6 +298,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   onCellChanged(sampleCode: string) {
+    if (this.isReadOnly) return;
     this.updateRecovery(sampleCode);
     this.onDataChanged();
   }
@@ -422,6 +428,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   bulkFillND() {
+    if (this.isReadOnly) return;
     const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
 
     allRowKeys.forEach((key: string) => {
@@ -444,6 +451,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   bulkClearAll() {
+    if (this.isReadOnly) return;
     const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
     allRowKeys.forEach((key: string) => {
       const row = this.draft.resultData[key];
@@ -458,6 +466,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   copyRowToAll(sourceKey: string) {
+    if (this.isReadOnly) return;
     const sourceData = this.draft.resultData[sourceKey];
     if (!sourceData) return;
 
@@ -489,6 +498,7 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   toggleSelectAll(event: Event) {
+    if (this.isReadOnly) return;
     const isChecked = (event.target as HTMLInputElement).checked;
     const rows = this.getDisplayRowsForFipronil().filter(r => !r.isQC);
     rows.forEach(r => {
@@ -507,6 +517,10 @@ export class Sop01EntryComponent implements OnInit {
 
   async importMassHunterExcel(event: Event) {
     const input = event.target as HTMLInputElement;
+    if (this.isReadOnly) {
+      input.value = '';
+      return;
+    }
     if (!input.files || input.files.length === 0) return;
     const file = input.files[0];
 

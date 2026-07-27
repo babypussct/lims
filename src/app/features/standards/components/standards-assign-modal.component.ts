@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
-import { getExpiryClass } from '../../../shared/utils/utils';
+import { getExpiryClass, formatNum } from '../../../shared/utils/utils';
 import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
 
 @Component({
@@ -34,7 +34,7 @@ import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
                       </div>
                       <div class="flex flex-col">
                           <span class="text-[10px] font-bold text-slate-400 uppercase">Lượng tồn kho</span>
-                          <span class="text-sm font-bold text-emerald-600">{{std()?.current_amount}} {{std()?.unit}}</span>
+                          <span class="text-sm font-bold text-emerald-600">{{formatNum(std()?.current_amount ?? 0)}} {{std()?.unit}}</span>
                       </div>
                       @if(std()?.internal_id) {
                           <div class="flex flex-col">
@@ -143,6 +143,8 @@ export class StandardsAssignModalComponent {
   assignExpectedAmount = signal<number | null>(null);
 
   getExpiryClass = getExpiryClass;
+  formatNum = formatNum;
+
   /** Lọ ưu tiên FEFO trong các lọ cùng tên mà nên dùng trước lọ hiện tại */
   fefoTopSibling = computed(() => {
     const current = this.std();

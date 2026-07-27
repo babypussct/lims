@@ -1,5 +1,45 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.27-b02] - 27/07/2026
+
+### 🧾 Nâng Cấp Module Kết Quả Phân Tích & Chuẩn Hóa Changelog
+
+#### 🔍 Kiểm Tra Trước Khi Tạo Báo Cáo
+- **Preflight trước khi xuất PDF:** Trước khi tạo báo cáo, hệ thống kiểm tra phạm vi mẫu đang in, mẫu được chọn, ngày ký Người phân tích/Người thẩm tra, kết quả hoặc ND, R² và mẫu đã từng có báo cáo.
+- **Chia phiếu rõ ràng:** Khi giới hạn số mẫu mỗi phiếu, màn kiểm tra hiển thị trước các phiếu dự kiến và danh sách mẫu trong từng phiếu.
+- **Tách logic dễ kiểm thử:** Logic preflight được tách thành module riêng và có test tự động cho các tình huống thiếu dữ liệu, chia phiếu, ND type3b và cảnh báo mẫu đã in.
+
+#### 📚 Lịch Sử Phiên Bản & Khôi Phục Báo Cáo
+- **Lưu lịch sử publish đầy đủ hơn:** Mỗi lần tạo báo cáo lưu backup page/result data, reportId, prefix, danh sách mẫu, file PDF/Docs và thông tin người in để phục vụ rollback.
+- **Khôi phục đúng phiếu/prefix:** Restore version có thể dò theo reportId, prefix, bản chung hoặc dữ liệu legacy để tránh khôi phục nhầm khi cùng version có nhiều phiếu.
+- **Timeline phiên bản trên UI:** Panel Các Báo Cáo hiển thị timeline 5 bản gần nhất, gồm version, phạm vi, người in, thời điểm, mẫu và nút mở PDF/Docs.
+
+#### 🔒 Readonly & Luồng Xem/Sửa Mượt Hơn
+- **Readonly thật cho SOP:** Truyền trạng thái readonly sâu xuống các SOP con và khóa input/button native cho SOP-01, SOP-03, Chloroform, Default Type2 và Type3B.
+- **Chặn side-effect khi readonly:** SOP-01 không còn cho import MassHunter, điền nhanh, điền ND, xóa bảng, copy dòng hoặc đổi chọn mẫu khi mẻ đang chỉ xem/đang xử lý.
+- **Tách xem và sửa mẻ hoàn tất:** Mẻ đã hoàn tất mở mặc định ở `/results-view/:id`; khi người dùng chủ động chỉnh sửa, hệ thống dùng `edit=1` để vào form nhập liệu.
+
+#### 🎯 Đồng Bộ UI Liên Quan
+- **Nhãn báo cáo dễ đọc hơn:** Màn xem chi tiết kết quả hiển thị nhãn theo prefix thật thay vì key/timestamp kỹ thuật.
+- **Cảnh báo rời trang chắc hơn:** Pending guard cảnh báo cả khi autosave đang saving hoặc lỗi, không chỉ khi trạng thái modified.
+- **Giữ chuẩn hiển thị chất chuẩn:** Tiếp tục đồng bộ định dạng 2 chữ số thập phân cho module Chất Chuẩn và Yêu Cầu Chất Chuẩn trong cùng bản phát hành.
+
+---
+
+## [v26.07.27-b01] - 27/07/2026
+
+### 🔢 Quy Chuẩn Hiển Thị 2 Chữ Số Thập Phân & Đồng Bộ Yêu Cầu Chất Chuẩn
+
+#### 📊 Quy Chuẩn 2 Chữ Số Thập Phân (Chuẩn GLP)
+- **Định dạng hiển thị đồng nhất:** Cập nhật hàm `formatNum` tự động định dạng hiển thị các giá trị định lượng chất chuẩn (lượng tồn kho, lượng ban đầu, lượng sử dụng, lượng trả) với đúng 2 chữ số thập phân cố định (ví dụ: `12.50`, `10.00`).
+- **Bảo toàn độ chính xác tính toán:** Giữ nguyên giá trị số thực float gốc trong Firestore để không gây sai số tích lũy tồn kho qua thời gian.
+
+#### 🎯 Đồng Bộ Toàn Bộ Giao Diện Chất Chuẩn & Yêu Cầu
+- **Module Chất Chuẩn:** Đồng bộ hiển thị 2 chữ số thập phân trên Danh sách Bảng, Card Lưới, Trang Chi tiết Chất chuẩn, Modal Gán/Mượn, Modal Nhập bù và Modal Lịch sử sử dụng.
+- **Trang Yêu Cầu Chất Chuẩn (/standard-requests):** Chuẩn hóa hiển thị tồn kho và tổng lượng sử dụng trên Bảng Yêu cầu (`requests-table`), Thẻ Kanban (`requests-kanban`), Modal Duyệt/Trả/Ghi nhận đợt dùng (`requests-action-modals`) và Khung tạo yêu cầu (`create-request-drawer`).
+
+---
+
 ## [v26.07.25-b01] - 25/07/2026
 
 ### 🧪 Nhập Bù Nhật Ký Sử Dụng Chuẩn Ngược Ngày & Tự Động Đánh Dấu Hết Hàng

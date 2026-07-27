@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, computed, inject, signal } from
 import { CommonModule } from '@angular/common';
 import { StandardRequest } from '../../../../core/models/standard.model';
 import { AuthService } from '../../../../core/services/auth.service';
+import { formatNum } from '../../../../shared/utils/utils';
 
 @Component({
   selector: 'app-requests-table',
@@ -67,7 +68,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                             <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-1">
                                                 <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tồn kho / Vị trí</span>
                                                 <div class="text-sm leading-snug">
-                                                    <span class="font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
+                                                    <span class="font-black text-slate-700 dark:text-slate-300">{{formatNum(req.standardDetails?.current_amount ?? 0)}}{{req.standardDetails?.unit}}</span>
                                                     <span class="text-slate-400 mx-1">•</span>
                                                     <span class="font-bold text-slate-600 dark:text-slate-400 break-words">{{req.standardDetails?.location || '?'}}</span>
                                                 </div>
@@ -246,6 +247,8 @@ export class RequestsTableComponent {
   @Output() actionDelete = new EventEmitter<StandardRequest>();
 
   Date = Date;
+  formatNum = formatNum;
+
 
   loadMore(): void {
     this.tableLimit.update(limit => limit + this.tableLimitStep);

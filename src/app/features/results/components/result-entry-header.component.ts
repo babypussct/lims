@@ -37,7 +37,7 @@ export class ResultEntryHeaderComponent {
   @Output() openResetModal = new EventEmitter<void>();
   @Output() deleteVirtualMaster = new EventEmitter<void>();
   @Output() openPdf = new EventEmitter<{ pdfUrl: string | null | undefined; docsUrl?: string | null | undefined }>();
-  @Output() restoreVersion = new EventEmitter<{ version: number; prefix?: string }>();
+  @Output() restoreVersion = new EventEmitter<{ version: number; prefix?: string; reportId?: string }>();
   @Output() samplesPerReportChange = new EventEmitter<number | null>();
   @Output() toggleRestoreMenu = new EventEmitter<void>();
   @Output() closeRestoreMenu = new EventEmitter<void>();

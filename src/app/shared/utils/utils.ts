@@ -102,9 +102,13 @@ export function cleanName(str: string): string {
   return str ? str.replace(/_per_/g, '/') : '';
 }
 
-export function formatNum(n: any): string {
+export function formatNum(n: any, decimals = 2): string {
   const val = parseFloat(n);
-  return isNaN(val) ? "0" : val.toLocaleString('en-US', { maximumFractionDigits: 6 });
+  if (isNaN(val)) return '0.' + '0'.repeat(decimals);
+  return val.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
 
 export function formatDate(timestamp: any): string {

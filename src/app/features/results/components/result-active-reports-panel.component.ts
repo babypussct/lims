@@ -34,6 +34,8 @@ export class ResultActiveReportsPanelComponent {
   @Input() draftStatus = 'draft';
   /** Tiến độ xuất báo cáo */
   @Input() progress: ReportProgress = { total: 0, published: 0, percent: 0, unpublishedSamples: [] };
+  /** Lịch sử các bản in đã publish/archive */
+  @Input() historyList: any[] = [];
 
   @Output() openPdf = new EventEmitter<OpenPdfEvent>();
 
@@ -83,6 +85,17 @@ export class ResultActiveReportsPanelComponent {
   getDocsPreviewUrl(url: string): string {
     if (!url) return '';
     return url.replace(/\/edit.*$/, '/preview');
+  }
+
+  getRecentHistory(): any[] {
+    return (this.historyList || []).slice(0, 5);
+  }
+
+  getHistoryScopeLabel(hist: any): string {
+    const prefix = hist?.prefix;
+    if (!prefix || prefix === 'ALL') return 'Báo cáo chung';
+    if (prefix === '_NO_PREFIX_') return 'Không tiền tố';
+    return `Nhóm ${prefix}`;
   }
 
 }

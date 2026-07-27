@@ -17,6 +17,7 @@ export class SopDefaultType2EntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Input() publishedSampleSet: Set<string> | null = null;
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
@@ -66,6 +67,7 @@ export class SopDefaultType2EntryComponent implements OnInit {
   }
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     this.draftChanged.emit(this.draft);
   }
 

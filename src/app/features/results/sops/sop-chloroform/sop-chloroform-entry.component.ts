@@ -18,6 +18,7 @@ export class SopChloroformEntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Input() publishedSampleSet: Set<string> | null = null;
   @Input() activeFilter = 'ALL';
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
@@ -372,6 +373,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     if (this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
       this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';
       this.draft.resultData['QC_FINAL']['khoiLuong'] = this.draft.resultData['QC_SPIKE']['khoiLuong'] || '';

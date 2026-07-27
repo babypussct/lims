@@ -29,6 +29,7 @@ import {
   buildUnifiedType3bPdfPayload,
   buildChloroformPdfPayload
 } from './result-pdf-helper';
+import { buildPublishPreflightSummary, PublishPreflightSummary } from './result-preflight';
 
 // Refactored sub-components
 import { ResultPrefixTabsComponent } from './components/result-prefix-tabs.component';
@@ -189,6 +190,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   // Sub-collection history signal
   historyList = signal<any[]>([]);
   showResetModal = signal(false);
+  showPreflightModal = signal(false);
+  preflightSummary = signal<PublishPreflightSummary | null>(null);
   resetConfirmText = signal('');
   isMetadataExpanded = signal(false);
 
@@ -417,17 +420,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '', sopObj);
         const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
 
-        if (sopConf && resolvedKey) {
-          this.config.set({ ...sopConf, id: resolvedKey });
-          this.configKey.set(resolvedKey);
+          if (sopConf && resolvedKey) {
+            this.config.set({ ...sopConf, id: resolvedKey });
+            this.configKey.set(resolvedKey);
 
-          if (!draftDoc) {
-            // Nếu chưa có nháp, tạo bản nháp mặc định ban đầu
-            draftDoc = this.createDefaultDraft(runDoc, sopConf);
-          }
+            if (!draftDoc) {
+              // Nếu chưa có nháp, tạo bản nháp mặc định ban đầu
+              draftDoc = this.createDefaultDraft(runDoc, sopConf);
+            }
 
-          // Cập nhật draft signal thời gian thực
-          // Chỉ cập nhật nếu đang loading lần đầu hoặc không có thay đổi chưa lưu
+            const explicitEditMode = this.route.snapshot.queryParamMap.get('edit') === '1';
+            if (draftDoc.status === 'completed' && !explicitEditMode) {
+              const queryParams = this.activeFilter() !== 'ALL' ? { prefix: this.activeFilter() } : {};
+              this.router.navigate(['/results-view', this.requestId], { queryParams, replaceUrl: true });
+              return;
+            }
+
+            // Cập nhật draft signal thời gian thực
+            // Chỉ cập nhật nếu đang loading lần đầu hoặc không có thay đổi chưa lưu
           // để tránh overwrite các giá trị đã được onSopSpecificInit() khởi tạo
           // nhưng chưa kịp auto-save vào Firestore
           if (this.isLoading() || this.autoSaveStatus() === 'synced') {
@@ -483,6 +493,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
+    if (this.formIsReadOnly()) return;
     // Tạo shallow copy để Angular signal luôn nhận new reference,
     // đảm bảo signal trigger change detection ngay cả khi child emit
     // cùng object reference (e.g., sau onSopSpecificInit trong ngOnInit).
@@ -549,16 +560,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   /**
    * Khôi phục số liệu từ một phiên bản cụ thể
    */
-  async restoreFromVersion(version: number, prefix?: string) {
+  async restoreFromVersion(version: number, prefix?: string, reportId?: string) {
     if (this.isProcessing()) return;
     
-    const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
+    const displayName = prefix && prefix !== 'ALL' ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
     const confirmed = confirm(`Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}${displayName}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`);
     if (!confirmed) return;
 
     this.closeRestoreMenu();
     this.isSavingDraft.set(true);
-    const restored = await this.resultService.restoreFromVersion(this.requestId, version, prefix);
+    const restored = await this.resultService.restoreFromVersion(this.requestId, version, prefix, reportId);
     if (restored) {
       this.draft.set(restored);
       // Reload lịch sử
@@ -571,7 +582,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   /**
    * Xuất bản kết quả -> Tạo tệp PDF
    */
-  async triggerPublishReport() {
+  async triggerPublishReport(skipPreflight = false) {
     if (this.isPublishing()) return;
     
     const currentRun = this.run();
@@ -584,6 +595,28 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.toast.show('Mẻ chạy đang bị khóa bởi người khác, không thể xuất báo cáo mới!', 'error');
         return;
       }
+    }
+
+    const preflight = buildPublishPreflightSummary({
+      run: currentRun,
+      draft: currentDraft,
+      config: currentConf,
+      configKey: this.configKey(),
+      activeFilter: this.activeFilter(),
+      samplesPerReport: this.samplesPerReport(),
+      unpublishedSamples: this.samplePublishProgress().unpublishedSamples
+    });
+    if (!skipPreflight) {
+      this.preflightSummary.set(preflight);
+      this.showPreflightModal.set(true);
+      return;
+    }
+
+    if (preflight.blockers.length > 0) {
+      this.preflightSummary.set(preflight);
+      this.showPreflightModal.set(true);
+      this.toast.show('Cần xử lý các lỗi bắt buộc trước khi tạo báo cáo.', 'error');
+      return;
     }
 
     this.isPublishing.set(true);
@@ -715,6 +748,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.resumeAutoSave();
       this.isPublishing.set(false);
     }
+  }
+
+  closePreflightModal() {
+    this.showPreflightModal.set(false);
+  }
+
+  async confirmPublishAfterPreflight() {
+    const summary = this.preflightSummary();
+    if (summary?.blockers.length) return;
+    this.showPreflightModal.set(false);
+    await this.triggerPublishReport(true);
   }
 
   /**

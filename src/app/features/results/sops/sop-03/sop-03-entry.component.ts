@@ -19,6 +19,7 @@ export class Sop03EntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Input() publishedSampleSet: Set<string> | null = null;
   @Input() activeFilter = 'ALL';
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
@@ -343,6 +344,7 @@ export class Sop03EntryComponent implements OnInit {
   }
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     this.syncQcValues();
     this.draftChanged.emit(this.draft);
   }

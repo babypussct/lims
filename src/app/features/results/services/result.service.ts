@@ -212,6 +212,8 @@ export class ResultService {
         pdfUrl: lastMeta['analysisResultSummary']?.['pdfUrl'] || '',
         pdfViewUrl: lastMeta['analysisResultSummary']?.['pdfViewUrl'] || '',
         docsUrl: lastMeta['analysisResultSummary']?.['docsUrl'] || '',
+        pdfFileName: lastMeta['analysisResultSummary']?.['pdfFileName'] || '',
+        pdfCreatedAt: lastMeta['analysisResultSummary']?.['pdfCreatedAt'] || '',
         reports: lastMeta['analysisResultSummary']?.['reports']
       };
       
@@ -289,6 +291,8 @@ export class ResultService {
         pdfUrl: metaData['analysisResultSummary']?.['pdfUrl'] || '',
         pdfViewUrl: metaData['analysisResultSummary']?.['pdfViewUrl'] || '',
         docsUrl: metaData['analysisResultSummary']?.['docsUrl'] || '',
+        pdfFileName: metaData['analysisResultSummary']?.['pdfFileName'] || '',
+        pdfCreatedAt: metaData['analysisResultSummary']?.['pdfCreatedAt'] || '',
         reports: metaData['analysisResultSummary']?.['reports']
       } as any;
     } catch (e: any) {
@@ -360,6 +364,18 @@ export class ResultService {
       if (draft.docsUrl !== undefined) summaryPayload.docsUrl = draft.docsUrl;
       else if (metaData['analysisResultSummary']?.['docsUrl'] !== undefined) summaryPayload.docsUrl = metaData['analysisResultSummary']['docsUrl'];
       else if (legacyResult['docsUrl'] !== undefined) summaryPayload.docsUrl = legacyResult['docsUrl'];
+
+      if (draft.pdfFileName !== undefined) summaryPayload.pdfFileName = draft.pdfFileName;
+      else if (metaData['analysisResultSummary']?.['pdfFileName'] !== undefined) summaryPayload.pdfFileName = metaData['analysisResultSummary']['pdfFileName'];
+      else if (legacyResult['pdfFileName'] !== undefined) summaryPayload.pdfFileName = legacyResult['pdfFileName'];
+
+      if (draft.pdfCreatedAt !== undefined) summaryPayload.pdfCreatedAt = draft.pdfCreatedAt;
+      else if (metaData['analysisResultSummary']?.['pdfCreatedAt'] !== undefined) summaryPayload.pdfCreatedAt = metaData['analysisResultSummary']['pdfCreatedAt'];
+      else if (legacyResult['pdfCreatedAt'] !== undefined) summaryPayload.pdfCreatedAt = legacyResult['pdfCreatedAt'];
+
+      if ((draft as any).includedSamples !== undefined) summaryPayload.includedSamples = (draft as any).includedSamples;
+      else if (metaData['analysisResultSummary']?.['includedSamples'] !== undefined) summaryPayload.includedSamples = metaData['analysisResultSummary']['includedSamples'];
+      else if (legacyResult['includedSamples'] !== undefined) summaryPayload.includedSamples = legacyResult['includedSamples'];
       
       if (draft.reports !== undefined) summaryPayload.reports = draft.reports;
       else if (metaData['analysisResultSummary']?.['reports'] !== undefined) summaryPayload.reports = metaData['analysisResultSummary']['reports'];
@@ -554,7 +570,7 @@ export class ResultService {
       const querySnap = await getDocs(q);
       const historyList: any[] = [];
       querySnap.forEach(docSnap => {
-        historyList.push(docSnap.data());
+        historyList.push({ _id: docSnap.id, ...docSnap.data() });
       });
       
       // Lấy thêm lịch sử báo cáo từ Master Ảo (nếu có)
@@ -567,7 +583,7 @@ export class ResultService {
           const parentQ = query(parentHistoryColRef, orderBy('version', 'desc'));
           const parentQuerySnap = await getDocs(parentQ);
           parentQuerySnap.forEach(docSnap => {
-            const data = docSnap.data();
+            const data: any = { _id: docSnap.id, ...docSnap.data() };
             data['isFromMaster'] = true;
             data['masterId'] = reqData['parentMasterId'];
             historyList.push(data);
@@ -592,7 +608,7 @@ export class ResultService {
   /**
    * Khôi phục số liệu từ một phiên bản in cụ thể (Rollback)
    */
-  async restoreFromVersion(requestId: string, versionNumber: number, prefix?: string): Promise<AnalysisResultDraft | null> {
+  async restoreFromVersion(requestId: string, versionNumber: number, prefix?: string, reportId?: string): Promise<AnalysisResultDraft | null> {
     try {
       const draft = await this.getDraft(requestId);
       if (!draft) return null;
@@ -604,13 +620,22 @@ export class ResultService {
         page1DataBackup = draft.publishedBackup?.page1Data || draft.page1Data;
         resultDataBackup = draft.publishedBackup?.resultData || draft.resultData;
       } else {
-        const docId = prefix ? `v${versionNumber}_${prefix}` : `v${versionNumber}`;
-        const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', docId);
-        const historySnap = await getDoc(historyDocRef);
-        if (historySnap.exists()) {
-          const histData = historySnap.data();
-          page1DataBackup = histData['page1DataBackup'];
-          resultDataBackup = histData['resultDataBackup'];
+        const candidateDocIds = Array.from(new Set([
+          reportId,
+          prefix ? `v${versionNumber}_${reportId || prefix}` : undefined,
+          prefix ? `v${versionNumber}_${prefix}` : undefined,
+          `v${versionNumber}`
+        ].filter(Boolean) as string[]));
+
+        for (const docId of candidateDocIds) {
+          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', docId);
+          const historySnap = await getDoc(historyDocRef);
+          if (historySnap.exists()) {
+            const histData = historySnap.data();
+            page1DataBackup = histData['page1DataBackup'];
+            resultDataBackup = histData['resultDataBackup'];
+            if (page1DataBackup && resultDataBackup) break;
+          }
         }
       }
 
@@ -621,7 +646,7 @@ export class ResultService {
           status: 'draft'
         };
         await this.saveDraft(requestId, restoredData);
-        const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
+        const displayName = prefix && prefix !== 'ALL' ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
         this.toast.show(`Đã khôi phục dữ liệu từ bản v${versionNumber}${displayName}!`, 'success');
 
         await this.logActivity(
@@ -639,7 +664,7 @@ export class ResultService {
         } as any;
       }
       
-      const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
+      const displayName = prefix && prefix !== 'ALL' ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
       this.toast.show(`Không tìm thấy dữ liệu sao lưu cho bản v${versionNumber}${displayName}!`, 'info');
       return null;
     } catch (e: any) {
@@ -759,11 +784,13 @@ export class ResultService {
       }
 
       // 4. Lưu trạng thái completed + phiên bản mới nhất và dữ liệu backup chi tiết
+      const publishedAt = new Date().toISOString();
+      const publishedBy = this.auth.currentUser()?.displayName || 'Unknown';
       const backup = {
         page1Data: draftData.page1Data || currentDraft.page1Data,
         resultData: draftData.resultData || currentDraft.resultData,
-        publishedAt: new Date().toISOString(),
-        publishedBy: this.auth.currentUser()?.displayName || 'Unknown'
+        publishedAt,
+        publishedBy
       };
 
       let updatePayload: Partial<AnalysisResultDraft>;
@@ -780,7 +807,7 @@ export class ResultService {
             pdfViewUrl: response.pdfViewUrl || null,
             docsUrl: response.docsUrl || null,
             pdfFileName: response.fileName || null,
-            pdfCreatedAt: new Date().toISOString(),
+            pdfCreatedAt: publishedAt,
             version: nextVersion,
             status: 'completed',
             includedSamples: includedSamples || []
@@ -845,7 +872,8 @@ export class ResultService {
           pdfViewUrl: response.pdfViewUrl || undefined,
           docsUrl: response.docsUrl || undefined,
           pdfFileName: response.fileName || undefined,
-          pdfCreatedAt: new Date().toISOString()
+          pdfCreatedAt: publishedAt,
+          ...({ includedSamples: includedSamples || [] } as any)
         };
       }
 
@@ -853,6 +881,24 @@ export class ResultService {
       if (!saved) {
         throw new Error('Không thể cập nhật thông tin xuất bản mới vào cơ sở dữ liệu!');
       }
+
+      const historyDocId = isPrefixReport ? `v${nextVersion}_${targetReportId}` : `v${nextVersion}`;
+      const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', historyDocId);
+      await setDoc(historyDocRef, {
+        version: nextVersion,
+        prefix: isPrefixReport ? (prefix === '' ? '_NO_PREFIX_' : prefix) : 'ALL',
+        reportId: isPrefixReport ? targetReportId : 'ALL',
+        pdfUrl: response.pdfUrl || '',
+        pdfViewUrl: response.pdfViewUrl || '',
+        docsUrl: response.docsUrl || '',
+        pdfFileName: response.fileName || (isPrefixReport ? `KQ_Nhóm_${prefix || 'Không_tiền_tố'}_Bản_v${nextVersion}` : `KQ_Bản_v${nextVersion}`),
+        publishedAt,
+        publishedBy,
+        includedSamples: includedSamples || [],
+        page1DataBackup: JSON.parse(JSON.stringify(backup.page1Data || {})),
+        resultDataBackup: JSON.parse(JSON.stringify(backup.resultData || {})),
+        status: 'published'
+      });
 
       const displayName = prefix !== undefined && prefix !== null && prefix !== 'ALL'
         ? (prefix === '' ? ' (Không tiền tố)' : ` (nhóm ${prefix})`)
@@ -1044,8 +1090,8 @@ export class ResultService {
               pdfFileName: rep.pdfFileName || `[HUY]_KQ_Nhóm_${repPrefix}_Bản_v${rep.version}`,
               publishedAt: rep.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
               publishedBy: currentDraft.updatedBy || 'Unknown',
-              page1DataBackup: rep.publishedBackup?.page1Data || {},
-              resultDataBackup: rep.publishedBackup?.resultData || {},
+              page1DataBackup: rep.publishedBackup?.page1Data || currentDraft.page1Data || {},
+              resultDataBackup: rep.publishedBackup?.resultData || currentDraft.resultData || {},
               status: 'archived'
             });
           }

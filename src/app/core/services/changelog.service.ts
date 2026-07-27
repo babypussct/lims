@@ -13,6 +13,49 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.27-b02',
+    date: '27/07/2026',
+    title: 'Nâng Cấp Module Kết Quả Phân Tích & Chuẩn Hóa Changelog',
+    highlights: [
+      'Thêm bước kiểm tra trước khi tạo báo cáo PDF để phát hiện thiếu mẫu, thiếu ngày ký, thiếu kết quả/ND và cảnh báo mẫu đã từng in.',
+      'Lưu lịch sử publish/restore đầy đủ hơn theo report ID, prefix, danh sách mẫu và backup dữ liệu nhập liệu.',
+      'Tách mặc định mẻ hoàn tất sang màn xem báo cáo, đồng thời giữ lối chỉnh sửa chủ động bằng edit=1.'
+    ],
+    features: [
+      'Modal preflight hiển thị blockers, warnings, thông tin phạm vi in và các phiếu dự kiến khi chia report.',
+      'Timeline phiên bản trong panel Các Báo Cáo với nút mở PDF/Google Docs từng bản.',
+      'Module preflight riêng kèm test tự động cho chia phiếu, ND type3b, thiếu dữ liệu và cảnh báo mẫu đã publish.'
+    ],
+    improvements: [
+      'Readonly được truyền sâu xuống các SOP Results và khóa native control cho SOP-01, SOP-03, Chloroform, Default Type2 và Type3B.',
+      'Restore version dò theo reportId/prefix/bản chung để tránh nhầm phiếu khi cùng version có nhiều report.',
+      'Màn xem chi tiết kết quả hiển thị nhãn report theo prefix thật thay vì key/timestamp kỹ thuật.'
+    ],
+    fixes: [
+      'Chặn các thao tác có side-effect trong SOP-01 khi mẻ readonly hoặc đang xử lý, gồm import MassHunter, điền nhanh, copy dòng và đổi chọn mẫu.',
+      'Pending guard cảnh báo cả khi autosave đang saving hoặc lỗi, không chỉ khi modified.',
+      'Tiếp tục đồng bộ định dạng 2 chữ số thập phân cho module Chất Chuẩn và Yêu Cầu Chất Chuẩn.'
+    ]
+  },
+  {
+    version: 'v26.07.27-b01',
+    date: '27/07/2026',
+    title: 'Quy Chuẩn Hiển Thị 2 Chữ Số Thập Phân & Đồng Bộ Yêu Cầu Chất Chuẩn',
+    highlights: [
+      'Quy chuẩn tự động hiển thị các giá trị định lượng chất chuẩn với đúng 2 chữ số thập phân cố định (12.50, 10.00).',
+      'Giữ nguyên độ chính xác tính toán tồn kho bằng cách phân tách dữ liệu lưu trữ float gốc và lớp hiển thị.',
+      'Đồng bộ hiển thị 2 chữ số thập phân trên toàn bộ module Chất Chuẩn và trang Yêu Cầu Chất Chuẩn (/standard-requests).'
+    ],
+    features: [
+      'Nâng cấp hàm formatNum hỗ trợ quy chuẩn định dạng 2 chữ số thập phân linh hoạt (Phương án A).',
+      'Đồng bộ chuẩn hóa hiển thị tồn kho và lượng sử dụng trên Bảng Yêu cầu, Card Kanban, Action Modals và Create Request Drawer.'
+    ],
+    improvements: [
+      'Giao diện gióng hàng các con số đẹp mắt, chuyên nghiệp theo chuẩn GLP.',
+      'Loại bỏ hoàn toàn các binding hiển thị số lẻ trực tiếp trên UI.'
+    ]
+  },
+  {
     version: 'v26.07.25-b01',
     date: '25/07/2026',
     title: 'Nhập Bù Nhật Ký Sử Dụng Chuẩn Ngược Ngày & Tự Động Đánh Dấu Hết Hàng',

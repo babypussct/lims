@@ -133,7 +133,9 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
     // 9.1 Emit draft ngay sau init đặc thù để đảm bảo parent nhận draft đã được
     // khởi tạo đầy đủ (tránh race condition với Firestore onSnapshot)
-    this.draftChanged.emit(this.draft);
+    if (!this.isReadOnly) {
+      this.draftChanged.emit(this.draft);
+    }
 
     // 9.5 Khởi tạo bulk vial start cho đường chuẩn và mẫu thử nếu chạy Form Đơn
     if (this.draft.page1Data['printFormType'] === 'formDon') {
@@ -537,6 +539,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   // ── Data Change Handlers ──────────────────────────────────────────────────
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     // Đồng bộ QC_FINAL theo QC_SPIKE (nếu cả 2 tồn tại)
     this.syncFinalFromSpike();
     // Tính % thu hồi cho QC mẫu thêm chuẩn

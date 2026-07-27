@@ -10,7 +10,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <fieldset [disabled]="isReadOnly" class="space-y-6 animate-fade-in">
       
       <!-- 1. Metadata Form & Checkboxes -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
@@ -270,13 +270,14 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
           </table>
         </div>
       </div>
-    </div>
+    </fieldset>
   `
 })
 export class ResultEntryType3bComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Input() publishedSampleSet: Set<string> | null = null;
 
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
@@ -369,6 +370,7 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     this.draftChanged.emit(this.draft);
   }
 

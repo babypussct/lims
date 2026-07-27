@@ -1,0 +1,101 @@
+import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
+
+export interface PublishPreflightSummary {
+  activeFilter: string;
+  includedSamples: string[];
+  chunks: string[][];
+  blockers: string[];
+  warnings: string[];
+  info: string[];
+}
+
+export interface PublishPreflightArgs {
+  run: any;
+  draft: AnalysisResultDraft;
+  config: any;
+  configKey?: string | null;
+  activeFilter: string;
+  samplesPerReport?: number | null;
+  unpublishedSamples?: string[];
+}
+
+export function buildPublishPreflightSummary(args: PublishPreflightArgs): PublishPreflightSummary {
+  const {
+    run,
+    draft,
+    config,
+    configKey,
+    activeFilter,
+    samplesPerReport,
+    unpublishedSamples = []
+  } = args;
+
+  const includedSamples = (run.sampleList || []).filter((sample: string) => {
+    const resObj = draft.resultData?.[sample] || {};
+    const startsWithLetter = /^[a-zA-Z]/.test(sample);
+    const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter && !sample.startsWith('QC_');
+  });
+
+  const chunkSize = samplesPerReport || includedSamples.length || 1;
+  const chunks: string[][] = [];
+  for (let i = 0; i < includedSamples.length; i += chunkSize) {
+    chunks.push(includedSamples.slice(i, i + chunkSize));
+  }
+
+  const blockers: string[] = [];
+  const warnings: string[] = [];
+  const info: string[] = [];
+
+  if (includedSamples.length === 0) {
+    blockers.push('Chưa có mẫu nào được chọn trong phạm vi in hiện tại.');
+  }
+  if (!draft.page1Data?.ngayNguoiPhanTich) {
+    blockers.push('Thiếu ngày ký Người phân tích.');
+  }
+  if (!draft.page1Data?.ngayNguoiThamTra) {
+    blockers.push('Thiếu ngày ký Người thẩm tra.');
+  }
+
+  const needsR2 = config.formType === 'type3a'
+    || config.formType === 'type3b'
+    || ['trifluralin-gcms', 'dichlorvos-gcms', 'chloroform-gcms'].includes(configKey || '');
+  if (needsR2 && !String(draft.page1Data?.['r2'] || '').trim()) {
+    warnings.push('Chưa nhập hệ số xác định R².');
+  }
+
+  const activeColumns = Object.keys(config.columns || {})
+    .filter(col => !['loSo', 'maSoMau', 'ghiChu', 'khoiLuong', 'heSoPhaLoang'].includes(col));
+  const missingResultSamples = includedSamples.filter((sample: string) => {
+    const row = draft.resultData?.[sample] || {};
+    if (config.formType === 'type3b' && Array.isArray(config.compounds)) {
+      return !config.compounds.some((compound: string) => hasReportableValue(row[compound]) || row[`${compound}_nd`] === true);
+    }
+    return !activeColumns.some(col => hasReportableValue(row[col]));
+  });
+  if (missingResultSamples.length > 0) {
+    blockers.push(`Có ${missingResultSamples.length} mẫu chưa có kết quả hoặc ND: ${missingResultSamples.slice(0, 8).join(', ')}${missingResultSamples.length > 8 ? '...' : ''}`);
+  }
+
+  const alreadyPublished = includedSamples.filter((sample: string) => !unpublishedSamples.includes(sample));
+  if (alreadyPublished.length > 0) {
+    warnings.push(`${alreadyPublished.length} mẫu trong phạm vi này đã từng có báo cáo. Lần in mới sẽ tạo phiên bản mới/phiếu mới.`);
+  }
+  if (chunks.length > 1) {
+    info.push(`Sẽ tách thành ${chunks.length} phiếu, mỗi phiếu tối đa ${chunkSize} mẫu.`);
+  }
+  if (activeFilter !== 'ALL') {
+    info.push(`Phạm vi in hiện tại: ${activeFilter === '' ? 'Không tiền tố' : 'Nhóm ' + activeFilter}.`);
+  }
+  if (draft.page1Data?.['printFormType']) {
+    info.push(`Kiểu form: ${draft.page1Data['printFormType']}.`);
+  }
+
+  return { activeFilter, includedSamples, chunks, blockers, warnings, info };
+}
+
+function hasReportableValue(value: any): boolean {
+  return value !== null && value !== undefined && String(value).trim() !== '' && value !== 'N/A';
+}

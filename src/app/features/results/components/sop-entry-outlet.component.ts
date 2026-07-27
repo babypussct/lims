@@ -177,14 +177,14 @@ export class SopEntryOutletComponent implements OnChanges, OnDestroy {
 
       return {
         load: () => import('../result-entry-type3b.component').then(m => m.ResultEntryType3bComponent),
-        inputs: ['run', 'draft', 'config', 'publishedSampleSet']
+        inputs: ['run', 'draft', 'config', 'isReadOnly', 'publishedSampleSet']
       };
     }
 
     if (key === 'fipronil-chlorpyrifos') {
       return {
         load: () => import('../sops/sop-01/sop-01-entry.component').then(m => m.Sop01EntryComponent),
-        inputs: ['run', 'draft', 'config', 'publishedSampleSet']
+        inputs: ['run', 'draft', 'config', 'isReadOnly', 'publishedSampleSet']
       };
     }
     if (key === 'dichlorvos-gcms') {
@@ -196,19 +196,19 @@ export class SopEntryOutletComponent implements OnChanges, OnDestroy {
     if (key === 'chloroform-gcms') {
       return {
         load: () => import('../sops/sop-chloroform/sop-chloroform-entry.component').then(m => m.SopChloroformEntryComponent),
-        inputs: ['run', 'draft', 'config', 'activeFilter', 'publishedSampleSet']
+        inputs: ['run', 'draft', 'config', 'activeFilter', 'isReadOnly', 'publishedSampleSet']
       };
     }
     if (key === 'trifluralin-gcms') {
       return {
         load: () => import('../sops/sop-03/sop-03-entry.component').then(m => m.Sop03EntryComponent),
-        inputs: ['run', 'draft', 'config', 'activeFilter', 'publishedSampleSet']
+        inputs: ['run', 'draft', 'config', 'activeFilter', 'isReadOnly', 'publishedSampleSet']
       };
     }
 
     return {
       load: () => import('../sops/sop-default-type2/sop-default-type2-entry.component').then(m => m.SopDefaultType2EntryComponent),
-      inputs: ['run', 'draft', 'config', 'publishedSampleSet']
+      inputs: ['run', 'draft', 'config', 'isReadOnly', 'publishedSampleSet']
     };
   }
 }

@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, signal, effect, OnChanges, Simp
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StandardRequest, ReferenceStandard } from '../../../../core/models/standard.model';
-import { getStandardizedAmount } from '../../../../shared/utils/utils';
+import { getStandardizedAmount, formatNum } from '../../../../shared/utils/utils';
 
 export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminReceive' | null;
 
@@ -37,7 +37,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                        }
                        <div class="flex flex-col">
                            <span class="text-xs font-bold text-slate-400 uppercase">Tồn kho hiện tại</span>
-                           <span class="text-base font-bold text-emerald-600">{{request.standardDetails?.current_amount}} {{request.standardDetails?.unit}}</span>
+                           <span class="text-base font-bold text-emerald-600">{{formatNum(request.standardDetails?.current_amount ?? 0)}} {{request.standardDetails?.unit}}</span>
                        </div>
                        @if(request.standardDetails?.internal_id) {
                            <div class="flex flex-col">
@@ -143,7 +143,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <h4 class="font-black text-slate-800 dark:text-slate-100 leading-tight mb-2">{{request.standardName}}</h4>
                       <div class="flex justify-between items-center">
                           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tồn kho hiện tại</span>
-                          <span class="font-black text-indigo-600">{{standard?.current_amount || request.standardDetails?.current_amount || 0}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
+                          <span class="font-black text-indigo-600">{{formatNum(standard?.current_amount || request.standardDetails?.current_amount || 0)}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                       </div>
                   </div>
 
@@ -181,7 +181,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                           @if (returnAmount() !== null && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0)) {
-                              <p class="text-red-500 text-xs font-bold mt-2 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Vượt quá tồn kho hiện hành ({{standard?.current_amount || request.standardDetails?.current_amount || 0}})</p>
+                              <p class="text-red-500 text-xs font-bold mt-2 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Vượt quá tồn kho hiện hành ({{formatNum(standard?.current_amount || request.standardDetails?.current_amount || 0)}})</p>
                           }
                       </div>
                   }
@@ -221,7 +221,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                           <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                       </div>
                       @if (logUsageAmount() !== null && logUsageAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0)) {
-                          <p class="text-red-500 text-xs font-bold mt-2 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Vượt quá tồn kho hiện hành ({{standard?.current_amount || request.standardDetails?.current_amount || 0}})</p>
+                          <p class="text-red-500 text-xs font-bold mt-2 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Vượt quá tồn kho hiện hành ({{formatNum(standard?.current_amount || request.standardDetails?.current_amount || 0)}})</p>
                       }
                   </div>
 
@@ -415,6 +415,8 @@ export class RequestsActionModalsComponent implements OnChanges {
       disposalReason: this.adminReceiveDisposalReason()
     });
   }
+
+  formatNum = formatNum;
 
   minimumLoggedAmount(): number {
     const standardUnit = this.standard?.unit || this.request?.standardDetails?.unit;

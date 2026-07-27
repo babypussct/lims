@@ -680,6 +680,7 @@ export class ResultEntryType2Component implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Input() publishedSampleSet: Set<string> | null = null;
 
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
@@ -911,6 +912,7 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   onDataChanged() {
+    if (this.isReadOnly) return;
     this.syncQcValues();
     this.draftChanged.emit(this.draft);
   }
