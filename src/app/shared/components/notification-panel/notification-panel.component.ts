@@ -47,33 +47,26 @@ interface DateGroup {
 
         <!-- ── Header ── -->
         <div class="notif-header shrink-0">
-          <div class="flex items-center gap-3">
-            <div class="notif-header-icon">
-              <i class="fa-solid fa-bell text-sm"></i>
-            </div>
-            <div>
-              <h2 class="font-bold text-slate-900 dark:text-slate-100 text-base leading-tight tracking-tight">Thông Báo</h2>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                @if (unreadCount() > 0) {
-                  <span class="notif-unread-pill">
-                    <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                    {{ unreadCount() }} chưa đọc
-                  </span>
-                } @else {
-                  <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Tất cả đã đọc</span>
-                }
-              </div>
+          <div class="min-w-0">
+            <h2 class="font-extrabold text-slate-950 dark:text-slate-50 text-[22px] leading-tight">Thông báo</h2>
+            <div class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+              @if (unreadCount() > 0) {
+                <span><b class="text-blue-600 dark:text-blue-400">{{ unreadCount() }}</b> thông báo chưa đọc</span>
+              } @else {
+                <span>Bạn đã xem tất cả thông báo</span>
+              }
             </div>
           </div>
 
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1.5">
             @if (unreadCount() > 0) {
               <button
                 (click)="markAllAsRead()"
-                class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-700 dark:hover:text-fuchsia-300
-                       px-2.5 py-1.5 rounded-xl hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40 transition-all active:scale-95 flex items-center gap-1">
-                <i class="fa-solid fa-check-double text-[10px]"></i>
-                Đọc Tất Cả
+                class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300
+                       hover:bg-blue-100 dark:hover:bg-blue-950/50 hover:text-blue-600 dark:hover:text-blue-400
+                       transition-all active:scale-95 flex items-center justify-center"
+                title="Đánh dấu tất cả đã đọc">
+                <i class="fa-solid fa-check-double text-xs"></i>
               </button>
             }
 
@@ -81,8 +74,8 @@ interface DateGroup {
               <div class="relative notif-actions-wrapper">
                 <button
                   (click)="toggleActionsMenu()"
-                  class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
-                         hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-700 dark:hover:text-slate-200
+                  class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
+                         hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100
                          transition-all active:scale-90"
                   title="Tùy chọn">
                   <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
@@ -107,8 +100,8 @@ interface DateGroup {
 
             <button
               (click)="panel.close()"
-              class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500
-                     hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-700 dark:hover:text-slate-200
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
+                     hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100
                      transition-all active:scale-90">
               <i class="fa-solid fa-xmark text-sm"></i>
             </button>
@@ -166,23 +159,21 @@ interface DateGroup {
                   class="notif-item group relative"
                   [class.notif-item--unread]="!n.isRead">
 
-                  <!-- Color Accent Left Bar -->
-                  <span class="notif-accent-bar" [ngClass]="getAccentBarClass(n.type)"></span>
-
-                  <div class="flex gap-3 items-start pl-3.5 pr-3 py-3">
+                  <div class="notif-item-layout">
                     <!-- Type Icon Container -->
                     <div class="notif-type-icon shrink-0" [ngClass]="getIconClass(n.type)">
                       <i class="fa-solid" [ngClass]="getIcon(n.type)"></i>
                     </div>
 
                     <!-- Main Body Content -->
-                    <div class="flex-1 min-w-0">
-                      <div class="flex justify-between items-start gap-2 mb-0.5">
-                        <h4 class="font-bold text-[13px] text-slate-800 dark:text-slate-100 leading-snug"
+                    <div class="notif-item-body">
+                      <div class="notif-item-heading">
+                        <h4 class="font-bold text-[13px] text-slate-900 dark:text-slate-100 leading-snug"
                             [class.truncate]="!isExpanded(n)">
                           {{ n.title }}
                         </h4>
-                        <span class="text-[10px] whitespace-nowrap text-slate-400 dark:text-slate-500 shrink-0 font-medium pt-0.5"
+                        <span class="notif-item-time"
+                              [ngClass]="!n.isRead ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'"
                               [title]="getFullDate(n.createdAt)">
                           {{ getTimeAgo(n.createdAt) }}
                         </span>
@@ -195,14 +186,14 @@ interface DateGroup {
 
                       @if (n.message && n.message.length > 90) {
                         <button (click)="toggleExpand(n, $event)"
-                                class="text-[10px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline mt-1 inline-block">
+                                class="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
                           {{ isExpanded(n) ? 'Ẩn bớt ↑' : 'Xem thêm ↓' }}
                         </button>
                       }
 
                       <!-- Action Button Chip -->
                       @if (n.actionUrl) {
-                        <div class="mt-2 flex items-center justify-between">
+                        <div class="mt-1.5 flex items-center">
                           <span class="notif-action-chip" [ngClass]="getChipClass(n.type)">
                             <span>{{ getActionLabel(n.type) }}</span>
                             <i class="fa-solid fa-arrow-right text-[9px] transition-transform group-hover:translate-x-0.5"></i>
@@ -211,19 +202,23 @@ interface DateGroup {
                       }
                     </div>
 
+                    @if (!n.isRead) {
+                      <span class="notif-unread-dot shrink-0 self-center" title="Chưa đọc"></span>
+                    }
+
                     <!-- Quick Hover Action Buttons -->
-                    <div class="notif-item-actions shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div class="notif-item-actions">
                       @if (!n.isRead) {
                         <button
                           (click)="markAsRead(n.id!, $event)"
-                          class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/60 text-slate-500 hover:text-fuchsia-600 dark:text-slate-400 dark:hover:text-fuchsia-300 flex items-center justify-center transition-all"
+                          class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-950/60 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300 flex items-center justify-center transition-all"
                           title="Đánh dấu đã đọc">
                           <i class="fa-solid fa-check text-[10px]"></i>
                         </button>
                       }
                       <button
                         (click)="deleteNotification(n, $event)"
-                        class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 flex items-center justify-center transition-all"
+                        class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 flex items-center justify-center transition-all"
                         title="Xoá thông báo">
                         <i class="fa-solid fa-trash-can text-[10px]"></i>
                       </button>
@@ -255,7 +250,7 @@ interface DateGroup {
           </span>
           <button
             (click)="goToSettings()"
-            class="text-[11px] font-bold text-fuchsia-600 hover:text-fuchsia-700 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 transition-colors flex items-center gap-1.5">
+            class="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5">
             <i class="fa-solid fa-gear text-[10px]"></i>
             Cài Đặt Thông Báo
           </button>
@@ -266,9 +261,7 @@ interface DateGroup {
   styles: [`
     /* === Backdrop === */
     .notif-backdrop {
-      background: rgba(15, 23, 42, 0.4);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      background: transparent;
       animation: notifFadeIn 0.22s ease-out forwards;
     }
 
@@ -277,27 +270,24 @@ interface DateGroup {
      * Dimensions: width 420px, max-height 70vh, border-radius 24px.
      */
     .notif-drawer {
-      width: min(420px, calc(100vw - 24px));
-      max-height: min(680px, 70vh);
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 24px;
-      border: 1px solid rgba(226, 232, 240, 0.9);
+      width: min(400px, calc(100vw - 24px));
+      max-height: min(720px, calc(100vh - 76px));
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
       box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.03),
-        0 24px 60px -12px rgba(15, 23, 42, 0.22),
-        0 0 0 1px rgba(0, 0, 0, 0.03);
+        0 12px 28px rgba(0, 0, 0, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.08);
       animation: notifPopUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       overflow: hidden;
     }
 
     :host-context(.dark) .notif-drawer {
-      background: rgba(15, 23, 42, 0.96);
-      border-color: rgba(51, 65, 85, 0.8);
+      background: #242526;
+      border-color: rgba(255, 255, 255, 0.08);
       box-shadow:
-        0 25px 65px -12px rgba(0, 0, 0, 0.65),
-        0 0 0 1px rgba(255, 255, 255, 0.08);
+        0 12px 28px rgba(0, 0, 0, 0.55),
+        0 2px 4px rgba(0, 0, 0, 0.35);
     }
 
     /* === Header === */
@@ -305,39 +295,7 @@ interface DateGroup {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px 14px;
-      border-bottom: 1px solid rgba(241, 245, 249, 0.9);
-    }
-
-    :host-context(.dark) .notif-header {
-      border-bottom-color: rgba(30, 41, 59, 0.9);
-    }
-
-    .notif-header-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 100%);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 14px rgba(217, 70, 239, 0.35);
-      flex-shrink: 0;
-    }
-
-    .notif-unread-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: linear-gradient(135deg, #d946ef, #ec4899);
-      color: white;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 999px;
-      letter-spacing: 0.01em;
-      box-shadow: 0 2px 6px rgba(217, 70, 239, 0.25);
+      padding: 16px 16px 10px;
     }
 
     /* === Actions Dropdown === */
@@ -348,7 +306,7 @@ interface DateGroup {
       margin-top: 6px;
       width: 200px;
       background: white;
-      border-radius: 16px;
+      border-radius: 8px;
       box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
       padding: 6px;
       z-index: 50;
@@ -398,38 +356,32 @@ interface DateGroup {
 
     /* === Segmented Control Tab Bar === */
     .notif-tab-bar {
-      padding: 8px 14px;
-      border-bottom: 1px solid rgba(241, 245, 249, 0.9);
-      background: rgba(248, 250, 252, 0.8);
+      padding: 4px 12px 10px;
+      background: transparent;
     }
 
     :host-context(.dark) .notif-tab-bar {
-      border-bottom-color: rgba(30, 41, 59, 0.9);
-      background: rgba(15, 23, 42, 0.6);
+      background: transparent;
     }
 
     .notif-tab-container {
-      display: flex;
-      gap: 4px;
-      padding: 3px;
-      background: rgba(226, 232, 240, 0.6);
-      border-radius: 14px;
-    }
-
-    :host-context(.dark) .notif-tab-container {
-      background: rgba(30, 41, 59, 0.8);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 2px;
+      background: transparent;
+      width: 100%;
     }
 
     .notif-tab {
-      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      padding: 7px 6px;
-      border-radius: 10px;
+      gap: 3px;
+      min-width: 0;
+      padding: 7px 4px;
+      border-radius: 999px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: #64748b;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       border: none;
@@ -442,33 +394,34 @@ interface DateGroup {
     }
 
     .notif-tab:hover {
-      color: #1e293b;
+      background: #f0f2f5;
+      color: #1c1e21;
     }
 
     :host-context(.dark) .notif-tab:hover {
+      background: #3a3b3c;
       color: #f1f5f9;
     }
 
     .notif-tab--active {
-      background: white;
-      color: #a21caf;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      background: #e7f3ff;
+      color: #0866ff;
+      box-shadow: none;
     }
 
     :host-context(.dark) .notif-tab--active {
-      background: #1e1030;
-      color: #e879f9;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      background: rgba(8, 102, 255, 0.2);
+      color: #7ab7ff;
+      box-shadow: none;
     }
 
     .notif-tab-count {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
+      min-width: 15px;
+      height: 15px;
+      padding: 0 3px;
       border-radius: 999px;
       font-size: 9px;
       font-weight: 800;
@@ -477,8 +430,8 @@ interface DateGroup {
     }
 
     .notif-tab-count--active {
-      background: linear-gradient(135deg, #d946ef, #ec4899);
-      color: white;
+      background: #0866ff;
+      color: #ffffff;
     }
 
     /* === Date Separator === */
@@ -486,107 +439,162 @@ interface DateGroup {
       position: sticky;
       top: 0;
       z-index: 10;
-      padding: 6px 18px 4px;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+      padding: 9px 16px 5px;
+      background: rgba(255, 255, 255, 0.96);
     }
 
     :host-context(.dark) .notif-date-separator {
-      background: rgba(15, 23, 42, 0.9);
-      border-bottom-color: rgba(30, 41, 59, 0.8);
+      background: rgba(36, 37, 38, 0.96);
     }
 
     .notif-date-label {
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #94a3b8;
+      color: #1c1e21;
     }
 
     :host-context(.dark) .notif-date-label {
-      color: #64748b;
+      color: #e4e6eb;
     }
 
     /* === Notification Item === */
     .notif-item {
       transition: background-color 0.18s ease;
-      border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+      margin: 0 8px 2px;
+      border-radius: 12px;
       cursor: pointer;
-    }
-
-    :host-context(.dark) .notif-item {
-      border-bottom-color: rgba(30, 41, 59, 0.8);
+      overflow: hidden;
     }
 
     .notif-item:hover {
-      background: rgba(248, 250, 252, 0.9);
+      background: #f0f2f5;
     }
 
     :host-context(.dark) .notif-item:hover {
-      background: rgba(30, 41, 59, 0.6);
+      background: #3a3b3c;
     }
 
     .notif-item--unread {
-      background: linear-gradient(90deg, rgba(250, 245, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+      background: #e7f3ff;
     }
 
     :host-context(.dark) .notif-item--unread {
-      background: linear-gradient(90deg, rgba(147, 51, 234, 0.1) 0%, rgba(15, 23, 42, 0.2) 100%);
+      background: rgba(8, 102, 255, 0.16);
     }
 
     .notif-item--unread:hover {
-      background: linear-gradient(90deg, rgba(243, 232, 255, 0.9) 0%, rgba(250, 245, 255, 0.6) 100%);
+      background: #dbeeff;
     }
 
     :host-context(.dark) .notif-item--unread:hover {
-      background: linear-gradient(90deg, rgba(147, 51, 234, 0.16) 0%, rgba(30, 41, 59, 0.5) 100%);
+      background: rgba(8, 102, 255, 0.24);
     }
 
     /* === Accent Left Bar === */
     .notif-accent-bar {
-      position: absolute;
-      left: 0;
-      top: 12px;
-      bottom: 12px;
-      width: 4px;
-      border-radius: 0 4px 4px 0;
+      display: none;
     }
 
     /* === Type Icon Container === */
     .notif-type-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 12px;
+    }
+
+    .notif-item-layout {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 9px 10px;
+    }
+
+    .notif-item-body {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .notif-item-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .notif-item-time {
+      padding-top: 2px;
+      white-space: nowrap;
+      font-size: 9.5px;
+      font-weight: 600;
+    }
+
+    .notif-item-actions {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 1px 5px rgba(15, 23, 42, 0.14);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .notif-item:hover .notif-item-actions,
+    .notif-item:focus-within .notif-item-actions {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    :host-context(.dark) .notif-item-actions {
+      background: rgba(36, 37, 38, 0.96);
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    .notif-unread-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #0866ff;
+      box-shadow: 0 0 0 3px rgba(8, 102, 255, 0.1);
     }
 
     /* === Action Chip Button === */
     .notif-action-chip {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 3px 10px;
+      gap: 5px;
+      padding: 3px 8px;
       border-radius: 999px;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
       border: 1px solid transparent;
       transition: all 0.18s ease;
+      background: #e7f3ff !important;
+      color: #0866ff !important;
+      border-color: transparent !important;
     }
 
     /* === Load More Button === */
     .notif-load-more-btn {
       width: 100%;
       padding: 9px 14px;
-      border-radius: 14px;
-      border: 1.5px dashed #cbd5e1;
-      background: #fafafa;
-      color: #64748b;
+      border-radius: 8px;
+      border: 0;
+      background: #e7f3ff;
+      color: #0866ff;
       font-size: 11px;
       font-weight: 700;
       display: flex;
@@ -604,28 +612,26 @@ interface DateGroup {
     }
 
     .notif-load-more-btn:hover {
-      border-color: #d946ef;
-      color: #a21caf;
-      background: #fdf4ff;
+      color: #0759d6;
+      background: #dbeeff;
     }
 
     :host-context(.dark) .notif-load-more-btn:hover {
-      border-color: #c084fc;
-      color: #e879f9;
-      background: rgba(192, 132, 252, 0.1);
+      color: #9ccbff;
+      background: rgba(8, 102, 255, 0.24);
     }
 
     /* === Footer === */
     .notif-footer {
-      padding: 12px 20px;
-      border-top: 1px solid rgba(241, 245, 249, 0.9);
+      padding: 11px 16px;
+      border-top: 1px solid #e4e6eb;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
     :host-context(.dark) .notif-footer {
-      border-top-color: rgba(30, 41, 59, 0.9);
+      border-top-color: #3e4042;
     }
 
     /* === Empty State Icon === */
@@ -656,13 +662,19 @@ interface DateGroup {
 
     /* === Mobile Native Bottom Sheet === */
     @media (max-width: 767px) {
+      .notif-backdrop {
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+
       .notif-drawer {
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
         max-height: 85vh !important;
-        border-radius: 24px 24px 0 0 !important;
+        border-radius: 18px 18px 0 0 !important;
         animation: notifSheetSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 

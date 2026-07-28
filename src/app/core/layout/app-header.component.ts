@@ -9,7 +9,7 @@ import { QrGlobalService } from '../services/qr-global.service';
 import { ChangelogService } from '../services/changelog.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
-import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
+import { ROUTE_ACCESS, ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
 
 interface PaletteItem {
   id: string;
@@ -28,48 +28,53 @@ interface PaletteItem {
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
-      class="hidden md:flex fixed top-0 right-0 z-[45] h-14 items-center gap-3 px-5
+      class="hidden md:grid fixed top-0 right-0 z-[45] h-14 items-center gap-3 px-5
+             grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)]
+             lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22.5rem)_minmax(0,1fr)]
              bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl
              border-b border-slate-200/50 dark:border-slate-800/50
              transition-[left] duration-300 ease-in-out"
       [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '0' : '16rem')">
 
-      <!-- ── Sidebar Toggle ── -->
-      <button
-        (click)="state.toggleSidebarCollapse()"
-        class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-               text-slate-400 dark:text-slate-500
-               hover:bg-slate-100 dark:hover:bg-slate-800
-               hover:text-fuchsia-500 dark:hover:text-fuchsia-400
-               transition-all duration-200 active:scale-90"
-        [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
-        <i class="fa-solid text-[13px] transition-transform duration-300"
-           [class.fa-bars]="state.sidebarCollapsed()"
-           [class.fa-chevron-left]="!state.sidebarCollapsed()"></i>
-      </button>
-
-      <!-- ── Breadcrumb / Page Title ── -->
-      <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div class="flex items-center gap-2 min-w-0">
+        <!-- ── Sidebar Toggle ── -->
         <button
-          type="button"
-          (click)="goToDashboard()"
-          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                 text-fuchsia-500 dark:text-fuchsia-400
-                 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40
+          (click)="state.toggleSidebarCollapse()"
+          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
+                 text-slate-400 dark:text-slate-500
+                 hover:bg-slate-100 dark:hover:bg-slate-800
+                 hover:text-fuchsia-500 dark:hover:text-fuchsia-400
                  transition-all duration-200 active:scale-90"
-          title="Về Trang Chủ"
-          aria-label="Về Trang Chủ">
-          <i class="fa-solid fa-house text-[12px]"></i>
+          [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
+          <i class="fa-solid text-[13px] transition-transform duration-300"
+             [class.fa-bars]="state.sidebarCollapsed()"
+             [class.fa-chevron-left]="!state.sidebarCollapsed()"></i>
         </button>
-        <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-          {{ pageTitle() }}
-        </span>
+
+        <!-- ── Breadcrumb / Page Title ── -->
+        <div class="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            (click)="goToDashboard()"
+            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                   text-fuchsia-500 dark:text-fuchsia-400
+                   hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40
+                   transition-all duration-200 active:scale-90"
+            title="Về Trang Chủ"
+            aria-label="Về Trang Chủ">
+            <i class="fa-solid fa-house text-[12px]"></i>
+          </button>
+          <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
+            {{ pageTitle() }}
+          </span>
+        </div>
       </div>
 
       <!-- ── Command Palette Trigger (real search, not just QR) ── -->
       <button
         (click)="openPalette()"
-        class="flex items-center gap-2.5 h-9 px-3.5 rounded-xl
+        class="w-full h-9 px-0 lg:px-3 rounded-xl
+               flex items-center justify-center lg:justify-start gap-2.5
                bg-slate-50 dark:bg-slate-800/80
                border border-slate-200/60 dark:border-slate-700/60
                text-slate-400 dark:text-slate-500
@@ -78,56 +83,38 @@ interface PaletteItem {
                transition-all duration-200 group cursor-pointer"
         title="Tìm kiếm trang hoặc quét mã (Ctrl+K)">
         <i class="fa-solid fa-magnifying-glass text-[11px] group-hover:scale-110 transition-transform"></i>
-        <span class="text-xs font-medium hidden lg:inline">Tìm kiếm...</span>
-        <kbd class="hidden lg:inline-flex items-center gap-0.5 h-5 px-1.5 rounded-md
+        <span class="text-xs font-medium hidden lg:inline flex-1 text-left truncate">Tìm chức năng...</span>
+        <kbd class="hidden xl:inline-flex items-center gap-0.5 h-5 px-1.5 rounded-md
                     bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600
                     text-[10px] font-bold text-slate-400 dark:text-slate-500 shadow-sm">
           ⌘K
         </kbd>
       </button>
 
-      <!-- ── Online / Offline Status ── -->
-      <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
-           [ngClass]="isOnline()
-             ? 'bg-emerald-50/80 dark:bg-emerald-900/20'
-             : 'bg-red-50/80 dark:bg-red-900/20'"
-           [title]="isOnline() ? 'Kết nối ổn định' : 'Mất kết nối'">
-        <span class="relative flex h-2 w-2">
-          @if (isOnline()) {
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50"></span>
-          }
-          <span class="relative inline-flex rounded-full h-2 w-2"
-                [ngClass]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"></span>
-        </span>
-        <span class="text-[10px] font-bold hidden xl:inline"
-              [ngClass]="isOnline() ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
-          {{ isOnline() ? 'Online' : 'Offline' }}
-        </span>
-      </div>
+      <div class="flex items-center justify-end gap-2 min-w-0">
+        <!-- ── Dark Mode Toggle ── -->
+        <button
+          (click)="state.toggleDarkMode()"
+          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
+                 bg-white dark:bg-slate-800
+                 border border-slate-200/60 dark:border-slate-700/60
+                 text-slate-500 dark:text-slate-400
+                 hover:text-fuchsia-500 dark:hover:text-fuchsia-400
+                 hover:border-fuchsia-300 dark:hover:border-fuchsia-700
+                 hover:shadow-md hover:shadow-fuchsia-500/5
+                 transition-all duration-200 shadow-sm active:scale-95"
+          [title]="state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối'">
+          <i class="fa-solid text-sm transition-transform duration-300"
+             [class.fa-sun]="state.darkMode()"
+             [class.fa-moon]="!state.darkMode()"
+             [class.rotate-180]="state.darkMode()"></i>
+        </button>
 
-      <!-- ── Dark Mode Toggle ── -->
-      <button
-        (click)="state.toggleDarkMode()"
-        class="w-9 h-9 rounded-xl flex items-center justify-center
-               bg-white dark:bg-slate-800
-               border border-slate-200/60 dark:border-slate-700/60
-               text-slate-500 dark:text-slate-400
-               hover:text-fuchsia-500 dark:hover:text-fuchsia-400
-               hover:border-fuchsia-300 dark:hover:border-fuchsia-700
-               hover:shadow-md hover:shadow-fuchsia-500/5
-               transition-all duration-200 shadow-sm active:scale-95"
-        [title]="state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối'">
-        <i class="fa-solid text-sm transition-transform duration-300"
-           [class.fa-sun]="state.darkMode()"
-           [class.fa-moon]="!state.darkMode()"
-           [class.rotate-180]="state.darkMode()"></i>
-      </button>
+        <!-- ── Notification Bell ── -->
+        <app-notification-bell [headerMode]="true"></app-notification-bell>
 
-      <!-- ── Notification Bell ── -->
-      <app-notification-bell [headerMode]="true"></app-notification-bell>
-
-      <!-- ── Profile Pill ── -->
-      <div class="relative">
+        <!-- ── Profile Pill ── -->
+        <div class="relative">
         @if (profileMenuOpen()) {
           <div class="fixed inset-0 z-[55]" (click)="profileMenuOpen.set(false)"></div>
         }
@@ -140,10 +127,14 @@ interface PaletteItem {
             ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200 dark:border-fuchsia-800/50 shadow-md shadow-fuchsia-500/10'
             : 'bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 shadow-sm'"
           title="Tài khoản">
-          <img
-            [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
-            class="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 object-cover"
-            alt="User">
+          <span class="relative w-8 h-8 shrink-0" [title]="isOnline() ? 'Đang trực tuyến' : 'Đang ngoại tuyến'">
+            <img
+              [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+              class="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 object-cover"
+              alt="User">
+            <span class="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800"
+                  [ngClass]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"></span>
+          </span>
           <div class="hidden xl:block text-left min-w-0">
             <div class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-[100px]">
               {{ auth.currentUser()?.displayName }}
@@ -160,18 +151,19 @@ interface PaletteItem {
         @if (profileMenuOpen()) {
           <div class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-              <img
-                [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
-                class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
-                alt="User">
+              <span class="relative w-10 h-10 shrink-0">
+                <img
+                  [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+                  class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
+                  alt="User">
+                <span class="absolute right-0 bottom-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900"
+                      [ngClass]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"
+                      [title]="isOnline() ? 'Online' : 'Offline'"></span>
+              </span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-bold truncate">{{ auth.currentUser()?.displayName }}</div>
                 <div class="text-[11px] text-slate-400 dark:text-slate-500 truncate">{{ auth.currentUser()?.email || auth.currentUser()?.role }}</div>
               </div>
-              <span
-                class="ml-auto w-2.5 h-2.5 rounded-full shrink-0"
-                [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"
-                [title]="isOnline() ? 'Online' : 'Offline'"></span>
             </div>
             <div class="p-2 space-y-0.5">
               <button (click)="openAccountSettings()"
@@ -199,6 +191,7 @@ interface PaletteItem {
             </div>
           </div>
         }
+        </div>
       </div>
     </header>
 
@@ -315,9 +308,10 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
       category: 'Hành động nhanh'
     });
 
-    // Route-based pages
+    // Route-based pages, filtered with the same access contract as route guards.
     for (const [segment, title] of Object.entries(ROUTE_TITLES)) {
       if (segment === 'printing' || segment === 'results-view') continue; // internal routes
+      if (!this.canAccessRoute(segment)) continue;
       items.push({
         id: `route-${segment}`,
         name: title,
@@ -329,6 +323,13 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
     return items;
   });
+
+  private canAccessRoute(segment: string): boolean {
+    const access = ROUTE_ACCESS[segment];
+    if (!access) return true;
+    if (access === 'role:manager') return this.state.isAdmin();
+    return this.auth.hasPermission(access);
+  }
 
   /** Filtered items based on search query */
   filteredItems = computed<PaletteItem[]>(() => {

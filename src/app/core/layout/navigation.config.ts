@@ -44,6 +44,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   'master-targets': 'Master Chỉ Tiêu',
   'matrix-types': 'Loại Nền Mẫu',
   'master-devices': 'Thiết Bị Phân Tích',
+  'sample-description-master': 'Mô Tả Mẫu',
   'results-view': 'Xem Kết Quả',
   'printing': 'In Ấn',
 };
@@ -72,8 +73,32 @@ export const ROUTE_ICONS: Record<string, string> = {
   'master-targets': 'fa-crosshairs',
   'matrix-types': 'fa-table-cells',
   'master-devices': 'fa-microscope',
+  'sample-description-master': 'fa-tags',
   'results-view': 'fa-square-poll-vertical',
   'printing': 'fa-print',
+};
+
+/** Quyền truy cập route dùng chung cho guard-aware navigation/search. */
+export const ROUTE_ACCESS: Partial<Record<string, NavigationAccess>> = {
+  'calculator': PERMISSIONS.SOP_VIEW,
+  'smart-batch': PERMISSIONS.BATCH_RUN,
+  'inventory': PERMISSIONS.INVENTORY_VIEW,
+  'standards': PERMISSIONS.STANDARD_VIEW,
+  'daily-checklist': PERMISSIONS.SOP_VIEW,
+  'standard-requests': PERMISSIONS.STANDARD_VIEW,
+  'standard-usage': PERMISSIONS.STANDARD_LOG_VIEW,
+  'recipes': PERMISSIONS.RECIPE_VIEW,
+  'target-groups': 'role:manager',
+  'master-targets': 'role:manager',
+  'matrix-types': 'role:manager',
+  'master-devices': 'role:manager',
+  'sample-description-master': 'role:manager',
+  'requests': PERMISSIONS.SOP_VIEW,
+  'results': PERMISSIONS.SOP_VIEW,
+  'stats': PERMISSIONS.REPORT_VIEW,
+  'printing': PERMISSIONS.SOP_VIEW,
+  'labels': PERMISSIONS.INVENTORY_VIEW,
+  'editor': PERMISSIONS.SOP_EDIT
 };
 
 export const NAVIGATION_GROUPS: NavigationGroup[] = [

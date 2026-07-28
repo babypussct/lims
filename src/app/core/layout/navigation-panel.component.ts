@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { StateService } from '../services/state.service';
 import { ToastService } from '../services/toast.service';
+import { LogoComponent } from '../../shared/components/logo.component';
 import { NavigationItem, NAVIGATION_GROUPS } from './navigation.config';
 
 interface ResolvedNavigationItem extends NavigationItem {
@@ -20,8 +21,27 @@ interface ResolvedNavigationGroup {
 @Component({
   selector: 'app-navigation-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LogoComponent],
   template: `
+    <div
+      class="fixed top-0 left-0 z-[46] h-14 w-64 px-3 flex items-center gap-3
+             bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl
+             border-r border-b border-slate-200/70 dark:border-slate-800">
+      <div class="w-9 h-9 shrink-0 overflow-hidden rounded-lg flex items-center justify-center bg-white dark:bg-slate-900">
+        <app-logo size="40px" class="scale-105"></app-logo>
+      </div>
+      <div class="min-w-0">
+        <div class="text-[13px] font-black text-gray-700 dark:text-slate-200 truncate">
+          LIMS <span class="font-light text-gray-500 dark:text-slate-400">NAFIQPM6</span>
+        </div>
+        <div
+          class="mt-0.5 text-[8px] font-medium leading-tight whitespace-nowrap text-gray-500 dark:text-slate-400"
+          title="Hệ thống quản lý thông tin phòng thí nghiệm">
+          Hệ thống quản lý thông tin phòng thí nghiệm
+        </div>
+      </div>
+    </div>
+
     <aside
       data-navigation-panel
       class="fixed top-14 bottom-0 left-0 z-40 w-64 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-soft-xl transition-transform duration-300 ease-in-out">

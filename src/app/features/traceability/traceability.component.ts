@@ -1,6 +1,7 @@
 
-import { Component, inject, signal, computed, Input, OnInit, ElementRef, viewChild } from '@angular/core';
+import { Component, inject, signal, computed, Input, OnInit, OnDestroy, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
@@ -16,11 +17,12 @@ import { TargetService } from '../targets/target.service';
 import { TargetGroup } from '../../core/models/sop.model';
 import { classifyTargetScope, buildTargetScopePresentation, TargetScopePresentation } from '../targets/target-scope-classifier';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
+import { QrGlobalService } from '../../core/services/qr-global.service';
 
 @Component({
   selector: 'app-traceability',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="w-full h-screen overflow-y-auto max-w-7xl mx-auto pb-20 fade-in px-4 md:px-0">
         <!-- HEADER -->
@@ -35,6 +37,174 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                 </div>
             </div>
         </div>
+
+        <!-- SMART LOOKUP -->
+        <section
+          class="mb-6 transition-all duration-300"
+          [ngClass]="!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()
+            ? 'max-w-2xl mx-auto pt-8 md:pt-14'
+            : 'w-full'">
+          <div
+            class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
+            [ngClass]="!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()
+              ? 'rounded-2xl p-5 md:p-6'
+              : 'rounded-xl p-3'">
+
+            @if (!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()) {
+              <div class="mb-4">
+                <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100">Tra cứu hồ sơ LIMS</h3>
+                <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  Nhập mã yêu cầu, mã nhật ký, mã phiếu in hoặc dán liên kết truy xuất.
+                </p>
+              </div>
+            }
+
+            <form (ngSubmit)="submitLookup()" class="flex flex-col sm:flex-row items-stretch gap-2">
+              <label class="relative flex-1 min-w-0">
+                <span class="sr-only">Mã hồ sơ cần truy xuất</span>
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                <input
+                  #lookupInput
+                  type="text"
+                  name="traceabilityLookup"
+                  [(ngModel)]="lookupValue"
+                  (input)="inputError.set('')"
+                  [disabled]="isLoading() || isVerifying()"
+                  placeholder="Ví dụ: REQ-..., LOG-... hoặc URL truy xuất"
+                  autocomplete="off"
+                  spellcheck="false"
+                  class="w-full h-11 pl-9 pr-9 rounded-xl border bg-slate-50 dark:bg-slate-900
+                         text-sm font-mono font-semibold text-slate-700 dark:text-slate-200
+                         placeholder:font-sans placeholder:font-normal placeholder:text-slate-400
+                         outline-none transition focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500
+                         disabled:opacity-60"
+                  [ngClass]="inputError()
+                    ? 'border-red-400 dark:border-red-600'
+                    : 'border-slate-200 dark:border-slate-700'">
+                @if (lookupValue && !isLoading() && !isVerifying()) {
+                  <button
+                    type="button"
+                    (click)="clearLookupInput()"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full
+                           text-slate-400 hover:text-slate-700 hover:bg-slate-200
+                           dark:hover:text-slate-200 dark:hover:bg-slate-700 transition"
+                    title="Xóa mã">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                  </button>
+                }
+              </label>
+
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  (click)="startQrScan()"
+                  [disabled]="isLoading() || isVerifying()"
+                  class="h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300
+                         hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95
+                         disabled:opacity-50 flex items-center justify-center gap-2"
+                  title="Quét mã QR">
+                  <i class="fa-solid fa-qrcode text-sm"></i>
+                  <span class="sm:hidden text-xs font-bold">Quét QR</span>
+                </button>
+                <button
+                  type="submit"
+                  [disabled]="isLoading() || isVerifying()"
+                  class="flex-1 sm:flex-none h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700
+                         text-white text-xs font-bold shadow-sm shadow-blue-600/20
+                         transition active:scale-95 disabled:opacity-50
+                         flex items-center justify-center gap-2">
+                  @if (isLoading() || isVerifying()) {
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Đang truy xuất</span>
+                  } @else {
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>Truy xuất</span>
+                  }
+                </button>
+              </div>
+            </form>
+
+            @if (inputError()) {
+              <p class="mt-2 text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-exclamation text-[10px]"></i>
+                {{ inputError() }}
+              </p>
+            } @else if (!id && !logData() && !errorMsg()) {
+              <p class="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
+                Có thể dán trực tiếp liên kết chứa <span class="font-mono">#/traceability/...</span>
+              </p>
+            }
+          </div>
+        </section>
+
+        @if (!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()) {
+          <aside class="max-w-2xl mx-auto mb-6 rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/20 overflow-hidden">
+            <div class="px-5 py-4 border-b border-blue-100 dark:border-blue-900/40 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-circle-info text-xs"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Tìm mã truy xuất ở đâu?</h3>
+                <p class="mt-0.5 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  Mã được hiển thị tại các điểm sau trong quy trình làm việc.
+                </p>
+              </div>
+            </div>
+
+            <ol class="divide-y divide-blue-100 dark:divide-blue-900/40">
+              <li class="px-5 py-3.5 flex gap-3">
+                <div class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-print text-[11px]"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Hàng Đợi In <i class="fa-solid fa-chevron-right mx-1 text-[8px] text-slate-400"></i> Xem &amp; In
+                  </div>
+                  <p class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                    Trên phiếu in, xem <b class="text-slate-600 dark:text-slate-300">góc phải phần đầu trang</b>,
+                    cạnh mã QR, tại nhãn <b class="text-slate-600 dark:text-slate-300">MÃ TRUY XUẤT (ID)</b>.
+                  </p>
+                </div>
+              </li>
+
+              <li class="px-5 py-3.5 flex gap-3">
+                <div class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-square-poll-vertical text-[11px]"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Kết Quả Phân Tích <i class="fa-solid fa-chevron-right mx-1 text-[8px] text-slate-400"></i> Chi Tiết Mẻ
+                  </div>
+                  <p class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                    Sao chép dòng <b class="text-slate-600 dark:text-slate-300">Mã mẻ</b> dưới tiêu đề,
+                    hoặc dùng nút <b class="text-slate-600 dark:text-slate-300">Mã QR</b> ở góc phải.
+                  </p>
+                </div>
+              </li>
+
+              <li class="px-5 py-3.5 flex gap-3">
+                <div class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-clock-rotate-left text-[11px]"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Trang Chủ <i class="fa-solid fa-chevron-right mx-1 text-[8px] text-slate-400"></i> Hoạt Động Gần Đây
+                  </div>
+                  <p class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                    Với hoạt động có liên kết hồ sơ, nhấn <b class="text-slate-600 dark:text-slate-300">Truy Xuất</b>
+                    để mở trực tiếp, không cần nhập lại mã.
+                  </p>
+                </div>
+              </li>
+            </ol>
+
+            <div class="px-5 py-3 bg-white/60 dark:bg-slate-900/30 text-[10.5px] leading-relaxed text-slate-500 dark:text-slate-400 flex items-start gap-2">
+              <i class="fa-solid fa-lightbulb mt-0.5 text-amber-500"></i>
+              <span>Bạn có thể nhập nguyên mã, dán toàn bộ liên kết truy xuất hoặc quét QR trên phiếu.</span>
+            </div>
+          </aside>
+        }
 
         @if(isVerifying() || isLoading()) {
             <div class="py-20 max-w-md mx-auto fade-in">
@@ -90,12 +260,36 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                 </div>
             </div>
         } @else if(errorMsg()) {
-            <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm">
-                <div class="flex items-center gap-3 mb-2">
-                    <i class="fa-solid fa-circle-exclamation text-red-500 text-xl"></i>
-                    <h3 class="text-lg font-bold text-red-800">Không Tìm Thấy Dữ Liệu</h3>
+            <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-2xl shadow-sm text-center">
+                <div class="mx-auto w-11 h-11 rounded-full bg-red-50 dark:bg-red-950/30 text-red-500 flex items-center justify-center">
+                    <i class="fa-solid fa-magnifying-glass-minus text-base"></i>
                 </div>
-                <p class="text-red-600 text-sm">{{errorMsg()}}</p>
+                <h3 class="mt-3 text-base font-extrabold text-slate-800 dark:text-slate-100">Không tìm thấy hồ sơ</h3>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{errorMsg()}}</p>
+                <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    (click)="focusLookupInput()"
+                    class="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition active:scale-95">
+                    Sửa mã
+                  </button>
+                  <button
+                    type="button"
+                    (click)="startQrScan()"
+                    class="h-9 px-4 rounded-lg border border-slate-200 dark:border-slate-700
+                           text-slate-600 dark:text-slate-300 text-xs font-bold
+                           hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95">
+                    <i class="fa-solid fa-qrcode mr-1.5"></i>Quét QR
+                  </button>
+                  <button
+                    type="button"
+                    (click)="submitLookup()"
+                    class="h-9 px-4 rounded-lg border border-slate-200 dark:border-slate-700
+                           text-slate-600 dark:text-slate-300 text-xs font-bold
+                           hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95">
+                    <i class="fa-solid fa-rotate-right mr-1.5"></i>Tìm lại
+                  </button>
+                </div>
             </div>
         } @else if(logData()) {
             <!-- DATA CARD -->
@@ -392,14 +586,28 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
     </div>
   `
 })
-export class TraceabilityComponent implements OnInit {
+export class TraceabilityComponent implements OnInit, OnDestroy {
   // Input Binding from Router (Angular 16+)
-  @Input() id?: string;
+  private routeId?: string;
+  private initialized = false;
+
+  @Input()
+  set id(value: string | undefined) {
+      this.routeId = value;
+      if (this.initialized) {
+          this.handleRouteId(value);
+      }
+  }
+
+  get id(): string | undefined {
+      return this.routeId;
+  }
 
   auth = inject(AuthService);
   state = inject(StateService);
   fb = inject(FirebaseService);
   toast = inject(ToastService);
+  qrService = inject(QrGlobalService);
   private masterTargetService = inject(MasterTargetService);
   private targetService = inject(TargetService);
   private router = inject(Router);
@@ -417,8 +625,15 @@ export class TraceabilityComponent implements OnInit {
   isVerifying = signal(false);
   verifyStep = signal(0);
   errorMsg = signal('');
+  inputError = signal('');
+  lookupValue = '';
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
+  lookupInput = viewChild<ElementRef<HTMLInputElement>>('lookupInput');
+
+  private lookupRequest = 0;
+  private verificationInterval?: ReturnType<typeof setInterval>;
+  private verificationTimeout?: ReturnType<typeof setTimeout>;
 
   computedSampleTargetGroups = computed(() => {
       const log = this.logData() as any;
@@ -490,11 +705,8 @@ export class TraceabilityComponent implements OnInit {
 
   async ngOnInit() {
       this.state.ensureUserInfoCacheListener();
-      if (this.id) {
-          this.loadData(this.id);
-      } else {
-          this.errorMsg.set('Không có mã ID được cung cấp.');
-      }
+      this.initialized = true;
+      this.handleRouteId(this.routeId);
 
       try {
           const [analytes, groups] = await Promise.all([
@@ -505,6 +717,121 @@ export class TraceabilityComponent implements OnInit {
           this.availableTargetGroups.set(groups);
       } catch (e) {
           console.warn('Failed to load master analytes or target groups in TraceabilityComponent', e);
+      }
+  }
+
+  ngOnDestroy() {
+      this.lookupRequest++;
+      this.stopVerificationTimers();
+  }
+
+  submitLookup() {
+      const code = this.normalizeLookupValue(this.lookupValue);
+      this.inputError.set('');
+
+      if (!code) {
+          this.inputError.set('Vui lòng nhập mã hồ sơ cần truy xuất.');
+          this.focusLookupInput();
+          return;
+      }
+
+      if (code.length > 200 || code.includes('/')) {
+          this.inputError.set('Mã hồ sơ không hợp lệ. Vui lòng kiểm tra lại mã hoặc liên kết.');
+          this.focusLookupInput();
+          return;
+      }
+
+      this.lookupValue = code;
+
+      if (this.routeId === code) {
+          void this.loadData(code);
+          return;
+      }
+
+      void this.router.navigate(['/traceability', code]);
+  }
+
+  clearLookupInput() {
+      this.lookupValue = '';
+      this.inputError.set('');
+      this.focusLookupInput();
+  }
+
+  focusLookupInput() {
+      setTimeout(() => {
+          const input = this.lookupInput()?.nativeElement;
+          input?.focus();
+          input?.select();
+      });
+  }
+
+  startQrScan() {
+      this.qrService.startScan();
+  }
+
+  private handleRouteId(value: string | undefined) {
+      const code = this.normalizeLookupValue(value || '');
+
+      if (!code) {
+          this.lookupRequest++;
+          this.stopVerificationTimers();
+          this.lookupValue = '';
+          this.logData.set(null);
+          this.errorMsg.set('');
+          this.inputError.set('');
+          this.isLoading.set(false);
+          this.isVerifying.set(false);
+          this.verifyStep.set(0);
+          this.focusLookupInput();
+          return;
+      }
+
+      this.lookupValue = code;
+      this.inputError.set('');
+      void this.loadData(code);
+  }
+
+  private normalizeLookupValue(rawValue: string): string {
+      let value = rawValue.trim();
+      if (!value) return '';
+
+      try {
+          const parsedUrl = new URL(value, window.location.origin);
+          const hashMatch = parsedUrl.hash.match(/#\/traceability\/([^/?#]+)/i);
+          const pathMatch = parsedUrl.pathname.match(/\/traceability\/([^/?#]+)/i);
+          const queryId = parsedUrl.searchParams.get('id');
+
+          if (hashMatch?.[1]) {
+              value = hashMatch[1];
+          } else if (pathMatch?.[1]) {
+              value = pathMatch[1];
+          } else if (queryId) {
+              value = queryId;
+          }
+      } catch {
+          const routeMatch = value.match(/(?:#\/)?traceability\/([^/?#]+)/i);
+          if (routeMatch?.[1]) {
+              value = routeMatch[1];
+          }
+      }
+
+      try {
+          value = decodeURIComponent(value);
+      } catch {
+          // Keep the original value when it is not valid URI-encoded text.
+      }
+
+      return value.trim();
+  }
+
+  private stopVerificationTimers() {
+      if (this.verificationInterval) {
+          clearInterval(this.verificationInterval);
+          this.verificationInterval = undefined;
+      }
+      if (this.verificationTimeout) {
+          clearTimeout(this.verificationTimeout);
+          this.verificationTimeout = undefined;
       }
   }
 
@@ -598,23 +925,29 @@ export class TraceabilityComponent implements OnInit {
   }
 
   async loadData(id: string) {
+      const requestToken = ++this.lookupRequest;
+      this.stopVerificationTimers();
       this.isLoading.set(true);
+      this.isVerifying.set(false);
       this.verifyStep.set(-1);
       this.errorMsg.set('');
+      this.logData.set(null);
       
       try {
           // 1. Try Direct Log Lookup (Priority 1)
           const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${id}`);
           const snap = await getDoc(logRef);
+          if (requestToken !== this.lookupRequest) return;
 
           if (snap.exists()) {
-              this.startVerificationProcess({ id: snap.id, ...snap.data() } as Log);
+              this.startVerificationProcess({ id: snap.id, ...snap.data() } as Log, requestToken);
               return;
           }
 
           // 2. Try Lookup by Print Job ID (Legacy or linked) (Priority 2)
           const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${id}`);
           const jobSnap = await getDoc(jobRef);
+          if (requestToken !== this.lookupRequest) return;
           
           if (jobSnap.exists()) {
               const jobData = jobSnap.data() as any;
@@ -627,13 +960,14 @@ export class TraceabilityComponent implements OnInit {
                   printable: true,
                   printData: jobData // Embed full data
               };
-              this.startVerificationProcess(mockLog);
+              this.startVerificationProcess(mockLog, requestToken);
               return;
           }
 
           // 3. Try Lookup by REQUEST ID (Dashboard links point here) (Priority 3)
           const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${id}`);
           const reqSnap = await getDoc(reqRef);
+          if (requestToken !== this.lookupRequest) return;
 
           if (reqSnap.exists()) {
               const reqData = reqSnap.data() as any;
@@ -681,7 +1015,7 @@ export class TraceabilityComponent implements OnInit {
                   }
               };
               
-              this.startVerificationProcess(mockLog);
+              this.startVerificationProcess(mockLog, requestToken);
               return;
           }
 
@@ -689,33 +1023,45 @@ export class TraceabilityComponent implements OnInit {
           this.errorMsg.set(`Không tìm thấy dữ liệu cho mã: ${id}`);
 
       } catch (e: any) {
+          if (requestToken !== this.lookupRequest) return;
           console.error(e);
           this.errorMsg.set('Lỗi kết nối: ' + e.message);
       } finally {
-          this.isLoading.set(false);
+          if (requestToken === this.lookupRequest) {
+              this.isLoading.set(false);
+          }
       }
   }
 
-  startVerificationProcess(log: Log) {
+  startVerificationProcess(log: Log, requestToken = this.lookupRequest) {
+      this.stopVerificationTimers();
       this.isVerifying.set(true);
       this.isLoading.set(false);
       this.verifyStep.set(0);
       
       let step = 0;
-      const interval = setInterval(() => {
+      this.verificationInterval = setInterval(() => {
+          if (requestToken !== this.lookupRequest) {
+              this.stopVerificationTimers();
+              return;
+          }
           step++;
           this.verifyStep.set(step);
           if (step >= 3) {
-              clearInterval(interval);
-              setTimeout(() => {
+              if (this.verificationInterval) {
+                  clearInterval(this.verificationInterval);
+                  this.verificationInterval = undefined;
+              }
+              this.verificationTimeout = setTimeout(() => {
+                  if (requestToken !== this.lookupRequest) return;
                   this.isVerifying.set(false);
-                  this.handleLogData(log);
+                  this.handleLogData(log, requestToken);
               }, 300);
           }
       }, 250);
   }
 
-  handleLogData(log: Log) {
+  handleLogData(log: Log, requestToken = this.lookupRequest) {
       const getStatusAndHydrate = async () => {
           // If log has requestId and no status, fetch request status
           if (log.requestId && !log.status) {
@@ -742,6 +1088,8 @@ export class TraceabilityComponent implements OnInit {
                   console.warn('Failed to fetch print job in Traceability', e);
               }
           }
+
+          if (requestToken !== this.lookupRequest) return;
           
           this.logData.set(log);
           setTimeout(() => void this.generateQr(log.id), 100);
