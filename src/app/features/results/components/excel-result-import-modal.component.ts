@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
+import { ProgressService } from '../../../core/services/progress.service';
+import { ReportService } from '../../../core/services/report.service';
 import {
   applyExcelImportCandidates,
   buildExcelImportCandidates,
@@ -22,15 +24,24 @@ import {
   templateUrl: './excel-result-import-modal.component.html'
 })
 export class ExcelResultImportModalComponent implements OnChanges {
+  private progressService = inject(ProgressService);
+  private reportService = inject(ReportService);
+
   @Input() file: File | null = null;
   @Input() run: any = null;
   @Input() draft!: AnalysisResultDraft;
   @Input() config: any = null;
   @Input() configKey: string | null = null;
+  @Input() masterTargets: any[] = [];
   @Input() isReadOnly = false;
 
   @Output() cancelled = new EventEmitter<void>();
-  @Output() applied = new EventEmitter<{ draft: AnalysisResultDraft; appliedCount: number }>();
+  @Output() applied = new EventEmitter<{
+    draft: AnalysisResultDraft;
+    appliedCount: number;
+    originalFileSaved: boolean;
+    originalFileName?: string;
+  }>();
 
   candidates: ExcelImportCandidate[] = [];
   warnings: string[] = [];
@@ -38,9 +49,12 @@ export class ExcelResultImportModalComponent implements OnChanges {
   isLoading = false;
   isApplying = false;
   decimalMode = 'source';
+  saveOriginalFile = false;
+  uploadErrorMessage = '';
 
   async ngOnChanges(changes: SimpleChanges) {
     if (changes['file'] && this.file) {
+      this.saveOriginalFile = this.draft?.page1Data?.['uploadMassHunterToDrive'] === true;
       await this.loadFile(this.file);
     }
   }
@@ -71,6 +85,20 @@ export class ExcelResultImportModalComponent implements OnChanges {
 
   get allMetadataCandidatesSelected(): boolean {
     return this.areAllSelected(this.metadataCandidates);
+  }
+
+  get fileSizeLabel(): string {
+    const bytes = this.file?.size || 0;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  get hasStoredOriginalFile(): boolean {
+    return Boolean(
+      this.draft?.page1Data?.['sourceExcelUrl']
+      || this.draft?.page1Data?.['massHunterExcelUrl']
+    );
   }
 
   toggleAll(checked: boolean, kind?: ExcelImportCandidateKind) {
@@ -132,17 +160,41 @@ export class ExcelResultImportModalComponent implements OnChanges {
   async applySelected() {
     if (!this.file || this.selectedCount === 0 || this.isApplying || this.isReadOnly) return;
     this.isApplying = true;
+    this.uploadErrorMessage = '';
     try {
+      let savedFileName: string | undefined;
+      if (this.saveOriginalFile) {
+        try {
+          savedFileName = await this.uploadOriginalFile(this.file);
+        } catch (error) {
+          this.progressService.stop();
+          const message = error instanceof Error ? error.message : String(error);
+          this.uploadErrorMessage =
+            `Không thể lưu tệp Excel gốc: ${message}. Bạn có thể thử lại hoặc bỏ chọn lưu tệp để chỉ nhập số liệu.`;
+          return;
+        }
+      }
+
       const appliedCount = applyExcelImportCandidates(
         this.candidates,
         this.context(),
         this.file.name,
         this.selectedDecimalPlaces()
       );
-      this.applied.emit({ draft: this.draft, appliedCount });
+      this.draft.page1Data['uploadMassHunterToDrive'] = this.saveOriginalFile;
+      this.applied.emit({
+        draft: this.draft,
+        appliedCount,
+        originalFileSaved: this.saveOriginalFile,
+        originalFileName: savedFileName
+      });
     } finally {
       this.isApplying = false;
     }
+  }
+
+  requestCancel() {
+    if (!this.isApplying) this.cancelled.emit();
   }
 
   private async loadFile(file: File) {
@@ -151,6 +203,7 @@ export class ExcelResultImportModalComponent implements OnChanges {
     this.warnings = [];
     this.candidates = [];
     this.decimalMode = 'source';
+    this.uploadErrorMessage = '';
 
     try {
       const XLSX = await import('xlsx');
@@ -179,7 +232,8 @@ export class ExcelResultImportModalComponent implements OnChanges {
       run: this.run,
       draft: this.draft,
       config: this.config,
-      configKey: this.configKey
+      configKey: this.configKey,
+      masterTargets: this.masterTargets
     };
   }
 
@@ -192,5 +246,83 @@ export class ExcelResultImportModalComponent implements OnChanges {
   private areAllSelected(candidates: ExcelImportCandidate[]): boolean {
     const selectable = candidates.filter(candidate => candidate.selectable);
     return selectable.length > 0 && selectable.every(candidate => candidate.selected);
+  }
+
+  private async uploadOriginalFile(file: File): Promise<string> {
+    this.progressService.start(
+      'Đang lưu tệp Excel gốc',
+      'Đang chuẩn bị dữ liệu để tải lên Google Drive...',
+      100
+    );
+    this.progressService.update(5);
+
+    const fileData = await this.readFileAsDataUrl(file);
+    this.progressService.update(25, 'Đang truyền tệp Excel lên Google Drive...');
+
+    const normalizedFileName = this.buildStoredFileName(file);
+    const response = await this.reportService.uploadExcelToDrive(
+      this.draft.requestId,
+      normalizedFileName,
+      fileData,
+      this.draft.sopId,
+      percent => {
+        const overallPercent = 25 + Math.round(percent * 0.65);
+        this.progressService.update(overallPercent, 'Đang truyền tệp Excel lên Google Drive...');
+      }
+    );
+
+    if (!response.success || !response.fileUrl) {
+      throw new Error(response.error || 'Google Drive không trả về liên kết tệp.');
+    }
+
+    this.progressService.update(95, 'Đang liên kết tệp nguồn với mẻ chạy...');
+    const storedFileName = response.fileName || normalizedFileName;
+    this.draft.page1Data['sourceExcelUrl'] = response.fileUrl;
+    this.draft.page1Data['sourceExcelName'] = storedFileName;
+    this.draft.page1Data['sourceExcelOriginalName'] = file.name;
+    this.draft.page1Data['sourceExcelSize'] = file.size;
+    this.draft.page1Data['sourceExcelUploadedAt'] = new Date().toISOString();
+    // Giữ các khóa cũ để dữ liệu và UI MassHunter trước đây tiếp tục tương thích.
+    this.draft.page1Data['massHunterExcelUrl'] = response.fileUrl;
+    this.draft.page1Data['massHunterExcelName'] = storedFileName;
+    this.draft.page1Data['massHunterExcelOriginalName'] = file.name;
+    this.draft.page1Data['massHunterExcelSize'] = file.size;
+    this.draft.page1Data['massHunterExcelUploadedAt'] = this.draft.page1Data['sourceExcelUploadedAt'];
+    this.progressService.update(100, 'Đã lưu tệp Excel gốc thành công.');
+    this.progressService.complete();
+    return storedFileName;
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Không đọc được nội dung tệp.'));
+      reader.onprogress = event => {
+        if (event.lengthComputable) {
+          this.progressService.update(
+            5 + Math.round((event.loaded / event.total) * 15),
+            'Đang chuẩn bị dữ liệu để tải lên Google Drive...'
+          );
+        }
+      };
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  private buildStoredFileName(file: File): string {
+    const batchCode = this.run?.inputs?.['batchCode']
+      || this.run?.id
+      || this.draft.requestId
+      || new Date().toISOString().slice(0, 10);
+    const versionSuffix = this.draft.version ? `_v${this.draft.version}` : '';
+    const extensionIndex = file.name.lastIndexOf('.');
+    const extension = extensionIndex >= 0 ? file.name.slice(extensionIndex) : '.xlsx';
+    const safePart = (value: unknown) => String(value || '')
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, '_')
+      .replace(/\s+/g, '_');
+
+    return `RAW_${safePart(this.draft.sopId)}_${safePart(batchCode)}${versionSuffix}${extension}`;
   }
 }

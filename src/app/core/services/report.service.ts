@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpEventType, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { filter, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 
@@ -131,13 +132,15 @@ export class ReportService {
 
   /**
    * Tải tệp Excel gốc lên Google Drive của mẻ chạy qua Apps Script Web App.
+   * Callback tiến trình chỉ phản ánh phần dữ liệu đã được trình duyệt gửi đi.
    */
   async uploadExcelToDrive(
     requestId: string,
     fileName: string,
     base64Data: string,
-    sopId = 'fipronil-chlorpyrifos'
-  ): Promise<{ success: boolean; fileUrl?: string; fileId?: string; error?: string }> {
+    sopId: string,
+    onProgress?: (percent: number) => void
+  ): Promise<{ success: boolean; fileUrl?: string; fileId?: string; fileName?: string; error?: string }> {
     if (!this.GAS_URL) {
       throw new Error('Chưa cấu hình GAS Web App URL.');
     }
@@ -150,12 +153,21 @@ export class ReportService {
       sopId
     };
 
-    const result = await firstValueFrom(
+    return firstValueFrom(
       this.http.post<any>(this.GAS_URL, JSON.stringify(payload), {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
-      })
+        observe: 'events',
+        reportProgress: true
+      }).pipe(
+        tap(event => {
+          if (event.type === HttpEventType.UploadProgress && event.total) {
+            onProgress?.(Math.round((event.loaded / event.total) * 100));
+          }
+        }),
+        filter((event): event is HttpResponse<any> => event.type === HttpEventType.Response),
+        map(event => event.body)
+      )
     );
-
-    return result;
   }
+
 }

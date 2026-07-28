@@ -13,6 +13,52 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.28-b06',
+    date: '28/07/2026',
+    title: 'Hoàn Thiện Import Excel, Alias & Lưu Tệp Gốc',
+    highlights: [
+      'Mọi SOP dùng chung một modal Import Excel cho Form Check và Form Đơn, từ xem trước đến chọn và áp dụng dữ liệu.',
+      'Alias chỉ tiêu được quản lý tại Master Analyte; hỗ trợ Etofenprox/Ethofenprox và giữ bảng alias cũ làm phương án dự phòng.',
+      'Người dùng có thể chọn lưu tệp Excel gốc lên Google Drive với modal tiến trình và liên kết mở lại ngay trên header mẻ.'
+    ],
+    features: [
+      'Checkbox lưu tệp nguồn chỉ mã hóa và upload khi được bật; lựa chọn gần nhất được ghi nhớ theo mẻ.',
+      'Master Analyte hỗ trợ nhập, sửa, tìm kiếm, import và export danh sách tên khác.',
+      'Liên kết Excel gốc dùng chung cho mọi SOP và vẫn đọc được dữ liệu MassHunter lịch sử.'
+    ],
+    improvements: [
+      'Modal PDF mở thủ công và tự bật sau khi xuất dùng chung metadata phiên bản, người phát hành, thời gian và Google Docs.',
+      'Command Palette hỗ trợ tìm kiếm tiếng Việt không dấu và phản hồi ngay khi nhập.',
+      'Loại bỏ parser và handler MassHunter riêng bị trùng, giữ một luồng import chung để các SOP mới tự thừa hưởng.'
+    ],
+    fixes: [
+      'Giá trị Final-Conc. bằng 0 được nhập thành ND đúng theo Form Check và Form Đơn.',
+      'PDF Form Check một mẫu chỉ in giá trị kết quả, không lặp mã mẫu trước giá trị.',
+      'Form Check không còn cảnh báo thiếu R² vì loại form này không có trường R².',
+      'Upload lỗi không làm thay đổi kết quả; modal được giữ lại để thử lại hoặc bỏ chọn lưu tệp.'
+    ]
+  },
+  {
+    version: 'v26.07.28-b05',
+    date: '28/07/2026',
+    title: 'Import Kết Quả Excel Theo Mẻ SOP',
+    highlights: [
+      'Một nút Import Excel dùng chung cho Form Check, Form Đơn và các SOP mới.',
+      'Modal xem trước cho phép chọn hoặc bỏ chọn từng thông tin trước khi ghi vào giao diện.',
+      'Ghép tên mẫu linh hoạt giữa tiền tố Excel và mã mẫu trong mẻ.'
+    ],
+    features: [
+      'Chỉ nhập Final-Conc. và không đổi đơn vị; mục được chọn ghi đè, mục bỏ chọn giữ nguyên.',
+      'ND được đánh dấu checkbox ở Form Check hoặc điền trực tiếp ở Form Đơn.',
+      'R² và số điểm đường chuẩn chỉ nhập cho Form Đơn, giữ nguyên nồng độ danh định.',
+      'Cho phép giữ nguyên Excel hoặc chọn từ 0 đến 6 chữ số thập phân.'
+    ],
+    improvements: [
+      'Mã mẫu chứa BL/SP vẫn được coi là mẫu thường; QC không tồn tại trên Form Check tự động bị bỏ qua.',
+      'Chỉ lưu dữ liệu đã chọn và nhật ký import rút gọn, không giữ toàn bộ workbook trên máy.'
+    ]
+  },
+  {
     version: 'v26.07.28-b04',
     date: '28/07/2026',
     title: 'Excel Tự Dãn Cột/Hàng Vừa Nội Dung',

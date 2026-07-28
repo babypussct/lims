@@ -539,11 +539,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.excelImportFile.set(null);
   }
 
-  onExcelImportApplied(event: { draft: AnalysisResultDraft; appliedCount: number }) {
+  onExcelImportApplied(event: {
+    draft: AnalysisResultDraft;
+    appliedCount: number;
+    originalFileSaved: boolean;
+    originalFileName?: string;
+  }) {
     this.onDraftChanged(event.draft);
     this.excelImportFile.set(null);
     this.toast.show(
-      `Đã áp dụng ${event.appliedCount} thông tin từ Excel. Dữ liệu đang được tự động lưu.`,
+      event.originalFileSaved
+        ? `Đã áp dụng ${event.appliedCount} thông tin và lưu tệp Excel gốc ${event.originalFileName || ''}. Dữ liệu đang được tự động lưu.`
+        : `Đã áp dụng ${event.appliedCount} thông tin từ Excel. Dữ liệu đang được tự động lưu.`,
       'success'
     );
   }
@@ -761,7 +768,14 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.historyList.set(hist);
         const url = lastResult.pdfViewUrl || lastResult.pdfUrl;
         if (url) {
-          this.openPdfPreview(url);
+          this.openPdfPreview(
+            url,
+            lastResult.docsUrl,
+            lastResult.version,
+            lastResult.publishedBy,
+            lastResult.publishedAt,
+            lastResult.prefix
+          );
         } else {
           this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
         }
@@ -1183,9 +1197,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.router.navigate(['/results']);
   }
 
-  openPdfPreview(pdfUrl: string | null | undefined, docsUrl?: string | null | undefined) {
+  openPdfPreview(
+    pdfUrl: string | null | undefined,
+    docsUrl?: string | null | undefined,
+    versionOverride?: number,
+    analystOverride?: string,
+    publishDateOverride?: any,
+    prefixOverride?: string
+  ) {
     if (!pdfUrl) return;
-    const activeFilter = this.activeFilter();
+    const activeFilter = prefixOverride === 'ALL' || prefixOverride === undefined
+      ? this.activeFilter()
+      : (prefixOverride === '_NO_PREFIX_' ? '' : prefixOverride);
     const filterName = activeFilter === 'ALL' ? 'Tất cả mẫu' : (activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`);
     const previewUrl = getGoogleDrivePreviewUrl(pdfUrl);
     const docPreviewUrl = docsUrl ? getGoogleDrivePreviewUrl(docsUrl) : undefined;
@@ -1193,9 +1216,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.printService.openPdfPreview(
       previewUrl,
       `Báo cáo kết quả — ${this.run()?.sopName || ''} (${filterName})`,
-      this.draft()?.version || 1,
-      this.draft()?.updatedBy || 'Chưa rõ',
-      this.draft()?.updatedAt,
+      versionOverride ?? this.draft()?.version ?? 1,
+      analystOverride ?? this.draft()?.updatedBy ?? 'Chưa rõ',
+      publishDateOverride ?? this.draft()?.updatedAt,
       async () => {
         await this.triggerPublishReport();
       },

@@ -196,6 +196,7 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Deltamethrin'                     : 'deltamethrin',
   'Tralomethrin'                     : 'tralomethrin',
   'Ethofenprox'                      : 'ethofenprox',
+  'Etofenprox'                       : 'ethofenprox',
   'Fenpropathrin'                    : 'fenpropathrin',
   'Silafluofen'                      : 'silafluofen',
   'Flucythrinate'                    : 'flucythrinate',

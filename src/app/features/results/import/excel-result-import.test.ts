@@ -73,7 +73,8 @@ function makeContext(printFormType: 'formCheck' | 'formDon') {
       formType: 'type3b',
       compounds: ['bifenthrin']
     },
-    configKey: 'nhom-cuc'
+    configKey: 'nhom-cuc',
+    masterTargets: [] as any[]
   };
 }
 
@@ -150,6 +151,39 @@ test('matches punctuation variants in compound sheet names', () => {
   const sample = candidates.find(candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01')!;
   assert.equal(sample.compoundId, 'ronnel_fenchlorphos');
   assert.equal(sample.selectable, true);
+});
+
+test('matches built-in and Master Analyte aliases for compound sheets', () => {
+  const builtInContext = makeContext('formCheck');
+  builtInContext.config.compounds = ['ethofenprox'];
+  builtInContext.run.sampleTargetMap = {
+    MINH_BL01: ['ethofenprox'],
+    MINH_SP01: ['ethofenprox']
+  };
+  const builtInCandidates = buildExcelImportCandidates(
+    parseMassHunterResultWorkbook(XLSX, makeWorkbook('Etofenprox')),
+    builtInContext
+  );
+  assert.equal(
+    builtInCandidates.find(candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01')?.compoundId,
+    'ethofenprox'
+  );
+
+  const masterContext = makeContext('formCheck');
+  masterContext.config.compounds = ['bifenthrin'];
+  masterContext.masterTargets = [{
+    id: 'bifenthrin',
+    name: 'Bifenthrin',
+    aliases: ['Bifenthrin instrument alias']
+  }];
+  const masterCandidates = buildExcelImportCandidates(
+    parseMassHunterResultWorkbook(XLSX, makeWorkbook('Bifenthrin instrument alias')),
+    masterContext
+  );
+  assert.equal(
+    masterCandidates.find(candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01')?.compoundId,
+    'bifenthrin'
+  );
 });
 
 test('rounds only numeric Final-Conc. when the user selects decimal places', () => {

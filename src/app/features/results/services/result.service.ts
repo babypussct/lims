@@ -683,7 +683,17 @@ export class ResultService {
     payload: GenerateReportPayload,
     prefix?: string,
     includedSamples?: string[]
-  ): Promise<{ success: boolean; pdfUrl?: string; pdfViewUrl?: string; newStatus?: string }> {
+  ): Promise<{
+    success: boolean;
+    pdfUrl?: string;
+    pdfViewUrl?: string;
+    docsUrl?: string;
+    newStatus?: string;
+    version?: number;
+    publishedAt?: string;
+    publishedBy?: string;
+    prefix?: string;
+  }> {
     try {
       const ref = this.getDocRef(requestId);
       const docSnap = await getDoc(ref);
@@ -913,7 +923,17 @@ export class ResultService {
       );
 
       this.toast.show(`Báo cáo PDF ${isPrefixReport ? (prefix === '' ? 'Không tiền tố' : 'nhóm ' + prefix) : 'chung'} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
-      return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl, newStatus: newStatus };
+      return {
+        success: true,
+        pdfUrl: response.pdfUrl,
+        pdfViewUrl: response.pdfViewUrl,
+        docsUrl: response.docsUrl,
+        newStatus,
+        version: nextVersion,
+        publishedAt,
+        publishedBy,
+        prefix
+      };
     } catch (e: any) {
       console.error('Error publishing report:', e);
       this.toast.show('Lỗi xuất bản báo cáo: ' + e.message, 'error');

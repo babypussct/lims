@@ -27,6 +27,17 @@
   @if (run && draft) {
     <div class="flex items-center gap-2">
 
+      @if (draft?.page1Data?.['sourceExcelUrl'] || draft?.page1Data?.['massHunterExcelUrl']) {
+        <a [href]="draft.page1Data['sourceExcelUrl'] || draft.page1Data['massHunterExcelUrl']"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="px-4 py-2 text-xs font-black text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/25 border border-sky-200/60 dark:border-sky-900/40 hover:bg-sky-100 dark:hover:bg-sky-900/30 rounded-xl transition flex items-center gap-2 active:scale-95 shadow-sm"
+           [title]="draft.page1Data['sourceExcelName'] || draft.page1Data['massHunterExcelName'] || 'Xem tệp Excel gốc đã lưu trên Google Drive'">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span class="hidden 2xl:inline">Excel gốc</span>
+        </a>
+      }
+
       @if (!isReadOnly) {
         <button type="button"
                 (click)="excelResultFileInput.click()"

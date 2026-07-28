@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.28-b05",
-    "notesVersion": "v26.07.28-b05",
-    "title": "Import Kết Quả Excel Theo Mẻ SOP",
+    "version": "v26.07.28-b06",
+    "notesVersion": "v26.07.28-b06",
+    "title": "Hoàn Thiện Import Excel & Lưu Tệp Gốc",
     "features": [
-      "📥 Một nút Import Excel dùng chung cho Form Check và Form Đơn",
-      "✅ Xem trước, chọn hoặc bỏ chọn từng kết quả trước khi ghi vào giao diện",
-      "🔗 Ghép tên mẫu linh hoạt, tự bỏ qua QC không tồn tại trên Form Check",
-      "🔢 Chỉ nhập Final-Conc., hỗ trợ ND, R² và tùy chọn số chữ số thập phân"
+      "🧪 Một modal Import Excel và hệ thống alias Master Analyte dùng chung cho mọi SOP",
+      "☁️ Tùy chọn lưu tệp Excel gốc lên Google Drive kèm modal tiến trình",
+      "✅ Sửa ND từ giá trị 0, cảnh báo R² Form Check và định dạng PDF một mẫu",
+      "📄 Đồng bộ modal PDF mở thủ công và tự bật sau khi tạo báo cáo"
     ]
   },
   "assetGroups": [

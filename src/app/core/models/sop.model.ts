@@ -50,6 +50,7 @@ export interface MatrixType {
 export interface MasterAnalyte {
   id: string; // Unique slug (e.g., 'chloramphenicol')
   name: string; // Standard Name (e.g., 'Chloramphenicol')
+  aliases?: string[]; // Tên khác từ máy/phần mềm, dùng để đối chiếu khi import
   cas_number?: string; // CAS Registry Number
   chemical_formula?: string; // e.g., 'C11H12Cl2N2O5'
   default_unit?: string; // e.g., 'ppb' or 'µg/kg'

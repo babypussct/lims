@@ -1,5 +1,19 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.28-b06] - 28/07/2026
+
+### 🧪 Hoàn Thiện Import Excel, Alias & Lưu Tệp Gốc
+
+- **Một UI/UX chung cho mọi SOP:** Toàn bộ Form Check và Form Đơn sử dụng chung modal xem trước, ghép mẫu, chọn dữ liệu và áp dụng kết quả; loại bỏ các parser/handler MassHunter riêng đã trùng chức năng.
+- **Alias chỉ tiêu có thể quản lý:** Hỗ trợ khai báo, tìm kiếm, import và export tên khác tại Master Analyte; bổ sung tương thích `Etofenprox`/`Ethofenprox` và giữ bảng alias cũ làm phương án dự phòng.
+- **Lưu Excel gốc theo lựa chọn:** Thêm checkbox tải tệp nguồn lên Google Drive, chỉ mã hóa/tải khi người dùng bật; modal tiến trình phản ánh trạng thái truyền tệp và giữ nguyên dữ liệu khi upload lỗi.
+- **Liên kết tệp dùng chung:** Tệp Excel đã lưu được gắn vào mẻ và mở từ header chung của mọi SOP; dữ liệu MassHunter lịch sử tiếp tục tương thích.
+- **Kết quả Form Check chính xác:** Giá trị `0` được hiểu là `ND`, PDF một mẫu chỉ in giá trị không kèm mã mẫu và Form Check không còn bị cảnh báo thiếu R².
+- **Xem PDF nhất quán:** Modal mở thủ công và modal tự bật sau khi tạo báo cáo dùng chung phiên bản, người phát hành, thời gian và liên kết Google Docs.
+- **Tìm kiếm dễ hơn:** Command Palette hỗ trợ tìm tiếng Việt không dấu và cập nhật kết quả ngay khi nhập.
+
+---
+
 ## [v26.07.28-b05] - 28/07/2026
 
 ### 📥 Import Kết Quả Excel Theo Mẻ SOP

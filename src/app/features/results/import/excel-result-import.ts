@@ -91,7 +91,7 @@ export function buildExcelImportCandidates(
   parsed: ParsedExcelWorkbook,
   context: ExcelImportContext
 ): ExcelImportCandidate[] {
-  const targets = buildResultTargets(context.config);
+  const targets = buildResultTargets(context.config, context.masterTargets || []);
   const formMode = String(context.draft?.page1Data?.['printFormType'] || '');
   const isFormDon = formMode === 'formDon';
   const candidates: ExcelImportCandidate[] = [];
@@ -473,12 +473,12 @@ function buildResultCandidate(
   };
 }
 
-function buildResultTargets(config: any): ResultTarget[] {
+function buildResultTargets(config: any, masterTargets: any[]): ResultTarget[] {
   if (config?.formType === 'type3b') {
     return (config.compounds || []).map((compoundId: string) => ({
       compoundId,
       resultKey: compoundId,
-      aliases: aliasesForCompound(compoundId)
+      aliases: aliasesForCompound(compoundId, '', masterTargets)
     }));
   }
 
@@ -490,12 +490,20 @@ function buildResultTargets(config: any): ResultTarget[] {
       return {
         compoundId,
         resultKey,
-        aliases: aliasesForCompound(compoundId, resultKey.replace(/^kq/i, ''))
+        aliases: aliasesForCompound(
+          compoundId,
+          resultKey.replace(/^kq/i, ''),
+          masterTargets
+        )
       };
     });
 }
 
-function aliasesForCompound(compoundId: string, extraAlias = ''): Set<string> {
+function aliasesForCompound(
+  compoundId: string,
+  extraAlias = '',
+  masterTargets: any[] = []
+): Set<string> {
   const aliases = new Set<string>([
     normalizeCompoundName(compoundId),
     normalizeCompoundName(extraAlias)
@@ -503,6 +511,21 @@ function aliasesForCompound(compoundId: string, extraAlias = ''): Set<string> {
   for (const [alias, canonical] of Object.entries(COMPOUND_TO_FIRESTORE_ID)) {
     if (canonical === compoundId) aliases.add(normalizeCompoundName(alias));
   }
+
+  const canonicalId = getCanonicalId(compoundId);
+  masterTargets
+    .filter(target =>
+      getCanonicalId(String(target?.id || '')) === canonicalId
+      || getCanonicalId(String(target?.name || '')) === canonicalId
+    )
+    .forEach(target => {
+      aliases.add(normalizeCompoundName(String(target.id || '')));
+      aliases.add(normalizeCompoundName(String(target.name || '')));
+      (Array.isArray(target.aliases) ? target.aliases : []).forEach((alias: unknown) => {
+        aliases.add(normalizeCompoundName(String(alias || '')));
+      });
+    });
+
   aliases.delete('');
   return aliases;
 }

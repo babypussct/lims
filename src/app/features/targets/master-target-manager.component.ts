@@ -85,6 +85,11 @@ import { Router } from '@angular/router';
                                         <td class="px-4 py-3">
                                             <div class="font-bold text-slate-800 text-sm">{{item.name}}</div>
                                             <div class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit mt-1 border border-slate-200">{{item.id}}</div>
+                                            @if (item.aliases?.length) {
+                                                <div class="text-[10px] text-indigo-500 mt-1.5 line-clamp-2" [title]="item.aliases!.join(', ')">
+                                                    Alias: {{item.aliases!.join(', ')}}
+                                                </div>
+                                            }
                                         </td>
                                         <td class="px-4 py-3">
                                             <div class="flex flex-col gap-1 text-xs">
@@ -159,6 +164,13 @@ import { Router } from '@angular/router';
                             </div>
 
                             <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên khác / Alias khi import</label>
+                                <textarea formControlName="aliasesText" rows="3"
+                                          class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"
+                                          placeholder="Mỗi alias một dòng hoặc phân cách bằng dấu chấm phẩy"></textarea>
+                            </div>
+
+                            <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mô tả / Ghi chú</label>
                                 <textarea formControlName="description" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"></textarea>
                             </div>
@@ -202,6 +214,7 @@ import { Router } from '@angular/router';
                                     <th class="p-3 border-b border-slate-200">Mã định danh (tự động)</th>
                                     <th class="p-3 border-b border-slate-200">CAS</th>
                                     <th class="p-3 border-b border-slate-200">Formula</th>
+                                    <th class="p-3 border-b border-slate-200">Alias</th>
                                     <th class="p-3 border-b border-slate-200 text-center">Unit</th>
                                 </tr>
                             </thead>
@@ -212,6 +225,7 @@ import { Router } from '@angular/router';
                                         <td class="p-3 font-mono text-slate-500">{{item.id}}</td>
                                         <td class="p-3 text-slate-600">{{item.cas_number || '-'}}</td>
                                         <td class="p-3 font-serif text-slate-600">{{item.chemical_formula || '-'}}</td>
+                                        <td class="p-3 text-indigo-500">{{item.aliases?.join(', ') || '-'}}</td>
                                         <td class="p-3 text-center bg-slate-50/50">{{item.default_unit || '-'}}</td>
                                     </tr>
                                 }
@@ -257,6 +271,7 @@ export class MasterTargetManagerComponent implements OnInit {
       cas_number: [''],
       chemical_formula: [''],
       default_unit: [''],
+      aliasesText: [''],
       description: ['']
   });
 
@@ -460,6 +475,7 @@ export class MasterTargetManagerComponent implements OnInit {
       return this.items().filter(i => 
           i.name.toLowerCase().includes(term) || 
           i.id.includes(term) ||
+          (i.aliases || []).some(alias => alias.toLowerCase().includes(term)) ||
           i.cas_number?.includes(term) ||
           i.chemical_formula?.toLowerCase().includes(term)
       );
@@ -490,7 +506,10 @@ export class MasterTargetManagerComponent implements OnInit {
       if (item) {
           this.isEditing.set(true);
           this.editingItem.set(item);
-          this.form.patchValue(item);
+          this.form.patchValue({
+              ...item,
+              aliasesText: (item.aliases || []).join('\n')
+          });
       } else {
           this.isEditing.set(false);
           this.editingItem.set(null);
@@ -521,6 +540,7 @@ export class MasterTargetManagerComponent implements OnInit {
           cas_number: (val.cas_number || '').trim(),
           chemical_formula: (val.chemical_formula || '').trim(),
           default_unit: (val.default_unit || '').trim(),
+          aliases: splitAliases(val.aliasesText || ''),
           description: (val.description || '').trim()
       };
 
@@ -593,23 +613,26 @@ export class MasterTargetManagerComponent implements OnInit {
           let formula = '';
           let unit = '';
           let desc = '';
+          let aliases: string[] = [];
 
           // Loop through keys to find matches
           Object.keys(row).forEach(key => {
               const k = normalize(key);
               const val = (row[key] || '').toString().trim();
               
-              if (k.includes('name') || k.includes('tên') || k.includes('chất')) name = val;
-              if (k.includes('cas')) cas = val;
-              if (k.includes('formula') || k.includes('công thức') || k.includes('cthh')) formula = val;
-              if (k.includes('unit') || k.includes('đơn vị')) unit = val;
-              if (k.includes('desc') || k.includes('mô tả') || k.includes('note')) desc = val;
+              if (k.includes('alias') || k.includes('bí danh') || k.includes('tên khác')) aliases = splitAliases(val);
+              else if (k.includes('name') || k.includes('tên') || k.includes('chất')) name = val;
+              else if (k.includes('cas')) cas = val;
+              else if (k.includes('formula') || k.includes('công thức') || k.includes('cthh')) formula = val;
+              else if (k.includes('unit') || k.includes('đơn vị')) unit = val;
+              else if (k.includes('desc') || k.includes('mô tả') || k.includes('note')) desc = val;
           });
 
           if (name) {
               parsed.push({
                   id: generateSlug(name),
                   name: name,
+                  aliases,
                   cas_number: cas,
                   chemical_formula: formula,
                   default_unit: unit || 'ppb',
@@ -654,6 +677,7 @@ export class MasterTargetManagerComponent implements OnInit {
           const dataToExport = this.items().map(item => ({
               'Mã định danh': item.id,
               'Tên chỉ tiêu': item.name,
+              'Tên khác / Alias': (item.aliases || []).join('; '),
               'Số CAS': item.cas_number || '',
               'Công thức hóa học': item.chemical_formula || '',
               'Đơn vị mặc định': item.default_unit || 'ppb',
@@ -683,4 +707,13 @@ export class MasterTargetManagerComponent implements OnInit {
           this.isProcessing.set(false);
       }
   }
+}
+
+function splitAliases(value: string): string[] {
+  return Array.from(new Set(
+    String(value || '')
+      .split(/\r?\n|;/)
+      .map(alias => alias.trim())
+      .filter(Boolean)
+  ));
 }

@@ -59,4 +59,5 @@ export interface ExcelImportContext {
   draft: any;
   config: any;
   configKey: string | null;
+  masterTargets?: any[];
 }

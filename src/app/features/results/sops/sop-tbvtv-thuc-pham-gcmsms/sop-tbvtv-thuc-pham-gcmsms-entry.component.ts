@@ -1,16 +1,12 @@
-import { Component, signal, computed, OnChanges, inject } from '@angular/core';
+import { Component, signal, computed, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
 import { calculateSop01Recovery } from '../sop-01/sop-01-engine';
-import { parseMassHunterWorkbook } from '../shared/mass-hunter-parser';
 import { navigateGrid } from '../shared/sop-grid-helper';
 import { getAssignedTargetsForSample, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
-import { ProgressService } from '../../../../core/services/progress.service';
-import { ReportService } from '../../../../core/services/report.service';
-import { ToastService } from '../../../../core/services/toast.service';
 
 const SOP914_FULL_TEMPLATE_DOC_ID = '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4';
 const SOP914_SHORT_TEMPLATE_DOC_ID = '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4';
@@ -25,10 +21,6 @@ const SOP914_SHORT_TEMPLATE_URL = `https://docs.google.com/document/d/${SOP914_S
 })
 export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry implements OnChanges {
 
-  private progressService = inject(ProgressService);
-  private reportService = inject(ReportService);
-  private toast = inject(ToastService);
-
   // ── UI State đặc thù của SOP TBVTV Thực Phẩm ────────────────────────────
   activeTab = signal<'compounds' | 'chromatography'>('compounds');
   searchQuery = signal<string>('');
@@ -37,7 +29,6 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   bulkRackStart = 1;
   bulkVialStartFip = 10;
   bulkVialsPerRack = 54;
-  decimalPlaces = 2;
   columnDisplayNames = signal<Record<string, string>>({});
 
   readonly activeColumns = [
@@ -96,7 +87,6 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     if (this.draft.page1Data['maHoSo'] === undefined) this.draft.page1Data['maHoSo'] = '';
     if (this.draft.page1Data['heSoPhaLoang'] === undefined) this.draft.page1Data['heSoPhaLoang'] = '1';
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
-    if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) this.draft.page1Data['uploadMassHunterToDrive'] = true;
     if (this.draft.page1Data['checkSampleName'] === undefined) this.draft.page1Data['checkSampleName'] = 'CHECK_SAMPLE';
 
     if (!this.draft.page1Data['loaiMau']) {
@@ -611,123 +601,4 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
   }
 
-  async importMassHunterExcel(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-
-    const XLSX = await import('xlsx');
-    const reader = new FileReader();
-
-    reader.onload = (e: any) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array', cellDates: false });
-
-        const sheetMap: Record<string, string> = {
-          'fipron': 'kqFip',
-          'fipronil': 'kqFip',
-          'fipronildesulfinyl': 'kqFipDesl',
-          'fipronil_desulfinyl': 'kqFipDesl',
-          'fipronilsulfide': 'kqFipSulf',
-          'fipronil_sulfide': 'kqFipSulf',
-          'fipronilsulfone': 'kqFipSulf2',
-          'fipronil_solid': 'kqFipSulf',
-          'fipronil_sulfone': 'kqFipSulf2',
-          'chlorpyrifos': 'kqClp',
-          'chlorpyrifosmethyl': 'kqClpMe',
-          'chlorpyrifos_methyl': 'kqClpMe',
-          'chlorpyriphos-methyl-desmethyl': 'kqClpMeDes',
-          'chlorpyrifos_methyl_desmethyl': 'kqClpMeDes'
-        };
-
-        const displayRows = this.getDisplayRowsForSpreadsheet();
-        const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
-
-        const { r2Values } = parseMassHunterWorkbook(
-          XLSX,
-          workbook,
-          displayRows,
-          this.draft.resultData,
-          this.decimalPlaces,
-          checkSampleName,
-          sheetMap,
-          (key) => this.updateRecovery(key)
-        );
-
-        if (r2Values.length > 0) {
-          const allR2Ok = r2Values.every(v => v >= 0.99);
-          this.draft.page1Data['qcR2'] = allR2Ok;
-        }
-
-        const spikeRow = this.draft.resultData['QC_SPIKE'];
-        if (spikeRow && spikeRow['kqFip'] !== undefined && spikeRow['kqFip'] !== '') {
-          const fipVal = parseFloat(String(spikeRow['kqFip']));
-          if (!isNaN(fipVal)) {
-            const recovery = (fipVal / 5) * 100;
-            this.draft.page1Data['qcThuHoi'] = recovery >= 70 && recovery <= 120;
-          }
-        }
-
-        this.onDataChanged();
-
-        if (this.draft.page1Data['uploadMassHunterToDrive'] !== false) {
-          const readerForUpload = new FileReader();
-          readerForUpload.onload = async (uploadEvent: any) => {
-            const base64String = uploadEvent.target.result;
-
-            this.progressService.start(
-              'Đang lưu tệp Excel gốc',
-              'Đang kết nối và truyền dữ liệu nhị phân gốc sang Google Drive...',
-              100
-            );
-            this.progressService.update(30, 'Đang gửi yêu cầu ghi tệp...');
-
-            try {
-              this.progressService.update(60, 'Đang ghi tệp gốc vào thư mục Google Drive...');
-              const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
-              const sopId = this.draft.sopId;
-              const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
-              const ext = file.name.substring(file.name.lastIndexOf('.'));
-              const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
-
-              const uploadRes = await this.reportService.uploadExcelToDrive(
-                this.draft.requestId,
-                normalizedFileName,
-                base64String,
-                this.draft.sopId
-              );
-
-              if (uploadRes.success && uploadRes.fileUrl) {
-                this.progressService.update(90, 'Liên kết tệp nguồn với mẻ chạy...');
-                this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
-                this.draft.page1Data['massHunterExcelName'] = normalizedFileName;
-                this.onDataChanged();
-
-                this.progressService.complete();
-                this.toast.show('Nhập dữ liệu thành công và đã tải tệp Excel MassHunter gốc lên Google Drive!', 'success');
-              } else {
-                throw new Error(uploadRes.error || 'Không thể tạo tệp trên Google Drive.');
-              }
-            } catch (err: any) {
-              this.progressService.stop();
-              console.error('Không thể tải tệp Excel lên Google Drive:', err);
-              this.toast.show('Đã nhập số liệu thành công nhưng không thể tải tệp Excel gốc lên Google Drive: ' + err.message, 'error');
-            }
-          };
-
-          readerForUpload.readAsDataURL(file);
-        } else {
-          this.toast.show('Nhập số liệu thành công! (Không tải tệp lên Google Drive)', 'success');
-        }
-
-      } catch (err: any) {
-        console.error('Lỗi khi đọc tệp Excel MassHunter:', err);
-        this.toast.show('Có lỗi xảy ra khi đọc tệp Excel: ' + err.message, 'error');
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-    input.value = '';
-  }
 }
