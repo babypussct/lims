@@ -188,6 +188,9 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     if (p['r2'] === undefined)
       p['r2'] = '';
 
+    if (!p['r2ByCompound'] || typeof p['r2ByCompound'] !== 'object')
+      p['r2ByCompound'] = {};
+
     if (p['blankName'] === undefined)
       p['blankName'] = '';
 
@@ -248,17 +251,26 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     const defaultCalib = defaults ?? (count === 6 ? defaultCalib6 : defaultCalib5);
     const calibPoints = this.draft.page1Data['calibPoints'];
 
-    if (!calibPoints || calibPoints.length !== count) {
+    // Khi chưa có dữ liệu thì dùng số điểm mặc định của SOP. Nếu draft đã có
+    // ít nhất 4 điểm (ví dụ được xác nhận từ Excel), giữ nguyên số điểm đó.
+    if (!Array.isArray(calibPoints) || calibPoints.length < 4) {
       this.draft.page1Data['calibPoints'] = defaultCalib;
     } else {
       calibPoints.forEach((pt: any, idx: number) => {
-        if (!pt.hamLuong) pt.hamLuong = defaultCalib[idx].hamLuong;
+        const defaultPoint = defaultCalib[idx] || {
+          loSo: `C${idx}`,
+          vialNo: String(idx + 1),
+          hamLuong: ''
+        };
+        if (pt.hamLuong === undefined || pt.hamLuong === null) {
+          pt.hamLuong = defaultPoint.hamLuong;
+        }
         // Migration: nếu loSo là số (dữ liệu cũ) → chuyển sang vialNo, set loSo = tên điểm
         if (!pt.vialNo) {
           if (/^\d+$/.test(String(pt.loSo || ''))) {
             pt.vialNo = pt.loSo; // giữ số vial cũ
           } else {
-            pt.vialNo = defaultCalib[idx].vialNo;
+            pt.vialNo = defaultPoint.vialNo;
           }
         }
         if (!pt.loSo || /^\d+$/.test(String(pt.loSo))) {
@@ -272,7 +284,14 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
    * Khởi tạo activeCompound (ưu tiên hoạt chất đầu tiên được giao cho ít nhất 1 mẫu)
    */
   protected initActiveCompound() {
-    if (this.draft.page1Data['activeCompound']) return;
+    const existingActive = this.draft.page1Data['activeCompound'];
+    if (existingActive) {
+      const byCompound = this.draft.page1Data['r2ByCompound'] ||= {};
+      if (byCompound[existingActive] === undefined && this.draft.page1Data['r2']) {
+        byCompound[existingActive] = this.draft.page1Data['r2'];
+      }
+      return;
+    }
 
     const compounds: string[] = this.config?.compounds || [];
     const sampleList: string[] = this.run?.sampleList || [];
@@ -283,7 +302,13 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
       : compounds[0];
 
     if (!firstAssigned && compounds.length > 0) firstAssigned = compounds[0];
-    if (firstAssigned) this.draft.page1Data['activeCompound'] = firstAssigned;
+    if (firstAssigned) {
+      this.draft.page1Data['activeCompound'] = firstAssigned;
+      const byCompound = this.draft.page1Data['r2ByCompound'] ||= {};
+      if (byCompound[firstAssigned] === undefined && this.draft.page1Data['r2']) {
+        byCompound[firstAssigned] = this.draft.page1Data['r2'];
+      }
+    }
   }
 
   // ── DATA MIGRATION (v1 display string → v2 canonical id) ─────────────────
@@ -540,6 +565,13 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   onDataChanged() {
     if (this.isReadOnly) return;
+    const activeCompound = this.draft.page1Data['activeCompound'];
+    const r2ByCompound = this.draft.page1Data['r2ByCompound'];
+    if (activeCompound && r2ByCompound?.[activeCompound] !== undefined) {
+      // Giữ trường r2 cũ để payload/PDF hiện tại tiếp tục hoạt động, trong khi
+      // UI lưu đúng R² riêng cho từng hoạt chất.
+      this.draft.page1Data['r2'] = r2ByCompound[activeCompound];
+    }
     // Đồng bộ QC_FINAL theo QC_SPIKE (nếu cả 2 tồn tại)
     this.syncFinalFromSpike();
     // Tính % thu hồi cho QC mẫu thêm chuẩn
@@ -894,9 +926,12 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
       this.draft.resultData['QC_FINAL']['loSo'] = defaultSpikeVial;
 
     if (type === 'formDon') {
-      if (!this.draft.page1Data['r2']) {
-        this.draft.page1Data['r2'] = '0.999';
+      const activeCompound = this.draft.page1Data['activeCompound'];
+      const byCompound = this.draft.page1Data['r2ByCompound'] ||= {};
+      if (activeCompound && byCompound[activeCompound] === undefined) {
+        byCompound[activeCompound] = this.draft.page1Data['r2'] || '0.999';
       }
+      if (activeCompound) this.draft.page1Data['r2'] = byCompound[activeCompound];
       const calPoints = this.draft.page1Data['calibPoints'];
       if (calPoints && calPoints.length > 0) {
         this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || 1;
@@ -907,6 +942,16 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
     this.onSetPrintFormType(type);
     this.updateGopInChungState();
+    this.onDataChanged();
+  }
+
+  onActiveCompoundChanged() {
+    const activeCompound = this.draft.page1Data['activeCompound'];
+    const byCompound = this.draft.page1Data['r2ByCompound'] ||= {};
+    if (activeCompound && byCompound[activeCompound] === undefined) {
+      byCompound[activeCompound] = '';
+    }
+    if (activeCompound) this.draft.page1Data['r2'] = byCompound[activeCompound];
     this.onDataChanged();
   }
 

@@ -38,6 +38,7 @@ import { ResultEntryStatusBannerComponent } from './components/result-entry-stat
 import { ResultActiveReportsPanelComponent } from './components/result-active-reports-panel.component';
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
 import { SopEntryOutletComponent } from './components/sop-entry-outlet.component';
+import { ExcelResultImportModalComponent } from './components/excel-result-import-modal.component';
 
 type AutoSaveStatus = 'synced' | 'modified' | 'saving' | 'error';
 
@@ -60,7 +61,8 @@ interface AutoSaveEnvelope {
     ResultEntryStatusBannerComponent,
     ResultActiveReportsPanelComponent,
     ResultEntryHeaderComponent,
-    SopEntryOutletComponent
+    SopEntryOutletComponent,
+    ExcelResultImportModalComponent
   ],
   templateUrl: './result-entry.component.html'
 })
@@ -191,6 +193,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   historyList = signal<any[]>([]);
   showResetModal = signal(false);
   showPreflightModal = signal(false);
+  excelImportFile = signal<File | null>(null);
   preflightSummary = signal<PublishPreflightSummary | null>(null);
   resetConfirmText = signal('');
   isMetadataExpanded = signal(false);
@@ -524,6 +527,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.resumeAutoSave();
       this.isSavingDraft.set(false);
     }
+  }
+
+  openExcelImport(file: File) {
+    if (this.formIsReadOnly()) return;
+    this.closeActionsMenu();
+    this.excelImportFile.set(file);
+  }
+
+  closeExcelImport() {
+    this.excelImportFile.set(null);
+  }
+
+  onExcelImportApplied(event: { draft: AnalysisResultDraft; appliedCount: number }) {
+    this.onDraftChanged(event.draft);
+    this.excelImportFile.set(null);
+    this.toast.show(
+      `Đã áp dụng ${event.appliedCount} thông tin từ Excel. Dữ liệu đang được tự động lưu.`,
+      'success'
+    );
   }
 
   /**

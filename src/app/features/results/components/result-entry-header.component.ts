@@ -43,4 +43,13 @@ export class ResultEntryHeaderComponent {
   @Output() closeRestoreMenu = new EventEmitter<void>();
   @Output() toggleActionsMenu = new EventEmitter<void>();
   @Output() closeActionsMenu = new EventEmitter<void>();
+  @Output() importExcel = new EventEmitter<File>();
+
+  selectExcelFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.importExcel.emit(file);
+    // Cho phép chọn lại chính file vừa đóng modal.
+    input.value = '';
+  }
 }

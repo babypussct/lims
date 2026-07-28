@@ -27,6 +27,22 @@
   @if (run && draft) {
     <div class="flex items-center gap-2">
 
+      @if (!isReadOnly) {
+        <button type="button"
+                (click)="excelResultFileInput.click()"
+                [disabled]="isProcessing"
+                class="px-4 py-2 text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/25 border border-emerald-200/60 dark:border-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition flex items-center gap-2 active:scale-95 disabled:opacity-50 shadow-sm"
+                title="Nhập nhanh Final-Conc. từ Excel và xem trước trước khi áp dụng">
+          <i class="fa-solid fa-file-excel"></i>
+          <span class="hidden xl:inline">Import Excel</span>
+        </button>
+        <input #excelResultFileInput
+               type="file"
+               accept=".xlsx,.xls"
+               class="hidden"
+               (change)="selectExcelFile($event)">
+      }
+
       <!-- Restore Version Dropdown -->
       @if (historyList.length > 0) {
         <div class="relative">

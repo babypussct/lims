@@ -28,7 +28,8 @@
     (toggleRestoreMenu)="toggleRestoreMenu()"
     (closeRestoreMenu)="closeRestoreMenu()"
     (toggleActionsMenu)="toggleActionsMenu()"
-    (closeActionsMenu)="closeActionsMenu()">
+    (closeActionsMenu)="closeActionsMenu()"
+    (importExcel)="openExcelImport($event)">
   </app-result-entry-header>
 
   <!-- Main Form Area -->
@@ -131,6 +132,19 @@
       </div>
     }
   </div>
+
+  @if (excelImportFile() && run() && draft() && config()) {
+    <app-excel-result-import-modal
+      [file]="excelImportFile()"
+      [run]="run()"
+      [draft]="draft()!"
+      [config]="config()"
+      [configKey]="configKey()"
+      [isReadOnly]="formIsReadOnly()"
+      (cancelled)="closeExcelImport()"
+      (applied)="onExcelImportApplied($event)">
+    </app-excel-result-import-modal>
+  }
 
   <!-- Publish Preflight Modal -->
   @if (showPreflightModal() && preflightSummary()) {

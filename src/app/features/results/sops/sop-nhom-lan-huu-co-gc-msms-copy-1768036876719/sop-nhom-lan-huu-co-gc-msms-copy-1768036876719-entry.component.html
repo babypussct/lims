@@ -423,7 +423,7 @@
                                       <div>
                                         <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Hệ số xác định R²</label>
                                         <input type="text"
-                                          [(ngModel)]="draft.page1Data['r2']"
+                                          [(ngModel)]="draft.page1Data['r2ByCompound'][draft.page1Data['activeCompound']]"
                                           (ngModelChange)="onDataChanged()"
                                           (focus)="$any($event.target).select()"
                                           placeholder="0.999..."
@@ -465,7 +465,7 @@
                                         <div class="flex flex-wrap items-center gap-2">
                                           <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hoạt chất:</label>
                                           <select [(ngModel)]="draft.page1Data['activeCompound']"
-                                            (ngModelChange)="onDataChanged()"
+                                                  (ngModelChange)="onActiveCompoundChanged()"
                                             class="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold text-violet-600 dark:text-violet-400 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition cursor-pointer max-w-[200px]">
                                             @for (c of assignedCompoundsForFormDon(); track c) {
                                               <option [value]="c">{{ compoundDisplayNames()[c] || c }}</option>

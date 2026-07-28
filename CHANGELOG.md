@@ -1,5 +1,19 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.28-b05] - 28/07/2026
+
+### 📥 Import Kết Quả Excel Theo Mẻ SOP
+
+- **Một luồng import dùng chung:** Bổ sung nút `Import Excel` tại màn trả kết quả cho cả Form Check và Form Đơn, dùng được ngay từ các SOP hiện tại và các SOP mới.
+- **Đối chiếu trước khi ghi:** Modal xem trước hiển thị sheet, mẫu, chỉ tiêu, trường UI, giá trị hiện tại và giá trị Excel; người dùng có thể chọn hoặc bỏ chọn từng thông tin.
+- **Ghép mẫu an toàn:** Hỗ trợ tên Excel có tiền tố như `TT_TBVTV_MINH_BL01` khớp với mẫu `MINH_BL01`; các mã mẫu chứa `BL` hoặc `SP` vẫn được coi là mẫu thường, còn QC Blank/QC Spike không có trên Form Check sẽ tự bỏ qua.
+- **Đúng quy tắc trả kết quả:** Chỉ lấy `Final-Conc.` và không đổi đơn vị; `ND` được đánh dấu checkbox ở Form Check hoặc điền trực tiếp ở Form Đơn; mục được chọn sẽ ghi đè, mục bỏ chọn giữ nguyên.
+- **Thông tin riêng theo loại form:** R² chỉ được nhập cho Form Đơn theo từng chỉ tiêu; số điểm đường chuẩn lấy từ Excel khi có tối thiểu 4 điểm và vẫn giữ nồng độ danh định.
+- **Chủ động số chữ số thập phân:** Cho phép giữ nguyên giá trị Excel hoặc làm tròn từ 0–6 chữ số thập phân; không làm thay đổi `ND` và R².
+- **Lưu trữ nhẹ trên máy:** Tệp Excel chỉ được đọc cục bộ trong trình duyệt; hệ thống lưu giá trị đã chọn cùng nhật ký import rút gọn, không lưu hoặc tải lên toàn bộ tệp.
+
+---
+
 ## [v26.07.28-b04] - 28/07/2026
 
 ### 📐 Excel Tự Dãn Cột/Hàng Vừa Nội Dung
