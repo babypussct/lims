@@ -210,8 +210,8 @@ interface PaletteItem {
             <input
               #paletteInput
               type="text"
-              [(ngModel)]="searchQuery"
-              (input)="onSearchInput()"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="onSearchInput($event)"
               (keydown)="onPaletteKeydown($event)"
               placeholder="Tìm trang, tính năng hoặc quét mã..."
               class="flex-1 bg-transparent text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none">
@@ -223,7 +223,7 @@ interface PaletteItem {
             @if (filteredItems().length === 0) {
               <div class="px-4 py-8 text-center text-sm text-slate-400">
                 <i class="fa-solid fa-search text-2xl mb-2 block opacity-30"></i>
-                Không tìm thấy kết quả cho "{{ searchQuery }}"
+                Không tìm thấy kết quả cho "{{ searchQuery() }}"
               </div>
             } @else {
               @for (item of filteredItems(); track item.id; let i = $index) {
@@ -270,7 +270,7 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
   // Command Palette state
   paletteOpen = signal(false);
-  searchQuery = '';
+  searchQuery = signal('');
   activeIndex = signal(0);
 
   @ViewChild('paletteInput') paletteInput!: ElementRef<HTMLInputElement>;
@@ -333,14 +333,24 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
   /** Filtered items based on search query */
   filteredItems = computed<PaletteItem[]>(() => {
-    const q = this.searchQuery.toLowerCase().trim();
+    const q = this.normalizeSearchText(this.searchQuery());
     if (!q) return this.allPaletteItems();
     return this.allPaletteItems().filter(item =>
-      item.name.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q) ||
-      (item.path && item.path.toLowerCase().includes(q))
+      this.normalizeSearchText(item.name).includes(q) ||
+      this.normalizeSearchText(item.category).includes(q) ||
+      (item.path && this.normalizeSearchText(item.path).includes(q))
     );
   });
+
+  private normalizeSearchText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .trim();
+  }
 
   ngOnInit() {
     this.currentUrl.set(this.router.url);
@@ -380,7 +390,7 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   // ── Command Palette ──
   openPalette() {
     this.profileMenuOpen.set(false);
-    this.searchQuery = '';
+    this.searchQuery.set('');
     this.activeIndex.set(0);
     this.paletteOpen.set(true);
     // Focus input after render
@@ -389,10 +399,11 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
   closePalette() {
     this.paletteOpen.set(false);
-    this.searchQuery = '';
+    this.searchQuery.set('');
   }
 
-  onSearchInput() {
+  onSearchInput(value: string) {
+    this.searchQuery.set(value);
     this.activeIndex.set(0);
   }
 
