@@ -95,6 +95,9 @@ interface PaletteItem {
         <!-- ── Dark Mode Toggle ── -->
         <button
           (click)="state.toggleDarkMode()"
+          [disabled]="state.themeTransitioning()"
+          [attr.aria-pressed]="state.darkMode()"
+          [attr.aria-label]="state.darkMode() ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'"
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                  bg-white dark:bg-slate-800
                  border border-slate-200/60 dark:border-slate-700/60
@@ -102,7 +105,7 @@ interface PaletteItem {
                  hover:text-fuchsia-500 dark:hover:text-fuchsia-400
                  hover:border-fuchsia-300 dark:hover:border-fuchsia-700
                  hover:shadow-md hover:shadow-fuchsia-500/5
-                 transition-all duration-200 shadow-sm active:scale-95"
+                 transition-all duration-200 shadow-sm active:scale-95 disabled:pointer-events-none"
           [title]="state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối'">
           <i class="fa-solid text-sm transition-transform duration-300"
              [class.fa-sun]="state.darkMode()"

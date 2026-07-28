@@ -1,6 +1,13 @@
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode, ErrorHandler, Injectable } from '@angular/core';
-import { provideRouter, withHashLocation, withComponentInputBinding, withRouterConfig } from '@angular/router';
+import {
+  provideRouter,
+  withHashLocation,
+  withComponentInputBinding,
+  withPreloading,
+  withRouterConfig
+} from '@angular/router';
 import { routes } from './app.routes';
+import { AdaptivePreloadingStrategy } from './core/routing/adaptive-preloading.strategy';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideHttpClient } from '@angular/common/http';
 
@@ -50,6 +57,7 @@ export const appConfig: ApplicationConfig = {
       routes, 
       withHashLocation(), 
       withComponentInputBinding(),
+      withPreloading(AdaptivePreloadingStrategy),
       // Tối ưu hoá Navigation Stack nếu người dùng huỷ chuyển trang (cancel loading module)
       withRouterConfig({ canceledNavigationResolution: 'replace' })
     ), 

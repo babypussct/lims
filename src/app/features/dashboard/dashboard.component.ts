@@ -653,14 +653,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const isDark = this.state.darkMode();
       
-      // Force recreate if dark mode changed
-      const forceRecreate = this._lastDarkMode !== null && this._lastDarkMode !== isDark;
+      // Keep the canvas instances alive during theme changes. Recreating both
+      // charts here caused a visible main-thread hitch on the dashboard.
+      const themeChanged = this._lastDarkMode !== null && this._lastDarkMode !== isDark;
       this._lastDarkMode = isDark;
-
-      if (forceRecreate) {
-          if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
-          if (this.doughnutChartInstance) { this.doughnutChartInstance.destroy(); this.doughnutChartInstance = null; }
-      }
 
       if (!this.chartInstance || !this.doughnutChartInstance) {
           const existingChart = Chart.getChart(canvas);
@@ -802,7 +798,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
               }
               return text;
           };
-          this.chartInstance.update('active');
+          Object.assign(this.chartInstance.options.plugins.tooltip, {
+              backgroundColor: tooltipBg,
+              titleColor: tooltipTitleColor,
+              bodyColor: tooltipBodyColor,
+              borderColor: tooltipBorderColor
+          });
+          this.chartInstance.options.scales.y.grid.color = gridColor;
+          this.chartInstance.data.datasets[0].backgroundColor = gradient;
+          this.chartInstance.data.datasets[1].backgroundColor = barGradient;
+          this.chartInstance.update(themeChanged ? 'none' : 'active');
       } else {
           // Initialize chart
           this.chartInstance = new Chart(ctx, {
@@ -896,7 +901,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.doughnutChartInstance.data.labels = sopLabels;
           this.doughnutChartInstance.data.datasets[0].data = sopData;
           this.doughnutChartInstance.data.datasets[0].backgroundColor = bgColors.slice(0, sopLabels.length);
-          this.doughnutChartInstance.update('active');
+          Object.assign(this.doughnutChartInstance.options.plugins.tooltip, {
+              backgroundColor: tooltipBg,
+              titleColor: tooltipTitleColor,
+              bodyColor: tooltipBodyColor,
+              borderColor: tooltipBorderColor
+          });
+          this.doughnutChartInstance.update(themeChanged ? 'none' : 'active');
       } else {
           this.doughnutChartInstance = new Chart(dCtx, {
               type: 'doughnut',

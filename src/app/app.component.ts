@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, computed, effect, signal, HostListener, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import {
+  RouterOutlet,
+  Router,
+  NavigationStart,
+  NavigationEnd,
+  NavigationCancel,
+  NavigationError
+} from '@angular/router';
 
 import { AppShellComponent } from './core/layout/app-shell.component';
 import { LogoComponent } from './shared/components/logo.component';
@@ -53,6 +60,35 @@ import { filter } from 'rxjs/operators';
        <router-outlet></router-outlet>
     } 
     @else {
+      <!-- Global route feedback: instant progress, skeleton only for genuinely slow lazy chunks. -->
+      @if (isNavigating()) {
+        <div class="route-progress" role="progressbar" aria-label="Đang chuyển trang">
+          <span></span>
+        </div>
+      }
+
+      @if (showNavigationSkeleton()) {
+        <div class="route-loading-layer no-print" aria-live="polite" aria-busy="true">
+          <div class="route-loading-shell">
+            <div class="route-loading-heading">
+              <span class="route-loading-icon"><i class="fa-solid fa-flask-vial"></i></span>
+              <div class="route-loading-title">
+                <span></span>
+                <span></span>
+              </div>
+              <span class="route-loading-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="route-loading-grid" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="route-loading-lines" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <span class="sr-only">Đang mở nội dung, vui lòng chờ.</span>
+          </div>
+        </div>
+      }
+
       <!-- Pull to Refresh Spinner -->
       @if (isPulling()) {
         <div class="fixed top-10 left-1/2 -translate-x-1/2 z-[300] bg-white rounded-full shadow-lg w-10 h-10 flex items-center justify-center animate-bounce">
@@ -295,11 +331,14 @@ export class AppComponent implements OnDestroy {
 
   // Reactive URL signal for computed dependencies
   currentUrl = signal<string>('');
+  isNavigating = signal(false);
+  showNavigationSkeleton = signal(false);
   isPublicRoute = computed(() => {
     const url = this.currentUrl();
     return url.startsWith('/privacy-policy') || url.startsWith('/terms-of-service') || url.startsWith('/changelog');
   });
   year = new Date().getFullYear();
+  private _navigationFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.applyPerformanceProfile();
@@ -316,10 +355,17 @@ export class AppComponent implements OnDestroy {
     // Initialize currentUrl
     this.currentUrl.set(this.router.url);
 
-    // Listen to router events to update signal
+    // Keep feedback immediate, but delay the larger skeleton so fast routes do
+    // not flash. The current screen stays visible underneath while a lazy chunk
+    // is fetched.
     this.router.events.subscribe(event => {
-      if (event instanceof NavigationEnd) {
+      if (event instanceof NavigationStart) {
+        this.startNavigationFeedback();
+      } else if (event instanceof NavigationEnd) {
         this.currentUrl.set(this.router.url);
+        this.finishNavigationFeedback();
+      } else if (event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.finishNavigationFeedback();
       }
     });
 
@@ -490,8 +536,27 @@ export class AppComponent implements OnDestroy {
   ngOnDestroy() {
     clearInterval(this._swCheckInterval);
     clearTimeout(this._maintenanceTimer);
+    if (this._navigationFeedbackTimer) clearTimeout(this._navigationFeedbackTimer);
     clearInterval(this._updateTimer);
     this._removeInteractionHandler();
+  }
+
+  private startNavigationFeedback() {
+    if (this._navigationFeedbackTimer) clearTimeout(this._navigationFeedbackTimer);
+    this.isNavigating.set(true);
+    this.showNavigationSkeleton.set(false);
+    this._navigationFeedbackTimer = setTimeout(() => {
+      if (this.isNavigating()) this.showNavigationSkeleton.set(true);
+    }, 160);
+  }
+
+  private finishNavigationFeedback() {
+    if (this._navigationFeedbackTimer) {
+      clearTimeout(this._navigationFeedbackTimer);
+      this._navigationFeedbackTimer = null;
+    }
+    this.showNavigationSkeleton.set(false);
+    this.isNavigating.set(false);
   }
 
   // Kiểm tra build mới ngay khi user quay lại tab (từ bất kỳ ứng dụng nào khác)

@@ -132,6 +132,7 @@ export class StateService implements OnDestroy {
 
   // --- DARK MODE ---
   darkMode = signal<boolean>(false);
+  themeTransitioning = signal<boolean>(false);
 
   constructor() {
     // Initialize Dark Mode from localStorage
@@ -166,12 +167,42 @@ export class StateService implements OnDestroy {
 
   // Toggle Dark Mode
   toggleDarkMode() {
-    this.darkMode.update(v => {
-      const newVal = !v;
+    if (this.themeTransitioning()) return;
+
+    const newVal = !this.darkMode();
+    const root = document.documentElement;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const documentWithTransitions = document as Document & {
+      startViewTransition?: (update: () => void) => { finished: Promise<void> };
+    };
+
+    this.themeTransitioning.set(true);
+    root.classList.add('theme-switching');
+
+    const commitTheme = () => {
       localStorage.setItem('darkMode', String(newVal));
       this.applyDarkMode(newVal);
-      return newVal;
-    });
+      this.darkMode.set(newVal);
+    };
+
+    const finishTransition = () => {
+      requestAnimationFrame(() => {
+        root.classList.remove('theme-switching');
+        this.themeTransitioning.set(false);
+      });
+    };
+
+    if (documentWithTransitions.startViewTransition && !prefersReducedMotion && !root.classList.contains('performance-lite')) {
+      try {
+        documentWithTransitions.startViewTransition(commitTheme).finished.finally(finishTransition);
+        return;
+      } catch {
+        // Fall back to an immediate, transition-free theme swap.
+      }
+    }
+
+    commitTheme();
+    finishTransition();
   }
 
   private applyDarkMode(isDark: boolean) {
@@ -184,6 +215,8 @@ export class StateService implements OnDestroy {
       document.body.classList.remove('dark');
       document.documentElement.style.colorScheme = 'light';
     }
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      ?.setAttribute('content', isDark ? '#0f172a' : '#f8f9fa');
   }
 
   private cleanupListeners() {

@@ -21,6 +21,199 @@ router-outlet + * {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  animation: route-content-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Route feedback --------------------------------------------------------- */
+.route-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 400;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(99, 102, 241, 0.12);
+  pointer-events: none;
+}
+
+.route-progress > span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #d946ef, #6366f1);
+  box-shadow: 0 0 14px rgba(217, 70, 239, 0.42);
+  animation: route-progress-move 900ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.route-loading-layer {
+  position: fixed;
+  inset: 3.5rem 0 0;
+  z-index: 45;
+  display: grid;
+  place-items: start center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  pointer-events: none;
+  background: rgba(248, 250, 252, 0.52);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: route-layer-enter 140ms ease-out both;
+}
+
+.dark .route-loading-layer {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.route-loading-shell {
+  width: min(760px, 100%);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
+}
+
+.dark .route-loading-shell {
+  background: rgba(30, 41, 59, 0.94);
+  border-color: rgba(100, 116, 139, 0.24);
+  box-shadow: 0 18px 50px rgba(2, 6, 23, 0.3);
+}
+
+.route-loading-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.route-loading-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 0.85rem;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.route-loading-title {
+  display: grid;
+  flex: 1;
+  gap: 0.45rem;
+}
+
+.route-loading-title span,
+.route-loading-grid span,
+.route-loading-lines span {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  border-radius: 999px;
+  background: #e9edf4;
+}
+
+.dark .route-loading-title span,
+.dark .route-loading-grid span,
+.dark .route-loading-lines span {
+  background: #334155;
+}
+
+.route-loading-title span::after,
+.route-loading-grid span::after,
+.route-loading-lines span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: route-shimmer 1.25s ease-in-out infinite;
+}
+
+.dark .route-loading-title span::after,
+.dark .route-loading-grid span::after,
+.dark .route-loading-lines span::after {
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.2), transparent);
+}
+
+.route-loading-title span:first-child { width: 9rem; height: 0.72rem; }
+.route-loading-title span:last-child { width: 5.5rem; height: 0.48rem; opacity: 0.72; }
+
+.route-loading-dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.route-loading-dots i {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: #a855f7;
+  animation: route-dot 900ms ease-in-out infinite alternate;
+}
+
+.route-loading-dots i:nth-child(2) { animation-delay: 120ms; }
+.route-loading-dots i:nth-child(3) { animation-delay: 240ms; }
+
+.route-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.route-loading-grid span { height: 4.5rem; border-radius: 0.9rem; }
+.route-loading-lines { display: grid; gap: 0.65rem; margin-top: 1rem; }
+.route-loading-lines span { height: 0.58rem; }
+.route-loading-lines span:nth-child(2) { width: 88%; }
+.route-loading-lines span:nth-child(3) { width: 72%; }
+
+@keyframes route-progress-move {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(340%); }
+}
+
+@keyframes route-layer-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes route-content-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes route-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@keyframes route-dot {
+  from { opacity: 0.35; transform: translateY(1px); }
+  to { opacity: 1; transform: translateY(-2px); }
+}
+
+/* Theme transition ------------------------------------------------------- */
+/* Disable hundreds of per-element Tailwind transitions during a theme swap.
+   The single View Transition below is cheaper and visually coherent. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+::view-transition-old(root) {
+  animation: theme-fade-out 160ms ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: theme-fade-in 220ms ease-out both;
+}
+
+@keyframes theme-fade-out {
+  to { opacity: 0.72; }
+}
+
+@keyframes theme-fade-in {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
 }
 /* Lightweight rendering profile for low-memory/low-core devices. Expensive
    blur and decorative motion are reduced while functional loading indicators
@@ -43,6 +236,22 @@ html.performance-lite .animate-fade-in {
   animation: none !important;
 }
 
+html.performance-lite router-outlet + * {
+  animation: route-layer-enter 100ms ease-out both;
+}
+
+html.performance-lite .route-loading-layer {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.performance-lite .route-loading-dots i,
+html.performance-lite .route-loading-title span::after,
+html.performance-lite .route-loading-grid span::after,
+html.performance-lite .route-loading-lines span::after {
+  animation: none !important;
+}
+
 html.performance-lite .transition-all {
   transition-duration: 100ms !important;
 }
@@ -55,5 +264,20 @@ html.performance-lite .transition-all {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  router-outlet + *,
+  .route-progress > span,
+  .route-loading-layer,
+  .route-loading-dots i,
+  .route-loading-title span::after,
+  .route-loading-grid span::after,
+  .route-loading-lines span::after {
+    animation: none !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }
