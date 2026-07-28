@@ -80,6 +80,35 @@ test('accepts type3b ND checkboxes as reportable results', () => {
   assert.equal(summary.blockers.length, 0);
 });
 
+test('does not require R² on Form Check but still warns on Form Đơn', () => {
+  const makeSummary = (printFormType: 'formCheck' | 'formDon') =>
+    buildPublishPreflightSummary({
+      run: { sampleList: ['A001'] },
+      draft: draft({
+        page1Data: {
+          ngayNguoiPhanTich: '2026-07-27',
+          ngayNguoiThamTra: '2026-07-27',
+          printFormType,
+          r2: ''
+        },
+        resultData: { A001: { alpha_nd: true } }
+      }),
+      config: { formType: 'type3b', compounds: ['alpha'], columns: {} },
+      configKey: 'tbvtv-thuc-pham-gcmsms',
+      activeFilter: 'ALL',
+      unpublishedSamples: ['A001']
+    });
+
+  assert.equal(
+    makeSummary('formCheck').warnings.some(message => message.includes('R²')),
+    false
+  );
+  assert.equal(
+    makeSummary('formDon').warnings.some(message => message.includes('R²')),
+    true
+  );
+});
+
 test('warns when included samples were already published', () => {
   const summary = buildPublishPreflightSummary({
     run: { sampleList: ['A001', 'A002'] },

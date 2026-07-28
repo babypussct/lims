@@ -62,7 +62,8 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
   const needsR2 = config.formType === 'type3a'
     || config.formType === 'type3b'
     || ['trifluralin-gcms', 'dichlorvos-gcms', 'chloroform-gcms'].includes(configKey || '');
-  if (needsR2 && !String(draft.page1Data?.['r2'] || '').trim()) {
+  const isFormCheck = draft.page1Data?.['printFormType'] === 'formCheck';
+  if (!isFormCheck && needsR2 && !String(draft.page1Data?.['r2'] || '').trim()) {
     warnings.push('Chưa nhập hệ số xác định R².');
   }
 

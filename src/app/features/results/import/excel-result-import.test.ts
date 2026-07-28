@@ -157,4 +157,36 @@ test('rounds only numeric Final-Conc. when the user selects decimal places', () 
   assert.equal(formatImportedFinalConc('1.234567', false, 2), '1.23');
   assert.equal(formatImportedFinalConc('1.2', false, 4), '1.2000');
   assert.equal(formatImportedFinalConc('N.D', true, 2), 'ND');
+  assert.equal(formatImportedFinalConc('0.000', false, null), 'ND');
+  assert.equal(formatImportedFinalConc('0,000', false, 3), 'ND');
+});
+
+test('treats zero Final-Conc. as ND on both Form Check and Form Đơn', () => {
+  const workbook = makeWorkbook();
+  workbook.Sheets.Bifenthrin['X15'] = { t: 's', v: '0.000' };
+  const parsed = parseMassHunterResultWorkbook(XLSX, workbook);
+
+  const checkContext = makeContext('formCheck');
+  const checkCandidates = buildExcelImportCandidates(parsed, checkContext);
+  const checkZero = checkCandidates.find(
+    candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01'
+  )!;
+  checkCandidates.forEach(candidate => candidate.selected = candidate === checkZero);
+  applyExcelImportCandidates(checkCandidates, checkContext, 'zero.xlsx');
+
+  assert.equal(checkZero.isNd, true);
+  assert.equal(checkZero.importValue, 'ND');
+  assert.equal(checkContext.draft.resultData.MINH_BL01.bifenthrin, '');
+  assert.equal(checkContext.draft.resultData.MINH_BL01.bifenthrin_nd, true);
+
+  const singleContext = makeContext('formDon');
+  const singleCandidates = buildExcelImportCandidates(parsed, singleContext);
+  const singleZero = singleCandidates.find(
+    candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01'
+  )!;
+  singleCandidates.forEach(candidate => candidate.selected = candidate === singleZero);
+  applyExcelImportCandidates(singleCandidates, singleContext, 'zero.xlsx');
+
+  assert.equal(singleZero.isNd, true);
+  assert.equal(singleContext.draft.resultData.MINH_BL01.bifenthrin, 'ND');
 });

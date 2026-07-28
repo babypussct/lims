@@ -1,0 +1,63 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { buildUnifiedType3bPdfPayload } from './result-pdf-helper';
+
+const formatDate = (value: string) => value;
+const getRunDate = () => '2026-07-28';
+
+function buildPayload(sampleList: string[]) {
+  const resultData = Object.fromEntries(sampleList.map((sample, index) => [
+    sample,
+    {
+      selected: true,
+      etofenprox: index === 0 ? '8.565' : '7.210',
+      etofenprox_nd: false,
+      etofenprox_qc1: 'Đạt',
+      etofenprox_qc2: 'Đạt',
+      etofenprox_qc3: 'Đạt'
+    }
+  ]));
+
+  return buildUnifiedType3bPdfPayload(
+    {
+      page1Data: {
+        printFormType: 'formCheck',
+        checkGopInChung: true,
+        ngayNguoiPhanTich: '2026-07-28',
+        ngayNguoiThamTra: '2026-07-28'
+      },
+      resultData
+    },
+    {
+      sampleList,
+      sampleTargetMap: Object.fromEntries(sampleList.map(sample => [sample, ['etofenprox']]))
+    },
+    'ALL',
+    {
+      id: 'nhom-cuc',
+      formType: 'type3b',
+      compounds: ['etofenprox']
+    },
+    formatDate,
+    getRunDate
+  );
+}
+
+test('Form Check single-sample PDF contains only the result value', () => {
+  const payload = buildPayload(['DAT_SP01']);
+
+  assert.equal(payload.samples.length, 1);
+  assert.equal(payload.samples[0].maSoMau, 'DAT_SP01');
+  assert.equal(payload.samples[0].etofenprox, '8.565');
+});
+
+test('Form Check grouped PDF keeps sample labels when values belong to multiple samples', () => {
+  const payload = buildPayload(['DAT_SP01', 'DAT_SP02']);
+
+  assert.equal(payload.samples.length, 1);
+  assert.equal(payload.samples[0].maSoMau, 'DAT_SP01; DAT_SP02');
+  assert.equal(
+    payload.samples[0].etofenprox,
+    'DAT_SP01: 8.565; DAT_SP02: 7.210'
+  );
+});

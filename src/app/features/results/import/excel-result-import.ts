@@ -301,7 +301,7 @@ export function formatImportedFinalConc(
   isNd: boolean,
   decimalPlaces: number | null
 ): string {
-  if (isNd) return 'ND';
+  if (isNd || isNdValue(sourceValue)) return 'ND';
   if (decimalPlaces === null) return String(sourceValue || '').trim();
 
   const normalized = String(sourceValue || '').trim().replace(',', '.');
@@ -672,7 +672,14 @@ function isNumericText(value: string): boolean {
 }
 
 function isNdValue(value: string): boolean {
-  return /^N[\s.]*D[\s.]*$/i.test(String(value || '').trim());
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return false;
+  if (/^N[\s.]*D[\s.]*$/i.test(normalized)) return true;
+
+  // Máy có thể xuất kết quả dưới LOQ dưới dạng 0, 0.000 hoặc 0,000.
+  // Mọi giá trị số bằng 0 đều được trả về ND ở cả hai loại form.
+  const numericValue = Number(normalized.replace(',', '.'));
+  return Number.isFinite(numericValue) && numericValue === 0;
 }
 
 function hasExistingValue(value: string): boolean {

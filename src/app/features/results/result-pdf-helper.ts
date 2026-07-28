@@ -1814,7 +1814,12 @@ export function buildUnifiedType3bPdfPayload(
   const filteredSamples = sampleList.filter(filterSample);
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
-  const isGop = !isDon && currentDraft.page1Data['checkGopInChung'] === true;
+  // Chỉ ghép mã mẫu vào kết quả khi một phiếu thực sự có nhiều mẫu.
+  // Nếu luồng tách phiếu chỉ còn một mẫu, kết quả phải là "8.565", không phải
+  // "DAT_SP01: 8.565" dù cờ gộp còn được lưu trong draft.
+  const isGop = !isDon
+    && currentDraft.page1Data['checkGopInChung'] === true
+    && filteredSamples.length > 1;
 
   const targetInfo: Record<string, { displayName: string; unit: string; lod: string; loq: string }> = {};
   (currentConf.compounds as string[]).forEach(canonicalId => {
