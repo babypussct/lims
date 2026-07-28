@@ -8,6 +8,7 @@ import { AuthService } from '../services/auth.service';
 import { QrGlobalService } from '../services/qr-global.service';
 import { ChangelogService } from '../services/changelog.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
+import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
 
 interface PaletteItem {
@@ -23,7 +24,7 @@ interface PaletteItem {
   selector: 'app-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationBellComponent],
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
@@ -31,7 +32,7 @@ interface PaletteItem {
              bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl
              border-b border-slate-200/50 dark:border-slate-800/50
              transition-[left] duration-300 ease-in-out"
-      [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '4rem' : '18rem')">
+      [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '0' : '16rem')">
 
       <!-- ── Sidebar Toggle ── -->
       <button
@@ -47,10 +48,19 @@ interface PaletteItem {
            [class.fa-chevron-left]="!state.sidebarCollapsed()"></i>
       </button>
 
-      <!-- ── Breadcrumb / Page Title (no Home icon — Rail already has one) ── -->
+      <!-- ── Breadcrumb / Page Title ── -->
       <div class="flex items-center gap-2 min-w-0 flex-1">
-        <i class="fa-solid text-[12px] text-fuchsia-500 dark:text-fuchsia-400 shrink-0"
-           [ngClass]="pageIcon()"></i>
+        <button
+          type="button"
+          (click)="goToDashboard()"
+          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                 text-fuchsia-500 dark:text-fuchsia-400
+                 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40
+                 transition-all duration-200 active:scale-90"
+          title="Về Trang Chủ"
+          aria-label="Về Trang Chủ">
+          <i class="fa-solid fa-house text-[12px]"></i>
+        </button>
         <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
           {{ pageTitle() }}
         </span>
@@ -113,7 +123,8 @@ interface PaletteItem {
            [class.rotate-180]="state.darkMode()"></i>
       </button>
 
-      <!-- (Notification Bell removed — already on Navigation Rail, no duplicate) -->
+      <!-- ── Notification Bell ── -->
+      <app-notification-bell [headerMode]="true"></app-notification-bell>
 
       <!-- ── Profile Pill ── -->
       <div class="relative">
@@ -280,10 +291,9 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     return ROUTE_TITLES[segment] || 'LIMS Cloud';
   });
 
-  pageIcon = computed(() => {
-    const segment = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
-    return ROUTE_ICONS[segment] || 'fa-cube';
-  });
+  goToDashboard() {
+    this.router.navigateByUrl('/dashboard');
+  }
 
   /** All navigable items for the command palette */
   allPaletteItems = computed<PaletteItem[]>(() => {

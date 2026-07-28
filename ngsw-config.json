@@ -2,15 +2,15 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.27-b05",
-    "notesVersion": "v26.07.27-b03",
-    "title": "Tối Ưu Xem Báo Cáo PDF, Khóa An Toàn Mẻ Hoàn Tất & Chuẩn Hóa Số Liệu Kho Chuẩn",
+    "version": "v26.07.28-b01",
+    "notesVersion": "v26.07.28-b01",
+    "title": "Điều Hướng Header Gọn Hơn & Bù Kho Smart Batch Tức Thời",
     "features": [
-      "📄 Xem báo cáo PDF trực tiếp mượt mà, tự động cập nhật đúng phiếu khi chuyển đổi bộ lọc",
-      "🔍 Tự động kiểm tra đủ chữ ký, kết quả & R² trước khi in báo cáo; hỗ trợ xem lịch sử 5 phiên bản",
-      "🔒 Tự động khóa chế độ Chỉ Xem cho các mẻ phân tích đã hoàn tất để tránh sửa nhầm dữ liệu",
-      "🧪 Hiển thị lượng chất chuẩn với 2 chữ số thập phân chuẩn GLP (12.50g), hỗ trợ nhập bù nhật ký & nút chọn nhanh Tối đa",
-      "⚡ Tăng tốc độ phản hồi hệ thống và tối ưu bộ nhớ trình duyệt cho máy tính phòng thí nghiệm"
+      "🧭 Loại bỏ Navigation Rail, đưa điều hướng Desktop lên Header và mở rộng Sidebar dễ đọc hơn",
+      "🏠 Thêm nút Trang Chủ thật trên breadcrumb, giữ lối về Dashboard luôn rõ ràng",
+      "🔔 Chuông thông báo đồng bộ Header và popover tự mở chính xác ngay dưới nút chuông",
+      "🧪 Smart Batch cập nhật tồn kho tức thời sau khi bù hàng và tự kiểm tra lại toàn bộ mẻ",
+      "✅ Tự mở khóa thao tác ở Bước 2 ngay khi đã bù đủ kho, không cần tải lại trang"
     ]
   },
   "assetGroups": [

@@ -13,6 +13,29 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.28-b01',
+    date: '28/07/2026',
+    title: 'Điều Hướng Header Gọn Hơn & Bù Kho Smart Batch Tức Thời',
+    highlights: [
+      'Loại bỏ Navigation Rail và đưa toàn bộ điều hướng Desktop lên Header, giúp giao diện gọn hơn và trả lại toàn bộ không gian nội dung khi đóng sidebar.',
+      'Chuông thông báo có chế độ Header riêng; popover tự neo chính xác ngay dưới nút chuông và vẫn giữ bottom sheet trên mobile.',
+      'Smart Batch cập nhật tồn kho tức thời sau khi bù hàng, tự kiểm tra lại mẻ và mở khóa thao tác ở Bước 2 khi đã đủ kho.'
+    ],
+    features: [
+      'Nút Trang Chủ thật trên breadcrumb Header và sidebar 256px nằm gọn dưới thanh điều hướng.',
+      'Notification Bell 36px đồng bộ các action Header, hỗ trợ badge, trạng thái active và animation thông báo chưa đọc.'
+    ],
+    improvements: [
+      'Main content và Header dùng chung mốc sidebar 256px, chuyển trạng thái mở/đóng mượt mà và nhất quán.',
+      'Notification popover đo vị trí nút chuông bằng bounding rectangle thay vì phụ thuộc chiều rộng navigation cố định.',
+      'Đồng bộ cache Smart Batch với state kho ngay sau giao dịch Nhập Kho Nhanh để bảng tổng hợp phản hồi tức thời.'
+    ],
+    fixes: [
+      'Khắc phục nút thao tác Smart Batch ở Bước 2 vẫn bị khóa sau khi người dùng đã bù đủ tồn kho.',
+      'Khắc phục cảnh báo thiếu hàng và trạng thái mẻ cập nhật chậm trong thời gian chờ Firestore listener.'
+    ]
+  },
+  {
     version: 'v26.07.27-b04',
     date: '27/07/2026',
     title: 'Thiết Kế Lại App Shell UI/UX Đồng Bộ Hệ Thống',

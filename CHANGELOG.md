@@ -1,5 +1,26 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.28-b01] - 28/07/2026
+
+### 🧭 Điều Hướng Header Gọn Hơn & Bù Kho Smart Batch Tức Thời
+
+#### 🖥️ Tinh Gọn Điều Hướng Desktop
+- **Header làm trung tâm điều hướng:** Loại bỏ Navigation Rail, đưa nút mở/đóng sidebar, Trang Chủ, tìm kiếm nhanh, trạng thái kết nối, Dark Mode, thông báo và tài khoản lên cùng một thanh Header.
+- **Sidebar rộng và dễ đọc hơn:** Navigation Panel dùng toàn bộ chiều rộng 256px từ mép trái, nằm gọn dưới Header và trả lại toàn bộ không gian nội dung khi đóng.
+- **Lối về Trang Chủ rõ ràng:** Biểu tượng Home trên breadcrumb hoạt động như một nút điều hướng thật, giúp quay lại Dashboard chỉ với một lần nhấn.
+
+#### 🔔 Thông Báo Neo Đúng Vị Trí
+- **Chuông thông báo đồng bộ Header:** Thêm chế độ chuông 36px riêng cho Desktop Header, giữ nguyên giao diện chuông mặc định và Bottom Navigation trên mobile.
+- **Popover bám theo nút chuông:** Cửa sổ thông báo tự đo vị trí nút chuông và mở ngay bên dưới, thay cho cách neo theo Navigation Rail cũ.
+- **Responsive ổn định:** Desktop dùng popover thả xuống; mobile tiếp tục sử dụng bottom sheet toàn chiều ngang.
+
+#### 🧪 Sửa Lỗi Bù Kho Trong Smart Batch
+- **Tự mở khóa thao tác:** Sau khi Nhập Kho Nhanh thành công, tồn kho được cập nhật đồng thời vào cache tính toán và trạng thái giao diện.
+- **Tái kiểm tra mẻ ngay lập tức:** Các mẻ tự chuyển từ `missing_stock` sang `ready` khi đã bù đủ, giúp nút thao tác ở Bước 2 tự mở mà không cần tải lại trang.
+- **Bảng tổng hợp luôn nhất quán:** Số tồn, cảnh báo thiếu hàng và trạng thái nút cùng sử dụng dữ liệu vừa cập nhật, tránh độ trễ khi chờ Firestore listener.
+
+---
+
 ## [v26.07.27-b04] - 27/07/2026
 
 ### 🎨 Thiết Kế Lại App Shell UI/UX Đồng Bộ Hệ Thống

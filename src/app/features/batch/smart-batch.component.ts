@@ -1678,16 +1678,22 @@ export class SmartBatchComponent {
       try {
           // Use Base Unit directly as per requirement
           await this.invService.updateStock(state.id, state.currentStock, amount, 'Điều chỉnh tồn kho khi lập mẻ');
-          
-          // Update Local Cache to reflect new stock immediately
-          const newItem = { ...this.inventoryCache[state.id] };
-          if (!newItem.id) {
-              // Handle case where item didn't exist in cache (phantom item) - Reload
-              const freshItem = (await this.invService.getItemsByIds([state.id]))[0];
-              if (freshItem) this.inventoryCache[state.id] = freshItem;
-          } else {
-              newItem.stock += amount;
-              this.inventoryCache[state.id] = newItem;
+
+          const cachedItem = this.inventoryCache[state.id] || this.state.inventoryMap()[state.id];
+          const updatedItem = cachedItem
+              ? { ...cachedItem, stock: state.currentStock + amount }
+              : (await this.invService.getItemsByIds([state.id]))[0];
+
+          if (updatedItem) {
+              this.inventoryCache[state.id] = updatedItem;
+              this.state.inventory.update(items => {
+                  const index = items.findIndex(item => item.id === state.id);
+                  if (index < 0) return [...items, updatedItem];
+
+                  const next = [...items];
+                  next[index] = updatedItem;
+                  return next;
+              });
           }
 
           this.toast.show(`Đã nhập +${formatNum(amount)} ${state.unit}`, 'success');

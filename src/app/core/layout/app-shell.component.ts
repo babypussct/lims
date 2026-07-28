@@ -5,7 +5,6 @@ import { StateService } from '../services/state.service';
 import { AppHeaderComponent } from './app-header.component';
 import { BottomNavComponent } from './bottom-nav.component';
 import { NavigationPanelComponent } from './navigation-panel.component';
-import { NavigationRailComponent } from './navigation-rail.component';
 
 @Component({
   selector: 'app-shell',
@@ -15,7 +14,6 @@ import { NavigationRailComponent } from './navigation-rail.component';
     CommonModule,
     RouterOutlet,
     AppHeaderComponent,
-    NavigationRailComponent,
     NavigationPanelComponent,
     BottomNavComponent
   ],
@@ -25,7 +23,6 @@ import { NavigationRailComponent } from './navigation-rail.component';
       @if (!state.focusMode()) {
         <div class="hidden md:block">
           @defer (when !!state.currentUser()) {
-            <app-navigation-rail></app-navigation-rail>
             @if (!state.sidebarCollapsed()) {
               <app-navigation-panel></app-navigation-panel>
             }
@@ -42,8 +39,7 @@ import { NavigationRailComponent } from './navigation-rail.component';
 
       <main
         class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out overflow-hidden"
-        [class.md:ml-72]="!state.sidebarCollapsed() && !state.focusMode()"
-        [class.md:ml-16]="state.sidebarCollapsed() && !state.focusMode()"
+        [class.md:ml-64]="!state.sidebarCollapsed() && !state.focusMode()"
         [class.md:pt-14]="!state.focusMode()"
         [class.p-0]="state.focusMode()">
 

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationPanelService } from '../../../core/services/notification-panel.service';
-import { StateService } from '../../../core/services/state.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AppNotification, NotificationType } from '../../../core/models/notification.model';
@@ -19,7 +18,7 @@ interface DateGroup {
  * NotificationPanelComponent — Premium Inbox v3 (Floating Popover + Mobile Bottom Sheet)
  *
  * Rendered at app root level (app.component.ts) to avoid sidebar stacking context z-index clipping.
- * Anchor-based placement on Desktop (adjacent to Bell button at sidebar bottom) and Bottom Sheet on Mobile.
+ * Anchor-based placement on Desktop (below the Header bell) and Bottom Sheet on Mobile.
  */
 @Component({
   selector: 'app-notification-panel',
@@ -39,8 +38,7 @@ interface DateGroup {
         role="dialog"
         aria-label="Trung tâm Thông báo"
         class="notif-drawer fixed z-[200] flex flex-col"
-        [style.left]="panelPos.left"
-        [style.bottom]="panelPos.bottom">
+        [ngStyle]="panelPos">
 
         <!-- Mobile Drag Indicator -->
         <div class="md:hidden pt-2.5 pb-1 flex justify-center shrink-0">
@@ -275,7 +273,7 @@ interface DateGroup {
     }
 
     /* === Popover Container ===
-     * Desktop: Premium Floating Popover attached to Bell button at sidebar bottom.
+     * Desktop: Premium Floating Popover attached below the Header bell.
      * Dimensions: width 420px, max-height 70vh, border-radius 24px.
      */
     .notif-drawer {
@@ -652,7 +650,7 @@ interface DateGroup {
     }
 
     @keyframes notifPopUp {
-      from { transform: translateY(20px) scale(0.97); opacity: 0; }
+      from { transform: translateY(-8px) scale(0.97); opacity: 0; }
       to   { transform: translateY(0)    scale(1);    opacity: 1; }
     }
 
@@ -684,7 +682,6 @@ interface DateGroup {
 export class NotificationPanelComponent {
   panel               = inject(NotificationPanelService);
   notificationService = inject(NotificationService);
-  state               = inject(StateService);
   router              = inject(Router);
   confirmation        = inject(ConfirmationService);
   toast               = inject(ToastService);
@@ -871,19 +868,25 @@ export class NotificationPanelComponent {
     }
   }
 
-  /**
-   * Vị trí Popover desktop (Anchor theo app shell navigation mới):
-   * - expanded: rail 64px + panel 224px
-   * - compact: rail 64px
-   * - left: sát bên phải navigation + 12px margin
-   * - bottom: 12px cách mép dưới viewport
-   */
-  get panelPos(): { left: string; bottom: string } {
+  /** Neo popover desktop theo nút chuông Header; mobile dùng bottom sheet. */
+  get panelPos(): { left: string; bottom: string; top: string; right: string } {
     if (typeof window === 'undefined' || window.innerWidth < 768) {
-      return { left: '0px', bottom: '0px' };
+      return { left: '0px', bottom: '0px', top: 'auto', right: '0px' };
     }
-    const w = this.state.sidebarCollapsed() ? 64 : 288;
-    return { left: `${w + 12}px`, bottom: '12px' };
+
+    const bell = document.getElementById('notif-bell-header');
+    if (!bell) {
+      return { left: 'auto', bottom: 'auto', top: '60px', right: '12px' };
+    }
+
+    const rect = bell.getBoundingClientRect();
+    const right = Math.max(12, window.innerWidth - rect.right);
+    return {
+      left: 'auto',
+      bottom: 'auto',
+      top: `${rect.bottom + 8}px`,
+      right: `${right}px`
+    };
   }
 
   @HostListener('document:keydown.escape')
