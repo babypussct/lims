@@ -1,20 +1,29 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, signal, HostListener, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { StateService } from '../services/state.service';
 import { AuthService } from '../services/auth.service';
 import { QrGlobalService } from '../services/qr-global.service';
 import { ChangelogService } from '../services/changelog.service';
-import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
+
+interface PaletteItem {
+  id: string;
+  name: string;
+  icon: string;
+  path?: string;
+  action?: () => void;
+  category: string;
+}
 
 @Component({
   selector: 'app-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, NotificationBellComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
@@ -24,26 +33,32 @@ import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
              transition-[left] duration-300 ease-in-out"
       [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '4rem' : '18rem')">
 
-      <!-- ── Breadcrumb / Page Title ── -->
+      <!-- ── Sidebar Toggle ── -->
+      <button
+        (click)="state.toggleSidebarCollapse()"
+        class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
+               text-slate-400 dark:text-slate-500
+               hover:bg-slate-100 dark:hover:bg-slate-800
+               hover:text-fuchsia-500 dark:hover:text-fuchsia-400
+               transition-all duration-200 active:scale-90"
+        [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
+        <i class="fa-solid text-[13px] transition-transform duration-300"
+           [class.fa-bars]="state.sidebarCollapsed()"
+           [class.fa-chevron-left]="!state.sidebarCollapsed()"></i>
+      </button>
+
+      <!-- ── Breadcrumb / Page Title (no Home icon — Rail already has one) ── -->
       <div class="flex items-center gap-2 min-w-0 flex-1">
-        <button (click)="goHome()"
-                class="text-slate-400 hover:text-fuchsia-500 transition-colors shrink-0"
-                title="Trang chủ">
-          <i class="fa-solid fa-house text-[11px]"></i>
-        </button>
-        <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-600"></i>
-        <div class="flex items-center gap-2 min-w-0">
-          <i class="fa-solid text-[11px] text-slate-400 dark:text-slate-500"
-             [ngClass]="pageIcon()"></i>
-          <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-            {{ pageTitle() }}
-          </span>
-        </div>
+        <i class="fa-solid text-[12px] text-fuchsia-500 dark:text-fuchsia-400 shrink-0"
+           [ngClass]="pageIcon()"></i>
+        <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
+          {{ pageTitle() }}
+        </span>
       </div>
 
-      <!-- ── Search / QR Quick-Action ── -->
+      <!-- ── Command Palette Trigger (real search, not just QR) ── -->
       <button
-        (click)="qrService.startScan()"
+        (click)="openPalette()"
         class="flex items-center gap-2.5 h-9 px-3.5 rounded-xl
                bg-slate-50 dark:bg-slate-800/80
                border border-slate-200/60 dark:border-slate-700/60
@@ -51,7 +66,7 @@ import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
                hover:border-fuchsia-300 dark:hover:border-fuchsia-700
                hover:text-fuchsia-500 dark:hover:text-fuchsia-400
                transition-all duration-200 group cursor-pointer"
-        title="Quét mã hoặc tìm kiếm (Ctrl+K)">
+        title="Tìm kiếm trang hoặc quét mã (Ctrl+K)">
         <i class="fa-solid fa-magnifying-glass text-[11px] group-hover:scale-110 transition-transform"></i>
         <span class="text-xs font-medium hidden lg:inline">Tìm kiếm...</span>
         <kbd class="hidden lg:inline-flex items-center gap-0.5 h-5 px-1.5 rounded-md
@@ -98,8 +113,7 @@ import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
            [class.rotate-180]="state.darkMode()"></i>
       </button>
 
-      <!-- ── Notification Bell ── -->
-      <app-notification-bell></app-notification-bell>
+      <!-- (Notification Bell removed — already on Navigation Rail, no duplicate) -->
 
       <!-- ── Profile Pill ── -->
       <div class="relative">
@@ -134,7 +148,6 @@ import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
         <!-- ── Profile Dropdown ── -->
         @if (profileMenuOpen()) {
           <div class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
-            <!-- User Info Header -->
             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
               <img
                 [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
@@ -149,8 +162,6 @@ import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
                 [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"
                 [title]="isOnline() ? 'Online' : 'Offline'"></span>
             </div>
-
-            <!-- Menu Actions -->
             <div class="p-2 space-y-0.5">
               <button (click)="openAccountSettings()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
@@ -179,6 +190,66 @@ import { ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
         }
       </div>
     </header>
+
+    <!-- ═══════ COMMAND PALETTE OVERLAY ═══════ -->
+    @if (paletteOpen()) {
+      <div class="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] px-4
+                  bg-slate-900/60 backdrop-blur-sm fade-in"
+           (click)="closePalette()">
+
+        <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden fade-in"
+             (click)="$event.stopPropagation()">
+
+          <!-- Search Input -->
+          <div class="flex items-center gap-3 px-4 h-14 border-b border-slate-100 dark:border-slate-800">
+            <i class="fa-solid fa-magnifying-glass text-fuchsia-500 text-sm"></i>
+            <input
+              #paletteInput
+              type="text"
+              [(ngModel)]="searchQuery"
+              (input)="onSearchInput()"
+              (keydown)="onPaletteKeydown($event)"
+              placeholder="Tìm trang, tính năng hoặc quét mã..."
+              class="flex-1 bg-transparent text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none">
+            <kbd class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">ESC</kbd>
+          </div>
+
+          <!-- Results -->
+          <div class="max-h-[50vh] overflow-y-auto custom-scrollbar py-2">
+            @if (filteredItems().length === 0) {
+              <div class="px-4 py-8 text-center text-sm text-slate-400">
+                <i class="fa-solid fa-search text-2xl mb-2 block opacity-30"></i>
+                Không tìm thấy kết quả cho "{{ searchQuery }}"
+              </div>
+            } @else {
+              @for (item of filteredItems(); track item.id; let i = $index) {
+                <button
+                  (click)="selectPaletteItem(item)"
+                  class="w-full flex items-center gap-3 px-4 py-2.5 text-left
+                         transition-colors duration-100"
+                  [ngClass]="i === activeIndex()
+                    ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'">
+                  <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                        [ngClass]="i === activeIndex()
+                          ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'">
+                    <i class="fa-solid {{ item.icon }} text-[11px]"></i>
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold truncate">{{ item.name }}</div>
+                    <div class="text-[10px] text-slate-400 dark:text-slate-500">{{ item.category }}</div>
+                  </div>
+                  @if (i === activeIndex()) {
+                    <kbd class="text-[9px] font-bold text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-900/30 px-1.5 py-0.5 rounded border border-fuchsia-200/50 dark:border-fuchsia-800/30">↵</kbd>
+                  }
+                </button>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
   `
 })
 export class AppHeaderComponent implements OnInit, OnDestroy {
@@ -193,6 +264,13 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   isOnline = signal(navigator.onLine);
   private currentUrl = signal('');
 
+  // Command Palette state
+  paletteOpen = signal(false);
+  searchQuery = '';
+  activeIndex = signal(0);
+
+  @ViewChild('paletteInput') paletteInput!: ElementRef<HTMLInputElement>;
+
   private onlineListener: (() => void) | undefined;
   private offlineListener: (() => void) | undefined;
   private routerSub: any;
@@ -205,6 +283,52 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   pageIcon = computed(() => {
     const segment = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
     return ROUTE_ICONS[segment] || 'fa-cube';
+  });
+
+  /** All navigable items for the command palette */
+  allPaletteItems = computed<PaletteItem[]>(() => {
+    const items: PaletteItem[] = [];
+
+    // Special actions first
+    items.push({
+      id: 'qr-scan',
+      name: 'Quét Mã QR / Barcode',
+      icon: 'fa-qrcode',
+      action: () => this.qrService.startScan(),
+      category: 'Hành động nhanh'
+    });
+    items.push({
+      id: 'toggle-dark',
+      name: this.state.darkMode() ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối',
+      icon: this.state.darkMode() ? 'fa-sun' : 'fa-moon',
+      action: () => this.state.toggleDarkMode(),
+      category: 'Hành động nhanh'
+    });
+
+    // Route-based pages
+    for (const [segment, title] of Object.entries(ROUTE_TITLES)) {
+      if (segment === 'printing' || segment === 'results-view') continue; // internal routes
+      items.push({
+        id: `route-${segment}`,
+        name: title,
+        icon: ROUTE_ICONS[segment] || 'fa-cube',
+        path: `/${segment}`,
+        category: 'Trang'
+      });
+    }
+
+    return items;
+  });
+
+  /** Filtered items based on search query */
+  filteredItems = computed<PaletteItem[]>(() => {
+    const q = this.searchQuery.toLowerCase().trim();
+    if (!q) return this.allPaletteItems();
+    return this.allPaletteItems().filter(item =>
+      item.name.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      (item.path && item.path.toLowerCase().includes(q))
+    );
   });
 
   ngOnInit() {
@@ -229,19 +353,63 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   handleKeyboardEvent(event: KeyboardEvent) {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
-      this.qrService.startScan();
+      this.openPalette();
     }
   }
 
   @HostListener('document:keydown.escape')
   onEscape() {
+    if (this.paletteOpen()) {
+      this.closePalette();
+    } else {
+      this.profileMenuOpen.set(false);
+    }
+  }
+
+  // ── Command Palette ──
+  openPalette() {
     this.profileMenuOpen.set(false);
+    this.searchQuery = '';
+    this.activeIndex.set(0);
+    this.paletteOpen.set(true);
+    // Focus input after render
+    setTimeout(() => this.paletteInput?.nativeElement?.focus(), 50);
   }
 
-  goHome() {
-    this.router.navigate(['/dashboard']);
+  closePalette() {
+    this.paletteOpen.set(false);
+    this.searchQuery = '';
   }
 
+  onSearchInput() {
+    this.activeIndex.set(0);
+  }
+
+  onPaletteKeydown(event: KeyboardEvent) {
+    const items = this.filteredItems();
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeIndex.update(i => Math.min(i + 1, items.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const selected = items[this.activeIndex()];
+      if (selected) this.selectPaletteItem(selected);
+    }
+  }
+
+  selectPaletteItem(item: PaletteItem) {
+    this.closePalette();
+    if (item.action) {
+      item.action();
+    } else if (item.path) {
+      this.router.navigate([item.path]);
+    }
+  }
+
+  // ── Profile ──
   toggleProfileMenu() {
     this.profileMenuOpen.update(v => !v);
   }
