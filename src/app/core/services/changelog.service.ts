@@ -13,6 +13,33 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.28-b02',
+    date: '28/07/2026',
+    title: 'Phiếu Giao Nhận Mẫu Premium: PDF Liên Tục & Excel Tương Tác',
+    highlights: [
+      'PDF hiển thị toàn bộ trang theo chiều dọc, tự đồng bộ số trang và render lười để tài liệu dài vẫn mượt trên desktop/mobile.',
+      'Excel giữ cấu trúc workbook, hỗ trợ chọn ô/dòng/cột/vùng, copy dạng bảng, tìm kiếm highlight và chuyển sheet như một bảng tính chỉ đọc.',
+      'Bộ lọc/sắp xếp theo đúng tiêu đề nghiệp vụ, chỉ tác động vùng dữ liệu và luôn giữ nguyên tiêu đề cùng phần ký xác nhận.'
+    ],
+    features: [
+      'Lớp văn bản PDF cho phép tô chọn/copy, tìm toàn tài liệu, tô vàng mọi kết quả và tô cam kết quả đang tập trung.',
+      'Excel hỗ trợ kéo chọn vùng, chọn cả dòng/cột, Ctrl/⌘ + A, Ctrl/⌘ + C, điều hướng bàn phím và thanh công thức.',
+      'Bảng Lọc & sắp xếp riêng với điều kiện Có chứa, Bằng chính xác, Không trống và thứ tự tăng/giảm.',
+      'Google Drive công khai tải đủ mọi trang dữ liệu, hỗ trợ hủy yêu cầu cũ và xuất Google Sheets sang XLSX.'
+    ],
+    improvements: [
+      'Modal xem tài liệu dùng tối đa diện tích, đồng bộ thanh công cụ PDF/Excel và tối ưu thao tác cảm ứng trên mobile.',
+      'Ghi nhớ thư mục, chế độ xem, mật độ, sắp xếp và vị trí cuộn khi quay lại module Phiếu Giao Nhận Mẫu.',
+      'PDF chỉ render các trang gần vùng nhìn; mọi xử lý PDF/Excel chạy cục bộ bằng thư viện mã nguồn mở, không phát sinh phí OCR/cloud.'
+    ],
+    fixes: [
+      'Khắc phục PDF chỉ hiển thị một trang khiến người dùng hiểu nhầm tài liệu đã kết thúc.',
+      'Khắc phục Excel không thể chọn/copy vùng, dòng hoặc cột và giao diện khác xa cấu trúc tệp gốc.',
+      'Khắc phục filter Excel bị kẹt, hiển thị nội dung vô nghĩa và kéo dòng trống/chữ ký vào vùng sắp xếp.',
+      'Khắc phục tìm kiếm chỉ báo kết quả nhưng không làm nổi bật đúng nội dung vừa tìm thấy.'
+    ]
+  },
+  {
     version: 'v26.07.28-b01',
     date: '28/07/2026',
     title: 'Điều Hướng Header Gọn Hơn & Bù Kho Smart Batch Tức Thời',

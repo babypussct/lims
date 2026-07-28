@@ -2,15 +2,15 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.28-b01",
-    "notesVersion": "v26.07.28-b01",
-    "title": "Điều Hướng Header Gọn Hơn & Bù Kho Smart Batch Tức Thời",
+    "version": "v26.07.28-b02",
+    "notesVersion": "v26.07.28-b02",
+    "title": "Phiếu Giao Nhận Mẫu Premium: PDF Liên Tục & Excel Tương Tác",
     "features": [
-      "🧭 Loại bỏ Navigation Rail, đưa điều hướng Desktop lên Header và mở rộng Sidebar dễ đọc hơn",
-      "🏠 Thêm nút Trang Chủ thật trên breadcrumb, giữ lối về Dashboard luôn rõ ràng",
-      "🔔 Chuông thông báo đồng bộ Header và popover tự mở chính xác ngay dưới nút chuông",
-      "🧪 Smart Batch cập nhật tồn kho tức thời sau khi bù hàng và tự kiểm tra lại toàn bộ mẻ",
-      "✅ Tự mở khóa thao tác ở Bước 2 ngay khi đã bù đủ kho, không cần tải lại trang"
+      "📄 PDF cuộn dọc liên tục đủ mọi trang, tự đồng bộ số trang và chỉ render vùng đang xem để tiết kiệm tài nguyên",
+      "🔎 Chọn/copy văn bản PDF, tìm kiếm toàn tài liệu và làm nổi bật đúng nội dung vừa tìm thấy",
+      "📊 Excel giữ cấu trúc workbook, hỗ trợ sheet tabs, chọn ô/dòng/cột/vùng và sao chép dạng bảng",
+      "↕️ Lọc và sắp xếp theo cột nghiệp vụ, giữ nguyên tiêu đề, phần ký xác nhận và thứ tự tệp gốc",
+      "📱 Modal xem tài liệu tối ưu desktop/mobile, không tích hợp OCR hay dịch vụ phát sinh chi phí"
     ]
   },
   "assetGroups": [

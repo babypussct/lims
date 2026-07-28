@@ -602,18 +602,42 @@ export class GoogleDriveService {
   /**
    * Tải file public dưới dạng Blob trực tiếp từ Google Drive bằng API Key (Không cần OAuth)
    */
-  async downloadPublicFile(fileId: string): Promise<Blob> {
+  async downloadPublicFile(fileId: string, signal?: AbortSignal): Promise<Blob> {
     const config = (environment as any).googleDrive;
     if (!config?.apiKey) {
       throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
     }
 
-    const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${config.apiKey}`;
-    const res = await fetch(url);
+    const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(config.apiKey)}`;
+    const res = await fetch(url, { signal });
     
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(`Không thể tải file: ${err?.error?.message || res.status}`);
+    }
+    return await res.blob();
+  }
+
+  /**
+   * Export a public Google Workspace file without OAuth.
+   * Used by the document viewer to render public Google Sheets as XLSX.
+   */
+  async exportPublicFile(fileId: string, mimeType: string, signal?: AbortSignal): Promise<Blob> {
+    const config = (environment as any).googleDrive;
+    if (!config?.apiKey) {
+      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+    }
+
+    const params = new URLSearchParams({
+      mimeType,
+      key: config.apiKey,
+    });
+    const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/export?${params.toString()}`;
+    const res = await fetch(url, { signal });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Không thể xuất tài liệu Google Drive: ${err?.error?.message || res.status}`);
     }
     return await res.blob();
   }
@@ -645,25 +669,49 @@ export class GoogleDriveService {
   /**
    * Fetch contents of a specific public folder using API Key
    */
-  async getFolderContents(folderId: string): Promise<any[]> {
+  async getFolderContents(folderId: string, signal?: AbortSignal): Promise<any[]> {
     const config = (environment as any).googleDrive;
     if (!config?.apiKey) {
       throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
     }
 
     const query = `'${folderId}' in parents and trashed=false`;
-    const fields = 'files(id, name, mimeType, webViewLink, webContentLink, iconLink, modifiedTime, size, thumbnailLink)';
+    const fields = 'nextPageToken,files(id, name, mimeType, webViewLink, webContentLink, iconLink, modifiedTime, size, thumbnailLink)';
     const orderBy = 'folder,name';
+    const items: any[] = [];
+    const seenPageTokens = new Set<string>();
+    let pageToken = '';
 
-    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&orderBy=${encodeURIComponent(orderBy)}&key=${config.apiKey}`;
+    do {
+      const params = new URLSearchParams({
+        q: query,
+        fields,
+        orderBy,
+        pageSize: '1000',
+        supportsAllDrives: 'true',
+        includeItemsFromAllDrives: 'true',
+        key: config.apiKey
+      });
+      if (pageToken) params.set('pageToken', pageToken);
 
-    const res = await fetch(url);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`Không thể lấy danh sách thư mục: ${err?.error?.message || res.status}`);
-    }
-    const data = await res.json();
-    return data.files || [];
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, { signal });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Không thể lấy danh sách thư mục: ${err?.error?.message || res.status}`);
+      }
+
+      const data = await res.json();
+      if (Array.isArray(data.files)) items.push(...data.files);
+
+      const nextPageToken = typeof data.nextPageToken === 'string' ? data.nextPageToken : '';
+      if (nextPageToken && seenPageTokens.has(nextPageToken)) {
+        throw new Error('Google Drive trả về mã phân trang lặp lại. Vui lòng thử làm mới.');
+      }
+      if (nextPageToken) seenPageTokens.add(nextPageToken);
+      pageToken = nextPageToken;
+    } while (pageToken);
+
+    return items;
   }
 
   /**

@@ -1,5 +1,32 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.28-b02] - 28/07/2026
+
+### 📄 Phiếu Giao Nhận Mẫu Premium: PDF Liên Tục & Excel Tương Tác
+
+#### 🗂️ Quản Lý Tài Liệu Google Drive Ổn Định
+- **Đọc đầy đủ thư mục công khai:** Tự tải toàn bộ các trang dữ liệu Google Drive thay vì chỉ lấy trang đầu, có bảo vệ vòng lặp page token và hủy yêu cầu cũ khi đổi thư mục nhanh.
+- **Giữ ngữ cảnh làm việc:** Ghi nhớ đường dẫn thư mục, chế độ danh sách/lưới, mật độ hiển thị, cột sắp xếp và vị trí cuộn để quay lại đúng nơi đang xử lý.
+- **Tải và xem đúng định dạng:** Google Sheets công khai được xuất sang XLSX; PDF và Excel thông thường được tải trực tiếp để xem trong ứng dụng ở chế độ chỉ đọc.
+
+#### 📄 PDF Cuộn Liên Tục, Chọn Chữ & Tìm Kiếm
+- **Không còn hiểu nhầm tài liệu một trang:** Hiển thị toàn bộ trang theo chiều dọc, cuộn tự nhiên sang trang tiếp theo và tự cập nhật chỉ báo `Trang hiện tại / Tổng số trang`.
+- **Nhanh với tài liệu dài:** Chỉ render các trang gần vùng nhìn, giữ thao tác thu phóng, vừa chiều rộng, vừa trang, xoay và điều hướng bằng số trang.
+- **Tương tác với văn bản:** Cho phép tô chọn/copy chữ có sẵn trong PDF, tìm kiếm toàn tài liệu, tô vàng mọi kết quả và tô cam kết quả đang tập trung.
+
+#### 📊 Excel Gần Với Trải Nghiệm Bảng Tính
+- **Giữ cấu trúc workbook:** Hiển thị nhiều sheet, ô gộp, kích thước cột/dòng, màu nền, font và thứ tự dữ liệu gần với tệp gốc.
+- **Chọn và sao chép linh hoạt:** Hỗ trợ chọn ô, kéo chọn vùng, chọn cả dòng/cột, `Ctrl/⌘ + A`, `Ctrl/⌘ + C`, điều hướng bàn phím và sao chép dạng TSV để dán lại vào Excel.
+- **Tìm kiếm không phá dữ liệu:** Tìm trong sheet, đếm kết quả, chuyển kết quả trước/sau và highlight nội dung mà không ẩn các dòng khác.
+- **Lọc và sắp xếp đúng nghiệp vụ:** Chọn cột theo tên tiêu đề thực, lọc `Có chứa / Bằng chính xác / Không trống`, sắp xếp tăng/giảm; chỉ biến đổi vùng dữ liệu và luôn giữ nguyên tiêu đề cùng phần ký xác nhận.
+
+#### 📱 Modal Đồng Bộ Desktop/Mobile & Không Phát Sinh Chi Phí
+- **Tối đa diện tích xem:** Thanh công cụ gọn, modal toàn màn hình, trạng thái chỉ đọc, tải xuống, mở Drive và thao tác tìm kiếm nhất quán giữa PDF/Excel.
+- **Thoát bộ lọc an toàn:** Đóng bằng nút `X`, nhấn ngoài panel hoặc phím `Esc`, khắc phục tình trạng popup filter bị kẹt.
+- **Không dịch vụ trả phí:** Toàn bộ xử lý PDF/Excel thực hiện cục bộ bằng thư viện mã nguồn mở; không gọi Cloud Vision, Document AI hoặc OCR tính phí.
+
+---
+
 ## [v26.07.28-b01] - 28/07/2026
 
 ### 🧭 Điều Hướng Header Gọn Hơn & Bù Kho Smart Batch Tức Thời
