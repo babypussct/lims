@@ -13,6 +13,26 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.28-b04',
+    date: '28/07/2026',
+    title: 'Excel Tự Dãn Cột/Hàng Vừa Nội Dung',
+    highlights: [
+      'Tự AutoFit cột và hàng ngay khi mở workbook hoặc chuyển sheet, không còn yêu cầu double-click từng tiêu đề.',
+      'Tự tăng chiều cao và wrap nội dung dài trong giới hạn an toàn, có xử lý đúng tổng chiều rộng của ô gộp.'
+    ],
+    features: [
+      'Nút Vừa nội dung cho phép khôi phục AutoFit sau khi người dùng kéo chỉnh kích thước thủ công.'
+    ],
+    improvements: [
+      'Giới hạn chiều rộng riêng cho desktop/mobile để bảng vừa dễ đọc vừa không bị phình bởi một ô bất thường.',
+      'Tối ưu hiệu năng bằng cách chỉ đo giá trị đại diện dài nhất của từng cột và lưu đệm kết quả đo.',
+      'Toàn bộ AutoFit chạy cục bộ trong trình duyệt, không phát sinh dịch vụ hoặc chi phí mới.'
+    ],
+    fixes: [
+      'Khắc phục cột mặc định 96px và hàng 28px khiến nội dung bị cắt cho đến khi người dùng double-click thủ công.'
+    ]
+  },
+  {
     version: 'v26.07.28-b03',
     date: '28/07/2026',
     title: 'Hotfix Xem PDF Trên Mobile',

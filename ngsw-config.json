@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.28-b03",
-    "notesVersion": "v26.07.28-b03",
-    "title": "Hotfix Xem PDF Trên Mobile",
+    "version": "v26.07.28-b04",
+    "notesVersion": "v26.07.28-b04",
+    "title": "Excel Tự Dãn Vừa Nội Dung",
     "features": [
-      "📱 Khắc phục lỗi getOrInsertComputed khiến PDF không mở được trên Chrome/Safari mobile",
-      "🧩 Chuyển đồng bộ viewer và worker sang PDF.js legacy build chính thức có lớp tương thích Map/WeakMap",
-      "📄 Giữ nguyên chế độ cuộn dọc nhiều trang, chọn/copy chữ và tìm kiếm highlight",
-      "✅ Không sửa prototype thủ công và không phát sinh dịch vụ hoặc chi phí mới"
+      "📐 Tự AutoFit cột và hàng ngay khi mở workbook hoặc chuyển sheet",
+      "📝 Tự tăng chiều cao cho nội dung xuống dòng, wrap và ô dài vượt giới hạn cột",
+      "📱 Giới hạn kích thước thông minh riêng cho mobile để bảng không bị phình",
+      "🖱️ Bổ sung nút Vừa nội dung để khôi phục AutoFit sau khi chỉnh thủ công"
     ]
   },
   "assetGroups": [

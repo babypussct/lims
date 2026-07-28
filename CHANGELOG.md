@@ -1,5 +1,17 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.28-b04] - 28/07/2026
+
+### 📐 Excel Tự Dãn Cột/Hàng Vừa Nội Dung
+
+- **AutoFit không cần double-click:** Tự đo nội dung và dãn cột/hàng ngay khi mở workbook hoặc chuyển sheet.
+- **Hiển thị đủ nội dung dài:** Tự tăng chiều cao cho ô xuống dòng, bật wrap khi nội dung vượt giới hạn chiều rộng và vẫn tôn trọng ô gộp.
+- **Tối ưu desktop/mobile:** Cột có giới hạn thông minh theo kích thước màn hình, tránh một ô quá dài làm toàn bộ bảng bị phình và khó thao tác.
+- **Khôi phục nhanh:** Thêm nút `Vừa nội dung` để đưa bảng về AutoFit sau khi người dùng kéo chỉnh kích thước thủ công.
+- **Hiệu năng cục bộ:** Chỉ đo giá trị đại diện dài nhất của mỗi cột, dùng bộ nhớ đệm khi tính chiều cao và không phát sinh dịch vụ hoặc chi phí mới.
+
+---
+
 ## [v26.07.28-b03] - 28/07/2026
 
 ### 📱 Hotfix Xem PDF Trên Mobile

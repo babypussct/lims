@@ -76,6 +76,13 @@ interface ExcelColumnOption {
           <span class="hidden sm:inline">Sao chép</span>
         </button>
 
+        <button type="button" (click)="fitSheetToContent()"
+                class="excel-tool-button shrink-0"
+                title="Tự dãn cột và hàng vừa khít nội dung">
+          <i class="fa-solid fa-arrows-left-right-to-line"></i>
+          <span class="hidden md:inline">Vừa nội dung</span>
+        </button>
+
         <button type="button" (click)="toggleFilterPanel()"
                 class="excel-tool-button shrink-0"
                 [class.excel-tool-active]="activeTransformCount() > 0 || filterPanelOpen()"
@@ -544,7 +551,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   });
 
   readonly getRowHeight = (params: RowHeightParams<ExcelViewerRow>): number =>
-    Math.min(52, Math.max(24, Number(params.data?.['__height']) || 28));
+    Math.min(160, Math.max(24, Number(params.data?.['__height']) || 28));
 
   private workbook?: WorkBook;
   private worksheet?: WorkSheet;
@@ -565,6 +572,9 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   private baseRows: ExcelViewerRow[] = [];
   private dataStartIndex = 0;
   private dataEndIndex = 0;
+  private fittedColumnWidths: number[] = [];
+  private measurementContext?: CanvasRenderingContext2D | null;
+  private readonly textWidthCache = new Map<string, number>();
 
   ngAfterViewInit(): void {
     this.viewReady = true;
@@ -738,6 +748,26 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.filterPanelOpen.set(false);
   }
 
+  fitSheetToContent(): void {
+    if (!this.worksheet || !this.xlsx || !this.baseRows.length) return;
+    const rows = this.baseRows.map(row => ({ ...row }));
+    const widths = this.calculateAutoFitColumnWidths(rows);
+    this.fittedColumnWidths = widths;
+    this.applyAutoFitRowHeights(rows, widths);
+    const columns = this.columnDefs().map((column, index) =>
+      index === 0
+        ? column
+        : { ...column, width: widths[index - 1] ?? column.width }
+    );
+    this.baseRows = rows;
+    this.columnDefs.set(columns);
+    this.gridApi?.setGridOption('columnDefs', columns);
+    this.applyDataTransform();
+    this.copyStatus.set('Đã dãn vừa nội dung');
+    if (this.copyTimer) clearTimeout(this.copyTimer);
+    this.copyTimer = setTimeout(() => this.copyStatus.set(''), 1800);
+  }
+
   onSearch(value: string): void {
     this.searchQuery.set(value);
     const token = ++this.searchToken;
@@ -834,6 +864,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.sortDirection.set('none');
     this.activeFilter.set(null);
     this.activeSort.set(null);
+    this.textWidthCache.clear();
 
     const reference = worksheet['!ref'] || 'A1:A1';
     const range = this.xlsx.utils.decode_range(reference);
@@ -945,6 +976,12 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       });
       return rowData;
     });
+    const autoFitWidths = this.calculateAutoFitColumnWidths(rows);
+    this.fittedColumnWidths = autoFitWidths;
+    this.applyAutoFitRowHeights(rows, autoFitWidths);
+    autoFitWidths.forEach((width, displayColumn) => {
+      columns[displayColumn + 1].width = width;
+    });
 
     const totalUnhiddenColumns = allVisibleColumns.length;
     this.truncated.set(
@@ -973,6 +1010,98 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       this.refreshGridDecorations();
       if (this.searchQuery().trim()) this.computeSearchMatches(this.searchQuery());
     });
+  }
+
+  private calculateAutoFitColumnWidths(rows: ExcelViewerRow[]): number[] {
+    const minWidth = 44;
+    const maxWidth = typeof window !== 'undefined' && window.innerWidth <= 640 ? 280 : 420;
+    return this.visibleSheetColumns.map((sheetColumn, displayColumn) => {
+      let longestLine = '';
+      let longestSpan = 1;
+      let longestScore = 0;
+      for (const row of rows) {
+        const text = String(row[`c${displayColumn}`] ?? '');
+        if (!text) continue;
+        const sheetRow = Number(row.__rowNumber) - 1;
+        const merge = this.mergeAnchors.get(this.cellKey(sheetRow, sheetColumn));
+        const span = merge
+          ? Math.max(1, this.visibleSheetColumns.filter(column =>
+              column >= merge.s.c && column <= merge.e.c
+            ).length)
+          : 1;
+        const candidate = text.split(/\r?\n/).reduce(
+          (longest, line) => this.visualTextLength(line) > this.visualTextLength(longest) ? line : longest,
+          '',
+        );
+        const score = this.visualTextLength(candidate) / span;
+        if (score > longestScore) {
+          longestLine = candidate;
+          longestSpan = span;
+          longestScore = score;
+        }
+      }
+      const preferredWidth = Math.ceil(this.measureTextWidth(longestLine) / longestSpan) + 16;
+      return Math.min(maxWidth, Math.max(minWidth, preferredWidth));
+    });
+  }
+
+  private applyAutoFitRowHeights(rows: ExcelViewerRow[], widths: number[]): void {
+    for (const row of rows) {
+      const sheetRow = Number(row.__rowNumber) - 1;
+      let requiredLines = 1;
+      this.visibleSheetColumns.forEach((sheetColumn, displayColumn) => {
+        const text = String(row[`c${displayColumn}`] ?? '');
+        if (!text) return;
+        const address = this.xlsx?.utils.encode_cell({ r: sheetRow, c: sheetColumn });
+        const cell = address ? this.worksheet?.[address] : undefined;
+        const merge = this.mergeAnchors.get(this.cellKey(sheetRow, sheetColumn));
+        const availableWidth = Math.max(20, (
+          merge
+            ? this.visibleSheetColumns.reduce(
+                (width, column, index) =>
+                  column >= merge.s.c && column <= merge.e.c ? width + (widths[index] || 96) : width,
+                0,
+              )
+            : (widths[displayColumn] || 96)
+        ) - 14);
+        const wraps = Boolean(cell?.s?.alignment?.wrapText) ||
+          /\r?\n/.test(text) ||
+          this.visualTextLength(text) * 7 > availableWidth;
+        if (!wraps) return;
+        const lines = text.split(/\r?\n/).reduce(
+          (count, line) => count + Math.max(1, Math.ceil(this.visualTextLength(line) * 7 / availableWidth)),
+          0,
+        );
+        requiredLines = Math.max(requiredLines, lines);
+      });
+      const sourceHeight = Number(row['__height']) || 28;
+      row['__height'] = Math.min(160, Math.max(24, sourceHeight, 10 + requiredLines * 16));
+    }
+  }
+
+  private measureTextWidth(value: string): number {
+    if (!value) return 0;
+    const cached = this.textWidthCache.get(value);
+    if (cached !== undefined) return cached;
+    if (typeof document === 'undefined') return this.visualTextLength(value) * 7;
+    if (this.measurementContext === undefined) {
+      this.measurementContext = document.createElement('canvas').getContext('2d');
+      if (this.measurementContext) {
+        this.measurementContext.font = '12px Aptos, Calibri, Arial, sans-serif';
+      }
+    }
+    const context = this.measurementContext;
+    if (!context) return this.visualTextLength(value) * 7;
+    const width = context.measureText(value.replace(/\t/g, '    ')).width;
+    if (this.textWidthCache.size < 4_000) this.textWidthCache.set(value, width);
+    return width;
+  }
+
+  private visualTextLength(value: string): number {
+    return Array.from(value.replace(/\t/g, '    ')).reduce(
+      (length, character) => length + (/[MW@#%&\u3000-\u9fff]/u.test(character) ? 1.6 : 1),
+      0,
+    );
   }
 
   private detectDataStartIndex(rows: ExcelViewerRow[]): number {
@@ -1269,8 +1398,25 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   private originalCellStyle(sheetRow: number, sheetColumn: number): Record<string, string | number> {
     const cell = this.worksheet?.[this.xlsx?.utils.encode_cell({ r: sheetRow, c: sheetColumn }) || ''];
     const style = cell?.s;
-    if (!style || typeof style !== 'object') return {};
     const css: Record<string, string | number> = {};
+    const cellText = String(cell?.w ?? cell?.v ?? '');
+    const displayColumn = this.visibleSheetColumns.indexOf(sheetColumn);
+    const merge = this.mergeAnchors.get(this.cellKey(sheetRow, sheetColumn));
+    const availableWidth = Math.max(20, (
+      merge
+        ? this.visibleSheetColumns.reduce(
+            (width, column, index) =>
+              column >= merge.s.c && column <= merge.e.c
+                ? width + (this.fittedColumnWidths[index] || 96)
+                : width,
+            0,
+          )
+        : (this.fittedColumnWidths[displayColumn] || 96)
+    ) - 14);
+    const contentNeedsWrap = /\r?\n/.test(cellText) || this.measureTextWidth(cellText) > availableWidth;
+    if (!style || typeof style !== 'object') {
+      return contentNeedsWrap ? { whiteSpace: 'pre-line', overflowWrap: 'anywhere' } : css;
+    }
     const fill = this.excelColor(style.fgColor || style.fill?.fgColor);
     const fontColor = this.excelColor(style.font?.color);
     if (fill && style.patternType !== 'none') css['backgroundColor'] = fill;
@@ -1284,7 +1430,11 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     if (horizontal === 'center' || horizontal === 'right' || horizontal === 'left') {
       css['textAlign'] = horizontal;
     }
-    if (style.alignment?.wrapText) css['whiteSpace'] = 'normal';
+    if (style.alignment?.wrapText || contentNeedsWrap) {
+      css['whiteSpace'] = 'normal';
+      css['overflowWrap'] = 'anywhere';
+    }
+    if (/\r?\n/.test(cellText)) css['whiteSpace'] = 'pre-line';
     return css;
   }
 
