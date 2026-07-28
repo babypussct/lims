@@ -280,7 +280,7 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
   });
 
   private pdfDocument?: PDFDocumentProxy;
-  private pdfjs?: typeof import('pdfjs-dist');
+  private pdfjs?: typeof import('pdfjs-dist/legacy/build/pdf.mjs');
   private renderTasks = new Map<number, RenderTask>();
   private textLayers = new Map<number, PdfTextLayer>();
   private renderedSignatures = new Map<number, string>();
@@ -465,7 +465,9 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
     this.cancelRendering();
     this.pageObserver?.disconnect();
     try {
-      const pdfjs = await import('pdfjs-dist');
+      // The legacy bundle includes the Map/WeakMap compatibility layer required
+      // by Chrome versions that do not yet implement getOrInsertComputed.
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
       this.pdfjs = pdfjs;
       pdfjs.GlobalWorkerOptions.workerSrc = new URL('assets/pdfjs/pdf.worker.min.mjs', document.baseURI).toString();
       const data = new Uint8Array(await this.blob.arrayBuffer());

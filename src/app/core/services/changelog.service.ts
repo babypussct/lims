@@ -13,6 +13,22 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.28-b03',
+    date: '28/07/2026',
+    title: 'Hotfix Xem PDF Trên Mobile',
+    highlights: [
+      'Khắc phục lỗi Map.getOrInsertComputed khiến PDF không mở được trên Chrome/Safari mobile.',
+      'Chuyển đồng bộ PDF.js viewer và worker sang legacy build chính thức có lớp tương thích Map/WeakMap.'
+    ],
+    improvements: [
+      'Giữ nguyên chế độ cuộn dọc nhiều trang, text layer chọn/copy và tìm kiếm highlight trên desktop lẫn mobile.',
+      'Không sửa prototype thủ công, không thêm OCR/cloud và không phát sinh chi phí.'
+    ],
+    fixes: [
+      'Sửa lỗi Không thể xem trước tài liệu do trình duyệt mobile chưa hỗ trợ Map.getOrInsertComputed.'
+    ]
+  },
+  {
     version: 'v26.07.28-b02',
     date: '28/07/2026',
     title: 'Phiếu Giao Nhận Mẫu Premium: PDF Liên Tục & Excel Tương Tác',

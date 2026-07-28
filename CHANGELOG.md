@@ -1,5 +1,16 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.28-b03] - 28/07/2026
+
+### 📱 Hotfix Xem PDF Trên Mobile
+
+- **Khắc phục lỗi tương thích:** PDF không còn báo `Map.getOrInsertComputed is not a function` trên các phiên bản Chrome/Safari mobile chưa hỗ trợ API Map mới.
+- **Viewer và worker đồng bộ:** Chuyển cả hai sang PDF.js legacy build chính thức có sẵn lớp tương thích `Map/WeakMap`, tránh lệch phiên bản khi render.
+- **Giữ nguyên trải nghiệm premium:** PDF vẫn cuộn dọc nhiều trang, tự đồng bộ số trang, chọn/copy văn bản và tìm kiếm highlight.
+- **Không phát sinh chi phí:** Không thay đổi nguồn dữ liệu, không thêm OCR/cloud và không sửa prototype trình duyệt thủ công.
+
+---
+
 ## [v26.07.28-b02] - 28/07/2026
 
 ### 📄 Phiếu Giao Nhận Mẫu Premium: PDF Liên Tục & Excel Tương Tác
