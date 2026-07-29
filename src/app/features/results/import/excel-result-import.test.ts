@@ -5,6 +5,7 @@ import {
   applyExcelImportCandidates,
   buildExcelImportCandidates,
   formatImportedFinalConc,
+  getRelevantExcelImportSheetNames,
   parseMassHunterResultWorkbook
 } from './excel-result-import';
 
@@ -77,6 +78,144 @@ function makeContext(printFormType: 'formCheck' | 'formDon') {
     masterTargets: [] as any[]
   };
 }
+
+function makeSop01Workbook() {
+  const rows: any[][] = Array.from({ length: 17 }, () => []);
+  rows[9][5] = 'Type';
+  rows[9][8] = 'Sample name';
+  rows[9][23] = 'Final-Conc.';
+
+  [
+    ['FIPRONIL_BL0107F', 0.004468],
+    ['FIPRONIL_SP0107F', 9.93477],
+    ['FIPRONIL_27_U01.D', 8.15939],
+    ['FIPRONIL_SP_1', 9.1],
+    ['FIPRONIL_27_U11.D', 8.50969],
+    ['FIPRONIL_SP_2', 9.2],
+    ['FIPRONIL_27_U21.D', 8.04967]
+  ].forEach(([sampleName, finalConc], index) => {
+    rows[10 + index][5] = 'Sample';
+    rows[10 + index][8] = sampleName;
+    rows[10 + index][23] = finalConc;
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), 'FIPRONIL');
+  return workbook;
+}
+
+function makeSop01Context() {
+  const sampleList = ['U0127', 'U1127', 'U2127'];
+  const resultData: Record<string, any> = {
+    QC_BLANK: {},
+    QC_SPIKE: {},
+    QC_SPIKE_1: {},
+    QC_SPIKE_2: {}
+  };
+  const sampleTargetMap: Record<string, string[]> = {};
+
+  sampleList.forEach(sample => {
+    resultData[sample] = { kqFip: '', selected: true };
+    sampleTargetMap[sample] = ['fipronil'];
+  });
+
+  return {
+    run: {
+      sopId: 'SOP-01',
+      sampleList,
+      sampleTargetMap
+    },
+    draft: {
+      page1Data: {},
+      resultData
+    },
+    config: {
+      formType: 'type2',
+      columns: {
+        kqFip: 'Fipronil'
+      }
+    },
+    configKey: 'fipronil-chlorpyrifos',
+    masterTargets: [] as any[]
+  };
+}
+
+test('SOP-01 maps dated samples and recognizes BLANK, SPIKE and SPIKE_N rows', () => {
+  const parsed = parseMassHunterResultWorkbook(XLSX, makeSop01Workbook());
+  const candidates = buildExcelImportCandidates(parsed, makeSop01Context())
+    .filter(candidate => candidate.kind === 'result');
+  const targetFor = (sourceSample: string) =>
+    candidates.find(candidate => candidate.sourceSample === sourceSample);
+
+  assert.equal(targetFor('FIPRONIL_27_U01.D')?.targetSample, 'U0127');
+  assert.equal(targetFor('FIPRONIL_27_U11.D')?.targetSample, 'U1127');
+  assert.equal(targetFor('FIPRONIL_27_U21.D')?.targetSample, 'U2127');
+  assert.equal(targetFor('FIPRONIL_BL0107F')?.targetSample, 'QC_BLANK');
+  assert.equal(targetFor('FIPRONIL_SP0107F')?.targetSample, 'QC_SPIKE');
+  assert.equal(targetFor('FIPRONIL_SP_1')?.targetSample, 'QC_SPIKE_1');
+  assert.equal(targetFor('FIPRONIL_SP_2')?.targetSample, 'QC_SPIKE_2');
+  assert.equal(candidates.every(candidate => candidate.selectable), true);
+  assert.equal(candidates.every(candidate => candidate.selected), true);
+});
+
+test('maps sequence names in xxx_day_sample format for SOPs other than SOP-01', () => {
+  const workbook = makeWorkbook();
+  workbook.Sheets.Bifenthrin['I15'] = {
+    t: 's',
+    v: 'TT_TBVTV_27_U01.D'
+  };
+  const context = makeContext('formCheck');
+  context.run.sampleList.push('U0127');
+  context.run.sampleTargetMap.U0127 = ['bifenthrin'];
+  context.draft.resultData.U0127 = { bifenthrin: '', selected: true };
+
+  const candidates = buildExcelImportCandidates(
+    parseMassHunterResultWorkbook(XLSX, workbook),
+    context
+  );
+  const datedSample = candidates.find(
+    candidate => candidate.sourceSample === 'TT_TBVTV_27_U01.D'
+  );
+
+  assert.equal(context.configKey, 'nhom-cuc');
+  assert.equal(datedSample?.targetSample, 'U0127');
+  assert.equal(datedSample?.status, 'ready');
+  assert.equal(datedSample?.selectable, true);
+});
+
+test('selects only compound sheets relevant to the current SOP', () => {
+  const sop01Sheets = getRelevantExcelImportSheetNames(
+    [
+      'Options',
+      'Compound',
+      'FIPRONIL',
+      'FIPRONIL DESULFINYL',
+      'FIPRONIL_SULFIDE',
+      'Design-Compound'
+    ],
+    makeSop01Context()
+  );
+
+  assert.deepEqual(sop01Sheets, [
+    'FIPRONIL',
+    'FIPRONIL DESULFINYL',
+    'FIPRONIL_SULFIDE'
+  ]);
+
+  const aliasContext = makeContext('formCheck');
+  aliasContext.masterTargets = [{
+    id: 'bifenthrin',
+    name: 'Bifenthrin',
+    aliases: ['Bifenthrin instrument alias']
+  }];
+  assert.deepEqual(
+    getRelevantExcelImportSheetNames(
+      ['Options', 'Bifenthrin instrument alias', 'Pirimiphos methyl'],
+      aliasContext
+    ),
+    ['Bifenthrin instrument alias']
+  );
+});
 
 test('Form Check matches BL01/SP01 as regular samples and does not create QC rows', () => {
   const parsed = parseMassHunterResultWorkbook(XLSX, makeWorkbook());
@@ -184,6 +323,33 @@ test('matches built-in and Master Analyte aliases for compound sheets', () => {
     masterCandidates.find(candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01')?.compoundId,
     'bifenthrin'
   );
+});
+
+test('uses Master Analyte when validating legacy target assignments', () => {
+  const context = makeContext('formCheck');
+  context.config.compounds = ['pirimiphos_methyl'];
+  context.run.sampleTargetMap = {
+    MINH_BL01: ['legacy-pirimiphos-target-id'],
+    MINH_SP01: ['legacy-pirimiphos-target-id']
+  };
+  context.masterTargets = [{
+    id: 'legacy-pirimiphos-target-id',
+    name: 'Pirimiphos methyl'
+  }];
+
+  const candidates = buildExcelImportCandidates(
+    parseMassHunterResultWorkbook(XLSX, makeWorkbook('Pirimiphos methyl')),
+    context
+  );
+  const sample = candidates.find(
+    candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01'
+  )!;
+
+  assert.equal(sample.compoundId, 'pirimiphos_methyl');
+  assert.equal(sample.targetSample, 'MINH_BL01');
+  assert.equal(sample.status, 'ready');
+  assert.equal(sample.selectable, true);
+  assert.equal(sample.selected, true);
 });
 
 test('rounds only numeric Final-Conc. when the user selects decimal places', () => {

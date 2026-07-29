@@ -24,9 +24,33 @@
 
     <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-5 md:px-7 py-5">
       @if (isLoading) {
-        <div class="py-20 text-center text-slate-500 dark:text-slate-400">
+        <div class="py-16 max-w-xl mx-auto text-center text-slate-500 dark:text-slate-400">
           <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-500 mb-3"></i>
-          <p class="text-sm font-bold">Đang đọc và đối chiếu dữ liệu...</p>
+          <p class="text-sm font-black text-slate-700 dark:text-slate-200">
+            {{ loadingMessage }}
+          </p>
+          <p class="mt-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            Chỉ đọc dữ liệu report cần thiết. Hình sắc ký, chart, style và sheet ngoài SOP sẽ được bỏ qua.
+          </p>
+          <div class="mt-5 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+               role="progressbar"
+               aria-label="Tiến trình đọc Excel"
+               aria-valuemin="0"
+               aria-valuemax="100"
+               [attr.aria-valuenow]="loadingProgress">
+            <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-[width] duration-300"
+                 [style.width.%]="loadingProgress"></div>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-400">
+            <span>{{ fileSizeLabel }}</span>
+            <span>{{ loadingProgress }}%</span>
+          </div>
+          <button type="button"
+                  (click)="requestCancel()"
+                  class="mt-6 inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-black text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+            <i class="fa-solid fa-xmark"></i>
+            Hủy đọc tệp
+          </button>
         </div>
       } @else {
         @if (errorMessage) {

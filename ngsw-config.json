@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.28-b06",
-    "notesVersion": "v26.07.28-b06",
-    "title": "Hoàn Thiện Import Excel & Lưu Tệp Gốc",
+    "version": "v26.07.29-b01",
+    "notesVersion": "v26.07.29-b01",
+    "title": "Import Excel Lớn Không Treo & Ghép Mẫu Sequence",
     "features": [
-      "🧪 Một modal Import Excel và hệ thống alias Master Analyte dùng chung cho mọi SOP",
-      "☁️ Tùy chọn lưu tệp Excel gốc lên Google Drive kèm modal tiến trình",
-      "✅ Sửa ND từ giá trị 0, cảnh báo R² Form Check và định dạng PDF một mẫu",
-      "📄 Đồng bộ modal PDF mở thủ công và tự bật sau khi tạo báo cáo"
+      "⚡ Đọc workbook trong Web Worker, không khóa giao diện khi file có nhiều sắc ký đồ",
+      "🎯 Chỉ phân tích sheet thuộc SOP và bỏ qua hình, chart, style cùng dữ liệu phụ",
+      "🔗 Ghép chung xxx_ngày_mã-mẫu với mã-mẫu+ngày, gồm FIPRONIL_27_U01.D → U0127",
+      "🧪 Khôi phục BLANK, SPIKE, SPIKE_N SOP-01 và alias Master Analyte lịch sử"
     ]
   },
   "assetGroups": [
@@ -31,7 +31,8 @@
       "updateMode": "prefetch",
       "resources": {
         "files": [
-          "/chunk-*.js"
+          "/chunk-*.js",
+          "/worker-*.js"
         ]
       }
     },

@@ -1,5 +1,19 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.29-b01] - 29/07/2026
+
+### ⚡ Import Excel Lớn Không Treo & Ghép Mẫu Sequence
+
+- **Đọc Excel ngoài luồng giao diện:** Chuyển việc giải nén và phân tích workbook sang Web Worker, giúp modal và màn trả kết quả tiếp tục phản hồi khi file chứa nhiều sắc ký đồ.
+- **Chỉ đọc dữ liệu report cần thiết:** Tự chọn các sheet hoạt chất thuộc SOP hiện tại; bỏ qua sheet ngoài SOP, hình ảnh, chart, style, rich text, công thức và dữ liệu phụ không phục vụ `Sample name`, `Final-Conc.` hoặc R².
+- **Tiến trình và hủy an toàn:** Modal hiển thị từng giai đoạn nạp file, nhận diện sheet, trích xuất dữ liệu và ghép mẫu; người dùng có thể hủy mà không ghi dở dữ liệu lên form.
+- **Fallback tương thích:** Nếu trình duyệt không hỗ trợ Worker hoặc chưa nhận ra tên sheet, hệ thống tự chuyển sang chế độ đọc tương thích/toàn bộ sheet để không làm mất dữ liệu hay khả năng chẩn đoán.
+- **Ghép mẫu sequence dùng chung:** Mọi SOP hỗ trợ quy tắc `xxx_ngày_mã-mẫu → mã-mẫu+ngày`, ví dụ `FIPRONIL_27_U01.D → U0127`, sau các bước khớp chính xác và hậu tố.
+- **Khôi phục QC đặc thù SOP-01:** Nhận đúng `BLANK`, `SPIKE`, `SPIKE_N` và các dòng `SP_1`, `SP_2` động; giữ nguyên quy tắc riêng trong phạm vi SOP-01.
+- **Alias phân chỉ tiêu chính xác:** Khi mẻ còn lưu ID chỉ tiêu lịch sử, import tiếp tục đối chiếu qua Master Analyte để những tên như `Pirimiphos methyl` không bị báo “không được phân”.
+
+---
+
 ## [v26.07.28-b06] - 28/07/2026
 
 ### 🧪 Hoàn Thiện Import Excel, Alias & Lưu Tệp Gốc

@@ -13,6 +13,31 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.29-b01',
+    date: '29/07/2026',
+    title: 'Import Excel Lớn Không Treo & Ghép Mẫu Sequence',
+    highlights: [
+      'Import Excel chạy trong Web Worker để file chứa nhiều hình sắc ký không còn khóa giao diện.',
+      'Chỉ các sheet hoạt chất thuộc SOP được phân tích; hình, chart, style và dữ liệu phụ được bỏ qua.',
+      'Mọi SOP nhận quy tắc tên sequence xxx_ngày_mã-mẫu, ví dụ FIPRONIL_27_U01.D ghép với U0127.'
+    ],
+    features: [
+      'Modal hiển thị tiến trình nạp file, đọc sheet, trích xuất report và ghép mẫu; hỗ trợ hủy an toàn trước khi áp dụng.',
+      'Fallback tự động về chế độ tương thích khi Worker không khả dụng hoặc đọc toàn bộ sheet khi chưa nhận diện được tên sheet SOP.',
+      'Service Worker lưu cache riêng cho bundle Excel Worker để luồng import tiếp tục dùng được khi kết nối mạng không ổn định.'
+    ],
+    improvements: [
+      'ArrayBuffer được chuyển sang Worker theo cơ chế transfer, tránh sao chép thêm file lớn trong bộ nhớ.',
+      'Tắt đọc công thức, rich text, styles, calculation chain, VBA và raw ZIP files nhưng vẫn giữ nguyên text hiển thị của Final-Conc.',
+      'SOP-01 nhận đầy đủ BLANK, SPIKE và SPIKE_N động; quy tắc ghép ngày/mã mẫu được mở rộng làm fallback chung cho SOP mới.'
+    ],
+    fixes: [
+      'Khắc phục giao diện có thể treo lâu khi XLSX.read chạy đồng bộ trên main thread với workbook nhiều sắc ký đồ.',
+      'Khắc phục U0127 không ghép với FIPRONIL_27_U01.D sau khi hợp nhất các module import.',
+      'Khắc phục Pirimiphos methyl bị báo không được phân khi mẻ đang lưu ID Master Analyte lịch sử.'
+    ]
+  },
+  {
     version: 'v26.07.28-b06',
     date: '28/07/2026',
     title: 'Hoàn Thiện Import Excel, Alias & Lưu Tệp Gốc',

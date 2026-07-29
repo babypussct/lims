@@ -179,6 +179,14 @@ export function buildExcelImportCandidates(
   return candidates;
 }
 
+export function getRelevantExcelImportSheetNames(
+  sheetNames: string[],
+  context: ExcelImportContext
+): string[] {
+  const targets = buildResultTargets(context.config, context.masterTargets || []);
+  return sheetNames.filter(sheetName => Boolean(matchCompoundTarget(sheetName, targets)));
+}
+
 export function updateCandidateSample(
   candidate: ExcelImportCandidate,
   targetSample: string,
@@ -203,7 +211,12 @@ export function updateCandidateSample(
     return;
   }
 
-  if (!isTargetAllowedForSample(targetSample, candidate.compoundId, context.run)) {
+  if (!isTargetAllowedForSample(
+    targetSample,
+    candidate.compoundId,
+    context.run,
+    context.masterTargets
+  )) {
     candidate.targetLabel = `${targetSample} · hoạt chất không được phân`;
     candidate.currentValue = '';
     candidate.status = 'unassigned';
@@ -291,7 +304,16 @@ export function normalizeImportSampleName(value: string): string {
 
 export function getAvailableExcelImportSamples(context: ExcelImportContext): string[] {
   const regularSamples = (context.run?.sampleList || []).map(String);
-  const qcSamples = ['QC_BLANK', 'QC_SPIKE', 'QC_FINAL', 'QC_CHECK_SAMPLE']
+  const dynamicSpikeSamples = Object.keys(context.draft?.resultData || {})
+    .filter(sample => /^QC_SPIKE_\d+$/.test(sample))
+    .sort(compareDynamicSpikeSamples);
+  const qcSamples = [
+    'QC_BLANK',
+    'QC_SPIKE',
+    ...dynamicSpikeSamples,
+    'QC_FINAL',
+    'QC_CHECK_SAMPLE'
+  ]
     .filter(sample => isQcTargetAvailable(sample, context));
   return Array.from(new Set([...regularSamples, ...qcSamples]));
 }
@@ -380,7 +402,7 @@ function buildResultCandidate(
   } else if (matchedSamples.length > 1) {
     status = 'ambiguous';
   } else {
-    targetSample = classifyQcSample(row.sampleName, row.sampleType);
+    targetSample = classifyQcSample(row.sampleName, row.sampleType, context);
   }
 
   if (targetSample?.startsWith('QC_') && !isQcTargetAvailable(targetSample, context)) {
@@ -425,7 +447,12 @@ function buildResultCandidate(
     };
   }
 
-  if (!isTargetAllowedForSample(targetSample, target.compoundId, context.run)) {
+  if (!isTargetAllowedForSample(
+    targetSample,
+    target.compoundId,
+    context.run,
+    context.masterTargets
+  )) {
     return {
       id,
       kind: 'result',
@@ -544,7 +571,10 @@ function matchCompoundTarget(sourceName: string, targets: ResultTarget[]): Resul
   return contained.length === 1 ? contained[0] : null;
 }
 
-function matchRegularSamples(excelSampleName: string, samples: string[]): string[] {
+function matchRegularSamples(
+  excelSampleName: string,
+  samples: string[]
+): string[] {
   const excel = normalizeImportSampleName(excelSampleName);
   if (!excel) return [];
 
@@ -555,22 +585,56 @@ function matchRegularSamples(excelSampleName: string, samples: string[]): string
     const lims = normalizeImportSampleName(sample);
     return Boolean(lims) && excel.endsWith(`_${lims}`);
   });
-  if (suffixMatches.length <= 1) return suffixMatches;
+  if (suffixMatches.length === 1) return suffixMatches;
+  if (suffixMatches.length > 1) {
+    const longestLength = Math.max(
+      ...suffixMatches.map(sample => normalizeImportSampleName(sample).length)
+    );
+    return suffixMatches.filter(
+      sample => normalizeImportSampleName(sample).length === longestLength
+    );
+  }
 
-  const longestLength = Math.max(
-    ...suffixMatches.map(sample => normalizeImportSampleName(sample).length)
-  );
-  return suffixMatches.filter(
-    sample => normalizeImportSampleName(sample).length === longestLength
+  // Nhánh fallback cho quy ước đặt tên sequence chung của lab:
+  // xxx_ngày_mã-mẫu (FIPRONIL_27_U01.D) tương ứng mã mẻ mã-mẫu+ngày (U0127).
+  // Chỉ dùng sau khi exact/suffix đều thất bại và chỉ trả về khi tên ghép
+  // thực sự tồn tại trong danh sách mẫu của mẻ.
+  const datedSample = excel.match(/(?:^|_)(0[1-9]|[12]\d|3[01])_([A-Z0-9]+)$/);
+  if (!datedSample) return [];
+
+  const limsSampleName = `${datedSample[2]}${datedSample[1]}`;
+  return samples.filter(
+    sample => normalizeImportSampleName(sample) === limsSampleName
   );
 }
 
-function classifyQcSample(sampleName: string, sampleType: string): string | undefined {
+function classifyQcSample(
+  sampleName: string,
+  sampleType: string,
+  context: ExcelImportContext
+): string | undefined {
   const normalized = normalizeImportSampleName(sampleName);
   const type = normalizeImportSampleName(sampleType);
   const lastToken = normalized.split('_').filter(Boolean).at(-1) || '';
 
   if (type.includes('CALIBRATION')) return undefined;
+
+  if (isSop01Import(context)) {
+    const numberedSpike = normalized.match(/(?:^|_)(?:SP|SPIKE)_(\d+)(?:_|$)/);
+    if (numberedSpike) return `QC_SPIKE_${Number(numberedSpike[1])}`;
+
+    // SOP-01 dùng các tên như FIPRONIL_BL0107F và FIPRONIL_SP0107F.
+    // Chỉ áp dụng quy tắc prefix này trong SOP-01 để tránh nhận nhầm mẫu thường
+    // có BL/SP ở những SOP khác.
+    if (/(?:^|_)(?:BLANK|BL)[A-Z0-9]*(?:_|$)/.test(normalized)) return 'QC_BLANK';
+    if (/(?:^|_)(?:SPIKE|SP)[A-Z0-9]*(?:_|$)/.test(normalized)) return 'QC_SPIKE';
+
+    const checkSampleName = normalizeImportSampleName(
+      String(context.draft?.page1Data?.['checkSampleName'] || '')
+    );
+    if (checkSampleName && normalized.includes(checkSampleName)) return 'QC_CHECK_SAMPLE';
+  }
+
   if (lastToken === 'BL' || lastToken === 'BLANK') return 'QC_BLANK';
   if (lastToken === 'SP' || lastToken === 'SPIKE') return 'QC_SPIKE';
   if (lastToken === 'FINAL') return 'QC_FINAL';
@@ -578,11 +642,25 @@ function classifyQcSample(sampleName: string, sampleType: string): string | unde
   return undefined;
 }
 
-function isTargetAllowedForSample(sample: string, compoundId: string, run: any): boolean {
+function isSop01Import(context: ExcelImportContext): boolean {
+  return context.configKey === 'fipronil-chlorpyrifos'
+    || context.run?.sopId === 'SOP-01';
+}
+
+function compareDynamicSpikeSamples(left: string, right: string): number {
+  return Number(left.replace('QC_SPIKE_', '')) - Number(right.replace('QC_SPIKE_', ''));
+}
+
+function isTargetAllowedForSample(
+  sample: string,
+  compoundId: string,
+  run: any,
+  masterTargets: any[] = []
+): boolean {
   if (sample.startsWith('QC_')) return true;
   const targetMap = run?.sampleTargetMap ?? run?.inputs?.sampleTargetMap;
   const assigned = getAssignedTargetsForSample(sample, targetMap);
-  return assigned === null || isCompoundAssigned(assigned, compoundId);
+  return assigned === null || isCompoundAssigned(assigned, compoundId, masterTargets);
 }
 
 function isQcTargetAvailable(sample: string, context: ExcelImportContext): boolean {

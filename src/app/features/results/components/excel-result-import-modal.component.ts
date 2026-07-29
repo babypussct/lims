@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, inject, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ProgressService } from '../../../core/services/progress.service';
@@ -8,9 +17,9 @@ import {
   applyExcelImportCandidates,
   buildExcelImportCandidates,
   formatImportedFinalConc,
-  parseMassHunterResultWorkbook,
   updateCandidateSample
 } from '../import/excel-result-import';
+import { readExcelResultFile } from '../import/excel-result-import-reader';
 import {
   ExcelImportCandidate,
   ExcelImportCandidateKind,
@@ -23,9 +32,10 @@ import {
   imports: [CommonModule, FormsModule],
   templateUrl: './excel-result-import-modal.component.html'
 })
-export class ExcelResultImportModalComponent implements OnChanges {
+export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
   private progressService = inject(ProgressService);
   private reportService = inject(ReportService);
+  private loadAbortController?: AbortController;
 
   @Input() file: File | null = null;
   @Input() run: any = null;
@@ -47,6 +57,8 @@ export class ExcelResultImportModalComponent implements OnChanges {
   warnings: string[] = [];
   errorMessage = '';
   isLoading = false;
+  loadingProgress = 0;
+  loadingMessage = 'Đang chuẩn bị đọc dữ liệu Excel...';
   isApplying = false;
   decimalMode = 'source';
   saveOriginalFile = false;
@@ -57,6 +69,10 @@ export class ExcelResultImportModalComponent implements OnChanges {
       this.saveOriginalFile = this.draft?.page1Data?.['uploadMassHunterToDrive'] === true;
       await this.loadFile(this.file);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.loadAbortController?.abort();
   }
 
   get selectedCount(): number {
@@ -194,11 +210,18 @@ export class ExcelResultImportModalComponent implements OnChanges {
   }
 
   requestCancel() {
-    if (!this.isApplying) this.cancelled.emit();
+    if (this.isApplying) return;
+    this.loadAbortController?.abort();
+    this.cancelled.emit();
   }
 
   private async loadFile(file: File) {
+    this.loadAbortController?.abort();
+    const controller = new AbortController();
+    this.loadAbortController = controller;
     this.isLoading = true;
+    this.loadingProgress = 0;
+    this.loadingMessage = 'Đang chuẩn bị đọc dữ liệu Excel...';
     this.errorMessage = '';
     this.warnings = [];
     this.candidates = [];
@@ -206,24 +229,35 @@ export class ExcelResultImportModalComponent implements OnChanges {
     this.uploadErrorMessage = '';
 
     try {
-      const XLSX = await import('xlsx');
-      const workbook = XLSX.read(await file.arrayBuffer(), {
-        type: 'array',
-        cellDates: false,
-        cellText: true
-      });
-      const parsed = parseMassHunterResultWorkbook(XLSX, workbook);
+      const parsed = await readExcelResultFile(
+        file,
+        this.context(),
+        progress => {
+          this.loadingProgress = progress.percent;
+          this.loadingMessage = progress.message;
+        },
+        controller.signal
+      );
+      if (controller.signal.aborted) return;
+
+      this.loadingProgress = 95;
+      this.loadingMessage = 'Đang hoàn tất đối chiếu với dữ liệu trên form...';
       this.warnings = parsed.warnings;
       this.candidates = buildExcelImportCandidates(parsed, this.context());
+      this.loadingProgress = 100;
 
       if (this.candidates.length === 0 && this.warnings.length === 0) {
         this.errorMessage = 'File không có kết quả Final-Conc. phù hợp để nhập.';
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('[Excel result import] Cannot parse workbook', error);
       this.errorMessage = 'Không đọc được file Excel. Vui lòng kiểm tra định dạng file MassHunter.';
     } finally {
-      this.isLoading = false;
+      if (this.loadAbortController === controller) {
+        this.loadAbortController = undefined;
+        this.isLoading = false;
+      }
     }
   }
 
