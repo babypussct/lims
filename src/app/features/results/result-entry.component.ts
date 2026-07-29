@@ -323,6 +323,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private previousDraftStatus: string | null = null;
 
   constructor() {
+    // getAll() có timeout để UI không bị treo, nhưng DeltaSync có thể trả dữ liệu
+    // sau timeout đó. Luôn đồng bộ signal sống để import Excel không giữ mãi
+    // danh mục Master Analyte rỗng của lần tải đầu.
+    effect(() => {
+      const targets = this.masterService.analytes();
+      if (targets.length > 0) {
+        this.masterTargets.set(targets);
+      }
+    }, { allowSignalWrites: true });
+
     effect(() => {
       const prefixes = this.detectedPrefixes();
       if (prefixes.length === 1) {

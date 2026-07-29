@@ -112,6 +112,7 @@ export class ResultService {
     try {
       const allTargetIds = new Set<string>();
       const combinedSampleTargetMap: Record<string, string[]> = {};
+      const combinedTargetNames: Record<string, string> = {};
       
       const childPromises = masterData.childRequestIds.map((id: string) => getDoc(this.getDocRef(id)));
       const childSnaps = await Promise.all(childPromises);
@@ -121,6 +122,14 @@ export class ResultService {
           const r = snap.data() as any;
           if (r['targetIds']) {
             r['targetIds'].forEach((t: string) => allTargetIds.add(t));
+          }
+          const rTargetNames = r['targetNames'] || r['inputs']?.['targetNames'];
+          if (rTargetNames) {
+            Object.entries(rTargetNames).forEach(([targetId, targetName]) => {
+              if (targetName !== null && targetName !== undefined) {
+                combinedTargetNames[targetId] = String(targetName);
+              }
+            });
           }
           const rMap = r['sampleTargetMap'] || r['inputs']?.['sampleTargetMap'];
           if (rMap) {
@@ -138,6 +147,7 @@ export class ResultService {
       
       await updateDoc(this.getDocRef(masterId), {
         targetIds: Array.from(allTargetIds),
+        targetNames: combinedTargetNames,
         sampleTargetMap: combinedSampleTargetMap,
         lastUpdated: serverTimestamp()
       });
@@ -172,7 +182,9 @@ export class ResultService {
                            lastMeta.targetIds.length === 0 || 
                            !lastMeta.sampleTargetMap || 
                            Object.keys(lastMeta.sampleTargetMap).length === 0 ||
-                           (lastMeta.sampleList && Object.keys(lastMeta.sampleTargetMap).length < lastMeta.sampleList.length);
+                           (lastMeta.sampleList && Object.keys(lastMeta.sampleTargetMap).length < lastMeta.sampleList.length) ||
+                           lastMeta.targetNames === undefined ||
+                           lastMeta.targetNames === null;
       
       if (lastMeta.isVirtualMaster && needsHealing && lastMeta.childRequestIds && !lastMeta._isHealing) {
         lastMeta._isHealing = true; // prevent infinite loop before db updates

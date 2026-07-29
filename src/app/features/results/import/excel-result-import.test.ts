@@ -277,6 +277,35 @@ test('Form Đơn writes ND text, imports per-compound R² and keeps nominal cali
   );
 });
 
+test('allows the user to leave ND result cells blank or write literal ND', () => {
+  const parsed = parseMassHunterResultWorkbook(XLSX, makeWorkbook());
+
+  const blankContext = makeContext('formDon');
+  const blankCandidates = buildExcelImportCandidates(parsed, blankContext);
+  blankCandidates.forEach(candidate => {
+    candidate.selected = candidate.kind === 'result'
+      && candidate.sourceSample === 'TT_TBVTV_MINH_SP01';
+  });
+  applyExcelImportCandidates(blankCandidates, blankContext, 'blank-nd.xlsx', null, false);
+
+  assert.equal(blankContext.draft.resultData.MINH_SP01.bifenthrin, '');
+  assert.equal(
+    blankContext.draft.page1Data.lastExcelResultImport.writeNdToResult,
+    false
+  );
+
+  const textContext = makeContext('formCheck');
+  const textCandidates = buildExcelImportCandidates(parsed, textContext);
+  textCandidates.forEach(candidate => {
+    candidate.selected = candidate.kind === 'result'
+      && candidate.sourceSample === 'TT_TBVTV_MINH_SP01';
+  });
+  applyExcelImportCandidates(textCandidates, textContext, 'text-nd.xlsx', null, true);
+
+  assert.equal(textContext.draft.resultData.MINH_SP01.bifenthrin, 'ND');
+  assert.equal(textContext.draft.resultData.MINH_SP01.bifenthrin_nd, true);
+});
+
 test('matches punctuation variants in compound sheet names', () => {
   const parsed = parseMassHunterResultWorkbook(XLSX, makeWorkbook('Ronnel _Fenchlorphos_'));
   const context = makeContext('formDon');
@@ -336,6 +365,33 @@ test('uses Master Analyte when validating legacy target assignments', () => {
     id: 'legacy-pirimiphos-target-id',
     name: 'Pirimiphos methyl'
   }];
+
+  const candidates = buildExcelImportCandidates(
+    parseMassHunterResultWorkbook(XLSX, makeWorkbook('Pirimiphos methyl')),
+    context
+  );
+  const sample = candidates.find(
+    candidate => candidate.sourceSample === 'TT_TBVTV_MINH_BL01'
+  )!;
+
+  assert.equal(sample.compoundId, 'pirimiphos_methyl');
+  assert.equal(sample.targetSample, 'MINH_BL01');
+  assert.equal(sample.status, 'ready');
+  assert.equal(sample.selectable, true);
+  assert.equal(sample.selected, true);
+});
+
+test('uses immutable request targetNames when Master Analyte has not loaded', () => {
+  const context = makeContext('formCheck');
+  context.config.compounds = ['pirimiphos_methyl'];
+  context.run.sampleTargetMap = {
+    MINH_BL01: ['legacy-pirimiphos-target-id'],
+    MINH_SP01: ['legacy-pirimiphos-target-id']
+  };
+  context.run.targetNames = {
+    'legacy-pirimiphos-target-id': 'Pirimiphos methyl'
+  };
+  context.masterTargets = [];
 
   const candidates = buildExcelImportCandidates(
     parseMassHunterResultWorkbook(XLSX, makeWorkbook('Pirimiphos methyl')),

@@ -91,7 +91,7 @@ export function buildExcelImportCandidates(
   parsed: ParsedExcelWorkbook,
   context: ExcelImportContext
 ): ExcelImportCandidate[] {
-  const targets = buildResultTargets(context.config, context.masterTargets || []);
+  const targets = buildResultTargets(context.config, buildTargetResolutionCatalog(context));
   const formMode = String(context.draft?.page1Data?.['printFormType'] || '');
   const isFormDon = formMode === 'formDon';
   const candidates: ExcelImportCandidate[] = [];
@@ -183,7 +183,7 @@ export function getRelevantExcelImportSheetNames(
   sheetNames: string[],
   context: ExcelImportContext
 ): string[] {
-  const targets = buildResultTargets(context.config, context.masterTargets || []);
+  const targets = buildResultTargets(context.config, buildTargetResolutionCatalog(context));
   return sheetNames.filter(sheetName => Boolean(matchCompoundTarget(sheetName, targets)));
 }
 
@@ -215,7 +215,7 @@ export function updateCandidateSample(
     targetSample,
     candidate.compoundId,
     context.run,
-    context.masterTargets
+    buildTargetResolutionCatalog(context)
   )) {
     candidate.targetLabel = `${targetSample} · hoạt chất không được phân`;
     candidate.currentValue = '';
@@ -238,7 +238,8 @@ export function applyExcelImportCandidates(
   candidates: ExcelImportCandidate[],
   context: ExcelImportContext,
   fileName: string,
-  decimalPlaces: number | null = null
+  decimalPlaces: number | null = null,
+  writeNdToResult = !usesNdCheckbox(context)
 ): number {
   const selected = candidates.filter(candidate => candidate.selected && candidate.selectable);
   const ndCheckbox = usesNdCheckbox(context);
@@ -250,10 +251,10 @@ export function applyExcelImportCandidates(
       const row = context.draft.resultData[candidate.targetSample] ||= { selected: true };
       if (ndCheckbox) {
         row[`${candidate.targetField}_nd`] = candidate.isNd;
-        row[candidate.targetField] = candidate.isNd ? '' : candidate.importValue;
-      } else {
-        row[candidate.targetField] = candidate.isNd ? 'ND' : candidate.importValue;
       }
+      row[candidate.targetField] = candidate.isNd
+        ? (writeNdToResult ? 'ND' : '')
+        : candidate.importValue;
       applied++;
       continue;
     }
@@ -284,7 +285,8 @@ export function applyExcelImportCandidates(
     importedAt: new Date().toISOString(),
     appliedCandidates: applied,
     selectedResults: selected.filter(candidate => candidate.kind === 'result').length,
-    decimalPlaces
+    decimalPlaces,
+    writeNdToResult
   });
   if (auditTrail.length > 20) auditTrail.splice(0, auditTrail.length - 20);
   context.draft.page1Data['lastExcelResultImport'] = auditTrail[auditTrail.length - 1];
@@ -451,7 +453,7 @@ function buildResultCandidate(
     targetSample,
     target.compoundId,
     context.run,
-    context.masterTargets
+    buildTargetResolutionCatalog(context)
   )) {
     return {
       id,
@@ -524,6 +526,52 @@ function buildResultTargets(config: any, masterTargets: any[]): ResultTarget[] {
         )
       };
     });
+}
+
+/**
+ * Ghép Master Analyte đang hoạt động với bản chụp tên hoạt chất bất biến của mẻ.
+ *
+ * Các mẻ cũ có thể lưu sampleTargetMap bằng document ID cũ. Nếu Master Analyte
+ * chưa tải xong (hoặc ID đó đã được thay đổi), targetNames của chính mẻ là nguồn
+ * truy vết đáng tin cậy để vẫn giải được ID cũ sang tên/canonical ID hiện tại.
+ */
+function buildTargetResolutionCatalog(context: ExcelImportContext): any[] {
+  const catalog = new Map<string, any>();
+
+  (context.masterTargets || []).forEach(target => {
+    const id = String(target?.id || '').trim();
+    if (!id) return;
+    catalog.set(id, { ...target });
+  });
+
+  const snapshots = [
+    context.run?.targetNames,
+    context.run?.inputs?.targetNames
+  ];
+  snapshots.forEach(snapshot => {
+    if (!snapshot || typeof snapshot !== 'object') return;
+    Object.entries(snapshot).forEach(([id, name]) => {
+      const normalizedId = String(id || '').trim();
+      const normalizedName = String(name || '').trim();
+      if (!normalizedId || !normalizedName) return;
+
+      const existing = catalog.get(normalizedId);
+      if (!existing) {
+        catalog.set(normalizedId, { id: normalizedId, name: normalizedName });
+        return;
+      }
+
+      const aliases = new Set<string>(
+        Array.isArray(existing.aliases) ? existing.aliases.map(String) : []
+      );
+      if (normalizedName !== String(existing.name || '').trim()) {
+        aliases.add(normalizedName);
+      }
+      catalog.set(normalizedId, { ...existing, aliases: Array.from(aliases) });
+    });
+  });
+
+  return Array.from(catalog.values());
 }
 
 function aliasesForCompound(

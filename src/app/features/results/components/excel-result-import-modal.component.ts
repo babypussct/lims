@@ -61,12 +61,14 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
   loadingMessage = 'Đang chuẩn bị đọc dữ liệu Excel...';
   isApplying = false;
   decimalMode = 'source';
+  writeNdToResult = false;
   saveOriginalFile = false;
   uploadErrorMessage = '';
 
   async ngOnChanges(changes: SimpleChanges) {
     if (changes['file'] && this.file) {
       this.saveOriginalFile = this.draft?.page1Data?.['uploadMassHunterToDrive'] === true;
+      this.writeNdToResult = this.defaultWriteNdToResult();
       await this.loadFile(this.file);
     }
   }
@@ -145,6 +147,13 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
     });
   }
 
+  displayImportValue(candidate: ExcelImportCandidate): string {
+    if (candidate.kind === 'result' && candidate.isNd && !this.writeNdToResult) {
+      return 'Để trống';
+    }
+    return candidate.importValue;
+  }
+
   manualSampleOptions(candidate: ExcelImportCandidate): string[] {
     return candidate.possibleSamples;
   }
@@ -195,9 +204,11 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
         this.candidates,
         this.context(),
         this.file.name,
-        this.selectedDecimalPlaces()
+        this.selectedDecimalPlaces(),
+        this.writeNdToResult
       );
       this.draft.page1Data['uploadMassHunterToDrive'] = this.saveOriginalFile;
+      this.draft.page1Data['excelImportWriteNdToResult'] = this.writeNdToResult;
       this.applied.emit({
         draft: this.draft,
         appliedCount,
@@ -275,6 +286,15 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
     if (this.decimalMode === 'source') return null;
     const parsed = Number(this.decimalMode);
     return Number.isInteger(parsed) && parsed >= 0 && parsed <= 6 ? parsed : null;
+  }
+
+  private defaultWriteNdToResult(): boolean {
+    const savedPreference = this.draft?.page1Data?.['excelImportWriteNdToResult'];
+    if (typeof savedPreference === 'boolean') return savedPreference;
+
+    const usesSeparateNdCheckbox = this.config?.formType === 'type3b'
+      && this.draft?.page1Data?.['printFormType'] === 'formCheck';
+    return !usesSeparateNdCheckbox;
   }
 
   private areAllSelected(candidates: ExcelImportCandidate[]): boolean {

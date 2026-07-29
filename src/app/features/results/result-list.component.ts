@@ -1463,6 +1463,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const allSamples = new Set<string>();
     const allTargetIds = new Set<string>();
     const combinedSampleTargetMap: Record<string, string[]> = {};
+    const combinedTargetNames: Record<string, string> = {};
 
     sops.forEach(r => {
       if (r.sampleList) {
@@ -1470,6 +1471,14 @@ export class ResultListComponent implements OnInit, OnDestroy {
       }
       if (r.targetIds) {
         r.targetIds.forEach((t: string) => allTargetIds.add(t));
+      }
+      const rTargetNames = r.targetNames || r.inputs?.targetNames;
+      if (rTargetNames) {
+        Object.entries(rTargetNames).forEach(([targetId, targetName]) => {
+          if (targetName !== null && targetName !== undefined) {
+            combinedTargetNames[targetId] = String(targetName);
+          }
+        });
       }
       const rMap = r.sampleTargetMap || r.inputs?.sampleTargetMap;
       if (rMap) {
@@ -1545,6 +1554,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         },
         sampleList,
         targetIds,
+        targetNames: combinedTargetNames,
         sampleTargetMap: combinedSampleTargetMap,
         status: 'approved' as const
       };
