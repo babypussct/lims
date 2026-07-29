@@ -62,8 +62,9 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
   const needsR2 = config.formType === 'type3a'
     || config.formType === 'type3b'
     || ['trifluralin-gcms', 'dichlorvos-gcms', 'chloroform-gcms'].includes(configKey || '');
-  const isFormCheck = draft.page1Data?.['printFormType'] === 'formCheck';
-  if (!isFormCheck && needsR2 && !String(draft.page1Data?.['r2'] || '').trim()) {
+  const printFormType = String(draft.page1Data?.['printFormType'] || '');
+  const formExposesR2 = doesPrintFormExposeR2(configKey, printFormType);
+  if (formExposesR2 && needsR2 && !String(draft.page1Data?.['r2'] || '').trim()) {
     warnings.push('Chưa nhập hệ số xác định R².');
   }
 
@@ -99,4 +100,20 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
 
 function hasReportableValue(value: any): boolean {
   return value !== null && value !== undefined && String(value).trim() !== '' && value !== 'N/A';
+}
+
+function doesPrintFormExposeR2(configKey: string | null | undefined, printFormType: string): boolean {
+  if (printFormType === 'formCheck') return false;
+
+  // SOP 9.14 dùng tên formDayDu/formRutGon thay cho hệ formCheck/formDon.
+  // Cả hai giao diện 9.14 đều không có trường R² nên preflight không được
+  // yêu cầu một dữ liệu mà người dùng không thể nhập trên UI.
+  if (
+    configKey === 'tbvtv-thuc-pham-gcmsms'
+    && (printFormType === 'formDayDu' || printFormType === 'formRutGon')
+  ) {
+    return false;
+  }
+
+  return true;
 }

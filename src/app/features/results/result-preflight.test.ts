@@ -109,6 +109,36 @@ test('does not require R² on Form Check but still warns on Form Đơn', () => {
   );
 });
 
+test('does not require R² on SOP 9.14 full or compact forms because neither UI exposes it', () => {
+  const makeSummary = (printFormType: 'formDayDu' | 'formRutGon') =>
+    buildPublishPreflightSummary({
+      run: { sampleList: ['A001'] },
+      draft: draft({
+        sopId: '9.14-tbvtv-gcmsms',
+        page1Data: {
+          ngayNguoiPhanTich: '2026-07-29',
+          ngayNguoiThamTra: '2026-07-29',
+          printFormType,
+          r2: ''
+        },
+        resultData: { A001: { alpha_nd: true } }
+      }),
+      config: { formType: 'type3b', compounds: ['alpha'], columns: {} },
+      configKey: 'tbvtv-thuc-pham-gcmsms',
+      activeFilter: 'ALL',
+      unpublishedSamples: ['A001']
+    });
+
+  assert.equal(
+    makeSummary('formDayDu').warnings.some(message => message.includes('R²')),
+    false
+  );
+  assert.equal(
+    makeSummary('formRutGon').warnings.some(message => message.includes('R²')),
+    false
+  );
+});
+
 test('warns when included samples were already published', () => {
   const summary = buildPublishPreflightSummary({
     run: { sampleList: ['A001', 'A002'] },
