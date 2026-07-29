@@ -11,7 +11,7 @@ import { ReferenceStandard, UsageLog, StandardRequest } from '../../../core/mode
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount, formatNum, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-amount';
-import { DeltaSyncService } from '../../../core/services/delta-sync.service';
+import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 import { buildStandardBackfillRecords } from '../../../shared/utils/standard-backfill';
@@ -34,8 +34,14 @@ export class StandardUsageService {
   // ─── Listen to Global Usage Logs ─────────────────────────────────────────────
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
     return this.deltaSync.startListener<UsageLog>({
-      cacheKey: 'lims_usage_cache_' + this.fb.APP_ID,
-      cursorKey: 'lims_usage_sync_seconds_' + this.fb.APP_ID,
+      cacheKey: buildScopedDeltaKey(
+        'lims_usage_cache_' + this.fb.APP_ID,
+        this.auth.getDeltaCacheScope()
+      ),
+      cursorKey: buildScopedDeltaKey(
+        'lims_usage_sync_seconds_' + this.fb.APP_ID,
+        this.auth.getDeltaCacheScope()
+      ),
       collectionPath: `artifacts/${this.fb.APP_ID}/standard_usages`,
       maxCacheSize: 1000,
       orderByField: 'timestamp',

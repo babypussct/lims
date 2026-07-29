@@ -10,7 +10,7 @@ import {
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
 import { CalculatorService } from './calculator.service';
-import { DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
+import { buildScopedDeltaKey, DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -238,8 +238,8 @@ export class StateService implements OnDestroy {
       this._unregisterStdReqListener();
       this._unregisterStdReqListener = undefined;
     }
-    // Hủy tất cả DeltaSync singletons (reference_standards, standard_requests, ...)
-    this.deltaSync.destroyAll();
+    // Các hàm unregister ở trên chỉ gỡ subscriber thuộc StateService.
+    // Singleton dùng chung được giữ lại trong cùng phiên; AuthService sẽ hủy sạch khi logout.
     this.sops.set([]);
     this.inventory.set([]);
     this.standards.set([]);
@@ -441,8 +441,8 @@ export class StateService implements OnDestroy {
     const isCurrentInit = () => initGeneration === this.initGeneration;
 
     const logsSyncConfig: DeltaSyncConfig = {
-      cacheKey: `lims_logs_cache_${this.fb.APP_ID}`,
-      cursorKey: `lims_logs_cursor_${this.fb.APP_ID}`,
+      cacheKey: buildScopedDeltaKey(`lims_logs_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      cursorKey: buildScopedDeltaKey(`lims_logs_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
       collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
       maxCacheSize: 200,
       orderByField: 'timestamp',
@@ -519,8 +519,8 @@ export class StateService implements OnDestroy {
     const isCurrentInit = () => initGeneration === this.initGeneration;
 
     const approvedRunsConfig: DeltaSyncConfig = {
-      cacheKey: `lims_approved_requests_cache_${this.fb.APP_ID}`,
-      cursorKey: `lims_approved_requests_cursor_${this.fb.APP_ID}`,
+      cacheKey: buildScopedDeltaKey(`lims_approved_requests_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      cursorKey: buildScopedDeltaKey(`lims_approved_requests_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
       collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
       maxCacheSize: 100, // Safe limit for localStorage
       orderByField: 'approvedAt',

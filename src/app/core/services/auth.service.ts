@@ -27,7 +27,7 @@ import {
 import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 import { AuthSession } from '../models/auth.model';
-import { DeltaSyncService } from './delta-sync.service';
+import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
 
 export const PERMISSIONS = {
   INVENTORY_VIEW: 'inventory_view',
@@ -202,6 +202,9 @@ export class AuthService {
       } else {
         if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
         if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
+        // Bao phủ cả trường hợp token hết hạn / phiên bị thu hồi ngoài nút Logout.
+        this.deltaSync.destroyAll(true);
+        this.clearLocalCredentials();
         this.currentUser.set(null);
         this.isAuthReady.set(true);
       }
@@ -343,7 +346,9 @@ export class AuthService {
     if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
     if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
     try {
-        this.deltaSync.destroyAll(); // Hủy toàn bộ DeltaSync real-time listeners
+        // Hủy listener và xóa mọi cache DeltaSync đã đăng ký trước khi đổi phiên.
+        // Điều này ngăn dữ liệu của tài khoản trước xuất hiện trong phiên kế tiếp.
+        this.deltaSync.destroyAll(true);
     } catch (e) {
         console.warn('[Auth] Failed to destroy DeltaSync singletons:', e);
     }
@@ -546,6 +551,11 @@ export class AuthService {
     
     return combined;
   });
+
+  /** Phạm vi bảo mật dùng để tách cache DeltaSync theo đúng người dùng và quyền hiện tại. */
+  getDeltaCacheScope(): string {
+    return buildDeltaAuthScope(this.currentUser(), this.userPermissions());
+  }
   
   hasPermission(perm: string): boolean {
     const perms = this.userPermissions();

@@ -6,7 +6,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { ReferenceStandard, StandardRequest } from '../../../core/models/standard.model';
-import { DeltaSyncService } from '../../../core/services/delta-sync.service';
+import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { isFefoCandidate, parseStandardDate } from '../../../shared/utils/standard-fefo';
 
 /**
@@ -29,8 +29,18 @@ export class StandardCacheService {
   readonly STD_SYNC_SECONDS_KEY = 'lims_std_sync_seconds';
 
   // Key thực sự DeltaSync đang dùng (computed sau khi APP_ID sẵn sàng)
-  get _deltaCacheKey()  { return 'lims_reference_standards_cache_'        + this.fb.APP_ID; }
-  get _deltaCursorKey() { return 'lims_reference_standards_sync_seconds_' + this.fb.APP_ID; }
+  get _deltaCacheKey()  {
+    return buildScopedDeltaKey(
+      'lims_reference_standards_cache_' + this.fb.APP_ID,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+  get _deltaCursorKey() {
+    return buildScopedDeltaKey(
+      'lims_reference_standards_sync_seconds_' + this.fb.APP_ID,
+      this.auth.getDeltaCacheScope()
+    );
+  }
 
   // L1: In-memory — giờ quản lý bởi DeltaSync singleton
   // Giữ _memStandards chỉ cho fetchAllAndCache() (admin bulk operation)

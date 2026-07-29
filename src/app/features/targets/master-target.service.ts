@@ -1,10 +1,10 @@
 
 import { Injectable, inject, signal, effect } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { DeltaSyncService, DeltaSyncConfig } from '../../core/services/delta-sync.service';
+import { buildScopedDeltaKey, DeltaSyncService, DeltaSyncConfig } from '../../core/services/delta-sync.service';
 import { AuthService } from '../../core/services/auth.service';
 import { 
-  collection, doc, setDoc, deleteDoc, 
+  collection, doc, setDoc, updateDoc,
   serverTimestamp, getDoc, writeBatch
 } from 'firebase/firestore';
 import { MasterAnalyte } from '../../core/models/sop.model';
@@ -19,6 +19,7 @@ export class MasterTargetService {
   readonly analytes = signal<MasterAnalyte[]>([]);
 
   private singletonStarted = false;
+  private activeDeltaCacheKey: string | null = null;
 
   private get collectionPath() {
     return `artifacts/${this.fb.APP_ID}/master_analytes`;
@@ -29,18 +30,31 @@ export class MasterTargetService {
   }
 
   private get _deltaCacheKey() {
-    return `delta_master_analytes_${this.fb.APP_ID}`;
+    return buildScopedDeltaKey(
+      `delta_master_analytes_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
   }
 
   private get _deltaCursorKey() {
-    return `delta_master_analytes_cursor_${this.fb.APP_ID}`;
+    return buildScopedDeltaKey(
+      `delta_master_analytes_cursor_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
   }
 
   constructor() {
     effect(() => {
       const user = this.auth.currentUser();
+      const nextCacheKey = user ? this._deltaCacheKey : null;
+      if (this.activeDeltaCacheKey && this.activeDeltaCacheKey !== nextCacheKey) {
+        this.deltaSync.destroySingleton(this.activeDeltaCacheKey);
+        this.singletonStarted = false;
+        this.analytes.set([]);
+      }
       if (!user) {
         this.singletonStarted = false;
+        this.activeDeltaCacheKey = null;
         this.analytes.set([]);
       }
     });
@@ -53,6 +67,7 @@ export class MasterTargetService {
   private ensureSingleton(): void {
     if (this.singletonStarted) return;
     this.singletonStarted = true;
+    this.activeDeltaCacheKey = this._deltaCacheKey;
 
     const config: DeltaSyncConfig = {
       cacheKey: this._deltaCacheKey,
@@ -60,6 +75,7 @@ export class MasterTargetService {
       collectionPath: this.collectionPath,
       orderByField: 'lastUpdated',
       orderDirection: 'desc',
+      initialCollectionScan: true,
       maxCacheSize: 500
     };
 
@@ -113,12 +129,13 @@ export class MasterTargetService {
     // Fallback: đọc trực tiếp từ Firestore
     const ref = doc(this.fb.db, `${this.collectionPath}/${id}`);
     const snap = await getDoc(ref);
-    return snap.exists() ? ({ id: snap.id, ...snap.data() } as MasterAnalyte) : undefined;
+    if (!snap.exists() || snap.data()['_isDeleted'] === true) return undefined;
+    return { id: snap.id, ...snap.data() } as MasterAnalyte;
   }
 
   async save(item: MasterAnalyte): Promise<void> {
     const ref = doc(this.fb.db, `${this.collectionPath}/${item.id}`);
-    await setDoc(ref, { ...item, lastUpdated: serverTimestamp() });
+    await setDoc(ref, { ...item, _isDeleted: false, lastUpdated: serverTimestamp() });
     await this.fb.updateMetadata('master_analytes');
     // DeltaSync listener sẽ tự nhận thay đổi và cập nhật analytes signal
   }
@@ -130,7 +147,7 @@ export class MasterTargetService {
 
     for (const item of items) {
         const ref = doc(this.fb.db, `${this.collectionPath}/${item.id}`);
-        currentBatch.set(ref, { ...item, lastUpdated: serverTimestamp() });
+        currentBatch.set(ref, { ...item, _isDeleted: false, lastUpdated: serverTimestamp() });
         opCount++;
 
         if (opCount >= MAX_BATCH_SIZE) {
@@ -149,7 +166,7 @@ export class MasterTargetService {
 
   async delete(id: string): Promise<void> {
     const ref = doc(this.fb.db, `${this.collectionPath}/${id}`);
-    await deleteDoc(ref);
+    await updateDoc(ref, { _isDeleted: true, lastUpdated: serverTimestamp() });
     await this.fb.updateMetadata('master_analytes');
     // DeltaSync listener sẽ tự nhận thay đổi
   }

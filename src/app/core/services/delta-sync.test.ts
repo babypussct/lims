@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mergeDeltaItems } from './delta-sync.service';
+import {
+  buildDeltaAuthScope,
+  buildScopedDeltaKey,
+  computeDeltaRetryDelay,
+  deltaValueToMillis,
+  getDeltaErrorCode,
+  getMaxDeltaCursorMillis,
+  isDeltaAuthorizationError,
+  isDeltaGenerationActive,
+  isRetryableDeltaError,
+  mergeDeltaItems,
+  replaceDeltaArrayContents,
+  sortAndTrimDeltaItems
+} from './delta-sync.service';
 
 test('merges optimistic delta changes without duplicating ids', () => {
   const base = [
@@ -31,4 +44,87 @@ test('removes deleted ids and does not reinsert them from the changed set', () =
   );
 
   assert.deepEqual(result, [{ id: 'c' }, { id: 'a' }]);
+});
+
+test('scopes persistent cache keys by user, role and normalized permissions', () => {
+  const managerScope = buildDeltaAuthScope(
+    { uid: 'manager-1', role: 'manager', roleId: 'role-manager' },
+    ['standard_edit', '*', 'standard_edit']
+  );
+  const sameManagerScope = buildDeltaAuthScope(
+    { uid: 'manager-1', role: 'manager', roleId: 'role-manager' },
+    ['*', 'standard_edit']
+  );
+  const otherUserScope = buildDeltaAuthScope(
+    { uid: 'manager-2', role: 'manager', roleId: 'role-manager' },
+    ['*', 'standard_edit']
+  );
+
+  assert.equal(managerScope, sameManagerScope);
+  assert.notEqual(managerScope, otherUserScope);
+  assert.equal(
+    buildScopedDeltaKey('standards', managerScope),
+    buildScopedDeltaKey('standards', sameManagerScope)
+  );
+  assert.notEqual(
+    buildScopedDeltaKey('standards', managerScope),
+    buildScopedDeltaKey('standards', otherUserScope)
+  );
+  assert.equal(buildDeltaAuthScope(null), 'signed-out');
+});
+
+test('normalizes all supported timestamp shapes', () => {
+  assert.equal(deltaValueToMillis(new Date('2026-07-29T00:00:00.000Z')), 1785283200000);
+  assert.equal(deltaValueToMillis({ seconds: 10, nanoseconds: 999_000_000 }), 10999);
+  assert.equal(deltaValueToMillis({ milliseconds: 1234 }), 1234);
+  assert.equal(deltaValueToMillis({ toMillis: () => 5678 }), 5678);
+  assert.equal(deltaValueToMillis('not-a-date'), 0);
+});
+
+test('keeps the cursor monotonic, including tombstone-only snapshots', () => {
+  const cursor = getMaxDeltaCursorMillis(
+    [{ lastUpdated: { seconds: 3 } }, { lastUpdated: 2500 }],
+    5000,
+    4000
+  );
+  assert.equal(cursor, 5000);
+});
+
+test('sorts timestamp and natural string fields before trimming', () => {
+  const timestampItems = [
+    { id: 'old', updated: { seconds: 1 } },
+    { id: 'new', updated: { toMillis: () => 3000 } },
+    { id: 'middle', updated: 2000 }
+  ];
+  sortAndTrimDeltaItems(timestampItems, 'updated', 'desc', 2);
+  assert.deepEqual(timestampItems.map(item => item.id), ['new', 'middle']);
+
+  const names = [{ name: 'Item 10' }, { name: 'Item 2' }, { name: 'Item 1' }];
+  sortAndTrimDeltaItems(names, 'name', 'asc', 10);
+  assert.deepEqual(names.map(item => item.name), ['Item 1', 'Item 2', 'Item 10']);
+});
+
+test('updates the canonical array without replacing its identity', () => {
+  const cache = [{ id: 'old' }];
+  const identity = cache;
+  const result = replaceDeltaArrayContents(cache, [{ id: 'new' }]);
+  assert.equal(result, identity);
+  assert.deepEqual(cache, [{ id: 'new' }]);
+});
+
+test('classifies retryable errors and caps exponential retry delay', () => {
+  assert.equal(getDeltaErrorCode({ code: 'firestore/permission-denied' }), 'permission-denied');
+  assert.equal(isRetryableDeltaError({ code: 'permission-denied' }), false);
+  assert.equal(isRetryableDeltaError({ code: 'unavailable' }), true);
+  assert.equal(isDeltaAuthorizationError({ code: 'firestore/permission-denied' }), true);
+  assert.equal(isDeltaAuthorizationError({ code: 'unauthenticated' }), true);
+  assert.equal(isDeltaAuthorizationError({ code: 'unavailable' }), false);
+  assert.equal(computeDeltaRetryDelay(1, 100, 500), 100);
+  assert.equal(computeDeltaRetryDelay(4, 100, 500), 500);
+});
+
+test('rejects stale generations after destroy or restart', () => {
+  assert.equal(isDeltaGenerationActive(3, 3, false), true);
+  assert.equal(isDeltaGenerationActive(4, 3, false), false);
+  assert.equal(isDeltaGenerationActive(3, 3, true), false);
 });

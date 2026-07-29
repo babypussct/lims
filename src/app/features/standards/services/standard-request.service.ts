@@ -20,7 +20,7 @@ import {
   canCompleteStandardReturn,
   normalizeLegacyStandardRequestStatus
 } from '../../../shared/utils/standard-workflow';
-import { DeltaSyncService } from '../../../core/services/delta-sync.service';
+import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 
@@ -53,15 +53,20 @@ export class StandardRequestService {
 
   // Cache key phân biệt theo role để tránh data leak giữa admin/user
   private _getCacheKey(roleKey: string): string {
-    return `lims_std_req_cache_${roleKey}_${this.fb.APP_ID}`;
+    return buildScopedDeltaKey(
+      `lims_std_req_cache_${roleKey}_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
   }
   private _getCursorKey(roleKey: string): string {
-    return `lims_std_req_cursor_${roleKey}_${this.fb.APP_ID}`;
+    return buildScopedDeltaKey(
+      `lims_std_req_cursor_${roleKey}_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
   }
   private _getRoleKey(): string {
     const isApprover = this.auth.canAssignStandards();
-    const uid = this.auth.currentUser()?.uid;
-    return isApprover ? 'admin' : (uid || 'guest');
+    return isApprover ? 'admin' : 'user';
   }
 
   // ─── Singleton Listener via DeltaSync v2 ───────────────────────────────────

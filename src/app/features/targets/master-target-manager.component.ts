@@ -313,8 +313,15 @@ export class MasterTargetManagerComponent implements OnInit {
               if (changed) {
                   data.lastUpdated = serverTimestamp(); // BẮT BUỘC ĐỂ DELTASYNC NHẬN DIỆN THAY ĐỔI
                   if (newDocId !== docId) {
-                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, newDocId), data);
-                      batch.delete(doc(db, `artifacts/${appId}/master_analytes`, docId));
+                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, newDocId), {
+                          ...data,
+                          _isDeleted: false,
+                          lastUpdated: serverTimestamp()
+                      });
+                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, docId), {
+                          _isDeleted: true,
+                          lastUpdated: serverTimestamp()
+                      }, { merge: true });
                       opCount += 2;
                   } else {
                       batch.set(doc(db, `artifacts/${appId}/master_analytes`, docId), data);
