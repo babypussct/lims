@@ -519,12 +519,14 @@ export class StateService implements OnDestroy {
       collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
       maxCacheSize: 100, // Safe limit for localStorage
       orderByField: 'approvedAt',
-      orderDirection: 'desc',
-      queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed', 'pending', 'rejected'])]
+      orderDirection: 'desc'
     };
 
     const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
       if (!isCurrentInit()) return;
+      // Lọc client-side để truy vấn cursor chỉ cần single-field index lastUpdated.
+      // Bộ lọc status trước đây bao phủ gần như mọi trạng thái và buộc Firestore
+      // yêu cầu một composite index không cần thiết.
       this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
     });
 
