@@ -101,6 +101,38 @@ test('treats blank SOP-01 result cells as valid ND without changing other SOPs',
   );
 });
 
+test('treats blank SOP-03 Trifluralin result cells as valid ND', () => {
+  const summary = buildPublishPreflightSummary({
+    run: { sopId: 'SOP-03', sampleList: ['T0129'] },
+    draft: draft({
+      sopId: 'SOP-03',
+      resultData: {
+        T0129: {
+          selected: true,
+          kqTrifluralin: ''
+        }
+      }
+    }),
+    config: {
+      formType: 'type2',
+      columns: {
+        loSo: {},
+        maSoMau: {},
+        kqTrifluralin: {},
+        ghiChu: {}
+      }
+    },
+    configKey: 'trifluralin-gcms',
+    activeFilter: 'ALL',
+    unpublishedSamples: ['T0129']
+  });
+
+  assert.equal(
+    summary.blockers.some(message => message.includes('chưa có kết quả')),
+    false
+  );
+});
+
 test('accepts type3b ND checkboxes as reportable results', () => {
   const summary = buildPublishPreflightSummary({
     run: { sampleList: ['A001'] },

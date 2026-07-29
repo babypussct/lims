@@ -71,10 +71,12 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
   const activeColumns = Object.keys(config.columns || {})
     .filter(col => !['loSo', 'maSoMau', 'ghiChu', 'khoiLuong', 'heSoPhaLoang'].includes(col));
   const blankResultsMeanNd = configKey === 'fipronil-chlorpyrifos'
-    || run.sopId === 'SOP-01';
+    || configKey === 'trifluralin-gcms'
+    || run.sopId === 'SOP-01'
+    || run.sopId === 'SOP-03';
   const missingResultSamples = includedSamples.filter((sample: string) => {
-    // SOP-01 quy ước ô kết quả trống là ND hợp lệ. Không tự đổi thành chuỗi
-    // "ND" vì template phải giữ ô trống; chỉ in ND khi người dùng nhập đúng ND.
+    // Một số SOP dạng type2 quy ước ô kết quả trống là ND hợp lệ.
+    // Preflight không tự ghi "ND" vào draft; chỉ không chặn publish.
     if (blankResultsMeanNd) return false;
 
     const row = draft.resultData?.[sample] || {};
