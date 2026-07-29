@@ -1,5 +1,17 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.29-b03] - 29/07/2026
+
+### 🔕 Toast DeltaSync Đúng Sự Kiện
+
+- **Dứt điểm toast Propoxur lặp:** Listener metadata không còn lấy activity log gần nhất trong cache để mô tả một lần import mới.
+- **Không echo thao tác của chính mình:** Người vừa import chỉ nhận toast kết quả từ màn hình import; DeltaSync không phát lại thông báo thứ hai cho cùng người dùng.
+- **Thông báo đúng cho người khác:** Metadata mang theo version, mã sự kiện, người thực hiện và nội dung import để các phiên người dùng khác nhận đúng thay đổi.
+- **Fallback an toàn:** Metadata cũ hoặc sự kiện lệch version chỉ hiện thông báo đồng bộ chung, tuyệt đối không gắn tên một chuẩn cũ vào thao tác mới.
+- **Bao phủ kiểm thử:** Có kiểm thử cho log Propoxur cũ, chặn self-echo và thông báo chính xác giữa hai người dùng.
+
+---
+
 ## [v26.07.29-b02] - 29/07/2026
 
 ### 🧪 Import Chất Chuẩn An Toàn & Tái Sử Dụng Slot

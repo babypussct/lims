@@ -13,6 +13,24 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.29-b03',
+    date: '29/07/2026',
+    title: 'Toast DeltaSync Đúng Sự Kiện',
+    highlights: [
+      'Dứt điểm toast Propoxur bị phát lại sau mỗi lần import chuẩn.',
+      'Người thực hiện import chỉ nhận một thông báo kết quả từ màn hình import.',
+      'Người dùng khác nhận đúng nội dung sự kiện đồng bộ thay vì activity log cũ.'
+    ],
+    improvements: [
+      'Metadata đồng bộ mang version, mã sự kiện, người thực hiện và nội dung thay đổi.',
+      'Sự kiện của chính người dùng được nhận diện và không echo qua listener toàn cục.'
+    ],
+    fixes: [
+      'Không còn lấy log Cập nhật chuẩn gần nhất trong cache để mô tả một mốc DeltaSync mới.',
+      'Metadata cũ hoặc lệch version chỉ hiện thông báo chung, không gắn nhầm tên chuẩn.'
+    ]
+  },
+  {
     version: 'v26.07.29-b02',
     date: '29/07/2026',
     title: 'Import Chất Chuẩn An Toàn & Tái Sử Dụng Slot',

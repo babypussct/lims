@@ -22,6 +22,7 @@ import { ReferenceStandard, StandardRequest } from '../models/standard.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
+import { resolveMetadataSyncToast } from './notification-policy';
 
 @Injectable({ providedIn: 'root' })
 export class StateService implements OnDestroy {
@@ -94,7 +95,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.29-b02');
+  systemVersion = signal<string>('v26.07.29-b03');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -396,18 +397,26 @@ export class StateService implements OnDestroy {
         // Delta Sync Logic: mỗi field thay đổi hiện 1 toast riêng, độc lập nhau
         if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
           lastSyncTimes['standards'] = data['standards'];
-          const stdActions = ['CREATE_STANDARD', 'UPDATE_STANDARD', 'UPDATE_STOCK', 'SOFT_DELETE_BATCH', 'RESTORE_STANDARD'];
-          const latestLog = this.logs().find(l => stdActions.includes(l.action));
-          const msg = latestLog ? buildStandardsToastMessage(latestLog) : '📊 Danh sách chuẩn đối chiếu vừa được cập nhật.';
-          this.toast.showEvent({ message: msg, type: 'info', dedupeKey: `std-sync-${data['standards']}` });
+          const syncToast = resolveMetadataSyncToast(
+            'standards',
+            data['standards'],
+            data['standards_event'],
+            this.auth.currentUser()?.uid,
+            '📊 Danh sách chuẩn đối chiếu vừa được cập nhật.'
+          );
+          if (syncToast) this.toast.showEvent({ ...syncToast, type: 'info' });
         }
 
         if (data['inventory'] > (lastSyncTimes['inventory'] || 0)) {
           lastSyncTimes['inventory'] = data['inventory'];
-          const invActions = ['CREATE_ITEM', 'UPDATE_INFO', 'STOCK_IN', 'STOCK_OUT', 'SOFT_DELETE_ITEM', 'RESTORE_ITEM', 'BULK_ZERO'];
-          const latestLog = this.logs().find(l => invActions.includes(l.action));
-          const msg = latestLog ? buildInventoryToastMessage(latestLog) : '🧪 Kho hóa chất vừa có thay đổi.';
-          this.toast.showEvent({ message: msg, type: 'info', dedupeKey: `inv-sync-${data['inventory']}` });
+          const syncToast = resolveMetadataSyncToast(
+            'inventory',
+            data['inventory'],
+            data['inventory_event'],
+            this.auth.currentUser()?.uid,
+            '🧪 Kho hóa chất vừa có thay đổi.'
+          );
+          if (syncToast) this.toast.showEvent({ ...syncToast, type: 'info' });
         }
 
         if (data['config'] > (lastSyncTimes['config'] || 0)) {
@@ -1442,29 +1451,5 @@ export class StateService implements OnDestroy {
     } catch (e: any) {
       this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
     }
-  }
-}
-
-function buildInventoryToastMessage(log: Log): string {
-  const who = log.user || 'Ai đó';
-  switch (log.action) {
-    case 'CREATE_ITEM':  return `🧪 [${who}] Thêm mới hóa chất vào kho: ${log.details.replace('Tạo mới: ', '')}`;
-    case 'STOCK_IN':     return `🧪 [${who}] Nhập kho: ${log.details.replace('Điều chỉnh kho ', '').replace(': +', ' (+') + ')'}`;
-    case 'STOCK_OUT':    return `🧪 [${who}] Xuất kho: ${log.details}`;
-    case 'UPDATE_INFO':  return `🧪 [${who}] Cập nhật hóa chất: ${log.targetId || ''}`;
-    case 'SOFT_DELETE_ITEM': return `🧪 [${who}] Xóa hóa chất: ${log.details.replace('Đưa vào Thùng rác: ', '')}`;
-    default: return `🧪 [${who}] Kho hóa chất vừa có thay đổi.`;
-  }
-}
-
-function buildStandardsToastMessage(log: Log): string {
-  const who = log.user || 'Ai đó';
-  switch (log.action) {
-    case 'CREATE_STANDARD':   return `📊 [${who}] Thêm chuẩn mới: ${log.details.replace('Thêm chuẩn mới: ', '')}`;
-    case 'UPDATE_STANDARD':   return `📊 [${who}] Cập nhật chuẩn: ${log.details.replace('Cập nhật chuẩn: ', '')}`;
-    case 'UPDATE_STOCK':      return `📊 [${who}] Điều chỉnh tồn kho chuẩn: ${log.details}`;
-    case 'SOFT_DELETE_BATCH': return `📊 [${who}] Xóa chuẩn: ${log.details}`;
-    case 'RESTORE_STANDARD':  return `📊 [${who}] Khôi phục chuẩn: ${log.details.replace('Khôi phục chuẩn đối chiếu: ', '')}`;
-    default: return `📊 [${who}] Danh sách chuẩn đối chiếu vừa được cập nhật.`;
   }
 }

@@ -288,7 +288,17 @@ export class StandardImportService {
           );
         }
       }
-      const metadataUpdate = this.fb.getMetadataUpdateOp('standards');
+      const importer = this.auth.currentUser();
+      const resultSummary = [
+        created > 0 ? `${created} chuẩn mới` : '',
+        updated > 0 ? `${updated} chuẩn cập nhật` : ''
+      ].filter(Boolean).join(', ');
+      const metadataUpdate = this.fb.getMetadataUpdateOp('standards', {
+        action: 'IMPORT_STANDARDS',
+        message: `📊 [${importer?.displayName || 'Người dùng'}] Import chuẩn: ${resultSummary}.`,
+        actorUid: importer?.uid,
+        actorName: importer?.displayName
+      });
       batch.set(metadataUpdate.ref, metadataUpdate.data, { merge: true });
       this.progressService.update(validItems.length, 'Đang commit toàn bộ batch lên Firestore...');
       await batch.commit();
@@ -524,7 +534,13 @@ export class StandardImportService {
           });
         }
       }
-      await this.fb.updateMetadata('standards');
+      const importer = this.auth.currentUser();
+      await this.fb.updateMetadata('standards', {
+        action: 'IMPORT_STANDARD_USAGE_LOGS',
+        message: `📊 [${importer?.displayName || 'Người dùng'}] Import ${validItems.length} nhật ký sử dụng chuẩn.`,
+        actorUid: importer?.uid,
+        actorName: importer?.displayName
+      });
       this.cache.invalidateLocalStandardsCache();
       this.progressService.complete();
     } catch (err) {

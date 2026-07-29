@@ -14,6 +14,15 @@ import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
 import type { UserProfile } from './auth.service'; 
 import { environment } from '../../../environments/environment';
+import { getAuth } from 'firebase/auth';
+
+export interface MetadataSyncEventInput {
+  action?: string;
+  message?: string;
+  targetId?: string;
+  actorUid?: string;
+  actorName?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
@@ -406,20 +415,40 @@ export class FirebaseService {
   }
 
   // --- Metadata Caching Strategy ---
-  async updateMetadata(moduleKey: string) {
+  async updateMetadata(moduleKey: string, event?: MetadataSyncEventInput) {
     const metaRef = doc(this.db, `artifacts/${this.APP_ID}/system/metadata`);
     try {
-        await setDoc(metaRef, { [moduleKey]: Date.now() }, { merge: true });
+        await setDoc(metaRef, this.buildMetadataUpdate(moduleKey, event), { merge: true });
     } catch (e) {
         console.warn(`Failed to update metadata for ${moduleKey}`, e);
     }
   }
 
   // Use this for batch operations so they can be merged into a single atomic commit
-  getMetadataUpdateOp(moduleKey: string) {
+  getMetadataUpdateOp(moduleKey: string, event?: MetadataSyncEventInput) {
     return {
         ref: doc(this.db, `artifacts/${this.APP_ID}/system/metadata`),
-        data: { [moduleKey]: Date.now() }
+        data: this.buildMetadataUpdate(moduleKey, event)
+    };
+  }
+
+  private buildMetadataUpdate(moduleKey: string, event?: MetadataSyncEventInput): Record<string, unknown> {
+    const version = Date.now();
+    const firebaseUser = getAuth(this.app).currentUser;
+    const actorUid = event?.actorUid || firebaseUser?.uid || '';
+    const actorName = event?.actorName || firebaseUser?.displayName || firebaseUser?.email || 'Hệ thống';
+    const syncEvent: Record<string, unknown> = {
+      id: `${moduleKey}-${version}-${Math.random().toString(36).slice(2, 9)}`,
+      version,
+      actorUid,
+      actorName
+    };
+    if (event?.action) syncEvent['action'] = event.action;
+    if (event?.message) syncEvent['message'] = event.message;
+    if (event?.targetId) syncEvent['targetId'] = event.targetId;
+    return {
+      [moduleKey]: version,
+      [`${moduleKey}_event`]: syncEvent
     };
   }
 

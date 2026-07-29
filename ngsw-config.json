@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.29-b02",
-    "notesVersion": "v26.07.29-b02",
-    "title": "Import Chất Chuẩn An Toàn & Tái Sử Dụng Slot",
+    "version": "v26.07.29-b03",
+    "notesVersion": "v26.07.29-b03",
+    "title": "Toast DeltaSync Đúng Sự Kiện",
     "features": [
-      "🧪 Xem trước toàn bộ dòng, sheet, lỗi và thay đổi trước khi ghi danh mục chất chuẩn",
-      "♻️ Mã quản lý của chuẩn đã xóa mềm được giải phóng để cấp cho chuẩn mới có ID lịch sử riêng",
-      "🛡️ Import nguyên tử: gặp xung đột hoặc lỗi sẽ không ghi dở một phần dữ liệu",
-      "🔄 DeltaSync giữ listener ổn định, toast trùng được gom và Restore bị chặn khi slot đã cấp lại"
+      "🔕 Người vừa import chỉ nhận một toast kết quả, không bị DeltaSync phát lại thông báo thứ hai",
+      "🎯 Mỗi thay đổi metadata mang đúng phiên bản, người thực hiện và nội dung sự kiện",
+      "🧹 Listener không còn lấy activity log cũ để gắn nhầm Propoxur vào import mới",
+      "🛡️ Sự kiện cũ hoặc không khớp chỉ hiện thông báo đồng bộ chung, không suy diễn bản ghi đã thay đổi"
     ]
   },
   "assetGroups": [

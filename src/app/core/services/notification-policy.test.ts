@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { levelForNotificationType, selectForegroundSurface } from './notification-policy';
+import {
+  levelForNotificationType,
+  resolveMetadataSyncToast,
+  selectForegroundSurface
+} from './notification-policy';
 
 describe('notification routing policy', () => {
   it('uses exactly one foreground surface', () => {
@@ -14,5 +18,47 @@ describe('notification routing policy', () => {
     assert.equal(levelForNotificationType('REQUEST_REJECTED'), 'error');
     assert.equal(levelForNotificationType('STOCK_LOW_ALERT'), 'warning');
     assert.equal(levelForNotificationType('SYSTEM_INFO'), 'info');
+  });
+
+  it('does not reuse a stale activity description for a newer metadata version', () => {
+    const result = resolveMetadataSyncToast(
+      'standards',
+      200,
+      { id: 'old-propoxur-event', version: 100, actorUid: 'other-user', message: 'Cập nhật chuẩn: Propoxur' },
+      'current-user',
+      'Danh sách chuẩn đối chiếu vừa được cập nhật.'
+    );
+
+    assert.deepEqual(result, {
+      message: 'Danh sách chuẩn đối chiếu vừa được cập nhật.',
+      dedupeKey: 'standards-sync-200'
+    });
+  });
+
+  it('suppresses the metadata echo for the user who initiated an import', () => {
+    const result = resolveMetadataSyncToast(
+      'standards',
+      200,
+      { id: 'standards-import-200', version: 200, actorUid: 'current-user', message: 'Import chuẩn: 44 mới, 1 cập nhật' },
+      'current-user',
+      'Danh sách chuẩn đối chiếu vừa được cập nhật.'
+    );
+
+    assert.equal(result, null);
+  });
+
+  it('shows the exact synchronized event to another user', () => {
+    const result = resolveMetadataSyncToast(
+      'standards',
+      200,
+      { id: 'standards-import-200', version: 200, actorUid: 'importer', message: 'Import chuẩn: 44 mới, 1 cập nhật' },
+      'viewer',
+      'Danh sách chuẩn đối chiếu vừa được cập nhật.'
+    );
+
+    assert.deepEqual(result, {
+      message: 'Import chuẩn: 44 mới, 1 cập nhật',
+      dedupeKey: 'standards-import-200'
+    });
   });
 });
