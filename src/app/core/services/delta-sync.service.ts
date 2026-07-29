@@ -21,6 +21,24 @@ export interface DeltaSyncConfig {
   isDeletedFn?: (doc: any) => boolean;
 }
 
+export function mergeDeltaItems<T extends { id?: string }>(
+  base: readonly T[],
+  changed: readonly T[],
+  deletedIds: readonly string[] = []
+): T[] {
+  const deleted = new Set(deletedIds);
+  const items = base.filter(item => !item.id || !deleted.has(item.id));
+
+  changed.forEach(item => {
+    if (!item.id || deleted.has(item.id)) return;
+    const index = items.findIndex(existing => existing.id === item.id);
+    if (index >= 0) items[index] = item;
+    else items.unshift(item);
+  });
+
+  return items;
+}
+
 /** Entry nội bộ cho mỗi singleton */
 interface SingletonEntry<T = any> {
   unsub: () => void;
@@ -232,6 +250,49 @@ export class DeltaSyncService {
   public getMemCache<T>(key: string): T[] | null {
     const entry = this._singletons.get(key);
     return entry ? [...entry.memCache] as T[] : null;
+  }
+
+  /**
+   * Publish thay đổi cục bộ vào singleton mà không hủy listener và không đẩy
+   * cursor theo đồng hồ client. Snapshot Firestore tiếp theo sẽ thay dữ liệu
+   * optimistic bằng bản authoritative có serverTimestamp.
+   */
+  public mergeSingletonCache<T extends { id?: string; [k: string]: any }>(
+    key: string,
+    changed: T[],
+    deletedIds: string[] = []
+  ): T[] {
+    const entry = this._singletons.get(key) as SingletonEntry<T> | undefined;
+    const base = entry?.memCache ?? this._loadFromCache<T>(key);
+    const items = mergeDeltaItems(base, changed, deletedIds);
+
+    if (entry) {
+      const sortField = entry.config.orderByField || 'timestamp';
+      const sortDir = entry.config.orderDirection || 'desc';
+      const maxCacheSize = entry.config.maxCacheSize || 1000;
+      items.sort((a: any, b: any) => {
+        const valA = a[sortField] || 0;
+        const valB = b[sortField] || 0;
+        if (typeof valA === 'string' || typeof valB === 'string') {
+          const comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+          return sortDir === 'asc' ? comparison : -comparison;
+        }
+        return sortDir === 'asc' ? valA - valB : valB - valA;
+      });
+      if (items.length > maxCacheSize) items.splice(maxCacheSize);
+
+      // Giữ nguyên identity của mảng vì snapshot listener đang đóng trên mảng này.
+      entry.memCache.splice(0, entry.memCache.length, ...items);
+      entry.callbacks.forEach(callback => callback([...entry.memCache]));
+    }
+
+    const published = entry?.memCache ?? items;
+    try {
+      localStorage.setItem(key, JSON.stringify(published));
+    } catch (e) {
+      console.warn('[DeltaSync] Optimistic cache write failed', e);
+    }
+    return [...published];
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

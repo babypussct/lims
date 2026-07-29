@@ -433,15 +433,19 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
   const canonicalCompound = getCanonicalId(compound);
 
   return assignedTargetIds.some(tId => {
-    // Direct match just in case
+    // Direct string match
     if (tId.toLowerCase() === compound.toLowerCase()) return true;
-    
+
     let targetName = tId;
     if (masterTargets && masterTargets.length > 0) {
-      const found = resolveTargetMasterInfo(tId, masterTargets);
+      // Direct ID lookup first: handles legacy Firestore doc IDs that resolveTargetMasterInfo
+      // cannot find because it canonical-izes tId and loses the original ID
+      const directMatch = masterTargets.find((t: any) => t.id === tId);
+      const found = directMatch ?? resolveTargetMasterInfo(tId, masterTargets);
       if (found && found.name) {
         targetName = found.name;
         if (targetName.toLowerCase() === compound.toLowerCase()) return true;
+        if (getCanonicalId(found.name) === canonicalCompound) return true;
       }
     }
 
@@ -459,23 +463,23 @@ export function resolveTargetMasterInfo(compound: string, masterTargets: any[]):
   if (!compound || !masterTargets || masterTargets.length === 0) return null;
 
   const targetIdStr = getCanonicalId(compound);
-  
+
   // 1. Match by exact ID or Canonical ID
-  let match = masterTargets.find(t => 
-    t.id === targetIdStr || 
+  let match = masterTargets.find((t: any) =>
+    t.id === targetIdStr ||
     getCanonicalId(t.id) === targetIdStr ||
     getCanonicalId(t.name) === targetIdStr
   );
   if (match) return match;
 
   // 2. Match by exact Name (case-insensitive)
-  match = masterTargets.find(t => t.name.toLowerCase() === compound.toLowerCase());
+  match = masterTargets.find((t: any) => t.name.toLowerCase() === compound.toLowerCase());
   if (match) return match;
 
   // 3. Fallback to Firestore ID config
   const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
   if (firestoreId) {
-    match = masterTargets.find(t => t.id === firestoreId || getCanonicalId(t.id) === firestoreId);
+    match = masterTargets.find((t: any) => t.id === firestoreId || getCanonicalId(t.id) === firestoreId);
     if (match) return match;
   }
 

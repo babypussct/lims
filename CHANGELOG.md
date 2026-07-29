@@ -1,5 +1,21 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.07.29-b02] - 29/07/2026
+
+### 🧪 Import Chất Chuẩn An Toàn & Tái Sử Dụng Slot
+
+- **Đọc đủ workbook:** Import chất chuẩn dùng Web Worker, nhận đúng header nhiều dòng, ngày Excel, đơn vị `/Chai`, lượng còn lại và mọi sheet có dữ liệu.
+- **Xem trước minh bạch:** Modal phân loại rõ tạo mới, cập nhật an toàn, cảnh báo và xung đột; cho phép tải danh sách lỗi trước khi xác nhận.
+- **Commit nguyên tử:** Toàn bộ import được kiểm tra số thao tác và commit trong một batch; nếu có lỗi hoặc slot bị nhiều chuẩn hoạt động cùng chiếm thì không ghi bất kỳ dòng nào.
+- **Slot được tái sử dụng:** Chuẩn đã xóa mềm không còn chiếm mã quản lý; chuẩn mới dùng lại mã được tạo với ID tài liệu bất biến riêng, không khôi phục hoặc ghi đè lịch sử cũ.
+- **Restore có bảo vệ:** Không cho khôi phục chuẩn đã xóa nếu mã quản lý đã cấp cho chuẩn hoạt động khác; chuẩn hết tồn được khôi phục đúng trạng thái `DEPLETED`.
+- **Không ghi đè tồn kho:** Import lại chuẩn đang hoạt động chỉ cập nhật metadata có mặt và có giá trị, không thay đổi tồn kho, trạng thái mượn/trả hay nhập trùng nhật ký.
+- **DeltaSync ổn định:** Thay đổi import được hợp nhất ngay vào cache mà không hủy listener đang phục vụ màn hình hiện tại.
+- **Toast không lặp:** Các thông báo trùng được gom nhóm, giới hạn tối đa ba toast hiển thị và dùng thời lượng theo mức độ.
+- **Đã xác minh Book2:** 45/45 dòng hợp lệ; dự kiến 44 chuẩn mới, 1 cập nhật an toàn cho `Bicozamycin/AB47`, 0 restore.
+
+---
+
 ## [v26.07.29-b01] - 29/07/2026
 
 ### ⚡ Import Excel Lớn Không Treo & Ghép Mẫu Sequence

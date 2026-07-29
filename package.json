@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.07.29-b01",
+  "version": "26.07.29-b02",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
@@ -12,7 +12,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:fefo": "tsx --test src/app/shared/utils/standard-fefo.test.ts",
-    "test:standards": "tsx --test src/app/shared/utils/standard-fefo.test.ts src/app/shared/utils/standard-amount.test.ts src/app/shared/utils/standard-workflow.test.ts src/app/shared/utils/standard-rules.test.ts src/app/shared/utils/chemical-name.test.ts src/app/core/services/pubchem.service.test.ts",
+    "test:standards": "tsx --test src/app/shared/utils/standard-fefo.test.ts src/app/shared/utils/standard-amount.test.ts src/app/shared/utils/standard-workflow.test.ts src/app/shared/utils/standard-backfill.test.ts src/app/shared/utils/dashboard-activity.test.ts src/app/shared/utils/standard-rules.test.ts src/app/shared/utils/chemical-name.test.ts src/app/core/services/pubchem.service.test.ts src/app/features/standards/services/standard-import.utils.test.ts src/app/core/services/delta-sync.test.ts",
     "test:cleanup": "tsx --test src/app/shared/utils/chemical-name.test.ts src/app/shared/utils/standard-cleanup.test.ts src/app/core/services/pubchem.service.test.ts",
     "test:notifications": "tsx --test src/app/core/services/notification-policy.test.ts src/app/core/services/toast.service.test.ts",
     "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts",

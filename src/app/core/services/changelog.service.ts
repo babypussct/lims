@@ -13,6 +13,31 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.29-b02',
+    date: '29/07/2026',
+    title: 'Import Chất Chuẩn An Toàn & Tái Sử Dụng Slot',
+    highlights: [
+      'Luồng import chất chuẩn đọc toàn bộ workbook, xem trước từng dòng và commit nguyên tử để không còn ghi dở dữ liệu.',
+      'Mã quản lý được xem là slot có thể cấp lại sau khi chuẩn cũ bị xóa mềm; chuẩn mới luôn có ID lịch sử riêng.',
+      'Book2.xlsx được nhận đủ 45 dòng: 44 chuẩn tạo mới và Bicozamycin/AB47 cập nhật an toàn.'
+    ],
+    features: [
+      'Modal import riêng hiển thị sheet, dòng hợp lệ, cảnh báo, xung đột, chế độ tạo mới/cập nhật và thay đổi metadata.',
+      'Web Worker đọc XLSX ngoài luồng giao diện; kiểm tra kích thước, định dạng, header, ngày, đơn vị và tồn kho trước khi ghi.',
+      'Restore kiểm tra slot đang được sử dụng và chặn khôi phục nếu mã đã cấp cho chuẩn hoạt động khác.'
+    ],
+    improvements: [
+      'DeltaSync hợp nhất thay đổi tối ưu mà không hủy listener của màn hình hiện tại.',
+      'Import lại chuẩn hiện hữu chỉ cập nhật metadata an toàn, không ghi đè tồn kho, workflow hoặc nhập trùng nhật ký.',
+      'Toast trùng được gom theo nội dung/sự kiện, giới hạn số thông báo đồng thời và duy trì thời gian hiển thị hợp lý.'
+    ],
+    fixes: [
+      'Khắc phục chỉ thấy Bicozamycin sau khi chọn Book2.xlsx trong phiên ứng dụng cũ.',
+      'Khắc phục chuẩn đã xóa mềm bị nhận nhầm thành RESTORE khi mã quản lý được dùng cho chuẩn mới.',
+      'Khắc phục Restore có thể làm hai chuẩn hoạt động cùng chiếm một mã quản lý.'
+    ]
+  },
+  {
     version: 'v26.07.29-b01',
     date: '29/07/2026',
     title: 'Import Excel Lớn Không Treo & Ghép Mẫu Sequence',

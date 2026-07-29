@@ -25,6 +25,22 @@ test('normalizes micro symbols and decimal comma', () => {
   });
 });
 
+test('accepts per-container units used by the standards Excel template', () => {
+  assert.deepEqual(parseStandardQuantity('0.5 mL/Chai', 'ml'), {
+    amount: 0.5,
+    unit: 'ml',
+    normalizedAmount: 0.5,
+    normalizedUnit: 'ml'
+  });
+  assert.deepEqual(parseStandardQuantity('8 g per vial', 'g'), {
+    amount: 8,
+    unit: 'g',
+    normalizedAmount: 8,
+    normalizedUnit: 'g'
+  });
+  assert.equal(parseStandardQuantity('100 mg/lọ', 'mg')?.normalizedAmount, 100);
+});
+
 test('rejects incompatible and unknown units', () => {
   assert.equal(parseStandardQuantity('1 ml', 'mg'), null);
   assert.equal(parseStandardQuantity('1 mystery', 'mg'), null);

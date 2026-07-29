@@ -4,6 +4,8 @@ export interface UsageLog {
   id?: string;
   date: string;
   user: string; 
+  /** Stable identity of the employee attributed to this usage. */
+  userId?: string;
   amount_used: number;
   unit?: string; // e.g. mg, ul
   /** Amount converted exactly once into normalized_unit (normally the standard unit). */
@@ -25,6 +27,10 @@ export interface UsageLog {
   _isDeleted?: boolean;
   requestId?: string;
   isDepleted?: boolean;
+  isBackfill?: boolean;
+  backfilledAt?: number;
+  backfilledByUid?: string;
+  backfilledByName?: string;
   rolledBackAt?: number;
   rolledBackBy?: string;
 }
@@ -151,6 +157,12 @@ export interface StandardRequest {
   confirmedUnit?: string;
   reportedDepleted?: boolean;
   usageLogs?: UsageLog[];
+
+  // Historical backfill provenance
+  isBackfill?: boolean;
+  backfilledAt?: number;
+  backfilledByUid?: string;
+  backfilledByName?: string;
   
   createdAt?: number;
   updatedAt?: number;
@@ -172,12 +184,24 @@ export interface StandardsPage {
 }
 
 export interface ImportPreviewItem {
-    raw: any; 
-    parsed: ReferenceStandard; 
-    logs: any[]; 
+    raw: any;
+    parsed: ReferenceStandard;
+    logs: UsageLog[];
     isValid: boolean;
-    mode?: 'CREATE' | 'UPDATE_SAFE' | 'CONFLICT';
+    mode?: 'CREATE' | 'UPDATE_SAFE' | 'RESTORE' | 'CONFLICT';
     errorMessage?: string;
+    warnings?: string[];
+    rowNumber?: number;
+    sourceSheet?: string;
+    presentFields?: (keyof ReferenceStandard)[];
+    changes?: StandardImportFieldChange[];
+}
+
+export interface StandardImportFieldChange {
+    field: keyof ReferenceStandard;
+    label: string;
+    before: string | number | boolean | null;
+    after: string | number | boolean | null;
 }
 
 export interface StandardNameUpdate {

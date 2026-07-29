@@ -9,11 +9,12 @@ import {
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../../core/models/standard.model';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
-import { getStandardizedAmount, formatNum } from '../../../shared/utils/utils';
+import { getStandardizedAmount, formatNum, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-amount';
 import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
+import { buildStandardBackfillRecords } from '../../../shared/utils/standard-backfill';
 
 /**
  * StandardUsageService — Quản lý toàn bộ vòng đời nhật ký sử dụng chuẩn.
@@ -161,17 +162,22 @@ export class StandardUsageService {
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
     const newLogRef = doc(logsRef);
+    const requestRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
+    const activityRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
+    const backfilledAt = Date.now();
+    const enteredByName = currentUser.displayName || currentUser.email || 'Quản lý';
 
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
       if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
-      const stdData = stdDoc.data() as ReferenceStandard;
+      const stdData = { ...stdDoc.data(), id: stdDoc.id } as ReferenceStandard;
 
       // Không chặn IN_USE — đây là nhập bù hồi ký
-      const currentAmount = stdData.current_amount || 0;
+      const currentAmount = stdData.current_amount ?? 0;
       const stockUnit = stdData.unit || 'mg';
       const usageUnit = log.unit || stockUnit;
       const amountToDeduct = normalizePositiveStandardAmount(log.amount_used, usageUnit, stockUnit, 'Lượng sử dụng');
+      const eventTimestamp = Number(log.timestamp || new Date(log.date).getTime());
 
       const newAmount = currentAmount - amountToDeduct;
       if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho! Hiện còn ${formatNum(currentAmount)} ${stockUnit}.`);
@@ -179,38 +185,52 @@ export class StandardUsageService {
       const updateData: Record<string, any> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
       if (newAmount <= 0 || log.isDepleted) updateData['status'] = 'DEPLETED';
 
-      log.id = newLogRef.id;
-      log.standardId = stdData.id;
-      log.standardName = stdData.name;
-      log.lotNumber = stdData.lot_number;
-      log.cas_number = stdData.cas_number;
-      log.internalId = stdData.internal_id;
-      log.manufacturer = stdData.manufacturer;
-      log.user = actorUserName || actorUserId || 'Không rõ';
-      log.normalized_amount = amountToDeduct;
-      log.normalized_unit = stockUnit;
-      // Audit trail: ai đã nhập bù
-      (log as any)['backfilledByUid'] = currentUser.uid;
-      (log as any)['backfilledByName'] = currentUser.displayName || currentUser.email || '';
-      (log as any)['isBackfill'] = true;
+      const { usageLog, request } = buildStandardBackfillRecords({
+        requestId: requestRef.id,
+        logId: newLogRef.id,
+        standard: stdData,
+        employeeUid: actorUserId,
+        employeeName: actorUserName,
+        enteredByUid: currentUser.uid,
+        enteredByName,
+        eventTimestamp,
+        backfilledAt,
+        amountUsed: log.amount_used,
+        usageUnit,
+        normalizedAmount: amountToDeduct,
+        stockUnit,
+        purpose: log.purpose || '',
+        isDepleted: Boolean(log.isDepleted)
+      });
 
-      const newLogDate = log.date.split('T')[0];
+      const newLogDate = usageLog.date.split('T')[0];
       const existingDateOpened = stdData.date_opened || '';
       if (!existingDateOpened || newLogDate < existingDateOpened) {
         updateData['date_opened'] = newLogDate;
       }
 
       transaction.update(stdRef, updateData);
-      transaction.set(newLogRef, log);
-      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
-      transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
+      transaction.set(newLogRef, sanitizeForFirebase(usageLog));
+      transaction.set(
+        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${usageLog.id}`),
+        sanitizeForFirebase({ ...usageLog, lastUpdated: serverTimestamp() })
+      );
+      transaction.set(requestRef, sanitizeForFirebase({ ...request, lastUpdated: serverTimestamp() }));
+      transaction.set(activityRef, {
+        id: activityRef.id,
+        action: 'BACKFILL_USAGE_LOG',
+        details:
+          `Nhập bù hồ sơ mượn đã hoàn thành: ${stdData.name} ` +
+          `(Mã: ${stdData.internal_id || stdId}, Lô: ${stdData.lot_number || 'N/A'}) — ` +
+          `${usageLog.amount_used}${usageLog.unit || ''} cho ${usageLog.user} ngày ${newLogDate}`,
+        timestamp: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+        user: enteredByName,
+        targetId: requestRef.id,
+        module: 'STANDARDS',
+        status: 'COMPLETED'
+      });
     });
-
-    await this.crud.logGlobalActivity(
-      'BACKFILL_USAGE_LOG',
-      `Nhập bù nhật ký ${log.amount_used}${log.unit || ''} cho ${actorUserName} — chuẩn: ${stdId}`,
-      stdId
-    );
   }
 
   // ─── Log Usage For Request ────────────────────────────────────────────────────
@@ -357,12 +377,19 @@ export class StandardUsageService {
           transaction.update(stdRef, updateData);
           if (reqRef && reqDoc?.exists()) {
             const reqData = reqDoc.data() as StandardRequest;
-            transaction.update(reqRef, {
-              usageLogs: (reqData.usageLogs || []).filter(item => item.id !== logId),
+            const remainingLogs = (reqData.usageLogs || []).filter(item => item.id !== logId);
+            const requestUpdates: Record<string, any> = {
+              usageLogs: remainingLogs,
               totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - amountToRestore),
               updatedAt: Date.now(),
               lastUpdated: serverTimestamp()
-            });
+            };
+            if (reqData.isBackfill && remainingLogs.length === 0) {
+              requestUpdates['_isDeleted'] = true;
+              requestUpdates['rolledBackAt'] = Date.now();
+              requestUpdates['rolledBackBy'] = currentUser.uid;
+            }
+            transaction.update(reqRef, requestUpdates);
           }
         }
       }

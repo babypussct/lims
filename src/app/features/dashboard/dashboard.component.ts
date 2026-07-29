@@ -14,6 +14,11 @@ import { QrGlobalService } from '../../core/services/qr-global.service'; // Impo
 import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
+import {
+  filterDashboardActivityLogs,
+  isSopActivityAction,
+  isStandardActivityAction
+} from '../../shared/utils/dashboard-activity';
 
 interface PriorityStandard {
     name: string;
@@ -144,28 +149,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
           logs = logs.filter(l => this.canViewActivityLog(l));
       }
 
-      logs = logs.slice(0, 50); // Fetch up to 50 logs for filtering after application of permissions filter
-      
-      const term = this.logSearchTerm().toLowerCase().trim();
-      if (term) {
-          logs = logs.filter(l => 
-              l.user.toLowerCase().includes(term) || 
-              (l.details && l.details.toLowerCase().includes(term)) ||
-              this.getLogActionText(l.action).toLowerCase().includes(term)
-          );
-      }
-
-      const category = this.logFilterCategory();
-      if (category !== 'ALL') {
-          logs = logs.filter(l => {
-              if (category === 'APPROVE') return l.action.includes('APPROVE') && !l.action.includes('STANDARD') && !l.action.includes('RESULT');
-              if (category === 'STOCK') return l.action.includes('STOCK');
-              if (category === 'STANDARD') return this.isStandardLogAction(l.action);
-              if (category === 'SOP') return this.isSopLogAction(l.action);
-              if (category === 'SYSTEM') return !l.action.includes('APPROVE') && !l.action.includes('STOCK') && !this.isStandardLogAction(l.action) && !this.isSopLogAction(l.action);
-              return true;
-          });
-      }
+      logs = filterDashboardActivityLogs(
+          logs,
+          this.logSearchTerm(),
+          this.logFilterCategory(),
+          action => this.getLogActionText(action),
+          50
+      );
 
       // Group by Date
       const groups = new Map<string, any[]>();
@@ -231,20 +221,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
       'RETURN_STANDARD': 'đã nhận lại chuẩn',
       'ASSIGN_STANDARD': 'đã gán chuẩn cho mượn',
       'LOG_USAGE_STANDARD': 'đã khai báo sử dụng chuẩn',
+      'BACKFILL_USAGE_LOG': 'đã nhập bù hồ sơ mượn chuẩn',
+      'DELETE_USAGE_LOG': 'đã hoàn tác nhật ký sử dụng chuẩn',
       'REQUEST_COA': 'đã yêu cầu bổ sung CoA'
   };
 
   private isStandardLogAction(action: string): boolean {
-      return action.includes('STANDARD') || action.includes('COA');
+      return isStandardActivityAction(action);
   }
 
   private isSopLogAction(action: string): boolean {
-      return action.includes('RESULT')
-          || action === 'PUBLISH_RESULT_REPORT'
-          || action === 'CREATE_VIRTUAL_MASTER'
-          || action === 'EDIT_REQUEST'
-          || action === 'DIRECT_APPROVE'
-          || action === 'APPROVE_REQUEST';
+      return isSopActivityAction(action);
   }
 
   private canViewActivityLog(log: { action?: string; user?: string }): boolean {

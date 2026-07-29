@@ -34,7 +34,14 @@ import { formatNum } from '../../../shared/utils/utils';
                             @for (log of historyLogs(); track log.id) { 
                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group"> 
                                     <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td>
-                                    <td class="px-6 py-4"><div class="font-bold text-slate-700 dark:text-slate-300 text-xs">{{ log.user }}</div></td>
+                                    <td class="px-6 py-4">
+                                        <div class="font-bold text-slate-700 dark:text-slate-300 text-xs">{{ log.user }}</div>
+                                        @if(log.isBackfill) {
+                                            <div class="mt-1 text-[9px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400" [title]="'Nhập bởi ' + (log.backfilledByName || 'Quản lý')">
+                                                <i class="fa-solid fa-clock-rotate-left mr-1"></i>Nhập bù
+                                            </div>
+                                        }
+                                    </td>
                                     <td class="px-6 py-4"><div class="text-slate-600 dark:text-slate-400 text-xs italic line-clamp-2" [title]="log.purpose || ''">{{ log.purpose || 'N/A' }}</div></td>
                                     <td class="px-6 py-4 text-right"><span class="font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500 dark:text-slate-400">{{log.unit || historyStd()?.unit}}</span></span></td>
                                     @if(state.isAdmin()){

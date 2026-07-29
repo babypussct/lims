@@ -20,7 +20,8 @@ import { Unsubscribe } from 'firebase/firestore';
 
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
-import { StandardsImportDataModalComponent, StandardsImportUsageModalComponent } from './components/standards-import-modal.component';
+import { StandardsImportUsageModalComponent } from './components/standards-import-modal.component';
+import { StandardsImportDataModalComponent } from './components/standards-import-data-modal.component';
 import { StandardsHistoryModalComponent } from './components/standards-history-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
 import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-modal.component';
@@ -58,6 +59,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   quickUploadStdId = signal<string>(''); // Track which std is being quick-uploaded
   private quickUploadStd: ReferenceStandard | null = null;
   isImporting = signal(false);
+  isParsingImport = signal(false);
   isProcessing = signal(false); // Hardened UX State
 
   // Responsive view mode: mobile (touch device) defaults to grid, desktop defaults to list
@@ -263,6 +265,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   // Import Preview State
   importPreviewData = signal<ImportPreviewItem[]>([]);
+  pendingImportFile = signal<File | null>(null);
+  importSheetNames = signal<string[]>([]);
+  selectedImportSheet = signal('');
   importUsageLogPreviewData = signal<ImportUsageLogPreviewItem[]>([]);
   validUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => i.isValid && !i.isDuplicate).length);
   duplicateUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => i.isDuplicate).length);
@@ -432,17 +437,44 @@ export class StandardsComponent implements OnInit, OnDestroy {
   async handleFileSelect(event: any) {
      const file = event.target.files[0];
      if (!file) return;
-     this.isLoading.set(true);
+     this.isParsingImport.set(true);
      try {
-         const data = await this.stdService.parseExcelData(file);
-         this.importPreviewData.set(data);
-         this.toast.show(`Đã đọc ${data.length} dòng. Vui lòng kiểm tra ngày tháng.`);
+         const preview = await this.stdService.parseExcelWorkbook(file);
+         if (!preview.items.length) throw new Error('Sheet đã chọn không có dòng dữ liệu.');
+         this.pendingImportFile.set(file);
+         this.importSheetNames.set(preview.sheetNames);
+         this.selectedImportSheet.set(preview.selectedSheet);
+         this.importPreviewData.set(preview.items);
+         const validCount = preview.items.filter(item => item.isValid).length;
+         const invalidCount = preview.items.length - validCount;
+         this.toast.show(
+           invalidCount > 0
+              ? `Đã đọc ${preview.items.length} dòng từ sheet ${preview.selectedSheet}: ${validCount} hợp lệ, ${invalidCount} cần kiểm tra.`
+              : `Đã đọc ${preview.items.length} dòng hợp lệ từ sheet ${preview.selectedSheet}.`,
+           invalidCount > 0 ? 'warning' : 'info'
+         );
      } catch (e: any) {
          this.toast.show('Lỗi đọc file: ' + e.message, 'error');
      } finally {
-         this.isLoading.set(false);
+         this.isParsingImport.set(false);
          event.target.value = ''; // Reset input
      }
+  }
+
+  async changeImportSheet(sheetName: string) {
+      const file = this.pendingImportFile();
+      if (!file || !sheetName || sheetName === this.selectedImportSheet() || this.isParsingImport()) return;
+      this.isParsingImport.set(true);
+      try {
+          const preview = await this.stdService.parseExcelWorkbook(file, sheetName);
+          if (!preview.items.length) throw new Error('Sheet đã chọn không có dòng dữ liệu.');
+          this.selectedImportSheet.set(preview.selectedSheet);
+          this.importPreviewData.set(preview.items);
+      } catch (e: any) {
+          this.toast.show('Không thể đọc sheet: ' + e.message, 'error');
+      } finally {
+          this.isParsingImport.set(false);
+      }
   }
 
   async handleUsageLogFileSelect(event: any) {
@@ -464,17 +496,29 @@ export class StandardsComponent implements OnInit, OnDestroy {
   cancelImport() {
       this.importPreviewData.set([]);
       this.importUsageLogPreviewData.set([]);
+      this.pendingImportFile.set(null);
+      this.importSheetNames.set([]);
+      this.selectedImportSheet.set('');
   }
 
   // --- HARDENED: Confirm Import ---
   async confirmImport() {
       if (this.importPreviewData().length === 0 || this.isImporting()) return;
+      if (this.importPreviewData().some(item => item.mode === 'CONFLICT')) return;
       this.isImporting.set(true);
       try {
-          await this.stdService.saveImportedData(this.importPreviewData());
-          this.toast.show('Nhập dữ liệu thành công!', 'success');
-          this.importPreviewData.set([]);
+          const result = await this.stdService.saveImportedData(this.importPreviewData());
+          const parts = [
+            result.created > 0 ? `${result.created} chuẩn mới` : '',
+            result.updated > 0 ? `${result.updated} chuẩn đã có` : '',
+            result.restored > 0 ? `khôi phục ${result.restored} chuẩn` : '',
+            result.skippedLogs > 0 ? `không nhập lại ${result.skippedLogs} nhật ký của chuẩn đã có` : '',
+            result.skippedInvalid > 0 ? `bỏ qua ${result.skippedInvalid} dòng lỗi` : ''
+          ].filter(Boolean);
+          this.toast.show(`Import thành công: ${parts.join(', ')}.`, 'success');
+          this.cancelImport();
       } catch (e: any) {
+          this.importPreviewData.update(items => [...items]);
           this.toast.show('Không thể lưu dữ liệu nhập: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);

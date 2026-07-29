@@ -30,6 +30,14 @@ import { CommonModule } from '@angular/common';
                         </div>
                     </div>
 
+                    <div class="mb-4 flex flex-wrap gap-2 text-xs font-bold">
+                        <span class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Tổng: {{data().length}}</span>
+                        <span class="px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Hợp lệ: {{validCount()}}</span>
+                        @if (invalidCount() > 0) {
+                            <span class="px-3 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">Lỗi: {{invalidCount()}}</span>
+                        }
+                    </div>
+
                     <table class="w-full text-xs text-left border-collapse border border-slate-200 dark:border-slate-700">
                         <thead class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
                             <tr>
@@ -38,10 +46,11 @@ import { CommonModule } from '@angular/common';
                                 <th class="p-2 border border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 w-32">Ngày nhận (Gốc)</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 w-32">Kết quả (Hệ thống hiểu)</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700">Hạn dùng (Parsed)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody class="text-slate-700 dark:text-slate-300">
-                            @for (item of data().slice(0, 10); track $index) {
+                            @for (item of previewRows(); track $index) {
                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 break-words" [title]="item.parsed.name">{{item.parsed.name}}</td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.parsed.lot_number}}</td>
@@ -51,6 +60,15 @@ import { CommonModule } from '@angular/common';
                                     </td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">
                                         {{item.parsed.expiry_date ? (item.parsed.expiry_date | date:'dd/MM/yyyy') : '---'}}
+                                    </td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700">
+                                        @if (item.isValid) {
+                                            <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                                                {{item.mode === 'UPDATE_SAFE' ? 'Cập nhật an toàn' : 'Tạo mới'}}
+                                            </span>
+                                        } @else {
+                                            <span class="font-bold text-red-600 dark:text-red-400">{{item.errorMessage || 'Dữ liệu không hợp lệ'}}</span>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -63,7 +81,7 @@ import { CommonModule } from '@angular/common';
 
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
                     <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
-                    <button (click)="onConfirm()" [disabled]="isImporting()" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
+                    <button (click)="onConfirm()" [disabled]="isImporting() || validCount() === 0" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                         @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
                         @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
                     </button>
@@ -79,6 +97,13 @@ export class StandardsImportDataModalComponent {
   cancel = output<void>();
   confirm = output<void>();
 
+  validCount() { return this.data().filter(item => item.isValid).length; }
+  invalidCount() { return this.data().length - this.validCount(); }
+  previewRows() {
+    return [...this.data()]
+      .sort((a, b) => Number(a.isValid) - Number(b.isValid))
+      .slice(0, 10);
+  }
   onCancel() { this.cancel.emit(); }
   onConfirm() { this.confirm.emit(); }
 }

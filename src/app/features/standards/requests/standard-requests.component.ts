@@ -656,6 +656,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   'Hãng sản xuất': r.standardDetails?.manufacturer || '',
                   'Quy cách đóng gói': r.standardDetails?.pack_size || '',
                   'Người yêu cầu': r.requestedByName,
+                  'Nguồn hồ sơ': r.isBackfill ? 'Nhập bù lịch sử' : 'Mượn thực tế',
                   'Ngày yêu cầu': this.datePipe.transform(r.requestDate, 'dd/MM/yyyy HH:mm'),
                   'Mục đích': r.purpose || '',
                   'Lượng dự kiến': r.expectedAmount ?? '',

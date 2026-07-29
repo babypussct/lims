@@ -11,7 +11,14 @@ export interface ParsedStandardQuantity {
 }
 
 export function normalizeStandardUnit(unit: string): string {
-  const cleaned = (unit || '').trim().toLowerCase().replace(/μ/g, 'µ');
+  const cleaned = (unit || '')
+    .trim()
+    .toLowerCase()
+    .replace(/μ/g, 'µ')
+    // Excel quản lý chuẩn thường ghi "mL/Chai", "mg/lọ", "g per vial".
+    // Phần sau dấu phân cách mô tả bao bì, không phải đơn vị đo.
+    .replace(/\s*(?:\/|\bper\b)\s*(?:chai|lọ|lo|vial|bottle|ampoule|ampule|ống|ong)(?:\s.*)?$/iu, '')
+    .trim();
   return Object.keys(UNIT_DATA).find(key => key.toLowerCase() === cleaned) || cleaned;
 }
 

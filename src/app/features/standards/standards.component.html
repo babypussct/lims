@@ -3,7 +3,7 @@
       <!-- Header -->
       <app-standards-toolbar
           [selectedCount]="selectedIds().size"
-          [isProcessing]="isProcessing()"
+          [isProcessing]="isProcessing() || isParsingImport()"
           [canEditStandards]="auth.canEditStandards()"
           (deleteSelected)="deleteSelected()"
           (printSelected)="openBatchPrintModal()"
@@ -108,7 +108,16 @@
       <!-- IMPORT PREVIEW MODAL -->
       @if (importPreviewData().length > 0) {
         @defer {
-          <app-standards-import-data-modal [data]="importPreviewData()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmImport()"></app-standards-import-data-modal>
+          <app-standards-import-data-modal
+              [data]="importPreviewData()"
+              [isImporting]="isImporting()"
+              [isParsing]="isParsingImport()"
+              [sheetNames]="importSheetNames()"
+              [selectedSheet]="selectedImportSheet()"
+              (sheetChange)="changeImportSheet($event)"
+              (cancel)="cancelImport()"
+              (confirm)="confirmImport()">
+          </app-standards-import-data-modal>
         }
       }
 

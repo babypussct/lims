@@ -48,7 +48,10 @@ export class StandardCacheService {
       cacheKey: this._deltaCacheKey,
       cursorKey: this._deltaCursorKey,
       collectionPath: `artifacts/${this.fb.APP_ID}/reference_standards`,
-      maxCacheSize: 3000,
+      // Giữ toàn bộ danh mục trong L1 để tìm khóa import/idempotency chính xác.
+      // localStorage có thể từ chối ở quy mô lớn, nhưng DeltaSync vẫn giữ L1 và
+      // tự phục hồi từ Firestore thay vì âm thầm cắt danh mục ở 3.000 bản ghi.
+      maxCacheSize: 10000,
       orderByField: 'received_date',
       orderDirection: 'desc' as const,
       initialCollectionScan: true,
@@ -161,13 +164,15 @@ export class StandardCacheService {
    * Dùng sau khi write Firestore để UI cập nhật tức thì, không chờ live listener.
    */
   _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
-    const base = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? [];
-    const items = base.filter(i => !deletedIds.includes(i.id));
-    changed.forEach(newDoc => {
-      const idx = items.findIndex(i => i.id === newDoc.id);
-      if (idx >= 0) { items[idx] = newDoc; } else { items.unshift(newDoc); }
-    });
-    this._saveStdToCache(items);
+    const items = this.deltaSync.mergeSingletonCache<ReferenceStandard>(
+      this._deltaCacheKey,
+      changed,
+      deletedIds
+    );
+    this._memStandards = items;
+    try {
+      localStorage.setItem(this.STD_CACHE_KEY, JSON.stringify(items));
+    } catch {}
   }
 
   // ─── Admin Bulk Operations ──────────────────────────────────────────────────

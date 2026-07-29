@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.29-b01",
-    "notesVersion": "v26.07.29-b01",
-    "title": "Import Excel Lớn Không Treo & Ghép Mẫu Sequence",
+    "version": "v26.07.29-b02",
+    "notesVersion": "v26.07.29-b02",
+    "title": "Import Chất Chuẩn An Toàn & Tái Sử Dụng Slot",
     "features": [
-      "⚡ Đọc workbook trong Web Worker, không khóa giao diện khi file có nhiều sắc ký đồ",
-      "🎯 Chỉ phân tích sheet thuộc SOP và bỏ qua hình, chart, style cùng dữ liệu phụ",
-      "🔗 Ghép chung xxx_ngày_mã-mẫu với mã-mẫu+ngày, gồm FIPRONIL_27_U01.D → U0127",
-      "🧪 Khôi phục BLANK, SPIKE, SPIKE_N SOP-01 và alias Master Analyte lịch sử"
+      "🧪 Xem trước toàn bộ dòng, sheet, lỗi và thay đổi trước khi ghi danh mục chất chuẩn",
+      "♻️ Mã quản lý của chuẩn đã xóa mềm được giải phóng để cấp cho chuẩn mới có ID lịch sử riêng",
+      "🛡️ Import nguyên tử: gặp xung đột hoặc lỗi sẽ không ghi dở một phần dữ liệu",
+      "🔄 DeltaSync giữ listener ổn định, toast trùng được gom và Restore bị chặn khi slot đã cấp lại"
     ]
   },
   "assetGroups": [

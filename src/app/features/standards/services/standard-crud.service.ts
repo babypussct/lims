@@ -442,8 +442,45 @@ export class StandardCrudService {
 
   async restoreStandard(id: string, name = ''): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-    await updateDoc(ref, { _isDeleted: deleteField(), status: 'AVAILABLE', lastUpdated: serverTimestamp() });
+    const currentSnapshot = await getDoc(ref);
+    if (!currentSnapshot.exists()) throw new Error('Chuẩn cần khôi phục không còn tồn tại.');
+    const current = { id: currentSnapshot.id, ...currentSnapshot.data() } as ReferenceStandard;
+    const internalId = (current.internal_id || '').trim();
+    const candidateRefs = internalId
+      ? (await getDocs(query(
+          collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`),
+          where('internal_id', 'in', [...new Set([internalId, internalId.toUpperCase(), internalId.toLowerCase()])])
+        ))).docs
+          .filter(snapshot => snapshot.id !== id)
+          .map(snapshot => snapshot.ref)
+      : [];
+
+    await runTransaction(this.fb.db, async transaction => {
+      const [freshSnapshot, ...candidateSnapshots] = await Promise.all([
+        transaction.get(ref),
+        ...candidateRefs.map(candidateRef => transaction.get(candidateRef))
+      ]);
+      if (!freshSnapshot.exists()) throw new Error('Chuẩn cần khôi phục không còn tồn tại.');
+      const fresh = { id: freshSnapshot.id, ...freshSnapshot.data() } as ReferenceStandard;
+      const occupied = candidateSnapshots
+        .filter(snapshot => snapshot.exists())
+        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
+        .find(standard => standard._isDeleted !== true && standard.status !== 'DELETED');
+      if (occupied) {
+        throw new Error(
+          `Không thể khôi phục vì slot ${fresh.internal_id || '(trống)'} đang được cấp cho ` +
+          `"${occupied.name}" (${occupied.internal_id || occupied.id}).`
+        );
+      }
+      transaction.update(ref, {
+        _isDeleted: deleteField(),
+        status: Number(fresh.current_amount || 0) <= 0 ? 'DEPLETED' : 'AVAILABLE',
+        lastUpdated: serverTimestamp()
+      });
+    });
     await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
+    await this.fb.updateMetadata('standards');
+    this.cache.invalidateLocalStandardsCache();
   }
 
   // ─── CoA Request ─────────────────────────────────────────────────────────────

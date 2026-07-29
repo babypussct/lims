@@ -196,7 +196,9 @@ import { formatNum } from '../../../../shared/utils/utils';
               <span class="text-[11px] text-slate-400 font-bold">{{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</span>
             </div>
           </div>
-          
+          @if(req.isBackfill) {
+            <span class="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">Nhập bù</span>
+          }
         </div>
         
         <!-- Center: Standard Name -->

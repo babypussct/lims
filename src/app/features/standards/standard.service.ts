@@ -27,7 +27,11 @@ import { StandardCacheService }   from './services/standard-cache.service';
 import { StandardCrudService }    from './services/standard-crud.service';
 import { StandardUsageService }   from './services/standard-usage.service';
 import { StandardRequestService } from './services/standard-request.service';
-import { StandardImportService }  from './services/standard-import.service';
+import {
+  StandardImportSaveResult,
+  StandardImportService,
+  StandardImportWorkbookPreview
+} from './services/standard-import.service';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -236,10 +240,13 @@ export class StandardService {
   parseExcelDate(val: unknown): string {
     return this.importer.parseExcelDate(val);
   }
-  async parseExcelData(file: File): Promise<ImportPreviewItem[]> {
-    return this.importer.parseExcelData(file);
+  async parseExcelWorkbook(file: File, sheetName?: string): Promise<StandardImportWorkbookPreview> {
+    return this.importer.parseExcelWorkbook(file, sheetName);
   }
-  async saveImportedData(data: ImportPreviewItem[]): Promise<void> {
+  async parseExcelData(file: File, sheetName?: string): Promise<ImportPreviewItem[]> {
+    return this.importer.parseExcelData(file, sheetName);
+  }
+  async saveImportedData(data: ImportPreviewItem[]): Promise<StandardImportSaveResult> {
     return this.importer.saveImportedData(data);
   }
   async parseUsageLogExcelData(file: File): Promise<ImportUsageLogPreviewItem[]> {

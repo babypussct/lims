@@ -38,7 +38,12 @@ import { formatNum } from '../../../../shared/utils/utils';
                                                 <i class="fa-solid fa-vial-circle-check text-base font-bold"></i>
                                             </div>
                                             <div>
-                                                <div class="font-black text-slate-800 dark:text-slate-100 text-base leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <div class="font-black text-slate-800 dark:text-slate-100 text-base leading-tight cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
+                                                    @if(req.isBackfill) {
+                                                        <span class="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">Nhập bù</span>
+                                                    }
+                                                </div>
                                                 <div class="flex items-center gap-2">
                                                     <span class="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-black rounded-lg border border-indigo-200 dark:border-indigo-700/50 shadow-sm uppercase tracking-wide">
                                                         {{req.standardDetails?.internal_id}}
