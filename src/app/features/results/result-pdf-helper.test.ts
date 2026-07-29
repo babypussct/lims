@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildUnifiedType3bPdfPayload } from './result-pdf-helper';
+import {
+  buildFipronilPdfPayload,
+  buildUnifiedType3bPdfPayload
+} from './result-pdf-helper';
 
 const formatDate = (value: string) => value;
 const getRunDate = () => '2026-07-28';
@@ -60,4 +63,39 @@ test('Form Check grouped PDF keeps sample labels when values belong to multiple 
     payload.samples[0].etofenprox,
     'DAT_SP01: 8.565; DAT_SP02: 7.210'
   );
+});
+
+test('SOP-01 PDF keeps blank results blank and prints literal ND only when entered', () => {
+  const payload = buildFipronilPdfPayload(
+    {
+      page1Data: {
+        ngayNguoiPhanTich: '2026-07-29',
+        ngayNguoiThamTra: '2026-07-29'
+      },
+      resultData: {
+        U0127: {
+          selected: true,
+          kqFip: '',
+          kqFipDesl: 'ND'
+        }
+      }
+    },
+    { sampleList: ['U0127'] },
+    'ALL',
+    {
+      columns: {
+        loSo: {},
+        maSoMau: {},
+        kqFip: {},
+        kqFipDesl: {},
+        ghiChu: {}
+      }
+    },
+    formatDate,
+    getRunDate
+  );
+  const sample = payload.samples.find((row: any) => row.maSoMau === 'U0127');
+
+  assert.equal(sample.kqFip, '');
+  assert.equal(sample.kqFipDesl, 'ND');
 });

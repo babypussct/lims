@@ -108,7 +108,7 @@
                 <span>
                   Điền chữ ND vào ô kết quả
                   <span class="block text-[9px] font-medium text-slate-400">
-                    Bỏ chọn: để trống ô kết quả{{ config?.formType === 'type3b' && draft.page1Data['printFormType'] === 'formCheck' ? ', vẫn đánh dấu checkbox ND' : '' }}
+                    {{ ndResultHint }}
                   </span>
                 </span>
               </label>

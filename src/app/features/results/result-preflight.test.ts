@@ -60,6 +60,47 @@ test('chunks selected samples by the configured report size', () => {
   assert.ok(summary.info.some(message => message.includes('2 phiếu')));
 });
 
+test('treats blank SOP-01 result cells as valid ND without changing other SOPs', () => {
+  const buildSummary = (sopId: string, configKey: string) =>
+    buildPublishPreflightSummary({
+      run: { sopId, sampleList: ['U0127'] },
+      draft: draft({
+        sopId,
+        resultData: {
+          U0127: {
+            selected: true,
+            kqFip: '',
+            kqFipDesl: '',
+            kqFipSulf: ''
+          }
+        }
+      }),
+      config: {
+        formType: 'type2',
+        columns: {
+          loSo: {},
+          kqFip: {},
+          kqFipDesl: {},
+          kqFipSulf: {}
+        }
+      },
+      configKey,
+      activeFilter: 'ALL',
+      unpublishedSamples: ['U0127']
+    });
+
+  assert.equal(
+    buildSummary('SOP-01', 'fipronil-chlorpyrifos').blockers
+      .some(message => message.includes('chưa có kết quả')),
+    false
+  );
+  assert.equal(
+    buildSummary('SOP-02', 'another-type2-sop').blockers
+      .some(message => message.includes('chưa có kết quả')),
+    true
+  );
+});
+
 test('accepts type3b ND checkboxes as reportable results', () => {
   const summary = buildPublishPreflightSummary({
     run: { sampleList: ['A001'] },

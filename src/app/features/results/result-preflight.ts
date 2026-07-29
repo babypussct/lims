@@ -70,7 +70,13 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
 
   const activeColumns = Object.keys(config.columns || {})
     .filter(col => !['loSo', 'maSoMau', 'ghiChu', 'khoiLuong', 'heSoPhaLoang'].includes(col));
+  const blankResultsMeanNd = configKey === 'fipronil-chlorpyrifos'
+    || run.sopId === 'SOP-01';
   const missingResultSamples = includedSamples.filter((sample: string) => {
+    // SOP-01 quy ước ô kết quả trống là ND hợp lệ. Không tự đổi thành chuỗi
+    // "ND" vì template phải giữ ô trống; chỉ in ND khi người dùng nhập đúng ND.
+    if (blankResultsMeanNd) return false;
+
     const row = draft.resultData?.[sample] || {};
     if (config.formType === 'type3b' && Array.isArray(config.compounds)) {
       return !config.compounds.some((compound: string) => hasReportableValue(row[compound]) || row[`${compound}_nd`] === true);

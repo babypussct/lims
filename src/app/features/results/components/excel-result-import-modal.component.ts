@@ -154,6 +154,17 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
     return candidate.importValue;
   }
 
+  get ndResultHint(): string {
+    if (this.isSop01()) {
+      return 'Bỏ chọn: để trống ô kết quả; SOP-01 vẫn hiểu là ND.';
+    }
+    const usesSeparateNdCheckbox = this.config?.formType === 'type3b'
+      && this.draft?.page1Data?.['printFormType'] === 'formCheck';
+    return usesSeparateNdCheckbox
+      ? 'Bỏ chọn: để trống ô kết quả, vẫn đánh dấu checkbox ND.'
+      : 'Bỏ chọn: để trống ô kết quả.';
+  }
+
   manualSampleOptions(candidate: ExcelImportCandidate): string[] {
     return candidate.possibleSamples;
   }
@@ -291,10 +302,16 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
   private defaultWriteNdToResult(): boolean {
     const savedPreference = this.draft?.page1Data?.['excelImportWriteNdToResult'];
     if (typeof savedPreference === 'boolean') return savedPreference;
+    if (this.isSop01()) return false;
 
     const usesSeparateNdCheckbox = this.config?.formType === 'type3b'
       && this.draft?.page1Data?.['printFormType'] === 'formCheck';
     return !usesSeparateNdCheckbox;
+  }
+
+  private isSop01(): boolean {
+    return this.configKey === 'fipronil-chlorpyrifos'
+      || this.run?.sopId === 'SOP-01';
   }
 
   private areAllSelected(candidates: ExcelImportCandidate[]): boolean {
