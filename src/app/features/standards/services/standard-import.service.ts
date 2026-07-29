@@ -224,7 +224,7 @@ export class StandardImportService {
     let processed = 0;
     let created = 0;
     let updated = 0;
-    let restored = 0;
+    const restored = 0;
     let skippedLogs = 0;
     const optimisticChanges: ReferenceStandard[] = [];
 

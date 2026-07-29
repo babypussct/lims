@@ -4,7 +4,7 @@ import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
 import {
     collection, doc, updateDoc, writeBatch,
-    query, where, onSnapshot, Unsubscribe, deleteDoc, arrayUnion
+    query, where, onSnapshot, Unsubscribe, deleteDoc
 } from 'firebase/firestore';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
 
@@ -103,13 +103,8 @@ export class NotificationService {
 
         // Không tự bật prompt khi đăng nhập. Chỉ đăng ký lại nếu user đã cấp quyền trước đó.
         if ('Notification' in window && Notification.permission === 'granted') {
-          this.fb.requestPushToken().then(token => {
-            if (token) {
-                localStorage.setItem('lims_fcm_token', token); // Lưu token của thiết bị này
-                const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
-                updateDoc(userRef, { fcmTokens: arrayUnion(token) }).catch(() => {});
-            }
-          }).catch(e => console.warn('[NotificationService] Could not refresh FCM token:', e));
+          this.registerCurrentDevicePushToken()
+            .catch(e => console.warn('[NotificationService] Could not refresh FCM token:', e));
         }
 
         // Listen for foreground FCM messages
@@ -134,8 +129,8 @@ export class NotificationService {
                 console.log('[NotificationService] Foreground message received:', payload);
                 this.foregroundMessage.set({
                     eventId: payload.data?.['eventId'],
-                    title: payload.notification?.title || 'Thông báo',
-                    message: payload.notification?.body || 'Bạn có thông báo mới.',
+                    title: payload.data?.['title'] || payload.notification?.title || 'Thông báo',
+                    message: payload.data?.['body'] || payload.notification?.body || 'Bạn có thông báo mới.',
                     level: this.parseLevel(payload.data?.['level']),
                     actionUrl: payload.data?.['actionUrl']
                 });
@@ -305,7 +300,25 @@ export class NotificationService {
         return value === 'success' || value === 'error' || value === 'warning' ? value : 'info';
     }
 
-    private async callNotificationApi(payload: Record<string, unknown>): Promise<void> {
+    async registerCurrentDevicePushToken(): Promise<string | null> {
+        const user = this.auth.currentUser();
+        if (!user) throw new Error('Phiên đăng nhập không hợp lệ.');
+
+        const token = await this.fb.requestPushToken();
+        if (!token) return null;
+
+        const previousToken = localStorage.getItem('lims_fcm_token');
+        await this.callNotificationApi({
+            action: 'registerToken',
+            appId: this.fb.APP_ID,
+            token,
+            previousToken: previousToken && previousToken !== token ? previousToken : undefined
+        });
+        localStorage.setItem('lims_fcm_token', token);
+        return token;
+    }
+
+    private async callNotificationApi(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
         const doFetch = async (forceRefresh: boolean) => {
             const token = await this.auth.getIdToken(forceRefresh);
             if (!token) throw new Error('Phiên đăng nhập không hợp lệ.');
@@ -330,5 +343,6 @@ export class NotificationService {
             const result = await response.json().catch(() => ({}));
             throw new Error(result?.error || `Không thể gửi thông báo (${response.status}).`);
         }
+        return response.json().catch(() => ({}));
     }
 }

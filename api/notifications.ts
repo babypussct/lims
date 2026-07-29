@@ -8,6 +8,7 @@ import {
   getFirestore
 } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { notificationDocumentId, uniqueStringValues } from './notification-utils.js';
 
 const NOTIFICATION_TYPES = new Set([
   'COA_REQUEST', 'BORROW_REQUEST', 'REQUEST_APPROVED', 'REQUEST_REJECTED',
@@ -127,6 +128,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       || rolePermissions.includes('standard_approve');
     const action = body.action;
 
+    const usersCollection = db.collection(`artifacts/${appId}/users`);
+
+    if (action === 'registerToken') {
+      const token = typeof body.token === 'string' ? body.token.trim() : '';
+      const previousToken = typeof body.previousToken === 'string' ? body.previousToken.trim() : '';
+      if (token.length < 20 || token.length > 4096) {
+        return res.status(400).json({ error: 'FCM token không hợp lệ.' });
+      }
+
+      const [owners, previousOwners] = await Promise.all([
+        usersCollection.where('fcmTokens', 'array-contains', token).get(),
+        previousToken && previousToken !== token
+          ? usersCollection.where('fcmTokens', 'array-contains', previousToken).get()
+          : Promise.resolve(null)
+      ]);
+      const batch = db.batch();
+      const tokensToRemoveByUid = new Map<string, Set<string>>();
+      owners.docs.forEach(owner => {
+        if (owner.id !== decoded.uid) {
+          tokensToRemoveByUid.set(owner.id, new Set([token]));
+        }
+      });
+      previousOwners?.docs.forEach(owner => {
+        if (owner.id === decoded.uid) return;
+        const removals = tokensToRemoveByUid.get(owner.id) || new Set<string>();
+        removals.add(previousToken);
+        tokensToRemoveByUid.set(owner.id, removals);
+      });
+      tokensToRemoveByUid.forEach((tokensToRemove, uid) => {
+        batch.update(usersCollection.doc(uid), {
+          fcmTokens: FieldValue.arrayRemove(...tokensToRemove)
+        });
+      });
+      const currentTokens = uniqueStringValues(profile['fcmTokens'])
+        .filter(item => item !== token && item !== previousToken);
+      batch.update(profileRef, { fcmTokens: [...currentTokens, token] });
+      await batch.commit();
+
+      return res.status(200).json({
+        success: true,
+        reassignedCount: tokensToRemoveByUid.size
+      });
+    }
+
     if (action === 'deleteGroup') {
       if (!isManager) return res.status(403).json({ error: 'Chỉ quản trị viên được thu hồi broadcast.' });
       const groupId = typeof body.groupId === 'string' ? body.groupId : '';
@@ -167,7 +212,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Không có quyền gửi thông báo trực tiếp cho người dùng khác.' });
     }
 
-    const usersCollection = db.collection(`artifacts/${appId}/users`);
     let recipientUids: string[];
     let loadedUsersMap: Map<string, DocumentData> | null = null;
 
@@ -210,7 +254,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      recipientUids = matchingUids;
+      recipientUids = [...new Set(matchingUids)];
       console.log(`[Notifications API] Resolved ${recipientUid} to ${recipientUids.length} users:`, recipientUids);
     } else {
       recipientUids = [recipientUid];
@@ -222,6 +266,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const eventId = typeof input.eventId === 'string' && input.eventId
       ? input.eventId
       : (typeof input.groupId === 'string' && input.groupId ? input.groupId : notificationCollection.doc().id);
+    if (eventId.length > 500) {
+      return res.status(400).json({ error: 'eventId vượt quá giới hạn.' });
+    }
     const createdAt = Date.now();
     const storedPayload = cleanObject({
       type,
@@ -240,34 +287,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       createdAt
     });
 
+    const sendPush = body.sendPush !== false;
+    const pushClaimId = notificationCollection.doc().id;
+    const claimedRecipientUids: string[] = [];
+    let createdCount = 0;
+
     for (const group of chunks(recipientUids, 400)) {
-      const batch = db.batch();
-      group.forEach(uid => {
-        const ref = notificationCollection.doc();
-        batch.set(ref, { ...storedPayload, id: ref.id, recipientUid: uid });
+      const refs = group.map(uid =>
+        notificationCollection.doc(notificationDocumentId(eventId, uid))
+      );
+      const result = await db.runTransaction(async transaction => {
+        const snapshots = await transaction.getAll(...refs);
+        const claimed: string[] = [];
+        let created = 0;
+
+        snapshots.forEach((snapshot, index) => {
+          const uid = group[index];
+          const ref = refs[index];
+          if (snapshot.exists) {
+            const existing = snapshot.data() || {};
+            const claimExpired = existing['pushStatus'] === 'sending'
+              && Number(existing['pushClaimedAt'] || 0) < createdAt - 2 * 60_000;
+            if (sendPush && (existing['pushStatus'] === 'failed' || claimExpired)) {
+              transaction.update(ref, {
+                pushStatus: 'sending',
+                pushClaimId,
+                pushClaimedAt: createdAt,
+                pushError: FieldValue.delete()
+              });
+              claimed.push(uid);
+            }
+            return;
+          }
+
+          transaction.create(ref, {
+            ...storedPayload,
+            id: ref.id,
+            recipientUid: uid,
+            pushStatus: sendPush ? 'sending' : 'not_requested',
+            ...(sendPush ? { pushClaimId, pushClaimedAt: createdAt } : {})
+          });
+          created++;
+          if (sendPush) claimed.push(uid);
+        });
+
+        return { claimed, created };
       });
-      await batch.commit();
+      claimedRecipientUids.push(...result.claimed);
+      createdCount += result.created;
     }
 
     let sentCount = 0;
     let failureCount = 0;
     let pushError: string | undefined;
 
-    if (body.sendPush !== false) {
+    if (sendPush && claimedRecipientUids.length > 0) {
       try {
         let tokens: string[] = [];
         if (loadedUsersMap) {
-          tokens = [...new Set(recipientUids.flatMap(uid => {
+          tokens = uniqueStringValues(claimedRecipientUids.flatMap(uid => {
             const userData = loadedUsersMap!.get(uid);
             const fcmTokens = userData?.['fcmTokens'];
-            return Array.isArray(fcmTokens) ? fcmTokens.filter((token): token is string => typeof token === 'string') : [];
-          }))];
+            return Array.isArray(fcmTokens) ? fcmTokens : [];
+          }));
         } else {
-          const userDocs = await Promise.all(recipientUids.map(uid => usersCollection.doc(uid).get()));
-          tokens = [...new Set(userDocs.flatMap(userDoc => {
+          const userDocs = await Promise.all(claimedRecipientUids.map(uid => usersCollection.doc(uid).get()));
+          tokens = uniqueStringValues(userDocs.flatMap(userDoc => {
             const fcmTokens = userDoc.data()?.['fcmTokens'];
-            return Array.isArray(fcmTokens) ? fcmTokens.filter((token): token is string => typeof token === 'string') : [];
-          }))];
+            return Array.isArray(fcmTokens) ? fcmTokens : [];
+          }));
         }
 
         console.log(`[Notifications API] Found ${tokens.length} FCM tokens to push.`);
@@ -275,13 +363,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         for (const tokenGroup of chunks(tokens, 500)) {
           if (!tokenGroup || tokenGroup.length === 0) continue;
           const response = await getMessaging().sendEachForMulticast({
-            notification: { title, body: message },
             data: {
               eventId,
+              title,
+              body: message,
               level: typeof input.level === 'string' ? input.level : 'info',
               actionUrl: typeof input.actionUrl === 'string' ? input.actionUrl : ''
             },
-            webpush: { fcmOptions: { link: typeof input.actionUrl === 'string' && input.actionUrl ? input.actionUrl : '/' } },
+            webpush: {
+              headers: { Urgency: 'high' },
+              fcmOptions: { link: typeof input.actionUrl === 'string' && input.actionUrl ? input.actionUrl : '/' }
+            },
             tokens: tokenGroup
           });
           sentCount += response?.successCount || 0;
@@ -302,9 +394,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
         }
+
+        for (const group of chunks(claimedRecipientUids, 400)) {
+          const batch = db.batch();
+          group.forEach(uid => {
+            const ref = notificationCollection.doc(notificationDocumentId(eventId, uid));
+            batch.update(ref, {
+              pushStatus: tokens.length > 0 ? 'sent' : 'no_token',
+              pushSentAt: Date.now(),
+              pushClaimId: FieldValue.delete(),
+              pushClaimedAt: FieldValue.delete()
+            });
+          });
+          await batch.commit();
+        }
       } catch (pErr: any) {
         pushError = pErr?.message || String(pErr);
         console.error('[Notifications API] Push notification failed (inbox notification saved):', pushError);
+        for (const group of chunks(claimedRecipientUids, 400)) {
+          const batch = db.batch();
+          group.forEach(uid => {
+            const ref = notificationCollection.doc(notificationDocumentId(eventId, uid));
+            batch.update(ref, {
+              pushStatus: 'failed',
+              pushError,
+              pushClaimId: FieldValue.delete(),
+              pushClaimedAt: FieldValue.delete()
+            });
+          });
+          await batch.commit().catch(() => {});
+        }
       }
     }
 
@@ -312,6 +431,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       eventId,
       recipientCount: recipientUids.length,
+      createdCount,
+      deduplicatedCount: recipientUids.length - createdCount,
       sentCount,
       failureCount,
       ...(pushError ? { pushError } : {})

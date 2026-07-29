@@ -2,13 +2,13 @@
 
 ## [v26.07.29-b03] - 29/07/2026
 
-### 🔕 Toast DeltaSync Đúng Sự Kiện
+### ✨ Lập Mẻ Tự Động An Toàn & Thông Báo Chính Xác
 
-- **Dứt điểm toast Propoxur lặp:** Listener metadata không còn lấy activity log gần nhất trong cache để mô tả một lần import mới.
-- **Không echo thao tác của chính mình:** Người vừa import chỉ nhận toast kết quả từ màn hình import; DeltaSync không phát lại thông báo thứ hai cho cùng người dùng.
-- **Thông báo đúng cho người khác:** Metadata mang theo version, mã sự kiện, người thực hiện và nội dung import để các phiên người dùng khác nhận đúng thay đổi.
-- **Fallback an toàn:** Metadata cũ hoặc sự kiện lệch version chỉ hiện thông báo đồng bộ chung, tuyệt đối không gắn tên một chuẩn cũ vào thao tác mới.
-- **Bao phủ kiểm thử:** Có kiểm thử cho log Propoxur cũ, chặn self-echo và thông báo chính xác giữa hai người dùng.
+- **Lập mẻ chính xác hơn:** Hệ thống nhận đúng mẫu, chỉ tiêu, nền mẫu và SOP phù hợp; các dòng nhập trùng được tự động bỏ qua.
+- **Phát hiện lỗi trước khi duyệt:** Cảnh báo rõ khi thiếu SOP, sai đơn vị, thiếu hóa chất, nhập số lượng không hợp lệ hoặc một mẫu bị xếp trùng.
+- **Không còn duyệt mẻ dở dang:** Kế hoạch chỉ được duyệt khi tất cả mẻ đều hợp lệ; nếu có lỗi, hệ thống giữ nguyên dữ liệu để người dùng sửa và thử lại.
+- **Tồn kho được kiểm soát tốt hơn:** Lượng hóa chất được tính theo toàn bộ kế hoạch và kiểm tra lại ngay lúc duyệt, giúp hạn chế thiếu hàng hoặc trừ tồn sai.
+- **Thông báo đúng và không bị lặp:** Người thao tác chỉ nhận một thông báo; những người dùng khác nhận đúng nội dung thay đổi mới nhất.
 
 ---
 

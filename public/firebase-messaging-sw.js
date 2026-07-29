@@ -17,15 +17,24 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    const notificationTitle = payload.notification?.title || 'Thông báo mới từ LIMS';
+    // Notification payloads are already rendered automatically by FCM.
+    // Do not render them a second time if an old sender still uses that format.
+    if (payload.notification) return;
+
+    const data = payload.data || {};
+    const notificationTitle = data.title || 'Thông báo mới từ LIMS';
     const notificationOptions = {
-        body: payload.notification?.body || 'Bạn có một thông báo mới chưa đọc.',
+        body: data.body || 'Bạn có một thông báo mới chưa đọc.',
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-72x72.png',
-        data: payload.data
+        tag: data.eventId || undefined,
+        renotify: false,
+        data
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // Backend sends data-only messages. This is the single place that renders
+    // a background notification; tag also collapses a retried event.
+    return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Pass notification click events to the app

@@ -25,6 +25,18 @@ import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 import { resolveMetadataSyncToast } from './notification-policy';
 
+export interface DirectBatchPlanItem {
+  sop: Sop;
+  calculatedItems: CalculatedItem[];
+  formInputs: any;
+}
+
+export interface DirectBatchPlanResult {
+  requestId: string;
+  printJobId: string;
+  logId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StateService implements OnDestroy {
   private fb = inject(FirebaseService);
@@ -1076,6 +1088,170 @@ export class StateService implements OnDestroy {
     } catch (e: any) {
       if (e.code === 'resource-exhausted') this.toast.show('Lỗi: Hết hạn mức Quota.', 'error');
       else this.toast.show(e.message, 'error');
+      return null;
+    }
+  }
+
+  async directApproveBatchPlan(
+    planItems: DirectBatchPlanItem[],
+    invMap: Record<string, InventoryItem> = {}
+  ): Promise<DirectBatchPlanResult[] | null> {
+    if (!this.auth.canRunBatch()) {
+      this.toast.show('Bạn không có quyền lập và vận hành mẻ.', 'error');
+      return null;
+    }
+    if (planItems.length === 0) {
+      this.toast.show('Kế hoạch không có mẻ nào để duyệt.', 'error');
+      return null;
+    }
+    if (planItems.some(item => !this.hasValidAnalysisDate(item.formInputs?.analysisDate))) {
+      this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ cho tất cả các mẻ.', 'error');
+      return null;
+    }
+
+    const deductions = new Map<string, number>();
+    const requestItemsByBatch: RequestItem[][] = [];
+    for (const item of planItems) {
+      const margin = Number(item.formInputs?.safetyMargin);
+      const hasInvalidCalculatedItem = item.calculatedItems.some(calculated =>
+        Boolean(calculated.validationError)
+        || calculated.displayWarning?.includes('Khác ĐV')
+        || (calculated.isComposite
+          ? calculated.breakdown.some(sub =>
+              !Number.isFinite(sub.totalNeed)
+              || sub.totalNeed < 0
+              || sub.displayWarning?.includes('Khác ĐV')
+            )
+          : !Number.isFinite(calculated.stockNeed) || calculated.stockNeed < 0)
+      );
+      if (
+        hasInvalidCalculatedItem
+        || !Number.isFinite(margin)
+        || (margin !== -1 && (margin < 0 || margin > 100))
+      ) {
+        this.toast.show(`Mẻ “${item.sop.name}” có công thức, đơn vị hoặc hao hụt không hợp lệ.`, 'error');
+        return null;
+      }
+      const batchDeductions = this.getItemsToDeduct(item.calculatedItems);
+      if (batchDeductions.some(deduction => !Number.isFinite(deduction.amount) || deduction.amount < 0)) {
+        this.toast.show(`Mẻ “${item.sop.name}” có lượng tiêu hao không hợp lệ.`, 'error');
+        return null;
+      }
+      batchDeductions.forEach(deduction =>
+        deductions.set(deduction.name, (deductions.get(deduction.name) || 0) + deduction.amount)
+      );
+      requestItemsByBatch.push(this.mapToRequestItems(item.calculatedItems, invMap));
+    }
+
+    const estimatedWrites = deductions.size + planItems.length * 3;
+    if (estimatedWrites > 450) {
+      this.toast.show('Kế hoạch quá lớn để duyệt nguyên tử. Hãy chia thành các kế hoạch nhỏ hơn.', 'error');
+      return null;
+    }
+
+    const planTimestamp = Date.now();
+    try {
+      const prepared = await Promise.all(planItems.map(async (item, index) => ({
+        ...item,
+        requestItems: requestItemsByBatch[index],
+        targetScopeSnapshots: await this.buildTargetScopeTraceability(item.sop, item.formInputs),
+        requestRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests')),
+        printJobRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs')),
+        logRef: doc(
+          this.fb.db,
+          'artifacts',
+          this.fb.APP_ID,
+          'logs',
+          `TRC-${planTimestamp}-${index}-${Math.floor(Math.random() * 1000)}`
+        )
+      })));
+
+      await runTransaction(this.fb.db, async transaction => {
+        const deductionEntries = Array.from(deductions.entries());
+        const inventoryRefs = deductionEntries.map(([name]) =>
+          doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', name)
+        );
+        const inventorySnapshots = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
+
+        deductionEntries.forEach(([name, amount], index) => {
+          const snapshot = inventorySnapshots[index];
+          if (!snapshot.exists()) throw new Error(`Hóa chất "${name}" không tồn tại!`);
+          const currentStock = Number(snapshot.data()['stock'] || 0);
+          if (currentStock < amount) {
+            throw new Error(`Kho không đủ "${name}". Tồn: ${currentStock}, Cần: ${amount}`);
+          }
+        });
+
+        deductionEntries.forEach(([, amount], index) => {
+          transaction.update(inventoryRefs[index], {
+            stock: increment(-amount),
+            lastUpdated: serverTimestamp()
+          });
+        });
+
+        prepared.forEach(item => {
+          const reqData: any = {
+            sopId: item.sop.id,
+            sopName: item.sop.name,
+            items: item.requestItems,
+            status: 'approved',
+            timestamp: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
+            approvedAt: serverTimestamp(),
+            user: this.getCurrentUserName(),
+            inputs: item.formInputs,
+            margin: item.formInputs.safetyMargin || 0,
+            analysisDate: item.formInputs.analysisDate,
+            targetScopeSnapshots: item.targetScopeSnapshots,
+            ...this.buildSopTraceability(item.sop)
+          };
+          if (item.formInputs.sampleList) reqData.sampleList = item.formInputs.sampleList;
+          if (item.formInputs.targetIds) reqData.targetIds = item.formInputs.targetIds;
+          if (item.formInputs.sampleTargetMap) reqData.sampleTargetMap = item.formInputs.sampleTargetMap;
+          if (item.formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
+          transaction.set(item.requestRef, sanitizeForFirebase(reqData));
+
+          const printData: PrintData = {
+            sop: item.sop,
+            inputs: item.formInputs,
+            margin: item.formInputs.safetyMargin || 0,
+            items: item.calculatedItems,
+            analysisDate: item.formInputs.analysisDate,
+            requestId: item.requestRef.id
+          };
+          transaction.set(item.printJobRef, {
+            ...sanitizeForFirebase(printData),
+            createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
+            createdBy: this.getCurrentUserName()
+          });
+
+          transaction.set(item.logRef, sanitizeForFirebase({
+            action: 'DIRECT_APPROVE_PLAN',
+            details: `Duyệt kế hoạch SmartBatch, SOP: ${item.sop.name}`,
+            timestamp: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
+            user: this.getCurrentUserName(),
+            printable: true,
+            printJobId: item.printJobRef.id,
+            requestId: item.requestRef.id,
+            planId: `PLAN-${planTimestamp}`,
+            sopBasicInfo: {
+              name: item.sop.name,
+              category: item.sop.category,
+              ref: item.sop.ref
+            }
+          }));
+        });
+      });
+
+      return prepared.map(item => ({
+        requestId: item.requestRef.id,
+        printJobId: item.printJobRef.id,
+        logId: item.logRef.id
+      }));
+    } catch (e: any) {
+      this.toast.show(e?.message || 'Không thể duyệt kế hoạch SmartBatch.', 'error');
       return null;
     }
   }

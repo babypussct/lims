@@ -324,6 +324,7 @@ export class StandardUsageService {
       const current = s.current_amount || 0;
       if (current > 0 && current <= initial * 0.2) {
         await this.notificationCenter.publish({
+          eventId: `standard-usage:${newLogRef.id}:stock-low`,
           recipientUid: 'role:admin', senderUid: 'system', senderName: 'Hệ thống LIMS',
           type: 'STOCK_LOW_ALERT', title: 'Cảnh báo tồn kho thấp',
           message: `Lô chuẩn ${s.name} chỉ còn ${formatNum(current)} ${s.unit} (dưới 20%). Vui lòng cân nhắc đặt mua thêm.`,

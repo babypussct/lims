@@ -30,6 +30,19 @@ test('requester stock writes can only reduce non-negative stock', () => {
   assert.match(rules, /request\.resource\.data\.current_amount <= resource\.data\.current_amount/);
 });
 
+test('batch operators can only deduct inventory stock through constrained updates', () => {
+  const inventoryBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/inventory/{itemId}'),
+    rules.indexOf('// MODULE CHUAN DOI CHIEU')
+  );
+  const inventoryTopLevel = inventoryBlock.slice(0, inventoryBlock.indexOf('// Lich su tieu hao'));
+  assert.match(inventoryTopLevel, /hasPermission\(appId, 'batch_run'\)/);
+  assert.match(inventoryTopLevel, /affectedKeys\(\)\.hasOnly\(\['stock', 'lastUpdated'\]\)/);
+  assert.match(inventoryTopLevel, /request\.resource\.data\.stock >= 0/);
+  assert.match(inventoryTopLevel, /request\.resource\.data\.stock <= resource\.data\.stock/);
+  assert.doesNotMatch(inventoryTopLevel, /allow write:/);
+});
+
 test('cleanup batches are immutable except for the applied-to-undone transition', () => {
   const cleanupBlock = rules.slice(
     rules.indexOf('match /artifacts/{appId}/standard_cleanup_batches/{batchId}'),

@@ -5,8 +5,8 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService, PERMISSIONS } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 // Import subcomponents
 import { ConfigGeneralComponent } from './components/config-general.component';
@@ -200,6 +200,7 @@ export class ConfigComponent {
   auth = inject(AuthService);
   state = inject(StateService);
   toast = inject(ToastService);
+  notificationService = inject(NotificationService);
   
   getAvatarUrl = getAvatarUrl;
   
@@ -234,15 +235,9 @@ export class ConfigComponent {
 
   async enableNotifications() {
       try {
-          const token = await this.fb.requestPushToken();
+          const token = await this.notificationService.registerCurrentDevicePushToken();
           if (token) {
-              localStorage.setItem('lims_fcm_token', token);
-              const user = this.auth.currentUser();
-              if (user) {
-                  const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
-                  await updateDoc(userRef, { fcmTokens: arrayUnion(token) });
-                  this.toast.show('Đã bật thông báo đẩy trên thiết bị này!', 'success');
-              }
+              this.toast.show('Đã bật thông báo đẩy trên thiết bị này!', 'success');
           } else {
               this.toast.show('Bạn đã từ chối quyền hoặc trình duyệt không hỗ trợ.', 'error');
           }

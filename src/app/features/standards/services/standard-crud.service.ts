@@ -543,7 +543,9 @@ export class StandardCrudService {
 
     const admin = this.auth.currentUser();
     const recipients = [...new Set(freshStandards.map(item => item.coa_requested_by).filter(Boolean))] as string[];
+    const coaEventId = `coa-upload:${freshStandards[0].id}:${encodeURIComponent(certificateUrl).slice(-160)}`;
     await Promise.all(recipients.map(recipientUid => this.notificationCenter.publish({
+      eventId: coaEventId,
       recipientUid,
       senderUid: admin?.uid,
       senderName: admin?.displayName || 'Quản trị viên',

@@ -436,8 +436,8 @@ export class InventoryService {
       this.invalidateLocalInventoryCache();
   }
 
-  async updateStock(id: string, currentStock: number, adjustment: number, reason = '') {
-    const newStock = currentStock + adjustment;
+  async updateStock(id: string, _currentStock: number, adjustment: number, reason = '') {
+    if (!Number.isFinite(adjustment)) throw new Error('Lượng điều chỉnh kho không hợp lệ.');
     const currentUser = this.state.getCurrentUserName();
     
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
@@ -445,6 +445,14 @@ export class InventoryService {
     const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
 
     await runTransaction(this.fb.db, async (transaction) => {
+        const snapshot = await transaction.get(invRef);
+        if (!snapshot.exists()) throw new Error(`Không tìm thấy vật tư "${id}".`);
+        const freshStock = Number(snapshot.data()['stock'] || 0);
+        const newStock = freshStock + adjustment;
+        if (!Number.isFinite(newStock) || newStock < 0) {
+            throw new Error(`Tồn kho "${id}" không đủ hoặc kết quả điều chỉnh không hợp lệ.`);
+        }
+
         // A. Update Stock
         transaction.update(invRef, { stock: newStock, lastUpdated: serverTimestamp() });
         

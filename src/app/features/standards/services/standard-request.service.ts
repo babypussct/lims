@@ -191,6 +191,7 @@ export class StandardRequestService {
     } else {
       await this.crud.logGlobalActivity('REQUEST_STANDARD', `Yêu cầu chuẩn: ${request.standardName}`, request.id);
       await this.notificationCenter.publish({
+        eventId: `standard-request:${request.id}:created`,
         recipientUid: 'role:admin', senderUid: currentUser?.uid,
         senderName: currentUser?.displayName || 'Người dùng',
         type: 'BORROW_REQUEST', title: 'Yêu cầu mượn chuẩn',
@@ -286,6 +287,7 @@ export class StandardRequestService {
         action = 'REJECT_STANDARD_REQUEST';
         details = `Từ chối yêu cầu: ${(reqData as StandardRequest).standardName}`;
         await this.notificationCenter.publish({
+          eventId: `standard-request:${requestId}:rejected`,
           recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Hệ thống',
           type: 'REQUEST_REJECTED', title: 'Yêu cầu bị từ chối',
@@ -349,6 +351,7 @@ export class StandardRequestService {
       if (!isAssign) {
         await this.crud.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
         await this.notificationCenter.publish({
+          eventId: `standard-request:${requestId}:approved`,
           recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Quản trị viên',
           type: 'REQUEST_APPROVED', title: 'Yêu cầu được duyệt',
@@ -360,6 +363,7 @@ export class StandardRequestService {
         // Send to the person who received it
         if (currentUser.uid !== (reqData as StandardRequest).requestedBy) {
           await this.notificationCenter.publish({
+            eventId: `standard-request:${requestId}:direct-assignment:recipient`,
             recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
             senderName: currentUser.displayName || 'Quản trị viên',
             type: 'REQUEST_APPROVED', title: 'Được cấp chuẩn',
@@ -372,6 +376,7 @@ export class StandardRequestService {
         // Also send to all admins (manager) so they know a standard was assigned, 
         // and so the person testing can see the notification themselves.
         await this.notificationCenter.publish({
+          eventId: `standard-request:${requestId}:direct-assignment:admins`,
           recipientUid: 'role:admin', senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Quản trị viên',
           type: 'SYSTEM_INFO', title: 'Gán chuẩn trực tiếp',

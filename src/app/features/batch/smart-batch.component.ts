@@ -32,6 +32,16 @@ import {
   setSampleDescriptionSnapshot,
   subsetSampleDescriptionMap
 } from '../../shared/utils/sample-description.utils';
+import {
+  applyNeedsToStockLedger,
+  BatchPlanValidationIssue,
+  buildAnalysisTaskKey,
+  countUnavailableStockItems,
+  getSopTargetKey,
+  isSopMatrixCompatible,
+  parseUniqueSampleCodes,
+  validateCalculatedItems
+} from './smart-batch.utils';
 
 // --- DATA MODELS ---
 
@@ -181,6 +191,7 @@ export class SmartBatchComponent {
   blocks = signal<JobBlock[]>([this.createEmptyBlock()]);
   batches = signal<ProposedBatch[]>([]);
   unmappedTasks = signal<AnalysisTask[]>([]);
+  excludedTaskKeys = signal<Set<string>>(new Set());
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
   availableMatrices = signal<MatrixType[]>([]);
@@ -265,7 +276,19 @@ export class SmartBatchComponent {
 
   // --- COMPUTED: GENERAL ---
   activeSops = computed(() => this.state.sops().filter(s => !s.isArchived));
-  allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.name) { const canonical = getCanonicalId(t.name); if (!targets.has(canonical)) targets.set(canonical, { id: canonical, name: t.name, uniqueKey: canonical }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
+  allAvailableTargets = computed(() => {
+    const targets = new Map<string, {id: string, name: string, uniqueKey: string}>();
+    this.activeSops().forEach(sop => {
+      sop.targets?.forEach(target => {
+        if (!target.name) return;
+        const canonical = getCanonicalId(target.name);
+        if (!targets.has(canonical)) {
+          targets.set(canonical, { id: canonical, name: target.name, uniqueKey: canonical });
+        }
+      });
+    });
+    return Array.from(targets.values()).sort((a, b) => a.name.localeCompare(b.name));
+  });
 
   // --- COMPUTED MAPS ---
   // Tránh tính lại không cần thiết mỗi change detection cycle trong @for loops
@@ -500,8 +523,7 @@ export class SmartBatchComponent {
     }
     const allSamples = new Set<string>();
     this.blocks().forEach(b => {
-      const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
-      samples.forEach(s => allSamples.add(s));
+      this.getBlockSamples(b).forEach(sample => allSamples.add(normalizeSampleCode(sample)));
     });
     return allSamples.size;
   });
@@ -518,6 +540,10 @@ export class SmartBatchComponent {
   });
   
   hasCriticalMissing = computed(() => this.batches().some(b => b.status === 'missing_stock'));
+  planValidationIssues = computed<BatchPlanValidationIssue[]>(() =>
+    this.batches().flatMap(batch => validateCalculatedItems(batch.resourceImpact, Number(batch.safetyMargin)))
+  );
+  hasInvalidPlanResources = computed(() => this.planValidationIssues().length > 0);
   
   totalStockSummary = computed(() => { 
       const summary = new Map<string, any>(); 
@@ -580,10 +606,11 @@ export class SmartBatchComponent {
       const sampleNames: Record<string, string> = {}; // Helper for displaying names if sample ID is obscure (not used here but good practice)
       
       this.blocks().forEach(block => {
-          const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
+          const samples = this.getBlockSamples(block);
           samples.forEach(s => {
               block.selectedTargets.forEach(tId => {
-                  neededTasks.add(`${s}|${tId}`);
+                  const key = buildAnalysisTaskKey(s, tId);
+                  if (!this.excludedTaskKeys().has(key)) neededTasks.add(key);
               });
           });
       });
@@ -595,9 +622,10 @@ export class SmartBatchComponent {
 
       this.batches().forEach(batch => {
           // Use tasks directly if available (Task-Based)
-          if (batch.tasks && batch.tasks.length > 0) {
-              batch.tasks.forEach(t => {
-                  const key = `${t.sample}|${t.targetId}`;
+           if (batch.tasks && batch.tasks.length > 0) {
+               batch.tasks.forEach(t => {
+                  if (!t.covered) return;
+                  const key = buildAnalysisTaskKey(t.sample, t.targetId);
                   if (coveredTasks.has(key)) {
                       duplicateTasks.add(key);
                       dupCount++;
@@ -606,10 +634,10 @@ export class SmartBatchComponent {
               });
           } else {
               // Fallback for legacy structure (should not happen with new logic)
-              const targetIds = batch.targets.map(t => t.id);
-              batch.samples.forEach(s => {
-                  targetIds.forEach(tId => {
-                      const key = `${s}|${tId}`;
+               const targetIds = batch.targets.map(t => t.id);
+               batch.samples.forEach(s => {
+                   targetIds.forEach(tId => {
+                      const key = buildAnalysisTaskKey(s, tId);
                       if (coveredTasks.has(key)) {
                           duplicateTasks.add(key);
                           dupCount++;
@@ -678,12 +706,7 @@ export class SmartBatchComponent {
       const cached = this.blockSamplesCache.get(block.id);
       if (cached && cached.rawSamples === block.rawSamples) return cached.samples;
 
-      const unique = new Map<string, string>();
-      block.rawSamples.split('\n').map(sample => sample.trim()).filter(Boolean).forEach(sample => {
-          const key = normalizeSampleCode(sample);
-          if (key && !unique.has(key)) unique.set(key, sample);
-      });
-      const samples = Array.from(unique.values());
+      const samples = parseUniqueSampleCodes(block.rawSamples);
       this.blockSamplesCache.set(block.id, { rawSamples: block.rawSamples, samples });
       return samples;
   }
@@ -889,7 +912,7 @@ export class SmartBatchComponent {
        }
    }
   
-  countSamples(raw: string): number { return raw.split('\n').filter(s => s.trim()).length; }
+  countSamples(raw: string): number { return parseUniqueSampleCodes(raw).length; }
   
   // getFilteredTargets method removed as it's replaced by filteredTargetsMap
 
@@ -1062,6 +1085,7 @@ export class SmartBatchComponent {
           return;
       }
 
+      this.excludedTaskKeys.set(new Set());
       this.isProcessing.set(true);
       try {
           // 1. Prefetch Data
@@ -1075,200 +1099,178 @@ export class SmartBatchComponent {
           const batches: ProposedBatch[] = [];
           const sops = this.state.sops().filter(s => !s.isArchived);
 
-          // 2. Flatten User Request & Handle Forced SOPs
-          const allTasks: AnalysisTask[] = [];
-          
-          for (const block of this.blocks()) {
-              const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
-              if (samples.length === 0 || block.selectedTargets.size === 0) continue;
-              
-              if (block.forcedSopId) {
-                  const forcedSop = sops.find(s => s.id === block.forcedSopId);
-                  if (forcedSop) {
-                      const blockSamples = new Set(samples);
-                      const blockTargetIds = new Set(block.selectedTargets);
-                      const batchTargets = (forcedSop.targets || []).filter(t => blockTargetIds.has(getCanonicalId(t.name)));
-                      const validSopTargets = new Set(batchTargets.map(t => getCanonicalId(t.name)));
-                      
-                      const blockTasks: AnalysisTask[] = [];
-                      for (const sample of samples) {
-                          for (const targetId of block.selectedTargets) {
-                              const foundTarget = resolveTargetMasterInfo(targetId, this.allAvailableTargets());
-                              const tName = foundTarget?.name || targetId;
-                              // Only mark 'covered: true' if the SOP ACTUALLY supports it
-                              const isCovered = validSopTargets.has(targetId);
-                              blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered, matrixType: block.matrixType, sourceGroupId: block.sourceGroupId });
-                              // If not covered, we still add it to allTasks so greedy algorithm can handle it
-                              if (!isCovered) {
-                                  allTasks.push({ sample, targetId, targetName: tName, covered: false, matrixType: block.matrixType, sourceGroupId: block.sourceGroupId });
-                              }
-                          }
-                      }
-                      
-                      const inputs: Record<string, any> = { analysisDate: this.getLocalTodayDate() };
-                      forcedSop.inputs.forEach(i => inputs[i.var] = i.default);
-                      inputs['analysisDate'] ||= this.getLocalTodayDate();
-                      inputs['n_sample'] = blockSamples.size;
-                      if (forcedSop.device) {
-                          inputs['device'] = forcedSop.device;
-                      }
+          // 2. Flatten and de-duplicate the request before planning.
+          const pendingTasks = new Map<string, AnalysisTask>();
+          const forcedAssignments = new Map<string, string>();
+          const taskMatrices = new Map<string, string>();
+          const planningLedger: Record<string, number> = {};
+          inv.forEach(item => planningLedger[item.id] = item.stock);
 
-                      const needs = this.calculator.calculateSopNeeds(
-                          forcedSop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-                      );
-
-                      const tags = ['Forced-SOP'];
-                      if (block.matrixType) tags.push(this.getMatrixLabel(block.matrixType));
-                      
-                      const batchId = `batch_${Date.now()}_${batches.length}`;
-                      batches.push({
-                          id: batchId,
-                          name: forcedSop.name + ' (Chỉ định)',
-                          sop: forcedSop,
-                          targets: batchTargets,
-                          samples: blockSamples,
-                          sampleCount: blockSamples.size,
-                          tasks: blockTasks,
-                          inputValues: inputs,
-                          safetyMargin: -1,
-                          resourceImpact: needs,
-                          status: 'ready',
-                          tags: tags,
-                          isExpanded: false,
-                          sampleDescriptionMap: this.buildDescriptionMapForSamples(blockSamples)
-                      });
-                      
-                      continue; // Skip adding to allTasks for greedy
-                  }
+          const registerMatrix = (key: string, matrixType?: string) => {
+              const matrixKey = matrixType || '';
+              const existing = taskMatrices.get(key);
+              if (existing && matrixKey && existing !== matrixKey) {
+                  throw new Error(`Cùng một mẫu/chỉ tiêu đang được khai báo với hai nền mẫu khác nhau (${existing} và ${matrixKey}).`);
               }
-              
+              if (!existing || matrixKey) taskMatrices.set(key, matrixKey);
+          };
+
+          for (const block of this.blocks()) {
+              const samples = this.getBlockSamples(block);
+              if (samples.length === 0 || block.selectedTargets.size === 0) continue;
+
+              const forcedSop = block.forcedSopId
+                  ? sops.find(sop => sop.id === block.forcedSopId)
+                  : undefined;
+              if (forcedSop && !isSopMatrixCompatible(forcedSop, block.matrixType)) {
+                  throw new Error(`SOP “${forcedSop.name}” không tương thích với nền mẫu “${this.getMatrixLabel(block.matrixType)}”.`);
+              }
+
+              const supportedForcedTasks: AnalysisTask[] = [];
               for (const sample of samples) {
-                  for (const targetId of block.selectedTargets) {
+                  for (const rawTargetId of block.selectedTargets) {
+                      const targetId = getCanonicalId(rawTargetId);
                       const foundTarget = resolveTargetMasterInfo(targetId, this.allAvailableTargets());
-                      const tName = foundTarget?.name || targetId;
-                      allTasks.push({
+                      const task: AnalysisTask = {
                           sample,
                           targetId,
-                          targetName: tName,
+                          targetName: foundTarget?.name || rawTargetId,
                           covered: false,
                           matrixType: block.matrixType,
                           sourceGroupId: block.sourceGroupId
-                      });
+                      };
+                      const key = buildAnalysisTaskKey(sample, targetId);
+                      registerMatrix(key, block.matrixType);
+
+                      if (forcedSop && forcedSop.targets?.some(target => getSopTargetKey(target) === targetId)) {
+                          const existingForcedSop = forcedAssignments.get(key);
+                          if (existingForcedSop && existingForcedSop !== forcedSop.id) {
+                              throw new Error(`Mẫu “${sample}” / chỉ tiêu “${task.targetName}” bị chỉ định cho nhiều SOP khác nhau.`);
+                          }
+                          if (!existingForcedSop) {
+                              forcedAssignments.set(key, forcedSop.id);
+                              pendingTasks.delete(key);
+                              supportedForcedTasks.push({ ...task, covered: true });
+                          }
+                      } else if (!forcedAssignments.has(key)) {
+                          const existingTask = pendingTasks.get(key);
+                          if (!existingTask) {
+                              pendingTasks.set(key, task);
+                          } else if (!existingTask.matrixType && task.matrixType) {
+                              pendingTasks.set(key, { ...existingTask, matrixType: task.matrixType });
+                          }
+                      }
                   }
+              }
+
+              if (forcedSop && supportedForcedTasks.length > 0) {
+                  const blockSamples = new Set(supportedForcedTasks.map(task => task.sample));
+                  const blockTargetIds = new Set(supportedForcedTasks.map(task => task.targetId));
+                  const batchTargets = (forcedSop.targets || []).filter(target => blockTargetIds.has(getSopTargetKey(target)));
+                  const inputs = this.buildDefaultBatchInputs(forcedSop, blockSamples.size);
+                  const needs = this.calculator.calculateSopNeeds(
+                      forcedSop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+                  );
+                  applyNeedsToStockLedger(needs, planningLedger);
+
+                  const tags = ['Forced-SOP'];
+                  if (block.matrixType) tags.push(this.getMatrixLabel(block.matrixType));
+                  batches.push({
+                      id: `batch_${Date.now()}_${batches.length}`,
+                      name: forcedSop.name + ' (Chỉ định)',
+                      sop: forcedSop,
+                      targets: batchTargets,
+                      samples: blockSamples,
+                      sampleCount: blockSamples.size,
+                      tasks: supportedForcedTasks,
+                      inputValues: inputs,
+                      safetyMargin: -1,
+                      resourceImpact: needs,
+                      status: 'ready',
+                      tags,
+                      isExpanded: false,
+                      sampleDescriptionMap: this.buildDescriptionMapForSamples(blockSamples)
+                  });
               }
           }
 
-          // 3. Greedy Loop with Weighted Scoring (Only on unforced tasks)
-          let remainingTasks = allTasks.filter(t => !t.covered);
-          let iterationLimit = 0;
-          const MAX_ITERATIONS = 50;
+          // 3. Greedy loop with deterministic scoring and quantity-aware stock penalty.
+          let remainingTasks = Array.from(pendingTasks.values());
+          let iterationCount = 0;
+          const sopsForAuto = sops.filter(sop => !sop.isManualOnly);
+          const maxIterations = Math.max(1, Math.min(remainingTasks.length, sopsForAuto.length + 1));
 
-          const sopsForAuto = sops.filter(s => !s.isManualOnly);
-
-          while (remainingTasks.length > 0 && iterationLimit < MAX_ITERATIONS) {
-              iterationLimit++;
-
+          while (remainingTasks.length > 0 && iterationCount < maxIterations) {
+              iterationCount++;
               const candidates = sopsForAuto.map(sop => {
                   if (!sop.targets || sop.targets.length === 0) return null;
-                  const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-                  const sopMatrices = sop.matrixTags || [];
-                  
-                  // --- MATRIX HARD FILTER ---
-                  const coverableTasks = remainingTasks.filter(t => {
-                      if (!sopTargetIds.has(t.targetId)) return false;
-                      if (sopMatrices.length === 0) return true;
-                      if (!t.matrixType) return true;
-                      return sopMatrices.includes(t.matrixType);
-                  });
+                  const sopTargetIds = new Set(sop.targets.map(getSopTargetKey));
+                  const coverableTasks = remainingTasks.filter(task =>
+                      sopTargetIds.has(task.targetId) && isSopMatrixCompatible(sop, task.matrixType)
+                  );
                   if (coverableTasks.length === 0) return null;
 
-                  // --- WEIGHTED SCORING SYSTEM ---
-                  let score = 0;
-
-                  // 1. Coverage Score (+10 per task)
-                  score += coverableTasks.length * 10;
-
-                  // 2. Completeness Bonus (+5 per sample fully covered)
-                  // Reward if this SOP clears ALL remaining targets for a specific sample
-                  const involvedSamples = new Set(coverableTasks.map(t => t.sample));
-                  involvedSamples.forEach(s => {
-                      const tasksForSample = remainingTasks.filter(t => t.sample === s);
-                      const coveredForSample = coverableTasks.filter(t => t.sample === s);
-                      if (tasksForSample.length === coveredForSample.length) {
-                          score += 5; 
-                      }
+                  let score = coverableTasks.length * 10;
+                  const involvedSamples = new Set(coverableTasks.map(task => normalizeSampleCode(task.sample)));
+                  involvedSamples.forEach(sampleKey => {
+                      const tasksForSample = remainingTasks.filter(task => normalizeSampleCode(task.sample) === sampleKey);
+                      const coveredForSample = coverableTasks.filter(task => normalizeSampleCode(task.sample) === sampleKey);
+                      if (tasksForSample.length === coveredForSample.length) score += 5;
                   });
 
-                  // 3. Coverage Ratio (MỚI)
-                  const uniqueCovered = new Set(coverableTasks.map(t=>t.targetId)).size;
+                  const uniqueCovered = new Set(coverableTasks.map(task => task.targetId)).size;
                   score += (uniqueCovered / sop.targets.length) * 30;
+                  score -= (sop.targets.length - uniqueCovered);
 
-                  // 4. Stock Penalty (-20 per missing item)
-                  let missingStockCount = 0;
-                  sop.consumables.forEach(c => {
-                      if (c.type === 'simple' && !this.inventoryCache[c.name]) missingStockCount++;
-                  });
-                  score -= (missingStockCount * 20);
+                  const sampleCount = new Set(coverableTasks.map(task => normalizeSampleCode(task.sample))).size;
+                  const inputs = this.buildDefaultBatchInputs(sop, sampleCount);
+                  const needs = this.calculator.calculateSopNeeds(
+                      sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+                  );
+                  const unavailableCount = countUnavailableStockItems(needs, planningLedger);
+                  const validationCount = validateCalculatedItems(needs, -1).length;
+                  score -= unavailableCount * 100;
+                  score -= validationCount * 1000;
 
-                  // 5. Efficiency Penalty (-1 per extraneous capability)
-                  // If SOP covers 50 targets but we only need 1, it's wasteful (maybe)
-                  const extraneous = sop.targets.length - uniqueCovered;
-                  score -= (extraneous * 1);
-
-                  return { sop, coverableTasks, score };
-              }).filter(c => c !== null);
+                  return { sop, coverableTasks, score, inputs, needs };
+              }).filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
 
               if (candidates.length === 0) break;
-
-              // Pick Winner
-              candidates.sort((a, b) => b!.score - a!.score);
-              const bestFit = candidates[0]!;
-
-              // Construct Batch
-              const batchSamples = new Set(bestFit.coverableTasks.map(t => t.sample));
-              const batchTargetIds = new Set(bestFit.coverableTasks.map(t => t.targetId));
-              // Only include targets relevant to the tasks being covered
-              const batchTargets = (bestFit.sop.targets || []).filter(t => batchTargetIds.has(getCanonicalId(t.name)));
-
-              // Calculate Resources
-              const inputs: Record<string, any> = { analysisDate: this.getLocalTodayDate() };
-              bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
-              inputs['analysisDate'] ||= this.getLocalTodayDate();
-              inputs['n_sample'] = batchSamples.size;
-              if (bestFit.sop.device) {
-                  inputs['device'] = bestFit.sop.device;
-              }
-
-              const needs = this.calculator.calculateSopNeeds(
-                  bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+              candidates.sort((a, b) =>
+                  b.score - a.score
+                  || a.sop.name.localeCompare(b.sop.name)
+                  || a.sop.id.localeCompare(b.sop.id)
               );
+              const bestFit = candidates[0];
+              const coveredTasks = bestFit.coverableTasks.map(task => ({ ...task, covered: true }));
+              const batchSamples = new Set(coveredTasks.map(task => task.sample));
+              const batchTargetIds = new Set(coveredTasks.map(task => task.targetId));
+              const batchTargets = (bestFit.sop.targets || []).filter(target => batchTargetIds.has(getSopTargetKey(target)));
+              applyNeedsToStockLedger(bestFit.needs, planningLedger);
 
               const tags = ['Đã tối ưu tự động'];
-              const matrixTypes = new Set(bestFit.coverableTasks.map(t => t.matrixType).filter(m => !!m));
-              matrixTypes.forEach(m => tags.push(this.getMatrixLabel(m)));
+              const matrixTypes = new Set(coveredTasks.map(task => task.matrixType).filter((matrix): matrix is string => Boolean(matrix)));
+              matrixTypes.forEach(matrix => tags.push(this.getMatrixLabel(matrix)));
 
-              const batchId = `batch_${Date.now()}_${batches.length}`;
-              
               batches.push({
-                  id: batchId,
+                  id: `batch_${Date.now()}_${batches.length}`,
                   name: bestFit.sop.name,
                   sop: bestFit.sop,
                   targets: batchTargets,
                   samples: batchSamples,
                   sampleCount: batchSamples.size,
-                  tasks: bestFit.coverableTasks, // Save granular task info for future splits
-                  inputValues: inputs,
-                  safetyMargin: -1, // Auto
-                  resourceImpact: needs,
+                  tasks: coveredTasks,
+                  inputValues: bestFit.inputs,
+                  safetyMargin: -1,
+                  resourceImpact: bestFit.needs,
                   status: 'ready',
-                  tags: tags,
-                  isExpanded: false, // Collapsed by default
+                  tags,
+                  isExpanded: false,
                   sampleDescriptionMap: this.buildDescriptionMapForSamples(batchSamples)
               });
 
-              // Mark tasks as covered
-              const coveredSet = new Set(bestFit.coverableTasks); 
-              remainingTasks = remainingTasks.filter(t => !coveredSet.has(t));
+              const coveredKeys = new Set(coveredTasks.map(task => buildAnalysisTaskKey(task.sample, task.targetId)));
+              remainingTasks = remainingTasks.filter(task => !coveredKeys.has(buildAnalysisTaskKey(task.sample, task.targetId)));
           }
 
           this.batches.set(batches);
@@ -1332,6 +1334,15 @@ export class SmartBatchComponent {
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
+  }
+
+  private buildDefaultBatchInputs(sop: Sop, sampleCount: number): Record<string, any> {
+      const inputs: Record<string, any> = { analysisDate: this.getLocalTodayDate() };
+      sop.inputs.forEach(input => inputs[input.var] = input.default);
+      inputs['analysisDate'] ||= this.getLocalTodayDate();
+      inputs['n_sample'] = sampleCount;
+      if (sop.device) inputs['device'] = sop.device;
+      return inputs;
   }
 
   private isValidAnalysisDate(value: unknown): value is string {
@@ -1480,7 +1491,7 @@ export class SmartBatchComponent {
       if (!state.selectedSopId) return;
 
       const sourceBatch = this.batches()[state.sourceBatchIndex];
-      const targetSop = this.state.sops().find(s => s.id === state.selectedSopId);
+      const targetSop = this.activeSops().find(s => s.id === state.selectedSopId);
       
       if (!targetSop) return;
 
@@ -1491,13 +1502,7 @@ export class SmartBatchComponent {
       const tasksToMove: AnalysisTask[] = [];
       const tasksToKeep: AnalysisTask[] = [];
 
-      // Convert selectedTargets (which are SopTarget.id) to canonical IDs for matching with tasks
-      const selectedCanonicalIds = new Set(
-          Array.from(state.selectedTargets).map(id => {
-              const t = sourceBatch.targets.find(x => x.id === id);
-              return t ? getCanonicalId(t.name) : id;
-          })
-      );
+      const selectedCanonicalIds = new Set(Array.from(state.selectedTargets).map(getCanonicalId));
 
       if (sourceBatch.tasks) {
           sourceBatch.tasks.forEach(t => {
@@ -1520,12 +1525,20 @@ export class SmartBatchComponent {
       }
 
       if (tasksToMove.length === 0) return;
+      if (tasksToMove.some(task => !isSopMatrixCompatible(targetSop, task.matrixType))) {
+          this.toast.show('SOP đích không tương thích với nền mẫu của các task đã chọn.', 'error');
+          return;
+      }
 
       // 2. Create New Batch
       // Metadata calculation for new batch
       const uniqueSamplesNew = new Set(tasksToMove.map(t => t.sample));
       const uniqueTargetIdsNew = new Set(tasksToMove.map(t => t.targetId));
-      const newBatchTargets = (targetSop.targets || []).filter(t => uniqueTargetIdsNew.has(t.id));
+      const newBatchTargets = (targetSop.targets || []).filter(target => uniqueTargetIdsNew.has(getSopTargetKey(target)));
+      if (newBatchTargets.length !== uniqueTargetIdsNew.size) {
+          this.toast.show('SOP đích không phủ đầy đủ các chỉ tiêu đã chọn.', 'error');
+          return;
+      }
       
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
@@ -1546,7 +1559,7 @@ export class SmartBatchComponent {
           targets: newBatchTargets,
           samples: uniqueSamplesNew,
           sampleCount: uniqueSamplesNew.size,
-          tasks: tasksToMove,
+          tasks: tasksToMove.map(task => ({ ...task, covered: true })),
           inputValues: newInputs,
           safetyMargin: sourceBatch.safetyMargin,
           resourceImpact: newNeeds,
@@ -1582,12 +1595,23 @@ export class SmartBatchComponent {
 
   // --- NEW: Remove Target From Batch directly ---
   removeTargetFromBatch(batchIndex: number, targetId: string) {
+      const currentBatch = this.batches()[batchIndex];
+      if (!currentBatch) return;
+      const target = currentBatch.targets.find(item => item.id === targetId);
+      const canonicalTargetId = target ? getSopTargetKey(target) : getCanonicalId(targetId);
+      const removedTasks = currentBatch.tasks.filter(task => task.targetId === canonicalTargetId);
+      this.excludedTaskKeys.update(current => {
+          const next = new Set(current);
+          removedTasks.forEach(task => next.add(buildAnalysisTaskKey(task.sample, task.targetId)));
+          return next;
+      });
+
       this.batches.update(current => {
           const next = [...current];
           const batch = next[batchIndex];
           if (!batch) return next;
 
-          const tasksToKeep = batch.tasks.filter(t => t.targetId !== targetId);
+          const tasksToKeep = batch.tasks.filter(task => task.targetId !== canonicalTargetId);
 
           if (tasksToKeep.length === 0) {
               next.splice(batchIndex, 1);
@@ -1601,6 +1625,7 @@ export class SmartBatchComponent {
           return next;
       });
       this.validateGlobalStock();
+      this.toast.show(`Đã loại “${removedTasks[0]?.targetName || targetId}” khỏi kế hoạch hiện tại.`, 'info');
   }
 
   // --- QUICK IMPORT LOGIC ---
@@ -1679,10 +1704,7 @@ export class SmartBatchComponent {
           // Use Base Unit directly as per requirement
           await this.invService.updateStock(state.id, state.currentStock, amount, 'Điều chỉnh tồn kho khi lập mẻ');
 
-          const cachedItem = this.inventoryCache[state.id] || this.state.inventoryMap()[state.id];
-          const updatedItem = cachedItem
-              ? { ...cachedItem, stock: state.currentStock + amount }
-              : (await this.invService.getItemsByIds([state.id]))[0];
+          const updatedItem = (await this.invService.getItemsByIds([state.id]))[0];
 
           if (updatedItem) {
               this.inventoryCache[state.id] = updatedItem;
@@ -1752,23 +1774,25 @@ export class SmartBatchComponent {
         const manualSopsWithTarget = manualSops.filter(s =>
           s.targets?.some(t => getCanonicalId(t.name) === targetId)
         );
+        const compatibleNormalSops = normalSopsWithTarget.filter(sop => isSopMatrixCompatible(sop, matrixType));
+        const compatibleManualSops = manualSopsWithTarget.filter(sop => isSopMatrixCompatible(sop, matrixType));
 
         if (normalSopsWithTarget.length === 0 && manualSopsWithTarget.length === 0) {
           // --- NHÓM 3: Không có SOP nào ---
           group3.push({ targetId, targetName, affectedSamples: samples, blockId, action: 'remove' });
 
-        } else if (normalSopsWithTarget.length === 0 && manualSopsWithTarget.length > 0) {
+        } else if (compatibleNormalSops.length === 0 && compatibleManualSops.length > 0) {
           // --- NHÓM 1: Chỉ có SOP Đặc thù ---
-          const autoChosen = manualSopsWithTarget.length === 1 ? manualSopsWithTarget[0].id : null;
+          const autoChosen = compatibleManualSops.length === 1 ? compatibleManualSops[0].id : null;
           group1.push({
             targetId, targetName, affectedSamples: samples, blockId,
-            candidateSops: manualSopsWithTarget,
+            candidateSops: compatibleManualSops,
             chosenSopId: autoChosen
           });
 
         } else {
           // --- NHÓM 2: Sai Matrix ---
-          const compatibleSops = normalSopsWithTarget.map(sop => ({
+          const compatibleSops = [...normalSopsWithTarget, ...manualSopsWithTarget].map(sop => ({
             sop,
             matrices: sop.matrixTags || []
           }));
@@ -1812,6 +1836,72 @@ export class SmartBatchComponent {
       });
   }
 
+  private removeTargetFromSourceBlock(blockId: number, targetId: string): void {
+      this.blocks.update(blocks => blocks
+          .map(block => {
+              if (block.id !== blockId) return block;
+              const selectedTargets = new Set(block.selectedTargets);
+              selectedTargets.delete(targetId);
+              return {
+                  ...block,
+                  selectedTargets,
+                  forcedSopId: selectedTargets.size === 0 ? undefined : block.forcedSopId,
+                  sourceGroupId: undefined,
+                  sourceGroupModified: true
+              };
+          })
+          .filter(block => block.selectedTargets.size > 0 || parseUniqueSampleCodes(block.rawSamples).length === 0)
+      );
+  }
+
+  private moveTargetToDedicatedBlock(
+      blockId: number,
+      targetId: string,
+      targetName: string,
+      affectedSamples: string[],
+      options: { forcedSopId?: string; clearMatrix?: boolean }
+  ): void {
+      this.blocks.update(blocks => {
+          const sourceIndex = blocks.findIndex(block => block.id === blockId);
+          if (sourceIndex < 0) return blocks;
+          const source = blocks[sourceIndex];
+
+          if (source.selectedTargets.size === 1 && source.selectedTargets.has(targetId)) {
+              const next = [...blocks];
+              next[sourceIndex] = {
+                  ...source,
+                  forcedSopId: options.forcedSopId,
+                  matrixType: options.clearMatrix ? undefined : source.matrixType,
+                  sourceGroupId: undefined,
+                  sourceGroupModified: true
+              };
+              return next;
+          }
+
+          const remainingTargets = new Set(source.selectedTargets);
+          remainingTargets.delete(targetId);
+          const dedicatedSamples = parseUniqueSampleCodes(affectedSamples.join('\n'));
+          const dedicated: JobBlock = {
+              ...this.createEmptyBlock(`${source.name} — ${targetName}`, options.clearMatrix ? undefined : source.matrixType),
+              id: Date.now() + blocks.length + Math.floor(Math.random() * 1000),
+              rawSamples: dedicatedSamples.join('\n'),
+              selectedTargets: new Set([targetId]),
+              forcedSopId: options.forcedSopId,
+              sourceGroupModified: true,
+              sampleDescriptionMap: subsetSampleDescriptionMap(source.sampleDescriptionMap, dedicatedSamples)
+          };
+          const next = [...blocks];
+          next[sourceIndex] = {
+              ...source,
+              selectedTargets: remainingTargets,
+              sourceGroupId: undefined,
+              sourceGroupModified: true
+          };
+          next.splice(sourceIndex + 1, 0, dedicated);
+          return next;
+      });
+  }
+
   applyFixCoverage() {
       const state = this.fixCoverageState();
       this.fixCoverageState.update(s => ({ ...s, isProcessing: true }));
@@ -1819,21 +1909,15 @@ export class SmartBatchComponent {
       // Process Group 1
       for (const item of state.group1) {
           if (item.chosenSopId === null) {
-              const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
-              if (blockIdx !== -1) {
-                  this.blocks.update(bs => {
-                      const n = [...bs];
-                      const set = new Set(n[blockIdx].selectedTargets);
-                      set.delete(item.targetId);
-                      n[blockIdx] = { ...n[blockIdx], selectedTargets: set };
-                      return n;
-                  });
-              }
+              this.removeTargetFromSourceBlock(item.blockId, item.targetId);
           } else {
-              const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
-              if (blockIdx !== -1) {
-                  this.updateBlockForcedSop(blockIdx, item.chosenSopId);
-              }
+              this.moveTargetToDedicatedBlock(
+                  item.blockId,
+                  item.targetId,
+                  item.targetName,
+                  item.affectedSamples,
+                  { forcedSopId: item.chosenSopId }
+              );
           }
       }
 
@@ -1843,35 +1927,22 @@ export class SmartBatchComponent {
           if (blockIdx === -1) continue;
 
           if (item.action === 'remove') {
-              this.blocks.update(bs => {
-                  const n = [...bs];
-                  const set = new Set(n[blockIdx].selectedTargets);
-                  set.delete(item.targetId);
-                  n[blockIdx] = { ...n[blockIdx], selectedTargets: set };
-                  return n;
-              });
+              this.removeTargetFromSourceBlock(item.blockId, item.targetId);
           } else {
-              this.blocks.update(bs => {
-                  const n = [...bs];
-                  n[blockIdx] = { ...n[blockIdx], matrixType: undefined };
-                  return n;
-              });
+              this.moveTargetToDedicatedBlock(
+                  item.blockId,
+                  item.targetId,
+                  item.targetName,
+                  item.affectedSamples,
+                  { clearMatrix: true }
+              );
           }
       }
 
       // Process Group 3
       for (const item of state.group3) {
           if (item.action === 'remove') {
-              const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
-              if (blockIdx !== -1) {
-                  this.blocks.update(bs => {
-                      const n = [...bs];
-                      const set = new Set(n[blockIdx].selectedTargets);
-                      set.delete(item.targetId);
-                      n[blockIdx] = { ...n[blockIdx], selectedTargets: set };
-                      return n;
-                  });
-              }
+              this.removeTargetFromSourceBlock(item.blockId, item.targetId);
           }
       }
 
@@ -1894,6 +1965,7 @@ export class SmartBatchComponent {
       this.step.set(0);
       this.batches.set([]);
       this.unmappedTasks.set([]);
+      this.excludedTaskKeys.set(new Set());
       this.blocks.set([this.createEmptyBlock()]);
       this.singleSampleCode.set('');
       this.singleSampleDescription.set(undefined);
@@ -1916,16 +1988,31 @@ export class SmartBatchComponent {
       }
       this.batches.set([]);
       this.unmappedTasks.set([]);
+      this.excludedTaskKeys.set(new Set());
       this.step.set(1);
   }
 
   async executeAll() {
-      if (!this.auth.canApprove()) {
-          this.toast.show('Bạn không có quyền duyệt.', 'error');
+      if (this.isProcessing()) return;
+      if (!this.auth.canRunBatch()) {
+          this.toast.show('Bạn không có quyền lập và vận hành mẻ.', 'error');
+          return;
+      }
+      if (this.batches().length === 0) {
+          this.toast.show('Kế hoạch chưa có mẻ nào để duyệt.', 'error');
           return;
       }
       if (this.hasInvalidAnalysisDates()) {
           this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ cho tất cả các mẻ.', 'error');
+          return;
+      }
+      if (this.hasInvalidPlanResources()) {
+          this.toast.show('Kế hoạch có lỗi công thức, đơn vị hoặc lượng tiêu hao không hợp lệ.', 'error');
+          return;
+      }
+      const coverage = this.coverageMetrics();
+      if (!coverage.isFullyCovered || coverage.duplicateCount > 0) {
+          this.toast.show('Kế hoạch phải phủ đủ và không được trùng task trước khi duyệt.', 'error');
           return;
       }
       this.validateGlobalStock();
@@ -1934,16 +2021,15 @@ export class SmartBatchComponent {
           return;
       }
       
-      if (await this.confirmation.confirm({ message: `Xác nhận tạo ${this.batches().length} phiếu yêu cầu, trừ kho ngay lập tức và đưa phiếu vào hàng đợi in?`, confirmText: 'Duyệt & Xếp Hàng In' })) {
+      if (await this.confirmation.confirm({ message: `Xác nhận tạo nguyên tử ${this.batches().length} phiếu yêu cầu, trừ kho và đưa toàn bộ vào hàng đợi in? Nếu một mẻ lỗi, toàn bộ kế hoạch sẽ không được ghi.`, confirmText: 'Duyệt Toàn Bộ' })) {
           this.isProcessing.set(true);
           const inventoryMap = this.state.inventoryMap();
-          let queuedCount = 0;
           
           try {
-              for (const batch of this.batches()) {
-                  const sampleTargetMap: Record<string, string[]> = {};
-                  if (batch.tasks && batch.tasks.length > 0) {
-                      batch.tasks.forEach(t => {
+              const planItems = this.batches().map(batch => {
+                   const sampleTargetMap: Record<string, string[]> = {};
+                   if (batch.tasks && batch.tasks.length > 0) {
+                       batch.tasks.forEach(t => {
                           if (!sampleTargetMap[t.sample]) {
                               sampleTargetMap[t.sample] = [];
                           }
@@ -1966,19 +2052,22 @@ export class SmartBatchComponent {
                       sampleTargetMap,
                       sampleDescriptionMap: batch.sampleDescriptionMap,
                       analysisDate: batch.inputValues['analysisDate'],
-                      explicitGroupId: batch.tasks.length > 0
-                        && batch.tasks.every(task => task.sourceGroupId && task.sourceGroupId === batch.tasks[0].sourceGroupId)
-                        ? batch.tasks[0].sourceGroupId
-                        : undefined
-                  };
-                  const res = await this.state.directApproveAndQueuePrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap, { showSuccessToast: false });
-                  if (res) {
-                      queuedCount++;
-                  }
-              }
-              
-              if (queuedCount > 0) {
-                  this.toast.show(`Hoàn tất! Đã duyệt ${queuedCount} mẻ và đưa phiếu vào hàng đợi in.`, 'success');
+                       explicitGroupId: batch.tasks.length > 0
+                         && batch.tasks.every(task => task.sourceGroupId && task.sourceGroupId === batch.tasks[0].sourceGroupId)
+                         ? batch.tasks[0].sourceGroupId
+                         : undefined
+                   };
+
+                   return {
+                       sop: batch.sop,
+                       calculatedItems: batch.resourceImpact,
+                       formInputs: finalInputs
+                   };
+              });
+
+              const result = await this.state.directApproveBatchPlan(planItems, inventoryMap);
+              if (result && result.length === planItems.length) {
+                  this.toast.show(`Hoàn tất! Đã duyệt nguyên tử ${result.length} mẻ và đưa phiếu vào hàng đợi in.`, 'success');
                   this.reset();
               }
           } catch (e: any) {

@@ -99,12 +99,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Send the push notification
+    const eventId = typeof req.body?.eventId === 'string' && req.body.eventId
+      ? req.body.eventId
+      : `legacy-push:${Date.now()}`;
     const message = {
-      notification: {
-        title: title,
-        body: body,
+      data: {
+        eventId,
+        title,
+        body,
+        level: 'info',
+        actionUrl: url || '/'
       },
       webpush: {
+        headers: {
+          Urgency: 'high'
+        },
         fcmOptions: {
           link: url || '/'
         }

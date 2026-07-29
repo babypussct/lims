@@ -306,28 +306,36 @@ export class StandardsFormModalComponent {
     
         if (this.std()) {
             const originalStd = this.std()!;
+            let coaNotification: {
+                recipientUid: string;
+                eventId: string;
+                message: string;
+            } | null = null;
             
             // Nếu chuẩn đang có người yêu cầu CoA và Admin vừa upload/điền link CoA xong
             if (originalStd.coa_requested_by && standardData.certificate_ref) {
-                const admin = this.auth.currentUser();
-                await this.notificationCenter.publish({
+                coaNotification = {
                     recipientUid: originalStd.coa_requested_by,
-                    senderUid: admin?.uid,
-                    senderName: admin?.displayName || 'Quản trị viên',
-                    type: 'SYSTEM_INFO',
-                    title: 'Đã cập nhật CoA',
-                    message: `File CoA của chuẩn "${standardData.name}" đã được tải lên thành công qua Form Chỉnh sửa.`,
-                    targetId: standardData.id,
-                    actionUrl: `/standards/${standardData.id}`,
-                    channels: ['inbox', 'push']
-                });
-                
-                // Xóa cờ (dùng undefined thay vì deleteField vì đây là patch object, updateDoc sẽ ghi đè. Tuy nhiên để chắc chắn xoá field trong firebase, dùng undefined có thể chỉ làm field thành null trong một số SDK. Firestore updateDoc với object thuần tuý bỏ qua undefined field, nó không xoá. Nhưng ReferenceStandard không có schema cứng, set undefined có thể làm nó bị lờ đi. Ta nên truyền null hoặc dùng deleteField nếu là patch).
-                // Ở đây ta update toàn bộ form value, để tránh update đè giá trị cũ, ta set null.
+                    eventId: `coa-form:${standardData.id}:${encodeURIComponent(standardData.certificate_ref).slice(-160)}`,
+                    message: `File CoA của chuẩn "${standardData.name}" đã được tải lên thành công qua Form Chỉnh sửa.`
+                };
                 (standardData as any).coa_requested_by = null;
             }
 
             await this.stdService.updateStandard(standardData);
+            if (coaNotification) {
+                const admin = this.auth.currentUser();
+                await this.notificationCenter.publish({
+                    ...coaNotification,
+                    senderUid: admin?.uid,
+                    senderName: admin?.displayName || 'Quản trị viên',
+                    type: 'SYSTEM_INFO',
+                    title: 'Đã cập nhật CoA',
+                    targetId: standardData.id,
+                    actionUrl: `/standards/${standardData.id}`,
+                    channels: ['inbox', 'push']
+                });
+            }
             this.toast.show('Cập nhật chuẩn thành công!', 'success');
         } else {
             await this.stdService.addStandard(standardData);

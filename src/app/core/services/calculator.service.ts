@@ -26,9 +26,22 @@ const ChemHelper = {
 @Injectable({ providedIn: 'root' })
 export class CalculatorService {
 
-  // Safe formula evaluator
+  private isFormulaSafe(formula: string): boolean {
+    if (!formula || formula.length > 500) return false;
+    const expression = formula.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, '0');
+    if (/[`;{}\[\]]/.test(expression)) return false;
+    if (/(^|[^=!<>])=([^=])/g.test(expression)) return false;
+    if (/\b(?:globalThis|window|document|self|navigator|location|fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB|alert|confirm|prompt|eval|Function|constructor|prototype|__proto__|import|require|process|class|function|new|this)\b/i.test(expression)) {
+      return false;
+    }
+    const propertyAccesses = expression.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\s*\./g) || [];
+    return propertyAccesses.every(access => /^(Math|Chem)\s*\.$/.test(access.trim()));
+  }
+
+  // Formula evaluator restricted to arithmetic, conditions, Math and Chem helpers.
   private evalFormula(formula: string, context: Record<string, number | boolean>): number | boolean | null {
     if (!formula) return 0;
+    if (!this.isFormulaSafe(formula)) return null;
     try {
       const keys = [...Object.keys(context), 'Math', 'Chem'];
       const values = [...Object.values(context), Math, ChemHelper];

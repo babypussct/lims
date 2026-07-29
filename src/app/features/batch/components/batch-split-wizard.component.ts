@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, signal, computed, OnInit } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sop, SopTarget } from '../../../core/models/sop.model';
+import { getSopTargetKey, isSopMatrixCompatible } from '../smart-batch.utils';
 
 interface ProposedBatch {
     id: string; 
@@ -93,8 +94,8 @@ export interface SplitWizardState {
                             @for(t of state().availableTargets; track t.id) {
                                 <label class="flex items-center gap-3 p-4 md:p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 dark:border-slate-700/50 last:border-0 cursor-pointer active:bg-slate-100">
                                     <input type="checkbox" 
-                                           [checked]="state().selectedTargets.has(t.id)" 
-                                           (change)="toggleTarget(t.id)"
+                                           [checked]="state().selectedTargets.has(targetKey(t))"
+                                           (change)="toggleTarget(targetKey(t))"
                                            class="w-5 h-5 md:w-4 md:h-4 accent-blue-600 rounded">
                                     <span class="text-base md:text-sm font-bold text-slate-700 dark:text-slate-300">{{t._displayName || t.name}}</span>
                                 </label>
@@ -196,7 +197,7 @@ export class BatchSplitWizardComponent implements OnInit {
             availableSamples: Array.from(this.sourceBatch.samples).sort(),
             selectedSamples: new Set<string>(),
             availableTargets: this.sourceBatch.targets,
-            selectedTargets: new Set<string>(this.sourceBatch.targets.map(t => t.id)),
+            selectedTargets: new Set<string>(this.sourceBatch.targets.map(target => getSopTargetKey(target))),
             selectedSopId: null
         });
     }
@@ -208,13 +209,21 @@ export class BatchSplitWizardComponent implements OnInit {
         if (reqTargets.size === 0) return [];
         return this.allSops.filter(sop => {
             if (!sop.targets) return false;
-            const sopTargetIds = new Set(sop.targets.map(t => t.id));
+            const sopTargetIds = new Set(sop.targets.map(getSopTargetKey));
             for (const reqId of Array.from(reqTargets)) {
                 if (!sopTargetIds.has(reqId)) return false;
             }
+            const selectedTasks = (this.sourceBatch.tasks || []).filter(task =>
+                s.selectedSamples.has(task.sample) && reqTargets.has(task.targetId)
+            );
+            if (selectedTasks.some(task => !isSopMatrixCompatible(sop, task.matrixType))) return false;
             return true;
         });
     });
+
+    targetKey(target: SopTarget): string {
+        return getSopTargetKey(target);
+    }
 
     toggleSample(sample: string) {
         this.state.update(s => {
@@ -235,7 +244,12 @@ export class BatchSplitWizardComponent implements OnInit {
         });
     }
 
-    selectAllTargets() { this.state.update(s => ({ ...s, selectedTargets: new Set(s.availableTargets.map(t => t.id)) })); }
+    selectAllTargets() {
+        this.state.update(s => ({
+            ...s,
+            selectedTargets: new Set(s.availableTargets.map(target => getSopTargetKey(target)))
+        }));
+    }
     deselectAllTargets() { this.state.update(s => ({ ...s, selectedTargets: new Set() })); }
 
     selectSop(id: string) { this.state.update(s => ({ ...s, selectedSopId: id })); }
@@ -250,7 +264,7 @@ export class BatchSplitWizardComponent implements OnInit {
                         if (s.selectedSamples.has(t.sample)) relevantTargets.add(t.targetId);
                     });
                 } else {
-                    s.availableTargets.forEach(t => relevantTargets.add(t.id));
+                    s.availableTargets.forEach(target => relevantTargets.add(getSopTargetKey(target)));
                 }
                 return { ...s, step: 2, selectedTargets: relevantTargets };
             }
