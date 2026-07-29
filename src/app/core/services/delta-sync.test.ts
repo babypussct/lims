@@ -12,6 +12,8 @@ import {
   isRetryableDeltaError,
   mergeDeltaItems,
   replaceDeltaArrayContents,
+  sanitizeDeltaCursorMillis,
+  shouldUseDeltaCache,
   sortAndTrimDeltaItems
 } from './delta-sync.service';
 
@@ -90,6 +92,25 @@ test('keeps the cursor monotonic, including tombstone-only snapshots', () => {
   assert.equal(cursor, 5000);
 });
 
+test('rejects corrupt future cursors and cache entries without a valid cursor', () => {
+  const now = 10_000;
+  assert.equal(sanitizeDeltaCursorMillis(now + 60_000, now), now + 60_000);
+  assert.equal(sanitizeDeltaCursorMillis(now + 10 * 60_000, now), 0);
+  assert.equal(sanitizeDeltaCursorMillis('invalid', now), 0);
+  assert.equal(shouldUseDeltaCache(3, 0), false);
+  assert.equal(shouldUseDeltaCache(3, 1000), true);
+  assert.equal(shouldUseDeltaCache(0, 0), true);
+  assert.equal(
+    getMaxDeltaCursorMillis(
+      [{ lastUpdated: now + 10 * 60_000 }, { lastUpdated: 9000 }],
+      0,
+      0,
+      now
+    ),
+    9000
+  );
+});
+
 test('sorts timestamp and natural string fields before trimming', () => {
   const timestampItems = [
     { id: 'old', updated: { seconds: 1 } },
@@ -121,6 +142,7 @@ test('classifies retryable errors and caps exponential retry delay', () => {
   assert.equal(isDeltaAuthorizationError({ code: 'unavailable' }), false);
   assert.equal(computeDeltaRetryDelay(1, 100, 500), 100);
   assert.equal(computeDeltaRetryDelay(4, 100, 500), 500);
+  assert.equal(computeDeltaRetryDelay(10_000, 100, 500), 500);
 });
 
 test('rejects stale generations after destroy or restart', () => {

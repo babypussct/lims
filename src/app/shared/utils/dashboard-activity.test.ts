@@ -5,6 +5,11 @@ import {
   isStandardActivityAction,
   matchesDashboardActivityCategory
 } from './dashboard-activity';
+import {
+  timestampToDate,
+  timestampToLocalDateKey,
+  timestampToMillis
+} from './timestamp';
 
 test('classifies backfill and usage rollback as standard activity', () => {
   assert.equal(isStandardActivityAction('BACKFILL_USAGE_LOG'), true);
@@ -33,4 +38,21 @@ test('filters before applying the dashboard display limit', () => {
   );
 
   assert.deepEqual(result, [standardLog]);
+});
+
+test('parses Firestore and DeltaSync cached timestamp shapes without Invalid Date', () => {
+  assert.equal(timestampToMillis({ seconds: 10, nanoseconds: 250_000_000 }), 10250);
+  assert.equal(timestampToMillis({ _seconds: 10, _nanoseconds: 250_000_000 }), 10250);
+  assert.equal(timestampToMillis({ milliseconds: 1234 }), 1234);
+  assert.equal(timestampToMillis({ toMillis: () => 5678 }), 5678);
+  assert.equal(timestampToMillis({ toDate: () => new Date(9012) }), 9012);
+  assert.equal(timestampToMillis({ seconds: 'bad' }), null);
+  assert.equal(timestampToDate({ invalid: true }), null);
+});
+
+test('creates a local date key and safely rejects malformed dashboard timestamps', () => {
+  const localDate = new Date(2026, 6, 29, 23, 59, 59);
+  assert.equal(timestampToLocalDateKey(localDate), '2026-07-29');
+  assert.equal(timestampToLocalDateKey('not-a-date'), null);
+  assert.doesNotThrow(() => timestampToLocalDateKey({ milliseconds: Number.NaN }));
 });

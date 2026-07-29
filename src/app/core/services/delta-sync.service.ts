@@ -3,6 +3,7 @@ import {
   collection, query, onSnapshot, where, orderBy, getDocs, limit, QueryConstraint
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
+import { timestampToMillis } from '../../shared/utils/timestamp';
 
 export interface DeltaSyncConfig {
   cacheKey: string;
@@ -51,9 +52,10 @@ interface DeltaErrorLike {
 const CACHE_REGISTRY_KEY = 'lims_delta_sync_registry_v3';
 const CACHE_MIGRATION_KEY = 'lims_delta_sync_cache_v3_migrated';
 const CURSOR_OVERLAP_MS = 1000;
+const MAX_CURSOR_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const DEFAULT_RETRY_INITIAL_MS = 1000;
 const DEFAULT_RETRY_MAX_MS = 30000;
-const DEFAULT_RETRY_ATTEMPTS = 6;
+const DEFAULT_RETRY_ATTEMPTS = Number.POSITIVE_INFINITY;
 const TERMINAL_ERROR_CODES = new Set([
   'permission-denied',
   'unauthenticated',
@@ -108,45 +110,37 @@ export function replaceDeltaArrayContents<T>(target: T[], source: readonly T[]):
 }
 
 export function deltaValueToMillis(value: unknown): number {
-  if (value === null || value === undefined) return 0;
-  if (value instanceof Date) return value.getTime();
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  if (typeof value === 'string') {
-    const parsed = Date.parse(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  if (typeof value === 'object') {
-    const timestamp = value as {
-      seconds?: unknown;
-      nanoseconds?: unknown;
-      milliseconds?: unknown;
-      toMillis?: unknown;
-    };
-    if (typeof timestamp.toMillis === 'function') {
-      const millis = (timestamp.toMillis as () => number)();
-      return Number.isFinite(millis) ? millis : 0;
-    }
-    if (typeof timestamp.milliseconds === 'number' && Number.isFinite(timestamp.milliseconds)) {
-      return timestamp.milliseconds;
-    }
-    if (typeof timestamp.seconds === 'number' && Number.isFinite(timestamp.seconds)) {
-      const nanos = typeof timestamp.nanoseconds === 'number' && Number.isFinite(timestamp.nanoseconds)
-        ? timestamp.nanoseconds
-        : 0;
-      return (timestamp.seconds * 1000) + Math.floor(nanos / 1_000_000);
-    }
-  }
-  return 0;
+  return timestampToMillis(value) ?? 0;
+}
+
+export function sanitizeDeltaCursorMillis(
+  value: unknown,
+  nowMillis = Date.now()
+): number {
+  const cursorMillis = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(cursorMillis) || cursorMillis < 0) return 0;
+  return cursorMillis <= nowMillis + MAX_CURSOR_FUTURE_SKEW_MS ? cursorMillis : 0;
+}
+
+export function shouldUseDeltaCache(cachedItemCount: number, cursorMillis: number): boolean {
+  return cachedItemCount === 0 || sanitizeDeltaCursorMillis(cursorMillis) > 0;
 }
 
 export function getMaxDeltaCursorMillis<T extends { lastUpdated?: unknown }>(
   items: readonly T[],
   observedCursorMillis = 0,
-  storedCursorMillis = 0
+  storedCursorMillis = 0,
+  nowMillis = Date.now()
 ): number {
-  let maxMillis = Math.max(0, observedCursorMillis, storedCursorMillis);
+  let maxMillis = Math.max(
+    sanitizeDeltaCursorMillis(observedCursorMillis, nowMillis),
+    sanitizeDeltaCursorMillis(storedCursorMillis, nowMillis)
+  );
   for (const item of items) {
-    maxMillis = Math.max(maxMillis, deltaValueToMillis(item.lastUpdated));
+    maxMillis = Math.max(
+      maxMillis,
+      sanitizeDeltaCursorMillis(deltaValueToMillis(item.lastUpdated), nowMillis)
+    );
   }
   return maxMillis;
 }
@@ -226,7 +220,8 @@ export function computeDeltaRetryDelay(
   maxDelayMs = DEFAULT_RETRY_MAX_MS
 ): number {
   const safeAttempt = Math.max(1, Math.floor(attempt));
-  const exponential = Math.max(0, initialDelayMs) * (2 ** (safeAttempt - 1));
+  const cappedExponent = Math.min(safeAttempt - 1, 30);
+  const exponential = Math.max(0, initialDelayMs) * (2 ** cappedExponent);
   return Math.min(Math.max(0, maxDelayMs), exponential);
 }
 
@@ -286,7 +281,12 @@ export class DeltaSyncService {
 
     this._registerStorageKeys(config.cacheKey, config.cursorKey);
     const isDeleted = config.isDeletedFn || ((document: any) => document._isDeleted === true);
-    const memCache = this._loadFromCache<T>(config.cacheKey, config).filter(document => !isDeleted(document));
+    const cachedItems = this._loadFromCache<T>(config.cacheKey, config).filter(document => !isDeleted(document));
+    const cachedCursor = this._loadCursor(config.cursorKey, config);
+    const memCache = shouldUseDeltaCache(cachedItems.length, cachedCursor) ? cachedItems : [];
+    if (cachedItems.length > 0 && memCache.length === 0) {
+      this._clearPersistentData(config);
+    }
     const entry: SingletonEntry<T> = {
       key,
       unsub: () => {},
@@ -320,7 +320,12 @@ export class DeltaSyncService {
   ): () => void {
     this._registerStorageKeys(config.cacheKey, config.cursorKey);
     const isDeleted = config.isDeletedFn || ((document: any) => document._isDeleted === true);
-    const cachedItems = this._loadFromCache<T>(config.cacheKey, config).filter(document => !isDeleted(document));
+    const loadedItems = this._loadFromCache<T>(config.cacheKey, config).filter(document => !isDeleted(document));
+    const cachedCursor = this._loadCursor(config.cursorKey, config);
+    const cachedItems = shouldUseDeltaCache(loadedItems.length, cachedCursor) ? loadedItems : [];
+    if (loadedItems.length > 0 && cachedItems.length === 0) {
+      this._clearPersistentData(config);
+    }
     let listenerUnsub: (() => void) | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let retryAttempt = 0;
@@ -424,6 +429,12 @@ export class DeltaSyncService {
   public destroyAll(clearPersistentCaches = false): void {
     [...this._singletons.keys()].forEach(key => this.destroySingleton(key));
     if (clearPersistentCaches) this.clearAllPersistentCaches();
+  }
+
+  public destroyInactiveSingletons(): void {
+    [...this._singletons.entries()]
+      .filter(([, entry]) => entry.callbacks.size === 0)
+      .forEach(([key]) => this.destroySingleton(key));
   }
 
   public clearCache(cacheKey: string, cursorKey: string): void {
@@ -571,7 +582,6 @@ export class DeltaSyncService {
         }
       }
     );
-    entry.status = 'listening';
   }
 
   private _handleSingletonError(
@@ -750,8 +760,8 @@ export class DeltaSyncService {
     try {
       const data = localStorage.getItem(key);
       if (!data) return 0;
-      const parsed = Number(data);
-      if (!Number.isFinite(parsed) || parsed < 0) throw new Error('Delta cursor is invalid.');
+      const parsed = sanitizeDeltaCursorMillis(data);
+      if (parsed === 0 && Number(data) !== 0) throw new Error('Delta cursor is invalid or too far in the future.');
       return parsed;
     } catch (error) {
       try { localStorage.removeItem(key); } catch {}
@@ -802,7 +812,11 @@ export class DeltaSyncService {
     this._diagnostics.push(diagnostic);
     if (this._diagnostics.length > 100) this._diagnostics.splice(0, this._diagnostics.length - 100);
     config.onError?.(diagnostic);
-    console.warn('[DeltaSync]', diagnostic);
+    console.warn(
+      `[DeltaSync] ${diagnostic.phase} ${diagnostic.collectionPath}: ${diagnostic.errorCode} `
+      + `(attempt ${diagnostic.attempt}, retry=${diagnostic.willRetry})`,
+      diagnostic
+    );
     return diagnostic;
   }
 

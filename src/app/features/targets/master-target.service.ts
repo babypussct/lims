@@ -48,9 +48,12 @@ export class MasterTargetService {
       const user = this.auth.currentUser();
       const nextCacheKey = user ? this._deltaCacheKey : null;
       if (this.activeDeltaCacheKey && this.activeDeltaCacheKey !== nextCacheKey) {
+        const shouldRestart = this.singletonStarted && !!user;
         this.deltaSync.destroySingleton(this.activeDeltaCacheKey);
         this.singletonStarted = false;
+        this.activeDeltaCacheKey = null;
         this.analytes.set([]);
+        if (shouldRestart) queueMicrotask(() => this.ensureSingleton());
       }
       if (!user) {
         this.singletonStarted = false;
@@ -108,15 +111,23 @@ export class MasterTargetService {
 
     // Cache hoàn toàn rỗng → đợi singleton fetch xong (chỉ lần đầu tiên)
     return new Promise<MasterAnalyte[]>((resolve) => {
+      let settled = false;
+      const finish = (data: MasterAnalyte[]) => {
+        if (settled) return;
+        settled = true;
+        clearInterval(check);
+        clearTimeout(timeout);
+        resolve(data);
+      };
       const check = setInterval(() => {
         const data = this.analytes();
-        if (data.length > 0) {
-          clearInterval(check);
-          resolve(data);
+        const status = this.deltaSync.getSingletonStatus(this._deltaCacheKey);
+        if (data.length > 0 || status === 'listening' || status === 'failed') {
+          finish(data);
         }
       }, 100);
       // Timeout sau 5s → trả rỗng
-      setTimeout(() => { clearInterval(check); resolve([]); }, 5000);
+      const timeout = setTimeout(() => finish([]), 5000);
     });
   }
 

@@ -6,6 +6,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { timestampToLocalDateKey } from '../../shared/utils/timestamp';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
@@ -91,7 +92,7 @@ export class LabelPrintComponent implements AfterViewInit {
   private readonly transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
   // Fetch Data State
-  fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
+  fetchDate = signal<string>(timestampToLocalDateKey(new Date()) || '');
   
   // Layout Config
   splitCount = signal<number>(1);
@@ -458,9 +459,7 @@ export class LabelPrintComponent implements AfterViewInit {
           if (req.analysisDate) {
               reqDateStr = req.analysisDate;
           } else {
-              const ts = req.approvedAt || req.timestamp;
-              const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-              reqDateStr = d.toISOString().split('T')[0];
+              reqDateStr = timestampToLocalDateKey(req.approvedAt ?? req.timestamp) || '';
           }
 
           if (reqDateStr === targetDate && req.sampleList && req.sampleList.length > 0) {

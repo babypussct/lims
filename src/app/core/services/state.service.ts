@@ -20,6 +20,7 @@ import { Log, PrintData } from '../models/log.model';
 import { PrintConfig, SafetyConfig, CategoryItem } from '../models/config.model';
 import { ReferenceStandard, StandardRequest } from '../models/standard.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
+import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 import { resolveMetadataSyncToast } from './notification-policy';
@@ -238,8 +239,9 @@ export class StateService implements OnDestroy {
       this._unregisterStdReqListener();
       this._unregisterStdReqListener = undefined;
     }
-    // Các hàm unregister ở trên chỉ gỡ subscriber thuộc StateService.
-    // Singleton dùng chung được giữ lại trong cùng phiên; AuthService sẽ hủy sạch khi logout.
+    // Giữ singleton còn subscriber ở màn hình khác, nhưng hủy listener mồ côi sau
+    // khi quyền/scope thay đổi để tránh tiếp tục tốn reads cho cache không còn dùng.
+    this.deltaSync.destroyInactiveSingletons();
     this.sops.set([]);
     this.inventory.set([]);
     this.standards.set([]);
@@ -501,14 +503,7 @@ export class StateService implements OnDestroy {
   }
 
   private getLogTime(log: Log): number {
-    const value = log.timestamp;
-    if (!value) return 0;
-    if (typeof value === 'number') return value;
-    if (typeof value.toMillis === 'function') return value.toMillis();
-    if (typeof value.toDate === 'function') return value.toDate().getTime();
-    if (typeof value.seconds === 'number') return value.seconds * 1000;
-    const parsed = new Date(value).getTime();
-    return Number.isFinite(parsed) ? parsed : 0;
+    return timestampToMillis(log.timestamp) ?? 0;
   }
 
   ensureApprovedRequestsListener(): void {
@@ -677,25 +672,28 @@ export class StateService implements OnDestroy {
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
   async loadAllStandardRequests(): Promise<void> {
     try {
-      const isApprover = this.auth.canApproveStandards();
+      const canReadAll = this.auth.canAssignStandards()
+        || this.auth.canViewStandardLogs()
+        || this.auth.canDeleteStandardLogs();
       const currentUser = this.auth.currentUser();
-      const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
-
-      const cacheKey = `lims_all_standard_requests_cache_${roleKey}_${this.fb.APP_ID}`;
-      const cached = this.deltaSync.getCache<any>(cacheKey);
-      if (cached && cached.length > 0) {
-        this.allStandardRequests.set(cached.filter((r: any) => !r._isDeleted));
+      if (!currentUser) {
+        this.allStandardRequests.set([]);
         return;
       }
 
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
-      const constraints: any[] = [orderBy('requestDate', 'desc'), limit(300)];
-      if (!isApprover && currentUser) {
-        constraints.unshift(where('requestedBy', '==', currentUser.uid));
-      }
-      const q = query(colRef, ...constraints);
-      const snap = await getDocs(q);
-      this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest)).filter(r => !r._isDeleted));
+      const source = canReadAll
+        ? colRef
+        : query(colRef, where('requestedBy', '==', currentUser.uid));
+      const snap = await getDocs(source);
+      const items = snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as StandardRequest))
+        .filter(request => !request._isDeleted)
+        .sort((a, b) =>
+          (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
+          - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0)
+        );
+      this.allStandardRequests.set(items);
     } catch (e) { console.warn('loadAllStandardRequests error:', e); }
   }
 
@@ -704,17 +702,25 @@ export class StateService implements OnDestroy {
   // Populates state.standards() signal so statistics.component.ts works unchanged.
   async loadReferenceStandards(): Promise<void> {
     try {
-      const cacheKey = 'lims_reference_standards_cache_' + this.fb.APP_ID;
-      const cached = this.deltaSync.getCache<any>(cacheKey);
+      const cacheKey = buildScopedDeltaKey(
+        'lims_reference_standards_cache_' + this.fb.APP_ID,
+        this.auth.getDeltaCacheScope()
+      );
+      const cached = this.deltaSync.getCache<ReferenceStandard>(cacheKey);
       if (cached && cached.length > 0) {
-        this.standards.set(cached);
+        this.standards.set(cached.filter(standard =>
+          !standard._isDeleted && standard.status !== 'DELETED'
+        ));
         return;
       }
 
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      const q = query(colRef, orderBy('received_date', 'desc'), limit(300));
-      const snap = await getDocs(q);
-      this.standards.set(snap.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard)));
+      const snap = await getDocs(colRef);
+      const standards = snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+        .filter(standard => !standard._isDeleted && standard.status !== 'DELETED')
+        .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
+      this.standards.set(standards);
     } catch (e) { console.warn('loadReferenceStandards error:', e); }
   }
 

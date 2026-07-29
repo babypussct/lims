@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PrintService, PrintOptions } from '../../../core/services/print.service';
 import { PrintLayoutComponent } from '../print-layout/print-layout.component';
 import { ToastService } from '../../../core/services/toast.service';
+import { timestampToDate } from '../../utils/timestamp';
 
 @Component({
   selector: 'app-print-preview-modal',
@@ -470,16 +471,7 @@ export class PrintPreviewModalComponent {
   }
 
   formatPublishDate(timestamp: any): string {
-      if (!timestamp) return 'Chưa rõ';
-      if (timestamp && typeof timestamp.toDate === 'function') {
-          return timestamp.toDate().toLocaleString('vi-VN');
-      }
-      if (timestamp instanceof Date) {
-          return timestamp.toLocaleString('vi-VN');
-      }
-      if (typeof timestamp === 'number' || typeof timestamp === 'string') {
-          return new Date(timestamp).toLocaleString('vi-VN');
-      }
-      return 'Vừa xong';
+      const date = timestampToDate(timestamp);
+      return date ? date.toLocaleString('vi-VN') : 'Chưa rõ';
   }
 }

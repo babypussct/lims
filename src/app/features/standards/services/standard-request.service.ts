@@ -626,7 +626,11 @@ export class StandardRequestService {
       didRollback = true;
     });
 
-    this.cache.purgeFromRequestsCache(request.id);
+    this.deltaSync.mergeSingletonCache<StandardRequest>(
+      this._getCacheKey(this._getRoleKey()),
+      [],
+      [request.id]
+    );
     if (didRollback && freshRequest) {
       await this.crud.logGlobalActivity(
         'HARD_DELETE_REQUEST',

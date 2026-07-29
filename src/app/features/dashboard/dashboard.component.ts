@@ -19,6 +19,7 @@ import {
   isSopActivityAction,
   isStandardActivityAction
 } from '../../shared/utils/dashboard-activity';
+import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 
 interface PriorityStandard {
     name: string;
@@ -160,8 +161,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       // Group by Date
       const groups = new Map<string, any[]>();
       logs.forEach(l => {
-          const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
-          const dateStr = this.formatDateStr(d);
+          const d = timestampToDate(l.timestamp);
+          const dateStr = d ? this.formatDateStr(d) : 'Không rõ thời gian';
           if (!groups.has(dateStr)) groups.set(dateStr, []);
           groups.get(dateStr)!.push(l);
       });
@@ -259,8 +260,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
 
       return logs.filter(l => {
-          const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
-          return d.toISOString().split('T')[0] === this._todayStr;
+          return timestampToLocalDateKey(l.timestamp) === this._todayStr;
       }).length;
   });
 
@@ -272,7 +272,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
       }
       const ts = req.approvedAt || req.timestamp;
-      return (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+      return timestampToDate(ts) ?? new Date(0);
   }
 
   // MỚI: Computed trung gian — parse date 1 lần duy nhất, filter isVirtualMaster
@@ -979,8 +979,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getTimeDiff(timestamp: any): string {
-      if (!timestamp) return '';
-      const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp);
+      const date = timestampToDate(timestamp);
+      if (!date) return '';
       const now = new Date(); const diffMs = now.getTime() - date.getTime(); const diffMins = Math.floor(diffMs / 60000);
       if (diffMins < 1) return 'Vừa xong'; if (diffMins < 60) return `${diffMins} phút trước`;
       const diffHours = Math.floor(diffMins / 60); if (diffHours < 24) return `${diffHours} giờ trước`;

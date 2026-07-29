@@ -9,6 +9,7 @@ import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/uti
 import { Log } from '../../core/models/log.model';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
+import { timestampToDate, timestampToMillis } from '../../shared/utils/timestamp';
 
 interface NxtReportItem {
   id: string;
@@ -282,14 +283,8 @@ export class StatisticsComponent {
 
               // Filter requests
               const filteredHistory = history.filter((req: any) => {
-                  let d: Date;
-                  if (req.analysisDate) {
-                      const parts = req.analysisDate.split('-');
-                      d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-                  } else {
-                      const ts = req.approvedAt || req.timestamp;
-                      d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-                  }
+                  const d = this.getRequestDate(req);
+                  if (!d) return false;
                   if (d < startD || d > endD) return false;
                   if (sopId !== 'all' && req.sopId !== sopId) return false;
                   if (type === 'specific_day' && d.getDate() !== specDay) return false;
@@ -327,14 +322,8 @@ export class StatisticsComponent {
                   const columnsSet = new Set<string>();
 
                   filteredHistory.forEach((req: any) => {
-                      let d: Date;
-                      if (req.analysisDate) {
-                          const parts = req.analysisDate.split('-');
-                          d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-                      } else {
-                          const ts = req.approvedAt || req.timestamp;
-                          d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-                      }
+                      const d = this.getRequestDate(req);
+                      if (!d) return;
                       let colKey = '';
                       if (type === 'daily') {
                           colKey = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -505,14 +494,8 @@ export class StatisticsComponent {
           {
               const coverWs = XLSX.utils.aoa_to_sheet([]);
               const approvedCount = this.state.approvedRequests().filter((req: any) => {
-                  let d: Date;
-                  if (req.analysisDate) {
-                      const parts = req.analysisDate.split('-');
-                      d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-                  } else {
-                      const ts = req.approvedAt || req.timestamp;
-                      d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-                  }
+                  const d = this.getRequestDate(req);
+                  if (!d) return false;
                   const s = new Date(start); s.setHours(0,0,0,0);
                   const e = new Date(end); e.setHours(23,59,59,999);
                   return d >= s && d <= e;
@@ -656,6 +639,23 @@ export class StatisticsComponent {
   }
   private getToday(): string { return this.toLocalDateStr(new Date()); }
   private getFirstDayOfMonth(): string { const d = new Date(); return this.toLocalDateStr(new Date(d.getFullYear(), d.getMonth(), 1)); }
+  private getRequestDate(request: any): Date | null {
+      if (typeof request?.analysisDate === 'string') {
+          const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(request.analysisDate);
+          if (match) {
+              const year = Number(match[1]);
+              const month = Number(match[2]);
+              const day = Number(match[3]);
+              const date = new Date(year, month - 1, day);
+              if (
+                  date.getFullYear() === year
+                  && date.getMonth() === month - 1
+                  && date.getDate() === day
+              ) return date;
+          }
+      }
+      return timestampToDate(request?.approvedAt ?? request?.timestamp);
+  }
   
   getUnitClass(unit: string): string { return (unit.includes('ml') || unit.includes('l')) ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'; }
 
@@ -697,7 +697,8 @@ export class StatisticsComponent {
               inventory.forEach(item => movements.set(item.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 }));
 
               logs.forEach(log => {
-                  const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
+                  const logTime = timestampToMillis(log.timestamp);
+                  if (logTime === null) return;
                   
                   const result: { id: string, delta: number }[] = [];
                   const targetId = log.targetId;
@@ -779,7 +780,8 @@ export class StatisticsComponent {
               // --- SOP-specific export detail mode ---
               const consumptionMap = new Map<string, number>();
               logs.forEach(log => {
-                  const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
+                  const logTime = timestampToMillis(log.timestamp);
+                  if (logTime === null) return;
                   
                   // Bug Fix: filter by BOTH start and end date (was only checking <= end)
                   if (logTime >= startTime && logTime <= endTime) {
@@ -828,7 +830,8 @@ export class StatisticsComponent {
       const sopId = this.selectedSopId();
 
       return this.state.logs().filter(log => {
-          const d = (log.timestamp as any).toDate ? (log.timestamp as any).toDate() : new Date(log.timestamp);
+          const d = timestampToDate(log.timestamp);
+          if (!d) return false;
           const inDate = d >= start && d <= end;
           if (!inDate) return false;
           if (sopId === 'all') return true;
@@ -855,14 +858,8 @@ export class StatisticsComponent {
     const sopId = this.selectedSopId();
 
     history.forEach(req => {
-        let d: Date;
-        if (req.analysisDate) {
-            const parts = req.analysisDate.split('-');
-            d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-        } else {
-            const ts = req.approvedAt || req.timestamp;
-            d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-        }
+        const d = this.getRequestDate(req);
+        if (!d) return;
 
         if (d < start || d > end) return;
         if (sopId !== 'all' && req.sopId !== sopId) return;
@@ -890,14 +887,8 @@ export class StatisticsComponent {
     const sopId = this.selectedSopId();
 
     const filteredHistory = history.filter(req => {
-        let d: Date;
-        if (req.analysisDate) {
-            const parts = req.analysisDate.split('-');
-            d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-        } else {
-            const ts = req.approvedAt || req.timestamp;
-            d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-        }
+        const d = this.getRequestDate(req);
+        if (!d) return false;
 
         if (d < start || d > end) return false;
         if (sopId !== 'all' && req.sopId !== sopId) return false;
@@ -1042,8 +1033,8 @@ export class StatisticsComponent {
       const end = new Date(this.endDate());
 
       history.forEach(req => {
-          const ts = req.approvedAt || req.timestamp;
-          const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+          const d = this.getRequestDate(req);
+          if (!d) return;
           if (d >= start && d <= end) {
               const key = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
               let dayTotal = 0;

@@ -20,6 +20,7 @@ import {
   suggestCasCorrection,
 } from '../../../shared/utils/standard-cleanup';
 import { StandardService } from '../standard.service';
+import { timestampToDate } from '../../../shared/utils/timestamp';
 
 type CleanupStatus = 'pending' | 'loading' | 'ready' | 'review' | 'success' | 'error';
 type CleanupFilter = 'all' | 'safe' | 'review' | 'blocked' | 'success';
@@ -666,8 +667,8 @@ export class StandardsDataCleanupModalComponent {
 
   formatBatchDate(value: any): string {
     if (!value) return 'Đang đồng bộ';
-    const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
-    return Number.isNaN(date.getTime()) ? 'Không rõ thời gian' : date.toLocaleString('vi-VN');
+    const date = timestampToDate(value);
+    return date ? date.toLocaleString('vi-VN') : 'Không rõ thời gian';
   }
 
   async undoBatch(batch: StandardCleanupBatch): Promise<void> {

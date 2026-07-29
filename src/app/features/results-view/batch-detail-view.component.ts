@@ -16,6 +16,7 @@ import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { resolveCompoundDisplayName, isCompoundAssigned } from '../results/shared/compound-id-resolver';
 import { MasterTargetService } from '../targets/master-target.service';
+import { timestampToDate } from '../../shared/utils/timestamp';
 
 @Component({
   selector: 'app-batch-detail-view',
@@ -1445,12 +1446,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   }
 
   convertToDate(timestamp: any): Date | null {
-    if (!timestamp) return null;
-    if (timestamp instanceof Date) return timestamp;
-    if (typeof timestamp.toDate === 'function') return timestamp.toDate();
-    if (timestamp.seconds !== undefined) return new Date(timestamp.seconds * 1000);
-    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
-    return null;
+    return timestampToDate(timestamp);
   }
 
   async takeOverLock() {

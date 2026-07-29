@@ -5,9 +5,10 @@ import {
   collection, getDocs, getDoc, doc,
   Unsubscribe
 } from 'firebase/firestore';
-import { ReferenceStandard, StandardRequest } from '../../../core/models/standard.model';
+import { ReferenceStandard } from '../../../core/models/standard.model';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { isFefoCandidate, parseStandardDate } from '../../../shared/utils/standard-fefo';
+import { timestampToMillis } from '../../../shared/utils/timestamp';
 
 /**
  * StandardCacheService — Quản lý cache cho ReferenceStandards.
@@ -180,9 +181,6 @@ export class StandardCacheService {
       deletedIds
     );
     this._memStandards = items;
-    try {
-      localStorage.setItem(this.STD_CACHE_KEY, JSON.stringify(items));
-    } catch {}
   }
 
   // ─── Admin Bulk Operations ──────────────────────────────────────────────────
@@ -203,36 +201,17 @@ export class StandardCacheService {
     try {
       const json = JSON.stringify(items);
       localStorage.setItem(this._deltaCacheKey, json);
-      localStorage.setItem(this.STD_CACHE_KEY, json); // legacy
 
-      const maxSec = items.reduce((max, i) => {
-        const sec = (i.lastUpdated as any)?.seconds ?? 0;
-        return sec > max ? sec : max;
+      const maxMillis = items.reduce((max, item) => {
+        const millis = timestampToMillis(item.lastUpdated) ?? 0;
+        return millis > max ? millis : max;
       }, 0);
-      if (maxSec > 0) {
-        localStorage.setItem(this._deltaCursorKey, maxSec.toString());
-        localStorage.setItem(this.STD_SYNC_SECONDS_KEY, maxSec.toString()); // legacy
+      if (maxMillis > 0) {
+        localStorage.setItem(this._deltaCursorKey, maxMillis.toString());
       }
     } catch (e: any) {
       console.warn('[StandardCacheService] Cache write failed:', e?.name);
       try { localStorage.removeItem(this._deltaCacheKey); } catch {}
-    }
-  }
-
-  /** Purge 1 request khỏi localStorage cache (dùng cho ghost record) */
-  purgeFromRequestsCache(requestId: string): void {
-    const cacheKey = 'lims_all_standard_requests_cache_' + this.fb.APP_ID;
-    try {
-      const raw = localStorage.getItem(cacheKey);
-      if (raw) {
-        const items: StandardRequest[] = JSON.parse(raw);
-        const filtered = items.filter(i => i.id !== requestId);
-        if (filtered.length !== items.length) {
-          localStorage.setItem(cacheKey, JSON.stringify(filtered));
-        }
-      }
-    } catch (e) {
-      console.warn('[StandardCacheService] purgeFromRequestsCache failed', e);
     }
   }
 }

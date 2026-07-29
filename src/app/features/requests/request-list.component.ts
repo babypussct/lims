@@ -9,6 +9,7 @@ import { Request, RequestItem } from '../../core/models/request.model';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { PrintQueueComponent } from './print-queue.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
+import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 
 import { Router } from '@angular/router';
 
@@ -342,8 +343,11 @@ export class RequestListComponent implements OnInit {
       }
   }
 
-  private getToday(): string { return new Date().toISOString().split('T')[0]; }
-  private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
+  private getToday(): string { return timestampToLocalDateKey(new Date()) || ''; }
+  private getFirstDayOfMonth(): string {
+      const d = new Date();
+      return timestampToLocalDateKey(new Date(d.getFullYear(), d.getMonth(), 1)) || '';
+  }
 
   onDateRangeChange(range: { start: string, end: string, label: string }) {
       this.startDate.set(range.start);
@@ -359,16 +363,15 @@ export class RequestListComponent implements OnInit {
 
       return all.filter(req => {
           // Date Filter
-          let d: Date;
+          let d: Date | null;
           // Priority: Analysis Date (if exists) -> Approved At -> Timestamp
           if (req.analysisDate) {
               const parts = req.analysisDate.split('-');
               d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
           } else {
-              const ts = req.approvedAt || req.timestamp;
-              d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+              d = timestampToDate(req.approvedAt ?? req.timestamp);
           }
-          
+          if (!d) return false;
           if (d < start || d > end) return false;
 
           // User Filter

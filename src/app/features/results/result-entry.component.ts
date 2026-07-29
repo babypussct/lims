@@ -15,6 +15,7 @@ import {
   SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS
 } from './config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
+import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { PrintService } from '../../core/services/print.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { Subject, Subscription } from 'rxjs';
@@ -116,12 +117,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   });
 
   convertToDate(timestamp: any): Date | null {
-    if (!timestamp) return null;
-    if (timestamp instanceof Date) return timestamp;
-    if (typeof timestamp.toDate === 'function') return timestamp.toDate();
-    if (timestamp.seconds !== undefined) return new Date(timestamp.seconds * 1000);
-    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
-    return null;
+    return timestampToDate(timestamp);
   }
 
   @HostListener('document:keyup')
@@ -999,19 +995,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   getRunDate(): string {
     const run = this.run();
-    if (!run) return new Date().toISOString().split('T')[0];
+    const today = timestampToLocalDateKey(new Date()) || '';
+    if (!run) return today;
     if (run.analysisDate) return run.analysisDate;
-    if (run.approvedAt?.toDate) {
-      const d = run.approvedAt.toDate();
-      const offset = d.getTimezoneOffset();
-      return new Date(d.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
-    }
-    if (run.timestamp?.toDate) {
-      const d = run.timestamp.toDate();
-      const offset = d.getTimezoneOffset();
-      return new Date(d.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
-    }
-    return new Date().toISOString().split('T')[0];
+    return timestampToLocalDateKey(run.approvedAt ?? run.timestamp) || today;
   }
 
   getCurrentDocsUrl(): string | null {

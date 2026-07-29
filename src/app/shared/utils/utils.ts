@@ -1,5 +1,6 @@
 import { ReferenceStandard } from '../../core/models/standard.model';
 import { isStandardExpired, parseStandardDate, startOfLocalDay } from './standard-fefo';
+import { timestampToDate } from './timestamp';
 export { canAssign } from './standard-fefo';
 
 export const UNIT_DATA: Record<string, { type: 'mass' | 'vol' | 'qty'; val: number }> = {
@@ -112,8 +113,8 @@ export function formatNum(n: any, decimals = 2): string {
 }
 
 export function formatDate(timestamp: any): string {
-  if (!timestamp) return '';
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const date = timestampToDate(timestamp);
+  if (!date) return '';
   return date.toLocaleString('vi-VN', { 
     hour: '2-digit', minute: '2-digit', 
     day: '2-digit', month: '2-digit', year: 'numeric' 

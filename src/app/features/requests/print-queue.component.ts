@@ -11,6 +11,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
 import { ToastService } from '../../core/services/toast.service';
+import { timestampToDate } from '../../shared/utils/timestamp';
 
 @Component({
   selector: 'app-print-queue',
@@ -178,7 +179,7 @@ export class PrintQueueComponent implements OnInit {
           if (log.printData) {
               jobs.push({
                   ...log.printData,
-                  date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
+                  date: timestampToDate(log.timestamp) ?? new Date(0),
                   user: log.user,
                   requestId: log.requestId || log.printData.requestId || log.id
               });
@@ -204,7 +205,7 @@ export class PrintQueueComponent implements OnInit {
                       if (originalLog) {
                           jobs.push({
                               ...data,
-                              date: originalLog.timestamp.toDate ? originalLog.timestamp.toDate() : new Date(originalLog.timestamp),
+                              date: timestampToDate(originalLog.timestamp) ?? new Date(0),
                               user: originalLog.user,
                               requestId: originalLog.requestId || relatedLogId
                           });
