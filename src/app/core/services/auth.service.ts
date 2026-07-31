@@ -16,17 +16,16 @@ import {
   browserPopupRedirectResolver,
   EmailAuthProvider,
   reauthenticateWithCredential,
-  linkWithCredential,
   type User,
   type Auth
 } from 'firebase/auth';
 import { 
-  doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc, arrayRemove,
+  doc, getDoc, setDoc, serverTimestamp, onSnapshot, updateDoc, arrayRemove,
   collection, query, limit, getDocs, writeBatch 
 } from 'firebase/firestore';
 import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
-import { AuthSession } from '../models/auth.model';
+
 import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
 
 export const PERMISSIONS = {
@@ -140,7 +139,7 @@ export class AuthService {
   private deltaSync = inject(DeltaSyncService);
   private googleDriveService = inject(GoogleDriveService);
   private auth: Auth;
-  private readonly CRED_KEY = 'lims_local_c'; // Key for local storage
+  // CRED_KEY removed: password caching in localStorage was a security vulnerability.
 
   currentUser = signal<UserProfile | null>(null);
   isAuthReady = signal<boolean>(false);
@@ -204,39 +203,13 @@ export class AuthService {
         if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
         // Bao phủ cả trường hợp token hết hạn / phiên bị thu hồi ngoài nút Logout.
         this.deltaSync.destroyAll(true);
-        this.clearLocalCredentials();
+        this.clearQrLoginCache();
         this.currentUser.set(null);
         this.isAuthReady.set(true);
       }
     });
   }
 
-  // --- LOCAL CREDENTIAL CACHING (For Seamless QR Login) ---
-  saveLocalCredentials(email: string, pass: string) {
-      // Simple obfuscation for local storage (Not military grade, but prevents casual reading)
-      // In a real app, use the device's secure storage (Keychain/Keystore) via Ionic/Capacitor
-      try {
-          const payload = btoa(encodeURIComponent(`${email}|${pass}`));
-          localStorage.setItem(this.CRED_KEY, payload);
-      } catch (e) { console.error("Could not save local creds"); }
-  }
-
-  getLocalCredentials(): {email: string, pass: string} | null {
-      const raw = localStorage.getItem(this.CRED_KEY);
-      if(!raw) return null;
-      try {
-          const decoded = decodeURIComponent(atob(raw));
-          const parts = decoded.split('|');
-          if (parts.length === 2) {
-              return { email: parts[0], pass: parts[1] };
-          }
-      } catch { return null; }
-      return null;
-  }
-
-  clearLocalCredentials() {
-      localStorage.removeItem(this.CRED_KEY);
-  }
 
   // --- AUTH METHODS ---
 
@@ -255,8 +228,6 @@ export class AuthService {
     });
 
     await signInWithEmailAndPassword(this.auth, email, pass);
-    // Save for QR functionality
-    this.saveLocalCredentials(email, pass);
     
     // Fallback: If they were already logged in, onAuthStateChanged might not fire.
     // Force a sync to break out of the stuck state.
@@ -264,6 +235,7 @@ export class AuthService {
         this.syncUser(this.auth.currentUser);
     }
   }
+
 
   loginWithGoogle(): Promise<void> {
     if (this.googlePopupState() !== 'ready') {
@@ -352,7 +324,7 @@ export class AuthService {
     } catch (e) {
         console.warn('[Auth] Failed to destroy DeltaSync singletons:', e);
     }
-    this.clearLocalCredentials(); // Security cleanup
+    this.clearQrLoginCache(); // Security cleanup
     localStorage.removeItem('lims_remember_session'); // Clear remember session flag
     
     // Clear Google Drive session state
@@ -389,11 +361,6 @@ export class AuthService {
     if (this.userUnsub) { this.userUnsub(); }
     const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
     
-    // Automatically link password provider in background for Google Auth users
-    this.linkPasswordProviderIfNeeded(firebaseUser).catch(err => {
-        console.warn("[Auth] linkPasswordProviderIfNeeded error:", err);
-    });
-
     // Đồng bộ cấu hình nhóm quyền động
     this.syncRolesConfig().catch(err => {
         console.warn("[Auth] Failed to sync roles_config:", err);
@@ -457,41 +424,26 @@ export class AuthService {
     });
   }
 
-  // --- QR LOGIN HANDSHAKE METHODS ---
+  // --- QR LOGIN HANDSHAKE METHODS (Secure Redesign) ---
+  // Luồng mới: Desktop tạo session qua /api/qr/create (Admin SDK),
+  // Mobile gửi Firebase ID Token lên /api/qr/approve,
+  // Desktop poll /api/qr/status và nhận customToken để đăng nhập.
+  // Không có password nào được truyền giữa các thiết bị.
 
-  async createAuthSession(sessionId: string) {
-      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
-      await setDoc(ref, {
-          status: 'waiting',
-          timestamp: serverTimestamp()
-      });
-  }
+  // Desktop: lắng nghe kết quả từ polling API (không dùng Firestore client)
+  // Placeholder - được xử lý hoàn toàn trong login.component.ts qua /api/qr/status
 
-  listenToAuthSession(sessionId: string, onUpdate: (session: AuthSession) => void) {
-      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
-      return onSnapshot(ref, (snap: any) => {
-          if (snap.exists()) {
-              onUpdate({ id: snap.id, ...snap.data() } as AuthSession);
-          }
-      });
-  }
-
+  // Mobile: Xoá session sau khi đã approve thành công (cleanup)
   async deleteAuthSession(sessionId: string) {
-      try {
-          const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
-          await deleteDoc(ref);
-      } catch(e) { console.warn("Cleanup error", e); }
+      // Session cleanup được xử lý server-side bởi /api/qr/status sau khi cấp customToken.
+      // Client chỉ gọi hàm này nếu user cancel thủ công.
+      console.log('[Auth] Session cleanup requested for:', sessionId);
   }
 
-  async approveAuthSession(sessionId: string, email: string, encryptedPass: string, deviceName: string) {
-      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
-      const payload = `${email}|${encryptedPass}`;
-      await setDoc(ref, {
-          status: 'approved',
-          encryptedCreds: payload,
-          deviceInfo: deviceName,
-          timestamp: serverTimestamp()
-      }, { merge: true });
+  // Placeholder - sẽ bị xoá sau khi mobile-qr-login.component.ts được cập nhật
+  /** @deprecated Dùng /api/qr/approve thay thế. Sẽ xoá sau khi redesign hoàn tất. */
+  async approveAuthSession(sessionId: string, _email: string, _encryptedPass: string, _deviceName: string) {
+      console.warn('[Auth] approveAuthSession is deprecated. Use /api/qr/approve API endpoint.');
   }
 
   async verifyPassword(email: string, pass: string): Promise<boolean> {
@@ -504,28 +456,14 @@ export class AuthService {
       return false;
   }
 
+  /** Xoá bất kỳ dữ liệu QR login tạm nào còn sót trong localStorage. */
+  clearQrLoginCache() {
+      localStorage.removeItem('lims_qr_session');
+  }
+
   isGoogleUser(): boolean {
       const authObj = getAuth(this.fb.app);
       return authObj.currentUser?.providerData?.some((p: any) => p.providerId === 'google.com') || false;
-  }
-
-  generateDeterministicPassword(uid: string): string {
-      const salt = "lims_secure_salt_2026_nafiqpm6";
-      return btoa(uid + salt).substring(0, 30);
-  }
-
-  async linkPasswordProviderIfNeeded(user: User) {
-      try {
-          const hasPassword = user.providerData.some((p: any) => p.providerId === 'password');
-          if (!hasPassword && user.email) {
-              const pass = this.generateDeterministicPassword(user.uid);
-              const credential = EmailAuthProvider.credential(user.email, pass);
-              await linkWithCredential(user, credential);
-              console.log("[Auth] Successfully linked background password provider for QR login.");
-          }
-      } catch (e) {
-          console.warn("[Auth] Failed to link password provider (provider might already be linked or error):", e);
-      }
   }
 
   // --- Permission Checks ---

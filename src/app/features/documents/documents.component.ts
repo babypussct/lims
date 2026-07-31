@@ -867,9 +867,11 @@ export class DocumentsComponent implements OnInit, OnDestroy {
 
   restoreGridScroll() {
     if (!this.gridApi || this.isMobile() || this.viewMode() !== 'list') return;
+    const rowCount = this.gridApi.getDisplayedRowCount();
+    if (rowCount === 0) return;
     const rowHeight = this.density() === 'compact' ? 34 : 44;
     const scrollTop = this.scrollPositions[this.currentFolderId()] || 0;
-    const rowIndex = Math.max(0, Math.floor(scrollTop / rowHeight));
+    const rowIndex = Math.min(Math.max(0, Math.floor(scrollTop / rowHeight)), rowCount - 1);
     setTimeout(() => this.gridApi?.ensureIndexVisible(rowIndex, 'top'));
   }
 

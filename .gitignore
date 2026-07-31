@@ -26,6 +26,7 @@ dist-ssr
 # Security / Secrets
 *firebase-adminsdk*.json
 *-service-account*.json
+service-account.json
 *.env
 
 # Angular cache

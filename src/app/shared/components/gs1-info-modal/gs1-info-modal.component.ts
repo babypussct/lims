@@ -147,7 +147,7 @@ export class Gs1InfoModalComponent {
       } else {
         this.matchedItem.set(null);
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   async lookupItem(gtin: string) {

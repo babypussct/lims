@@ -48,6 +48,21 @@
                         <i class="fa-solid fa-file-export group-hover:rotate-12 transition-transform"></i> Xuất Báo Cáo
                     </button>
 
+                    <!-- Backfill Button (Admin/Manager only) -->
+                    @if (auth.currentUser()?.role === 'manager') {
+                        <button (click)="runStatsBackfill()" [disabled]="isBackfilling()"
+                                class="h-[42px] px-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 rounded-xl text-xs font-black uppercase tracking-wider transition shadow-lg shadow-orange-500/20 active:scale-95 flex items-center gap-2 disabled:opacity-50 group">
+                            <i class="fa-solid fa-database" [class.fa-spin]="isBackfilling()"></i> 
+                            {{ isBackfilling() ? 'Đang chạy...' : 'Cập nhật lại Dữ liệu (Backfill)' }}
+                        </button>
+                        
+                        @if (isBackfilling() && backfillProgressText()) {
+                            <div class="text-xs text-orange-600 dark:text-orange-400 font-bold ml-2 animate-pulse">
+                                {{ backfillProgressText() }}
+                            </div>
+                        }
+                    }
+
                 </div>
             </div>
 

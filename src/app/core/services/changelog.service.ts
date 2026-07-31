@@ -13,6 +13,17 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.07.31-b01',
+    date: '31/07/2026',
+    title: 'Tối Ưu Thống Kê Firestore & Khắc Phục So Sánh Xu Hướng',
+    highlights: [
+      'Toàn bộ phần Hiệu Suất Phân Tích (KPI, biểu đồ, so sánh trendInfo, tần suất SOP) chuyển sang 100% Firestore pre-aggregated.',
+      'Đã sửa triệt để lỗi Date Rollover và Off-by-one giúp phép so sánh giữa các tháng luôn chính xác.',
+      'Khắc phục lỗi Firestore query Composite Index cho phép Backfill dữ liệu từ 01/01/2026 mượt mà.',
+      'Nâng cấp cache Signal statsData.update giúp duy trì dữ liệu các tháng đã tải khi chuyển đổi bộ lọc.'
+    ]
+  },
+  {
     version: 'v26.07.29-b03',
     date: '29/07/2026',
     title: 'Lập Mẻ Tự Động An Toàn & Thông Báo Chính Xác',

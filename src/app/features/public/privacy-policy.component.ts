@@ -32,7 +32,7 @@ import { Router } from '@angular/router';
             <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Chính Sách Bảo Mật & Quyền Riêng Tư</h2>
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-semibold">
               <i class="fa-regular fa-clock"></i>
-              <span>Cập nhật lần cuối: 13/07/2026</span>
+              <span>Cập nhật lần cuối: 30/07/2026</span>
             </div>
           </div>
 
@@ -135,10 +135,43 @@ import { Router } from '@angular/router';
               </p>
             </div>
 
-            <!-- Section 5 -->
+            <!-- Section 5: Xoa tai khoan -->
+            <div class="bg-red-50/50 dark:bg-red-950/20 p-6 rounded-2xl border border-red-200 dark:border-red-900/50 my-6">
+              <h3 class="text-lg font-extrabold text-red-900 dark:text-red-200 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-user-slash text-red-600"></i> 5. Quyền Xóa và Ẩn Danh Hoá Tài Khoản
+              </h3>
+              <p class="mb-3">
+                Theo yêu cầu của Apple App Store và chính sách GDPR, bạn có quyền yêu cầu ẩn danh hoá thông tin cá nhân bất kỳ lúc nào.
+              </p>
+              <ul class="list-disc pl-5 space-y-2 mb-4">
+                <li><strong>Thông tin được ẩn danh hoá:</strong> Địa chỉ email và ảnh đại diện.</li>
+                <li><strong>Thông tin được giữ lại:</strong> Tên hiển thị và UID được giữ để phục vụ audit trail và tính toàn vẹn dữ liệu kết quả kiểm nghiệm.</li>
+                <li><strong>Cách thực hiện:</strong> Vào <strong>Trang cá nhân → Quản lý Tài Khoản</strong> và bấm nút “Ẩn danh hoá thông tin cá nhân”.</li>
+                <li><strong>Hiệu lực tức thì:</strong> Sau khi xác nhận, hệ thống sẽ thực hiện trong vòng 60 giây.</li>
+              </ul>
+              <p class="text-sm text-slate-600 dark:text-slate-300">
+                Nếu bạn muốn xóa hoàn toàn tài khoản và toàn bộ dữ liệu liên quan, vui lòng liên hệ trực tiếp quản trị viên qua email bên dưới.
+              </p>
+            </div>
+
+            <!-- Section 6: Firebase/FCM -->
             <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
               <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-user-xmark text-blue-600"></i> 5. Quyền Kiểm Soát và Thu Hồi Quyền Truy Cập
+                <i class="fa-solid fa-fire text-orange-500"></i> 6. Dịch Vụ Firebase và Thông Báo Đẩy
+              </h3>
+              <p class="mb-3">Hệ thống sử dụng các dịch vụ Google Firebase:</p>
+              <ul class="list-disc pl-5 space-y-2">
+                <li><strong>Firebase Authentication:</strong> Xác thực đăng nhập bằng tên đăng nhập/mật khẩu nội bộ. Dữ liệu lưu trữ: email (hoặc tên đại diện), UID. Không có OAuth Google đối với người dùng thường.</li>
+                <li><strong>Cloud Firestore:</strong> Lưu trữ dữ liệu nghiệp vụ (kết quả kiểm nghiệm, số lượng, SOP). Toàn bộ dữ liệu thuộc sở hữu của phòng thí nghiệm NAFIQPM6.</li>
+                <li><strong>Firebase Cloud Messaging (FCM):</strong> Gửi thông báo đẩy nội bộ (cảnh báo hết hạn, yêu cầu duyệt). FCM token được lưu trên thiết bị và Firestore, chỉ dùng để gửi thông báo nội bộ, không chia sẻ bên ngoài.</li>
+                <li><strong>Vercel (hosting):</strong> Ứng dụng được triển khai trên Vercel. Vercel có thể lưu access log (IP, user agent) trong tối đa 30 ngày theo chính sách riêng của họ.</li>
+              </ul>
+            </div>
+
+            <!-- Section 7: Quyen kiem soat -->
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-user-xmark text-blue-600"></i> 7. Quyền Kiểm Soát và Thu Hồi Quyền Truy Cập Google
               </h3>
               <p>
                 Bạn có toàn quyền kiểm soát tài khoản của mình. Bạn có thể thu hồi quyền truy cập Google Drive bất kỳ lúc nào bằng cách:
@@ -150,10 +183,10 @@ import { Router } from '@angular/router';
               </ol>
             </div>
 
-            <!-- Section 6 -->
+            <!-- Section 8: Lien he -->
             <div class="border-t border-slate-200 dark:border-slate-700/80 pt-6 mt-8">
               <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-envelope-open-text text-blue-600"></i> 6. Liên Hệ Hỗ Trợ
+                <i class="fa-solid fa-envelope-open-text text-blue-600"></i> 8. Liên Hệ Hỗ Trợ
               </h3>
               <p>
                 Nếu bạn có bất kỳ câu hỏi nào liên quan đến Chính sách Bảo mật này hoặc các vấn đề kỹ thuật khác, vui lòng liên hệ quản trị viên:

@@ -11,6 +11,7 @@ import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
 import { CalculatorService } from './calculator.service';
 import { buildScopedDeltaKey, DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
+import { StatsService } from './stats.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -46,6 +47,7 @@ export class StateService implements OnDestroy {
   private injector = inject(Injector);
   private deltaSync = inject(DeltaSyncService);
   private targetService = inject(TargetService);
+  private statsService = inject(StatsService);
 
   private listeners: Unsubscribe[] = [];
   private initGeneration = 0;
@@ -108,7 +110,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.07.29-b03');
+  systemVersion = signal<string>('v26.07.31-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -163,7 +165,7 @@ export class StateService implements OnDestroy {
       } else {
         this.cleanupListeners();
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
@@ -893,6 +895,17 @@ export class StateService implements OnDestroy {
     return requestItems;
   }
 
+  private getStatsDateForRequest(req: any, fallbackDate: Date): Date {
+    let date = req.approvedAt ? new Date(req.approvedAt.seconds * 1000) : (req.timestamp ? new Date(req.timestamp.seconds * 1000) : fallbackDate);
+    if (req.analysisDate) {
+      const parts = req.analysisDate.split('-');
+      if (parts.length === 3) {
+        date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      }
+    }
+    return date;
+  }
+
   private buildSopTraceability(sop: Sop): Pick<Request, 'sopVersion' | 'sopRef' | 'targetNames'> {
     return {
       sopVersion: sop.version || 1,
@@ -1083,6 +1096,12 @@ export class StateService implements OnDestroy {
       if (options.showSuccessToast !== false) {
         this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
       }
+
+      let samples = 1; let qcs = 0;
+      if (formInputs?.['n_sample']) samples = Number(formInputs['n_sample']);
+      if (formInputs?.['n_qc']) qcs = Number(formInputs['n_qc']);
+      this.statsService.incrementStats(this.getStatsDateForRequest({ analysisDate: formInputs?.analysisDate }, new Date()), sop.id, sop.name, samples, 1, qcs).catch(e => console.error(e));
+
       return { logId: logRef.id, printJobId: printJobRef.id };
 
     } catch (e: any) {
@@ -1245,6 +1264,13 @@ export class StateService implements OnDestroy {
         });
       });
 
+      prepared.forEach(item => {
+        let samples = 1; let qcs = 0;
+        if (item.formInputs?.['n_sample']) samples = Number(item.formInputs['n_sample']);
+        if (item.formInputs?.['n_qc']) qcs = Number(item.formInputs['n_qc']);
+        this.statsService.incrementStats(this.getStatsDateForRequest({ analysisDate: item.formInputs?.analysisDate }, new Date()), item.sop.id, item.sop.name, samples, 1, qcs).catch(e => console.error(e));
+      });
+
       return prepared.map(item => ({
         requestId: item.requestRef.id,
         printJobId: item.printJobRef.id,
@@ -1369,6 +1395,13 @@ export class StateService implements OnDestroy {
           }));
         }
       });
+
+      let samples = 1; let qcs = 0;
+      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+      if (req.inputs?.['n_qc']) qcs = Number(req.inputs['n_qc']);
+      this.statsService.incrementStats(this.getStatsDateForRequest(req, new Date()), req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+
       this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
   }
@@ -1408,6 +1441,14 @@ export class StateService implements OnDestroy {
           requestId: req.id
         }));
       });
+
+      let samples = 1; let qcs = 0;
+      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+      if (req.inputs?.['n_qc']) qcs = Number(req.inputs['n_qc']);
+      const reqDate = this.getStatsDateForRequest(req, new Date());
+      this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+
       this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
   }
@@ -1552,6 +1593,29 @@ export class StateService implements OnDestroy {
           }
         }));
       });
+
+      let oldSamples = 1; let oldQcs = 0;
+      if (req.sampleList && req.sampleList.length > 0) oldSamples = req.sampleList.length;
+      else if (req.inputs?.['n_sample']) oldSamples = Number(req.inputs['n_sample']);
+      if (req.inputs?.['n_qc']) oldQcs = Number(req.inputs['n_qc']);
+
+      let newSamples = 1; let newQcs = 0;
+      if (formInputs.sampleList && formInputs.sampleList.length > 0) newSamples = formInputs.sampleList.length;
+      else if (formInputs['n_sample']) newSamples = Number(formInputs['n_sample']);
+      if (formInputs['n_qc']) newQcs = Number(formInputs['n_qc']);
+
+      const sampleDelta = newSamples - oldSamples;
+      const qcDelta = newQcs - oldQcs;
+
+      if (sampleDelta !== 0) {
+        const reqDate = this.getStatsDateForRequest(req, new Date());
+        this.statsService.incrementStats(reqDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
+      }
+      if (qcDelta !== 0) {
+        const reqDate = this.getStatsDateForRequest(req, new Date());
+        this.statsService.incrementStats(reqDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+      }
+
       this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');
       return true;
     } catch (e: any) {

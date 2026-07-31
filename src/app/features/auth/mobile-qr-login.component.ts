@@ -1,15 +1,21 @@
-import { Component, inject, signal, effect, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 
+// Format mã QR mới (secure): "LIMS_QR|{sessionId}|{nonce}"
+// Mobile gửi Firebase ID Token lên /api/qr/approve — KHÔNG truyền password.
+interface QrPayload {
+  sessionId: string;
+  nonce: string;
+}
+
 @Component({
   selector: 'app-mobile-qr-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, QrScannerComponent],
+  imports: [CommonModule, QrScannerComponent],
   template: `
     <div class="h-full flex flex-col bg-black relative">
         <!-- Header -->
@@ -26,17 +32,26 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
             <div class="flex-1 relative">
                 <app-qr-scanner (scanSuccess)="onScan($event)" (scanError)="onError($event)"></app-qr-scanner>
             </div>
+        } @else if (isProcessing()) {
+            <!-- PROCESSING STATE -->
+            <div class="flex-1 bg-slate-50 flex flex-col items-center justify-center p-6">
+                <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-blue-200">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                </div>
+                <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đang xác thực...</h2>
+                <p class="text-sm text-slate-500 text-center px-4">Đang gửi xác nhận an toàn đến máy tính.</p>
+            </div>
         } @else {
             <!-- CONFIRM FORM -->
             <div class="flex-1 bg-slate-50 flex flex-col items-center justify-center p-6 animate-slide-up">
-                
+
                 <!-- Success Icon -->
                 <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-green-200 animate-bounce-in">
                     <i class="fa-solid fa-desktop"></i>
                 </div>
-                
+
                 <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đăng Nhập Máy Tính?</h2>
-                <p class="text-sm text-slate-500 text-center mb-8 px-4">Xác nhận cấp quyền truy cập cho thiết bị mới.</p>
+                <p class="text-sm text-slate-500 text-center mb-8 px-4">Xác nhận để cấp quyền truy cập an toàn cho thiết bị này.</p>
 
                 <!-- User Info Card -->
                 <div class="w-full max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-3">
@@ -50,25 +65,21 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
                     <div class="text-green-500 text-xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
 
-                <!-- Input is hidden if credentials found or if Google user -->
-                @if (!hasCachedCreds() && !isGoogleUser()) {
-                    <div class="w-full max-w-sm bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                        <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Nhập mật khẩu để xác nhận</label>
-                        <div class="relative">
-                            <input type="password" [(ngModel)]="confirmPassword" placeholder="Mật khẩu..." 
-                                   class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition">
-                            <i class="fa-solid fa-lock absolute right-4 top-3.5 text-slate-400"></i>
-                        </div>
-                    </div>
-                }
+                <!-- Security Notice -->
+                <div class="w-full max-w-sm bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+                    <i class="fa-solid fa-shield-halved text-emerald-600 mt-0.5"></i>
+                    <p class="text-xs text-emerald-700">
+                        Xác thực bằng tài khoản của bạn — không cần nhập mật khẩu.
+                        Phiên đăng nhập sẽ hết hạn sau 5 phút nếu không xác nhận.
+                    </p>
+                </div>
 
                 <div class="w-full max-w-sm flex gap-3 mt-auto mb-6">
                     <button (click)="cancel()" class="flex-1 py-4 rounded-xl border border-slate-200 font-bold text-slate-600 bg-white hover:bg-slate-50 transition">Hủy</button>
-                    
-                    <button (click)="approve()" [disabled]="(!confirmPassword && !hasCachedCreds() && !isGoogleUser()) || isProcessing()" 
+
+                    <button (click)="approve()" [disabled]="isProcessing()"
                             class="flex-[2] py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-base">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                        @else { <i class="fa-solid fa-fingerprint"></i> }
+                        <i class="fa-solid fa-fingerprint"></i>
                         Đồng ý & Đăng nhập
                     </button>
                 </div>
@@ -79,6 +90,8 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
   styles: [`
     @keyframes bounceIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
     .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-slide-up { animation: slideUp 0.3s ease-out; }
   `]
 })
 export class MobileQrLoginComponent implements OnInit {
@@ -87,23 +100,11 @@ export class MobileQrLoginComponent implements OnInit {
   route: ActivatedRoute = inject(ActivatedRoute);
   toast = inject(ToastService);
 
-  scanData = signal<{sessionId: string, key: string} | null>(null);
-  confirmPassword = '';
+  scanData = signal<QrPayload | null>(null);
   isProcessing = signal(false);
-  hasCachedCreds = signal(false);
-  isGoogleUser = computed(() => this.auth.isGoogleUser());
-
-  constructor() {
-      // Check for cached credentials immediately
-      const creds = this.auth.getLocalCredentials();
-      if (creds && creds.pass) {
-          this.hasCachedCreds.set(true);
-          this.confirmPassword = creds.pass; // Pre-fill internally
-      }
-  }
 
   ngOnInit() {
-      // Check if QR code was passed via query params (e.g. from Global Scanner)
+      // Hỗ trợ QR code được pass qua query params (ví dụ từ Global Scanner)
       this.route.queryParams.subscribe(params => {
           if (params['qr']) {
               this.onScan(params['qr']);
@@ -112,92 +113,73 @@ export class MobileQrLoginComponent implements OnInit {
   }
 
   onScan(raw: string) {
-      if (this.scanData()) return;
-      
-      console.log("Scanned:", raw);
+      if (this.scanData() || this.isProcessing()) return;
+
+      // Format mới: "LIMS_QR|{sessionId}|{nonce}"
       const parts = raw.split('|');
-      
-      if (parts.length === 2 && parts[0].toLowerCase().startsWith('sess_')) {
-          this.scanData.set({ sessionId: parts[0], key: parts[1] });
+      if (parts.length === 3 && parts[0] === 'LIMS_QR' && parts[1] && parts[2]) {
+          const sessionId = parts[1];
+          const nonce = parts[2];
+          // Validation cơ bản: nonce phải đủ dài (32+ chars từ crypto.getRandomValues)
+          if (nonce.length < 16) {
+              this.toast.show('Mã QR không hợp lệ hoặc đã hết hạn.', 'error');
+              return;
+          }
+          this.scanData.set({ sessionId, nonce });
       } else {
-          this.toast.show('Mã QR không hợp lệ. Vui lòng quét mã trên màn hình đăng nhập.', 'error');
+          this.toast.show('Mã QR không đúng định dạng. Vui lòng quét mã trên màn hình đăng nhập.', 'error');
       }
   }
 
-  onError(err: any) {
-      // Handle camera errors silently mostly
+  onError(_err: any) {
+      // Xử lý lỗi camera một cách yên lặng — user có thể thử lại
   }
 
   cancel() {
       this.scanData.set(null);
-      // Reset password if it wasn't cached
-      if (!this.hasCachedCreds()) this.confirmPassword = '';
       this.router.navigate(['/dashboard']);
   }
 
   async approve() {
       const data = this.scanData();
-      const currentUser = this.auth.currentUser();
-      
-      if (!data || !currentUser) return;
+      if (!data || this.isProcessing()) return;
 
       this.isProcessing.set(true);
       try {
-          let passToEncrypt = this.confirmPassword;
-          
-          if (this.isGoogleUser()) {
-              passToEncrypt = this.auth.generateDeterministicPassword(currentUser.uid);
-          }
-
-          if (!passToEncrypt) {
-              this.toast.show('Vui lòng nhập mật khẩu.', 'error');
+          // Lấy Firebase ID Token của user hiện tại (không truyền password)
+          const idToken = await this.auth.getIdToken(false);
+          if (!idToken) {
+              this.toast.show('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.', 'error');
               this.isProcessing.set(false);
               return;
           }
 
-          // Verify password first (either cached or manual, bypass for Google users)
-          if (!this.hasCachedCreds() && !this.isGoogleUser()) {
-              try {
-                  await this.auth.verifyPassword(currentUser.email, passToEncrypt);
-              } catch (verifyErr: any) {
-                  console.error("Re-authentication failed:", verifyErr);
-                  this.toast.show('Mật khẩu xác nhận không chính xác!', 'error');
-                  this.isProcessing.set(false);
-                  return;
-              }
+          // Gửi ID Token lên server để xác thực — server tạo customToken cho Desktop
+          const response = await fetch('/api/qr/approve', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  sessionId: data.sessionId,
+                  nonce: data.nonce,
+                  idToken
+              })
+          });
+
+          if (!response.ok) {
+              const err = await response.json().catch(() => ({ error: 'Lỗi không xác định' }));
+              throw new Error(err.error || `HTTP ${response.status}`);
           }
 
-          // Encrypt Password using the Key from QR (XOR for client-side demo)
-          // Note: The key comes from the Desktop's QR code.
-          const encrypted = this.xorEncrypt(passToEncrypt, data.key);
-          
-          await this.auth.approveAuthSession(
-              data.sessionId, 
-              currentUser.email, 
-              encrypted, 
-              navigator.userAgent
-          );
-          
-          this.toast.show('Đã gửi xác nhận đăng nhập!', 'success');
-          // If the password was typed manually, let's also cache it locally so they don't have to type it next time!
-          if (!this.hasCachedCreds() && !this.isGoogleUser()) {
-              this.auth.saveLocalCredentials(currentUser.email, this.confirmPassword);
-              this.hasCachedCreds.set(true);
-          }
-          
-          setTimeout(() => this.router.navigate(['/dashboard']), 1000);
-      } catch (e) {
-          this.toast.show('Lỗi kết nối. Thử lại.', 'error');
+          this.toast.show('Đã xác nhận đăng nhập thành công!', 'success');
+          setTimeout(() => this.router.navigate(['/dashboard']), 1200);
+      } catch (e: any) {
+          console.error('[QR Approve] Error:', e);
+          const msg = e?.message?.includes('expired')
+              ? 'Mã QR đã hết hạn. Vui lòng quét lại mã mới.'
+              : 'Lỗi kết nối. Vui lòng thử lại.';
+          this.toast.show(msg, 'error');
+          this.scanData.set(null);
           this.isProcessing.set(false);
       }
-  }
-
-  // Simple XOR Cipher (Matches Login Component Logic)
-  xorEncrypt(input: string, key: string): string {
-      let result = '';
-      for (let i = 0; i < input.length; i++) {
-          result += String.fromCharCode(input.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-      }
-      return btoa(result); // Base64 encode
   }
 }

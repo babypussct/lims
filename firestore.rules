@@ -120,6 +120,9 @@ service cloud.firestore {
     match /artifacts/{appId}/stats/{docId} {
       allow read, write: if isSignedIn();
     }
+    match /artifacts/{appId}/monthly_stats/{docId} {
+      allow read, write: if isSignedIn();
+    }
     match /artifacts/{appId}/notifications/{docId} {
       allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
       allow create: if false; // Chi Firebase Admin trong /api/notifications duoc tao
@@ -130,7 +133,10 @@ service cloud.firestore {
       allow delete: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
     }
     match /artifacts/{appId}/auth_sessions/{sessionId} {
-      allow read, write: if true;
+      // [SECURITY FIX 2026-07-30] P0: Collection này KHÔNG cho phép client trực tiếp đọc/ghi.
+      // Mọi thao tác tạo/duyệt/poll session đi qua Admin SDK tại /api/qr/* (Vercel serverless).
+      // Sau khi QR login redesign hoàn tất, rule này sẽ được mở lại với scope tối thiểu theo uid.
+      allow read, write: if false;
     }
 
     // --- CAC MODULE NGHIEP VU ---

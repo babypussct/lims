@@ -225,7 +225,7 @@ export class SmartBatchComponent {
           if (changed) {
               this.blocks.set(updatedBlocks);
           }
-      }, { allowSignalWrites: true });
+      });
   }
   
   // Quick Generate Modal State

@@ -162,7 +162,7 @@ export class SopEditorComponent {
       }
       const sub = this.form.valueChanges.pipe(debounceTime(300)).subscribe(val => { this.runPreview(val); });
       onCleanup(() => sub.unsubscribe());
-    }, { allowSignalWrites: true });
+    });
 
     // Load Master Data
     this.invService.getAllInventory().then(inv => this.masterInventory.set(inv));

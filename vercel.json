@@ -2,11 +2,26 @@
   "buildCommand": "npx ng build --configuration=production --no-progress",
   "outputDirectory": "dist/lims-cloud-pro/browser",
   "framework": "angular",
+  "alias": [
+    "nafiqpm6.vercel.app",
+    "nafiqpm6-babypusscts-projects.vercel.app",
+    "nafiqpm6-git-main-babypusscts-projects.vercel.app"
+  ],
   "rewrites": [
     { "source": "/__/auth/(.*)", "destination": "https://lims-cloud-by-otada.firebaseapp.com/__/auth/$1" },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+      ]
+    },
     {
       "source": "/main-(.*).js",
       "headers": [

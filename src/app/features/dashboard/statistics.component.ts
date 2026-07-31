@@ -1,9 +1,9 @@
-
 import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { StatsService, MonthlyStatsDoc } from '../../core/services/stats.service';
 import { InventoryService } from '../../features/inventory/inventory.service';
 import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
@@ -33,6 +33,7 @@ export class StatisticsComponent {
   state = inject(StateService);
   auth = inject(AuthService); 
   invService = inject(InventoryService);
+  statsService = inject(StatsService);
   formatDate = formatDate;
   formatNum = formatNum;
   cleanName = cleanName;
@@ -79,6 +80,20 @@ export class StatisticsComponent {
   isLoading = signal(false);
   hasGenerated = signal(false);
   nxtData = signal<NxtReportItem[]>([]);
+  statsData = signal<Record<string, MonthlyStatsDoc>>({});
+
+  // Helper function to extract stats for a specific day
+  private getDayStats(d: Date): { totalSamples: number, totalBatches: number, totalQcs: number, sops: Record<string, { samples: number, batches: number, qcs: number }> } {
+      const y = d.getFullYear();
+      const mStr = String(d.getMonth() + 1).padStart(2, '0');
+      const dStr = String(d.getDate()).padStart(2, '0');
+      const monthKey = `${y}-${mStr}`;
+      const dayKey = `${y}-${mStr}-${dStr}`;
+      
+      const stats = this.statsData()[monthKey];
+      if (stats && stats[dayKey]) return stats[dayKey];
+      return { totalSamples: 0, totalBatches: 0, totalQcs: 0, sops: {} };
+  }
 
   showGlobalExportModal = signal(false);
   exportInventory = signal(true);
@@ -602,11 +617,62 @@ export class StatisticsComponent {
   specificDay = signal<number>(1);
   excludeMargin = signal<boolean>(false);
 
+  // --- BACKFILL UI STATE ---
+  isBackfilling = signal(false);
+  backfillProgressText = signal('');
+  
+  async runStatsBackfill() {
+    if (this.isBackfilling()) return;
+    
+    // Check permission (only Manager)
+    if (this.auth.currentUser()?.role !== 'manager') {
+        alert('Bạn không có quyền chạy Backfill.');
+        return;
+    }
+
+    // Tự động dùng khoảng thời gian từ đầu năm 01/01 để đảm bảo nạp đủ lịch sử các tháng so sánh
+    const currentYearStart = `${new Date().getFullYear()}-01-01`;
+    const selectedStart = this.startDate();
+    const endStr = this.endDate();
+    
+    // Sử dụng từ đầu năm nếu bộ lọc hiện tại ngắn hơn
+    const startStr = selectedStart > currentYearStart ? currentYearStart : selectedStart;
+
+    if (!confirm(`Bạn có chắc chắn muốn tổng hợp lại toàn bộ số liệu thống kê từ ${startStr} đến ${endStr} không?\nQuá trình này sẽ nạp lại đầy đủ dữ liệu các tháng trước để so sánh xu hướng.`)) {
+        return;
+    }
+
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    this.isBackfilling.set(true);
+    this.backfillProgressText.set('Đang khởi tạo...');
+    
+    try {
+        await this.statsService.runBackfill(
+            startStr,
+            endStr,
+            (msg: string) => {
+                this.backfillProgressText.set(msg);
+            }
+        );
+        this.backfillProgressText.set('Thành công!');
+        setTimeout(() => this.isBackfilling.set(false), 2000);
+    } catch (e: any) {
+        console.error(e);
+        alert('Lỗi khi chạy backfill: ' + e.message);
+    } finally {
+        this.isBackfilling.set(false);
+        this.backfillProgressText.set('');
+    }
+  }
+
   constructor() {
     this.state.ensureApprovedRequestsListener();
     this.state.ensureActivityFeedListeners();
     // Load on-demand (listeners removed for Spark Free optimization)
     this.state.loadAllStandardRequests();
+    this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
+
     this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
 
     effect(() => {
@@ -621,6 +687,23 @@ export class StatisticsComponent {
                 this.createConsumptionLineChart();
             }, 100);
         }
+    });
+
+    effect(() => {
+        const start = new Date(this.startDate());
+        const end = new Date(this.endDate());
+        const months = new Set<string>();
+        
+        let d = new Date(start);
+        d.setDate(1);
+        while (d <= end) {
+            months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+            d.setMonth(d.getMonth() + 1);
+        }
+        
+        this.statsService.getStatsForMonths(Array.from(months)).then(result => {
+            this.statsData.update(prev => ({ ...prev, ...result }));
+        });
     });
   }
 
@@ -664,6 +747,13 @@ export class StatisticsComponent {
       if (id === 'all') return 'Tất cả';
       const sop = this.state.sops().find(s => s.id === id);
       return sop ? sop.name : id;
+  }
+
+  getDayStats(date: Date) {
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const dayKey = String(date.getDate()).padStart(2, '0');
+      const monthData = this.statsData().find(s => s.month === monthKey);
+      return monthData?.days?.[dayKey] ?? { sops: {} };
   }
 
   // --- NXT / EXPORT DETAIL REPORT LOGIC ---
@@ -864,7 +954,7 @@ export class StatisticsComponent {
         if (d < start || d > end) return;
         if (sopId !== 'all' && req.sopId !== sopId) return;
 
-        req.items.forEach(item => {
+        req.items.forEach((item: any) => {
             const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
             map.set(item.name, { 
                 amount: current.amount + item.amount, 
@@ -880,37 +970,43 @@ export class StatisticsComponent {
   });
 
   sopFrequencyData = computed(() => {
-    const history = this.state.approvedRequests();
+    const startStr = this.startDate();
+    const endStr = this.endDate();
+    const start = new Date(startStr); start.setHours(0,0,0,0);
+    const end = new Date(endStr); end.setHours(23,59,59,999);
+    const sopIdFilter = this.selectedSopId();
     
-    const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-    const end = new Date(this.endDate()); end.setHours(23,59,59,999);
-    const sopId = this.selectedSopId();
+    // Đọc statsData để tạo dependency (trigger computed khi data về)
+    const stats = this.statsData();
 
-    const filteredHistory = history.filter(req => {
-        const d = this.getRequestDate(req);
-        if (!d) return false;
-
-        if (d < start || d > end) return false;
-        if (sopId !== 'all' && req.sopId !== sopId) return false;
-        return true;
-    });
-
-    const total = filteredHistory.length;
-    if (total === 0) return [];
-
+    let diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
+    if (diffDays < 0) return [];
+    
     const map = new Map<string, {count: number, samples: number, qcs: number}>();
-    filteredHistory.forEach(req => {
-        const current = map.get(req.sopName) || { count: 0, samples: 0, qcs: 0 };
-        let s = 0; let q = 0;
-        if (req.inputs) {
-            if(req.inputs['n_sample']) s = Number(req.inputs['n_sample']);
-            if(req.inputs['n_qc']) q = Number(req.inputs['n_qc']);
+    let totalBatchesGlobal = 0;
+
+    // Use < instead of <= to prevent off-by-one error since diffDays represents the count of days (rounded from ~0.99 to 1 for same day)
+    for (let i = 0; i < diffDays; i++) {
+        let currentDay = new Date(start.getTime() + (i * 24 * 3600 * 1000));
+        let dayStats = this.getDayStats(currentDay);
+        
+        for (const [sopKey, sStats] of Object.entries(dayStats.sops)) {
+            if (sopIdFilter !== 'all' && sopKey !== sopIdFilter && sopKey !== this.getSelectedSopName()) continue;
+            
+            const current = map.get(sopKey) || { count: 0, samples: 0, qcs: 0 };
+            map.set(sopKey, {
+                count: current.count + sStats.batches,
+                samples: current.samples + sStats.samples,
+                qcs: current.qcs + (sStats.qcs || 0)
+            });
+            totalBatchesGlobal += sStats.batches;
         }
-        map.set(req.sopName, { count: current.count + 1, samples: current.samples + s, qcs: current.qcs + q });
-    });
+    }
+
+    if (totalBatchesGlobal === 0) return [];
 
     return Array.from(map.entries())
-        .map(([name, val]) => ({ name, count: val.count, samples: val.samples, qcs: val.qcs, percent: (val.count/total)*100 }))
+        .map(([name, val]) => ({ name, count: val.count, samples: val.samples, qcs: val.qcs, percent: (val.count/totalBatchesGlobal)*100 }))
         .sort((a,b) => b.count - a.count);
   });
 

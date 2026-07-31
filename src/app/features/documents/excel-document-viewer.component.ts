@@ -1005,8 +1005,10 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     setTimeout(() => {
       this.gridApi?.setGridOption('columnDefs', columns);
       this.gridApi?.setGridOption('rowData', [...rows]);
-      this.gridApi?.ensureIndexVisible(0, 'top');
-      this.gridApi?.setFocusedCell(0, 'c0');
+      if (rows.length > 0) {
+        this.gridApi?.ensureIndexVisible(0, 'top');
+        this.gridApi?.setFocusedCell(0, 'c0');
+      }
       this.refreshGridDecorations();
       if (this.searchQuery().trim()) this.computeSearchMatches(this.searchQuery());
     });

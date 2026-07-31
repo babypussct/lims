@@ -136,7 +136,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   }
               }
           }
-      }, { allowSignalWrites: true });
+      });
   }
 
   filteredRequests = computed(() => {

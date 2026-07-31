@@ -8,7 +8,7 @@ import {
   getFirestore
 } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { notificationDocumentId, uniqueStringValues } from './notification-utils.js';
+import { notificationDocumentId, uniqueStringValues } from './_lib/notification-utils.js';
 
 const NOTIFICATION_TYPES = new Set([
   'COA_REQUEST', 'BORROW_REQUEST', 'REQUEST_APPROVED', 'REQUEST_REJECTED',

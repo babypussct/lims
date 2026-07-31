@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService, PERMISSIONS } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
@@ -17,7 +18,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
 @Component({
   selector: 'app-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
   template: `
     <div class="w-full max-w-7xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
         <!-- Header Card -->
@@ -136,14 +137,14 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                     </div>
                                 </div>
                                 
-                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 mt-4">
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Thông báo đẩy (PWA)</label>
                                     <button (click)="enableNotifications()" class="w-full text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 py-2 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
                                         <i class="fa-regular fa-bell"></i> Cấp Quyền Thông Báo
                                     </button>
                                 </div>
                                 
-                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 mt-4">
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Giao diện Avatar cá nhân</label>
                                     <select [ngModel]="auth.currentUser()?.avatarStyle || ''" (ngModelChange)="saveMyAvatarStyle($event)" 
                                             class="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:border-blue-500 dark:focus:border-blue-500 cursor-pointer">
@@ -155,6 +156,45 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                         <option value="notionists">✏️ Vẽ tay (Notionists)</option>
                                         <option value="initials">🔤 Chữ cái (Letters)</option>
                                     </select>
+                                </div>
+
+                                <!-- DANGER ZONE -->
+                                <div class="bg-red-50/60 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl p-4">
+                                    <label class="text-[10px] font-bold text-red-500 uppercase tracking-wider flex items-center gap-2 mb-3">
+                                        <i class="fa-solid fa-circle-exclamation"></i> Quản lý Tài Khoản
+                                    </label>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+                                        Ẩn danh hoá email và avatar của bạn khỏi hệ thống. Tên hiển thị và UID vẫn giữ cho mục đích audit.
+                                    </p>
+                                    @if (!showDeleteConfirm()) {
+                                        <button (click)="showDeleteConfirm.set(true)" id="btn-anonymize-account"
+                                                class="w-full text-xs font-bold text-red-600 dark:text-red-400 border border-red-300 dark:border-red-800 bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/40 py-2.5 rounded-xl transition flex items-center justify-center gap-2 active:scale-95">
+                                            <i class="fa-solid fa-user-slash"></i> Ẩn danh hoá thông tin cá nhân
+                                        </button>
+                                    } @else {
+                                        <div class="bg-red-100 dark:bg-red-950/40 border border-red-300 dark:border-red-800 rounded-xl p-4 space-y-3">
+                                            <p class="text-xs font-bold text-red-700 dark:text-red-300 text-center">
+                                                ⚠️ Xác nhận: Email và ảnh đại diện sẽ bị xóa vĩnh viễn?
+                                            </p>
+                                            <div class="flex gap-2">
+                                                <button (click)="showDeleteConfirm.set(false)"
+                                                        class="flex-1 text-xs font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 py-2 rounded-lg transition hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                    Hủy
+                                                </button>
+                                                <button (click)="anonymizeAccount()" [disabled]="isAnonymizing()"
+                                                        class="flex-1 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                                                    @if (isAnonymizing()) {
+                                                        <i class="fa-solid fa-circle-notch fa-spin"></i> Đang xử lý...
+                                                    } @else {
+                                                        <i class="fa-solid fa-check"></i> Đồng ý, Ẩn danh hoá
+                                                    }
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                    <a routerLink="/privacy" class="block mt-3 text-center text-[11px] text-blue-500 dark:text-blue-400 hover:underline">
+                                        <i class="fa-solid fa-shield-halved mr-1"></i> Xem Chính sách Bảo mật
+                                    </a>
                                 </div>
                             </div>
 
@@ -205,6 +245,8 @@ export class ConfigComponent {
   getAvatarUrl = getAvatarUrl;
   
   activeTab = signal<'profile' | 'general' | 'users' | 'safety' | 'roles'>('general');
+  showDeleteConfirm = signal(false);
+  isAnonymizing = signal(false);
 
   availablePermissions = [
       { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },
@@ -231,6 +273,32 @@ export class ConfigComponent {
   async saveMyAvatarStyle(style: string) {
       await this.state.saveMyAvatarStyle(style);
       this.toast.show('Đã cập nhật Avatar cá nhân!', 'success');
+  }
+
+  async anonymizeAccount() {
+      if (this.isAnonymizing()) return;
+      this.isAnonymizing.set(true);
+      try {
+          const { getAuth } = await import('firebase/auth');
+          const user = getAuth().currentUser;
+          if (!user) throw new Error('Chưa đăng nhập');
+          const idToken = await user.getIdToken();
+          const res = await fetch('/api/account/delete-request', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+          });
+          if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || 'Lỗi máy chủ');
+          }
+          this.toast.show('Đã ẩn danh hoá thông tin cá nhân thành công.', 'success');
+          this.showDeleteConfirm.set(false);
+          setTimeout(() => this.auth.logout(), 1500);
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
+      } finally {
+          this.isAnonymizing.set(false);
+      }
   }
 
   async enableNotifications() {

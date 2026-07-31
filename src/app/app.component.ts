@@ -378,7 +378,7 @@ export class AppComponent implements OnDestroy {
         this.idleService.stopWatching();
         this.notificationService.stopListener();
       }
-    }, { allowSignalWrites: true });
+    });
 
     // Lắng nghe trạng thái bảo trì để thông báo khi kết thúc
     let previousMaintenanceState = false;

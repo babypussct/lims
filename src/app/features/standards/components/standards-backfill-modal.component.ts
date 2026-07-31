@@ -224,7 +224,7 @@ export class StandardsBackfillModalComponent {
         this.purpose.set('');
         this.isDepleted.set(false);
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   onUserChange(uid: string) {

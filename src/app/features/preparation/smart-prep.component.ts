@@ -148,7 +148,7 @@ export class SmartPrepComponent {
           })
       ).subscribe(items => this.searchResults.set(items));
 
-      effect(() => { if (this.systemMode() === 'sandbox') this.clearSelection(); }, { allowSignalWrites: true });
+      effect(() => { if (this.systemMode() === 'sandbox') this.clearSelection(); });
   }
 
   setSystemMode(mode: SystemMode) { 

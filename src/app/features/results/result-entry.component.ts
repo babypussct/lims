@@ -327,14 +327,14 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       if (targets.length > 0) {
         this.masterTargets.set(targets);
       }
-    }, { allowSignalWrites: true });
+    });
 
     effect(() => {
       const prefixes = this.detectedPrefixes();
       if (prefixes.length === 1) {
         this.activeFilter.set(prefixes[0]);
       }
-    }, { allowSignalWrites: true });
+    });
 
     effect(() => {
       const status = this.draft()?.status;
@@ -345,7 +345,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         );
       }
       this.previousDraftStatus = status || null;
-    }, { allowSignalWrites: false });
+    });
 
     // Tự động giành khóa một cách phản ứng (Reactive Lock Acquisition)
     effect(() => {

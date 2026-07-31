@@ -348,7 +348,7 @@ export class CalculatorComponent implements OnDestroy {
                 this.editingRequest.set(null);
             }
         }
-    }, { allowSignalWrites: true });
+    });
 
     effect(() => {
       const s = this.activeSop();
@@ -465,7 +465,7 @@ export class CalculatorComponent implements OnDestroy {
       } else {
          this.currentFormSopId = null; this.calculatedItems.set([]); this.localInventoryMap.set({});
       }
-    }, { allowSignalWrites: true });
+    });
   }
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }

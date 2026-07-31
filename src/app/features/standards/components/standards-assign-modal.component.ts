@@ -167,7 +167,7 @@ export class StandardsAssignModalComponent {
         this.assignPurpose.set('');
         this.assignExpectedAmount.set(null);
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   onAssignUserChange(userId: string) {

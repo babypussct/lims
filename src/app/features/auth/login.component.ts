@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { Unsubscribe } from 'firebase/firestore';
+
+
 import { PwaInstallPromptComponent } from '../../shared/components/pwa-install-prompt.component';
 import { StateService } from '../../core/services/state.service';
 import { ChangelogService } from '../../core/services/changelog.service';
@@ -505,12 +506,13 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   year = new Date().getFullYear();
 
 
-  // QR Handshake State
+  // QR Handshake State (Secure Redesign)
+  // Desktop t\u1ea1o session qua /api/qr/create, Mobile approve qua /api/qr/approve,
+  // Desktop nh\u1eadn customToken t\u1eeb /api/qr/status v\u00e0 signInWithCustomToken().
   @ViewChild('qrCanvas') qrCanvas!: ElementRef;
   qrStatus = signal<'waiting' | 'scanned' | 'approved' | 'expired'>('waiting');
   currentSessionId: string | null = null;
-  currentSecretKey: string | null = null;
-  private sessionSub?: Unsubscribe;
+  private pollInterval: any = null;
   private expiryTimer: any;
 
   ngOnDestroy() {
@@ -530,62 +532,77 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   async generateSession() {
       this.cleanupSession();
       this.errorMsg.set('');
-      
-      // 1. Generate ID and Secret Key
-      this.currentSessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-      this.currentSecretKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      
       this.qrStatus.set('waiting');
 
-      // 2. Display QR: ID|Key
       try {
-          const QRious = await ensureQrious();
-          const qrData = `${this.currentSessionId}|${this.currentSecretKey}`;
-          new QRious({
-              element: this.qrCanvas.nativeElement,
-              value: qrData,
-              size: 256,
-              level: 'M'
+          // 1. Tạo session bằng Admin SDK qua Vercel serverless function
+          const createRes = await fetch('/api/qr/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
           });
-      } catch (e) {
-          console.error('QR library load error:', e);
-          this.errorMsg.set('Không thể tải thư viện tạo mã QR. Vui lòng kiểm tra kết nối mạng.');
-          return;
-      }
 
-      // 3. Create Session in Firestore (Handshake)
-      try {
-          await this.auth.createAuthSession(this.currentSessionId);
-      } catch (e: any) {
-          console.error("QR Session Init Error:", e);
-          if (e.code === 'permission-denied') {
-              this.errorMsg.set('Không thể truy cập dữ liệu. Vui lòng kiểm tra quy tắc Firestore trong phần Cấu hình.');
-          } else {
-              this.errorMsg.set('Không thể tạo phiên kết nối. Vui lòng thử lại.');
+          if (!createRes.ok) {
+              throw new Error(`Server error: ${createRes.status}`);
           }
-          return;
-      }
 
-      // 4. Listen for Approval
-      try {
-          this.sessionSub = this.auth.listenToAuthSession(this.currentSessionId, (session: any) => {
-              if (session.status === 'approved' && session.encryptedCreds) {
-                  this.handleApproval(session.encryptedCreds);
+          const { sessionId, nonce, expiresAt } = await createRes.json();
+          this.currentSessionId = sessionId;
+
+          // 2. Hiển thị QR với format mới: LIMS_QR|sessionId|nonce
+          // Mobile đọc QR này và gửi lên /api/qr/approve kèm Firebase ID Token
+          try {
+              const QRious = await ensureQrious();
+              const qrData = `LIMS_QR|${sessionId}|${nonce}`;
+              new QRious({
+                  element: this.qrCanvas.nativeElement,
+                  value: qrData,
+                  size: 256,
+                  level: 'M'
+              });
+          } catch (e) {
+              console.error('QR library load error:', e);
+              this.errorMsg.set('Không thể tải thư viện tạo mã QR. Vui lòng kiểm tra kết nối mạng.');
+              return;
+          }
+
+          // 3. Poll /api/qr/status mỗi 3 giây để chờ Mobile approve
+          this.pollInterval = setInterval(async () => {
+              if (!this.currentSessionId) return;
+              try {
+                  const statusRes = await fetch(`/api/qr/status?sessionId=${encodeURIComponent(this.currentSessionId)}`);
+                  if (!statusRes.ok) return;
+
+                  const statusData = await statusRes.json();
+
+                  if (statusData.status === 'approved' && statusData.customToken) {
+                      this.qrStatus.set('approved');
+                      this.cleanupSession(false);
+                      await this.handleApproval(statusData.customToken);
+                  } else if (statusData.status === 'expired') {
+                      this.qrStatus.set('expired');
+                      this.cleanupSession(false);
+                  }
+              } catch {
+                  // Lỗi mạng tạm thời — tiếp tục poll
               }
-          });
-      } catch (e) {
-          console.error("Listener Error:", e);
-      }
+          }, 3000);
 
-      // 5. Expiry Timer (2 mins)
-      this.expiryTimer = setTimeout(() => {
-          this.qrStatus.set('expired');
-          this.cleanupSession(false); // Keep ID for display but stop listening
-      }, 120000);
+          // 4. Bộ đếm hết hạn dựa trên expiresAt từ server
+          const remainingMs = Math.max((expiresAt - Date.now()), 0);
+          this.expiryTimer = setTimeout(() => {
+              this.qrStatus.set('expired');
+              this.cleanupSession(false);
+          }, remainingMs);
+
+      } catch (e: any) {
+          console.error('[QR generateSession] Error:', e);
+          this.errorMsg.set('Không thể tạo phiên kết nối. Vui lòng thử lại.');
+      }
   }
 
   cleanupSession(clearId = true) {
-      if (this.sessionSub) { this.sessionSub(); this.sessionSub = undefined; }
+      if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
       if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; }
       if (this.currentSessionId && clearId) {
           this.auth.deleteAuthSession(this.currentSessionId).catch(() => {});
@@ -593,60 +610,19 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       }
   }
 
-  async handleApproval(encryptedData: string) {
-      this.qrStatus.set('approved');
-      
-      const sessionIdToClose = this.currentSessionId;
-      
-      // Stop listener and timer immediately to avoid duplicate triggers
-      if (this.sessionSub) { this.sessionSub(); this.sessionSub = undefined; }
-      if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; }
-      
+  async handleApproval(customToken: string) {
+      // Desktop nhận customToken từ /api/qr/status, dùng signInWithCustomToken() để đăng nhập.
+      // Không có password nào được truyền trong quá trình này.
       try {
-          const [userEmail, cipherText] = encryptedData.split('|');
-          if (!this.currentSecretKey) throw new Error("Missing key");
-          
-          const decryptedPass = this.xorDecrypt(cipherText, this.currentSecretKey);
-          
-          if (!decryptedPass) {
-              throw new Error("Không thể giải mã thông tin mật khẩu.");
-          }
-          
-          if (userEmail && decryptedPass) {
-              await this.auth.login(userEmail, decryptedPass);
-              this.toast.show('Đăng nhập qua QR thành công!', 'success');
-              
-              if (sessionIdToClose) {
-                  this.auth.deleteAuthSession(sessionIdToClose).catch(() => {});
-              }
-              if (this.currentSessionId === sessionIdToClose) {
-                  this.currentSessionId = null;
-              }
-          }
+          const { getAuth, signInWithCustomToken } = await import('firebase/auth');
+          const auth = getAuth();
+          await signInWithCustomToken(auth, customToken);
+          this.toast.show('Đăng nhập qua QR thành công!', 'success');
       } catch (e) {
-          console.error(e);
+          console.error('[QR handleApproval] Error:', e);
           this.toast.show('Lỗi xác thực phiên đăng nhập.', 'error');
-          
-          if (sessionIdToClose) {
-              this.auth.deleteAuthSession(sessionIdToClose).catch(() => {});
-          }
-          if (this.currentSessionId === sessionIdToClose) {
-              this.currentSessionId = null;
-          }
-          
-          this.generateSession(); // Retry safely
+          this.generateSession(); // Thử lại
       }
-  }
-
-  xorDecrypt(input: string, key: string): string {
-      try {
-          const decoded = atob(input);
-          let result = '';
-          for (let i = 0; i < decoded.length; i++) {
-              result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-          }
-          return result;
-      } catch(e) { return ''; }
   }
 
   async login() {

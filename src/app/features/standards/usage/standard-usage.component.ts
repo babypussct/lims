@@ -180,7 +180,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
                   this.startRealTimeStream();
               }
           }
-      }, { allowSignalWrites: true });
+      });
 
       // Effect: Sync state to URL Query Params
       effect(() => {

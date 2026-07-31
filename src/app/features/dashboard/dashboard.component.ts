@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms'; 
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { StatsService, MonthlyStatsDoc } from '../../core/services/stats.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { StandardService } from '../standards/standard.service'; 
 import { InventoryItem } from '../../core/models/inventory.model';
@@ -74,6 +75,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
   toast = inject(ToastService);
   qrService = inject(QrGlobalService);
   changelogService = inject(ChangelogService);
+  statsService = inject(StatsService);
+
+  statsData = signal<Record<string, MonthlyStatsDoc>>({});
+
+  // Helper function to extract stats for a specific day
+  private getDayStats(d: Date): { totalSamples: number, totalBatches: number, totalQcs: number, sops: Record<string, { samples: number, batches: number, qcs: number }> } {
+      const y = d.getFullYear();
+      const mStr = String(d.getMonth() + 1).padStart(2, '0');
+      const dStr = String(d.getDate()).padStart(2, '0');
+      const monthKey = `${y}-${mStr}`;
+      const dayKey = `${y}-${mStr}-${dStr}`;
+      
+      const stats = this.statsData()[monthKey];
+      if (stats && stats[dayKey]) return stats[dayKey];
+      return { totalSamples: 0, totalBatches: 0, totalQcs: 0, sops: {} };
+  }
 
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
@@ -311,11 +328,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // TREND INDICATOR (Dynamic Comparison based on Date Filter)
   trendInfo = computed(() => {
-      let history = this._parsedRequests();
       const filter = this.selectedSopFilter();
-      if (filter) {
-          history = history.filter(r => r.sopName === filter);
-      }
       
       const startStr = this.startDate();
       const endStr = this.endDate();
@@ -332,16 +345,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       // Calculate current total
       let currentTotal = 0;
-      const tCurrStart = currentStart.getTime();
-      const tCurrEnd = currentEnd.getTime();
-
-      const currentFiltered = this._rangeFilteredRequests();
-      currentFiltered.forEach(req => {
-          let count = 1;
-          if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
-          else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-          currentTotal += count;
-      });
+      for (let i = 0; i < diffDays; i++) {
+          const d = new Date(currentStart); d.setDate(d.getDate() + i);
+          const dayStats = this.getDayStats(d);
+          
+          if (filter) {
+              const sopStats = dayStats.sops[filter];
+              if (sopStats) currentTotal += sopStats.samples;
+          } else {
+              currentTotal += dayStats.totalSamples;
+          }
+      }
 
       const currentAvg = diffDays > 0 ? currentTotal / diffDays : currentTotal;
 
@@ -350,23 +364,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const historyEnd = new Date(currentStart); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
       const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
 
-      const tHistStart = historyStart.getTime();
-      const tHistEnd = historyEnd.getTime();
-
       // Daily totals for history
       const dailyTotals = new Array(historyDays).fill(0);
-      history.forEach(req => {
-          const timestamp = req._date.getTime();
-          if (timestamp >= tHistStart && timestamp <= tHistEnd) {
-              const dayIndex = Math.floor((timestamp - tHistStart) / (1000 * 60 * 60 * 24));
-              if (dayIndex >= 0 && dayIndex < historyDays) {
-                  let count = 1;
-                  if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
-                  else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-                  dailyTotals[dayIndex] += count;
-              }
+      for (let i = 0; i < historyDays; i++) {
+          const d = new Date(historyStart); d.setDate(d.getDate() + i);
+          const dayStats = this.getDayStats(d);
+          
+          if (filter) {
+              const sopStats = dayStats.sops[filter];
+              if (sopStats) dailyTotals[i] = sopStats.samples;
+          } else {
+              dailyTotals[i] = dayStats.totalSamples;
           }
-      });
+      }
 
       // Calculate Mean and StdDev
       const historyMean = dailyTotals.reduce((a, b) => a + b, 0) / historyDays;
@@ -488,18 +498,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
   });
 
   chartKpis = computed(() => {
-      const currentReqs = this._rangeFilteredRequests();
+      const filter = this.selectedSopFilter();
+      
+      const startStr = this.startDate();
+      const endStr = this.endDate();
+      
+      let currentStart = new Date(); currentStart.setHours(0,0,0,0);
+      let currentEnd = new Date(); currentEnd.setHours(23,59,59,999);
+      if (startStr && endStr) {
+          currentStart = this.parseDateSafe(startStr)!; currentStart.setHours(0,0,0,0);
+          currentEnd = this.parseDateSafe(endStr)!; currentEnd.setHours(23,59,59,999);
+      }
+      
+      const diffTime = Math.abs(currentEnd.getTime() - currentStart.getTime());
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
       let totalSamples = 0;
       let totalBatches = 0;
 
-      currentReqs.forEach(req => {
-          totalBatches++;
-          let samples = 0;
-          if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-          else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-          else samples = 1;
-          totalSamples += samples;
-      });
+      for (let i = 0; i < diffDays; i++) {
+          const d = new Date(currentStart); d.setDate(d.getDate() + i);
+          const dayStats = this.getDayStats(d);
+          
+          if (filter) {
+              const sopStats = dayStats.sops[filter];
+              if (sopStats) {
+                  totalSamples += sopStats.samples;
+                  totalBatches += sopStats.batches;
+              }
+          } else {
+              totalSamples += dayStats.totalSamples;
+              totalBatches += dayStats.totalBatches;
+          }
+      }
 
       const avgSamplesPerBatch = totalBatches > 0 ? (totalSamples / totalBatches).toFixed(1) : '0';
       
@@ -524,10 +555,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.endDate();
           this.selectedSopFilter();
           this.state.darkMode();
+          this.statsData();
           
           if (!this.isLoading()) {
               if (this._chartDebounceTimer) clearTimeout(this._chartDebounceTimer);
               this._chartDebounceTimer = setTimeout(() => this.initChart(), 300);
+          }
+      });
+
+      // MỚI: Fetch Stats Data based on date range
+      effect(() => {
+          const startStr = this.startDate();
+          const endStr = this.endDate();
+          const start = this.parseDateSafe(startStr);
+          const end = this.parseDateSafe(endStr);
+          if (start && end) {
+              const monthsToFetch = new Set<string>();
+              const diffDays = Math.round(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              const historyDays = diffDays > 0 ? diffDays : 1;
+              const historyEnd = new Date(start); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
+              const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
+              
+              let d = new Date(historyStart);
+              d.setDate(1); // Set to 1st of the month to avoid month rollover bugs (e.g. May 31 + 1 month -> July 1)
+              while (d <= end) {
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, '0');
+                  monthsToFetch.add(`${y}-${m}`);
+                  d.setMonth(d.getMonth() + 1);
+              }
+              const keys = Array.from(monthsToFetch);
+              this.statsService.getStatsForMonths(keys).then(data => {
+                  this.statsData.update(prev => ({ ...prev, ...data }));
+              }).catch(e => console.error("Error fetching stats:", e));
           }
       });
 
@@ -711,7 +771,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const sampleData = new Array(chartDays).fill(0);
       const runData = new Array(chartDays).fill(0);
       const dailyDetails: Record<string, number>[] = new Array(chartDays).fill(null).map(() => ({}));
-      const dateMap = new Map<string, number>();
       
       for (let i = 0; i < chartDays; i++) {
           const d = new Date(chartStart); d.setDate(d.getDate() + i);
@@ -722,50 +781,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
           const key = `${d.getDate()}/${d.getMonth() + 1}`;
           
           labels.push(key); 
-          // Use a consistent key for mapping data
-          const mapKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-          dateMap.set(mapKey, i);
       }
 
-      const sopCounts = new Map<string, number>();
-
-      const history = this._parsedRequests();
       const filter = this.selectedSopFilter();
 
-      history.forEach(req => {
-          const d = req._date;
+      // MỚI: Loop over chart range instead of history array
+      for (let i = 0; i < chartDays; i++) {
+          const d = new Date(chartStart); d.setDate(d.getDate() + i);
+          const dayStats = this.getDayStats(d);
           
-          // Only count data within the chart's display range
-          if (d >= chartStart && d <= chartEnd) {
-              const mapKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-              const idx = dateMap.get(mapKey);
-              if (idx !== undefined) {
-                  // 1. SOP Distribution (always computed globally for the selected range to serve as selector legend)
-                  if (d >= origStart && d <= origEnd) {
-                      const sopName = req.sopName || 'Unknown';
-                      let samples = 0;
-                      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-                      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-                      else samples = 1;
-                      sopCounts.set(sopName, (sopCounts.get(sopName) || 0) + samples);
-                  }
-
-                  // 2. Line/Bar Data (filtered by selectedSopFilter)
-                  if (!filter || req.sopName === filter) {
-                      runData[idx]++;
-                      let samples = 0;
-                      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-                      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-                      else samples = 1;
-                      sampleData[idx] += samples; 
-                      
-                      // Daily details
-                      const sopName = req.sopName || 'Unknown';
-                      dailyDetails[idx][sopName] = (dailyDetails[idx][sopName] || 0) + samples;
-                  }
+          if (filter) {
+              const sopStats = dayStats.sops[filter];
+              if (sopStats) {
+                  runData[i] = sopStats.batches;
+                  sampleData[i] = sopStats.samples;
+                  dailyDetails[i][filter] = sopStats.samples;
+              }
+          } else {
+              runData[i] = dayStats.totalBatches;
+              sampleData[i] = dayStats.totalSamples;
+              for (const [sop, counts] of Object.entries(dayStats.sops)) {
+                  dailyDetails[i][sop] = counts.samples;
               }
           }
-      });
+      }
+
+      // 1. SOP Distribution (always computed globally for the selected range to serve as selector legend)
+      const sopCounts = new Map<string, number>();
+      for (let i = 0; i < chartDays; i++) {
+          const d = new Date(chartStart); d.setDate(d.getDate() + i);
+          if (d >= origStart && d <= origEnd) {
+              const dayStats = this.getDayStats(d);
+              for (const [sop, counts] of Object.entries(dayStats.sops)) {
+                  sopCounts.set(sop, (sopCounts.get(sop) || 0) + counts.samples);
+              }
+          }
+      }
 
       // Line Chart
       if (this.chartInstance) {

@@ -137,7 +137,7 @@ export class DateRangeFilterComponent {
               // Use setTimeout to emit AFTER Angular has finished the current change-detection cycle
               setTimeout(() => this.emitChange(), 0);
           }
-      }, { allowSignalWrites: true });
+      });
   }
 
   /** Inspect a start/end date pair and return the matching preset + label */

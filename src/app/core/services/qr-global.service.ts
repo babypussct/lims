@@ -53,7 +53,19 @@ export class QrGlobalService {
 
     const cleanCode = code.toUpperCase();
 
-    // 2.5. Check for GS1 Data Matrix (Merck, etc.)
+    // 2.5. Check for auth QR TRƯỚC GS1 và toast (không hiển thị toast cho QR login)
+    // CASE A2: QR Login mới — format: LIMS_QR|sessionId|nonce (case-sensitive!)
+    if (rawValue.trimStart().startsWith('LIMS_QR|')) {
+        this.router.navigate(['/mobile-login'], { queryParams: { qr: rawValue.trim() } });
+        return;
+    }
+    // CASE A: Auth Handshake (Mobile Login) — format cũ
+    if (cleanCode.startsWith('SESS_')) {
+        this.router.navigate(['/mobile-login'], { queryParams: { qr: code } });
+        return;
+    }
+
+    // 2.6. Check for GS1 Data Matrix (Merck, etc.)
     const gs1Data = parseGs1Data(cleanCode);
     if (gs1Data.isGs1) {
         if (gs1Data.error) {
@@ -62,8 +74,6 @@ export class QrGlobalService {
             this.toast.show(`Nhận diện GS1: GTIN ${gs1Data.gtin}, Lô ${gs1Data.lotNumber || 'N/A'}`, 'success');
         }
         console.log('Parsed GS1 Data:', gs1Data);
-        
-        // Open GS1 Info Modal instead of routing immediately
         this.scannedGs1Data.set(gs1Data);
         return;
     }
@@ -71,12 +81,6 @@ export class QrGlobalService {
     this.toast.show(`Đang xử lý: ${cleanCode}`, 'info');
 
     // 3. Smart Routing Strategy
-    
-    // CASE A: Auth Handshake (Mobile Login)
-    if (cleanCode.startsWith('SESS_')) {
-        this.router.navigate(['/mobile-login'], { queryParams: { qr: code } }); 
-        return;
-    }
 
     // CASE B: Traceability (Requests, Logs, Print Jobs)
     if (cleanCode.startsWith('TRC-') || cleanCode.startsWith('REQ-') || cleanCode.startsWith('LOG-') || cleanCode.toLowerCase().startsWith('log_')) {

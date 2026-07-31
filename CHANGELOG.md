@@ -1,6 +1,15 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
-## [v26.07.29-b03] - 29/07/2026
+## [v26.07.31-b01] - 31/07/2026
+
+### ⚡ Tối Ưu Thống Kê Firestore & Khắc Phục So Sánh Xu Hướng
+
+- **Chuyển đổi 100% về Firestore pre-aggregated:** Toàn bộ phần Hiệu Suất Phân Tích (KPI, biểu đồ chính, chỉ số so sánh trendInfo, tần suất SOP) hoạt động độc lập trên Firestore `monthly_stats`.
+- **Sửa lỗi Date Rollover & Off-by-one:** Đưa ngày tính toán về mùng 1 đầu tháng (`d.setDate(1)`) và chuẩn hóa số ngày quét, loại bỏ hiện tượng nhảy cóc tháng khi so sánh.
+- **Khắc phục lỗi Firestore query Backfill:** Loại bỏ điều kiện lọc `where(status)` gây lỗi Composite Index, cho phép script Backfill quét mượt mà dữ liệu từ 01/01/2026 đến nay.
+- **Tích lũy cache Signal an toàn:** Nâng cấp `statsData.update` giúp giữ lại các tháng đã tải trong bộ nhớ client, không bị xóa cache khi chuyển đổi qua lại giữa các bộ lọc.
+
+---
 
 ### ✨ Lập Mẻ Tự Động An Toàn & Thông Báo Chính Xác
 

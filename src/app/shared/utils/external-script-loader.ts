@@ -47,16 +47,10 @@ export async function ensureQrious(): Promise<any> {
 }
 
 export async function ensureHtml5Qrcode(): Promise<{ Html5Qrcode: any; Html5QrcodeSupportedFormats: any }> {
-  if ((window as any).Html5Qrcode) {
-    return {
-      Html5Qrcode: (window as any).Html5Qrcode,
-      Html5QrcodeSupportedFormats: (window as any).Html5QrcodeSupportedFormats
-    };
-  }
-
-  await loadExternalScript('lims-html5-qrcode-script', 'https://unpkg.com/html5-qrcode');
+  // Dùng dynamic import từ npm (version pinned 2.3.8) thay vì CDN không ổn định
+  const mod = await import('html5-qrcode');
   return {
-    Html5Qrcode: (window as any).Html5Qrcode,
-    Html5QrcodeSupportedFormats: (window as any).Html5QrcodeSupportedFormats
+    Html5Qrcode: mod.Html5Qrcode,
+    Html5QrcodeSupportedFormats: mod.Html5QrcodeSupportedFormats
   };
 }
