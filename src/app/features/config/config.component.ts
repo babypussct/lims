@@ -158,6 +158,34 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                     </select>
                                 </div>
 
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Phương thức đăng nhập</label>
+                                    <div class="space-y-2 text-xs font-semibold">
+                                        <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-700">
+                                            <span class="flex items-center gap-2 text-slate-700 dark:text-slate-200"><i class="fa-brands fa-google text-red-500"></i> Google</span>
+                                            @if (auth.hasGoogleProvider()) {
+                                                <span class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Đã liên kết</span>
+                                            } @else {
+                                                <button type="button" (click)="linkGoogle()" class="text-blue-600 dark:text-blue-400 hover:underline">Liên kết</button>
+                                            }
+                                        </div>
+                                        <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-700">
+                                            <span class="flex items-center gap-2 text-slate-700 dark:text-slate-200"><i class="fa-solid fa-key text-fuchsia-500"></i> Gmail / mật khẩu LIMS</span>
+                                            @if (auth.hasPasswordProvider()) {
+                                                <span class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Đã bật</span>
+                                            } @else {
+                                                <span class="text-amber-600 dark:text-amber-400">Chưa bật</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    @if (auth.googleRedirectError()) {
+                                        <div class="mt-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-300 text-[11px] px-3 py-2 leading-relaxed">
+                                            {{auth.googleRedirectError()}}
+                                        </div>
+                                    }
+                                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-2 leading-relaxed">Hai phương thức dùng chung một UID và dữ liệu LIMS. Mật khẩu LIMS không phải mật khẩu Google.</p>
+                                </div>
+
                                 <!-- DANGER ZONE -->
                                 <div class="bg-red-50/60 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl p-4">
                                     <label class="text-[10px] font-bold text-red-500 uppercase tracking-wider flex items-center gap-2 mb-3">
@@ -273,6 +301,14 @@ export class ConfigComponent {
   async saveMyAvatarStyle(style: string) {
       await this.state.saveMyAvatarStyle(style);
       this.toast.show('Đã cập nhật Avatar cá nhân!', 'success');
+  }
+
+  async linkGoogle() {
+      try {
+          await this.auth.linkGoogleToCurrentUser();
+      } catch (e: any) {
+          this.toast.show(this.auth.googleRedirectError() || e?.message || 'Không thể liên kết Google.', 'error');
+      }
   }
 
   async anonymizeAccount() {

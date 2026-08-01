@@ -169,15 +169,32 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                 <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() || auth.googleRedirectError() }}
                             </div>
                         }
+
+                        @if (auth.pendingGoogleLinkEmail()) {
+                            <div class="mt-4 p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-left">
+                                <div class="text-xs font-bold text-amber-800 dark:text-amber-200 mb-1">Liên kết tài khoản hiện có</div>
+                                <p class="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed mb-3">
+                                    Email Google này đã có tài khoản LIMS. Nhập mật khẩu hiện tại để dùng chung một tài khoản.
+                                </p>
+                                <input type="password" [(ngModel)]="pendingLinkPassword" (keyup.enter)="linkGoogleAccount()"
+                                       class="w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 text-sm outline-none focus:border-amber-500"
+                                       placeholder="Mật khẩu LIMS hiện tại" [disabled]="isLinkLoading()" autocomplete="current-password">
+                                <button type="button" (click)="linkGoogleAccount()" [disabled]="isLinkLoading()"
+                                        class="w-full mt-2.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold transition flex items-center justify-center gap-2">
+                                    @if (isLinkLoading()) { <i class="fa-solid fa-circle-notch fa-spin"></i> Đang liên kết... }
+                                    @else { <i class="fa-solid fa-link"></i> Xác thực và liên kết Google }
+                                </button>
+                            </div>
+                        }
                     </div>
                 }
 
-                <!-- LOGIN MODE: PASSWORD (ADMIN ONLY) -->
+                <!-- LOGIN MODE: PASSWORD -->
                 @if (mode() === 'password') {
                     <div class="animate-fade-in-up relative z-10">
                         <div class="space-y-4">
                             <div class="group">
-                                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Tên đăng nhập / Email</label>
+                                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Gmail / Email hoặc username</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <i class="fa-regular fa-user text-gray-400 group-focus-within:text-fuchsia-500 transition-colors"></i>
@@ -186,7 +203,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                            class="w-full pl-11 pr-24 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500" 
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
-                                           placeholder="Nhập username..."
+                                           placeholder="Nhập Gmail hoặc username..."
                                            [disabled]="isLoading()">
                                     
                                     @if (!email.includes('@')) {
@@ -268,11 +285,18 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                 </div>
                             }
 
+                            <div class="text-right -mt-1">
+                                <button type="button" (click)="sendPasswordReset()" [disabled]="isLoading() || isResetLoading()"
+                                        class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline disabled:opacity-50">
+                                    @if (isResetLoading()) { Đang gửi... } @else { Quên mật khẩu? }
+                                </button>
+                            </div>
+
                             <button (click)="login()" [disabled]="isLoading()"
                                     class="w-full py-4 mt-2 bg-[linear-gradient(310deg,#7928ca,#ff0080)] hover:opacity-90 text-white rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(203,12,159,0.2)] hover:shadow-[0_8px_15px_-6px_rgba(203,12,159,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 relative overflow-hidden group">
                                 <div class="absolute inset-0 w-1/2 h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:animate-shimmer"></div>
                                 @if (isLoading() && !isGoogleLoading()) { <i class="fa-solid fa-circle-notch fa-spin"></i> }
-                                @else { <i class="fa-solid fa-shield-halved text-xs"></i> <span>Đăng Nhập Quản Trị</span> }
+                                @else { <i class="fa-solid fa-shield-halved text-xs"></i> <span>Đăng nhập LIMS</span> }
                             </button>
                         </div>
                     </div>
@@ -446,6 +470,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   
   email = '';
   password = '';
+  pendingLinkPassword = '';
   errorMsg = signal('');
   isPWA = signal<boolean>(false);
   
@@ -491,6 +516,8 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   isLoading = signal(false);
   isGoogleLoading = signal(false);
+  isLinkLoading = signal(false);
+  isResetLoading = signal(false);
   year = new Date().getFullYear();
 
 
@@ -650,6 +677,41 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
   }
 
+  async linkGoogleAccount(): Promise<void> {
+    if (!this.pendingLinkPassword) {
+      this.errorMsg.set('Vui lòng nhập mật khẩu LIMS hiện tại.');
+      return;
+    }
+    this.errorMsg.set('');
+    this.isLinkLoading.set(true);
+    try {
+      await this.auth.linkPendingGoogleAccount(this.pendingLinkPassword);
+      this.pendingLinkPassword = '';
+      this.toast.show('Đã liên kết Google với tài khoản LIMS.', 'success');
+    } catch (error: any) {
+      this.handleError(error, false);
+    } finally {
+      this.isLinkLoading.set(false);
+    }
+  }
+
+  async sendPasswordReset(): Promise<void> {
+    if (!this.email.trim()) {
+      this.errorMsg.set('Vui lòng nhập Gmail hoặc email trước.');
+      return;
+    }
+    this.errorMsg.set('');
+    this.isResetLoading.set(true);
+    try {
+      await this.auth.sendPasswordReset(this.email);
+      this.toast.show('Đã gửi email khôi phục mật khẩu. Hãy kiểm tra hộp thư.', 'success');
+    } catch (error: any) {
+      this.handleError(error, false);
+    } finally {
+      this.isResetLoading.set(false);
+    }
+  }
+
   private handleError(e: any, isGoogle: boolean) {
       const code = e.code || '';
       const msg = e.message || '';
@@ -667,8 +729,12 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.errorMsg.set('Trình duyệt đã chặn cửa sổ Popup.');
       } else if (code === 'permission-denied') {
           this.errorMsg.set('Tài khoản không có quyền truy cập hệ thống.');
+      } else if (code === 'auth/weak-password') {
+          this.errorMsg.set(msg || 'Mật khẩu chưa đủ mạnh.');
+      } else if (code === 'auth/requires-recent-login') {
+          this.errorMsg.set('Phiên đăng nhập đã cũ. Vui lòng đăng nhập lại rồi thử lại.');
       } else {
-          this.errorMsg.set('Lỗi: ' + (code || msg || 'Không xác định'));
+          this.errorMsg.set('Không thể hoàn tất đăng nhập. Vui lòng kiểm tra thông tin và thử lại.');
       }
   }
 }

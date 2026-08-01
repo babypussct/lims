@@ -13,6 +13,27 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b06',
+    date: '01/08/2026',
+    title: 'Liên Kết Google & Mật Khẩu Đăng Nhập',
+    highlights: [
+      'Người dùng Google có thể thiết lập mật khẩu LIMS để đăng nhập bằng Gmail/email hoặc Google.',
+      'Liên kết Google và mật khẩu trên cùng một Firebase UID, giữ nguyên hồ sơ, quyền và dữ liệu.'
+    ],
+    features: [
+      'Bổ sung màn hình thiết lập mật khẩu bắt buộc cho tài khoản Google mới.',
+      'Cho phép tài khoản email/mật khẩu liên kết Google từ hồ sơ tài khoản.'
+    ],
+    improvements: [
+      'Hiển thị trạng thái các phương thức xác thực và hỗ trợ gửi lại email đặt lại mật khẩu.',
+      'Thông báo redirect localhost nêu rõ nguyên nhân và hướng mở bằng trình duyệt ngoài khi cần.'
+    ],
+    fixes: [
+      'Khắc phục lỗi Firebase gọi endpoint __/firebase/init.json 404 khi đăng nhập Google trên localhost.',
+      'Từ chối liên kết Google khác email tài khoản hiện tại để tránh gắn nhầm người dùng.'
+    ]
+  },
+  {
     version: 'v26.08.01-b05',
     date: '01/08/2026',
     title: 'Hoàn Tất Cấu Hình Firebase Đăng Nhập Google',

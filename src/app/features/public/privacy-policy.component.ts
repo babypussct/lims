@@ -161,7 +161,7 @@ import { Router } from '@angular/router';
               </h3>
               <p class="mb-3">Hệ thống sử dụng các dịch vụ Google Firebase:</p>
               <ul class="list-disc pl-5 space-y-2">
-                <li><strong>Firebase Authentication:</strong> Xác thực đăng nhập bằng tên đăng nhập/mật khẩu nội bộ. Dữ liệu lưu trữ: email (hoặc tên đại diện), UID. Không có OAuth Google đối với người dùng thường.</li>
+                <li><strong>Firebase Authentication:</strong> Hỗ trợ đăng nhập bằng Google hoặc Gmail/email và mật khẩu LIMS. Hai phương thức được liên kết về cùng một UID; mật khẩu LIMS được Firebase bảo vệ dưới dạng hash và không phải mật khẩu Google.</li>
                 <li><strong>Cloud Firestore:</strong> Lưu trữ dữ liệu nghiệp vụ (kết quả kiểm nghiệm, số lượng, SOP). Toàn bộ dữ liệu thuộc sở hữu của phòng thí nghiệm NAFIQPM6.</li>
                 <li><strong>Firebase Cloud Messaging (FCM):</strong> Gửi thông báo đẩy nội bộ (cảnh báo hết hạn, yêu cầu duyệt). FCM token được lưu trên thiết bị và Firestore, chỉ dùng để gửi thông báo nội bộ, không chia sẻ bên ngoài.</li>
                 <li><strong>Vercel (hosting):</strong> Ứng dụng được triển khai trên Vercel. Vercel có thể lưu access log (IP, user agent) trong tối đa 30 ngày theo chính sách riêng của họ.</li>

@@ -57,7 +57,7 @@ import { Router } from '@angular/router';
                 <i class="fa-solid fa-user-shield text-blue-600"></i> 2. Đăng Nhập và Bảo Mật Tài Khoản
               </h3>
               <ul class="list-disc pl-5 space-y-2 m-0">
-                <li>Người dùng đăng nhập thông qua cơ chế xác thực an toàn bằng tài khoản Google (OAuth 2.0).</li>
+                <li>Người dùng có thể đăng nhập bằng Google hoặc Gmail/email và mật khẩu LIMS đã liên kết trong Firebase Authentication.</li>
                 <li>Bạn chịu trách nhiệm bảo mật thông tin đăng nhập tài khoản Google của mình và không cho phép bên thứ ba truy cập trái phép vào tài khoản của bạn để thao tác trên hệ thống LIMS.</li>
                 <li>Mọi hoạt động được thực hiện dưới tài khoản đã đăng nhập của bạn sẽ được ghi nhận là hoạt động hợp pháp của chính bạn.</li>
               </ul>

@@ -16,6 +16,7 @@ import { PrintPreviewModalComponent } from './shared/components/print-preview-mo
 import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; 
 import { Gs1InfoModalComponent } from './shared/components/gs1-info-modal/gs1-info-modal.component';
 import { LoginComponent } from './features/auth/login.component';
+import { PasswordSetupComponent } from './features/auth/password-setup.component';
 import { NotificationPanelComponent } from './shared/components/notification-panel/notification-panel.component';
 import { ProgressOverlayComponent } from './shared/components/progress-overlay/progress-overlay.component';
 import { ToastHostComponent } from './shared/components/toast-host/toast-host.component';
@@ -49,6 +50,7 @@ import { filter } from 'rxjs/operators';
     GlobalScannerComponent, 
     Gs1InfoModalComponent,
     LoginComponent,
+    PasswordSetupComponent,
     NotificationPanelComponent,
     ProgressOverlayComponent,
     ToastHostComponent,
@@ -108,6 +110,9 @@ import { filter } from 'rxjs/operators';
       }
 
       <app-toast-host></app-toast-host>
+      @if (auth.needsPasswordSetup()) {
+        <app-password-setup></app-password-setup>
+      }
       @defer (when changelogService.isOpen()) {
         <app-changelog-modal></app-changelog-modal>
       }

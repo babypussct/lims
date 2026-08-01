@@ -5,15 +5,21 @@ import {
   getAuth, 
   signInWithEmailAndPassword, 
   signInWithRedirect,
+  linkWithRedirect,
+  linkWithCredential,
   getRedirectResult,
   signOut, 
   onAuthStateChanged, 
   GoogleAuthProvider,
+  unlink,
+  updatePassword,
+  sendPasswordResetEmail,
   setPersistence,
   browserSessionPersistence,
   browserLocalPersistence,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  type AuthCredential,
   type User,
   type Auth
 } from 'firebase/auth';
@@ -27,6 +33,7 @@ import { FirebaseService } from './firebase.service';
 import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
 
 const GOOGLE_REDIRECT_PENDING_KEY = '__lims_google_redirect_pending';
+const GOOGLE_LINK_REDIRECT_PENDING_KEY = '__lims_google_link_redirect_pending';
 
 export const PERMISSIONS = {
   INVENTORY_VIEW: 'inventory_view',
@@ -147,6 +154,16 @@ export class AuthService {
   isProcessingRedirect = signal<boolean>(false);
   /** Lỗi Google redirect gần nhất, hiển thị lại trên màn hình đăng nhập. */
   googleRedirectError = signal<string | null>(null);
+  /** Email của tài khoản local cần xác thực để hoàn tất liên kết Google. */
+  pendingGoogleLinkEmail = signal<string | null>(null);
+  private pendingGoogleCredential: AuthCredential | null = null;
+  private authProviderIds = signal<string[]>([]);
+  readonly hasGoogleProvider = computed(() => this.authProviderIds().includes('google.com'));
+  readonly hasPasswordProvider = computed(() => this.authProviderIds().includes('password'));
+  /** Google-only accounts must create a local password before using ID/password login. */
+  readonly needsPasswordSetup = computed(() =>
+    !!this.currentUser() && this.hasGoogleProvider() && !this.hasPasswordProvider()
+  );
   private userUnsub: any = null;
   private rolesUnsub: any = null;
   readonly rolesConfig = signal<Record<string, string[]>>({});
@@ -167,19 +184,21 @@ export class AuthService {
     }
 
     const hasPendingGoogleRedirect = sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === 'true';
-    if (hasPendingGoogleRedirect) {
+    const hasPendingGoogleLink = sessionStorage.getItem(GOOGLE_LINK_REDIRECT_PENDING_KEY) === 'true';
+    if (hasPendingGoogleRedirect || hasPendingGoogleLink) {
       this.isProcessingRedirect.set(true);
     }
 
     // Let Firebase own the redirect transaction and credential exchange. This
     // avoids exposing a Google ID token to the application URL or hand-rolling
     // state/nonce validation in index.html.
-    void persistenceReady.then(() => this.processGoogleRedirectResult(hasPendingGoogleRedirect));
+    void persistenceReady.then(() => this.processGoogleRedirectResult(hasPendingGoogleRedirect, hasPendingGoogleLink));
 
     // 2. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
         this.isProcessingRedirect.set(false); // Tắt overlay khi đã có user
+        this.updateAuthProviderState(firebaseUser);
         this.syncUser(firebaseUser);
 
         // Restore intended route nếu guard đã lưu route ý định trước khi redirect về login.
@@ -200,19 +219,24 @@ export class AuthService {
         // Bao phủ cả trường hợp token hết hạn / phiên bị thu hồi ngoài nút Logout.
         this.deltaSync.destroyAll(true);
         this.clearQrLoginCache();
+        this.authProviderIds.set([]);
         this.currentUser.set(null);
         this.isAuthReady.set(true);
       }
     });
   }
 
-  private processGoogleRedirectResult(hasPendingGoogleRedirect: boolean): void {
+  private processGoogleRedirectResult(hasPendingGoogleRedirect: boolean, hasPendingGoogleLink: boolean): void {
 
     void getRedirectResult(this.auth)
-      .then((result) => {
+      .then(async (result) => {
         if (result?.user) {
           this.googleRedirectError.set(null);
           console.log('[Auth] Firebase Google redirect completed:', result.user.email);
+
+          if (hasPendingGoogleLink) {
+            await this.validateCompletedGoogleLink(result.user);
+          }
 
           // Normally onAuthStateChanged handles this. Keep a guarded fallback
           // for browsers where the auth observer was initialized first.
@@ -222,16 +246,31 @@ export class AuthService {
             }
           });
         } else if (hasPendingGoogleRedirect && !this.auth.currentUser) {
-          this.googleRedirectError.set('Không nhận được kết quả đăng nhập Google. Vui lòng thử lại hoặc mở bằng trình duyệt ngoài.');
+          this.googleRedirectError.set(this.googleRedirectNoResultMessage());
+        } else if (hasPendingGoogleLink) {
+          this.googleRedirectError.set('Không nhận được kết quả liên kết Google. Vui lòng thử lại.');
         }
       })
       .catch((error: any) => {
         console.error('[Auth] Firebase Google redirect failed:', error);
-        this.googleRedirectError.set(this.googleAuthErrorMessage(error));
+        if (hasPendingGoogleRedirect && this.capturePendingGoogleCredential(error)) {
+          this.googleRedirectError.set(
+            `Email ${this.pendingGoogleLinkEmail()} đã có tài khoản mật khẩu. Nhập mật khẩu hiện tại để liên kết Google.`
+          );
+        } else if (hasPendingGoogleLink) {
+          this.googleRedirectError.set(this.googleLinkErrorMessage(error));
+        } else {
+          this.googleRedirectError.set(this.googleAuthErrorMessage(error));
+        }
       })
       .finally(() => {
         if (hasPendingGoogleRedirect) {
           sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+        }
+        if (hasPendingGoogleLink) {
+          sessionStorage.removeItem(GOOGLE_LINK_REDIRECT_PENDING_KEY);
+        }
+        if (hasPendingGoogleRedirect || hasPendingGoogleLink) {
           this.isProcessingRedirect.set(false);
         }
       });
@@ -248,7 +287,7 @@ export class AuthService {
       case 'auth/network-request-failed':
         return 'Không thể kết nối Google. Vui lòng kiểm tra mạng và thử lại.';
       case 'auth/account-exists-with-different-credential':
-        return 'Email Google này đã được đăng ký bằng phương thức đăng nhập khác.';
+        return 'Email Google này đã có tài khoản. Hãy đăng nhập bằng mật khẩu hiện tại rồi liên kết Google trong Hồ sơ cá nhân.';
       case 'auth/no-auth-event':
         return 'Phiên đăng nhập Google đã bị hủy hoặc hết hạn. Vui lòng thử lại.';
       case 'auth/cancelled-popup-request':
@@ -257,6 +296,14 @@ export class AuthService {
       default:
         return 'Không thể hoàn tất đăng nhập Google. Vui lòng thử lại hoặc mở bằng trình duyệt ngoài.';
     }
+  }
+
+  private googleRedirectNoResultMessage(): string {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+      return 'Firebase chưa cấp quyền cho localhost. Vào Firebase Console → Authentication → Settings → Authorized domains, thêm "localhost" (không thêm :4200), rồi tải lại ứng dụng.';
+    }
+    return 'Không nhận được kết quả đăng nhập Google. Vui lòng thử lại hoặc mở bằng trình duyệt ngoài.';
   }
 
   clearGoogleRedirectError(): void {
@@ -280,7 +327,10 @@ export class AuthService {
       console.warn('[Auth] Failed to set session persistence dynamically:', err);
     });
 
-    await signInWithEmailAndPassword(this.auth, email, pass);
+    await signInWithEmailAndPassword(this.auth, this.normalizeAuthEmail(email), pass);
+    if (this.auth.currentUser) {
+      this.updateAuthProviderState(this.auth.currentUser);
+    }
     
     // Fallback: If they were already logged in, onAuthStateChanged might not fire.
     // Force a sync to break out of the stuck state.
@@ -292,6 +342,7 @@ export class AuthService {
 
   async loginWithGoogle(): Promise<void> {
     this.googleRedirectError.set(null);
+    this.clearPendingGoogleLink();
 
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
     await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
@@ -302,6 +353,7 @@ export class AuthService {
     provider.setCustomParameters({ prompt: 'select_account' });
 
     console.log('[Auth] loginWithGoogle: starting Firebase redirect');
+    sessionStorage.removeItem(GOOGLE_LINK_REDIRECT_PENDING_KEY);
     sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, 'true');
     try {
       await signInWithRedirect(this.auth, provider);
@@ -309,6 +361,213 @@ export class AuthService {
       sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
       this.googleRedirectError.set(this.googleAuthErrorMessage(error));
       throw error;
+    }
+  }
+
+  /**
+   * Liên kết mật khẩu nội bộ vào tài khoản Google hiện tại.
+   * Firebase giữ nguyên UID nên toàn bộ hồ sơ, quyền và dữ liệu LIMS không đổi.
+   */
+  async setLocalPassword(password: string): Promise<void> {
+    const firebaseUser = this.auth.currentUser;
+    if (!firebaseUser?.email) {
+      throw new Error('Không tìm thấy email tài khoản để tạo mật khẩu.');
+    }
+
+    this.updateAuthProviderState(firebaseUser);
+    if (!this.hasGoogleProvider()) {
+      throw new Error('Chỉ tài khoản đăng nhập bằng Google mới cần thao tác này.');
+    }
+    this.validateNewPassword(password);
+
+    try {
+      if (this.hasPasswordProvider()) {
+        await updatePassword(firebaseUser, password);
+      } else {
+        const credential = EmailAuthProvider.credential(
+          this.normalizeAuthEmail(firebaseUser.email),
+          password
+        );
+        await linkWithCredential(firebaseUser, credential);
+      }
+    } catch (error: any) {
+      // Race condition-safe: another tab may have linked the provider first.
+      if (error?.code === 'auth/provider-already-linked') {
+        await updatePassword(firebaseUser, password);
+      } else {
+        throw error;
+      }
+    }
+
+    await firebaseUser.reload();
+    const refreshedUser = this.auth.currentUser || firebaseUser;
+    this.updateAuthProviderState(refreshedUser);
+  }
+
+  /**
+   * Hoàn tất trường hợp Google email đã có sẵn tài khoản email/password.
+   * Credential Google chỉ sống trong memory của tab hiện tại, không ghi vào storage.
+   */
+  async linkPendingGoogleAccount(password: string): Promise<void> {
+    const googleCredential = this.pendingGoogleCredential;
+    const email = this.pendingGoogleLinkEmail();
+    if (!googleCredential || !email) {
+      throw new Error('Phiên liên kết Google đã hết hạn. Vui lòng đăng nhập Google lại.');
+    }
+    this.validateNewPassword(password, false);
+
+    const result = await signInWithEmailAndPassword(this.auth, email, password);
+    const localUser = result.user;
+    if (this.normalizeAuthEmail(localUser.email || '') !== email) {
+      await signOut(this.auth);
+      throw this.createAuthError('auth/email-mismatch', 'Tài khoản email không khớp với Google.');
+    }
+
+    try {
+      await linkWithCredential(localUser, googleCredential);
+    } catch (error: any) {
+      // Do not leave a partially authenticated local session when linking fails.
+      await signOut(this.auth);
+      if (error?.code === 'auth/credential-already-in-use') {
+        this.clearPendingGoogleLink();
+      }
+      throw error;
+    }
+    await localUser.reload();
+    const refreshedUser = this.auth.currentUser || localUser;
+    this.updateAuthProviderState(refreshedUser);
+    this.clearPendingGoogleLink();
+    this.googleRedirectError.set(null);
+    this.syncUser(refreshedUser);
+  }
+
+  /** Bắt đầu liên kết Google từ tài khoản email/password đang đăng nhập. */
+  async linkGoogleToCurrentUser(): Promise<void> {
+    const firebaseUser = this.auth.currentUser;
+    if (!firebaseUser) {
+      throw new Error('Bạn cần đăng nhập trước khi liên kết Google.');
+    }
+
+    this.updateAuthProviderState(firebaseUser);
+    if (this.hasGoogleProvider()) return;
+    if (!this.hasPasswordProvider()) {
+      throw new Error('Tài khoản chưa có phương thức mật khẩu để làm phương thức dự phòng.');
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account',
+      ...(firebaseUser.email ? { login_hint: firebaseUser.email } : {})
+    });
+
+    this.googleRedirectError.set(null);
+    sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+    sessionStorage.setItem(GOOGLE_LINK_REDIRECT_PENDING_KEY, 'true');
+    this.isProcessingRedirect.set(true);
+    try {
+      await linkWithRedirect(firebaseUser, provider);
+    } catch (error: any) {
+      sessionStorage.removeItem(GOOGLE_LINK_REDIRECT_PENDING_KEY);
+      this.isProcessingRedirect.set(false);
+      this.googleRedirectError.set(this.googleLinkErrorMessage(error));
+      throw error;
+    }
+  }
+
+  /** Gửi email khôi phục mật khẩu cho login ID hiện tại. */
+  async sendPasswordReset(email: string): Promise<void> {
+    const normalizedEmail = this.normalizeAuthEmail(email);
+    if (!normalizedEmail.includes('@')) {
+      throw this.createAuthError('auth/invalid-email', 'Email không hợp lệ.');
+    }
+    await sendPasswordResetEmail(this.auth, normalizedEmail);
+  }
+
+  private normalizeAuthEmail(email: string | null | undefined): string {
+    const normalized = (email || '').trim().toLowerCase();
+    return normalized && !normalized.includes('@') ? `${normalized}@lims.com` : normalized;
+  }
+
+  private validateNewPassword(password: string, requireStrongLength = true): void {
+    const minLength = requireStrongLength ? 8 : 1;
+    if (!password || password.length < minLength) {
+      throw this.createAuthError(
+        'auth/weak-password',
+        requireStrongLength ? 'Mật khẩu phải có ít nhất 8 ký tự.' : 'Vui lòng nhập mật khẩu.'
+      );
+    }
+    if (/^\s|\s$/.test(password)) {
+      throw this.createAuthError('auth/weak-password', 'Mật khẩu không được có khoảng trắng ở đầu hoặc cuối.');
+    }
+  }
+
+  private createAuthError(code: string, message: string): Error & { code: string } {
+    const error = new Error(message) as Error & { code: string };
+    error.code = code;
+    return error;
+  }
+
+  private updateAuthProviderState(firebaseUser: User): void {
+    this.authProviderIds.set(
+      (firebaseUser.providerData || [])
+        .map(provider => provider.providerId)
+        .filter((providerId): providerId is string => !!providerId)
+    );
+  }
+
+  private capturePendingGoogleCredential(error: any): boolean {
+    const credential = (error?.credential ||
+      (GoogleAuthProvider as any).credentialFromError?.(error) || null) as AuthCredential | null;
+    const email = this.normalizeAuthEmail(error?.customData?.email || error?.email || '');
+    if (!credential || !email.includes('@')) return false;
+
+    this.pendingGoogleCredential = credential;
+    this.pendingGoogleLinkEmail.set(email);
+    return true;
+  }
+
+  private clearPendingGoogleLink(): void {
+    this.pendingGoogleCredential = null;
+    this.pendingGoogleLinkEmail.set(null);
+  }
+
+  private async validateCompletedGoogleLink(firebaseUser: User): Promise<void> {
+    const googleProvider = firebaseUser.providerData.find(provider => provider.providerId === 'google.com');
+    const googleEmail = this.normalizeAuthEmail(googleProvider?.email || '');
+    const accountEmail = this.normalizeAuthEmail(firebaseUser.email || '');
+
+    // The LIMS login ID remains the verified email. Do not silently attach a
+    // different Google identity to an existing local account.
+    if (!googleEmail || googleEmail !== accountEmail) {
+      try {
+        await unlink(firebaseUser, 'google.com');
+      } catch (unlinkError) {
+        console.error('[Auth] Could not roll back mismatched Google link:', unlinkError);
+      }
+      this.updateAuthProviderState(this.auth.currentUser || firebaseUser);
+      throw this.createAuthError(
+        'auth/google-email-mismatch',
+        'Tài khoản Google phải dùng đúng email đang là ID đăng nhập LIMS.'
+      );
+    }
+
+    this.updateAuthProviderState(firebaseUser);
+  }
+
+  private googleLinkErrorMessage(error: any): string {
+    const code = typeof error === 'string' ? error : error?.code;
+    switch (code) {
+      case 'auth/credential-already-in-use':
+        return 'Tài khoản Google này đã liên kết với một tài khoản LIMS khác.';
+      case 'auth/google-email-mismatch':
+        return 'Email Google phải trùng với ID email đang dùng trong LIMS.';
+      case 'auth/requires-recent-login':
+        return 'Phiên đăng nhập đã cũ. Vui lòng đăng nhập lại rồi thử liên kết Google.';
+      case 'auth/popup-closed-by-user':
+      case 'auth/cancelled-popup-request':
+        return 'Đã hủy liên kết Google.';
+      default:
+        return this.googleAuthErrorMessage(error);
     }
   }
 
@@ -323,6 +582,7 @@ export class AuthService {
         console.warn('[Auth] Failed to destroy DeltaSync singletons:', e);
     }
     this.clearQrLoginCache(); // Security cleanup
+    this.clearPendingGoogleLink();
     localStorage.removeItem('lims_remember_session'); // Clear remember session flag
     
     // Clear Google Drive session state
@@ -447,7 +707,7 @@ export class AuthService {
   async verifyPassword(email: string, pass: string): Promise<boolean> {
       const authObj = getAuth(this.fb.app);
       if (authObj.currentUser) {
-          const credential = EmailAuthProvider.credential(email, pass);
+          const credential = EmailAuthProvider.credential(this.normalizeAuthEmail(email), pass);
           await reauthenticateWithCredential(authObj.currentUser, credential);
           return true;
       }
@@ -460,8 +720,7 @@ export class AuthService {
   }
 
   isGoogleUser(): boolean {
-      const authObj = getAuth(this.fb.app);
-      return authObj.currentUser?.providerData?.some((p: any) => p.providerId === 'google.com') || false;
+      return this.hasGoogleProvider();
   }
 
   // --- Permission Checks ---

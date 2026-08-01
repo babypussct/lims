@@ -2,7 +2,10 @@ export const environment = {
   production: false,
   firebase: {
     apiKey: "AIzaSyDZmI3PE-j1ZhkqUd3mQaYmX1pJpWqtwck", // Thay bằng key thực tế của bạn nếu khác
-    authDomain: "lims-cloud-by-otada.firebaseapp.com",
+    // Use the Vercel auth domain locally as well. It serves the Firebase
+    // helper init manifest at /__/firebase/init.json; the legacy Firebase
+    // Hosting domain currently returns 404 for that endpoint.
+    authDomain: "nafiqpm6.vercel.app",
     projectId: "lims-cloud-by-otada",
     storageBucket: "lims-cloud-by-otada.firebasestorage.app",
     messagingSenderId: "498845778988",

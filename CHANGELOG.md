@@ -1,5 +1,22 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.01-b06] - 01/08/2026
+
+### 🚀 Tính Năng Mới
+- **Đăng nhập hai phương thức:** Người dùng đăng nhập bằng Google có thể tự thiết lập mật khẩu LIMS để đăng nhập bằng Gmail/email hoặc Google.
+- **Liên kết tài khoản trên cùng UID:** Tài khoản email/mật khẩu có thể liên kết Google và tiếp tục dùng chung hồ sơ, quyền và dữ liệu hiện có.
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Thiết lập mật khẩu có kiểm soát:** Bổ sung màn hình bắt buộc thiết lập mật khẩu cho tài khoản Google mới và kiểm tra độ dài, xác nhận mật khẩu trước khi liên kết.
+- **Quản lý phương thức xác thực:** Hiển thị trạng thái Google/mật khẩu, hỗ trợ liên kết Google từ hồ sơ và gửi lại email đặt lại mật khẩu.
+- **Thông báo redirect rõ ràng:** Phân biệt lỗi thiếu kết quả đăng nhập trên localhost với lỗi trình duyệt hoặc cấu hình tên miền để người dùng có hướng xử lý cụ thể.
+
+### 🐛 Sửa Lỗi
+- **Khắc phục đăng nhập Google trên localhost:** Dùng `nafiqpm6.vercel.app` làm `authDomain` hỗ trợ để Firebase không gọi endpoint `__/firebase/init.json` 404 của Firebase Hosting cũ.
+- **Không tạo tài khoản liên kết sai email:** Từ chối liên kết khi email Google không trùng email tài khoản LIMS hiện tại và dọn trạng thái redirect còn sót.
+
+---
+
 ## [v26.08.01-b05] - 01/08/2026
 
 ### 🚀 Tính Năng Mới

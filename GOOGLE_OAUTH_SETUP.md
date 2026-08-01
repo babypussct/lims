@@ -12,18 +12,29 @@ Angular never receives the refresh token.
 
 ## Firebase Authentication
 
-Enable the Google provider in Firebase Authentication and add every production
-hostname that can serve the app to Firebase Authentication's authorized domains:
+Enable both the Google provider and the Email/Password provider in Firebase
+Authentication. A Google-first user is given the verified Google email as the
+initial LIMS login ID and can create a separate LIMS password in the app; the
+password is linked to the same Firebase UID and is never synchronized with the
+Google password. Do not create a second Firebase account for the same email.
+
+Add every hostname that can serve the app to Firebase Authentication's
+authorized domains. For local development, add `localhost` without the port
+(`localhost:4200` is not a separate entry):
 
 ```text
+localhost
 nafiqpm6.vercel.app
 nafiqpm6-babypusscts-projects.vercel.app
 nafiqpm6-git-main-babypusscts-projects.vercel.app
 ```
 
-The production Firebase config uses `nafiqpm6.vercel.app` as `authDomain`.
-`vercel.json` must continue proxying `/__/auth/*` to the Firebase Hosting helper
-domain. The matching `/__/firebase/init.json` is served from
+Both development and production Firebase configs use `nafiqpm6.vercel.app` as
+`authDomain`; this is required because the legacy
+`lims-cloud-by-otada.firebaseapp.com/__/firebase/init.json` endpoint returns
+404. `vercel.json` must continue proxying `/__/auth/*` to the Firebase Hosting helper
+domain.
+The matching `/__/firebase/init.json` is served from
 `public/__/firebase/init.json` with the same Firebase web configuration so the
 helper can initialize correctly when third-party storage is restricted.
 The security header `X-Frame-Options: DENY` must not apply to `/__/auth/*` or

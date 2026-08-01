@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.01-b05",
-    "notesVersion": "v26.08.01-b05",
-    "title": "Hoàn Tất Cấu Hình Firebase Đăng Nhập Google",
+    "version": "v26.08.01-b06",
+    "notesVersion": "v26.08.01-b06",
+    "title": "Liên Kết Google & Mật Khẩu Đăng Nhập",
     "features": [
-      "🔐 Firebase hoàn tất đăng nhập Google ổn định trên môi trường production",
-      "🧩 Cung cấp đầy đủ cấu hình khởi tạo cho thành phần xác thực Firebase",
-      "🛡️ Giữ bảo vệ chống nhúng cho ứng dụng, đồng thời cho phép endpoint xác thực hoạt động đúng"
+      "🔐 Tài khoản Google có thể thiết lập mật khẩu LIMS để đăng nhập bằng Gmail hoặc email",
+      "🔗 Liên kết Google và mật khẩu trên cùng một tài khoản Firebase, giữ nguyên hồ sơ và dữ liệu",
+      "🛠️ Sửa luồng redirect localhost bằng authDomain hỗ trợ đúng endpoint khởi tạo Firebase"
     ]
   },
   "assetGroups": [
