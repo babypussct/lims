@@ -1,5 +1,19 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.01-b05] - 01/08/2026
+
+### 🚀 Tính Năng Mới
+- *(Không có tính năng mới trong bản cập nhật này)*
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Khởi tạo Firebase đầy đủ:** Cung cấp đúng cấu hình web cho thành phần hỗ trợ đăng nhập Google trên production.
+- **Đăng nhập chuyển hướng ổn định hơn:** Hoàn tất các endpoint cần thiết để Firebase khởi tạo và trả kết quả xác thực.
+
+### 🐛 Sửa Lỗi
+- **Không còn lỗi thiếu cấu hình Firebase:** Khắc phục trường hợp endpoint `init.json` trả về 404 trong quá trình đăng nhập.
+
+---
+
 ## [v26.08.01-b04] - 01/08/2026
 
 ### 🚀 Tính Năng Mới

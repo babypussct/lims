@@ -13,6 +13,21 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b05',
+    date: '01/08/2026',
+    title: 'Hoàn Tất Cấu Hình Firebase Đăng Nhập Google',
+    highlights: [
+      'Cung cấp đúng cấu hình web cho thành phần hỗ trợ đăng nhập Google trên production.',
+      'Đăng nhập chuyển hướng có đủ endpoint để Firebase khởi tạo và trả kết quả xác thực.'
+    ],
+    improvements: [
+      'Cập nhật file cấu hình Firebase dùng chung cho endpoint hỗ trợ đăng nhập.'
+    ],
+    fixes: [
+      'Khắc phục trường hợp endpoint init.json trả về 404 khi bắt đầu đăng nhập Google.'
+    ]
+  },
+  {
     version: 'v26.08.01-b04',
     date: '01/08/2026',
     title: 'Hoàn Tất Cấu Hình Đăng Nhập Google Production',
