@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.01-b03",
-    "notesVersion": "v26.08.01-b03",
-    "title": "Đăng Nhập Google Hoạt Động Ổn Định Trên Production",
+    "version": "v26.08.01-b04",
+    "notesVersion": "v26.08.01-b04",
+    "title": "Hoàn Tất Cấu Hình Đăng Nhập Google Production",
     "features": [
       "🔐 Firebase hoàn tất đăng nhập Google ổn định trên môi trường production",
-      "🛡️ Giữ bảo vệ chống nhúng cho ứng dụng, đồng thời cho phép endpoint xác thực hoạt động đúng",
-      "✅ Làm sạch toàn bộ lỗi lint còn lại ở màn hình thống kê và dashboard"
+      "🧩 Đồng bộ đầy đủ các endpoint hỗ trợ xác thực Firebase trên Vercel",
+      "🛡️ Giữ bảo vệ chống nhúng cho ứng dụng, đồng thời cho phép endpoint xác thực hoạt động đúng"
     ]
   },
   "assetGroups": [

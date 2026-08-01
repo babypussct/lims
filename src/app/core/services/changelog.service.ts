@@ -13,6 +13,21 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b04',
+    date: '01/08/2026',
+    title: 'Hoàn Tất Cấu Hình Đăng Nhập Google Production',
+    highlights: [
+      'Đồng bộ đầy đủ các endpoint hỗ trợ xác thực Firebase trên Vercel.',
+      'Đăng nhập Google chuyển hướng hoạt động ổn định hơn trên production.'
+    ],
+    improvements: [
+      'Giữ bảo vệ chống nhúng cho các màn hình chính của ứng dụng.'
+    ],
+    fixes: [
+      'Không còn trả nhầm trang ứng dụng thay cho cấu hình Firebase khi trình duyệt khởi tạo luồng đăng nhập.'
+    ]
+  },
+  {
     version: 'v26.08.01-b03',
     date: '01/08/2026',
     title: 'Đăng Nhập Google Hoạt Động Ổn Định Trên Production',

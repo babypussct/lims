@@ -9,6 +9,7 @@
   ],
   "rewrites": [
     { "source": "/__/auth/(.*)", "destination": "https://lims-cloud-by-otada.firebaseapp.com/__/auth/$1" },
+    { "source": "/__/firebase/(.*)", "destination": "https://lims-cloud-by-otada.firebaseapp.com/__/firebase/$1" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
