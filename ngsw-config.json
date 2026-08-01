@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.01-b07",
-    "notesVersion": "v26.08.01-b07",
-    "title": "Thiết Lập Mật Khẩu LIMS Từ Hồ Sơ",
+    "version": "v26.08.01-b08",
+    "notesVersion": "v26.08.01-b08",
+    "title": "Bắt Buộc Hoàn Tất Mật Khẩu Sau Đăng Nhập Google",
     "features": [
-      "🔑 Cho phép tạo hoặc đổi mật khẩu LIMS trực tiếp từ khu vực Cấu hình / Hồ sơ cá nhân",
-      "⚙️ Tự động nhận diện tài khoản Google/Email và hiển thị đúng nút Thiết lập hoặc Đổi mật khẩu",
-      "🛡️ Tài khoản đã có mật khẩu có thể đóng modal bất kỳ lúc nào mà không bắt buộc cài đặt lại"
+      "🚪 Sau khi Google redirect thành công, dashboard tự mở form và yêu cầu hoàn tất mật khẩu LIMS",
+      "🔗 Kiểm tra cờ onboarding trên cùng hồ sơ Firebase, không phụ thuộc việc người dùng có vào menu Cài đặt hay không",
+      "🛡️ Đồng bộ trạng thái hoàn tất trên Firestore với Rules chỉ cho phép chính chủ cập nhật"
     ]
   },
   "assetGroups": [

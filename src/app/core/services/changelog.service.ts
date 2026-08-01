@@ -13,6 +13,25 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b08',
+    date: '01/08/2026',
+    title: 'Bắt Buộc Hoàn Tất Mật Khẩu Sau Đăng Nhập Google',
+    highlights: [
+      'Ngay sau Google redirect thành công, dashboard tự mở form để người dùng tạo mật khẩu LIMS.',
+      'Lưu trạng thái onboarding trên cùng Firebase profile để đồng bộ khi đăng nhập Google hoặc Gmail.'
+    ],
+    features: [
+      'Tài khoản cũ đã có provider nhưng thiếu cờ hoàn tất cũng được đưa vào onboarding.',
+      'Không cần vào menu Cấu hình để tìm form tạo mật khẩu.'
+    ],
+    improvements: [
+      'Firestore Rules chỉ cho phép chính người dùng cập nhật hai trường trạng thái onboarding.'
+    ],
+    fixes: [
+      'Không còn bỏ qua bước thiết lập chỉ vì Firebase providerData đã chứa password.'
+    ]
+  },
+  {
     version: 'v26.08.01-b07',
     date: '01/08/2026',
     title: 'Thiết Lập Mật Khẩu LIMS Từ Hồ Sơ',

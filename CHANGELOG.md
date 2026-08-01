@@ -1,5 +1,21 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.01-b08] - 01/08/2026
+
+### 🚀 Tính Năng Mới
+- **Onboarding mật khẩu sau Google:** Ngay khi Google redirect thành công và dashboard được tải, hệ thống tự mở form để người dùng tạo mật khẩu LIMS.
+- **Đồng bộ trạng thái hoàn tất:** Lưu cờ hoàn tất trên cùng hồ sơ Firebase để lần đăng nhập Google hoặc Gmail tiếp theo dùng chung một trạng thái.
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Không phụ thuộc menu Cài đặt:** Việc kiểm tra được thực hiện ở AuthService/root modal, nên người dùng không cần tự tìm màn hình Hồ sơ.
+- **Hỗ trợ tài khoản cũ:** Tài khoản đã có provider nhưng chưa từng hoàn tất onboarding cũng được yêu cầu thiết lập lại ngay sau đăng nhập.
+
+### 🐛 Sửa Lỗi
+- **Không bỏ qua bước tạo mật khẩu:** Không còn chỉ dựa vào providerData `password`, tránh trạng thái “Đã bật” nhưng chưa hoàn tất bước thiết lập trong LIMS.
+- **Giới hạn cập nhật hồ sơ:** Firestore Rules chỉ mở đúng hai trường trạng thái onboarding cho chính tài khoản đang đăng nhập.
+
+---
+
 ## [v26.08.01-b07] - 01/08/2026
 
 ### 🚀 Tính Năng Mới

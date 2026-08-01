@@ -135,6 +135,9 @@ export interface UserProfile {
   customPermissions?: string[]; // Quyền ghi đè cá nhân cho Staff
   photoURL?: string;
   avatarStyle?: string;
+  /** Cờ onboarding, không chứa và không thay thế mật khẩu Firebase. */
+  localPasswordConfigured?: boolean;
+  localPasswordConfiguredAt?: any;
   createdAt?: any;
 }
 
@@ -160,10 +163,16 @@ export class AuthService {
   private authProviderIds = signal<string[]>([]);
   readonly hasGoogleProvider = computed(() => this.authProviderIds().includes('google.com'));
   readonly hasPasswordProvider = computed(() => this.authProviderIds().includes('password'));
-  /** Google-only accounts must create a local password before using ID/password login. */
-  readonly needsPasswordSetup = computed(() =>
-    !!this.currentUser() && this.hasGoogleProvider() && !this.hasPasswordProvider()
-  );
+  /**
+   * Google login must complete the LIMS-password onboarding before the app is usable.
+   * The profile flag is intentionally checked in addition to providerData so accounts
+   * created before this flow cannot silently skip the first setup screen.
+   */
+  readonly needsPasswordSetup = computed(() => {
+    const profile = this.currentUser();
+    if (!profile || !this.hasGoogleProvider()) return false;
+    return !this.hasPasswordProvider() || profile.localPasswordConfigured !== true;
+  });
   /** Cho phép mở lại form từ Hồ sơ sau khi tài khoản đã có provider password. */
   private passwordSetupRequested = signal(false);
   readonly isPasswordSetupOpen = computed(() =>
@@ -408,6 +417,7 @@ export class AuthService {
     await firebaseUser.reload();
     const refreshedUser = this.auth.currentUser || firebaseUser;
     this.updateAuthProviderState(refreshedUser);
+    await this.markLocalPasswordConfigured(refreshedUser);
     this.passwordSetupRequested.set(false);
   }
 
@@ -457,6 +467,7 @@ export class AuthService {
     await localUser.reload();
     const refreshedUser = this.auth.currentUser || localUser;
     this.updateAuthProviderState(refreshedUser);
+    await this.markLocalPasswordConfigured(refreshedUser);
     this.clearPendingGoogleLink();
     this.googleRedirectError.set(null);
     this.syncUser(refreshedUser);
@@ -536,6 +547,20 @@ export class AuthService {
     );
   }
 
+  /** Chỉ lưu trạng thái onboarding; Firebase Auth vẫn là nguồn xác thực thật. */
+  private async markLocalPasswordConfigured(firebaseUser: User): Promise<void> {
+    const profileRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
+    await setDoc(profileRef, {
+      localPasswordConfigured: true,
+      localPasswordConfiguredAt: serverTimestamp()
+    }, { merge: true });
+
+    const profile = this.currentUser();
+    if (profile?.uid === firebaseUser.uid) {
+      this.currentUser.set({ ...profile, localPasswordConfigured: true });
+    }
+  }
+
   private capturePendingGoogleCredential(error: any): boolean {
     const credential = (error?.credential ||
       (GoogleAuthProvider as any).credentialFromError?.(error) || null) as AuthCredential | null;
@@ -573,6 +598,7 @@ export class AuthService {
     }
 
     this.updateAuthProviderState(firebaseUser);
+    await this.markLocalPasswordConfigured(firebaseUser);
   }
 
   private googleLinkErrorMessage(error: any): string {
@@ -679,6 +705,7 @@ export class AuthService {
                 role: isSuperAdmin ? 'manager' : 'pending',
                 permissions: isSuperAdmin ? Object.values(PERMISSIONS) : [],
                 photoURL: firebaseUser.photoURL || '',
+                localPasswordConfigured: !this.hasGoogleProvider() || this.hasPasswordProvider(),
                 createdAt: serverTimestamp()
               };
               await setDoc(userRef, newUser);
