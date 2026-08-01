@@ -749,12 +749,6 @@ export class StatisticsComponent {
       return sop ? sop.name : id;
   }
 
-  getDayStats(date: Date) {
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const dayKey = String(date.getDate()).padStart(2, '0');
-      const monthData = this.statsData().find(s => s.month === monthKey);
-      return monthData?.days?.[dayKey] ?? { sops: {} };
-  }
 
   // --- NXT / EXPORT DETAIL REPORT LOGIC ---
   async generateNxtReport() {

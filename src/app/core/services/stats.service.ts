@@ -186,9 +186,9 @@ export class StatsService {
             if (!statsMap[monthKey]) statsMap[monthKey] = {};
 
             let s = 1; let q = 0;
-            if (req.inputs?.['n_sample']) s = Number(req.inputs['n_sample']);
-            if (req.inputs?.['n_qc']) q = Number(req.inputs['n_qc']);
-            else if (req.sampleList?.length > 0) s = req.sampleList.length;
+            if (req['inputs']?.['n_sample']) s = Number(req['inputs']['n_sample']);
+            if (req['inputs']?.['n_qc']) q = Number(req['inputs']['n_qc']);
+            else if (req['sampleList']?.length > 0) s = req['sampleList'].length;
 
             if (!statsMap[monthKey][dayKey]) {
                 statsMap[monthKey][dayKey] = { totalSamples: 0, totalBatches: 0, totalQcs: 0, sops: {} };
@@ -199,7 +199,7 @@ export class StatsService {
             dayStats.totalBatches += 1;
             dayStats.totalQcs = (dayStats.totalQcs || 0) + q;
 
-            const sopKey = req.sopName || req.sopId || 'Unknown';
+            const sopKey = req['sopName'] || req['sopId'] || 'Unknown';
             if (!dayStats.sops[sopKey]) {
                 dayStats.sops[sopKey] = { samples: 0, batches: 0, qcs: 0 };
             }
