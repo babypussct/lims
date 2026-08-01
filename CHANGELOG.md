@@ -2,10 +2,14 @@
 
 ## [v26.08.01-b01] - 01/08/2026
 
-### 🔧 Khắc Phục Lỗi Đăng Nhập Popup & PDF Viewer
+### 🚀 Tính Năng Mới
+- *(Không có tính năng mới trong bản cập nhật này)*
 
-- **Khắc phục lỗi chặn Popup Đăng nhập:** Tự động nhận diện nếu trình duyệt (Safari, Brave) hoặc trình duyệt nhúng (Zalo/Facebook) chặn popup đăng nhập Google. Khi lỗi `popup-closed-by-user` xảy ra dưới 2.5 giây, hệ thống chủ động chuyển sang luồng Redirect (OIDC) để đảm bảo người dùng luôn có thể đăng nhập.
-- **Tối ưu tương thích PDF Viewer:** Xử lý lỗi không tương thích mảng Array Spread của `Map.entries()` trên các trình duyệt cũ, giúp chức năng xem tài liệu PDF hoạt động ổn định và mượt mà hơn.
+### ⚡ Tối Ưu & Cải Tiến
+- **Luồng Đăng nhập (OIDC):** Tự động nhận diện nếu trình duyệt (Safari, Brave) hoặc trình duyệt nhúng (Zalo/Facebook) chặn popup đăng nhập Google (lỗi `popup-closed-by-user` xảy ra dưới 2.5 giây) và chủ động chuyển hướng sang luồng Redirect để người dùng không bị gián đoạn.
+
+### 🐛 Sửa Lỗi
+- **Tương thích PDF Viewer:** Xử lý lỗi không tương thích mảng Array Spread của `Map.entries()` trên các trình duyệt cũ, giúp chức năng xem tài liệu PDF hoạt động ổn định và mượt mà hơn.
 
 ---
 
