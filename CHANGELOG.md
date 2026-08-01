@@ -1,5 +1,20 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.01-b03] - 01/08/2026
+
+### 🚀 Tính Năng Mới
+- *(Không có tính năng mới trong bản cập nhật này)*
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Đăng nhập Google ổn định trên production:** Cho phép thành phần xác thực Firebase hoạt động đúng khi đăng nhập chuyển hướng trên Vercel.
+- **Giữ an toàn cho ứng dụng:** Chỉ mở ngoại lệ cần thiết cho endpoint xác thực; các màn hình chính vẫn được bảo vệ khỏi việc bị nhúng trái phép.
+- **Mã nguồn sạch hơn:** Xử lý toàn bộ lỗi lint còn lại ở dịch vụ thống kê và dashboard.
+
+### 🐛 Sửa Lỗi
+- **Không còn lỗi thiếu kết quả đăng nhập:** Khắc phục trường hợp Google chuyển về ứng dụng nhưng Firebase không nhận được kết quả xác thực.
+
+---
+
 ## [v26.08.01-b02] - 01/08/2026
 
 ### 🚀 Tính Năng Mới

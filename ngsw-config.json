@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.01-b02",
-    "notesVersion": "v26.08.01-b02",
-    "title": "Đăng Nhập Google Ổn Định & An Toàn Hơn",
+    "version": "v26.08.01-b03",
+    "notesVersion": "v26.08.01-b03",
+    "title": "Đăng Nhập Google Hoạt Động Ổn Định Trên Production",
     "features": [
-      "🔐 Đăng nhập Google dùng luồng chuyển trang an toàn, không còn phụ thuộc vào cửa sổ bật lên",
-      "📱 Cải thiện khả năng đăng nhập trên Safari, thiết bị di động và trình duyệt trong ứng dụng",
-      "🧭 Khôi phục đúng màn hình người dùng đang làm việc sau khi đăng nhập"
+      "🔐 Firebase hoàn tất đăng nhập Google ổn định trên môi trường production",
+      "🛡️ Giữ bảo vệ chống nhúng cho ứng dụng, đồng thời cho phép endpoint xác thực hoạt động đúng",
+      "✅ Làm sạch toàn bộ lỗi lint còn lại ở màn hình thống kê và dashboard"
     ]
   },
   "assetGroups": [

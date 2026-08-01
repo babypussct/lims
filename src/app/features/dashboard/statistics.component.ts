@@ -694,7 +694,7 @@ export class StatisticsComponent {
         const end = new Date(this.endDate());
         const months = new Set<string>();
         
-        let d = new Date(start);
+        const d = new Date(start);
         d.setDate(1);
         while (d <= end) {
             months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
@@ -973,7 +973,7 @@ export class StatisticsComponent {
     // Đọc statsData để tạo dependency (trigger computed khi data về)
     const stats = this.statsData();
 
-    let diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
+    const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
     if (diffDays < 0) return [];
     
     const map = new Map<string, {count: number, samples: number, qcs: number}>();
@@ -981,8 +981,8 @@ export class StatisticsComponent {
 
     // Use < instead of <= to prevent off-by-one error since diffDays represents the count of days (rounded from ~0.99 to 1 for same day)
     for (let i = 0; i < diffDays; i++) {
-        let currentDay = new Date(start.getTime() + (i * 24 * 3600 * 1000));
-        let dayStats = this.getDayStats(currentDay);
+        const currentDay = new Date(start.getTime() + (i * 24 * 3600 * 1000));
+        const dayStats = this.getDayStats(currentDay);
         
         for (const [sopKey, sStats] of Object.entries(dayStats.sops)) {
             if (sopIdFilter !== 'all' && sopKey !== sopIdFilter && sopKey !== this.getSelectedSopName()) continue;

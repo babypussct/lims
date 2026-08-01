@@ -24,6 +24,9 @@ nafiqpm6-git-main-babypusscts-projects.vercel.app
 The production Firebase config uses `nafiqpm6.vercel.app` as `authDomain`.
 `vercel.json` must continue proxying `/__/auth/*` to the Firebase Hosting helper
 domain so redirect sign-in works when third-party storage is restricted.
+The security header `X-Frame-Options: DENY` must not apply to `/__/auth/*` or
+`/__/firebase/*`; Firebase loads these helper endpoints in an iframe during the
+redirect flow. The application routes remain protected by `DENY`.
 
 ## Google Cloud Console
 

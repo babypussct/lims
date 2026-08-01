@@ -22,9 +22,7 @@ export interface DailyStats {
   sops: Record<string, { samples: number; batches: number; qcs: number }>;
 }
 
-export interface MonthlyStatsDoc {
-  [dayKey: string]: DailyStats; // '2026-07-31'
-}
+export type MonthlyStatsDoc = Record<string, DailyStats>; // '2026-07-31'
 
 @Injectable({ providedIn: 'root' })
 export class StatsService {
@@ -52,9 +50,9 @@ export class StatsService {
     sopId: string,
     sopName: string,
     samples: number,
-    batches: number = 1,
-    qcs: number = 0,
-    isDecrement: boolean = false
+    batches = 1,
+    qcs = 0,
+    isDecrement = false
   ): Promise<void> {
     const monthKey = this.getMonthKey(date);
     const dayKey = this.getDayKey(date);

@@ -13,6 +13,22 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b03',
+    date: '01/08/2026',
+    title: 'Đăng Nhập Google Hoạt Động Ổn Định Trên Production',
+    highlights: [
+      'Đăng nhập Google ổn định hơn trên môi trường production và Vercel.',
+      'Ứng dụng vẫn được bảo vệ chống nhúng trái phép trong khi luồng xác thực hoạt động bình thường.'
+    ],
+    improvements: [
+      'Cho phép thành phần xác thực Firebase hoạt động đúng trong quá trình đăng nhập chuyển hướng.',
+      'Làm sạch toàn bộ lỗi lint còn lại ở dịch vụ thống kê và dashboard.'
+    ],
+    fixes: [
+      'Khắc phục trường hợp Google chuyển về ứng dụng nhưng không nhận được kết quả đăng nhập.'
+    ]
+  },
+  {
     version: 'v26.08.01-b02',
     date: '01/08/2026',
     title: 'Đăng Nhập Google Ổn Định & An Toàn Hơn',

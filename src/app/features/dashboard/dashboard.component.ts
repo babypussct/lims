@@ -576,7 +576,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
               const historyEnd = new Date(start); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
               const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
               
-              let d = new Date(historyStart);
+              const d = new Date(historyStart);
               d.setDate(1); // Set to 1st of the month to avoid month rollover bugs (e.g. May 31 + 1 month -> July 1)
               while (d <= end) {
                   const y = d.getFullYear();
