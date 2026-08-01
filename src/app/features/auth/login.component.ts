@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -101,19 +101,19 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                 <!-- LOGIN MODE: GOOGLE (PRIMARY) -->
                 @if (mode() === 'google') {
                     <div class="animate-fade-in-up relative z-10 text-center">
-                        <button #googleBtn type="button" [disabled]="isLoading() || auth.googlePopupState() === 'loading'"
+                        <button type="button" (click)="loginGoogle()" [disabled]="isLoading()"
                                 class="w-full py-4 mt-2 bg-white dark:bg-slate-800 backdrop-blur-md border border-white dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-200 rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] group relative overflow-hidden">
                             <!-- Subtle pink hover glow -->
                             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-50/50 to-transparent dark:via-pink-950/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             
-                            @if (isGoogleLoading() || auth.googlePopupState() === 'loading') { <i class="fa-solid fa-spinner fa-spin text-gray-400"></i> } 
+                            @if (isGoogleLoading()) { <i class="fa-solid fa-spinner fa-spin text-gray-400"></i> }
                             @else { 
                                 <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-950/50 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
                                     <i class="fa-brands fa-google text-red-500 text-[16px] group-hover:scale-110 transition-transform"></i> 
                                 </div>
                             }
                             <span class="text-[15px]">
-                              {{ auth.googlePopupState() === 'loading' ? 'Đang chuẩn bị Google...' : 'Đăng nhập với Google' }}
+                              Đăng nhập với Google
                             </span>
                         </button>
 
@@ -164,9 +164,9 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                 </div>
                             </div>
                         </div>
-                        @if (errorMsg()) {
+                        @if (errorMsg() || auth.googleRedirectError()) {
                             <div class="mt-4 px-4 py-3 rounded-2xl bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 text-[13px] font-medium flex items-center justify-center gap-2 animate-shake">
-                                <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() }}
+                                <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() || auth.googleRedirectError() }}
                             </div>
                         }
                     </div>
@@ -433,7 +433,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
     }
   `]
 })
-export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
+export class LoginComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   toast = inject(ToastService);
   state = inject(StateService);
@@ -449,8 +449,6 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   errorMsg = signal('');
   isPWA = signal<boolean>(false);
   
-  @ViewChild('googleBtn') googleBtn!: ElementRef<HTMLButtonElement>;
-
   ngOnInit() {
     const reason = localStorage.getItem('lims_logout_reason');
     if (reason) {
@@ -469,16 +467,6 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
       this.isPWA.set(true);
     }
-  }
-
-  ngAfterViewInit() {
-      if (this.googleBtn) {
-          // Bypass Zone.js completely to guarantee transient user activation for popup
-          this.googleBtn.nativeElement.addEventListener('click', () => {
-              if (this.isLoading() || this.auth.googlePopupState() === 'loading') return;
-              this.loginGoogle();
-          });
-      }
   }
 
   toggleSharedDevice() {
@@ -522,6 +510,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   switchMode(m: 'google' | 'password' | 'qr') {
       this.mode.set(m);
       this.errorMsg.set('');
+      this.auth.clearGoogleRedirectError();
       if (m === 'qr') {
           setTimeout(() => this.generateSession(), 100);
       } else {
@@ -646,18 +635,15 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
 
   loginGoogle() {
     this.errorMsg.set('');
+    this.auth.clearGoogleRedirectError();
     this.isLoading.set(true);
     this.isGoogleLoading.set(true);
 
-    // Bắt buộc gọi trực tiếp, không dùng await/async wrapper
-    this.auth.loginWithGoogle().then(() => {
-        this.isLoading.set(false);
-        this.isGoogleLoading.set(false);
-    }).catch((e: any) => {
-        if (e && e.code === 'auth/popup-closed-by-user') {
-            this.errorMsg.set('Đã hủy đăng nhập Google.');
-        } else if (e) {
-            this.handleError(e, true);
+    // Redirect navigates away from this document on success. Only reset the
+    // button state when Firebase reports that the redirect could not start.
+    void this.auth.loginWithGoogle().catch((e: any) => {
+        if (e) {
+            this.errorMsg.set(this.auth.googleRedirectError() || 'Không thể bắt đầu đăng nhập Google.');
         }
         this.isLoading.set(false);
         this.isGoogleLoading.set(false);

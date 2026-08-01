@@ -1,19 +1,17 @@
 
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
-import { environment } from '../../../environments/environment';
 import { GoogleDriveService } from './google-drive.service';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
-  signInWithPopup,
-  signInWithCredential,
+  signInWithRedirect,
+  getRedirectResult,
   signOut, 
   onAuthStateChanged, 
   GoogleAuthProvider,
   setPersistence,
   browserSessionPersistence,
   browserLocalPersistence,
-  browserPopupRedirectResolver,
   EmailAuthProvider,
   reauthenticateWithCredential,
   type User,
@@ -27,6 +25,8 @@ import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 
 import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
+
+const GOOGLE_REDIRECT_PENDING_KEY = '__lims_google_redirect_pending';
 
 export const PERMISSIONS = {
   INVENTORY_VIEW: 'inventory_view',
@@ -145,8 +145,8 @@ export class AuthService {
   isAuthReady = signal<boolean>(false);
   /** true trong khi đang xử lý token trả về từ Google redirect — dùng để ẩn màn hình Login */
   isProcessingRedirect = signal<boolean>(false);
-  /** Firebase popup iframe must be ready before the user clicks Google login. */
-  googlePopupState = signal<'loading' | 'ready' | 'failed'>('ready');
+  /** Lỗi Google redirect gần nhất, hiển thị lại trên màn hình đăng nhập. */
+  googleRedirectError = signal<string | null>(null);
   private userUnsub: any = null;
   private rolesUnsub: any = null;
   readonly rolesConfig = signal<Record<string, string[]>>({});
@@ -156,29 +156,25 @@ export class AuthService {
 
     // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab (hoặc giữ nếu lưu trạng thái)
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
+    const persistenceReady = setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
       console.warn('[Auth] Failed to set session persistence:', err);
     });
 
-    // --- DIRECT OIDC LOGIN FALLBACK INTERCEPTOR ---
-    // If the manual redirect fallback was used, index.html will capture the id_token
-    // from the URL hash and place it in sessionStorage. We process it here BEFORE
-    // regular auth state logic.
-    const pendingIdToken = sessionStorage.getItem('__google_id_token');
-    if (pendingIdToken) {
-      sessionStorage.removeItem('__google_id_token'); // Clear immediately
-      console.log('[Auth] Intercepted Google ID Token from redirect. Authenticating...');
-      this.isProcessingRedirect.set(true); // ← Khoá màn hình Login
-      
-      const credential = GoogleAuthProvider.credential(pendingIdToken);
-      signInWithCredential(this.auth, credential).then((result: any) => {
-          console.log('[Auth] Successfully authenticated with ID Token:', result.user.email);
-          // onAuthStateChanged sẽ set isProcessingRedirect = false sau khi syncUser xong
-      }).catch((e: any) => {
-          console.error('[Auth] Failed to authenticate with ID Token:', e);
-          this.isProcessingRedirect.set(false); // Mở lại Login nếu lỗi
-      });
+    const legacyRedirectError = sessionStorage.getItem('__google_redirect_error');
+    if (legacyRedirectError) {
+      sessionStorage.removeItem('__google_redirect_error');
+      this.googleRedirectError.set(this.googleAuthErrorMessage(legacyRedirectError));
     }
+
+    const hasPendingGoogleRedirect = sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === 'true';
+    if (hasPendingGoogleRedirect) {
+      this.isProcessingRedirect.set(true);
+    }
+
+    // Let Firebase own the redirect transaction and credential exchange. This
+    // avoids exposing a Google ID token to the application URL or hand-rolling
+    // state/nonce validation in index.html.
+    void persistenceReady.then(() => this.processGoogleRedirectResult(hasPendingGoogleRedirect));
 
     // 2. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
@@ -210,6 +206,63 @@ export class AuthService {
     });
   }
 
+  private processGoogleRedirectResult(hasPendingGoogleRedirect: boolean): void {
+
+    void getRedirectResult(this.auth)
+      .then((result) => {
+        if (result?.user) {
+          this.googleRedirectError.set(null);
+          console.log('[Auth] Firebase Google redirect completed:', result.user.email);
+
+          // Normally onAuthStateChanged handles this. Keep a guarded fallback
+          // for browsers where the auth observer was initialized first.
+          this.ngZone.run(() => {
+            if (!this.currentUser() && this.auth.currentUser) {
+              this.syncUser(this.auth.currentUser);
+            }
+          });
+        } else if (hasPendingGoogleRedirect && !this.auth.currentUser) {
+          this.googleRedirectError.set('Không nhận được kết quả đăng nhập Google. Vui lòng thử lại hoặc mở bằng trình duyệt ngoài.');
+        }
+      })
+      .catch((error: any) => {
+        console.error('[Auth] Firebase Google redirect failed:', error);
+        this.googleRedirectError.set(this.googleAuthErrorMessage(error));
+      })
+      .finally(() => {
+        if (hasPendingGoogleRedirect) {
+          sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+          this.isProcessingRedirect.set(false);
+        }
+      });
+  }
+
+  private googleAuthErrorMessage(error: any): string {
+    const code = typeof error === 'string' ? error : error?.code;
+
+    switch (code) {
+      case 'auth/unauthorized-domain':
+        return 'Tên miền hiện tại chưa được cấp phép đăng nhập Firebase. Vui lòng liên hệ quản trị viên.';
+      case 'auth/operation-not-supported-in-this-environment':
+        return 'Trình duyệt hiện tại không hỗ trợ đăng nhập chuyển hướng. Hãy mở ứng dụng bằng trình duyệt ngoài.';
+      case 'auth/network-request-failed':
+        return 'Không thể kết nối Google. Vui lòng kiểm tra mạng và thử lại.';
+      case 'auth/account-exists-with-different-credential':
+        return 'Email Google này đã được đăng ký bằng phương thức đăng nhập khác.';
+      case 'auth/no-auth-event':
+        return 'Phiên đăng nhập Google đã bị hủy hoặc hết hạn. Vui lòng thử lại.';
+      case 'auth/cancelled-popup-request':
+      case 'auth/popup-closed-by-user':
+        return 'Đã hủy đăng nhập Google.';
+      default:
+        return 'Không thể hoàn tất đăng nhập Google. Vui lòng thử lại hoặc mở bằng trình duyệt ngoài.';
+    }
+  }
+
+  clearGoogleRedirectError(): void {
+    this.googleRedirectError.set(null);
+  }
+
 
   // --- AUTH METHODS ---
 
@@ -237,90 +290,26 @@ export class AuthService {
   }
 
 
-  loginWithGoogle(): Promise<void> {
-    if (this.googlePopupState() !== 'ready') {
-        console.warn('[Auth] loginWithGoogle: googlePopupState is not ready:', this.googlePopupState());
-        this._authViaDirectOidc();
-        return Promise.resolve();
-    }
+  async loginWithGoogle(): Promise<void> {
+    this.googleRedirectError.set(null);
+
+    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
+      console.warn('[Auth] Failed to set Google session persistence dynamically:', err);
+    });
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    console.log('[Auth] loginWithGoogle: attempting signInWithPopup (outside NgZone)...');
-    
-    // Return the promise directly WITHOUT async/await wrapping before the call.
-    // This is strictly required to prevent strict PWA environments from dropping the user gesture.
-    return this.ngZone.runOutsideAngular(() => {
-        const popupStartTime = Date.now();
-        return signInWithPopup(this.auth, provider, browserPopupRedirectResolver)
-            .then((result) => {
-                console.log('[Auth] loginWithGoogle: signInWithPopup SUCCESS');
-                this.ngZone.run(() => {
-                    if (!this.currentUser() && this.auth.currentUser) {
-                        this.syncUser(this.auth.currentUser);
-                    }
-                    // Note: intended route navigation is handled in onAuthStateChanged
-                    // after user profile is fully synced from Firestore.
-                });
-            })
-            .catch((e: any) => {
-                if (e.code === 'auth/popup-closed-by-user') {
-                    const elapsed = Date.now() - popupStartTime;
-                    // Nếu lỗi văng ra quá nhanh (< 2.5s), chắc chắn do trình duyệt/in-app browser chặn hoặc đóng popup ngay lập tức
-                    if (elapsed < 2500) {
-                        console.warn(`[Auth] Trình duyệt chặn popup (popup-closed-by-user sau ${elapsed}ms). Đang chuyển sang redirect...`);
-                        this._authViaDirectOidc();
-                        return;
-                    }
-                    console.warn('[Auth] loginWithGoogle: Người dùng đã đóng popup đăng nhập.');
-                    throw e;
-                }
-                console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
-                if (e.code === 'auth/popup-blocked') {
-                    console.warn('[Auth] Firebase reported popup-blocked; switching to same-tab OAuth redirect.', e);
-                    this._authViaDirectOidc();
-                    return;
-                }
-                throw e;
-            });
-    });
-  }
-
-  /**
-   * Directly navigates the browser to Google OAuth to get an ID Token.
-   * Completely bypasses Firebase's cross-domain redirect handlers.
-   */
-  private _authViaDirectOidc(): void {
-      const config = environment.googleDrive;
-      if (!config?.clientId) {
-          throw new Error('Chưa cấu hình Google OAuth Client ID.');
-      }
-
-      // Save current route so index.html knows where to put the user back.
-      // Priority: (1) intended route saved by guard before login redirect,
-      // (2) current hash (if already on a real page), (3) fallback to root.
-      const intendedRoute = sessionStorage.getItem('__lims_intended_route');
-      sessionStorage.removeItem('__lims_intended_route');
-      const currentHash = window.location.hash;
-      const routeToRestore = intendedRoute || (currentHash && currentHash !== '#/' ? currentHash : '#/');
-      sessionStorage.setItem('__gd_route', routeToRestore);
-
-      // Redirect URI must be EXACTLY what is registered in Google Cloud Console
-      const redirectUri = window.location.origin; 
-      // Request cả id_token (cho login) và access_token (cho Drive) kèm scopes tương ứng
-      const params = new URLSearchParams({
-          client_id: config.clientId,
-          redirect_uri: redirectUri,
-          response_type: 'id_token token',
-          scope: 'email profile openid https://www.googleapis.com/auth/drive.file',
-          prompt: 'select_account',
-          nonce: Math.random().toString(36).substring(2) + Date.now() // Required for id_token
-      });
-
-      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-      console.log('[Auth] Starting Google OpenID Connect redirect...');
-      window.location.assign(authUrl);
+    console.log('[Auth] loginWithGoogle: starting Firebase redirect');
+    sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, 'true');
+    try {
+      await signInWithRedirect(this.auth, provider);
+    } catch (error) {
+      sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+      this.googleRedirectError.set(this.googleAuthErrorMessage(error));
+      throw error;
+    }
   }
 
   async logout() {

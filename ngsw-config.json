@@ -2,12 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.01-b01",
-    "notesVersion": "v26.08.01-b01",
-    "title": "Khắc Phục Lỗi Đăng Nhập Popup & PDF Viewer",
+    "version": "v26.08.01-b02",
+    "notesVersion": "v26.08.01-b02",
+    "title": "Đăng Nhập Google Ổn Định & An Toàn Hơn",
     "features": [
-      "🔧 Tự động nhận diện trình duyệt chặn popup đăng nhập và chuyển hướng sang OIDC (Redirect)",
-      "📄 Sửa lỗi tương thích cú pháp mảng Array Spread của Map.entries() trên trình duyệt cũ giúp xem tài liệu PDF ổn định hơn"
+      "🔐 Đăng nhập Google dùng luồng chuyển trang an toàn, không còn phụ thuộc vào cửa sổ bật lên",
+      "📱 Cải thiện khả năng đăng nhập trên Safari, thiết bị di động và trình duyệt trong ứng dụng",
+      "🧭 Khôi phục đúng màn hình người dùng đang làm việc sau khi đăng nhập"
     ]
   },
   "assetGroups": [

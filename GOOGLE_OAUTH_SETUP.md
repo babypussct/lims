@@ -1,13 +1,34 @@
-# Google OAuth redirect setup
+# Google OAuth setup
+
+Google sign-in uses Firebase's official `signInWithRedirect()` / `getRedirectResult()`
+flow. The Angular app does not parse or exchange Google ID tokens itself.
+
+Google Drive authorization remains a separate authorization-code flow handled by
+Vercel. The Drive scope must not be requested as part of normal LIMS sign-in.
 
 The PDF preview flow uses an OAuth 2.0 authorization code redirect. Google
 tokens are exchanged by Vercel and stored in an encrypted `HttpOnly` cookie;
 Angular never receives the refresh token.
 
+## Firebase Authentication
+
+Enable the Google provider in Firebase Authentication and add every production
+hostname that can serve the app to Firebase Authentication's authorized domains:
+
+```text
+nafiqpm6.vercel.app
+nafiqpm6-babypusscts-projects.vercel.app
+nafiqpm6-git-main-babypusscts-projects.vercel.app
+```
+
+The production Firebase config uses `nafiqpm6.vercel.app` as `authDomain`.
+`vercel.json` must continue proxying `/__/auth/*` to the Firebase Hosting helper
+domain so redirect sign-in works when third-party storage is restricted.
+
 ## Google Cloud Console
 
-Use the existing OAuth 2.0 **Web application** client and add this exact
-authorized redirect URI:
+The existing OAuth 2.0 **Web application** client is used by the separate Drive
+authorization-code flow. Keep this exact authorized redirect URI:
 
 ```text
 https://nafiqpm6.vercel.app/api/oauth/google/callback
@@ -18,6 +39,10 @@ Keep this authorized JavaScript origin:
 ```text
 https://nafiqpm6.vercel.app
 ```
+
+If Drive is used from another owned origin, add that origin explicitly. Do not
+use wildcard origins, and do not configure the Angular Firebase login to request
+the Drive scope.
 
 ## Vercel environment variables
 

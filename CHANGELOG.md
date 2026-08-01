@@ -1,5 +1,21 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.01-b02] - 01/08/2026
+
+### 🚀 Tính Năng Mới
+- *(Không có tính năng mới trong bản cập nhật này)*
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Đăng nhập Google ổn định hơn:** Chuyển sang luồng đăng nhập toàn trang, giảm phụ thuộc vào cửa sổ bật lên trên Safari, thiết bị di động và trình duyệt trong ứng dụng.
+- **Khôi phục đúng màn hình làm việc:** Sau khi đăng nhập, hệ thống đưa người dùng trở lại đúng màn hình đang mở trước đó.
+- **Bảo vệ thông tin đăng nhập:** Quá trình xác thực được hệ thống quản lý tập trung, không tự đưa thông tin đăng nhập vào địa chỉ trang.
+
+### 🐛 Sửa Lỗi
+- **Không còn xin quyền Drive khi đăng nhập:** Quyền Google Drive chỉ được yêu cầu khi người dùng thực sự sử dụng tính năng Drive.
+- **Thông báo lỗi rõ ràng hơn:** Hiển thị hướng dẫn phù hợp khi trình duyệt, tên miền hoặc kết nối mạng không thể hoàn tất đăng nhập.
+
+---
+
 ## [v26.08.01-b01] - 01/08/2026
 
 ### 🚀 Tính Năng Mới

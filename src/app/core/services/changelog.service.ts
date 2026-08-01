@@ -13,6 +13,22 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b02',
+    date: '01/08/2026',
+    title: 'Đăng Nhập Google Ổn Định & An Toàn Hơn',
+    highlights: [
+      'Đăng nhập Google ổn định hơn trên Safari, thiết bị di động và trình duyệt trong ứng dụng.',
+      'Sau khi đăng nhập, hệ thống đưa người dùng trở lại đúng màn hình đang làm việc.'
+    ],
+    improvements: [
+      'Luồng đăng nhập không còn phụ thuộc vào cửa sổ bật lên.',
+      'Quyền Google Drive chỉ được yêu cầu khi người dùng sử dụng tính năng Drive.'
+    ],
+    fixes: [
+      'Hiển thị thông báo và hướng dẫn rõ ràng hơn khi đăng nhập bị gián đoạn do trình duyệt, tên miền hoặc mạng.'
+    ]
+  },
+  {
     version: 'v26.08.01-b01',
     date: '01/08/2026',
     title: 'Khắc Phục Lỗi Đăng Nhập Popup & PDF Viewer',
