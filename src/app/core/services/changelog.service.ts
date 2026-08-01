@@ -13,6 +13,22 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b07',
+    date: '01/08/2026',
+    title: 'Thiết Lập Mật Khẩu LIMS Từ Hồ Sơ',
+    highlights: [
+      'Cho phép tạo hoặc đổi mật khẩu LIMS trực tiếp từ khu vực Cấu hình / Hồ sơ cá nhân.',
+      'Linh hoạt cho phép hủy/đóng modal đổi mật khẩu khi tài khoản đã có mật khẩu.'
+    ],
+    features: [
+      'Bổ sung nút Thiết lập / Đổi mật khẩu trong mục Quản lý phương thức xác thực.',
+      'Tự động hiển thị và điều khiển modal tạo/đổi mật khẩu phù hợp với loại tài khoản.'
+    ],
+    improvements: [
+      'Cập nhật giao diện Hồ sơ cá nhân với chỉ báo trạng thái phương thức xác thực rõ ràng.'
+    ]
+  },
+  {
     version: 'v26.08.01-b06',
     date: '01/08/2026',
     title: 'Liên Kết Google & Mật Khẩu Đăng Nhập',

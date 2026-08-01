@@ -8,7 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    @if (auth.needsPasswordSetup()) {
+    @if (auth.isPasswordSetupOpen()) {
       <div class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4" role="dialog" aria-modal="true" aria-labelledby="password-setup-title">
         <div class="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 md:p-8">
           <div class="flex items-start gap-4 mb-6">
@@ -16,11 +16,19 @@ import { AuthService } from '../../core/services/auth.service';
               <i class="fa-solid fa-key text-xl"></i>
             </div>
             <div>
-              <h2 id="password-setup-title" class="text-xl font-black text-slate-800 dark:text-white">Tạo mật khẩu đăng nhập</h2>
-              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tài khoản Google <strong>{{auth.currentUser()?.email}}</strong> đã đăng nhập thành công.
-                Hãy tạo mật khẩu để lần sau có thể đăng nhập bằng Gmail hoặc Google.
-              </p>
+              <h2 id="password-setup-title" class="text-xl font-black text-slate-800 dark:text-white">
+                @if (auth.needsPasswordSetup()) { Tạo mật khẩu đăng nhập } @else { Đổi mật khẩu LIMS }
+              </h2>
+              @if (auth.needsPasswordSetup()) {
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  Tài khoản Google <strong>{{auth.currentUser()?.email}}</strong> đã đăng nhập thành công.
+                  Hãy tạo mật khẩu để lần sau có thể đăng nhập bằng Gmail hoặc Google.
+                </p>
+              } @else {
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  Đặt lại mật khẩu LIMS cho <strong>{{auth.currentUser()?.email}}</strong>. Mật khẩu Google không bị thay đổi.
+                </p>
+              }
             </div>
           </div>
 
@@ -48,17 +56,24 @@ import { AuthService } from '../../core/services/auth.service';
               Mật khẩu này chỉ dùng cho LIMS và không thay đổi mật khẩu Google của bạn.
             </div>
 
-            <button type="submit" [disabled]="isSaving()"
+              <button type="submit" [disabled]="isSaving()"
                     class="w-full py-3.5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 disabled:opacity-60 text-white font-bold text-sm transition flex items-center justify-center gap-2">
               @if (isSaving()) { <i class="fa-solid fa-circle-notch fa-spin"></i> Đang lưu... }
               @else { <i class="fa-solid fa-check"></i> Lưu mật khẩu và tiếp tục }
             </button>
           </form>
 
-          <button type="button" (click)="logout()" [disabled]="isSaving()"
-                  class="w-full mt-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition">
-            Đăng xuất và thực hiện sau
-          </button>
+          @if (auth.needsPasswordSetup()) {
+            <button type="button" (click)="logout()" [disabled]="isSaving()"
+                    class="w-full mt-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition">
+              Đăng xuất và thực hiện sau
+            </button>
+          } @else {
+            <button type="button" (click)="close()" [disabled]="isSaving()"
+                    class="w-full mt-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition">
+              Hủy
+            </button>
+          }
         </div>
       </div>
     }
@@ -97,6 +112,12 @@ export class PasswordSetupComponent {
   async logout(): Promise<void> {
     if (this.isSaving()) return;
     await this.auth.logout();
+  }
+
+  close(): void {
+    if (!this.isSaving()) {
+      this.auth.closePasswordSetup();
+    }
   }
 
   private errorMessage(error: any): string {

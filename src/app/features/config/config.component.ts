@@ -171,11 +171,18 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                         </div>
                                         <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-700">
                                             <span class="flex items-center gap-2 text-slate-700 dark:text-slate-200"><i class="fa-solid fa-key text-fuchsia-500"></i> Gmail / mật khẩu LIMS</span>
-                                            @if (auth.hasPasswordProvider()) {
-                                                <span class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Đã bật</span>
-                                            } @else {
-                                                <span class="text-amber-600 dark:text-amber-400">Chưa bật</span>
-                                            }
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                @if (auth.hasPasswordProvider()) {
+                                                    <span class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Đã bật</span>
+                                                    @if (auth.hasGoogleProvider()) {
+                                                        <button type="button" (click)="auth.openPasswordSetup()" class="text-fuchsia-600 dark:text-fuchsia-400 hover:underline">Đổi mật khẩu</button>
+                                                    }
+                                                } @else if (auth.hasGoogleProvider()) {
+                                                    <button type="button" (click)="auth.openPasswordSetup()" class="text-fuchsia-600 dark:text-fuchsia-400 hover:underline">Thiết lập</button>
+                                                } @else {
+                                                    <span class="text-amber-600 dark:text-amber-400">Chưa bật</span>
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                     @if (auth.googleRedirectError()) {

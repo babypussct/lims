@@ -110,7 +110,7 @@ import { filter } from 'rxjs/operators';
       }
 
       <app-toast-host></app-toast-host>
-      @if (auth.needsPasswordSetup()) {
+      @if (auth.isPasswordSetupOpen()) {
         <app-password-setup></app-password-setup>
       }
       @defer (when changelogService.isOpen()) {

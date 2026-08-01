@@ -164,6 +164,11 @@ export class AuthService {
   readonly needsPasswordSetup = computed(() =>
     !!this.currentUser() && this.hasGoogleProvider() && !this.hasPasswordProvider()
   );
+  /** Cho phép mở lại form từ Hồ sơ sau khi tài khoản đã có provider password. */
+  private passwordSetupRequested = signal(false);
+  readonly isPasswordSetupOpen = computed(() =>
+    this.passwordSetupRequested() || this.needsPasswordSetup()
+  );
   private userUnsub: any = null;
   private rolesUnsub: any = null;
   readonly rolesConfig = signal<Record<string, string[]>>({});
@@ -220,6 +225,7 @@ export class AuthService {
         this.deltaSync.destroyAll(true);
         this.clearQrLoginCache();
         this.authProviderIds.set([]);
+        this.passwordSetupRequested.set(false);
         this.currentUser.set(null);
         this.isAuthReady.set(true);
       }
@@ -402,6 +408,21 @@ export class AuthService {
     await firebaseUser.reload();
     const refreshedUser = this.auth.currentUser || firebaseUser;
     this.updateAuthProviderState(refreshedUser);
+    this.passwordSetupRequested.set(false);
+  }
+
+  /** Mở form tạo/đổi mật khẩu LIMS từ khu vực Hồ sơ. */
+  openPasswordSetup(): void {
+    if (this.auth.currentUser && this.currentUser()) {
+      this.passwordSetupRequested.set(true);
+    }
+  }
+
+  /** Chỉ cho đóng form khi tài khoản đã có mật khẩu; Google-only vẫn bắt buộc thiết lập. */
+  closePasswordSetup(): void {
+    if (!this.needsPasswordSetup()) {
+      this.passwordSetupRequested.set(false);
+    }
   }
 
   /**
@@ -583,6 +604,7 @@ export class AuthService {
     }
     this.clearQrLoginCache(); // Security cleanup
     this.clearPendingGoogleLink();
+    this.passwordSetupRequested.set(false);
     localStorage.removeItem('lims_remember_session'); // Clear remember session flag
     
     // Clear Google Drive session state

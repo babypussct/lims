@@ -1,5 +1,19 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.01-b07] - 01/08/2026
+
+### 🚀 Tính Năng Mới
+- **Thiết lập Mật Khẩu từ Hồ Sơ:** Cho phép mở modal tạo hoặc đổi mật khẩu LIMS trực tiếp từ màn hình Cấu hình / Hồ sơ cá nhân.
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Kiểm soát đóng modal mật khẩu:** Cho phép đóng/hủy modal đối với tài khoản đã có mật khẩu, trong khi vẫn yêu cầu tài khoản Google mới hoàn tất khởi tạo.
+- **Trạng thái phương thức xác thực:** Tự động nhận diện tài khoản Google/Email và cập nhật nút Đổi mật khẩu hoặc Thiết lập tương ứng.
+
+### 🐛 Sửa Lỗi
+- *(Không có sửa lỗi phát sinh trong bản cập nhật này)*
+
+---
+
 ## [v26.08.01-b06] - 01/08/2026
 
 ### 🚀 Tính Năng Mới
