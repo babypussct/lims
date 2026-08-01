@@ -252,6 +252,7 @@ export class AuthService {
     // Return the promise directly WITHOUT async/await wrapping before the call.
     // This is strictly required to prevent strict PWA environments from dropping the user gesture.
     return this.ngZone.runOutsideAngular(() => {
+        const popupStartTime = Date.now();
         return signInWithPopup(this.auth, provider, browserPopupRedirectResolver)
             .then((result) => {
                 console.log('[Auth] loginWithGoogle: signInWithPopup SUCCESS');
@@ -264,10 +265,18 @@ export class AuthService {
                 });
             })
             .catch((e: any) => {
-                console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
                 if (e.code === 'auth/popup-closed-by-user') {
+                    const elapsed = Date.now() - popupStartTime;
+                    // Nếu lỗi văng ra quá nhanh (< 2.5s), chắc chắn do trình duyệt/in-app browser chặn hoặc đóng popup ngay lập tức
+                    if (elapsed < 2500) {
+                        console.warn(`[Auth] Trình duyệt chặn popup (popup-closed-by-user sau ${elapsed}ms). Đang chuyển sang redirect...`);
+                        this._authViaDirectOidc();
+                        return;
+                    }
+                    console.warn('[Auth] loginWithGoogle: Người dùng đã đóng popup đăng nhập.');
                     throw e;
                 }
+                console.error('[Auth] loginWithGoogle: signInWithPopup FAILED — code:', e.code, '| message:', e.message);
                 if (e.code === 'auth/popup-blocked') {
                     console.warn('[Auth] Firebase reported popup-blocked; switching to same-tab OAuth redirect.', e);
                     this._authViaDirectOidc();

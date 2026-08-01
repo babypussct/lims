@@ -661,7 +661,8 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
   }
 
   private setPageRendering(page: number, active: boolean): void {
-    const pages = new Set(this.renderingPages());
+    const pages = new Set<number>();
+    this.renderingPages().forEach(p => pages.add(p));
     if (active) pages.add(page);
     else pages.delete(page);
     this.renderingPages.set(pages);
@@ -738,7 +739,12 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
 
   private applySearchHighlights(pageNumber?: number): void {
     const active = this.searchMatches[this.activeMatchIndex()];
-    const layers = pageNumber ? [[pageNumber, this.textLayers.get(pageNumber)] as const] : [...this.textLayers.entries()];
+    const layers: [number, PdfTextLayer | undefined][] = [];
+    if (pageNumber) {
+      layers.push([pageNumber, this.textLayers.get(pageNumber)]);
+    } else {
+      this.textLayers.forEach((layer, page) => layers.push([page, layer]));
+    }
     layers.forEach(([page, layer]) => {
       if (!layer) return;
       layer.textDivs.forEach(element => element.classList.remove('pdf-search-match', 'pdf-search-active'));

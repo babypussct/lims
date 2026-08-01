@@ -13,6 +13,15 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.01-b01',
+    date: '01/08/2026',
+    title: 'Khắc Phục Lỗi Đăng Nhập Popup & PDF Viewer',
+    fixes: [
+      'Tự động nhận diện nếu trình duyệt (Safari, Brave) hoặc trình duyệt nhúng (Zalo/Facebook) chặn popup đăng nhập Google. Khi lỗi popup-closed-by-user xảy ra dưới 2.5 giây, hệ thống chủ động chuyển sang luồng Redirect (OIDC).',
+      'Xử lý lỗi không tương thích mảng Array Spread của Map.entries() trên các trình duyệt cũ, giúp chức năng xem tài liệu PDF hoạt động ổn định và mượt mà hơn.'
+    ]
+  },
+  {
     version: 'v26.07.31-b01',
     date: '31/07/2026',
     title: 'Tối Ưu Thống Kê Firestore & Khắc Phục So Sánh Xu Hướng',

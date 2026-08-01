@@ -2,14 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.07.31-b01",
-    "notesVersion": "v26.07.31-b01",
-    "title": "Tối Ưu Thống Kê Firestore & Khắc Phục So Sánh Xu Hướng",
+    "version": "v26.08.01-b01",
+    "notesVersion": "v26.08.01-b01",
+    "title": "Khắc Phục Lỗi Đăng Nhập Popup & PDF Viewer",
     "features": [
-      "⚡ Chuyển đổi 100% phần Hiệu Suất Phân Tích (KPI, biểu đồ, so sánh) sang mô hình Firestore pre-aggregated thuần túy",
-      "📅 Sửa triệt để lỗi tính toán Date Rollover và Off-by-one làm sai lệch số ngày và nhảy cóc tháng",
-      "🚀 Khắc phục lỗi Firestore query composite index trong script Backfill, cho phép quét dữ liệu từ 01/01/2026",
-      "🔄 Nâng cấp lưu trữ cache Signal statsData.update giúp tích lũy dữ liệu các tháng đã tải mà không bị ghi đè"
+      "🔧 Tự động nhận diện trình duyệt chặn popup đăng nhập và chuyển hướng sang OIDC (Redirect)",
+      "📄 Sửa lỗi tương thích cú pháp mảng Array Spread của Map.entries() trên trình duyệt cũ giúp xem tài liệu PDF ổn định hơn"
     ]
   },
   "assetGroups": [
