@@ -1,5 +1,22 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.02-b01] - 02/08/2026
+
+### 🚀 Tính Năng Mới
+- **Khôi phục mật khẩu LIMS:** Gửi liên kết đặt lại mật khẩu ngay từ màn hình đăng nhập, có giới hạn gửi lại để tránh spam.
+- **Quản lý phương thức đăng nhập:** Cho phép liên kết hoặc hủy liên kết Google và mật khẩu trên cùng tài khoản, không cho xóa phương thức cuối cùng.
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Đổi mật khẩu an toàn hơn:** Khi tài khoản đã có mật khẩu, hệ thống yêu cầu xác nhận mật khẩu hiện tại trước khi đổi.
+- **Đăng nhập local ổn định hơn:** Môi trường phát triển dùng cửa sổ đăng nhập phù hợp, còn production giữ luồng chuyển hướng an toàn.
+- **Trải nghiệm đăng nhập tốt hơn:** Bổ sung nhãn, tự động điền và nút hiện/ẩn mật khẩu rõ ràng hơn.
+
+### 🐛 Sửa Lỗi
+- **Ghi nhận thay đổi mật khẩu chính xác:** Lưu thời điểm thay đổi bằng thời gian máy chủ và chỉ cho phép chính tài khoản cập nhật.
+- **Không tiết lộ tài khoản tồn tại:** Yêu cầu khôi phục mật khẩu dùng thông báo chung khi email chưa được đăng ký.
+
+---
+
 ## [v26.08.01-b08] - 01/08/2026
 
 ### 🚀 Tính Năng Mới

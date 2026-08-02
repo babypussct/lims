@@ -1,15 +1,17 @@
 
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { GoogleDriveService } from './google-drive.service';
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
   signInWithRedirect,
+  linkWithPopup,
   linkWithRedirect,
   linkWithCredential,
   getRedirectResult,
-  signOut, 
-  onAuthStateChanged, 
+  signOut,
+  onAuthStateChanged,
   GoogleAuthProvider,
   unlink,
   updatePassword,
@@ -138,6 +140,7 @@ export interface UserProfile {
   /** Cờ onboarding, không chứa và không thay thế mật khẩu Firebase. */
   localPasswordConfigured?: boolean;
   localPasswordConfiguredAt?: any;
+  lastPasswordChangedAt?: any;
   createdAt?: any;
 }
 
@@ -178,6 +181,19 @@ export class AuthService {
   readonly isPasswordSetupOpen = computed(() =>
     this.passwordSetupRequested() || this.needsPasswordSetup()
   );
+
+  /** Quản lý trạng thái mở Modal Quên mật khẩu toàn cục */
+  forgotPasswordRequested = signal(false);
+
+  /** Cho phép hủy liên kết khi tài khoản có ít nhất 2 phương thức hợp lệ (Google & Mật khẩu) để chống khóa ngoài */
+  readonly canUnlink = computed(() => {
+    return this.authProviderIds().length >= 2;
+  });
+
+  canUnlinkProvider(providerId: 'google.com' | 'password'): boolean {
+    return this.canUnlink() && this.authProviderIds().includes(providerId);
+  }
+
   private userUnsub: any = null;
   private rolesUnsub: any = null;
   readonly rolesConfig = signal<Record<string, string[]>>({});
@@ -314,11 +330,15 @@ export class AuthService {
   }
 
   private googleRedirectNoResultMessage(): string {
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+    if (this.isLocalDevelopmentHost()) {
       return 'Firebase chưa cấp quyền cho localhost. Vào Firebase Console → Authentication → Settings → Authorized domains, thêm "localhost" (không thêm :4200), rồi tải lại ứng dụng.';
     }
     return 'Không nhận được kết quả đăng nhập Google. Vui lòng thử lại hoặc mở bằng trình duyệt ngoài.';
+  }
+
+  private isLocalDevelopmentHost(): boolean {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   }
 
   clearGoogleRedirectError(): void {
@@ -367,6 +387,29 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
+    // Angular's dev server does not proxy Firebase's /__/auth and /__/firebase
+    // helper endpoints. Use popup locally so localhost never lands on a 404
+    // Firebase redirect handler; production keeps the redirect flow.
+    if (this.isLocalDevelopmentHost()) {
+      try {
+        const result = await signInWithPopup(this.auth, provider);
+        this.updateAuthProviderState(result.user);
+        if (!this.currentUser()) {
+          this.syncUser(result.user);
+        }
+      } catch (error: any) {
+        if (this.capturePendingGoogleCredential(error)) {
+          this.googleRedirectError.set(
+            `Email ${this.pendingGoogleLinkEmail()} đã có tài khoản mật khẩu. Nhập mật khẩu hiện tại để liên kết Google.`
+          );
+        } else {
+          this.googleRedirectError.set(this.googleAuthErrorMessage(error));
+        }
+        throw error;
+      }
+      return;
+    }
+
     console.log('[Auth] loginWithGoogle: starting Firebase redirect');
     sessionStorage.removeItem(GOOGLE_LINK_REDIRECT_PENDING_KEY);
     sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, 'true');
@@ -380,23 +423,35 @@ export class AuthService {
   }
 
   /**
-   * Liên kết mật khẩu nội bộ vào tài khoản Google hiện tại.
+   * Tạo hoặc đổi mật khẩu LIMS trên tài khoản hiện tại.
    * Firebase giữ nguyên UID nên toàn bộ hồ sơ, quyền và dữ liệu LIMS không đổi.
    */
-  async setLocalPassword(password: string): Promise<void> {
+  async setLocalPassword(password: string, currentPassword?: string): Promise<void> {
     const firebaseUser = this.auth.currentUser;
     if (!firebaseUser?.email) {
       throw new Error('Không tìm thấy email tài khoản để tạo mật khẩu.');
     }
 
     this.updateAuthProviderState(firebaseUser);
-    if (!this.hasGoogleProvider()) {
-      throw new Error('Chỉ tài khoản đăng nhập bằng Google mới cần thao tác này.');
+    if (!this.hasGoogleProvider() && !this.hasPasswordProvider()) {
+      throw new Error('Tài khoản chưa có phương thức đăng nhập hợp lệ.');
     }
     this.validateNewPassword(password);
 
+    const changingExistingPassword = this.hasPasswordProvider();
+    if (changingExistingPassword) {
+      if (!currentPassword) {
+        throw this.createAuthError('auth/missing-current-password', 'Vui lòng nhập mật khẩu LIMS hiện tại.');
+      }
+      const currentCredential = EmailAuthProvider.credential(
+        this.normalizeAuthEmail(firebaseUser.email),
+        currentPassword
+      );
+      await reauthenticateWithCredential(firebaseUser, currentCredential);
+    }
+
     try {
-      if (this.hasPasswordProvider()) {
+      if (changingExistingPassword) {
         await updatePassword(firebaseUser, password);
       } else {
         const credential = EmailAuthProvider.credential(
@@ -408,6 +463,14 @@ export class AuthService {
     } catch (error: any) {
       // Race condition-safe: another tab may have linked the provider first.
       if (error?.code === 'auth/provider-already-linked') {
+        if (!currentPassword) {
+          throw this.createAuthError('auth/missing-current-password', 'Tài khoản đã có mật khẩu. Vui lòng xác thực bằng mật khẩu hiện tại.');
+        }
+        const currentCredential = EmailAuthProvider.credential(
+          this.normalizeAuthEmail(firebaseUser.email),
+          currentPassword
+        );
+        await reauthenticateWithCredential(firebaseUser, currentCredential);
         await updatePassword(firebaseUser, password);
       } else {
         throw error;
@@ -418,6 +481,8 @@ export class AuthService {
     const refreshedUser = this.auth.currentUser || firebaseUser;
     this.updateAuthProviderState(refreshedUser);
     await this.markLocalPasswordConfigured(refreshedUser);
+    await this.recordPasswordChangedAt(refreshedUser);
+
     this.passwordSetupRequested.set(false);
   }
 
@@ -432,6 +497,43 @@ export class AuthService {
   closePasswordSetup(): void {
     if (!this.needsPasswordSetup()) {
       this.passwordSetupRequested.set(false);
+    }
+  }
+
+  /** Mở form Quên mật khẩu */
+  openForgotPassword(): void {
+    this.forgotPasswordRequested.set(true);
+  }
+
+  /** Đóng form Quên mật khẩu */
+  closeForgotPassword(): void {
+    this.forgotPasswordRequested.set(false);
+  }
+
+  /**
+   * Hủy liên kết một phương thức (Google hoặc Mật khẩu) với cơ chế Safety Lock
+   */
+  async unlinkProvider(providerId: 'google.com' | 'password'): Promise<void> {
+    const firebaseUser = this.auth.currentUser;
+    if (!firebaseUser) throw new Error('Chưa đăng nhập.');
+    this.updateAuthProviderState(firebaseUser);
+    if (!this.authProviderIds().includes(providerId)) throw new Error('Phương thức đăng nhập này chưa được liên kết.');
+    if (!this.canUnlinkProvider(providerId)) throw new Error('Không thể hủy liên kết phương thức cuối cùng. Vui lòng thiết lập phương thức khác trước.');
+
+    await unlink(firebaseUser, providerId);
+    await firebaseUser.reload();
+    this.updateAuthProviderState(firebaseUser);
+
+    if (providerId === 'password') {
+      const profileRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
+      await setDoc(profileRef, {
+        localPasswordConfigured: false,
+        localPasswordConfiguredAt: null
+      }, { merge: true });
+      const profile = this.currentUser();
+      if (profile?.uid === firebaseUser.uid) {
+        this.currentUser.set({ ...profile, localPasswordConfigured: false, localPasswordConfiguredAt: null });
+      }
     }
   }
 
@@ -493,6 +595,22 @@ export class AuthService {
     });
 
     this.googleRedirectError.set(null);
+
+    if (this.isLocalDevelopmentHost()) {
+      try {
+        const result = await linkWithPopup(firebaseUser, provider);
+        await firebaseUser.reload();
+        const refreshedUser = this.auth.currentUser || result.user;
+        await this.validateCompletedGoogleLink(refreshedUser);
+        this.updateAuthProviderState(refreshedUser);
+        this.syncUser(refreshedUser);
+      } catch (error: any) {
+        this.googleRedirectError.set(this.googleLinkErrorMessage(error));
+        throw error;
+      }
+      return;
+    }
+
     sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
     sessionStorage.setItem(GOOGLE_LINK_REDIRECT_PENDING_KEY, 'true');
     this.isProcessingRedirect.set(true);
@@ -528,9 +646,6 @@ export class AuthService {
         requireStrongLength ? 'Mật khẩu phải có ít nhất 8 ký tự.' : 'Vui lòng nhập mật khẩu.'
       );
     }
-    if (/^\s|\s$/.test(password)) {
-      throw this.createAuthError('auth/weak-password', 'Mật khẩu không được có khoảng trắng ở đầu hoặc cuối.');
-    }
   }
 
   private createAuthError(code: string, message: string): Error & { code: string } {
@@ -558,6 +673,16 @@ export class AuthService {
     const profile = this.currentUser();
     if (profile?.uid === firebaseUser.uid) {
       this.currentUser.set({ ...profile, localPasswordConfigured: true });
+    }
+  }
+
+  private async recordPasswordChangedAt(firebaseUser: User): Promise<void> {
+    const profileRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
+    await setDoc(profileRef, { lastPasswordChangedAt: serverTimestamp() }, { merge: true });
+
+    const profile = this.currentUser();
+    if (profile?.uid === firebaseUser.uid) {
+      this.currentUser.set({ ...profile, lastPasswordChangedAt: new Date() });
     }
   }
 

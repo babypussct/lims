@@ -199,13 +199,14 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <i class="fa-regular fa-user text-gray-400 group-focus-within:text-fuchsia-500 transition-colors"></i>
                                     </div>
-                                    <input type="text" [(ngModel)]="email" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-24 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500" 
+                                    <input id="login-email" name="email" type="text" [(ngModel)]="email" (keyup.enter)="login()"
+                                           autocomplete="username"
+                                           class="w-full pl-11 pr-24 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
                                            placeholder="Nhập Gmail hoặc username..."
                                            [disabled]="isLoading()">
-                                    
+
                                     @if (!email.includes('@')) {
                                         <span class="absolute right-4 top-3.5 text-gray-400 font-medium text-sm pointer-events-none select-none tracking-tight animate-fade-in">
                                             &#64;lims.com
@@ -216,48 +217,47 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
 
                             <div class="group">
                                 <div class="flex justify-between items-center mb-1.5 ml-1">
-                                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">Mật khẩu</label>
+                                    <label for="login-password" class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">Mật khẩu</label>
                                 </div>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <i class="fa-solid fa-lock text-gray-400 group-focus-within:text-fuchsia-500 transition-colors"></i>
                                     </div>
-                                    <input type="password" [(ngModel)]="password" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-4 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500" 
+                                    <input id="login-password" name="password" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" (keyup.enter)="login()"
+                                           autocomplete="current-password"
+                                           class="w-full pl-11 pr-12 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
                                            placeholder="••••••••"
                                            [disabled]="isLoading()">
+                                    <button type="button" (click)="showPassword.set(!showPassword())" tabindex="-1" aria-label="Hiện hoặc ẩn mật khẩu"
+                                            class="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-fuchsia-600 transition-colors">
+                                        <i class="fa-solid" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Shared Device & Remember Session Checkboxes (Horizontal Row) -->
+                            <!-- Shared Device & Remember Session iOS Toggles -->
                             <div class="mt-4 flex items-center justify-between gap-2 text-left relative">
-                                <!-- Checkbox 1: Remember session -->
                                 <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
                                        [class.opacity-40]="isSharedDevice()"
                                        [class.pointer-events-none]="isSharedDevice()">
-                                    <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
-                                         [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                        <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
-                                        @if (rememberSession()) {
-                                            <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
-                                        }
-                                    </div>
+                                    <span class="relative inline-flex h-5 w-9 shrink-0">
+                                        <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="peer sr-only" [disabled]="isSharedDevice()" aria-label="Duy trì đăng nhập">
+                                        <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
+                                        <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
+                                    </span>
                                     <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Duy trì đăng nhập</span>
                                 </label>
 
-                                <!-- Checkbox 2: Shared Device -->
                                 <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
                                        [class.opacity-40]="rememberSession()"
                                        [class.pointer-events-none]="rememberSession()">
-                                    <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
-                                         [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                        <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
-                                        @if (isSharedDevice()) {
-                                            <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
-                                        }
-                                    </div>
+                                    <span class="relative inline-flex h-5 w-9 shrink-0">
+                                        <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="peer sr-only" [disabled]="rememberSession()" aria-label="Máy dùng chung">
+                                        <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
+                                        <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
+                                    </span>
                                     <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Máy dùng chung</span>
                                 </label>
 
@@ -266,14 +266,13 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                     <button type="button" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-450 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
                                         <i class="fa-regular fa-circle-question text-[13px]"></i>
                                     </button>
-                                    <!-- Tooltip content -->
                                     <div class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
                                         <div class="font-bold text-fuchsia-400 mb-1.5 flex items-center gap-1.5">
                                             <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
                                         </div>
                                         <div class="space-y-1.5 text-slate-300">
-                                            <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
-                                            <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn đăng xuất để bảo mật.</div>
+                                            <div><strong>• Duy trì đăng nhập:</strong> Giữ phiên đăng nhập trên máy cá nhân.</div>
+                                            <div><strong>• Máy dùng chung:</strong> Tự thoát phiên sau thời gian không hoạt động.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -286,9 +285,9 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                             }
 
                             <div class="text-right -mt-1">
-                                <button type="button" (click)="sendPasswordReset()" [disabled]="isLoading() || isResetLoading()"
-                                        class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline disabled:opacity-50">
-                                    @if (isResetLoading()) { Đang gửi... } @else { Quên mật khẩu? }
+                                <button type="button" (click)="auth.openForgotPassword()"
+                                        class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline">
+                                    Quên mật khẩu?
                                 </button>
                             </div>
 
@@ -341,33 +340,27 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                             }
                         </div>
 
-                        <!-- Shared Device & Remember Session Checkboxes (Horizontal Row) -->
+                        <!-- Shared Device & Remember Session iOS Toggles -->
                         <div class="mt-6 flex items-center justify-between gap-2 text-left relative w-full">
-                            <!-- Checkbox 1: Remember session -->
                             <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
                                    [class.opacity-40]="isSharedDevice()"
                                    [class.pointer-events-none]="isSharedDevice()">
-                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
-                                     [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                    <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
-                                    @if (rememberSession()) {
-                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
-                                    }
-                                </div>
+                                <span class="relative inline-flex h-5 w-9 shrink-0">
+                                    <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="peer sr-only" [disabled]="isSharedDevice()" aria-label="Duy trì đăng nhập">
+                                    <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
+                                    <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
+                                </span>
                                 <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Duy trì đăng nhập</span>
                             </label>
 
-                            <!-- Checkbox 2: Shared Device -->
                             <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
                                    [class.opacity-40]="rememberSession()"
                                    [class.pointer-events-none]="rememberSession()">
-                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
-                                     [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
-                                    @if (isSharedDevice()) {
-                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
-                                    }
-                                </div>
+                                <span class="relative inline-flex h-5 w-9 shrink-0">
+                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="peer sr-only" [disabled]="rememberSession()" aria-label="Máy dùng chung">
+                                    <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
+                                    <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
+                                </span>
                                 <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Máy dùng chung</span>
                             </label>
 
@@ -470,6 +463,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   
   email = '';
   password = '';
+  showPassword = signal(false);
   pendingLinkPassword = '';
   errorMsg = signal('');
   isPWA = signal<boolean>(false);

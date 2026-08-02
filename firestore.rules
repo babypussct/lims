@@ -89,8 +89,11 @@ service cloud.firestore {
         isSignedIn() && request.auth.uid == uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'photoURL', 'avatarStyle', 'fcmTokens', 'email', 'displayName', 'lastSeen', 'lastLogin',
-          'localPasswordConfigured', 'localPasswordConfiguredAt'
-        ])
+          'localPasswordConfigured', 'localPasswordConfiguredAt', 'lastPasswordChangedAt'
+        ]) && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastPasswordChangedAt']) ||
+          request.resource.data.lastPasswordChangedAt == request.time
+        )
       );
       allow delete: if isManager(appId);
     }

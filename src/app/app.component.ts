@@ -21,6 +21,8 @@ import { NotificationPanelComponent } from './shared/components/notification-pan
 import { ProgressOverlayComponent } from './shared/components/progress-overlay/progress-overlay.component';
 import { ToastHostComponent } from './shared/components/toast-host/toast-host.component';
 import { ChangelogModalComponent } from './shared/components/changelog-modal/changelog-modal.component';
+import { ForgotPasswordModalComponent } from './features/auth/forgot-password-modal.component';
+
 
 import { StateService } from './core/services/state.service';
 import { AuthService } from './core/services/auth.service';
@@ -55,7 +57,8 @@ import { filter } from 'rxjs/operators';
     ProgressOverlayComponent,
     ToastHostComponent,
     LogoComponent,
-    ChangelogModalComponent
+    ChangelogModalComponent,
+    ForgotPasswordModalComponent
   ],
   template: `
     @if (isPrintMode()) {
@@ -113,6 +116,7 @@ import { filter } from 'rxjs/operators';
       @if (auth.isPasswordSetupOpen()) {
         <app-password-setup></app-password-setup>
       }
+      <app-forgot-password-modal></app-forgot-password-modal>
       @defer (when changelogService.isOpen()) {
         <app-changelog-modal></app-changelog-modal>
       }

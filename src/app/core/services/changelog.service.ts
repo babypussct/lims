@@ -13,6 +13,26 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.02-b01',
+    date: '02/08/2026',
+    title: 'Quản Lý Mật Khẩu Và Khôi Phục Tài Khoản An Toàn',
+    highlights: [
+      'Gửi liên kết khôi phục mật khẩu ngay từ màn hình đăng nhập, có giới hạn gửi lại.',
+      'Quản lý liên kết Google và mật khẩu trên cùng một tài khoản, không cho xóa phương thức cuối cùng.'
+    ],
+    features: [
+      'Cho phép tạo, đổi và khôi phục mật khẩu LIMS ngay trong ứng dụng.',
+      'Hỗ trợ liên kết hoặc hủy liên kết phương thức đăng nhập với cơ chế bảo vệ tài khoản.'
+    ],
+    improvements: [
+      'Yêu cầu xác nhận mật khẩu hiện tại trước khi đổi mật khẩu đã có.',
+      'Bổ sung tự động điền, nhãn biểu mẫu và nút hiện/ẩn mật khẩu rõ ràng hơn.'
+    ],
+    fixes: [
+      'Ghi thời điểm thay đổi mật khẩu bằng thời gian máy chủ và không tiết lộ email có tồn tại khi khôi phục.'
+    ]
+  },
+  {
     version: 'v26.08.01-b08',
     date: '01/08/2026',
     title: 'Bắt Buộc Hoàn Tất Mật Khẩu Sau Đăng Nhập Google',
