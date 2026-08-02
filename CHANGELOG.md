@@ -12,6 +12,7 @@
 - **Trải nghiệm đăng nhập tốt hơn:** Bổ sung nhãn, tự động điền và nút hiện/ẩn mật khẩu rõ ràng hơn.
 
 ### 🐛 Sửa Lỗi
+- **Sửa lỗi kẹt khi tạo mật khẩu mới:** Tài khoản mới đăng nhập chưa cấu hình mật khẩu (hoặc do quản trị viên tạo) sẽ không bị kẹt ở bước yêu cầu nhập mật khẩu cũ. Chỉ yêu cầu mật khẩu cũ khi thực sự đang đổi mật khẩu đã tồn tại.
 - **Ghi nhận thay đổi mật khẩu chính xác:** Lưu thời điểm thay đổi bằng thời gian máy chủ và chỉ cho phép chính tài khoản cập nhật.
 - **Không tiết lộ tài khoản tồn tại:** Yêu cầu khôi phục mật khẩu dùng thông báo chung khi email chưa được đăng ký.
 

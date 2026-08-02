@@ -53,7 +53,7 @@ import { AuthService } from '../../core/services/auth.service';
           <form (ngSubmit)="save()" class="space-y-4 relative z-10">
 
             <!-- Current Password (Only when changing password) -->
-            @if (auth.hasPasswordProvider()) {
+            @if (auth.requiresCurrentPassword()) {
               <div class="group">
                 <label for="current-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mật khẩu hiện tại</label>
                 <div class="relative">
@@ -193,7 +193,7 @@ export class PasswordSetupComponent {
 
   isFormValid(): boolean {
     return this.checkLength() && this.checkMatch() &&
-           (!this.auth.hasPasswordProvider() || this.currentPassword.length > 0);
+           (!this.auth.requiresCurrentPassword() || this.currentPassword.length > 0);
   }
 
   strengthLabel(): string {

@@ -166,6 +166,10 @@ export class AuthService {
   private authProviderIds = signal<string[]>([]);
   readonly hasGoogleProvider = computed(() => this.authProviderIds().includes('google.com'));
   readonly hasPasswordProvider = computed(() => this.authProviderIds().includes('password'));
+  readonly requiresCurrentPassword = computed(() => {
+    const profile = this.currentUser();
+    return this.hasPasswordProvider() && profile?.localPasswordConfigured === true;
+  });
   /**
    * Google login must complete the LIMS-password onboarding before the app is usable.
    * The profile flag is intentionally checked in addition to providerData so accounts
@@ -438,8 +442,10 @@ export class AuthService {
     }
     this.validateNewPassword(password);
 
-    const changingExistingPassword = this.hasPasswordProvider();
-    if (changingExistingPassword) {
+    const isUpdatingPassword = this.hasPasswordProvider();
+    const requireCurrentPassword = this.requiresCurrentPassword();
+
+    if (requireCurrentPassword) {
       if (!currentPassword) {
         throw this.createAuthError('auth/missing-current-password', 'Vui lòng nhập mật khẩu LIMS hiện tại.');
       }
@@ -451,7 +457,7 @@ export class AuthService {
     }
 
     try {
-      if (changingExistingPassword) {
+      if (isUpdatingPassword) {
         await updatePassword(firebaseUser, password);
       } else {
         const credential = EmailAuthProvider.credential(
@@ -463,14 +469,16 @@ export class AuthService {
     } catch (error: any) {
       // Race condition-safe: another tab may have linked the provider first.
       if (error?.code === 'auth/provider-already-linked') {
-        if (!currentPassword) {
+        if (requireCurrentPassword && !currentPassword) {
           throw this.createAuthError('auth/missing-current-password', 'Tài khoản đã có mật khẩu. Vui lòng xác thực bằng mật khẩu hiện tại.');
         }
-        const currentCredential = EmailAuthProvider.credential(
-          this.normalizeAuthEmail(firebaseUser.email),
-          currentPassword
-        );
-        await reauthenticateWithCredential(firebaseUser, currentCredential);
+        if (currentPassword) {
+          const currentCredential = EmailAuthProvider.credential(
+            this.normalizeAuthEmail(firebaseUser.email),
+            currentPassword
+          );
+          await reauthenticateWithCredential(firebaseUser, currentCredential);
+        }
         await updatePassword(firebaseUser, password);
       } else {
         throw error;
