@@ -77,7 +77,18 @@ function readReleases() {
     // When this final refactor is already checked out, recover that array from
     // the previous Git revision and add the current release-notes.json entry.
     const legacyPath = 'src/app/core/services/changelog.service.ts';
-    for (const ref of ['HEAD', 'HEAD^', 'HEAD~2']) {
+    let historyRefs = [];
+    try {
+      historyRefs = execFileSync('git', ['rev-list', '--all', '--', legacyPath], {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore']
+      }).split(/\r?\n/).filter(Boolean);
+    } catch (_) {
+      historyRefs = ['HEAD', 'HEAD^', 'HEAD~2', 'HEAD~3'];
+    }
+
+    for (const ref of historyRefs) {
       try {
         const source = execFileSync('git', ['show', `${ref}:${legacyPath}`], {
           cwd: root,
