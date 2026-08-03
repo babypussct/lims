@@ -13,6 +13,23 @@ export interface ChangelogItem {
 // ─── DÙNG CHO TRANG /changelog (Toàn bộ lịch sử) ──────────────
 export const CHANGELOG_DATA: ChangelogItem[] = [
   {
+    version: 'v26.08.03-b01',
+    date: '03/08/2026',
+    title: 'Sửa Lỗi Kẹt Màn Hình Thiết Lập Mật Khẩu',
+    highlights: [
+      'Người dùng Google mới không còn bị kẹt mãi ở thông báo yêu cầu nhập mật khẩu dù đã nhập và lưu thành công.',
+      'Ba lớp bảo vệ chống race condition giữa Firestore onSnapshot và optimistic state update.'
+    ],
+    improvements: [
+      'Thêm signal isSettingPassword làm guard tạm thời ngăn isPasswordSetupOpen đánh giá lại trong lúc đang lưu.',
+      'Bảo vệ localPasswordConfigured trong onSnapshot: khi đã được set true, snapshot từ cache cũ không được ghi đè.'
+    ],
+    fixes: [
+      'Sửa lỗi Firestore local cache snapshot ghi đè trạng thái localPasswordConfigured vừa xác nhận, khiến modal hiện lại.',
+      'Sửa lỗi dùng stale firebaseUser object sau reload() khiến providerData thiếu password provider và needsPasswordSetup() vẫn true.'
+    ]
+  },
+  {
     version: 'v26.08.02-b01',
     date: '02/08/2026',
     title: 'Quản Lý Mật Khẩu Và Khôi Phục Tài Khoản An Toàn',
