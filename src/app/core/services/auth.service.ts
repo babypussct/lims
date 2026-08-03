@@ -1,4 +1,4 @@
-﻿
+
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { GoogleDriveService } from './google-drive.service';
 import {
@@ -178,7 +178,9 @@ export class AuthService {
   readonly needsPasswordSetup = computed(() => {
     const profile = this.currentUser();
     if (!profile || !this.hasGoogleProvider()) return false;
-    return !this.hasPasswordProvider() || profile.localPasswordConfigured !== true;
+    // AND: chỉ hiện modal khi CẢ Firebase Auth providerData lẫn Firestore flag
+    // đều chưa ghi nhận mật khẩu. Nếu một trong hai đã "xanh" → đã tạo xong.
+    return !this.hasPasswordProvider() && profile.localPasswordConfigured !== true;
   });
   /** Cho phép mở lại form từ Hồ sơ sau khi tài khoản đã có provider password. */
   private passwordSetupRequested = signal(false);
@@ -236,9 +238,13 @@ export class AuthService {
     // 2. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
+        // Reload từ server để providerData phản ánh đúng trạng thái provider
+        // (đặc biệt sau khi link password provider ở phiên trước).
+        try { await firebaseUser.reload(); } catch (_) { /* offline fallback */ }
+        const freshUser = this.auth.currentUser || firebaseUser;
         this.isProcessingRedirect.set(false); // Tắt overlay khi đã có user
-        this.updateAuthProviderState(firebaseUser);
-        this.syncUser(firebaseUser);
+        this.updateAuthProviderState(freshUser);
+        this.syncUser(freshUser);
 
         // Restore intended route nếu guard đã lưu route ý định trước khi redirect về login.
         // Key này chỉ được guard set khi cần, nên chỉ có khi user bị forced redirect.

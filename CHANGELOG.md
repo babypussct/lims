@@ -3,8 +3,9 @@
 ## [v26.08.03-b01] - 03/08/2026
 
 ### 🐛 Sửa Lỗi
-- **Sửa lỗi kẹt màn hình thiết lập mật khẩu:** Người dùng Google mới hoặc chưa thiết lập mật khẩu có thể bị kẹt mãi ở thông báo yêu cầu nhập mật khẩu dù đã nhập thành công. Nguyên nhân là race condition giữa Firestore `onSnapshot` và optimistic state update — snapshot từ local cache có thể ghi đè trạng thái `localPasswordConfigured = true` vừa xác nhận, khiến modal hiện lại. Đã khắc phục bằng ba lớp bảo vệ bổ sung.
-- **Sửa lỗi dùng stale user object sau `reload()`:** Sau khi `firebaseUser.reload()` hoàn tất, code cũ có thể fallback về object `firebaseUser` trước reload nếu `auth.currentUser` trả về `null` thoáng qua. Điều này khiến `providerData` chưa có `password` provider → `needsPasswordSetup()` vẫn `true`. Đã đổi thành kiểm tra null-safety nghiêm ngặt và throw lỗi rõ ràng thay vì tiếp tục với object cũ.
+- **Sửa lỗi modal tạo mật khẩu hiện lại sau khi đã tạo xong:** `needsPasswordSetup` sử dụng logic OR khiến modal hiện nếu MỘT TRONG HAI nguồn (Firebase Auth providerData hoặc Firestore `localPasswordConfigured`) chưa kịp cập nhật khi đăng nhập lại. Đổi sang AND — chỉ hiện modal khi CẢ HAI nguồn đều chưa ghi nhận mật khẩu.
+- **Sửa providerData bị stale khi đăng nhập lại:** `onAuthStateChanged` nhận `firebaseUser` từ cache cũ (IndexedDB) mà không gọi `reload()`, khiến `hasPasswordProvider()` trả về `false` dù Firebase Auth đã có `password` provider. Đã thêm `reload()` trước khi đọc `providerData`.
+- **Sửa lỗi kẹt màn hình thiết lập mật khẩu:** Race condition giữa Firestore `onSnapshot` và optimistic state update — snapshot từ local cache có thể ghi đè trạng thái `localPasswordConfigured = true` vừa xác nhận. Đã khắc phục bằng guard `isSettingPassword` và bảo vệ optimistic value trong `onSnapshot`.
 
 ### ⚡ Tối Ưu & Cải Tiến
 - **Thêm signal `isSettingPassword` làm guard chống race condition:** Trong suốt quá trình `setLocalPassword()` (từ lúc Firebase xác nhận đến lúc state được cập nhật đầy đủ), signal này tạm thời ngăn `isPasswordSetupOpen` đánh giá lại, đảm bảo modal không mở lại do Firestore snapshot chậm.
