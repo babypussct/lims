@@ -1,8 +1,8 @@
-import { Component, inject, computed, signal, HostListener } from '@angular/core';
+import { Component, inject, computed, signal, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ChangelogService, LATEST_CHANGELOG, ChangelogItem } from '../../../core/services/changelog.service';
+import { ChangelogService } from '../../../core/services/changelog.service';
 import { StateService } from '../../../core/services/state.service';
 
 @Component({
@@ -65,7 +65,19 @@ import { StateService } from '../../../core/services/state.service';
 
           <!-- Modal Body (Timeline List) -->
           <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
-            @for (item of filteredList(); track item.version) {
+            @if (changelogService.loading()) {
+              <div class="space-y-6 animate-pulse" aria-live="polite" aria-busy="true">
+                @for (placeholder of [1, 2, 3]; track placeholder) {
+                  <div class="relative pl-6 space-y-3">
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-200 dark:bg-blue-900"></div>
+                    <div class="h-4 w-28 rounded bg-slate-200 dark:bg-slate-800"></div>
+                    <div class="h-5 w-3/4 rounded bg-slate-200 dark:bg-slate-800"></div>
+                    <div class="h-16 w-full rounded-2xl bg-slate-100 dark:bg-slate-800/70"></div>
+                  </div>
+                }
+              </div>
+            } @else {
+              @for (item of filteredList(); track item.version) {
               <div class="relative pl-6 border-l-2 border-blue-500/30 dark:border-blue-500/20 last:border-l-0">
                 <!-- Timeline Dot -->
                 <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm"></div>
@@ -121,13 +133,14 @@ import { StateService } from '../../../core/services/state.service';
                   </div>
                 }
               </div>
-            }
+              }
 
-            @if (filteredList().length === 0) {
-              <div class="text-center py-10 text-slate-400 dark:text-slate-500">
-                <i class="fa-solid fa-scroll text-3xl mb-2 opacity-50 block"></i>
-                <p class="text-xs font-semibold">Không tìm thấy bản ghi phù hợp từ khóa "{{ searchQuery() }}"</p>
-              </div>
+              @if (filteredList().length === 0) {
+                <div class="text-center py-10 text-slate-400 dark:text-slate-500">
+                  <i class="fa-solid fa-scroll text-3xl mb-2 opacity-50 block"></i>
+                  <p class="text-xs font-semibold">Không tìm thấy bản ghi phù hợp từ khóa "{{ searchQuery() }}"</p>
+                </div>
+              }
             }
           </div>
 
@@ -156,17 +169,24 @@ export class ChangelogModalComponent {
 
   searchQuery = signal<string>('');
 
-  /** Show Top 3 latest versions in Modal Popup, or search within top 3 */
+  constructor() {
+    effect(() => {
+      if (this.changelogService.isOpen()) {
+        void this.changelogService.loadLatest();
+      }
+    });
+  }
+
   filteredList = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    if (!q) {
-      return LATEST_CHANGELOG;
-    }
-    return LATEST_CHANGELOG.filter(item => 
+    const releases = this.changelogService.latestReleases();
+    if (!q) return releases;
+    return releases.filter(item =>
       item.version.toLowerCase().includes(q) ||
       item.title.toLowerCase().includes(q) ||
       (item.highlights && item.highlights.some(h => h.toLowerCase().includes(q))) ||
       (item.features && item.features.some(f => f.toLowerCase().includes(q))) ||
+      (item.improvements && item.improvements.some(imp => imp.toLowerCase().includes(q))) ||
       (item.fixes && item.fixes.some(fx => fx.toLowerCase().includes(q)))
     );
   });

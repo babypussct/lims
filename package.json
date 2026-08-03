@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.03-b01",
+  "version": "26.08.04-b01",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
@@ -19,6 +19,7 @@
     "test:excel-import": "tsx --test src/app/features/results/import/excel-result-import.test.ts",
     "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/core/services/calculator.service.test.ts",
     "validate:release-notes": "node scripts/validate-release-notes.js",
+    "migrate:releases": "node scripts/migrate-releases.js",
     "lint": "ng lint",
     "typecheck:api": "tsc -p tsconfig.api.json --noEmit",
     "dump-sops": "node scratch/dump_all_sops.js"

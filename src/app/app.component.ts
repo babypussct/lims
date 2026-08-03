@@ -36,6 +36,7 @@ import { NotificationPanelService } from './core/services/notification-panel.ser
 import { ProgressService } from './core/services/progress.service';
 import { QrGlobalService } from './core/services/qr-global.service';
 import { ChangelogService } from './core/services/changelog.service';
+import { ReleaseService } from './core/services/release.service';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 
@@ -335,6 +336,7 @@ export class AppComponent implements OnDestroy {
   progressService = inject(ProgressService);
   qrService = inject(QrGlobalService);
   changelogService = inject(ChangelogService);
+  private releaseService = inject(ReleaseService);
   swUpdate = inject(SwUpdate);
   private ngZone = inject(NgZone);
 
@@ -348,6 +350,7 @@ export class AppComponent implements OnDestroy {
   });
   year = new Date().getFullYear();
   private _navigationFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private releaseBootstrapVersion: string | null = null;
 
   constructor() {
     this.applyPerformanceProfile();
@@ -386,6 +389,17 @@ export class AppComponent implements OnDestroy {
       } else {
         this.idleService.stopWatching();
         this.notificationService.stopListener();
+      }
+    });
+
+    // Changelog history is published lazily by a Manager after the first login
+    // of a new build. The release content is embedded in ngsw.json at build time.
+    effect(() => {
+      const user = this.auth.currentUser();
+      const version = this.state.systemVersion();
+      if (this.auth.isAuthReady() && user?.role === 'manager' && this.releaseBootstrapVersion !== version) {
+        this.releaseBootstrapVersion = version;
+        void this.ensureCurrentRelease(version);
       }
     });
 
@@ -467,6 +481,38 @@ export class AppComponent implements OnDestroy {
       }, 5 * 60 * 1000); // 5 phút
     } else {
       console.warn('[LIMS SW] ⛔ Service Worker KHÔNG hoạt động (dev mode hoặc trình duyệt không hỗ trợ).');
+    }
+  }
+
+  private async ensureCurrentRelease(version: string): Promise<void> {
+    try {
+      const appData = await this.loadEmbeddedAppData();
+      await this.releaseService.ensureReleaseExists(version, {
+        version,
+        title: appData?.title || this.updateTitle() || 'Cập nhật hệ thống',
+        highlights: appData?.features || this.updateFeatures(),
+        features: [],
+        improvements: [],
+        fixes: [],
+        date: new Intl.DateTimeFormat('vi-VN').format(new Date())
+      });
+    } catch (error) {
+      // A release record should never prevent a user from opening the app.
+      console.warn('[Release] Không thể tự tạo release trên Firestore:', error);
+    }
+  }
+
+  private async loadEmbeddedAppData(): Promise<any | null> {
+    if (typeof fetch !== 'function') return null;
+
+    try {
+      const response = await fetch('/ngsw.json', { cache: 'no-store' });
+      if (!response.ok) return null;
+      const manifest = await response.json();
+      return manifest?.appData || null;
+    } catch (error) {
+      console.warn('[Release] Không đọc được appData từ ngsw.json:', error);
+      return null;
     }
   }
 

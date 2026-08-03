@@ -1,0 +1,16 @@
+{
+  "title": "Changelog Firestore — Tự Động Hóa Quy Trình Phát Hành",
+  "highlights": [
+    "Không còn phải cập nhật thủ công nhiều file khi chuẩn bị deploy release mới.",
+    "Lịch sử phiên bản được lưu tập trung trên Firestore và tự động hiển thị trong ứng dụng."
+  ],
+  "features": [
+    "Trang /changelog và modal changelog đọc dữ liệu release từ Firestore.",
+    "Manager tự động khởi tạo release mới từ nội dung appData sau lần đăng nhập đầu tiên."
+  ],
+  "improvements": [
+    "sync-version tự nhúng release notes vào Service Worker và validator kiểm tra đồng bộ version.",
+    "Bổ sung migration script để đưa lịch sử changelog hiện tại lên collection releases."
+  ],
+  "fixes": []
+}

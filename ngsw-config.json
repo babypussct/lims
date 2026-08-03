@@ -2,13 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.03-b01",
-    "notesVersion": "v26.08.03-b01",
-    "title": "Sửa Lỗi Kẹt Màn Hình Thiết Lập Mật Khẩu",
+    "version": "v26.08.04-b01",
+    "title": "Changelog Firestore — Tự Động Hóa Quy Trình Phát Hành",
     "features": [
-      "🔒 Người dùng Google không còn bị kẹt mãi ở modal nhập mật khẩu dù đã lưu thành công",
-      "⚡ Ba lớp bảo vệ chống race condition giữa Firestore snapshot và optimistic state",
-      "🛡️ Bảo vệ localPasswordConfigured khỏi bị ghi đè bởi cache cũ"
+      "Không còn phải cập nhật thủ công nhiều file khi chuẩn bị deploy release mới.",
+      "Lịch sử phiên bản được lưu tập trung trên Firestore và tự động hiển thị trong ứng dụng.",
+      "Trang /changelog và modal changelog đọc dữ liệu release từ Firestore.",
+      "Manager tự động khởi tạo release mới từ nội dung appData sau lần đăng nhập đầu tiên.",
+      "sync-version tự nhúng release notes vào Service Worker và validator kiểm tra đồng bộ version."
     ]
   },
   "assetGroups": [

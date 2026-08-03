@@ -2,7 +2,7 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CHANGELOG_DATA, ChangelogItem } from '../../core/services/changelog.service';
+import { ChangelogService } from '../../core/services/changelog.service';
 import { StateService } from '../../core/services/state.service';
 
 @Component({
@@ -60,7 +60,19 @@ import { StateService } from '../../core/services/state.service';
 
           <!-- Timeline -->
           <div class="space-y-10">
-            @for (item of filteredList(); track item.version) {
+            @if (changelogService.loading()) {
+              <div class="space-y-8 animate-pulse" aria-live="polite" aria-busy="true">
+                @for (placeholder of [1, 2, 3]; track placeholder) {
+                  <div class="relative pl-8 space-y-3">
+                    <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-900"></div>
+                    <div class="h-6 w-32 rounded-xl bg-slate-200 dark:bg-slate-700"></div>
+                    <div class="h-7 w-2/3 rounded bg-slate-200 dark:bg-slate-700"></div>
+                    <div class="h-24 w-full rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
+                  </div>
+                }
+              </div>
+            } @else {
+              @for (item of filteredList(); track item.version) {
               <div class="relative pl-8 border-l-2 border-blue-500/30 dark:border-blue-500/20">
                 
                 <!-- Dot -->
@@ -129,13 +141,14 @@ import { StateService } from '../../core/services/state.service';
                 </div>
 
               </div>
-            }
+              }
 
-            @if (filteredList().length === 0) {
-              <div class="text-center py-12 text-slate-400 dark:text-slate-500">
-                <i class="fa-solid fa-scroll text-4xl mb-3 block opacity-40"></i>
-                <p class="text-sm font-semibold">Không tìm thấy bản ghi phù hợp từ khóa "{{ searchQuery() }}"</p>
-              </div>
+              @if (filteredList().length === 0) {
+                <div class="text-center py-12 text-slate-400 dark:text-slate-500">
+                  <i class="fa-solid fa-scroll text-4xl mb-3 block opacity-40"></i>
+                  <p class="text-sm font-semibold">Không tìm thấy bản ghi phù hợp từ khóa "{{ searchQuery() }}"</p>
+                </div>
+              }
             }
           </div>
 
@@ -156,19 +169,26 @@ import { StateService } from '../../core/services/state.service';
 })
 export class ChangelogComponent {
   state = inject(StateService);
+  changelogService = inject(ChangelogService);
   router = inject(Router);
   year = new Date().getFullYear();
 
   searchQuery = signal<string>('');
 
+  constructor() {
+    void this.changelogService.loadAll();
+  }
+
   filteredList = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    if (!q) return CHANGELOG_DATA;
-    return CHANGELOG_DATA.filter(item => 
+    const releases = this.changelogService.allReleases();
+    if (!q) return releases;
+    return releases.filter(item =>
       item.version.toLowerCase().includes(q) ||
       item.title.toLowerCase().includes(q) ||
       (item.highlights && item.highlights.some(h => h.toLowerCase().includes(q))) ||
       (item.features && item.features.some(f => f.toLowerCase().includes(q))) ||
+      (item.improvements && item.improvements.some(imp => imp.toLowerCase().includes(q))) ||
       (item.fixes && item.fixes.some(fx => fx.toLowerCase().includes(q)))
     );
   });
