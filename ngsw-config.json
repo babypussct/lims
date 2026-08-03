@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b01",
-    "title": "Changelog Firestore — Tự Động Hóa Quy Trình Phát Hành",
+    "version": "v26.08.04-b02",
+    "title": "Nhật Ký Cập Nhật Dễ Theo Dõi Hơn",
     "features": [
-      "Không còn phải cập nhật thủ công nhiều file khi chuẩn bị deploy release mới.",
-      "Lịch sử phiên bản được lưu tập trung trên Firestore và tự động hiển thị trong ứng dụng.",
-      "Trang /changelog và modal changelog đọc dữ liệu release từ Firestore.",
-      "Manager tự động khởi tạo release mới từ nội dung appData sau lần đăng nhập đầu tiên.",
-      "sync-version tự nhúng release notes vào Service Worker và validator kiểm tra đồng bộ version."
+      "Xem rõ những thay đổi mới nhất của LIMS Cloud trước khi bắt đầu ca làm việc.",
+      "Nội dung tập trung vào lợi ích thực tế cho việc quản lý mẫu, mẻ phân tích và hồ sơ kiểm nghiệm.",
+      "Mở Nhật Ký Cập Nhật để xem nhanh 3 phiên bản mới nhất hoặc xem toàn bộ lịch sử.",
+      "Tìm kiếm theo phiên bản hoặc tên tính năng để tra lại thay đổi cần biết.",
+      "Thông tin phiên bản được cập nhật tự động, giúp nội dung hiển thị thống nhất trong toàn hệ thống."
     ]
   },
   "assetGroups": [

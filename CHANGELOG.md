@@ -1,7 +1,7 @@
 # 📢 Nhật Ký Cập Nhật — LIMS Cloud
 
-Lịch sử phiên bản đầy đủ được lưu trong Firestore và hiển thị tại [/changelog trên ứng dụng](/changelog).
+Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.03-b02
+## Phiên bản hiện tại: v26.08.04-b02
 
-Nội dung release mới được viết trong `release-notes.json` và tự động nhúng vào Service Worker khi chạy `npm run sync-version`.
+Nội dung cập nhật mới được chuẩn bị tự động trước mỗi lần phát hành để người dùng dễ theo dõi.
