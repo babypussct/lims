@@ -110,7 +110,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.03-b01');
+  systemVersion = signal<string>('v26.08.03-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -294,32 +294,57 @@ export class StateService implements OnDestroy {
       }
     };
 
-    // 1. Inventory Listener
+    // 1. Inventory Listener — OPTIMIZED: onSnapshot → DeltaSync singleton (cursor-based)
+    // Trước: đọc toàn bộ collection mỗi lần login (~200+ reads)
+    // Sau: initial fetch 1 lần, sau đó chỉ delta kể từ cursor (~5-10 reads/lần)
     if (this.auth.hasPermission('inventory_view')) {
-      const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
-        const items: InventoryItem[] = [];
-        s.forEach(d => {
-          const data = d.data();
-          // Lọc rác Soft Delete ra khỏi State Memory
-          if (data['_isDeleted'] !== true) {
-            items.push({ id: d.id, ...data } as InventoryItem);
-          }
-        });
+      const invCacheKey = buildScopedDeltaKey(
+        `lims_inventory_cache_${this.fb.APP_ID}`,
+        this.auth.getDeltaCacheScope()
+      );
+      const invSub = this.deltaSync.startSingletonListener<InventoryItem>({
+        cacheKey: invCacheKey,
+        cursorKey: buildScopedDeltaKey(
+          `lims_inventory_cursor_${this.fb.APP_ID}`,
+          this.auth.getDeltaCacheScope()
+        ),
+        collectionPath: `artifacts/${this.fb.APP_ID}/inventory`,
+        maxCacheSize: 2000,
+        orderByField: 'lastUpdated',
+        orderDirection: 'desc',
+        isDeletedFn: (doc) => doc._isDeleted === true
+      }, (items) => {
         if (!isCurrentInit()) return;
         this.inventory.set(items);
-      }, handleError('Inventory'));
+      });
       addListener(invSub);
     }
 
-    // 2. SOPs Listener
+    // 2. SOPs Listener — OPTIMIZED: onSnapshot → DeltaSync singleton (cursor-based)
+    // Trước: đọc toàn bộ sops mỗi lần login
+    // Sau: initial fetch 1 lần, sau đó chỉ delta. isArchived=true bị lọc ra khỏi cache.
     if (this.auth.hasPermission('sop_view')) {
-      const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
-        const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
+      const sopSub = this.deltaSync.startSingletonListener<Sop>({
+        cacheKey: buildScopedDeltaKey(
+          `lims_sops_cache_${this.fb.APP_ID}`,
+          this.auth.getDeltaCacheScope()
+        ),
+        cursorKey: buildScopedDeltaKey(
+          `lims_sops_cursor_${this.fb.APP_ID}`,
+          this.auth.getDeltaCacheScope()
+        ),
+        collectionPath: `artifacts/${this.fb.APP_ID}/sops`,
+        maxCacheSize: 500,
+        orderByField: 'lastUpdated',
+        orderDirection: 'desc',
+        isDeletedFn: (doc) => doc.isArchived === true
+      }, (items) => {
         if (!isCurrentInit()) return;
         this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
-      }, handleError('SOPs'));
+      });
       addListener(sopSub);
     }
+
 
     // 3. Requests Listeners
     if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
@@ -483,21 +508,30 @@ export class StateService implements OnDestroy {
     if (this.personalLogsSub || !this.auth.currentUser() || !displayName) return;
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
+    const uid = this.auth.currentUser()!.uid;
 
-    const personalSub = onSnapshot(
-      query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`), where('user', '==', displayName)),
-      (snapshot) => {
-        if (!isCurrentInit()) return;
-        const items: Log[] = [];
-        snapshot.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
-        this.personalLogsCache = items;
-        this.publishActivityLogs();
-      },
-      (error: any) => {
-        if (!isCurrentInit()) return;
-        console.warn('Personal Logs listener error:', error.message);
-      }
-    );
+    // OPTIMIZED: onSnapshot(all logs) → DeltaSync singleton (cursor-based + limit)
+    // Trước: đọc toàn bộ logs của user mỗi lần gọi (~500-1000 reads)
+    // Sau: cursor-based, chỉ đọc delta, giới hạn 100 bản ghi gần nhất
+    const personalSub = this.deltaSync.startSingletonListener<Log>({
+      cacheKey: buildScopedDeltaKey(
+        `lims_personal_logs_cache_${this.fb.APP_ID}_${uid}`,
+        this.auth.getDeltaCacheScope()
+      ),
+      cursorKey: buildScopedDeltaKey(
+        `lims_personal_logs_cursor_${this.fb.APP_ID}_${uid}`,
+        this.auth.getDeltaCacheScope()
+      ),
+      collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
+      queryConstraints: [where('user', '==', displayName)],
+      maxCacheSize: 100,
+      orderByField: 'lastUpdated',
+      orderDirection: 'desc'
+    }, (items) => {
+      if (!isCurrentInit()) return;
+      this.personalLogsCache = items;
+      this.publishActivityLogs();
+    });
 
     this.personalLogsSub = () => {
       personalSub();
@@ -505,6 +539,7 @@ export class StateService implements OnDestroy {
     };
     this.listeners.push(this.personalLogsSub);
   }
+
 
   private publishActivityLogs(): void {
     const merged = new Map<string, Log>();

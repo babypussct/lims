@@ -63,12 +63,16 @@ export class StandardCacheService {
       // localStorage có thể từ chối ở quy mô lớn, nhưng DeltaSync vẫn giữ L1 và
       // tự phục hồi từ Firestore thay vì âm thầm cắt danh mục ở 3.000 bản ghi.
       maxCacheSize: 10000,
-      orderByField: 'received_date',
+      // OPTIMIZED (sau migration lastUpdated): cursor-based delta sync
+      // Lần đầu: fetch toàn collection 1 lần → ghi cursor lastUpdated
+      // Các lần sau: chỉ fetch docs có lastUpdated > cursor (~95% tiết kiệm reads)
+      orderByField: 'lastUpdated',
       orderDirection: 'desc' as const,
-      initialCollectionScan: true,
+      initialCollectionScan: false,
       isDeletedFn: (doc: any) => doc._isDeleted === true || doc.status === 'DELETED'
     };
   }
+
 
   constructor() {
     effect(() => {

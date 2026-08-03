@@ -45,6 +45,7 @@ export class SopService {
 
         // 3. Save new data as Active and un-archive if previously archived
         sop.lastModified = serverTimestamp();
+        sop.lastUpdated = serverTimestamp(); // Required for DeltaSync cursor
         sop.isArchived = false; 
         transaction.set(sopRef, sop);
       });
@@ -61,7 +62,8 @@ export class SopService {
       const ref = doc(this.firebaseService.db, `artifacts/${appId}/sops/${id}`);
       await updateDoc(ref, { 
           isArchived: true,
-          archivedAt: serverTimestamp()
+          archivedAt: serverTimestamp(),
+          lastUpdated: serverTimestamp() // Required for DeltaSync cursor
       });
       await this.firebaseService.updateMetadata('sops');
   }

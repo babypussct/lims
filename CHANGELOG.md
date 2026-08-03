@@ -1,5 +1,23 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.03-b02] - 03/08/2026
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Tối ưu Firestore reads — Inventory & SOPs sang DeltaSync cursor-based:** Thay toàn bộ `onSnapshot(collection)` bằng `DeltaSync startSingletonListener` với `orderByField: lastUpdated`. Lần đầu: fetch toàn bộ, ghi cursor. Các lần sau: chỉ đọc delta (docs thay đổi kể từ cursor). Ước tính tiết kiệm ~95% reads cho inventory và sops sau lần login đầu.
+- **Tối ưu Personal Logs — cursor-based + limit 100:** `ensurePersonalLogsListener` đổi từ `onSnapshot(toàn bộ logs của user)` sang DeltaSync singleton với `queryConstraints: [where('user', '==', displayName)]` và `maxCacheSize: 100`. Tiết kiệm ~500–1000 reads mỗi lần login.
+- **Hợp nhất inventory cache — xóa dual-cache:** `inventory.service.ts` có hệ thống delta sync thủ công riêng (`_memInventory`, `_fetchAllInvAndCache`, `loadInventoryWithDeltaSync`). Đã xóa toàn bộ và chuyển `getAllInventory()` để đọc từ `state.inventory()` signal — single source of truth.
+- **Reference Standards — tắt `initialCollectionScan`:** Đổi sang `orderByField: lastUpdated` để cursor hoạt động. Lần login tiếp theo sẽ chỉ fetch delta thay vì toàn bộ collection.
+- **Giảm thời gian lưu thông báo:** Thay đổi `CLEANUP_AGE_MS` từ 90 ngày xuống **15 ngày** để giảm kích thước notifications collection.
+- **Thêm `lastUpdated` vào `Sop` interface và `saveSop()` / `archiveSop()`:** Field này là điều kiện cần để DeltaSync cursor hoạt động đúng cho collection `sops`.
+
+### 🔧 Công Cụ
+- **Thêm Migration Panel trong Cấu Hình:** Nút "Chạy Migration lastUpdated" (admin only) quét `inventory`, `sops`, `logs` và ghi `lastUpdated` cho các document cũ chưa có field này. Thao tác idempotent, có log tiến trình thời gian thực.
+
+### ⚠️ Yêu Cầu Sau Deploy
+> Sau khi deploy bản này, admin cần vào **Cấu Hình → Migration Dữ Liệu Hệ Thống → Chạy Migration lastUpdated** để đảm bảo DeltaSync cursor hoạt động đúng cho toàn bộ dữ liệu cũ. Chỉ cần chạy **một lần duy nhất**.
+
+---
+
 ## [v26.08.03-b01] - 03/08/2026
 
 ### 🐛 Sửa Lỗi

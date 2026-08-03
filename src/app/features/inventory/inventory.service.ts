@@ -6,14 +6,13 @@ import {
   doc, setDoc, updateDoc, deleteDoc, getDoc,
   collection, addDoc, serverTimestamp, writeBatch,
   query, where, orderBy, limit, startAfter, getDocs, 
-  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer, deleteField, Timestamp
+  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer, deleteField
 } from 'firebase/firestore';
-import { effect } from '@angular/core';
-import { AuthService } from '../../core/services/auth.service';
 import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
 import { Log } from '../../core/models/log.model';
 import { normalizeInventoryItem } from '../../shared/utils/utils';
+
 
 export interface InventoryPage {
   items: InventoryItem[];
@@ -26,34 +25,20 @@ export class InventoryService {
   private fb = inject(FirebaseService);
   private state = inject(StateService);
   private toast = inject(ToastService);
-  private auth = inject(AuthService);
 
-  // ─── Delta Sync Cache ───────────────────────────────────────────────────────
-  private get _deltaCacheKey() {
-    return 'lims_inv_list_cache_' + this.fb.APP_ID;
-  }
-  private get _deltaSyncSecondsKey() {
-    return 'lims_inv_sync_seconds_' + this.fb.APP_ID;
-  }
+  // ─── SINGLE SOURCE OF TRUTH ────────────────────────────────────────────────
+  // getAllInventory() đọc từ state.inventory() signal (được cập nhật bởi DeltaSync
+  // singleton trong state.service.ts). Không còn manual cache riêng.
 
-  private _memInventory: InventoryItem[] | null = null;
+  constructor() {}
 
-  constructor() {
-    // Tự động dọn dẹp khi user logout
-    effect(() => {
-      const user = this.auth.currentUser();
-      if (!user) {
-        this._memInventory = null;
-      }
-    });
-  }
-
-  // ─── INVALIDATE CACHE ───────────────────────────────────────────────────────
+  // ─── BACKWARD-COMPATIBLE STUB ─────────────────────────────────────────────
+  // Xóa localStorage keys cũ nếu còn tồn tại từ version trước
   invalidateLocalInventoryCache(): void {
-    this._memInventory = null;
-    localStorage.removeItem(this._deltaSyncSecondsKey);
-    localStorage.removeItem(this._deltaCacheKey);
+    localStorage.removeItem('lims_inv_list_cache_' + this.fb.APP_ID);
+    localStorage.removeItem('lims_inv_sync_seconds_' + this.fb.APP_ID);
   }
+
 
   // ─── OPTIMIZED READ Operations ──────────────────────────────────────────────
 
@@ -140,108 +125,9 @@ export class InventoryService {
       return null;
   }
 
+  // Đọc từ state.inventory() signal (single source of truth — DeltaSync managed)
   async getAllInventory(): Promise<InventoryItem[]> {
-      return this.loadInventoryWithDeltaSync();
-  }
-
-  async loadInventoryWithDeltaSync(): Promise<InventoryItem[]> {
-      if (this._memInventory !== null) {
-          return this._memInventory;
-      }
-
-      const localItems = this._loadInvFromCache();
-      const lastSyncSec = Number(localStorage.getItem(this._deltaSyncSecondsKey) || 0);
-
-      if (!localItems || lastSyncSec === 0) {
-          // COLD START
-          return await this._fetchAllInvAndCache();
-      }
-
-      // WARM START
-      this._memInventory = localItems;
-
-      try {
-          const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
-          const deltaSnap = await getDocs(query(
-              colRef,
-              where('lastUpdated', '>', Timestamp.fromMillis(lastSyncSec * 1000))
-          ));
-
-          if (!deltaSnap.empty) {
-              const changed: InventoryItem[] = [];
-              const deletedIds: string[] = [];
-
-              deltaSnap.docs.forEach(d => {
-                  const data = d.data();
-                  if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
-                      deletedIds.push(d.id);
-                  } else {
-                      changed.push({ id: d.id, ...data } as InventoryItem);
-                  }
-              });
-
-              this._mergeAndSaveInv(changed, deletedIds);
-          }
-      } catch (e) {
-          console.warn('[InventoryService] Delta sync error, using cached data:', e);
-      }
-
-      return this._memInventory!;
-  }
-
-  private _mergeAndSaveInv(changed: InventoryItem[], deletedIds: string[]): void {
-      if (!this._memInventory) return;
-
-      const items = this._memInventory.filter(i => !deletedIds.includes(i.id));
-
-      changed.forEach(newDoc => {
-          const idx = items.findIndex(i => i.id === newDoc.id);
-          if (idx >= 0) {
-              items[idx] = newDoc;
-          } else {
-              items.unshift(newDoc);
-          }
-      });
-
-      this._memInventory = items;
-      this._saveInvToCache(items);
-  }
-
-  private async _fetchAllInvAndCache(): Promise<InventoryItem[]> {
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
-      const snap = await getDocs(colRef);
-      const items: InventoryItem[] = snap.docs
-          .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
-          .map(d => ({ id: d.id, ...d.data() } as InventoryItem));
-      
-      this._saveInvToCache(items);
-      this._memInventory = items;
-      return items;
-  }
-
-  private _loadInvFromCache(): InventoryItem[] | null {
-      try {
-          const raw = localStorage.getItem(this._deltaCacheKey);
-          return raw ? (JSON.parse(raw) as InventoryItem[]) : null;
-      } catch {
-          return null;
-      }
-  }
-
-  private _saveInvToCache(items: InventoryItem[]): void {
-      try {
-          localStorage.setItem(this._deltaCacheKey, JSON.stringify(items));
-          const maxSec = items.reduce((max, i) => {
-              const sec = (i.lastUpdated as any)?.seconds ?? 0;
-              return sec > max ? sec : max;
-          }, 0);
-          if (maxSec > 0) {
-              localStorage.setItem(this._deltaSyncSecondsKey, maxSec.toString());
-          }
-      } catch (e: any) {
-          console.warn('[InventoryService] Cache write failed:', e?.name);
-          try { localStorage.removeItem(this._deltaCacheKey); } catch {}
-      }
+    return this.state.inventory();
   }
 
   async getInventoryPage(

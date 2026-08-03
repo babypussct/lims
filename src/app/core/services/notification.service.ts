@@ -8,8 +8,8 @@ import {
 } from 'firebase/firestore';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
 
-// Notifications older than 90 days are auto-cleaned up on listener start
-const CLEANUP_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+// Notifications older than 15 days are auto-cleaned up on listener start
+const CLEANUP_AGE_MS = 15 * 24 * 60 * 60 * 1000;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -288,7 +288,7 @@ export class NotificationService {
                 batch.delete(docRef);
             });
             await batch.commit();
-            console.log(`[NotificationService] Auto-cleaned ${stale.length} notifications older than 90 days.`);
+            console.log(`[NotificationService] Auto-cleaned ${stale.length} notifications older than 15 days.`);
         } catch (e) {
             console.warn('[NotificationService] Cleanup failed (non-critical):', e);
         } finally {

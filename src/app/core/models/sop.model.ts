@@ -112,6 +112,7 @@ export interface Sop {
   // Version Control Fields
   version?: number;
   lastModified?: any;
+  lastUpdated?: any; // Required for DeltaSync cursor-based incremental sync
   archivedAt?: any; // Used only for history records
   
   // Soft Delete Flag

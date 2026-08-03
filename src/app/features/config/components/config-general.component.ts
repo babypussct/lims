@@ -594,4 +594,75 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           this.isRecycling.set(false);
       }
   }
+
+  // ─── Migration: Đặt lastUpdated cho legacy docs ─────────────────────────────
+  isMigrating = signal(false);
+  migrationLog = signal<string[]>([]);
+
+  async runLastUpdatedMigration() {
+    if (!await this.confirmationService.confirm({
+      message: 'Migration sẽ quét inventory, sops và logs để ghi lastUpdated cho các document cũ chưa có field này. Thao tác này an toàn và idempotent (có thể chạy lại). Tiếp tục?',
+      confirmText: 'Chạy Migration'
+    })) return;
+
+    this.isMigrating.set(true);
+    this.migrationLog.set([]);
+    const appId = this.fb.APP_ID;
+    const BATCH_SIZE = 400;
+    const logs: string[] = [];
+    const addLog = (msg: string) => {
+      logs.push(msg);
+      this.migrationLog.set([...logs]);
+    };
+
+    try {
+      const collectionsToMigrate: Array<{ name: string; path: string }> = [
+        { name: 'inventory', path: `artifacts/${appId}/inventory` },
+        { name: 'sops', path: `artifacts/${appId}/sops` },
+        { name: 'logs', path: `artifacts/${appId}/logs` },
+      ];
+
+      for (const col of collectionsToMigrate) {
+        addLog(`🔍 Đang quét ${col.name}...`);
+        const colRef = collection(this.fb.db, col.path);
+        const snap = await getDocs(colRef);
+
+        let batchOps = writeBatch(this.fb.db);
+        let opCount = 0;
+        let updatedCount = 0;
+
+        for (const docSnap of snap.docs) {
+          const data = docSnap.data();
+          // Idempotent: chỉ migrate docs THỰC SỰ thiếu lastUpdated
+          if (data['lastUpdated'] != null) continue;
+
+          // Với sops: dùng lastModified làm gốc nếu có, tránh ghi đè thông tin cũ
+          const fallbackTs = data['lastModified'] ?? serverTimestamp();
+          batchOps.update(docSnap.ref, { lastUpdated: fallbackTs });
+          opCount++;
+          updatedCount++;
+
+          if (opCount >= BATCH_SIZE) {
+            await batchOps.commit();
+            batchOps = writeBatch(this.fb.db);
+            opCount = 0;
+            addLog(`  ✅ Đã commit batch (${updatedCount} docs xử lý...)`);
+          }
+        }
+
+        if (opCount > 0) await batchOps.commit();
+        addLog(`✅ ${col.name}: ${updatedCount}/${snap.size} docs đã được cập nhật lastUpdated`);
+      }
+
+      addLog('🎉 Migration hoàn tất! Hệ thống DeltaSync cursor sẽ hoạt động đúng cho tất cả collections.');
+      this.toast.show('Migration lastUpdated hoàn tất!', 'success');
+    } catch (e: any) {
+      addLog(`❌ Lỗi: ${e?.message || e}`);
+      this.toast.show('Lỗi trong quá trình migration.', 'error');
+      console.error('[Migration] Error:', e);
+    } finally {
+      this.isMigrating.set(false);
+    }
+  }
 }
+

@@ -375,6 +375,35 @@
 
     </div>
 
+    <!-- MIGRATION PANEL -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-amber-200 dark:border-amber-900/40 p-6 flex flex-col gap-4 mt-6">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
+                <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i class="fa-solid fa-database"></i></div>
+                Migration Dữ Liệu Hệ Thống
+            </h3>
+            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">Chỉ Admin</span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Ghi <code class="font-mono bg-slate-100 dark:bg-slate-700 px-1 rounded">lastUpdated</code> cho các document cũ trong <strong>inventory</strong>, <strong>sops</strong> và <strong>logs</strong> để DeltaSync cursor hoạt động đúng. Thao tác idempotent — an toàn khi chạy lại.</p>
+        <button (click)="runLastUpdatedMigration()"
+            [disabled]="isMigrating()"
+            class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-wait text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm">
+            @if (isMigrating()) {
+                <i class="fa-solid fa-spinner fa-spin"></i> Đang chạy migration...
+            } @else {
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Chạy Migration lastUpdated
+            }
+        </button>
+        @if (migrationLog().length > 0) {
+            <div class="bg-slate-900 dark:bg-slate-950 rounded-xl p-4 font-mono text-[11px] text-slate-300 max-h-48 overflow-y-auto flex flex-col gap-1">
+                @for (line of migrationLog(); track $index) {
+                    <div>{{ line }}</div>
+                }
+            </div>
+            <button (click)="migrationLog.set([])" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition self-end">Xóa log</button>
+        }
+    </div>
+
     <!-- RECYCLE BIN MODAL -->
     @if (showRecycleBin()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm animate-fade-in" style="z-index: 100;">
