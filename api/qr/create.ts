@@ -29,7 +29,7 @@ function initAdmin() {
 }
 
 const SESSION_TTL_MS = 5 * 60 * 1000; // 5 phút
-const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'default';
+const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS: cho phép tất cả origins vì create là public endpoint,

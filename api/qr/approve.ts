@@ -29,9 +29,19 @@ function initAdmin() {
   initializeApp({ credential: cert(serviceAccount) });
 }
 
-const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'default';
+const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS — Mobile PWA gọi endpoint này
+  const origin = req.headers['origin'] as string | undefined;
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

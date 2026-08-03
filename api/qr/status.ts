@@ -31,9 +31,19 @@ function initAdmin() {
   initializeApp({ credential: cert(serviceAccount) });
 }
 
-const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'default';
+const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS — Desktop poll endpoint này
+  const origin = req.headers['origin'] as string | undefined;
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -70,13 +80,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (sessionData['status'] === 'approved' && sessionData['uid']) {
-      const uid = sessionData['uid'] as string;
+      // Atomic: chỉ cấp token nếu session vẫn ở trạng thái approved (chống race condition)
+      const approvedUid = await db.runTransaction(async (txn) => {
+        const snap = await txn.get(sessionRef);
+        if (!snap.exists || snap.data()!['status'] !== 'approved') return null;
+        txn.delete(sessionRef);
+        return snap.data()!['uid'] as string;
+      });
+
+      if (!approvedUid) {
+        return res.status(200).json({ status: 'expired' });
+      }
 
       // Tạo Custom Token cho Desktop — Desktop dùng để signInWithCustomToken()
-      const customToken = await auth.createCustomToken(uid);
-
-      // Xóa session ngay lập tức — single-use
-      await sessionRef.delete();
+      const customToken = await auth.createCustomToken(approvedUid);
 
       // Không log uid trong production, chỉ log event
       console.log(`[QR Status] Issued custom token for session ${sessionId.substring(0, 12)}...`);

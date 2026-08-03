@@ -911,9 +911,11 @@ export class AuthService {
 
   // Mobile: Xoá session sau khi đã approve thành công (cleanup)
   async deleteAuthSession(sessionId: string) {
-      // Session cleanup được xử lý server-side bởi /api/qr/status sau khi cấp customToken.
-      // Client chỉ gọi hàm này nếu user cancel thủ công.
-      console.log('[Auth] Session cleanup requested for:', sessionId);
+      // Gọi server để xóa session khi user cancel QR login.
+      // Dùng /api/qr/status GET rồi ignore — hoặc tạo endpoint riêng.
+      // Đơn giản nhất: let session expire theo TTL (5 phút).
+      // Trong trường hợp này, ta chấp nhận TTL cleanup vì không có endpoint DELETE.
+      console.log('[Auth] Session cleanup requested for:', sessionId, '(will expire by TTL)');
   }
 
   // Placeholder - sẽ bị xoá sau khi mobile-qr-login.component.ts được cập nhật
