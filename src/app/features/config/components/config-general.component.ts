@@ -616,7 +616,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     };
 
     try {
-      const collectionsToMigrate: Array<{ name: string; path: string }> = [
+      const collectionsToMigrate: { name: string; path: string }[] = [
         { name: 'inventory', path: `artifacts/${appId}/inventory` },
         { name: 'sops', path: `artifacts/${appId}/sops` },
         { name: 'logs', path: `artifacts/${appId}/logs` },
