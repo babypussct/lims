@@ -1,4 +1,4 @@
-
+﻿
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { GoogleDriveService } from './google-drive.service';
 import {
@@ -182,8 +182,13 @@ export class AuthService {
   });
   /** Cho phép mở lại form từ Hồ sơ sau khi tài khoản đã có provider password. */
   private passwordSetupRequested = signal(false);
+  /**
+   * Guard chống race condition: khi đang trong quá trình ghi mật khẩu lên Firebase,
+   * tạm thời ngăn `needsPasswordSetup()` đánh giá lại do Firestore snapshot stale.
+   */
+  private isSettingPassword = signal(false);
   readonly isPasswordSetupOpen = computed(() =>
-    this.passwordSetupRequested() || this.needsPasswordSetup()
+    this.passwordSetupRequested() || (this.needsPasswordSetup() && !this.isSettingPassword())
   );
 
   /** Quản lý trạng thái mở Modal Quên mật khẩu toàn cục */
@@ -456,6 +461,8 @@ export class AuthService {
       await reauthenticateWithCredential(firebaseUser, currentCredential);
     }
 
+    // Guard: Ngăn Firestore onSnapshot stale làm modal hiện lại trong khi đang lưu.
+    this.isSettingPassword.set(true);
     try {
       if (isUpdatingPassword) {
         await updatePassword(firebaseUser, password);
@@ -481,17 +488,27 @@ export class AuthService {
         }
         await updatePassword(firebaseUser, password);
       } else {
+        // Giải phóng guard trước khi re-throw để tránh kẹt UI.
+        this.isSettingPassword.set(false);
         throw error;
       }
     }
 
     await firebaseUser.reload();
-    const refreshedUser = this.auth.currentUser || firebaseUser;
+    // Đọc lại user sau reload() để đảm bảo dùng đúng object có providerData mới nhất.
+    // Không fallback về `firebaseUser` cũ vì có thể chưa phản ánh password provider vừa link.
+    const refreshedUser = this.auth.currentUser;
+    if (!refreshedUser) {
+      this.isSettingPassword.set(false);
+      throw new Error('Phiên đăng nhập không còn hợp lệ sau khi tạo mật khẩu. Vui lòng đăng nhập lại.');
+    }
     this.updateAuthProviderState(refreshedUser);
     await this.markLocalPasswordConfigured(refreshedUser);
     await this.recordPasswordChangedAt(refreshedUser);
 
     this.passwordSetupRequested.set(false);
+    // Giải phóng guard sau khi đã cập nhật state đầy đủ — modal sẽ đóng ở đây.
+    this.isSettingPassword.set(false);
   }
 
   /** Mở form tạo/đổi mật khẩu LIMS từ khu vực Hồ sơ. */
@@ -827,7 +844,20 @@ export class AuthService {
                   // Don't await here to avoid blocking UI sync, let it update in background
                   updateDoc(userRef, { photoURL: firebaseUser.photoURL }).catch((e: any) => console.error("Could not sync photoURL to Firestore", e));
               }
-              
+
+              // Race-condition guard: Firestore co the gui snapshot tu local cache truoc
+              // khi server commit hoan tat (dac biet sau setLocalPassword). Neu truong
+              // `localPasswordConfigured` dang duoc optimistic-set la true (boi
+              // markLocalPasswordConfigured), khong cho phep snapshot cu ghi de ve false.
+              const existingProfile = this.currentUser();
+              if (
+                existingProfile?.uid === firebaseUser.uid &&
+                existingProfile.localPasswordConfigured === true &&
+                data.localPasswordConfigured !== true
+              ) {
+                data.localPasswordConfigured = true;
+              }
+
               this.currentUser.set(data);
             } else {
               const isSuperAdmin = (firebaseUser.email || '').toLowerCase() === 'oneloveonepeopleforever@gmail.com';

@@ -1,5 +1,17 @@
 # 📢 NHẬT KÝ CẬP NHẬT HỆ THỐNG — LIMS CLOUD
 
+## [v26.08.03-b01] - 03/08/2026
+
+### 🐛 Sửa Lỗi
+- **Sửa lỗi kẹt màn hình thiết lập mật khẩu:** Người dùng Google mới hoặc chưa thiết lập mật khẩu có thể bị kẹt mãi ở thông báo yêu cầu nhập mật khẩu dù đã nhập thành công. Nguyên nhân là race condition giữa Firestore `onSnapshot` và optimistic state update — snapshot từ local cache có thể ghi đè trạng thái `localPasswordConfigured = true` vừa xác nhận, khiến modal hiện lại. Đã khắc phục bằng ba lớp bảo vệ bổ sung.
+- **Sửa lỗi dùng stale user object sau `reload()`:** Sau khi `firebaseUser.reload()` hoàn tất, code cũ có thể fallback về object `firebaseUser` trước reload nếu `auth.currentUser` trả về `null` thoáng qua. Điều này khiến `providerData` chưa có `password` provider → `needsPasswordSetup()` vẫn `true`. Đã đổi thành kiểm tra null-safety nghiêm ngặt và throw lỗi rõ ràng thay vì tiếp tục với object cũ.
+
+### ⚡ Tối Ưu & Cải Tiến
+- **Thêm signal `isSettingPassword` làm guard chống race condition:** Trong suốt quá trình `setLocalPassword()` (từ lúc Firebase xác nhận đến lúc state được cập nhật đầy đủ), signal này tạm thời ngăn `isPasswordSetupOpen` đánh giá lại, đảm bảo modal không mở lại do Firestore snapshot chậm.
+- **Bảo vệ `localPasswordConfigured` trong `onSnapshot`:** Khi giá trị đang là `true` (đã được optimistic-set), `onSnapshot` không được phép ghi đè về `false`/`undefined` dù snapshot có xuất phát từ cache cũ. Đây là lớp phòng thủ thứ hai cho trường hợp snapshot đến sau khi guard đã được giải phóng.
+
+---
+
 ## [v26.08.02-b01] - 02/08/2026
 
 ### 🚀 Tính Năng Mới
