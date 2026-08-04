@@ -4,13 +4,17 @@ import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
 import {
     collection, doc, updateDoc, writeBatch,
-    query, where, onSnapshot, Unsubscribe, deleteDoc
+    query, where, limit, onSnapshot, Unsubscribe, deleteDoc
 } from 'firebase/firestore';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
 
 // Notifications older than 15 days are auto-cleaned up on listener start
 const CLEANUP_AGE_MS = 15 * 24 * 60 * 60 * 1000;
+// Inbox realtime chỉ cần một cửa sổ hữu hạn. Các thông báo cũ hơn vẫn được
+// dọn nền theo retention policy, nhưng không được phép làm listener login đọc
+// vô hạn nếu dữ liệu cũ còn tồn tại.
+const NOTIFICATION_LISTENER_LIMIT = 100;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -84,7 +88,11 @@ export class NotificationService {
         const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
 
         // Single query: only this user's own notification documents
-        const q = query(colRef, where('recipientUid', '==', user.uid));
+        const q = query(
+            colRef,
+            where('recipientUid', '==', user.uid),
+            limit(NOTIFICATION_LISTENER_LIMIT)
+        );
 
         let isFirstSnapshot = true;
         this.unsub = onSnapshot(q, (snapshot) => {

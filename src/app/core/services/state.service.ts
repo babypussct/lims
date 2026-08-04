@@ -118,7 +118,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.04-b04');
+  systemVersion = signal<string>('v26.08.04-b05');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -371,7 +371,14 @@ export class StateService implements OnDestroy {
     if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
       const requestsPath = `artifacts/${this.fb.APP_ID}/requests`;
       let isFirstRequestsSnapshot = true;
-      const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')),
+      const reqSub = onSnapshot(query(
+        collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'),
+        where('status', '==', 'pending'),
+        orderBy('timestamp', 'desc'),
+        // Chỉ cần các yêu cầu đang chờ xử lý gần nhất trên bảng điều hành.
+        // Không để lịch sử pending cũ biến listener nền thành truy vấn không giới hạn.
+        limit(100)
+      ),
         (s) => {
           this.readMonitor.record(
             'onSnapshot',
@@ -824,8 +831,8 @@ export class StateService implements OnDestroy {
 
         const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
         const source = canReadAll
-          ? colRef
-          : query(colRef, where('requestedBy', '==', currentUser.uid));
+          ? query(colRef, limit(1000))
+          : query(colRef, where('requestedBy', '==', currentUser.uid), limit(1000));
         const snap = await getDocs(source);
         this.readMonitor.record('getDocs', requestsPath, snap.size);
         if (initGeneration !== this.initGeneration) return;
@@ -876,7 +883,10 @@ export class StateService implements OnDestroy {
 
         const standardsPath = `artifacts/${this.fb.APP_ID}/reference_standards`;
         const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-        const snap = await getDocs(colRef);
+        // Đồng bộ với giới hạn DeltaSync của reference_standards. Luồng này
+        // chỉ là fallback khi chưa có cache; tránh một getDocs không giới hạn
+        // nếu dữ liệu cũ đã phình lớn bất thường.
+        const snap = await getDocs(query(colRef, limit(10000)));
         this.readMonitor.record('getDocs', standardsPath, snap.size);
         if (initGeneration !== this.initGeneration) return;
         const standards = snap.docs

@@ -10,15 +10,34 @@ import { Recipe } from '../../core/models/recipe.model';
 @Injectable({ providedIn: 'root' })
 export class RecipeService {
   private fb = inject(FirebaseService);
+  private recipesCache: Recipe[] | null = null;
+  private recipesLoadedAt = 0;
+  private recipesRequest?: Promise<Recipe[]>;
+  private readonly cacheTtlMs = 2 * 60 * 1000;
 
   private get collectionRef() {
     return collection(this.fb.db, `artifacts/${this.fb.APP_ID}/recipes`);
   }
 
-  async getAllRecipes(): Promise<Recipe[]> {
-    const q = query(this.collectionRef, orderBy('name'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe));
+  async getAllRecipes(forceRefresh = false): Promise<Recipe[]> {
+    if (!forceRefresh && this.recipesCache && Date.now() - this.recipesLoadedAt < this.cacheTtlMs) {
+      return [...this.recipesCache];
+    }
+    if (!forceRefresh && this.recipesRequest) return this.recipesRequest;
+
+    const request = getDocs(query(this.collectionRef, orderBy('name')))
+      .then(snapshot => snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)))
+      .then(items => {
+        this.recipesCache = items;
+        this.recipesLoadedAt = Date.now();
+        return [...items];
+      });
+    this.recipesRequest = request;
+    try {
+      return await request;
+    } finally {
+      if (this.recipesRequest === request) this.recipesRequest = undefined;
+    }
   }
 
   async getRecipesByIds(ids: string[]): Promise<Recipe[]> {
@@ -35,12 +54,16 @@ export class RecipeService {
   async saveRecipe(recipe: Recipe): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/recipes/${recipe.id}`);
     await setDoc(ref, { ...recipe, lastUpdated: serverTimestamp() });
+    this.recipesCache = null;
+    this.recipesLoadedAt = 0;
     await this.fb.updateMetadata('recipes');
   }
 
   async deleteRecipe(id: string): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/recipes/${id}`);
     await deleteDoc(ref);
+    this.recipesCache = null;
+    this.recipesLoadedAt = 0;
     await this.fb.updateMetadata('recipes');
   }
 }

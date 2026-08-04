@@ -19,6 +19,8 @@ export interface DeltaSyncConfig {
   /** Field used to select the initial batch. Defaults to lastUpdated for cursor safety. */
   initialOrderByField?: string;
   initialOrderDirection?: 'asc' | 'desc';
+  /** Rebuild a bounded cache instead of replaying a very old offline delta window. */
+  maxCatchUpAgeMs?: number;
   retryInitialDelayMs?: number;
   retryMaxDelayMs?: number;
   retryMaxAttempts?: number;
@@ -56,6 +58,7 @@ const CURSOR_OVERLAP_MS = 1000;
 const MAX_CURSOR_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const DEFAULT_RETRY_INITIAL_MS = 1000;
 const DEFAULT_RETRY_MAX_MS = 30000;
+const DEFAULT_MAX_CATCH_UP_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 // Firestore quota errors must not create an unbounded client-side retry loop.
 // A later app/session initialization can recover after the quota incident is cleared.
 const DEFAULT_RETRY_ATTEMPTS = 3;
@@ -127,6 +130,19 @@ export function sanitizeDeltaCursorMillis(
 
 export function shouldUseDeltaCache(cachedItemCount: number, cursorMillis: number): boolean {
   return cachedItemCount === 0 || sanitizeDeltaCursorMillis(cursorMillis) > 0;
+}
+
+export function shouldResetStaleDeltaCache(
+  cursorMillis: number,
+  lastSyncAtMillis: number,
+  maxAgeMs = DEFAULT_MAX_CATCH_UP_AGE_MS,
+  nowMillis = Date.now()
+): boolean {
+  if (cursorMillis <= 0 || !Number.isFinite(maxAgeMs) || maxAgeMs <= 0) return false;
+  // Legacy caches from before the sync-at marker are kept once during the
+  // rollout to avoid forcing every existing browser into a full refetch.
+  if (lastSyncAtMillis <= 0) return false;
+  return nowMillis - lastSyncAtMillis > maxAgeMs;
 }
 
 export function getMaxDeltaCursorMillis<T extends { lastUpdated?: unknown }>(
@@ -283,10 +299,17 @@ export class DeltaSyncService {
       return () => existing.callbacks.delete(onData);
     }
 
-    this._registerStorageKeys(config.cacheKey, config.cursorKey);
+    this._registerStorageKeys(config.cacheKey, config.cursorKey, this._syncAtKey(config.cursorKey));
     const isDeleted = config.isDeletedFn || ((document: any) => document._isDeleted === true);
-    const cachedItems = this._loadFromCache<T>(config.cacheKey, config).filter(document => !isDeleted(document));
     const cachedCursor = this._loadCursor(config.cursorKey, config);
+    const resetStaleCache = shouldResetStaleDeltaCache(
+      cachedCursor,
+      this._loadSyncAt(config.cursorKey),
+      config.maxCatchUpAgeMs
+    );
+    const cachedItems = (resetStaleCache ? [] : this._loadFromCache<T>(config.cacheKey, config))
+      .filter(document => !isDeleted(document));
+    if (resetStaleCache) this._clearPersistentData(config);
     const memCache = shouldUseDeltaCache(cachedItems.length, cachedCursor) ? cachedItems : [];
     if (cachedItems.length > 0 && memCache.length === 0) {
       this._clearPersistentData(config);
@@ -322,10 +345,17 @@ export class DeltaSyncService {
     config: DeltaSyncConfig,
     onData: (data: T[]) => void
   ): () => void {
-    this._registerStorageKeys(config.cacheKey, config.cursorKey);
+    this._registerStorageKeys(config.cacheKey, config.cursorKey, this._syncAtKey(config.cursorKey));
     const isDeleted = config.isDeletedFn || ((document: any) => document._isDeleted === true);
-    const loadedItems = this._loadFromCache<T>(config.cacheKey, config).filter(document => !isDeleted(document));
     const cachedCursor = this._loadCursor(config.cursorKey, config);
+    const resetStaleCache = shouldResetStaleDeltaCache(
+      cachedCursor,
+      this._loadSyncAt(config.cursorKey),
+      config.maxCatchUpAgeMs
+    );
+    const loadedItems = (resetStaleCache ? [] : this._loadFromCache<T>(config.cacheKey, config))
+      .filter(document => !isDeleted(document));
+    if (resetStaleCache) this._clearPersistentData(config);
     const cachedItems = shouldUseDeltaCache(loadedItems.length, cachedCursor) ? loadedItems : [];
     if (loadedItems.length > 0 && cachedItems.length === 0) {
       this._clearPersistentData(config);
@@ -445,7 +475,8 @@ export class DeltaSyncService {
     try {
       localStorage.removeItem(cacheKey);
       localStorage.removeItem(cursorKey);
-      this._unregisterStorageKeys(cacheKey, cursorKey);
+      localStorage.removeItem(this._syncAtKey(cursorKey));
+      this._unregisterStorageKeys(cacheKey, cursorKey, this._syncAtKey(cursorKey));
     } catch {}
   }
 
@@ -779,7 +810,10 @@ export class DeltaSyncService {
 
     try {
       localStorage.setItem(config.cacheKey, JSON.stringify(items));
-      if (cursorMillis > 0) localStorage.setItem(config.cursorKey, cursorMillis.toString());
+      if (cursorMillis > 0) {
+        localStorage.setItem(config.cursorKey, cursorMillis.toString());
+        localStorage.setItem(this._syncAtKey(config.cursorKey), Date.now().toString());
+      }
     } catch (error) {
       this._recordDiagnostic(config, error, 'cache-write', 0, false);
     }
@@ -818,7 +852,21 @@ export class DeltaSyncService {
     try {
       localStorage.removeItem(config.cacheKey);
       localStorage.removeItem(config.cursorKey);
+      localStorage.removeItem(this._syncAtKey(config.cursorKey));
     } catch {}
+  }
+
+  private _syncAtKey(cursorKey: string): string {
+    return `${cursorKey}__syncAt`;
+  }
+
+  private _loadSyncAt(cursorKey: string): number {
+    try {
+      const value = Number(localStorage.getItem(this._syncAtKey(cursorKey)) || 0);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch {
+      return 0;
+    }
   }
 
   private _entryIsActive(entry: SingletonEntry, capturedGeneration: number): boolean {

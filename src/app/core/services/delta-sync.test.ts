@@ -12,6 +12,7 @@ import {
   isRetryableDeltaError,
   mergeDeltaItems,
   replaceDeltaArrayContents,
+  shouldResetStaleDeltaCache,
   sanitizeDeltaCursorMillis,
   shouldUseDeltaCache,
   sortAndTrimDeltaItems
@@ -109,6 +110,14 @@ test('rejects corrupt future cursors and cache entries without a valid cursor', 
     ),
     9000
   );
+});
+
+test('resets a cache with an old sync timestamp before catch-up', () => {
+  const now = 100_000;
+  assert.equal(shouldResetStaleDeltaCache(90_000, 90_000, 10_000, now), false);
+  assert.equal(shouldResetStaleDeltaCache(90_000, 80_000, 10_000, now), true);
+  assert.equal(shouldResetStaleDeltaCache(90_000, 0, 10_000, now), false);
+  assert.equal(shouldResetStaleDeltaCache(0, 0, 10_000, now), false);
 });
 
 test('sorts timestamp and natural string fields before trimming', () => {

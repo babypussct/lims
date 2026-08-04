@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b04",
-    "title": "Đo Lường và Tiếp Tục Giảm Firestore Reads",
+    "version": "v26.08.04-b05",
+    "title": "Tiếp Tục Giảm Firestore Reads và Chặn Read Spike",
     "features": [
       "Bổ sung đo lường read theo collection, listener và nguồn cache để xác định đúng điểm phát sinh quota.",
       "Giảm các lần tải lại trùng trên Dashboard và dùng lại singleton cache của standard requests.",
+      "Chặn listener nền và các fallback query đọc không giới hạn khi dữ liệu hoặc lịch sử phiên tăng lớn.",
       "Có thể kiểm tra số liệu read trong phiên qua window.__limsFirestoreReads và sessionStorage.",
-      "Giới hạn listener purchase requests và system updates để không đọc lịch sử không cần thiết.",
-      "DeltaSync ghi nhận initial read, delta read và snapshot từ cache mà không tạo thêm Firestore request."
+      "Giới hạn listener pending requests và inbox notifications để không đọc lịch sử không cần thiết."
     ]
   },
   "assetGroups": [
