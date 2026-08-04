@@ -9,7 +9,7 @@ import { formatNum } from '../../../../shared/utils/utils';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex-1 overflow-x-auto custom-scrollbar">
+    <div class="flex-1 min-h-0 overflow-auto custom-scrollbar">
         <table class="w-full text-left border-separate border-spacing-0">
             <thead class="bg-white dark:bg-slate-800 sticky top-0 z-30">
                 <tr>
@@ -179,18 +179,6 @@ import { formatNum } from '../../../../shared/utils/utils';
                             </td>
                         </tr>
                     } 
-                    @if (requests.length > visibleRequests().length) {
-                        <tr>
-                            <td colspan="6" class="px-6 py-5 text-center">
-                                <button type="button"
-                                        (click)="loadMore()"
-                                        class="px-5 py-2 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
-                                    <i class="fa-solid fa-angles-down mr-1"></i>
-                                    Xem thêm {{Math.min(tableLimitStep, requests.length - visibleRequests().length)}} dòng — còn {{requests.length - visibleRequests().length}}
-                                </button>
-                            </td>
-                        </tr>
-                    }
                     @if (requests.length === 0) {
                         <tr>
                             <td colspan="6" class="px-6 py-24 text-center">
@@ -205,6 +193,22 @@ import { formatNum } from '../../../../shared/utils/utils';
             </tbody>
         </table>
     </div>
+    @if (!isLoading && requests.length > 0) {
+        <div class="shrink-0 border-t border-slate-100 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs" data-testid="request-table-footer">
+            <span class="font-bold text-slate-500 dark:text-slate-400">
+                Đang hiển thị <strong class="text-slate-700 dark:text-slate-200">{{visibleRequests().length}}</strong>/<strong class="text-slate-700 dark:text-slate-200">{{requests.length}}</strong> yêu cầu
+            </span>
+            @if (requests.length > visibleRequests().length) {
+                <button type="button" (click)="loadMore()" class="px-4 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition" data-testid="request-table-more">
+                    <i class="fa-solid fa-angles-down mr-1"></i>
+                    Xem thêm {{Math.min(tableLimitStep, requests.length - visibleRequests().length)}} dòng
+                    <span class="font-bold opacity-70">(còn {{requests.length - visibleRequests().length}})</span>
+                </button>
+            } @else {
+                <span class="text-emerald-600 dark:text-emerald-400 font-black"><i class="fa-solid fa-check mr-1"></i>Đã hiển thị toàn bộ</span>
+            }
+        </div>
+    }
   `
 })
 export class RequestsTableComponent {

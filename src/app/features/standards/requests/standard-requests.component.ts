@@ -171,6 +171,11 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     }));
   });
 
+  clearFilters() {
+      this.searchTerm.set('');
+      this.statusFilter.set('ALL');
+  }
+
   // Status Counts for Tabs (Admin views all, Users view theirs)
   statusCounts = computed(() => {
       const reqs = this.requests();

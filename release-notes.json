@@ -1,23 +1,23 @@
 {
-  "title": "Sửa Firestore Index cho Activity Logs",
+  "title": "Dễ thao tác hơn với Yêu Cầu Chất Chuẩn",
   "highlights": [
-    "Loại bỏ failed-precondition khi tải activity logs của người dùng.",
-    "Giữ listener cá nhân realtime ở mức tối đa 100 bản ghi.",
-    "Không cần tạo composite index mới cho luồng logs hiện tại."
+    "Cửa sổ thao tác luôn xuất hiện đúng giữa màn hình, kể cả khi đang xem danh sách dài.",
+    "Dễ theo dõi số lượng yêu cầu đang xem và số mục còn lại.",
+    "Tìm kiếm, lọc và xem thêm danh sách thuận tiện hơn trên cả máy tính và điện thoại."
   ],
   "features": [
-    "Query cá nhân dùng equality filter + limit và sắp xếp kết quả ở client.",
-    "Read monitor tiếp tục ghi nhận initial/delta và nguồn cache của listener.",
-    "Activity feed vẫn hợp nhất logs toàn hệ thống và logs cá nhân như trước."
+    "Bảng yêu cầu có khu vực hướng dẫn cố định ở cuối để tải thêm mà không phải kéo xuống tận đáy.",
+    "Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ xem.",
+    "Hiển thị rõ số lượng kết quả phù hợp và số chất chuẩn đã chọn."
   ],
   "improvements": [
-    "Giảm một truy vấn DeltaSync có nguy cơ cần composite index.",
-    "Giới hạn read và tránh retry vô ích khi index chưa được khai báo.",
-    "Giữ nguyên các tối ưu phân trang lịch sử và cache danh mục của b06."
+    "Thanh tìm kiếm và bộ lọc được sắp xếp gọn hơn trên màn hình nhỏ.",
+    "Giảm số lượng mục hiển thị cùng lúc để danh sách dài nhẹ và dễ thao tác hơn.",
+    "Nút xóa bộ lọc giúp quay nhanh về toàn bộ danh sách."
   ],
   "fixes": [
-    "Sửa lỗi Firestore failed-precondition tại artifacts/lims-cloud-fixed/logs.",
-    "Không còn ghép where(user) với orderBy(lastUpdated) trong personal activity listener.",
-    "Giữ trần 100 bản ghi để không tạo read spike khi mở activity feed."
+    "Sửa lỗi cửa sổ xác nhận có thể xuất hiện lệch vị trí hoặc bị che khi mở từ danh sách dài.",
+    "Sửa tình trạng phải kéo quá nhiều mới có thể tải thêm các mục còn lại.",
+    "Sửa hiển thị gây rối khi có nhiều yêu cầu hoặc nhiều chất chuẩn cùng lúc."
   ]
 }

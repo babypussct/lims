@@ -26,7 +26,7 @@ function removeAccents(str: string): string {
   template: `
     <!-- REQUEST MODAL (Tạo yêu cầu mới - Drawer) -->
     @if (isOpen) {
-        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+        <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" role="dialog" aria-modal="true" aria-labelledby="create-standard-request-title">
         <!-- Overlay click to close -->
         <div class="absolute inset-0" (click)="onClose()"></div>
         
@@ -35,7 +35,7 @@ function removeAccents(str: string): string {
             <!-- Left Column: Standards Selection -->
             <div class="w-full md:w-1/2 h-[55vh] md:h-auto md:flex-1 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 shrink-0 md:min-h-0">
                 <div class="p-6 border-b border-slate-100 dark:border-slate-800">
-                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
+                        <h3 id="create-standard-request-title" class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-flask-vial text-indigo-600"></i>
                         Chọn Chuẩn Đối Chiếu
                     </h3>
@@ -43,7 +43,7 @@ function removeAccents(str: string): string {
                     <!-- Search Input -->
                     <div class="relative">
                         <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" [ngModel]="standardSearchTerm()" (ngModelChange)="standardSearchTerm.set($event)" 
+                        <input type="text" [ngModel]="standardSearchTerm()" (ngModelChange)="setStandardSearchTerm($event)"
                                 placeholder="Tìm theo tên, lot, cas, mã..." 
                                 class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
                     </div>
@@ -51,8 +51,14 @@ function removeAccents(str: string): string {
 
                 <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                     @if (standardSearchTerm().length > 0) {
+                        <div class="flex items-center justify-between gap-2 px-1 pb-2 text-xs font-bold text-slate-400 dark:text-slate-500">
+                            <span><strong class="text-indigo-600 dark:text-indigo-400">{{filteredAvailableStandards().length}}</strong> chuẩn phù hợp</span>
+                            @if (selectedStandardIds().size > 0) {
+                                <span class="text-indigo-600 dark:text-indigo-400">{{selectedStandardIds().size}} đã chọn</span>
+                            }
+                        </div>
                         <div class="space-y-2">
-                            @for(std of filteredAvailableStandards(); track std.id) {
+                            @for(std of visibleAvailableStandards(); track std.id) {
                                 <div class="p-3 border rounded-2xl transition-all duration-200 flex items-start gap-3 group relative overflow-hidden"
                                         [ngClass]="{
                                         'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && isSelectable(std),
@@ -148,7 +154,13 @@ function removeAccents(str: string): string {
                                         </div>
                                     </div>
                             }
-                            @if(filteredAvailableStandards().length === 0) {
+                            @if (filteredAvailableStandards().length > visibleAvailableStandards().length) {
+                                <button type="button" (click)="loadMoreStandards()" class="w-full rounded-2xl border border-dashed border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/20 px-3 py-3 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
+                                    <i class="fa-solid fa-angles-down mr-1"></i>
+                                    Xem thêm — còn {{filteredAvailableStandards().length - visibleAvailableStandards().length}} chuẩn
+                                </button>
+                            }
+                            @if (filteredAvailableStandards().length === 0) {
                                 <div class="py-12 text-center">
                                     <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
                                         <i class="fa-solid fa-layer-group text-2xl"></i>
@@ -298,6 +310,8 @@ export class CreateRequestDrawerComponent {
   _availableStandards = signal<ReferenceStandard[]>([]);
   standardSearchTerm = signal('');
   selectedStandardIds = signal<Set<string>>(new Set());
+  readonly standardListLimitStep = 80;
+  standardListLimit = signal(this.standardListLimitStep);
 
   constructor() {
     this.form = this.fb.group({
@@ -334,6 +348,8 @@ export class CreateRequestDrawerComponent {
       
       return sortStandardsByFefo(stds);
   });
+
+  visibleAvailableStandards = computed(() => this.filteredAvailableStandards().slice(0, this.standardListLimit()));
 
   /** Danh sách cảnh báo FEFO cho các lô đã chọn không theo thứ tự tối ưu */
   fefoWarnings = computed(() => {
@@ -382,6 +398,15 @@ export class CreateRequestDrawerComponent {
       return this._availableStandards().filter(s => ids.has(s.id));
   });
 
+  setStandardSearchTerm(term: string) {
+      this.standardSearchTerm.set(term);
+      this.standardListLimit.set(this.standardListLimitStep);
+  }
+
+  loadMoreStandards() {
+      this.standardListLimit.update(limit => limit + this.standardListLimitStep);
+  }
+
   isDepleted(std: ReferenceStandard): boolean {
       return std.status === 'DEPLETED' || (std.current_amount ?? 0) <= 0;
   }
@@ -417,6 +442,7 @@ export class CreateRequestDrawerComponent {
       this.form.reset();
       this.selectedStandardIds.set(new Set());
       this.standardSearchTerm.set('');
+      this.standardListLimit.set(this.standardListLimitStep);
       this.close.emit();
   }
 

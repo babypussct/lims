@@ -13,8 +13,8 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
   template: `
     <!-- APPROVE MODAL -->
     @if (activeModal === 'approve' && request) {
-       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-           <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col md:flex-row overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 max-h-[90vh]">
+       <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+           <div role="dialog" aria-modal="true" class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col md:flex-row overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 max-h-[90vh]">
                <!-- Left: Standard Info Summary -->
                <div class="flex w-full md:w-2/5 bg-slate-50 dark:bg-slate-800/50 p-6 md:p-8 flex-col border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 shrink-0 overflow-y-auto">
                    <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
@@ -95,8 +95,8 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
     <!-- REJECT MODAL -->
     @if (activeModal === 'reject' && request) {
-       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-          <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+       <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+          <div role="dialog" aria-modal="true" class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-red-50/50 dark:bg-red-900/10">
                   <h3 class="font-black text-red-600 dark:text-red-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-ban"></i> Từ Chối Yêu Cầu
@@ -128,8 +128,8 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
     <!-- RETURN MODAL -->
     @if (activeModal === 'return' && request) {
-       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-          <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+       <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+          <div role="dialog" aria-modal="true" class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
                   <h3 class="font-black text-indigo-600 dark:text-indigo-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-rotate-left"></i>
@@ -204,8 +204,8 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
     <!-- LOG USAGE MODAL -->
     @if (activeModal === 'logUsage' && request) {
-       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-          <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+       <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+          <div role="dialog" aria-modal="true" class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-teal-50/50 dark:bg-teal-900/10">
                   <h3 class="font-black text-teal-600 dark:text-teal-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-vial-circle-check"></i> Ghi Nhận Đợt Dùng
@@ -243,8 +243,8 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
     <!-- ADMIN RECEIVE RETURN MODAL -->
     @if (activeModal === 'adminReceive' && request) {
-       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-           <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col">
+       <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+           <div role="dialog" aria-modal="true" class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col">
               <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
                   <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-clipboard-check"></i> Xác Nhận Nhập Kho Trả

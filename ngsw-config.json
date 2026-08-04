@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b07",
-    "title": "Sửa Firestore Index cho Activity Logs",
+    "version": "v26.08.04-b08",
+    "title": "Dễ thao tác hơn với Yêu Cầu Chất Chuẩn",
     "features": [
-      "Loại bỏ failed-precondition khi tải activity logs của người dùng.",
-      "Giữ listener cá nhân realtime ở mức tối đa 100 bản ghi.",
-      "Không cần tạo composite index mới cho luồng logs hiện tại.",
-      "Query cá nhân dùng equality filter + limit và sắp xếp kết quả ở client.",
-      "Read monitor tiếp tục ghi nhận initial/delta và nguồn cache của listener."
+      "Cửa sổ thao tác luôn xuất hiện đúng giữa màn hình, kể cả khi đang xem danh sách dài.",
+      "Dễ theo dõi số lượng yêu cầu đang xem và số mục còn lại.",
+      "Tìm kiếm, lọc và xem thêm danh sách thuận tiện hơn trên cả máy tính và điện thoại.",
+      "Bảng yêu cầu có khu vực hướng dẫn cố định ở cuối để tải thêm mà không phải kéo xuống tận đáy.",
+      "Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ xem."
     ]
   },
   "assetGroups": [

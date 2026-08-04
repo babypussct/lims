@@ -2,7 +2,15 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.04-b07
+## Phiên bản hiện tại: v26.08.04-b08
+
+### v26.08.04-b08
+
+- Cửa sổ thao tác luôn xuất hiện rõ ràng ở giữa màn hình, kể cả khi đang xem danh sách dài.
+- Bảng yêu cầu hiển thị số mục đang xem và nút “Xem thêm” ngay tại khu vực thao tác.
+- Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ theo dõi hơn.
+- Thanh tìm kiếm, bộ lọc và cách hiển thị danh sách được sắp xếp gọn hơn trên điện thoại.
+- Sửa các trường hợp cửa sổ xác nhận bị lệch vị trí, bị che hoặc gây khó hiểu khi thao tác từ danh sách dài.
 
 ### v26.08.04-b07
 
