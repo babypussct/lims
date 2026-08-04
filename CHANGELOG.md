@@ -2,7 +2,13 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.04-b08
+## Phiên bản hiện tại: v26.08.04-b09
+
+### v26.08.04-b09
+
+- Bỏ 4 thẻ số liệu tổng quan không cần thiết ở đầu trang Yêu Cầu Chất Chuẩn để màn hình gọn hơn.
+- Đưa trọng tâm về danh sách yêu cầu; các bộ lọc trạng thái vẫn có sẵn ngay bên trên danh sách.
+- Giữ nguyên các cải thiện về tìm kiếm, xem thêm và cửa sổ thao tác cho danh sách dài.
 
 ### v26.08.04-b08
 

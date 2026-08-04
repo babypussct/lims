@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b08",
-    "title": "Dễ thao tác hơn với Yêu Cầu Chất Chuẩn",
+    "version": "v26.08.04-b09",
+    "title": "Màn hình Yêu Cầu Chất Chuẩn gọn hơn",
     "features": [
-      "Cửa sổ thao tác luôn xuất hiện đúng giữa màn hình, kể cả khi đang xem danh sách dài.",
-      "Dễ theo dõi số lượng yêu cầu đang xem và số mục còn lại.",
-      "Tìm kiếm, lọc và xem thêm danh sách thuận tiện hơn trên cả máy tính và điện thoại.",
-      "Bảng yêu cầu có khu vực hướng dẫn cố định ở cuối để tải thêm mà không phải kéo xuống tận đáy.",
-      "Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ xem."
+      "Bỏ các thẻ số liệu tổng quan không cần thiết ở đầu trang, giúp đi thẳng đến danh sách yêu cầu.",
+      "Các bộ lọc trạng thái vẫn nằm ngay trên danh sách để tra cứu khi cần.",
+      "Màn hình gọn hơn, dễ tập trung vào việc tìm và xử lý yêu cầu.",
+      "Các cửa sổ thao tác vẫn hiển thị rõ ở giữa màn hình, kể cả khi danh sách dài.",
+      "Bảng yêu cầu có nút xem thêm ngay tại khu vực thao tác."
     ]
   },
   "assetGroups": [

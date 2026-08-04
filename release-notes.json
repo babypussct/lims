@@ -1,23 +1,21 @@
 {
-  "title": "Dễ thao tác hơn với Yêu Cầu Chất Chuẩn",
+  "title": "Màn hình Yêu Cầu Chất Chuẩn gọn hơn",
   "highlights": [
-    "Cửa sổ thao tác luôn xuất hiện đúng giữa màn hình, kể cả khi đang xem danh sách dài.",
-    "Dễ theo dõi số lượng yêu cầu đang xem và số mục còn lại.",
-    "Tìm kiếm, lọc và xem thêm danh sách thuận tiện hơn trên cả máy tính và điện thoại."
+    "Bỏ các thẻ số liệu tổng quan không cần thiết ở đầu trang, giúp đi thẳng đến danh sách yêu cầu.",
+    "Các bộ lọc trạng thái vẫn nằm ngay trên danh sách để tra cứu khi cần.",
+    "Màn hình gọn hơn, dễ tập trung vào việc tìm và xử lý yêu cầu."
   ],
   "features": [
-    "Bảng yêu cầu có khu vực hướng dẫn cố định ở cuối để tải thêm mà không phải kéo xuống tận đáy.",
-    "Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ xem.",
-    "Hiển thị rõ số lượng kết quả phù hợp và số chất chuẩn đã chọn."
+    "Các cửa sổ thao tác vẫn hiển thị rõ ở giữa màn hình, kể cả khi danh sách dài.",
+    "Bảng yêu cầu có nút xem thêm ngay tại khu vực thao tác."
   ],
   "improvements": [
-    "Thanh tìm kiếm và bộ lọc được sắp xếp gọn hơn trên màn hình nhỏ.",
-    "Giảm số lượng mục hiển thị cùng lúc để danh sách dài nhẹ và dễ thao tác hơn.",
+    "Thanh tìm kiếm, bộ lọc và cách hiển thị danh sách được sắp xếp gọn hơn trên điện thoại.",
+    "Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ theo dõi hơn.",
     "Nút xóa bộ lọc giúp quay nhanh về toàn bộ danh sách."
   ],
   "fixes": [
     "Sửa lỗi cửa sổ xác nhận có thể xuất hiện lệch vị trí hoặc bị che khi mở từ danh sách dài.",
-    "Sửa tình trạng phải kéo quá nhiều mới có thể tải thêm các mục còn lại.",
     "Sửa hiển thị gây rối khi có nhiều yêu cầu hoặc nhiều chất chuẩn cùng lúc."
   ]
 }
