@@ -158,6 +158,8 @@ export class StandardCacheService {
   }
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
+    if (!this.auth.canViewStandards()) return null;
+
     let stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
     if (!stds || stds.length === 0) stds = await this.fetchAllAndCache();
     const active = stds.filter(standard =>

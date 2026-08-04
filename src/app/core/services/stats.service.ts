@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from './firebase.service';
+import { AuthService } from './auth.service';
 import {
   doc,
   getDoc,
@@ -27,6 +28,7 @@ export type MonthlyStatsDoc = Record<string, DailyStats>; // '2026-07-31'
 @Injectable({ providedIn: 'root' })
 export class StatsService {
   private fb = inject(FirebaseService);
+  private auth = inject(AuthService);
 
   private getMonthKey(date: Date): string {
     const y = date.getFullYear();
@@ -108,7 +110,9 @@ export class StatsService {
    */
   async getStatsForMonths(monthKeys: string[]): Promise<Record<string, MonthlyStatsDoc>> {
     const result: Record<string, MonthlyStatsDoc> = {};
-    for (const key of monthKeys) {
+    if (!this.auth.canViewReports()) return result;
+
+    for (const key of Array.from(new Set(monthKeys))) {
       try {
         const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/monthly_stats`, key);
         const snap = await getDoc(docRef);

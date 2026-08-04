@@ -118,7 +118,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.04-b09');
+  systemVersion = signal<string>('v26.08.04-b10');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -396,9 +396,16 @@ export class StateService implements OnDestroy {
     // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
     // statistics.component.ts uses loadAllStandardRequests() on-demand instead
 
-    // standard_requests: subscribe vào singleton của StandardRequestService
-    // (tránh tạo listener trùng lặp — tiết kiệm ~89% reads)
-    {
+    // standard_requests: chỉ mở listener khi user có thể sử dụng màn hình
+    // yêu cầu/mượn chuẩn hoặc cần dữ liệu duyệt/nhật ký chuẩn.
+    const canUseStandardRequests = this.auth.canViewStandards()
+      || this.auth.hasPermission('standard_request')
+      || this.auth.canAssignStandards()
+      || this.auth.canViewStandardLogs()
+      || this.auth.canDeleteStandardLogs();
+    if (canUseStandardRequests) {
+      // Subscribe vào singleton của StandardRequestService
+      // (tránh tạo listener trùng lặp — tiết kiệm reads)
       const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
       if (!isCurrentInit()) return;
       const reqService = this.injector.get(StandardRequestService);
@@ -434,14 +441,16 @@ export class StateService implements OnDestroy {
     // 4. Logs Listener — now started on-demand via ensureLogsListener()
     // Avoid opening activity/print-feed stream for every route immediately after login.
 
-    // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
-    try {
-      const statsPath = `artifacts/${this.fb.APP_ID}/stats/master`;
-      const statSnap = await getDoc(doc(this.fb.db, statsPath));
-      this.readMonitor.record('getDoc', statsPath, 1);
-      if (!isCurrentInit()) return;
-      if (statSnap.exists()) this.stats.set(statSnap.data() as { totalSopsRun: number; totalItemsUsed: number });
-    } catch (e) { console.warn('Stats load error:', e); }
+    // 5. Stats — chỉ tải cho user có quyền Báo cáo
+    if (this.auth.canViewReports()) {
+      try {
+        const statsPath = `artifacts/${this.fb.APP_ID}/stats/master`;
+        const statSnap = await getDoc(doc(this.fb.db, statsPath));
+        this.readMonitor.record('getDoc', statsPath, 1);
+        if (!isCurrentInit()) return;
+        if (statSnap.exists()) this.stats.set(statSnap.data() as { totalSopsRun: number; totalItemsUsed: number });
+      } catch (e) { console.warn('Stats load error:', e); }
+    }
 
     // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
     await this.loadConfig(initGeneration);

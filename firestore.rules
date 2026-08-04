@@ -89,6 +89,12 @@ service cloud.firestore {
       return hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_log_delete');
     }
 
+    // Các thao tác duyệt/vận hành cập nhật monthly_stats bằng transaction,
+    // vì vậy cần đọc document thống kê trước khi ghi delta.
+    function canUpdateStats(appId) {
+      return hasPermission(appId, 'sop_approve') || hasPermission(appId, 'batch_run');
+    }
+
     // --- CAU HINH HE THONG VA VAI TRO ---
     
     // Moi nguoi dung da dang nhap deu co the doc thong tin co ban de hien thi avatar,
@@ -135,10 +141,12 @@ service cloud.firestore {
       allow write: if isManager(appId);
     }
     match /artifacts/{appId}/stats/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if hasPermission(appId, 'report_view');
+      allow write: if isSignedIn();
     }
     match /artifacts/{appId}/monthly_stats/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if hasPermission(appId, 'report_view') || canUpdateStats(appId);
+      allow write: if isSignedIn();
     }
     match /artifacts/{appId}/notifications/{docId} {
       allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;

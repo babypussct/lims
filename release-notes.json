@@ -1,21 +1,20 @@
 {
-  "title": "Màn hình Yêu Cầu Chất Chuẩn gọn hơn",
+  "title": "Trang Chủ tải nhẹ hơn theo quyền truy cập",
   "highlights": [
-    "Bỏ các thẻ số liệu tổng quan không cần thiết ở đầu trang, giúp đi thẳng đến danh sách yêu cầu.",
-    "Các bộ lọc trạng thái vẫn nằm ngay trên danh sách để tra cứu khi cần.",
-    "Màn hình gọn hơn, dễ tập trung vào việc tìm và xử lý yêu cầu."
+    "Trang Chủ chỉ tải các khu vực phù hợp với quyền được cấp.",
+    "Mở hệ thống nhẹ hơn đối với tài khoản không sử dụng Báo cáo hoặc Vận hành SOP.",
+    "Các thao tác duyệt và vận hành vẫn cập nhật số liệu đầy đủ."
   ],
   "features": [
-    "Các cửa sổ thao tác vẫn hiển thị rõ ở giữa màn hình, kể cả khi danh sách dài.",
-    "Bảng yêu cầu có nút xem thêm ngay tại khu vực thao tác."
+    "Báo cáo chỉ tải khi tài khoản có quyền Xem Báo cáo.",
+    "Bảng theo dõi mẫu chỉ tải khi tài khoản có quyền Vận hành SOP."
   ],
   "improvements": [
-    "Thanh tìm kiếm, bộ lọc và cách hiển thị danh sách được sắp xếp gọn hơn trên điện thoại.",
-    "Khi tạo yêu cầu mới, danh sách chất chuẩn được chia thành từng phần dễ theo dõi hơn.",
-    "Nút xóa bộ lọc giúp quay nhanh về toàn bộ danh sách."
+    "Các khu vực bị khóa không còn tải dữ liệu nền không cần thiết.",
+    "Các dữ liệu thống kê đã có trong phiên được dùng lại khi thay đổi khoảng ngày."
   ],
   "fixes": [
-    "Sửa lỗi cửa sổ xác nhận có thể xuất hiện lệch vị trí hoặc bị che khi mở từ danh sách dài.",
-    "Sửa hiển thị gây rối khi có nhiều yêu cầu hoặc nhiều chất chuẩn cùng lúc."
+    "Ngăn tài khoản thiếu quyền Báo cáo đọc dữ liệu thống kê chỉ dùng cho màn hình Báo cáo.",
+    "Ngăn tải danh sách chất chuẩn và bảng theo dõi mẫu khi khu vực tương ứng đang bị khóa."
   ]
 }

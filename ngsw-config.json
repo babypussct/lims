@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b09",
-    "title": "Màn hình Yêu Cầu Chất Chuẩn gọn hơn",
+    "version": "v26.08.04-b10",
+    "title": "Trang Chủ tải nhẹ hơn theo quyền truy cập",
     "features": [
-      "Bỏ các thẻ số liệu tổng quan không cần thiết ở đầu trang, giúp đi thẳng đến danh sách yêu cầu.",
-      "Các bộ lọc trạng thái vẫn nằm ngay trên danh sách để tra cứu khi cần.",
-      "Màn hình gọn hơn, dễ tập trung vào việc tìm và xử lý yêu cầu.",
-      "Các cửa sổ thao tác vẫn hiển thị rõ ở giữa màn hình, kể cả khi danh sách dài.",
-      "Bảng yêu cầu có nút xem thêm ngay tại khu vực thao tác."
+      "Trang Chủ chỉ tải các khu vực phù hợp với quyền được cấp.",
+      "Mở hệ thống nhẹ hơn đối với tài khoản không sử dụng Báo cáo hoặc Vận hành SOP.",
+      "Các thao tác duyệt và vận hành vẫn cập nhật số liệu đầy đủ.",
+      "Báo cáo chỉ tải khi tài khoản có quyền Xem Báo cáo.",
+      "Bảng theo dõi mẫu chỉ tải khi tài khoản có quyền Vận hành SOP."
     ]
   },
   "assetGroups": [

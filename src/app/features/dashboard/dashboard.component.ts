@@ -565,8 +565,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       // MỚI: Fetch Stats Data based on date range
       effect(() => {
+          const user = this.auth.currentUser();
+          const canViewReports = !!user && this.auth.canViewReports();
           const startStr = this.startDate();
           const endStr = this.endDate();
+
+          // The analytics panel is locked for users without report access.
+          // Do not fetch its monthly aggregates just to blur them underneath
+          // the lock overlay.
+          if (!canViewReports) {
+              this.statsData.set({});
+              return;
+          }
+
           const start = this.parseDateSafe(startStr);
           const end = this.parseDateSafe(endStr);
           if (start && end) {
@@ -583,9 +594,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
                   const m = String(d.getMonth() + 1).padStart(2, '0');
                   monthsToFetch.add(`${y}-${m}`);
                   d.setMonth(d.getMonth() + 1);
-              }
+               }
               const keys = Array.from(monthsToFetch);
-              this.statsService.getStatsForMonths(keys).then(data => {
+              const cachedStats = this.statsData();
+              const missingKeys = keys.filter(key => !Object.prototype.hasOwnProperty.call(cachedStats, key));
+              if (missingKeys.length === 0) return;
+
+              this.statsService.getStatsForMonths(missingKeys).then(data => {
+                  if (!this.auth.canViewReports()) return;
                   this.statsData.update(prev => ({ ...prev, ...data }));
               }).catch(e => console.error("Error fetching stats:", e));
           }
@@ -608,8 +624,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       // 2. Tải thông tin chuẩn sắp hết hạn
       try {
-          const nearestStd = await this.stdService.getNearestExpiry();
-          this.processPriorityStandard(nearestStd);
+          if (this.auth.canViewStandards()) {
+              const nearestStd = await this.stdService.getNearestExpiry();
+              this.processPriorityStandard(nearestStd);
+          } else {
+              this.priorityStandard.set(null);
+          }
       } catch (e) {
           console.warn("Dashboard: Lỗi khi tải thông tin chất chuẩn sắp hết hạn:", e);
           this.priorityStandard.set({ name: 'Lỗi kết nối / dữ liệu', daysLeft: 0, date: '', status: 'error' });
