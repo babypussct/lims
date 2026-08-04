@@ -2,7 +2,13 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.04-b06
+## Phiên bản hiện tại: v26.08.04-b07
+
+### v26.08.04-b07
+
+- Sửa lỗi Firestore `failed-precondition` tại activity logs do query cần composite index.
+- Listener logs cá nhân dùng `where + limit(100)`, sắp xếp ở client và vẫn realtime.
+- Giữ nguyên giới hạn read của activity feed, tránh retry vô ích.
 
 ### v26.08.04-b06
 

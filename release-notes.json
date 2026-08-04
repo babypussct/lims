@@ -1,23 +1,23 @@
 {
-  "title": "Phân Trang Lịch Sử và Cache Danh Mục Giảm Firestore Reads",
+  "title": "Sửa Firestore Index cho Activity Logs",
   "highlights": [
-    "Lịch sử sử dụng chuẩn chỉ tải 100 bản ghi đầu và cho phép tải thêm theo cursor.",
-    "Cache các danh mục nền mẫu, thiết bị, mô tả mẫu và danh sách người dùng trong 5 phút.",
-    "Giữ các listener nền và fallback query ở trạng thái bounded để tránh read spike."
+    "Loại bỏ failed-precondition khi tải activity logs của người dùng.",
+    "Giữ listener cá nhân realtime ở mức tối đa 100 bản ghi.",
+    "Không cần tạo composite index mới cho luồng logs hiện tại."
   ],
   "features": [
-    "Màn hình chi tiết chuẩn và modal lịch sử có nút Tải thêm, không mất khả năng xem bản ghi cũ.",
-    "Tự tìm bản ghi sử dụng sớm nhất bằng một truy vấn limit(1) để vẫn giữ logic tự sửa date_opened.",
-    "Chống gọi đồng thời lặp lại khi nhiều màn hình cùng yêu cầu một danh mục."
+    "Query cá nhân dùng equality filter + limit và sắp xếp kết quả ở client.",
+    "Read monitor tiếp tục ghi nhận initial/delta và nguồn cache của listener.",
+    "Activity feed vẫn hợp nhất logs toàn hệ thống và logs cá nhân như trước."
   ],
   "improvements": [
-    "Read monitor ghi nhận riêng initial/page/earliest cho lịch sử sử dụng chuẩn.",
-    "Các cache danh mục tự vô hiệu hóa sau thao tác lưu, xóa hoặc cập nhật quyền.",
-    "DeltaSync tự dựng lại cache bounded sau 14 ngày không đồng bộ thay vì replay cửa sổ offline không giới hạn."
+    "Giảm một truy vấn DeltaSync có nguy cơ cần composite index.",
+    "Giới hạn read và tránh retry vô ích khi index chưa được khai báo.",
+    "Giữ nguyên các tối ưu phân trang lịch sử và cache danh mục của b06."
   ],
   "fixes": [
-    "Không còn getDocs không giới hạn khi mở lịch sử sử dụng của một chuẩn lớn.",
-    "Không tải lại cùng một danh mục khi editor SOP được khởi tạo nhiều lần trong thời gian ngắn.",
-    "Đặt trần 1.000 standard requests và 10.000 reference standards cho fallback tải lạnh."
+    "Sửa lỗi Firestore failed-precondition tại artifacts/lims-cloud-fixed/logs.",
+    "Không còn ghép where(user) với orderBy(lastUpdated) trong personal activity listener.",
+    "Giữ trần 100 bản ghi để không tạo read spike khi mở activity feed."
   ]
 }

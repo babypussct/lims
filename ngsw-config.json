@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b06",
-    "title": "Phân Trang Lịch Sử và Cache Danh Mục Giảm Firestore Reads",
+    "version": "v26.08.04-b07",
+    "title": "Sửa Firestore Index cho Activity Logs",
     "features": [
-      "Lịch sử sử dụng chuẩn chỉ tải 100 bản ghi đầu và cho phép tải thêm theo cursor.",
-      "Cache các danh mục nền mẫu, thiết bị, mô tả mẫu và danh sách người dùng trong 5 phút.",
-      "Giữ các listener nền và fallback query ở trạng thái bounded để tránh read spike.",
-      "Màn hình chi tiết chuẩn và modal lịch sử có nút Tải thêm, không mất khả năng xem bản ghi cũ.",
-      "Tự tìm bản ghi sử dụng sớm nhất bằng một truy vấn limit(1) để vẫn giữ logic tự sửa date_opened."
+      "Loại bỏ failed-precondition khi tải activity logs của người dùng.",
+      "Giữ listener cá nhân realtime ở mức tối đa 100 bản ghi.",
+      "Không cần tạo composite index mới cho luồng logs hiện tại.",
+      "Query cá nhân dùng equality filter + limit và sắp xếp kết quả ở client.",
+      "Read monitor tiếp tục ghi nhận initial/delta và nguồn cache của listener."
     ]
   },
   "assetGroups": [

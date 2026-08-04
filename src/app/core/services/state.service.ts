@@ -118,7 +118,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.04-b06');
+  systemVersion = signal<string>('v26.08.04-b07');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -558,29 +558,40 @@ export class StateService implements OnDestroy {
     if (this.personalLogsSub || !this.auth.currentUser() || !displayName) return;
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
-    const uid = this.auth.currentUser()!.uid;
 
-    // OPTIMIZED: onSnapshot(all logs) → DeltaSync singleton (cursor-based + limit)
-    // Trước: đọc toàn bộ logs của user mỗi lần gọi (~500-1000 reads)
-    // Sau: cursor-based, chỉ đọc delta, giới hạn 100 bản ghi gần nhất
-    const personalSub = this.deltaSync.startSingletonListener<Log>({
-      cacheKey: buildScopedDeltaKey(
-        `lims_personal_logs_cache_${this.fb.APP_ID}_${uid}`,
-        this.auth.getDeltaCacheScope()
-      ),
-      cursorKey: buildScopedDeltaKey(
-        `lims_personal_logs_cursor_${this.fb.APP_ID}_${uid}`,
-        this.auth.getDeltaCacheScope()
-      ),
-      collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
-      queryConstraints: [where('user', '==', displayName)],
-      maxCacheSize: 100,
-      orderByField: 'lastUpdated',
-      orderDirection: 'desc'
-    }, (items) => {
+    // Không ghép where(user) với orderBy(lastUpdated) ở đây: Firestore sẽ
+    // yêu cầu composite index và gây failed-precondition trên project mới.
+    // Query chỉ có equality filter + limit dùng single-field index mặc định;
+    // kết quả được sắp xếp ở client và vẫn bounded ở 100 bản ghi.
+    const personalLogsPath = `artifacts/${this.fb.APP_ID}/logs`;
+    const personalLogsQuery = query(
+      collection(this.fb.db, personalLogsPath),
+      where('user', '==', displayName),
+      limit(100)
+    );
+    let isFirstPersonalSnapshot = true;
+    const personalSub = onSnapshot(personalLogsQuery, (snapshot) => {
+      this.readMonitor.record(
+        'onSnapshot',
+        personalLogsPath,
+        isFirstPersonalSnapshot
+          ? snapshot.size
+          : snapshot.docChanges().filter(change => change.type !== 'removed').length,
+        { phase: isFirstPersonalSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
+      );
+      isFirstPersonalSnapshot = false;
       if (!isCurrentInit()) return;
+
+      const items: Log[] = snapshot.docs.map(logDoc => ({
+        id: logDoc.id,
+        ...logDoc.data()
+      } as Log));
+      items.sort((a, b) => this.getLogTime(b) - this.getLogTime(a));
       this.personalLogsCache = items;
       this.publishActivityLogs();
+    }, (error: any) => {
+      if (!isCurrentInit()) return;
+      console.warn('Personal logs listener error:', error.message);
     });
 
     this.personalLogsSub = () => {
