@@ -31,6 +31,10 @@ function cleanObject(value: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
 }
 
+function sameStringArray(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 async function removeStaleTokens(
   appId: string,
   staleTokens: string[],
@@ -161,10 +165,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fcmTokens: FieldValue.arrayRemove(...tokensToRemove)
         });
       });
-      const currentTokens = uniqueStringValues(profile['fcmTokens'])
-        .filter(item => item !== token && item !== previousToken);
-      batch.update(profileRef, { fcmTokens: [...currentTokens, token] });
-      await batch.commit();
+      const currentTokens = uniqueStringValues(profile['fcmTokens']);
+      const tokenAlreadyRegistered = currentTokens.includes(token);
+      const previousTokenNeedsRemoval = Boolean(
+        previousToken && previousToken !== token && currentTokens.includes(previousToken)
+      );
+      const nextTokens = tokenAlreadyRegistered && !previousTokenNeedsRemoval
+        ? currentTokens
+        : [...currentTokens.filter(item => item !== token && item !== previousToken), token];
+      if (!sameStringArray(currentTokens, nextTokens)) {
+        batch.update(profileRef, { fcmTokens: nextTokens });
+      }
+      if (!sameStringArray(currentTokens, nextTokens) || tokensToRemoveByUid.size > 0) {
+        await batch.commit();
+      }
 
       return res.status(200).json({
         success: true,

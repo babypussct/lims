@@ -57,6 +57,7 @@ export class StateService implements OnDestroy {
   private usersInfoSub?: Unsubscribe;
   /** Singleton request listener — unregister callback (không hủy listener) */
   private _unregisterStdReqListener?: () => void;
+  private activeInitScope: string | null | undefined;
   private globalLogsCache: Log[] = [];
   private personalLogsCache: Log[] = [];
 
@@ -110,7 +111,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.04-b02');
+  systemVersion = signal<string>('v26.08.04-b03');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -157,12 +158,21 @@ export class StateService implements OnDestroy {
     this.applyDarkMode(savedDarkMode);
 
     effect(() => {
-      const user = this.auth.currentUser();
+      const userId = this.auth.currentUserUid();
       const perms = this.auth.userPermissions();
-      if (user && perms.length > 0) {
-        this.initData();
+      const scope = userId && perms.length > 0
+        ? `${userId}|${[...perms].sort().join(',')}`
+        : null;
+
+      if (scope) {
+        // Profile snapshots (for example an FCM token update) must not restart
+        // every Firestore listener when the effective auth scope is unchanged.
+        if (this.activeInitScope === scope) return;
+        this.activeInitScope = scope;
+        void this.initData();
         // checkSystemHealth() removed from auto-call — call manually from Admin panel
-      } else {
+      } else if (this.activeInitScope !== null) {
+        this.activeInitScope = null;
         this.cleanupListeners();
       }
     });
@@ -591,7 +601,11 @@ export class StateService implements OnDestroy {
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
 
-    const usersSub = onSnapshot(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), (s) => {
+    // Avatar rendering only needs a bounded directory. An unbounded listener here
+    // re-read every user profile on each reconnect and was a major Spark amplifier.
+    const usersSub = onSnapshot(
+      query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), limit(100)),
+      (s) => {
         const cacheMap = new Map<string, {avatarStyle: string, photoURL: string}>();
         s.forEach(d => {
             const data = d.data();
@@ -604,11 +618,12 @@ export class StateService implements OnDestroy {
         });
         if (!isCurrentInit()) return;
         this.usersInfoCache.set(cacheMap);
-    }, (error: any) => {
+      }, (error: any) => {
       if (!isCurrentInit()) return;
       console.warn('Users Cache listener error:', error.message);
       if (error.code === 'permission-denied') this.permissionError.set(true);
-    });
+      }
+    );
 
     this.usersInfoSub = () => {
       usersSub();

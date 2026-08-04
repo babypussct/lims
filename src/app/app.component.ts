@@ -383,7 +383,7 @@ export class AppComponent implements OnDestroy {
 
     // Start idle timeout watcher and notifications when auth state is ready and logged in
     effect(() => {
-      if (this.auth.isAuthReady() && this.auth.currentUser()) {
+      if (this.auth.isAuthReady() && this.auth.currentUserUid()) {
         this.idleService.startWatching();
         this.notificationService.startListener();
       } else {

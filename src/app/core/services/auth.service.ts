@@ -155,6 +155,8 @@ export class AuthService {
   // CRED_KEY removed: password caching in localStorage was a security vulnerability.
 
   currentUser = signal<UserProfile | null>(null);
+  /** Stable auth identity used by app-wide effects; profile snapshots may change frequently. */
+  readonly currentUserUid = computed(() => this.currentUser()?.uid ?? null);
   isAuthReady = signal<boolean>(false);
   /** true trong khi đang xử lý token trả về từ Google redirect — dùng để ẩn màn hình Login */
   isProcessingRedirect = signal<boolean>(false);
@@ -207,6 +209,9 @@ export class AuthService {
 
   private userUnsub: any = null;
   private rolesUnsub: any = null;
+  private rolesInitPromise: Promise<void> | null = null;
+  private rolesListenerGeneration = 0;
+  private rolesSessionActive = false;
   readonly rolesConfig = signal<Record<string, string[]>>({});
 
   constructor() {
@@ -260,7 +265,7 @@ export class AuthService {
         }
       } else {
         if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
-        if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
+        this.stopRolesConfigListener();
         // Bao phủ cả trường hợp token hết hạn / phiên bị thu hồi ngoài nút Logout.
         this.deltaSync.destroyAll(true);
         this.clearQrLoginCache();
@@ -776,7 +781,7 @@ export class AuthService {
 
   async logout() {
     if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
-    if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
+    this.stopRolesConfigListener();
     try {
         // Hủy listener và xóa mọi cache DeltaSync đã đăng ký trước khi đổi phiên.
         // Điều này ngăn dữ liệu của tài khoản trước xuất hiện trong phiên kế tiếp.
@@ -821,6 +826,7 @@ export class AuthService {
 
   private syncUser(firebaseUser: User) {
     if (this.userUnsub) { this.userUnsub(); }
+    this.rolesSessionActive = true;
     const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
     
     // Đồng bộ cấu hình nhóm quyền động
@@ -981,23 +987,56 @@ export class AuthService {
     return PERMISSION_NAMES[permCode] || permCode;
   }
 
-  private async syncRolesConfig() {
-    if (this.rolesUnsub) { this.rolesUnsub(); }
-    
-    // Khởi tạo các vai trò hệ thống mặc định nếu trống
-    await this.initializeDefaultRolesIfNeeded();
-    
-    const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
-    this.rolesUnsub = onSnapshot(rolesRef, (snap: any) => {
-        const config: Record<string, string[]> = {};
-        snap.forEach((doc: any) => {
-            const data = doc.data();
-            config[doc.id] = data['permissions'] || [];
-        });
-        this.rolesConfig.set(config);
-    }, (err: any) => {
-        console.warn("[Auth] Failed to listen to roles_config:", err);
+  private syncRolesConfig(): Promise<void> {
+    if (this.rolesUnsub) return Promise.resolve();
+    if (this.rolesInitPromise) return this.rolesInitPromise;
+
+    const generation = this.rolesListenerGeneration;
+    const startPromise = (async () => {
+      // Khởi tạo các vai trò hệ thống mặc định nếu trống.
+      await this.initializeDefaultRolesIfNeeded();
+      if (generation !== this.rolesListenerGeneration || !this.rolesSessionActive) return;
+
+      const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
+      const unsubscribe = onSnapshot(rolesRef, (snap: any) => {
+          const config: Record<string, string[]> = {};
+          snap.forEach((doc: any) => {
+              const data = doc.data();
+              config[doc.id] = data['permissions'] || [];
+          });
+          this.rolesConfig.set(config);
+      }, (err: any) => {
+          console.warn("[Auth] Failed to listen to roles_config:", err);
+      });
+
+      if (generation !== this.rolesListenerGeneration || !this.rolesSessionActive) {
+          unsubscribe();
+          return;
+      }
+      this.rolesUnsub = unsubscribe;
+    })();
+
+    const trackedPromise = startPromise.finally(() => {
+      if (this.rolesInitPromise !== trackedPromise) return;
+      this.rolesInitPromise = null;
+      // A logout/login transition may have invalidated the in-flight start.
+      if (this.rolesSessionActive && generation !== this.rolesListenerGeneration && !this.rolesUnsub) {
+          void this.syncRolesConfig().catch(err => {
+              console.warn("[Auth] Failed to resync roles_config:", err);
+          });
+      }
     });
+    this.rolesInitPromise = trackedPromise;
+    return trackedPromise;
+  }
+
+  private stopRolesConfigListener(): void {
+    this.rolesSessionActive = false;
+    this.rolesListenerGeneration++;
+    if (this.rolesUnsub) {
+        this.rolesUnsub();
+        this.rolesUnsub = null;
+    }
   }
 
   private async initializeDefaultRolesIfNeeded() {

@@ -1,16 +1,19 @@
 {
-  "title": "Nhật Ký Cập Nhật Dễ Theo Dõi Hơn",
+  "title": "Giảm Tải Firestore và Ổn Định Phiên Làm Việc",
   "highlights": [
-    "Xem rõ những thay đổi mới nhất của LIMS Cloud trước khi bắt đầu ca làm việc.",
-    "Nội dung tập trung vào lợi ích thực tế cho việc quản lý mẫu, mẻ phân tích và hồ sơ kiểm nghiệm."
+    "Giảm các lần đọc Firestore lặp lại khi đăng nhập và làm việc liên tục.",
+    "Giữ phiên notification và các listener ổn định hơn khi hồ sơ người dùng thay đổi."
   ],
   "features": [
-    "Mở Nhật Ký Cập Nhật để xem nhanh 3 phiên bản mới nhất hoặc xem toàn bộ lịch sử.",
-    "Tìm kiếm theo phiên bản hoặc tên tính năng để tra lại thay đổi cần biết."
+    "Chia sẻ các lần đọc inventory đang chạy và tránh request trùng khi thao tác Bù Kho.",
+    "Giới hạn retry tự động khi Firestore báo vượt quota để tránh khuếch đại lỗi."
   ],
   "improvements": [
-    "Thông tin phiên bản được cập nhật tự động, giúp nội dung hiển thị thống nhất trong toàn hệ thống.",
-    "Lịch sử cập nhật được trình bày gọn hơn, dễ đọc trên cả máy tính và điện thoại."
+    "Listener quyền và danh sách user được khởi tạo theo scope cần thiết, có dọn dẹp đúng vòng đời.",
+    "Đăng ký FCM token có dedupe, cooldown khi lỗi và API idempotent."
   ],
-  "fixes": []
+  "fixes": [
+    "Loại bỏ vòng lặp snapshot user → đăng ký FCM → ghi lại user.",
+    "Loại bỏ lần tải reference standards trùng trên màn hình thống kê."
+  ]
 }

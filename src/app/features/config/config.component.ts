@@ -348,7 +348,7 @@ export class ConfigComponent {
 
   async enableNotifications() {
     try {
-      const token = await this.notificationService.registerCurrentDevicePushToken();
+      const token = await this.notificationService.registerCurrentDevicePushToken({ force: true });
       this.toast.show(token ? 'Đã bật thông báo đẩy trên thiết bị này!' : 'Bạn đã từ chối quyền hoặc trình duyệt không hỗ trợ.', token ? 'success' : 'error');
     } catch (e: any) {
       this.toast.show('Lỗi: ' + e.message, 'error');

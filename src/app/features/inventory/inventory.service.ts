@@ -25,6 +25,7 @@ export class InventoryService {
   private fb = inject(FirebaseService);
   private state = inject(StateService);
   private toast = inject(ToastService);
+  private inFlightItemReads = new Map<string, Promise<InventoryItem[]>>();
 
   // ─── SINGLE SOURCE OF TRUTH ────────────────────────────────────────────────
   // getAllInventory() đọc từ state.inventory() signal (được cập nhật bởi DeltaSync
@@ -63,7 +64,26 @@ export class InventoryService {
     });
 
     if (validIds.length === 0) return [];
-    
+
+    const requestKey = validIds.slice().sort().join('\u001f');
+    const existingRequest = this.inFlightItemReads.get(requestKey);
+    if (existingRequest) return existingRequest;
+
+    const request = this.fetchItemsByIds(validIds);
+    this.inFlightItemReads.set(requestKey, request);
+    void request.finally(() => {
+      if (this.inFlightItemReads.get(requestKey) === request) {
+        this.inFlightItemReads.delete(requestKey);
+      }
+    }).catch(() => {
+      // The original caller receives the Firestore error; this cleanup branch
+      // must not create a second unhandled rejection.
+    });
+    return request;
+  }
+
+  private async fetchItemsByIds(validIds: string[]): Promise<InventoryItem[]> {
+
     const chunks = [];
     const chunkSize = 30; 
 
@@ -77,15 +97,13 @@ export class InventoryService {
     const fetchChunk = async (chunk: string[]) => {
         try {
             const q = query(colRef, where('__name__', 'in', chunk));
-            const snapshot = await Promise.race([
-                getDocs(q),
-                new Promise<never>((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout fetching inventory')), 5000)
-                )
-            ]);
+            // Do not race a local timeout against Firestore: Promise.race would
+            // release callers while the underlying read continued in the SDK,
+            // allowing repeated clicks to create overlapping requests.
+            const snapshot = await getDocs(q);
             snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() } as InventoryItem));
         } catch (e) {
-            console.warn("Chunk fetch failed or timed out (skipping chunk):", chunk, e);
+            console.warn("Chunk fetch failed (skipping chunk):", chunk, e);
         }
     };
 

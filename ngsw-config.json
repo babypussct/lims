@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b02",
-    "title": "Nhật Ký Cập Nhật Dễ Theo Dõi Hơn",
+    "version": "v26.08.04-b03",
+    "title": "Giảm Tải Firestore và Ổn Định Phiên Làm Việc",
     "features": [
-      "Xem rõ những thay đổi mới nhất của LIMS Cloud trước khi bắt đầu ca làm việc.",
-      "Nội dung tập trung vào lợi ích thực tế cho việc quản lý mẫu, mẻ phân tích và hồ sơ kiểm nghiệm.",
-      "Mở Nhật Ký Cập Nhật để xem nhanh 3 phiên bản mới nhất hoặc xem toàn bộ lịch sử.",
-      "Tìm kiếm theo phiên bản hoặc tên tính năng để tra lại thay đổi cần biết.",
-      "Thông tin phiên bản được cập nhật tự động, giúp nội dung hiển thị thống nhất trong toàn hệ thống."
+      "Giảm các lần đọc Firestore lặp lại khi đăng nhập và làm việc liên tục.",
+      "Giữ phiên notification và các listener ổn định hơn khi hồ sơ người dùng thay đổi.",
+      "Chia sẻ các lần đọc inventory đang chạy và tránh request trùng khi thao tác Bù Kho.",
+      "Giới hạn retry tự động khi Firestore báo vượt quota để tránh khuếch đại lỗi.",
+      "Listener quyền và danh sách user được khởi tạo theo scope cần thiết, có dọn dẹp đúng vòng đời."
     ]
   },
   "assetGroups": [

@@ -673,8 +673,6 @@ export class StatisticsComponent {
     this.state.loadAllStandardRequests();
     this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
 
-    this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
-
     effect(() => {
         const active = this.activeTab();
         const consData = this.consumptionData();

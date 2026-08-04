@@ -35,6 +35,12 @@ export class NotificationService {
     private fcmUnsub?: () => void;
     private foregroundGeneration = 0;
     private _allItems: AppNotification[] = [];
+    private pushTokenRegistration?: Promise<string | null>;
+    private pushTokenRegistrationUserId?: string;
+    private registeredPushToken: { userId: string; token: string } | null = null;
+    private pushTokenFailureUserId?: string;
+    private pushTokenFailureAt = 0;
+    private readonly pushTokenFailureCooldownMs = 5 * 60 * 1000;
 
     private readonly _onSwMessage = (event: MessageEvent) => {
         if (event.data?.type === 'SW_NAVIGATE' && typeof event.data.url === 'string') {
@@ -152,6 +158,11 @@ export class NotificationService {
         this.totalCount.set(0);
         this.updateAppBadge(0);
         this.foregroundMessage.set(null);
+        if (!this.auth.currentUser()) {
+            this.registeredPushToken = null;
+            this.pushTokenFailureUserId = undefined;
+            this.pushTokenFailureAt = 0;
+        }
     }
 
     // ── Pagination ─────────────────────────────────────────────────────────────
@@ -300,9 +311,56 @@ export class NotificationService {
         return value === 'success' || value === 'error' || value === 'warning' ? value : 'info';
     }
 
-    async registerCurrentDevicePushToken(): Promise<string | null> {
+    async registerCurrentDevicePushToken(options: { force?: boolean } = {}): Promise<string | null> {
         const user = this.auth.currentUser();
         if (!user) throw new Error('Phiên đăng nhập không hợp lệ.');
+        const force = options.force === true;
+
+        if (!force && this.registeredPushToken?.userId === user.uid) {
+            return this.registeredPushToken.token;
+        }
+
+        if (this.pushTokenRegistration && this.pushTokenRegistrationUserId === user.uid) {
+            return this.pushTokenRegistration;
+        }
+
+        if (!force &&
+            this.pushTokenFailureUserId === user.uid &&
+            Date.now() - this.pushTokenFailureAt < this.pushTokenFailureCooldownMs
+        ) {
+            return null;
+        }
+
+        const userId = user.uid;
+        const registration = (async () => {
+            try {
+                const token = await this.registerCurrentDevicePushTokenInternal(userId);
+                if (token) {
+                    this.registeredPushToken = { userId, token };
+                    this.pushTokenFailureUserId = undefined;
+                    this.pushTokenFailureAt = 0;
+                }
+                return token;
+            } catch (error) {
+                this.pushTokenFailureUserId = userId;
+                this.pushTokenFailureAt = Date.now();
+                throw error;
+            } finally {
+                if (this.pushTokenRegistrationUserId === userId) {
+                    this.pushTokenRegistration = undefined;
+                    this.pushTokenRegistrationUserId = undefined;
+                }
+            }
+        })();
+
+        this.pushTokenRegistration = registration;
+        this.pushTokenRegistrationUserId = userId;
+        return registration;
+    }
+
+    private async registerCurrentDevicePushTokenInternal(userId: string): Promise<string | null> {
+        const user = this.auth.currentUser();
+        if (!user || user.uid !== userId) return null;
 
         const token = await this.fb.requestPushToken();
         if (!token) return null;

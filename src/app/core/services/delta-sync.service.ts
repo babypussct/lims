@@ -55,7 +55,9 @@ const CURSOR_OVERLAP_MS = 1000;
 const MAX_CURSOR_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const DEFAULT_RETRY_INITIAL_MS = 1000;
 const DEFAULT_RETRY_MAX_MS = 30000;
-const DEFAULT_RETRY_ATTEMPTS = Number.POSITIVE_INFINITY;
+// Firestore quota errors must not create an unbounded client-side retry loop.
+// A later app/session initialization can recover after the quota incident is cleared.
+const DEFAULT_RETRY_ATTEMPTS = 3;
 const TERMINAL_ERROR_CODES = new Set([
   'permission-denied',
   'unauthenticated',
