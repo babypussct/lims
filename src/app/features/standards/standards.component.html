@@ -169,7 +169,16 @@
       <!-- HISTORY MODAL -->
       @if (historyStd()) {
         @defer {
-          <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
+          <app-standards-history-modal
+            [historyStd]="historyStd()"
+            [loadingHistory]="loadingHistory()"
+            [historyLogs]="historyLogs()"
+            [isProcessing]="isProcessing()"
+            [hasMoreHistory]="hasMoreHistory()"
+            [loadingMoreHistory]="loadingMoreHistory()"
+            (closeModal)="historyStd.set(null)"
+            (deleteLogEvent)="deleteLog($event)"
+            (loadMoreHistoryEvent)="loadMoreHistory()"></app-standards-history-modal>
         }
       }
 

@@ -12,9 +12,12 @@ import { NotificationCenterService } from '../../../core/services/notification-c
 import { getStandardizedAmount, formatNum, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-amount';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 import { buildStandardBackfillRecords } from '../../../shared/utils/standard-backfill';
+
+const STANDARD_USAGE_HISTORY_PAGE_SIZE = 100;
 
 /**
  * StandardUsageService — Quản lý toàn bộ vòng đời nhật ký sử dụng chuẩn.
@@ -30,6 +33,7 @@ export class StandardUsageService {
   private cache = inject(StandardCacheService);
   private deltaSync = inject(DeltaSyncService);
   private notificationCenter = inject(NotificationCenterService);
+  private readMonitor = inject(FirestoreReadMonitor);
 
   // ─── Listen to Global Usage Logs ─────────────────────────────────────────────
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
@@ -50,12 +54,56 @@ export class StandardUsageService {
   }
 
   // ─── Paginated Queries ────────────────────────────────────────────────────────
-  async getUsageHistory(stdId: string): Promise<UsageLog[]> {
+  async getUsageHistoryPage(
+    stdId: string,
+    pageSize = STANDARD_USAGE_HISTORY_PAGE_SIZE,
+    lastDoc: QueryDocumentSnapshot | null = null
+  ): Promise<{ items: UsageLog[]; lastDoc: QueryDocumentSnapshot | null; hasMore: boolean }> {
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
-    const snapshot = await getDocs(query(logsRef, orderBy('timestamp', 'desc')));
-    return snapshot.docs
+    const constraints: QueryConstraint[] = [
+      orderBy('timestamp', 'desc'),
+      limit(Math.max(1, Math.min(pageSize, 500)))
+    ];
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+
+    const snapshot = await getDocs(query(logsRef, ...constraints));
+    this.readMonitor.record(
+      'getDocs',
+      `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`,
+      snapshot.size,
+      { phase: lastDoc ? 'page' : 'initial' }
+    );
+    return {
+      items: snapshot.docs
       .map(d => ({ id: d.id, ...d.data() } as UsageLog))
-      .filter(log => !log._isDeleted);
+      .filter(log => !log._isDeleted),
+      lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
+      hasMore: snapshot.docs.length === Math.max(1, Math.min(pageSize, 500))
+    };
+  }
+
+  /**
+   * Backward-compatible bounded read for callers that only need the first page.
+   * New UI code should use getUsageHistoryPage() to expose load-more behaviour.
+   */
+  async getUsageHistory(stdId: string, pageSize = STANDARD_USAGE_HISTORY_PAGE_SIZE): Promise<UsageLog[]> {
+    const page = await this.getUsageHistoryPage(stdId, pageSize);
+    return page.items;
+  }
+
+  async getEarliestUsageLog(stdId: string): Promise<UsageLog | null> {
+    const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
+    const snapshot = await getDocs(query(logsRef, orderBy('timestamp', 'asc'), limit(1)));
+    this.readMonitor.record(
+      'getDocs',
+      `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`,
+      snapshot.size,
+      { phase: 'earliest' }
+    );
+    const first = snapshot.docs[0];
+    if (!first) return null;
+    const log = { id: first.id, ...first.data() } as UsageLog;
+    return log._isDeleted ? null : log;
   }
 
   async queryUsageLogsByDateRange(

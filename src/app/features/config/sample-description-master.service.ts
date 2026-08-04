@@ -15,18 +15,43 @@ import { FirebaseService } from '../../core/services/firebase.service';
 @Injectable({ providedIn: 'root' })
 export class SampleDescriptionMasterService {
   private readonly fb = inject(FirebaseService);
+  private readonly cacheTtlMs = 5 * 60 * 1000;
+  private cachedAll: SampleDescriptionMaster[] | null = null;
+  private cachedAt = 0;
+  private inFlight?: Promise<SampleDescriptionMaster[]>;
 
   private get collectionRef() {
     return collection(this.fb.db, `artifacts/${this.fb.APP_ID}/sample_description_master`);
   }
 
-  async getAll(): Promise<SampleDescriptionMaster[]> {
-    const snapshot = await getDocs(query(this.collectionRef, orderBy('name')));
-    return snapshot.docs.map(item => ({
-      id: item.id,
-      ...item.data(),
-      isActive: item.data()['isActive'] !== false
-    } as SampleDescriptionMaster));
+  async getAll(forceRefresh = false): Promise<SampleDescriptionMaster[]> {
+    if (!forceRefresh && this.cachedAll && Date.now() - this.cachedAt < this.cacheTtlMs) {
+      return this.cachedAll;
+    }
+    if (this.inFlight) return this.inFlight;
+
+    const load = (async () => {
+      const snapshot = await getDocs(query(this.collectionRef, orderBy('name')));
+      const items = snapshot.docs.map(item => ({
+        id: item.id,
+        ...item.data(),
+        isActive: item.data()['isActive'] !== false
+      } as SampleDescriptionMaster));
+      this.cachedAll = items;
+      this.cachedAt = Date.now();
+      return items;
+    })();
+    this.inFlight = load;
+    try {
+      return await load;
+    } finally {
+      if (this.inFlight === load) this.inFlight = undefined;
+    }
+  }
+
+  private invalidateCache() {
+    this.cachedAll = null;
+    this.cachedAt = 0;
   }
 
   async getActive(): Promise<SampleDescriptionMaster[]> {
@@ -42,6 +67,7 @@ export class SampleDescriptionMasterService {
       updatedAt: serverTimestamp(),
       updatedBy: actorName || null
     }, { merge: true });
+    this.invalidateCache();
   }
 
   async saveBatch(items: SampleDescriptionMaster[], actorName = ''): Promise<void> {
@@ -59,6 +85,7 @@ export class SampleDescriptionMasterService {
       });
       await batch.commit();
     }
+    this.invalidateCache();
   }
 
   async setActive(item: SampleDescriptionMaster, isActive: boolean, actorName = ''): Promise<void> {

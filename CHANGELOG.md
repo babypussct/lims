@@ -2,7 +2,13 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.04-b05
+## Phiên bản hiện tại: v26.08.04-b06
+
+### v26.08.04-b06
+
+- Lịch sử sử dụng chuẩn tải theo trang 100 bản ghi, có nút tải thêm và vẫn giữ tự tìm bản ghi sớm nhất.
+- Cache 5 phút và chống gọi đồng thời cho danh mục nền mẫu, thiết bị, mô tả mẫu và danh sách người dùng.
+- Ghi nhận read monitor riêng cho các truy vấn lịch sử initial/page/earliest.
 
 ### v26.08.04-b05
 

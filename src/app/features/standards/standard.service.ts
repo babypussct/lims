@@ -141,6 +141,16 @@ export class StandardService {
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {
     return this.usage.getUsageHistory(stdId);
   }
+  async getUsageHistoryPage(
+    stdId: string,
+    pageSize?: number,
+    lastDoc?: QueryDocumentSnapshot | null
+  ): Promise<{ items: UsageLog[]; lastDoc: QueryDocumentSnapshot | null; hasMore: boolean }> {
+    return this.usage.getUsageHistoryPage(stdId, pageSize, lastDoc);
+  }
+  async getEarliestUsageLog(stdId: string): Promise<UsageLog | null> {
+    return this.usage.getEarliestUsageLog(stdId);
+  }
   async queryUsageLogsByDateRange(
     fromTimestamp: number, toTimestamp: number,
     pageSize?: number, lastDoc?: QueryDocumentSnapshot | null

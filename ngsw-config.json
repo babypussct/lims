@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b05",
-    "title": "Tiếp Tục Giảm Firestore Reads và Chặn Read Spike",
+    "version": "v26.08.04-b06",
+    "title": "Phân Trang Lịch Sử và Cache Danh Mục Giảm Firestore Reads",
     "features": [
-      "Bổ sung đo lường read theo collection, listener và nguồn cache để xác định đúng điểm phát sinh quota.",
-      "Giảm các lần tải lại trùng trên Dashboard và dùng lại singleton cache của standard requests.",
-      "Chặn listener nền và các fallback query đọc không giới hạn khi dữ liệu hoặc lịch sử phiên tăng lớn.",
-      "Có thể kiểm tra số liệu read trong phiên qua window.__limsFirestoreReads và sessionStorage.",
-      "Giới hạn listener pending requests và inbox notifications để không đọc lịch sử không cần thiết."
+      "Lịch sử sử dụng chuẩn chỉ tải 100 bản ghi đầu và cho phép tải thêm theo cursor.",
+      "Cache các danh mục nền mẫu, thiết bị, mô tả mẫu và danh sách người dùng trong 5 phút.",
+      "Giữ các listener nền và fallback query ở trạng thái bounded để tránh read spike.",
+      "Màn hình chi tiết chuẩn và modal lịch sử có nút Tải thêm, không mất khả năng xem bản ghi cũ.",
+      "Tự tìm bản ghi sử dụng sớm nhất bằng một truy vấn limit(1) để vẫn giữ logic tự sửa date_opened."
     ]
   },
   "assetGroups": [

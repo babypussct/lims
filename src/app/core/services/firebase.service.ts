@@ -162,12 +162,23 @@ export class FirebaseService {
   }
 
   // --- User Management (New) ---
-  async getAllUsers(): Promise<UserProfile[]> {
+  private readonly usersCacheTtlMs = 5 * 60 * 1000;
+  private usersCache: UserProfile[] | null = null;
+  private usersCacheAt = 0;
+  private usersLoad?: Promise<UserProfile[]>;
+
+  async getAllUsers(forceRefresh = false): Promise<UserProfile[]> {
+    if (!forceRefresh && this.usersCache && Date.now() - this.usersCacheAt < this.usersCacheTtlMs) {
+        return this.usersCache;
+    }
+    if (this.usersLoad) return this.usersLoad;
+
+    const load = (async () => {
     try {
         const colRef = collection(this.db, `artifacts/${this.APP_ID}/users`);
         const snapshot = await getDocs(colRef);
         this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/users`, snapshot.size);
-        return snapshot.docs.map(d => {
+        const users = snapshot.docs.map(d => {
             const data = d.data();
             return {
                 uid: d.id,
@@ -179,10 +190,25 @@ export class FirebaseService {
                 customPermissions: data['customPermissions'] || []
             };
         });
+        this.usersCache = users;
+        this.usersCacheAt = Date.now();
+        return users;
     } catch (e: any) {
         console.warn("Could not fetch users (likely permission issue):", e.code);
         throw e;
     }
+    })();
+    this.usersLoad = load;
+    try {
+        return await load;
+    } finally {
+        if (this.usersLoad === load) this.usersLoad = undefined;
+    }
+  }
+
+  private invalidateUsersCache() {
+      this.usersCache = null;
+      this.usersCacheAt = 0;
   }
 
   async updateUserPermissions(uid: string, role: string, permissions: string[], roleId?: string, customPermissions?: string[]) {
@@ -195,6 +221,7 @@ export class FirebaseService {
           updateData.customPermissions = customPermissions;
       }
       await updateDoc(ref, updateData);
+      this.invalidateUsersCache();
   }
 
   async getRolesConfig(): Promise<any[]> {

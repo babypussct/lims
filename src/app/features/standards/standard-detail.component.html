@@ -347,6 +347,13 @@
                                         }
                                     </tbody>
                                 </table>
+                                @if(hasMoreHistory()) {
+                                    <div class="p-4 text-center border-t border-slate-100 dark:border-slate-700">
+                                        <button (click)="loadMoreHistory()" [disabled]="loadingMoreHistory()" class="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-50 transition">
+                                            @if(loadingMoreHistory()) { <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải... } @else { Tải thêm lịch sử }
+                                        </button>
+                                    </div>
+                                }
                             }
                         }
 

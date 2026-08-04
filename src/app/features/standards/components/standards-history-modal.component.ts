@@ -48,11 +48,18 @@ import { formatNum } from '../../../shared/utils/utils';
                                         <td class="px-6 py-4 text-center"><button (click)="onDeleteLog(log)" [disabled]="isProcessing()" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 disabled:opacity-50"><i class="fa-solid fa-trash"></i></button></td>
                                     }
                                 </tr> 
-                            } @empty { 
+                        } @empty {
                                 <tr><td colspan="5" class="p-8 text-center text-slate-400 dark:text-slate-500 italic">Chưa có dữ liệu.</td></tr> 
                             }
                         }
                   </tbody></table>
+                  @if(hasMoreHistory()) {
+                    <div class="p-4 text-center border-t border-slate-100 dark:border-slate-800">
+                      <button (click)="loadMoreHistoryEvent.emit()" [disabled]="loadingMoreHistory()" class="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-50 transition">
+                        @if(loadingMoreHistory()) { <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải... } @else { Tải thêm lịch sử }
+                      </button>
+                    </div>
+                  }
                </div>
             </div>
          </div>
@@ -66,9 +73,12 @@ export class StandardsHistoryModalComponent {
   historyLogs = input<UsageLog[]>([]);
   loadingHistory = input<boolean>(false);
   isProcessing = input<boolean>(false);
+  hasMoreHistory = input<boolean>(false);
+  loadingMoreHistory = input<boolean>(false);
 
   closeModal = output<void>();
   deleteLogEvent = output<UsageLog>();
+  loadMoreHistoryEvent = output<void>();
 
   formatNum = formatNum;
 

@@ -25,7 +25,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 import { PrintService } from '../../core/services/print.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
-import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { QueryDocumentSnapshot, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
 
 @Component({
@@ -76,8 +76,13 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     usageLogs = signal<UsageLog[]>([]);
     loadingHistory = signal(false);
+    loadingMoreHistory = signal(false);
+    hasMoreHistory = signal(false);
     isProcessing = signal(false);
     allStandardsCache = signal<ReferenceStandard[]>([]);
+
+    private readonly usageHistoryPageSize = 100;
+    private historyLastDoc: QueryDocumentSnapshot | null = null;
 
     activeTab = signal<'usage' | 'related'>('usage');
 
@@ -250,25 +255,58 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async loadHistory(id: string) {
         this.loadingHistory.set(true);
+        this.historyLastDoc = null;
+        this.hasMoreHistory.set(false);
         try {
-            const logs = await this.stdService.getUsageHistory(id);
-            this.usageLogs.set(logs);
+            const page = await this.stdService.getUsageHistoryPage(id, this.usageHistoryPageSize);
+            this.usageLogs.set(page.items);
+            this.historyLastDoc = page.lastDoc;
+            this.hasMoreHistory.set(page.hasMore);
 
             // SELF-HEALING (Cách 1): Cập nhật ngầm ngày mở nắp nếu chưa có
             const std = this.standard();
-            if (std && !std.date_opened && logs.length > 0) {
-                const earliestLog = logs.reduce((min, log) => {
-                    const logTime = new Date(log.date).getTime();
-                    const minTime = new Date(min.date).getTime();
-                    return logTime < minTime ? log : min;
-                }, logs[0]);
+            if (std && !std.date_opened && page.items.length > 0) {
+                const earliestLog = page.hasMore
+                    ? await this.stdService.getEarliestUsageLog(id)
+                    : page.items.reduce((min, log) => {
+                        const logTime = new Date(log.date).getTime();
+                        const minTime = new Date(min.date).getTime();
+                        return logTime < minTime ? log : min;
+                    }, page.items[0]);
 
-                this.autoHealDateOpened(std.id, earliestLog.date);
+                if (earliestLog) this.autoHealDateOpened(std.id, earliestLog.date);
             }
         } catch (error) {
             console.error('Failed to load history:', error);
         } finally {
             this.loadingHistory.set(false);
+        }
+    }
+
+    async loadMoreHistory() {
+        const id = this.standardId();
+        if (!id || !this.hasMoreHistory() || !this.historyLastDoc || this.loadingMoreHistory()) return;
+
+        this.loadingMoreHistory.set(true);
+        try {
+            const page = await this.stdService.getUsageHistoryPage(
+                id,
+                this.usageHistoryPageSize,
+                this.historyLastDoc
+            );
+            if (id !== this.standardId()) return;
+
+            const existingIds = new Set(this.usageLogs().map(log => log.id));
+            this.usageLogs.update(logs => [
+                ...logs,
+                ...page.items.filter(log => !existingIds.has(log.id))
+            ]);
+            this.historyLastDoc = page.lastDoc;
+            this.hasMoreHistory.set(page.hasMore);
+        } catch (error) {
+            console.error('Failed to load more history:', error);
+        } finally {
+            this.loadingMoreHistory.set(false);
         }
     }
 

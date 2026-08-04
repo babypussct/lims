@@ -16,7 +16,7 @@ import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { PrintService } from '../../core/services/print.service';
 import { ProgressService } from '../../core/services/progress.service';
-import { Unsubscribe } from 'firebase/firestore';
+import { QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
 
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
@@ -279,6 +279,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
   historyStd = signal<ReferenceStandard | null>(null);
   historyLogs = signal<UsageLog[]>([]);
   loadingHistory = signal(false);
+  loadingMoreHistory = signal(false);
+  hasMoreHistory = signal(false);
+  private readonly usageHistoryPageSize = 100;
+  private historyLastDoc: QueryDocumentSnapshot | null = null;
 
   showModal = signal(false);
   isEditing = signal(false);
@@ -859,11 +863,40 @@ export class StandardsComponent implements OnInit, OnDestroy {
   async viewHistory(std: ReferenceStandard) {
       this.historyStd.set(std);
       this.loadingHistory.set(true);
+      this.historyLastDoc = null;
+      this.hasMoreHistory.set(false);
       try {
-          const logs = await this.stdService.getUsageHistory(std.id);
-          this.historyLogs.set(logs);
+          const page = await this.stdService.getUsageHistoryPage(std.id, this.usageHistoryPageSize);
+          this.historyLogs.set(page.items);
+          this.historyLastDoc = page.lastDoc;
+          this.hasMoreHistory.set(page.hasMore);
       } finally {
           this.loadingHistory.set(false);
+      }
+  }
+
+  async loadMoreHistory() {
+      const std = this.historyStd();
+      if (!std || !this.hasMoreHistory() || !this.historyLastDoc || this.loadingMoreHistory()) return;
+
+      this.loadingMoreHistory.set(true);
+      try {
+          const page = await this.stdService.getUsageHistoryPage(
+              std.id,
+              this.usageHistoryPageSize,
+              this.historyLastDoc
+          );
+          if (this.historyStd()?.id !== std.id) return;
+
+          const existingIds = new Set(this.historyLogs().map(log => log.id));
+          this.historyLogs.update(logs => [
+              ...logs,
+              ...page.items.filter(log => !existingIds.has(log.id))
+          ]);
+          this.historyLastDoc = page.lastDoc;
+          this.hasMoreHistory.set(page.hasMore);
+      } finally {
+          this.loadingMoreHistory.set(false);
       }
   }
 

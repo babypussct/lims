@@ -7,25 +7,52 @@ import { MatrixType } from '../../core/models/sop.model';
 @Injectable({ providedIn: 'root' })
 export class MatrixTypeService {
   private fb = inject(FirebaseService);
+  private readonly cacheTtlMs = 5 * 60 * 1000;
+  private cachedAll: MatrixType[] | null = null;
+  private cachedAt = 0;
+  private inFlight?: Promise<MatrixType[]>;
 
   private get colRef() {
     return collection(this.fb.db, `artifacts/${this.fb.APP_ID}/matrix_types`);
   }
 
-  async getAll(): Promise<MatrixType[]> {
-    const q = query(this.colRef, orderBy('name'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as MatrixType));
+  async getAll(forceRefresh = false): Promise<MatrixType[]> {
+    if (!forceRefresh && this.cachedAll && Date.now() - this.cachedAt < this.cacheTtlMs) {
+      return this.cachedAll;
+    }
+    if (this.inFlight) return this.inFlight;
+
+    const load = (async () => {
+      const q = query(this.colRef, orderBy('name'));
+      const snap = await getDocs(q);
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as MatrixType));
+      this.cachedAll = items;
+      this.cachedAt = Date.now();
+      return items;
+    })();
+    this.inFlight = load;
+    try {
+      return await load;
+    } finally {
+      if (this.inFlight === load) this.inFlight = undefined;
+    }
+  }
+
+  private invalidateCache() {
+    this.cachedAll = null;
+    this.cachedAt = 0;
   }
 
   async save(matrix: MatrixType): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/matrix_types/${matrix.id}`);
     await setDoc(ref, { ...matrix, lastUpdated: serverTimestamp() });
+    this.invalidateCache();
   }
 
   async delete(id: string): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/matrix_types/${id}`);
     await deleteDoc(ref);
+    this.invalidateCache();
   }
 
   async toggleDefault(item: MatrixType): Promise<void> {
@@ -42,6 +69,7 @@ export class MatrixTypeService {
       }
     }
     await batch.commit();
+    this.invalidateCache();
   }
 
   async seedDefaults(): Promise<void> {
