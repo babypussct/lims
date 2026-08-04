@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b03",
-    "title": "Giảm Tải Firestore và Ổn Định Phiên Làm Việc",
+    "version": "v26.08.04-b04",
+    "title": "Đo Lường và Tiếp Tục Giảm Firestore Reads",
     "features": [
-      "Giảm các lần đọc Firestore lặp lại khi đăng nhập và làm việc liên tục.",
-      "Giữ phiên notification và các listener ổn định hơn khi hồ sơ người dùng thay đổi.",
-      "Chia sẻ các lần đọc inventory đang chạy và tránh request trùng khi thao tác Bù Kho.",
-      "Giới hạn retry tự động khi Firestore báo vượt quota để tránh khuếch đại lỗi.",
-      "Listener quyền và danh sách user được khởi tạo theo scope cần thiết, có dọn dẹp đúng vòng đời."
+      "Bổ sung đo lường read theo collection, listener và nguồn cache để xác định đúng điểm phát sinh quota.",
+      "Giảm các lần tải lại trùng trên Dashboard và dùng lại singleton cache của standard requests.",
+      "Có thể kiểm tra số liệu read trong phiên qua window.__limsFirestoreReads và sessionStorage.",
+      "Giới hạn listener purchase requests và system updates để không đọc lịch sử không cần thiết.",
+      "DeltaSync ghi nhận initial read, delta read và snapshot từ cache mà không tạo thêm Firestore request."
     ]
   },
   "assetGroups": [

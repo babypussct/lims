@@ -1,19 +1,19 @@
 {
-  "title": "Giảm Tải Firestore và Ổn Định Phiên Làm Việc",
+  "title": "Đo Lường và Tiếp Tục Giảm Firestore Reads",
   "highlights": [
-    "Giảm các lần đọc Firestore lặp lại khi đăng nhập và làm việc liên tục.",
-    "Giữ phiên notification và các listener ổn định hơn khi hồ sơ người dùng thay đổi."
+    "Bổ sung đo lường read theo collection, listener và nguồn cache để xác định đúng điểm phát sinh quota.",
+    "Giảm các lần tải lại trùng trên Dashboard và dùng lại singleton cache của standard requests."
   ],
   "features": [
-    "Chia sẻ các lần đọc inventory đang chạy và tránh request trùng khi thao tác Bù Kho.",
-    "Giới hạn retry tự động khi Firestore báo vượt quota để tránh khuếch đại lỗi."
+    "Có thể kiểm tra số liệu read trong phiên qua window.__limsFirestoreReads và sessionStorage.",
+    "Giới hạn listener purchase requests và system updates để không đọc lịch sử không cần thiết."
   ],
   "improvements": [
-    "Listener quyền và danh sách user được khởi tạo theo scope cần thiết, có dọn dẹp đúng vòng đời.",
-    "Đăng ký FCM token có dedupe, cooldown khi lỗi và API idempotent."
+    "DeltaSync ghi nhận initial read, delta read và snapshot từ cache mà không tạo thêm Firestore request.",
+    "Các luồng Inventory, State, Notification và FirebaseService được ghi nhận read theo collection."
   ],
   "fixes": [
-    "Loại bỏ vòng lặp snapshot user → đăng ký FCM → ghi lại user.",
-    "Loại bỏ lần tải reference standards trùng trên màn hình thống kê."
+    "Dedupe tải reference standards và all standard requests trong 2 phút theo phiên và scope quyền.",
+    "Không để Dashboard phát sinh query full collection thứ hai khi singleton standard requests đã sẵn sàng."
   ]
 }

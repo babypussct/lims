@@ -7,6 +7,7 @@ import {
     query, where, onSnapshot, Unsubscribe, deleteDoc
 } from 'firebase/firestore';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
+import { FirestoreReadMonitor } from './firestore-read-monitor.service';
 
 // Notifications older than 15 days are auto-cleaned up on listener start
 const CLEANUP_AGE_MS = 15 * 24 * 60 * 60 * 1000;
@@ -16,6 +17,7 @@ export class NotificationService {
     private fb = inject(FirebaseService);
     private auth = inject(AuthService);
     private router = inject(Router);
+    private readMonitor = inject(FirestoreReadMonitor);
 
     // Reactive state
     notifications = signal<AppNotification[]>([]);
@@ -84,7 +86,17 @@ export class NotificationService {
         // Single query: only this user's own notification documents
         const q = query(colRef, where('recipientUid', '==', user.uid));
 
+        let isFirstSnapshot = true;
         this.unsub = onSnapshot(q, (snapshot) => {
+            this.readMonitor.record(
+                'onSnapshot',
+                `artifacts/${this.fb.APP_ID}/notifications`,
+                isFirstSnapshot
+                    ? snapshot.size
+                    : snapshot.docChanges().filter(change => change.type !== 'removed').length,
+                { phase: isFirstSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
+            );
+            isFirstSnapshot = false;
             const items: AppNotification[] = [];
             snapshot.forEach(d => items.push({ ...d.data(), id: d.id } as AppNotification));
 

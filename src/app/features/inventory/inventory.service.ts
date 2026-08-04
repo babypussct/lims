@@ -12,6 +12,7 @@ import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.mod
 import { ToastService } from '../../core/services/toast.service';
 import { Log } from '../../core/models/log.model';
 import { normalizeInventoryItem } from '../../shared/utils/utils';
+import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor.service';
 
 
 export interface InventoryPage {
@@ -25,6 +26,7 @@ export class InventoryService {
   private fb = inject(FirebaseService);
   private state = inject(StateService);
   private toast = inject(ToastService);
+  private readMonitor = inject(FirestoreReadMonitor);
   private inFlightItemReads = new Map<string, Promise<InventoryItem[]>>();
 
   // ─── SINGLE SOURCE OF TRUTH ────────────────────────────────────────────────
@@ -101,6 +103,7 @@ export class InventoryService {
             // release callers while the underlying read continued in the SDK,
             // allowing repeated clicks to create overlapping requests.
             const snapshot = await getDocs(q);
+            this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapshot.size);
             snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() } as InventoryItem));
         } catch (e) {
             console.warn("Chunk fetch failed (skipping chunk):", chunk, e);
@@ -116,6 +119,7 @@ export class InventoryService {
       const q = query(colRef, orderBy('stock', 'asc'), limit(limitCount * 4)); 
       
       const snapshot = await getDocs(q);
+      this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapshot.size);
       const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
       const lowItems = items.filter(i => i.stock <= (i.threshold || 5));
       
@@ -129,6 +133,7 @@ export class InventoryService {
       // Try querying by GTIN field
       const qGtin = query(colRef, where('gtin', '==', gtin), limit(1));
       const snapGtin = await getDocs(qGtin);
+      this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapGtin.size);
       if (!snapGtin.empty) {
           return { id: snapGtin.docs[0].id, ...snapGtin.docs[0].data() } as InventoryItem;
       }
@@ -136,6 +141,7 @@ export class InventoryService {
       // Fallback: try querying by ref_code (some systems store GTIN there)
       const qRef = query(colRef, where('ref_code', '==', gtin), limit(1));
       const snapRef = await getDocs(qRef);
+      this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapRef.size);
       if (!snapRef.empty) {
           return { id: snapRef.docs[0].id, ...snapRef.docs[0].data() } as InventoryItem;
       }
@@ -177,6 +183,7 @@ export class InventoryService {
 
     const q = query(colRef, ...constraints);
     const snapshot = await getDocs(q);
+    this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapshot.size);
     
     const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
     
@@ -207,6 +214,7 @@ export class InventoryService {
     );
 
     const snapshot = await getDocs(q);
+    this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/logs`, snapshot.size);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Log));
   }
 
@@ -214,6 +222,7 @@ export class InventoryService {
       const ref = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemId, 'history');
       const q = query(ref, orderBy('timestamp', 'desc'), limit(500));
       const snapshot = await getDocs(q);
+      this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory/${itemId}/history`, snapshot.size);
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StockHistoryItem));
   }
 

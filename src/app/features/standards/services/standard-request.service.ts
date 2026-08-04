@@ -4,7 +4,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDoc, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
-  where, Unsubscribe, onSnapshot, getDocs
+  where, limit, Unsubscribe, onSnapshot, getDocs
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus } from '../../../core/models/standard.model';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
@@ -23,6 +23,7 @@ import {
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 
 /**
  * StandardRequestService — Vòng đời đầy đủ của StandardRequest.
@@ -40,6 +41,7 @@ export class StandardRequestService {
   private cache = inject(StandardCacheService);
   private deltaSync = inject(DeltaSyncService);
   private notificationCenter = inject(NotificationCenterService);
+  private readMonitor = inject(FirestoreReadMonitor);
 
   constructor() {
     // Cleanup singleton khi user logout hoặc đổi account
@@ -109,6 +111,18 @@ export class StandardRequestService {
   }
 
   /**
+   * Reuse the singleton listener's initial read when a caller needs the full
+   * request history for statistics. Returning null means that the listener is
+   * not available/ready and the caller may fall back to a direct query.
+   */
+  async getRequestsFromListenerCache(): Promise<StandardRequest[] | null> {
+    const cacheKey = this._getCacheKey(this._getRoleKey());
+    if (!this.deltaSync.getSingletonStatus(cacheKey)) return null;
+    if (!await this.deltaSync.waitForSingletonReady(cacheKey)) return null;
+    return this.getRequestsFromCache();
+  }
+
+  /**
    * @deprecated Dùng startRequestsListener() thay thế.
    */
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
@@ -119,9 +133,22 @@ export class StandardRequestService {
 
   listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
     const reqRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests`);
-    const q = query(reqRef, where('status', 'in', ['PENDING', 'ORDERED']));
+    // The admin board only needs the latest actionable requests. Keep the
+    // realtime listener bounded so an old purchase-request history cannot
+    // become a recurring read amplifier after reconnects.
+    const q = query(reqRef, where('status', 'in', ['PENDING', 'ORDERED']), limit(100));
     
+    let isFirstSnapshot = true;
     return onSnapshot(q, (snapshot: any) => {
+      this.readMonitor.record(
+        'onSnapshot',
+        `artifacts/${this.fb.APP_ID}/purchase_requests`,
+        isFirstSnapshot
+          ? snapshot.size
+          : snapshot.docChanges().filter((change: any) => change.type !== 'removed').length,
+        { phase: isFirstSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata?.fromCache }
+      );
+      isFirstSnapshot = false;
       const reqs: PurchaseRequest[] = [];
       snapshot.forEach((d: any) => reqs.push({ ...d.data(), id: d.id } as PurchaseRequest));
       callback(reqs);

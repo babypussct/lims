@@ -9,7 +9,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { CategoryItem, PrintConfig } from '../../../core/models/config.model';
 import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
-import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 
@@ -200,7 +200,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   listenSystemUpdates() {
       const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
-      const q = query(updatesRef, orderBy('timestamp', 'desc'));
+      const q = query(updatesRef, orderBy('timestamp', 'desc'), limit(50));
       this.systemUpdatesSub = onSnapshot(q, (snap) => {
           this.systemUpdates.set(snap.docs.map(d => {
               const data = d.data();

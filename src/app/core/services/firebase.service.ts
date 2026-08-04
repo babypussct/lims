@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
@@ -15,6 +15,7 @@ import { HealthCheckItem } from '../models/config.model';
 import type { UserProfile } from './auth.service'; 
 import { environment } from '../../../environments/environment';
 import { getAuth } from 'firebase/auth';
+import { FirestoreReadMonitor } from './firestore-read-monitor.service';
 
 export interface MetadataSyncEventInput {
   action?: string;
@@ -31,6 +32,7 @@ export class FirebaseService {
   public messaging: Messaging | null = null;
   public APP_ID: string;
   private storage: FirebaseStorage | null = null;
+  private readMonitor = inject(FirestoreReadMonitor);
 
   private readonly APP_ID_KEY = 'lims_app_id';
 
@@ -164,6 +166,7 @@ export class FirebaseService {
     try {
         const colRef = collection(this.db, `artifacts/${this.APP_ID}/users`);
         const snapshot = await getDocs(colRef);
+        this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/users`, snapshot.size);
         return snapshot.docs.map(d => {
             const data = d.data();
             return {
@@ -198,6 +201,7 @@ export class FirebaseService {
       try {
           const colRef = collection(this.db, `artifacts/${this.APP_ID}/roles_config`);
           const snapshot = await getDocs(colRef);
+          this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/roles_config`, snapshot.size);
           return snapshot.docs.map(d => ({
               id: d.id,
               ...d.data()
@@ -240,6 +244,7 @@ export class FirebaseService {
         const colRef = collection(this.db, `artifacts/${this.APP_ID}/${col}`);
         // getCountFromServer: costs only 1 read regardless of collection size
         const countSnap = await getCountFromServer(colRef);
+        this.readMonitor.record('aggregate', `artifacts/${this.APP_ID}/${col}`, 1);
         const count = countSnap.data().count;
         details[col] = { count, sizeKB: parseFloat((count * 1.2).toFixed(2)) }; // ~1.2KB/doc estimate
         totalDocs += count;
@@ -265,6 +270,7 @@ export class FirebaseService {
     const q = query(colRef, where('timestamp', '<', cutoff), limit(10000));
     
     const snap = await getDocs(q);
+    this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/${collectionName}`, snap.size);
     
     return snap.docs.map(d => {
         const data = d.data();
@@ -353,7 +359,9 @@ export class FirebaseService {
   // --- Backup & Restore ---
   async exportData(): Promise<any> {
     const sopsSnap = await getDocs(collection(this.db, `artifacts/${this.APP_ID}/sops`));
+    this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/sops`, sopsSnap.size);
     const invSnap = await getDocs(collection(this.db, `artifacts/${this.APP_ID}/inventory`));
+    this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/inventory`, invSnap.size);
 
     const sops = sopsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const inventory = invSnap.docs.map(d => ({ id: d.id, ...d.data() }));

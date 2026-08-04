@@ -12,6 +12,7 @@ import { ConfirmationService } from './confirmation.service';
 import { CalculatorService } from './calculator.service';
 import { buildScopedDeltaKey, DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
 import { StatsService } from './stats.service';
+import { FirestoreReadMonitor } from './firestore-read-monitor.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -48,6 +49,7 @@ export class StateService implements OnDestroy {
   private deltaSync = inject(DeltaSyncService);
   private targetService = inject(TargetService);
   private statsService = inject(StatsService);
+  private readMonitor = inject(FirestoreReadMonitor);
 
   private listeners: Unsubscribe[] = [];
   private initGeneration = 0;
@@ -60,6 +62,11 @@ export class StateService implements OnDestroy {
   private activeInitScope: string | null | undefined;
   private globalLogsCache: Log[] = [];
   private personalLogsCache: Log[] = [];
+  private readonly ON_DEMAND_CACHE_TTL_MS = 2 * 60 * 1000;
+  private allStandardRequestsLoad?: Promise<void>;
+  private allStandardRequestsLoadedAt = 0;
+  private referenceStandardsLoad?: Promise<void>;
+  private referenceStandardsLoadedAt = 0;
 
   // --- DATA SIGNALS ---
   inventory = signal<InventoryItem[]>([]);
@@ -111,7 +118,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.04-b03');
+  systemVersion = signal<string>('v26.08.04-b04');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -255,6 +262,10 @@ export class StateService implements OnDestroy {
     this.usersInfoSub = undefined;
     this.globalLogsCache = [];
     this.personalLogsCache = [];
+    this.allStandardRequestsLoad = undefined;
+    this.allStandardRequestsLoadedAt = 0;
+    this.referenceStandardsLoad = undefined;
+    this.referenceStandardsLoadedAt = 0;
     if (this.sysConfigSub) {
       this.sysConfigSub();
       this.sysConfigSub = undefined;
@@ -358,8 +369,20 @@ export class StateService implements OnDestroy {
 
     // 3. Requests Listeners
     if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
+      const requestsPath = `artifacts/${this.fb.APP_ID}/requests`;
+      let isFirstRequestsSnapshot = true;
       const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')),
-        (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); if (!isCurrentInit()) return; this.requests.set(items); }, handleError('Requests'));
+        (s) => {
+          this.readMonitor.record(
+            'onSnapshot',
+            requestsPath,
+            isFirstRequestsSnapshot
+              ? s.size
+              : s.docChanges().filter(change => change.type !== 'removed').length,
+            { phase: isFirstRequestsSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache }
+          );
+          isFirstRequestsSnapshot = false;
+          const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); if (!isCurrentInit()) return; this.requests.set(items); }, handleError('Requests'));
       addListener(reqSub);
     }
 
@@ -406,7 +429,9 @@ export class StateService implements OnDestroy {
 
     // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
     try {
-      const statSnap = await getDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'));
+      const statsPath = `artifacts/${this.fb.APP_ID}/stats/master`;
+      const statSnap = await getDoc(doc(this.fb.db, statsPath));
+      this.readMonitor.record('getDoc', statsPath, 1);
       if (!isCurrentInit()) return;
       if (statSnap.exists()) this.stats.set(statSnap.data() as { totalSopsRun: number; totalItemsUsed: number });
     } catch (e) { console.warn('Stats load error:', e); }
@@ -422,7 +447,14 @@ export class StateService implements OnDestroy {
     let isFirstMetaLoad = true;
     let lastSyncTimes: Record<string, number> = {};
 
-    const sysMetaSub = onSnapshot(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system/metadata`), (docSnap) => {
+    const metadataPath = `artifacts/${this.fb.APP_ID}/system/metadata`;
+    let isFirstMetadataSnapshot = true;
+    const sysMetaSub = onSnapshot(doc(this.fb.db, metadataPath), (docSnap) => {
+      this.readMonitor.record('onSnapshot', metadataPath, 1, {
+        phase: isFirstMetadataSnapshot ? 'initial' : 'delta',
+        fromCache: docSnap.metadata.fromCache
+      });
+      isFirstMetadataSnapshot = false;
       if (!isCurrentInit()) return;
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -448,6 +480,7 @@ export class StateService implements OnDestroy {
         // Delta Sync Logic: mỗi field thay đổi hiện 1 toast riêng, độc lập nhau
         if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
           lastSyncTimes['standards'] = data['standards'];
+          this.referenceStandardsLoadedAt = 0;
           const syncToast = resolveMetadataSyncToast(
             'standards',
             data['standards'],
@@ -603,9 +636,20 @@ export class StateService implements OnDestroy {
 
     // Avatar rendering only needs a bounded directory. An unbounded listener here
     // re-read every user profile on each reconnect and was a major Spark amplifier.
+    const usersPath = `artifacts/${this.fb.APP_ID}/users`;
+    let isFirstUsersSnapshot = true;
     const usersSub = onSnapshot(
       query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), limit(100)),
       (s) => {
+        this.readMonitor.record(
+          'onSnapshot',
+          usersPath,
+          isFirstUsersSnapshot
+            ? s.size
+            : s.docChanges().filter(change => change.type !== 'removed').length,
+          { phase: isFirstUsersSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache }
+        );
+        isFirstUsersSnapshot = false;
         const cacheMap = new Map<string, {avatarStyle: string, photoURL: string}>();
         s.forEach(d => {
             const data = d.data();
@@ -654,7 +698,9 @@ export class StateService implements OnDestroy {
     // Background: fetch only '_metadata' to check if we need to download everything
     try {
       const base = `artifacts/${this.fb.APP_ID}/config`;
+      const metadataPath = `${base}/_metadata`;
       const metaSnap = await getDoc(doc(this.fb.db, base, '_metadata'));
+      this.readMonitor.record('getDoc', metadataPath, 1);
       if (!isLoadActive()) return;
 
       const serverVersion = metaSnap.exists() ? metaSnap.data()['lastUpdated'] || 0 : 0;
@@ -688,6 +734,10 @@ export class StateService implements OnDestroy {
         getDoc(doc(this.fb.db, base, 'categories')),
         getDoc(doc(this.fb.db, base, 'system')),
       ]);
+      this.readMonitor.record('getDoc', `${base}/print`, 1);
+      this.readMonitor.record('getDoc', `${base}/safety`, 1);
+      this.readMonitor.record('getDoc', `${base}/categories`, 1);
+      this.readMonitor.record('getDoc', `${base}/system`, 1);
       if (!isLoadActive()) return;
 
       if (printSnap.exists()) this.printConfig.set(printSnap.data() as PrintConfig);
@@ -736,58 +786,114 @@ export class StateService implements OnDestroy {
   }
 
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
-  async loadAllStandardRequests(): Promise<void> {
-    try {
-      const canReadAll = this.auth.canAssignStandards()
-        || this.auth.canViewStandardLogs()
-        || this.auth.canDeleteStandardLogs();
-      const currentUser = this.auth.currentUser();
-      if (!currentUser) {
-        this.allStandardRequests.set([]);
-        return;
-      }
+  async loadAllStandardRequests(forceRefresh = false): Promise<void> {
+    if (!forceRefresh && this.allStandardRequestsLoadedAt > 0
+      && Date.now() - this.allStandardRequestsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS) return;
+    if (this.allStandardRequestsLoad) return this.allStandardRequestsLoad;
 
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
-      const source = canReadAll
-        ? colRef
-        : query(colRef, where('requestedBy', '==', currentUser.uid));
-      const snap = await getDocs(source);
-      const items = snap.docs
-        .map(d => ({ id: d.id, ...d.data() } as StandardRequest))
-        .filter(request => !request._isDeleted)
-        .sort((a, b) =>
-          (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
-          - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0)
-        );
-      this.allStandardRequests.set(items);
-    } catch (e) { console.warn('loadAllStandardRequests error:', e); }
+    const initGeneration = this.initGeneration;
+    const load = (async () => {
+      try {
+        const canReadAll = this.auth.canAssignStandards()
+          || this.auth.canViewStandardLogs()
+          || this.auth.canDeleteStandardLogs();
+        const currentUser = this.auth.currentUser();
+        if (!currentUser) {
+          this.allStandardRequests.set([]);
+          this.allStandardRequestsLoadedAt = Date.now();
+          return;
+        }
+
+        const requestsPath = `artifacts/${this.fb.APP_ID}/standard_requests`;
+        const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
+        const requestService = this.injector.get(StandardRequestService);
+        const listenerCached = await requestService.getRequestsFromListenerCache();
+        if (listenerCached) {
+          if (initGeneration !== this.initGeneration) return;
+          const items = listenerCached
+            .filter(request => !request._isDeleted)
+            .sort((a, b) =>
+              (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
+              - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0)
+            );
+          this.allStandardRequests.set(items);
+          this.allStandardRequestsLoadedAt = Date.now();
+          this.readMonitor.record('getDocs', requestsPath, listenerCached.length, { phase: 'cache', fromCache: true });
+          return;
+        }
+
+        const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
+        const source = canReadAll
+          ? colRef
+          : query(colRef, where('requestedBy', '==', currentUser.uid));
+        const snap = await getDocs(source);
+        this.readMonitor.record('getDocs', requestsPath, snap.size);
+        if (initGeneration !== this.initGeneration) return;
+        const items = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as StandardRequest))
+          .filter(request => !request._isDeleted)
+          .sort((a, b) =>
+            (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
+            - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0)
+          );
+        this.allStandardRequests.set(items);
+        this.allStandardRequestsLoadedAt = Date.now();
+      } catch (e) { console.warn('loadAllStandardRequests error:', e); }
+    })();
+
+    this.allStandardRequestsLoad = load;
+    try {
+      await load;
+    } finally {
+      if (this.allStandardRequestsLoad === load) this.allStandardRequestsLoad = undefined;
+    }
   }
 
   // ─── standards (reference_standards): Load on-demand for Statistics ───────────
   // Replaces the removed realtime listener on the legacy 'standards' collection.
   // Populates state.standards() signal so statistics.component.ts works unchanged.
-  async loadReferenceStandards(): Promise<void> {
-    try {
-      const cacheKey = buildScopedDeltaKey(
-        'lims_reference_standards_cache_' + this.fb.APP_ID,
-        this.auth.getDeltaCacheScope()
-      );
-      const cached = this.deltaSync.getCache<ReferenceStandard>(cacheKey);
-      if (cached && cached.length > 0) {
-        this.standards.set(cached.filter(standard =>
-          !standard._isDeleted && standard.status !== 'DELETED'
-        ));
-        return;
-      }
+  async loadReferenceStandards(forceRefresh = false): Promise<void> {
+    if (!forceRefresh && this.referenceStandardsLoadedAt > 0
+      && Date.now() - this.referenceStandardsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS) return;
+    if (this.referenceStandardsLoad) return this.referenceStandardsLoad;
 
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      const snap = await getDocs(colRef);
-      const standards = snap.docs
-        .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
-        .filter(standard => !standard._isDeleted && standard.status !== 'DELETED')
-        .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
-      this.standards.set(standards);
-    } catch (e) { console.warn('loadReferenceStandards error:', e); }
+    const initGeneration = this.initGeneration;
+    const load = (async () => {
+      try {
+        const cacheKey = buildScopedDeltaKey(
+          'lims_reference_standards_cache_' + this.fb.APP_ID,
+          this.auth.getDeltaCacheScope()
+        );
+        const cached = this.deltaSync.getCache<ReferenceStandard>(cacheKey);
+        if (!forceRefresh && cached && cached.length > 0) {
+          this.standards.set(cached.filter(standard =>
+            !standard._isDeleted && standard.status !== 'DELETED'
+          ));
+          this.referenceStandardsLoadedAt = Date.now();
+          this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, cached.length, { phase: 'cache', fromCache: true });
+          return;
+        }
+
+        const standardsPath = `artifacts/${this.fb.APP_ID}/reference_standards`;
+        const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+        const snap = await getDocs(colRef);
+        this.readMonitor.record('getDocs', standardsPath, snap.size);
+        if (initGeneration !== this.initGeneration) return;
+        const standards = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+          .filter(standard => !standard._isDeleted && standard.status !== 'DELETED')
+          .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
+        this.standards.set(standards);
+        this.referenceStandardsLoadedAt = Date.now();
+      } catch (e) { console.warn('loadReferenceStandards error:', e); }
+    })();
+
+    this.referenceStandardsLoad = load;
+    try {
+      await load;
+    } finally {
+      if (this.referenceStandardsLoad === load) this.referenceStandardsLoad = undefined;
+    }
   }
 
   async checkSystemHealth() { return true; }

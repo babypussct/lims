@@ -4,6 +4,7 @@ import {
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { timestampToMillis } from '../../shared/utils/timestamp';
+import { FirestoreReadMonitor } from './firestore-read-monitor.service';
 
 export interface DeltaSyncConfig {
   cacheKey: string;
@@ -253,6 +254,7 @@ interface SingletonEntry<T = any> {
 export class DeltaSyncService {
   private firebaseService = inject(FirebaseService);
   private fb = this.firebaseService.db;
+  private readMonitor = inject(FirestoreReadMonitor);
   private _singletons = new Map<string, SingletonEntry>();
   private _diagnostics: DeltaSyncDiagnostic[] = [];
 
@@ -477,6 +479,30 @@ export class DeltaSyncService {
     return this._singletons.get(key)?.status ?? null;
   }
 
+  /**
+   * Wait for an already-registered singleton to finish its initial fetch.
+   * This is intentionally read-free; callers can reuse the singleton cache
+   * instead of issuing a second getDocs() for the same collection.
+   */
+  public waitForSingletonReady(key: string, timeoutMs = 10000): Promise<boolean> {
+    const startedAt = Date.now();
+    return new Promise(resolve => {
+      const check = () => {
+        const status = this._singletons.get(key)?.status;
+        if (status === 'listening') {
+          resolve(true);
+          return;
+        }
+        if (!status || status === 'failed' || Date.now() - startedAt >= timeoutMs) {
+          resolve(false);
+          return;
+        }
+        setTimeout(check, 50);
+      };
+      check();
+    });
+  }
+
   public getDiagnostics(): DeltaSyncDiagnostic[] {
     return this._diagnostics.map(diagnostic => ({ ...diagnostic }));
   }
@@ -652,7 +678,22 @@ export class DeltaSyncService {
         )
       : query(colRef, ...constraints, orderBy('lastUpdated', 'desc'), limit(100));
 
+    let isFirstSnapshot = true;
     return onSnapshot(snapshotQuery, snapshot => {
+      const changedDocuments = snapshot.docChanges()
+        .filter(change => change.type !== 'removed')
+        .length;
+      this.readMonitor.record(
+        'onSnapshot',
+        config.collectionPath,
+        isFirstSnapshot ? snapshot.size : changedDocuments,
+        {
+          phase: isFirstSnapshot ? 'initial' : 'delta',
+          fromCache: snapshot.metadata.fromCache
+        }
+      );
+      isFirstSnapshot = false;
+
       onReady?.();
       let hasChanges = false;
       let observedCursorMillis = cursorMillis;
@@ -697,6 +738,7 @@ export class DeltaSyncService {
       ? query(colRef, ...constraints, limit(maxCacheSize))
       : query(colRef, ...constraints, orderBy(initialOrderField, initialOrderDirection), limit(maxCacheSize));
     const snapshot = await getDocs(initialQuery);
+    this.readMonitor.record('getDocs', config.collectionPath, snapshot.size, { phase: 'initial' });
 
     const items: T[] = [];
     snapshot.forEach(document => {
