@@ -87,4 +87,5 @@ test('standard tag arrays are bounded and custom catalog uses soft delete', () =
   assert.match(tagBlock, /_isDeleted is bool/);
   assert.match(tagBlock, /resource\.data\.locked == true/);
   assert.match(tagBlock, /validManualCatalogItem/);
+  assert.match(rules, /data\.methodName is string/);
 });

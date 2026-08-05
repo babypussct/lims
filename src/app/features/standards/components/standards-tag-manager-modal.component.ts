@@ -3,7 +3,7 @@ import { Component, computed, effect, inject, input, output, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { StandardTagOption } from '../../../core/models/standard.model';
 import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
-import { parseTagKeyStrict } from '../services/standard-tag.utils';
+import { compareChemicalMethodCodes, parseTagKeyStrict } from '../services/standard-tag.utils';
 
 type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccreditationMethodImport']>>;
 
@@ -79,6 +79,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                     <div class="flex items-start justify-between gap-2">
                       <div class="min-w-0">
                         <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate" [title]="option.key">{{option.label}}</div>
+                        @if (option.methodName) { <div class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2" [title]="option.methodName">{{option.methodName}}</div> }
                         <div class="text-[10px] font-mono text-slate-400 truncate" [title]="option.key">{{option.key}}</div>
                         <div class="flex flex-wrap gap-1 mt-1">
                           @if (option.origin === 'ACCREDITATION_SCOPE') { <span class="rounded-full bg-fuchsia-100 text-fuchsia-700 px-1.5 py-0.5 text-[9px] font-black">ACCREDITATION</span> }
@@ -116,7 +117,9 @@ export class StandardsTagManagerModalComponent {
   readonly catalog = inject(StandardTagCatalogService);
   readonly customOptions = computed<StandardTagOption[]>(() => [...this.catalog.lookupMap().values()]
     .filter(option => option.source === 'CUSTOM')
-    .sort((a, b) => a.label.localeCompare(b.label)));
+    .sort((a, b) => a.methodCode && b.methodCode
+      ? compareChemicalMethodCodes(a.methodCode, b.methodCode)
+      : a.label.localeCompare(b.label, 'vi', { sensitivity: 'base', numeric: true })));
 
   name = signal('');
   description = signal('');

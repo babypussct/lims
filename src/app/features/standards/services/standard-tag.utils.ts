@@ -218,6 +218,27 @@ export function normalizeNafi6ChemicalMethodCode(value: unknown): string {
   return `NAFI6/H-${match[1]}.${match[2]}`;
 }
 
+/** Natural numeric ordering: H-1.2, H-1.6, H-1.10 (not lexical 1.10 before 1.2). */
+export function compareChemicalMethodCodes(left: unknown, right: unknown): number {
+  const a = String(left ?? '').trim();
+  const b = String(right ?? '').trim();
+  const aMatch = /^NAFI6\/H-(\d+)\.(\d+)$/i.exec(a);
+  const bMatch = /^NAFI6\/H-(\d+)\.(\d+)$/i.exec(b);
+  if (aMatch && bMatch) {
+    return Number(aMatch[1]) - Number(bMatch[1])
+      || Number(aMatch[2]) - Number(bMatch[2])
+      || a.localeCompare(b);
+  }
+  if (aMatch) return -1;
+  if (bMatch) return 1;
+  return a.localeCompare(b, 'vi', { sensitivity: 'base', numeric: true });
+}
+
+export function formatMethodOptionLabel(option: Pick<StandardTagCatalogItem, 'name' | 'methodName'> | { label: string; methodName?: string }): string {
+  const code = 'label' in option ? option.label : option.name;
+  return option.methodName ? `${code} — ${option.methodName}` : code;
+}
+
 export function buildAccreditationMethodTagId(methodCode: string): string {
   const normalized = normalizeNafi6ChemicalMethodCode(methodCode).toLowerCase();
   return `method-${normalized.replace('/', '-').replace(/[^a-z0-9.-]+/g, '-')}`;

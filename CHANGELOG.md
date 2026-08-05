@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.05-b03
+## Phiên bản hiện tại: v26.08.06-b01
+
+### v26.08.06-b01
+
+#### 🚀 Tính năng mới
+
+- **Catalog 119 phương pháp hóa học:** Chỉ hiển thị các mã NAFI6/H-* được duyệt; loại bỏ mục nhóm/chỉ tiêu không phải nhãn phương pháp khỏi bộ chọn vận hành.
+- **Tên phép thử đi kèm mã:** Mỗi mã có mô tả tiếng Việt dạng “Xác định ...” trong catalog, chip, bộ lọc và export.
+- **Gán nhiều phương pháp:** Một chuẩn và một lần báo trả có thể lưu nhiều method tag trong cùng một mảng.
+
+#### ⚡ Tối ưu & cải tiến
+
+- Sắp xếp numeric tự nhiên: `H-1.2`, `H-1.3`, `H-1.10`, `H-1.11`.
+- Có catalog tĩnh dự phòng để 119 phương pháp hiển thị trước khi Admin seed Firestore.
+- Giữ key lịch sử SOP/nhóm cũ để đọc lại nhưng chỉ cho gán mới phương pháp hóa học.
+
+#### 🐛 Sửa lỗi & an toàn dữ liệu
+
+- Bổ sung và kiểm tra `methodName` trong seed catalog và Firestore Rules.
+- Bổ sung test tên phép thử đủ 119 mã, natural sort và chọn nhiều nhãn.
 
 ### v26.08.05-b03
 

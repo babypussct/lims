@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { StandardRequest, ReferenceStandard } from '../../../../core/models/standard.model';
 import { getStandardizedAmount, formatNum } from '../../../../shared/utils/utils';
 import { StandardTagCatalogService } from '../../services/standard-tag-catalog.service';
-import { MAX_RETURN_TAGS, sanitizeLegacyTagKeys } from '../../services/standard-tag.utils';
+import { MAX_RETURN_TAGS, formatMethodOptionLabel, sanitizeLegacyTagKeys } from '../../services/standard-tag.utils';
 
 export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminReceive' | null;
 
@@ -196,19 +196,20 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
                   <div class="space-y-2 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
                       <div class="flex items-center justify-between">
-                          <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Nhãn phương pháp / SOP <span class="font-medium text-indigo-500">(khuyến nghị, {{returnSopTags().length}}/{{maxReturnTags}})</span></label>
+                           <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Nhãn phương pháp thử <span class="font-medium text-indigo-500">(chọn nhiều, {{returnSopTags().length}}/{{maxReturnTags}})</span></label>
                           <button type="button" (click)="returnSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
                       </div>
-                      <div class="flex gap-2">
+                       <p class="text-[11px] text-indigo-600/80 dark:text-indigo-300/80">Một báo cáo có thể gắn nhiều phương pháp hóa học cùng lúc.</p>
+                       <div class="flex gap-2">
                           <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
                               <option value="">Chọn nhãn trong danh mục...</option>
-                              @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{option.label}}</option> }
+                               @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                           </select>
                           <button type="button" (click)="addReturnTag()" [disabled]="!returnTagToAdd() || returnSopTags().length >= maxReturnTags" class="rounded-xl bg-indigo-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                           @for (key of returnSopTags(); track key) {
-                              <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300">{{tagCatalog.resolveTag(key).label}}<button type="button" (click)="removeReturnTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeReturnTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
                           }
                       </div>
                   </div>
@@ -310,19 +311,20 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
                   <div class="space-y-2 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
                       <div class="flex items-center justify-between">
-                          <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Nhãn quyết định cuối của Admin <span class="font-medium text-indigo-500">({{adminFinalSopTags().length}}/{{maxReturnTags}})</span></label>
+                           <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Phương pháp quyết định cuối của Admin <span class="font-medium text-indigo-500">(chọn nhiều, {{adminFinalSopTags().length}}/{{maxReturnTags}})</span></label>
                           <button type="button" (click)="adminFinalSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
                       </div>
-                      <div class="flex gap-2">
+                       <p class="text-[11px] text-indigo-600/80 dark:text-indigo-300/80">Có thể xác nhận nhiều phương pháp áp dụng cho cùng một chuẩn.</p>
+                       <div class="flex gap-2">
                           <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
                               <option value="">Chọn nhãn trong danh mục...</option>
-                              @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{option.label}}</option> }
+                               @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                           </select>
                           <button type="button" (click)="addAdminTag()" [disabled]="!adminTagToAdd() || adminFinalSopTags().length >= maxReturnTags" class="rounded-xl bg-indigo-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                           @for (key of adminFinalSopTags(); track key) {
-                              <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300">{{tagCatalog.resolveTag(key).label}}<button type="button" (click)="removeAdminTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeAdminTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
                           }
                       </div>
                   </div>
@@ -378,6 +380,10 @@ export class RequestsActionModalsComponent implements OnChanges {
 
   readonly tagOptions = this.tagCatalog.selectableOptions;
   readonly maxReturnTags = MAX_RETURN_TAGS;
+
+  formatTagLabel(option: { label: string; methodName?: string }): string {
+    return formatMethodOptionLabel(option);
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['activeModal'] || changes['request']) {

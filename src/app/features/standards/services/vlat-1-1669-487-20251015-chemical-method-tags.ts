@@ -5,9 +5,11 @@ import {
 import {
   buildAccreditationMethodTagId,
   buildTagKey,
+  compareChemicalMethodCodes,
   deriveMethodSeries,
   normalizeNafi6ChemicalMethodCode,
 } from './standard-tag.utils';
+import { getVlatMethodName } from './vlat-1-1669-20251015-chemical-method-names';
 
 export const VLAT_11669_SOURCE = {
   origin: 'ACCREDITATION_SCOPE' as const,
@@ -83,15 +85,18 @@ const SOURCE_PAGE_OVERRIDES: Readonly<Record<string, string>> = {
   'NAFI6/H-8.45': 'PDF 43, 68',
 };
 
-export const VLAT_11669_CHEMICAL_METHOD_CODES: readonly string[] = METHOD_CODES;
+const SORTED_METHOD_CODES = [...METHOD_CODES].sort(compareChemicalMethodCodes);
 
-export const VLAT_11669_CHEMICAL_METHOD_TAGS: readonly StandardTagCatalogItem[] = METHOD_CODES.map((rawCode, index) => {
+export const VLAT_11669_CHEMICAL_METHOD_CODES: readonly string[] = SORTED_METHOD_CODES;
+
+export const VLAT_11669_CHEMICAL_METHOD_TAGS: readonly StandardTagCatalogItem[] = SORTED_METHOD_CODES.map((rawCode, index) => {
   const methodCode = normalizeNafi6ChemicalMethodCode(rawCode);
   const id = `${VLAT_11669_SOURCE.seedVersion}-${buildAccreditationMethodTagId(methodCode)}`;
   return {
     id,
     name: methodCode,
     code: methodCode,
+    methodName: getVlatMethodName(methodCode),
     origin: VLAT_11669_SOURCE.origin,
     templateKind: VLAT_11669_SOURCE.templateKind,
     methodCode,
@@ -120,4 +125,3 @@ export const VLAT_11669_CHEMICAL_METHOD_DEVICE_MAP: ReadonlyMap<string, readonly
 export function getVlatMethodSeries(methodCode: string): string {
   return deriveMethodSeries(methodCode);
 }
-

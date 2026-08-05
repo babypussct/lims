@@ -28,6 +28,7 @@ import {
   sanitizeLegacyTagKeys,
   MAX_BULK_WRITES,
   deriveMethodSeries,
+  compareChemicalMethodCodes,
   normalizeNafi6ChemicalMethodCode,
   STANDARD_DEVICE_OPTIONS,
 } from './standard-tag.utils';
@@ -35,6 +36,7 @@ import {
   VLAT_11669_CHEMICAL_METHOD_TAGS,
   VLAT_11669_SOURCE,
 } from './vlat-1-1669-487-20251015-chemical-method-tags';
+import { getVlatMethodName } from './vlat-1-1669-20251015-chemical-method-names';
 
 export interface AccreditationMethodImportOptions {
   restoreArchivedFromSameSeed?: boolean;
@@ -63,22 +65,37 @@ export class StandardTagCatalogService {
   readonly isReady = signal(false);
   readonly loadWarning = signal<string | null>(null);
 
-  readonly selectableOptions = computed<StandardTagOption[]>(() => {
+  /**
+   * Operational pickers expose only the 119 reviewed chemical test methods.
+   * SOPs, target groups and old manual catalog entries remain resolvable for
+   * history, but are not presented as method labels for new assignments.
+   */
+  readonly methodOptions = computed<StandardTagOption[]>(() => {
     const now = this.todayIso();
-    const sopOptions = this.state.sops()
-      .filter(sop => !sop.isArchived)
-      .map(sop => this.toSopOption(sop));
-    const targetOptions = this.targetGroups()
-      .map(group => this.toTargetOption(group));
-    const customOptions = this.customTags()
-      .filter(tag => !tag._isDeleted && this.isSelectableCustomTag(tag, now))
-      .map(tag => this.toCustomOption(tag, true));
-    return [...sopOptions, ...targetOptions, ...customOptions]
-      .sort((a, b) => a.label.localeCompare(b.label));
+    const persistedById = new Map(this.customTags().map(tag => [tag.id, tag]));
+    return VLAT_11669_CHEMICAL_METHOD_TAGS
+      .map(seed => {
+        const persisted = persistedById.get(seed.id);
+        const item = persisted && this.isChemicalMethodTag(persisted)
+          ? { ...seed, ...persisted, methodName: persisted.methodName || seed.methodName }
+          : seed;
+        return this.toCustomOption(item, this.isSelectableCustomTag(item, now));
+      })
+      .filter(option => option.selectable)
+      .sort((a, b) => compareChemicalMethodCodes(a.methodCode || a.label, b.methodCode || b.label));
   });
+
+  /** Compatibility alias used by existing standards/request pickers. */
+  readonly selectableOptions = this.methodOptions;
 
   readonly lookupMap = computed<ReadonlyMap<string, StandardTagOption>>(() => {
     const map = new Map<string, StandardTagOption>();
+    // Keep the reviewed method catalog resolvable even before an Admin runs
+    // the idempotent Firestore seed import. Persisted documents override the
+    // static metadata when they exist (e.g. archive/supersede state).
+    for (const item of VLAT_11669_CHEMICAL_METHOD_TAGS) {
+      map.set(buildTagKey('CUSTOM', item.id), this.toCustomOption(item, true));
+    }
     for (const item of this.state.sops()) map.set(buildTagKey('SOP', item.id), this.toSopOption(item));
     for (const item of this.targetGroups()) map.set(buildTagKey('TARGET_GROUP', item.id), this.toTargetOption(item));
     for (const item of this.customTags()) map.set(buildTagKey('CUSTOM', item.id), this.toCustomOption(item, this.isSelectableCustomTag(item, this.todayIso())));
@@ -387,6 +404,9 @@ export class StandardTagCatalogService {
       if (item.name !== methodCode || item.code !== methodCode || item.origin !== 'ACCREDITATION_SCOPE' || item.templateKind !== 'TEST_METHOD') {
         throw new Error(`Manifest có metadata không hợp lệ tại ${item.id}.`);
       }
+      if (!item.methodName || !/^X(?:á|á|a)c\s+đ/i.test(item.methodName)) {
+        throw new Error(`Manifest thiếu tên phép thử tại ${item.id}.`);
+      }
       if (item.sourceDecision !== VLAT_11669_SOURCE.sourceDecision || item.sourceLabCode !== VLAT_11669_SOURCE.sourceLabCode || item.sourceSha256 !== VLAT_11669_SOURCE.sourceSha256) {
         throw new Error(`Manifest sai provenance tại ${item.id}.`);
       }
@@ -418,10 +438,12 @@ export class StandardTagCatalogService {
   }
 
   private toCustomOption(item: StandardTagCatalogItem, selectable: boolean): StandardTagOption {
+    const methodName = item.methodName || (item.methodCode ? getVlatMethodName(item.methodCode) : undefined);
     return {
       key: buildTagKey('CUSTOM', item.id),
       label: item.name,
       description: item.description,
+      methodName,
       source: 'CUSTOM',
       origin: item.origin || 'MANUAL',
       templateKind: item.templateKind,
@@ -443,6 +465,12 @@ export class StandardTagCatalogService {
     if (item._isDeleted) return false;
     if (item.supersededByDecision || (item.sourceValidTo && item.sourceValidTo < today)) return false;
     return true;
+  }
+
+  private isChemicalMethodTag(item: StandardTagCatalogItem): boolean {
+    return item.origin === 'ACCREDITATION_SCOPE'
+      && item.templateKind === 'TEST_METHOD'
+      && typeof item.methodCode === 'string';
   }
 
   private todayIso(): string {
@@ -490,7 +518,7 @@ export class StandardTagCatalogService {
   private sameSeedItem(a: StandardTagCatalogItem, b: StandardTagCatalogItem): boolean {
     const fields: (keyof StandardTagCatalogItem)[] = [
       'id', 'name', 'code', 'description', 'color', 'origin', 'templateKind',
-      'methodCode', 'deviceCodes', 'sourceAgency', 'sourceDecision', 'sourceLabCode',
+      'methodName', 'methodCode', 'deviceCodes', 'sourceAgency', 'sourceDecision', 'sourceLabCode',
       'sourceDocument', 'sourceSha256', 'sourceValidFrom', 'sourceValidTo', 'sourcePages',
       'seedVersion', 'sortOrder', 'locked'
     ];

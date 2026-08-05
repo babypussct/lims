@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { StandardBulkTagMode } from '../services/standard-tag.utils';
+import { StandardBulkTagMode, formatMethodOptionLabel } from '../services/standard-tag.utils';
 import { StandardTagOption } from '../../../core/models/standard.model';
 
 @Component({
@@ -31,14 +31,14 @@ import { StandardTagOption } from '../../../core/models/standard.model';
               <div class="flex gap-2">
                 <select [ngModel]="tagToAdd()" (ngModelChange)="tagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-bold">
                   <option value="">Chọn nhãn...</option>
-                  @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{option.label}}</option> }
+                  @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                 </select>
                 <button (click)="addTag()" [disabled]="!tagToAdd()" class="rounded-xl bg-indigo-600 px-4 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
               </div>
             </div>
             <div class="min-h-10 flex flex-wrap gap-2">
               @for (key of tags(); track key) {
-                <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-xs font-bold">{{resolveLabel(key)}}<button (click)="removeTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-xs font-bold" [title]="resolveLabel(key)">{{resolveLabel(key)}}<button (click)="removeTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
               }
               @if (tags().length === 0) { <span class="text-xs text-slate-400 italic">Chưa chọn nhãn (REPLACE rỗng = xóa toàn bộ).</span> }
             </div>
@@ -64,6 +64,10 @@ export class StandardsBulkTagModalComponent {
   tags = signal<string[]>([]);
   tagToAdd = signal('');
 
+  formatTagLabel(option: StandardTagOption): string {
+    return formatMethodOptionLabel(option);
+  }
+
   addTag(): void {
     const key = this.tagToAdd();
     if (!key || this.tags().includes(key)) return;
@@ -76,7 +80,8 @@ export class StandardsBulkTagModalComponent {
   }
 
   resolveLabel(key: string): string {
-    return this.tagOptions().find(option => option.key === key)?.label || key;
+    const option = this.tagOptions().find(item => item.key === key);
+    return option ? formatMethodOptionLabel(option) : key;
   }
 
   confirmSelection(): void {
@@ -84,4 +89,3 @@ export class StandardsBulkTagModalComponent {
     this.confirm.emit({ tags: this.tags(), mode: this.mode() });
   }
 }
-

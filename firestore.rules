@@ -126,7 +126,7 @@ service cloud.firestore {
 
     function validManualCatalogItem(data) {
       return validCatalogName(data) && data.origin == 'MANUAL' && data.locked == false &&
-        !data.keys().hasAny(['methodCode', 'deviceCodes', 'sourceDecision', 'sourceLabCode', 'sourceDocument', 'sourceSha256', 'seedVersion']);
+        !data.keys().hasAny(['methodName', 'methodCode', 'deviceCodes', 'sourceDecision', 'sourceLabCode', 'sourceDocument', 'sourceSha256', 'seedVersion']);
     }
 
     function validAccreditationCatalogItem(data) {
@@ -135,6 +135,7 @@ service cloud.firestore {
         data.templateKind == 'TEST_METHOD' &&
         data.name is string && data.code == data.name && data.methodCode == data.name &&
         data.methodCode.matches('^NAFI6/H-[0-9]+\\.[0-9]+$') &&
+        data.methodName is string && data.methodName.size() > 0 && data.methodName.size() <= 300 &&
         data.sourceAgency is string && data.sourceAgency.size() > 0 &&
         data.sourceDecision is string && data.sourceDecision.size() > 0 &&
         data.sourceLabCode is string && data.sourceLabCode.size() > 0 &&
@@ -370,7 +371,7 @@ service cloud.firestore {
           (resource.data.locked == true && validAccreditationCatalogItem(request.resource.data) &&
             request.resource.data.origin == resource.data.origin &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'description', 'deviceCodes', 'color', 'sourcePages', 'sortOrder',
+              'description', 'methodName', 'deviceCodes', 'color', 'sourcePages', 'sortOrder',
               '_isDeleted', 'supersededByDecision', 'supersededAt', 'lastUpdated'
             ])) ||
           (resource.data.locked != true && validManualCatalogItem(request.resource.data))

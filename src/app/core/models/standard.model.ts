@@ -35,6 +35,8 @@ export interface StandardTagOption {
   key: string;
   label: string;
   description?: string;
+  /** Human-readable Vietnamese test name shown beside the canonical method code. */
+  methodName?: string;
   source: StandardTagSource;
   origin?: StandardTagCatalogOrigin;
   templateKind?: StandardTagTemplateKind;
@@ -56,6 +58,8 @@ export interface StandardTagCatalogItem {
   name: string;
   code?: string;
   description?: string;
+  /** Human-readable Vietnamese test name from the accreditation source. */
+  methodName?: string;
   color?: string;
   origin?: StandardTagCatalogOrigin;
   templateKind?: StandardTagTemplateKind;

@@ -1,23 +1,22 @@
 {
-  "title": "Quản lý nhãn phương pháp hóa học và đồng bộ trả chất chuẩn",
+  "title": "Tăng tốc độ toàn hệ thống, cải tiến Yêu cầu chất chuẩn và chuẩn hóa Danh mục phương pháp",
   "highlights": [
-    "Bổ sung 119 mã phương pháp hóa học NAFI6/H-* từ danh mục VILAS 2025; không nhập các nhãn lõi sinh học.",
-    "Đồng bộ sopTags xuyên suốt luồng KNV báo trả và Admin xác nhận nhập kho trả, giữ đúng quyết định cuối cùng.",
-    "Tra cứu, lọc và thống kê chất chuẩn theo phương pháp thử và thiết bị phân tích."
+    "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
+    "Màn hình Yêu cầu chất chuẩn được làm gọn, giúp thao tác chọn và gửi yêu cầu dễ nhìn và nhanh hơn.",
+    "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng."
   ],
   "features": [
-    "Catalog nhãn trung tâm cho phương pháp hóa học và nhãn thiết bị phụ như GCMS, GCMSMS, GCHRMS, LCMSMS, ICPMS và HPLC.",
-    "Gán nhãn hàng loạt an toàn với ADD, REMOVE và REPLACE; cảnh báo mạnh khi thay thế toàn bộ nhãn.",
-    "Tự động hiển thị nhãn thiết bị suy dẫn từ phương pháp mà không lưu trùng vào request hoặc chất chuẩn."
+    "Cho phép chọn và gắn nhiều phương pháp hóa học cùng lúc khi báo trả Kết quả hoặc quản lý Chất chuẩn.",
+    "Hiển thị tên phép thử tiếng Việt đi kèm mã phương pháp trên các danh sách, bộ lọc và khi xuất dữ liệu ra Excel.",
+    "Trình xem tài liệu PDF được nâng cấp, hoạt động ổn định trên nhiều thiết bị và tương thích tốt với chế độ ứng dụng điện thoại."
   ],
   "improvements": [
-    "Tổng tồn kho được gom theo từng đơn vị đo thực tế và hiển thị kèm tổng số lọ.",
-    "Chuẩn hóa key bảo toàn casing ID gốc, giới hạn 10 nhãn khi báo trả và 100 nhãn trên chất chuẩn.",
-    "Bổ sung bộ chọn nhãn cho KNV/Admin, bộ lọc phương pháp–thiết bị và quản trị catalog custom tag."
+    "Bảng tin tự động tải dữ liệu nhanh hơn và chính xác theo quyền hạn của từng người dùng.",
+    "Danh sách các phương pháp hóa học tự động sắp xếp theo thứ tự số tự nhiên (ví dụ H-1.2 đứng trước H-1.10), giúp tìm kiếm bằng mắt thuận tiện hơn.",
+    "Giao diện màn hình Yêu cầu chất chuẩn được tinh chỉnh, giảm bớt các thao tác không cần thiết."
   ],
   "fixes": [
-    "Không còn mất nhãn âm thầm: vượt giới hạn sẽ báo lỗi rõ ràng bằng assertTagLimit.",
-    "Firestore Rules kiểm tra kiểu mảng, giới hạn độ dài và khóa hard-delete đối với standard_tags.",
-    "Bulk update giới hạn 400 ghi mỗi batch và dùng arrayUnion/arrayRemove để tránh ghi đè nhãn đồng thời."
+    "Khắc phục tình trạng hiển thị lệch giao diện hoặc giật lag khi mở xem các tài liệu SOP.",
+    "Xử lý dứt điểm hiện tượng tải trang chậm hoặc bị treo khi người dùng tra cứu lịch sử hoạt động cá nhân."
   ]
 }

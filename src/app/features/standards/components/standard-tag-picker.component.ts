@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StandardTagOption } from '../../../core/models/standard.model';
+import { formatMethodOptionLabel } from '../services/standard-tag.utils';
 
 /**
  * Shared picker for persisted standard/request tags.
@@ -29,7 +30,7 @@ import { StandardTagOption } from '../../../core/models/standard.model';
         >
           <option value="">Chọn nhãn trong danh mục...</option>
           @for (option of availableOptions(); track option.key) {
-            <option [value]="option.key">{{ option.label }}</option>
+            <option [value]="option.key">{{ formatOptionLabel(option) }}</option>
           }
         </select>
         <button
@@ -99,6 +100,11 @@ export class StandardTagPickerComponent {
   }
 
   resolveLabel(key: string): string {
-    return this.options().find(option => option.key === key)?.label || `[Đã lưu trữ] ${key}`;
+    const option = this.options().find(item => item.key === key);
+    return option ? formatMethodOptionLabel(option) : `[Đã lưu trữ] ${key}`;
+  }
+
+  formatOptionLabel(option: StandardTagOption): string {
+    return formatMethodOptionLabel(option);
   }
 }

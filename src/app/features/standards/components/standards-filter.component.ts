@@ -2,7 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StandardDeviceCode, StandardDeviceOption, StandardTagOption } from '../../../core/models/standard.model';
-import { formatStockSummary, StockSummaryResult } from '../services/standard-tag.utils';
+import { formatMethodOptionLabel, formatStockSummary, StockSummaryResult } from '../services/standard-tag.utils';
 
 @Component({
   selector: 'app-standards-filter',
@@ -60,7 +60,7 @@ import { formatStockSummary, StockSummaryResult } from '../services/standard-tag
                <span class="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-flask mr-1"></i> Phương pháp:</span>
                <select [ngModel]="methodTagFilter()" (ngModelChange)="methodTagFilterChange.emit($event || null)" class="min-w-0 flex-1 bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1">
                    <option [ngValue]="null">Tất cả phương pháp</option>
-                   @for (option of tagOptions(); track option.key) { <option [ngValue]="option.key">{{option.label}}</option> }
+                   @for (option of tagOptions(); track option.key) { <option [ngValue]="option.key">{{formatTagLabel(option)}}</option> }
                </select>
            </div>
            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm h-[30px] flex-1">
@@ -108,6 +108,10 @@ export class StandardsFilterComponent {
   viewModeChange = output<'list' | 'grid'>();
   methodTagFilterChange = output<string | null>();
   deviceFilterChange = output<StandardDeviceCode | 'all'>();
+
+  formatTagLabel(option: StandardTagOption): string {
+    return formatMethodOptionLabel(option);
+  }
 
   onSearchInput(val: string) {
     this.searchTermChange.emit(val);

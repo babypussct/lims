@@ -4,10 +4,12 @@ import {
   VLAT_11669_CHEMICAL_METHOD_TAGS,
   VLAT_11669_SOURCE,
 } from './vlat-1-1669-487-20251015-chemical-method-tags';
+import { VLAT_11669_METHOD_NAMES } from './vlat-1-1669-20251015-chemical-method-names';
 import { buildTagKey, deriveMethodSeries } from './standard-tag.utils';
 
 test('VLAT catalog contains only the reviewed 119 chemical methods', () => {
   assert.equal(VLAT_11669_CHEMICAL_METHOD_TAGS.length, 119);
+  assert.equal(Object.keys(VLAT_11669_METHOD_NAMES).length, 119);
   const counts = new Map<string, number>();
   const keys = new Set<string>();
   for (const item of VLAT_11669_CHEMICAL_METHOD_TAGS) {
@@ -16,6 +18,7 @@ test('VLAT catalog contains only the reviewed 119 chemical methods', () => {
     assert.equal(item.templateKind, 'TEST_METHOD');
     assert.equal(item.name, item.methodCode);
     assert.equal(item.code, item.methodCode);
+    assert.match(item.methodName || '', /^X(?:á|á|a)c\s+đ/i);
     assert.equal(item.sourceDecision, '487/QĐ-AOSC');
     assert.equal(item.sourceLabCode, 'VLAT-1.1669');
     assert.equal(item.sourceSha256, VLAT_11669_SOURCE.sourceSha256);

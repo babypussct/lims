@@ -5,6 +5,8 @@ import {
   assertTagLimit,
   buildAccreditationMethodTagId,
   buildTagKey,
+  compareChemicalMethodCodes,
+  formatMethodOptionLabel,
   formatStockSummary,
   mergeUniqueTagKeys,
   normalizeNafi6ChemicalMethodCode,
@@ -34,6 +36,26 @@ test('strict normalization deduplicates canonical keys without lowercasing suffi
   ]);
   assert.deepEqual(normalizeTagKeysStrict([]), []);
   assert.throws(() => normalizeTagKeysStrict(['not-a-key']));
+});
+
+test('one return report can retain multiple method labels', () => {
+  const first = buildTagKey('CUSTOM', VLAT_11669_CHEMICAL_METHOD_TAGS[0].id);
+  const second = buildTagKey('CUSTOM', VLAT_11669_CHEMICAL_METHOD_TAGS[1].id);
+  assert.deepEqual(normalizeTagKeysStrict([first, second]), [first, second]);
+  const merged = resolveReturnTagMerge([], [first, second]);
+  assert.equal(merged.status, 'MERGED');
+  assert.deepEqual(merged.standardTags, [first, second]);
+});
+
+test('chemical method codes use natural numeric ordering', () => {
+  const values = ['NAFI6/H-1.11', 'NAFI6/H-1.2', 'NAFI6/H-1.10', 'NAFI6/H-1.3', 'NAFI6/H-10.1'];
+  values.sort(compareChemicalMethodCodes);
+  assert.deepEqual(values, ['NAFI6/H-1.2', 'NAFI6/H-1.3', 'NAFI6/H-1.10', 'NAFI6/H-1.11', 'NAFI6/H-10.1']);
+});
+
+test('catalog labels show the method code and Vietnamese test name together', () => {
+  const option = VLAT_11669_CHEMICAL_METHOD_TAGS.find(item => item.methodCode === 'NAFI6/H-8.41')!;
+  assert.match(formatMethodOptionLabel(option), /^NAFI6\/H-8\.41 — Xác định /);
 });
 
 test('tag limit reports overflow instead of silently dropping tags', () => {
@@ -85,6 +107,7 @@ test('chemical manifest contains exactly the reviewed chemical method set', () =
   assert.equal(normalizeNafi6ChemicalMethodCode(' nafi6 / h-9.21 '), 'NAFI6/H-9.21');
   assert.equal(buildAccreditationMethodTagId('NAFI6/H-9.21'), 'method-nafi6-h-9.21');
   assert.equal(VLAT_11669_CHEMICAL_METHOD_TAGS.some(item => item.methodCode?.includes('BIO')), false);
+  assert.match(VLAT_11669_CHEMICAL_METHOD_TAGS.find(item => item.methodCode === 'NAFI6/H-8.41')?.methodName || '', /^X/);
 });
 
 test('device aliases resolve to the specific read-only secondary label', () => {

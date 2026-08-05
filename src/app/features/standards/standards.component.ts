@@ -36,7 +36,7 @@ import { StandardsBulkTagModalComponent } from './components/standards-bulk-tag-
 import { StandardsTagManagerModalComponent } from './components/standards-tag-manager-modal.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 import { StandardTagCatalogService } from './services/standard-tag-catalog.service';
-import { StandardBulkTagMode, summarizeStockByUnit, StockSummaryResult } from './services/standard-tag.utils';
+import { StandardBulkTagMode, formatMethodOptionLabel, summarizeStockByUnit, StockSummaryResult } from './services/standard-tag.utils';
 @Component({
   selector: 'app-standards',
   standalone: true,
@@ -239,10 +239,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
   visibleItems = computed(() => {
       return this.filteredItems().slice(0, this.displayLimit()).map(item => ({
           ...item,
-          derivedDeviceCodes: this.tagCatalog.deriveDeviceCodes(item.sop_tags),
-          derivedMethodLabels: (item.sop_tags || [])
-              .map(key => this.tagCatalog.resolveTag(key).methodCode || this.tagCatalog.resolveTag(key).label)
-              .filter(Boolean),
+           derivedDeviceCodes: this.tagCatalog.deriveDeviceCodes(item.sop_tags),
+           derivedMethodLabels: (item.sop_tags || [])
+               .map(key => formatMethodOptionLabel(this.tagCatalog.resolveTag(key)))
+               .filter(Boolean),
       }));
   });
 
@@ -1195,7 +1195,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
           const buildRowData = (item: any, label: string, sttVal: number | string): Record<string, any> => {
               const methodLabels = (item.sop_tags || [])
-                  .map((key: string) => this.tagCatalog.resolveTag(key).methodCode || this.tagCatalog.resolveTag(key).label)
+                  .map((key: string) => formatMethodOptionLabel(this.tagCatalog.resolveTag(key)))
                   .join(', ');
               const methodOptions: StandardTagOption[] = (item.sop_tags || []).map((key: string) => this.tagCatalog.resolveTag(key));
               const sourceLabs = [...new Set(methodOptions.map(option => option.sourceLabCode).filter(Boolean))].join(', ');

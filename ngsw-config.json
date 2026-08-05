@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.05-b03",
-    "title": "Quản lý nhãn phương pháp hóa học và đồng bộ trả chất chuẩn",
+    "version": "v26.08.06-b02",
+    "title": "Tăng tốc độ toàn hệ thống, cải tiến Yêu cầu chất chuẩn và chuẩn hóa Danh mục phương pháp",
     "features": [
-      "Bổ sung 119 mã phương pháp hóa học NAFI6/H-* từ danh mục VILAS 2025; không nhập các nhãn lõi sinh học.",
-      "Đồng bộ sopTags xuyên suốt luồng KNV báo trả và Admin xác nhận nhập kho trả, giữ đúng quyết định cuối cùng.",
-      "Tra cứu, lọc và thống kê chất chuẩn theo phương pháp thử và thiết bị phân tích.",
-      "Catalog nhãn trung tâm cho phương pháp hóa học và nhãn thiết bị phụ như GCMS, GCMSMS, GCHRMS, LCMSMS, ICPMS và HPLC.",
-      "Gán nhãn hàng loạt an toàn với ADD, REMOVE và REPLACE; cảnh báo mạnh khi thay thế toàn bộ nhãn."
+      "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
+      "Màn hình Yêu cầu chất chuẩn được làm gọn, giúp thao tác chọn và gửi yêu cầu dễ nhìn và nhanh hơn.",
+      "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng.",
+      "Cho phép chọn và gắn nhiều phương pháp hóa học cùng lúc khi báo trả Kết quả hoặc quản lý Chất chuẩn.",
+      "Hiển thị tên phép thử tiếng Việt đi kèm mã phương pháp trên các danh sách, bộ lọc và khi xuất dữ liệu ra Excel."
     ]
   },
   "assetGroups": [
