@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.04-b10",
+    "version": "v26.08.05-b02",
     "title": "Cải thiện Giao Nhận Mẫu và khả năng tương thích PWA",
     "features": [
       "Giao Nhận Mẫu hiển thị đúng khi sidebar mở rộng và topbar đang bật.",
       "Excel trên PWA giữ khu vực chuyển sheet rõ ràng, có thể cuộn ngang trên màn hình hẹp.",
       "PDF trên PWA được xử lý ổn định hơn trên các WebView cũ.",
       "PDF worker được cache để mở tài liệu ổn định hơn khi mạng chập chờn hoặc ngoại tuyến.",
-      "Sửa lỗi PDF báo undefined is not a function trong một số môi trường PWA."
+      "Khu vực xem tài liệu thích ứng với vùng an toàn ở mép dưới màn hình điện thoại."
     ]
   },
   "assetGroups": [

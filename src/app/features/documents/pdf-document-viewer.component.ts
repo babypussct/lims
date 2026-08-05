@@ -694,54 +694,71 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
     this.renderingPages.set(pages);
   }
 
+  private static pdfJsPolyfilled = false;
+
   private clearTextLayer(container: HTMLElement): void {
     while (container.firstChild) container.removeChild(container.firstChild);
   }
 
   private ensurePdfJsRuntimeCompatibility(): void {
+    if (PdfDocumentViewerComponent.pdfJsPolyfilled) return;
+    PdfDocumentViewerComponent.pdfJsPolyfilled = true;
+
     const promiseConstructor = Promise as PromiseConstructor & {
       withResolvers?: <T>() => PromiseCapability<T>;
     };
     if (!promiseConstructor.withResolvers) {
-      promiseConstructor.withResolvers = <T>() => {
-        let resolve!: (value: T | PromiseLike<T>) => void;
-        let reject!: (reason?: unknown) => void;
-        const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-          resolve = resolvePromise;
-          reject = rejectPromise;
-        });
-        return { promise, resolve, reject };
-      };
+      Object.defineProperty(promiseConstructor, 'withResolvers', {
+        value: <T>() => {
+          let resolve!: (value: T | PromiseLike<T>) => void;
+          let reject!: (reason?: unknown) => void;
+          const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+            resolve = resolvePromise;
+            reject = rejectPromise;
+          });
+          return { promise, resolve, reject };
+        },
+        configurable: true,
+        writable: true,
+      });
     }
 
     const installGetOrInsert = (prototype: KeyedCollectionPrototype): void => {
       if (!prototype.getOrInsert) {
-        prototype.getOrInsert = function (key: unknown, value: unknown): unknown {
-          const collection = this as unknown as {
-            has(key: unknown): boolean;
-            get(key: unknown): unknown;
-            set(key: unknown, value: unknown): unknown;
-          };
-          if (collection.has(key)) return collection.get(key);
-          collection.set(key, value);
-          return value;
-        };
+        Object.defineProperty(prototype, 'getOrInsert', {
+          value: function (key: unknown, value: unknown): unknown {
+            const collection = this as unknown as {
+              has(key: unknown): boolean;
+              get(key: unknown): unknown;
+              set(key: unknown, value: unknown): unknown;
+            };
+            if (collection.has(key)) return collection.get(key);
+            collection.set(key, value);
+            return value;
+          },
+          configurable: true,
+          writable: true,
+        });
       }
       if (!prototype.getOrInsertComputed) {
-        prototype.getOrInsertComputed = function (
-          key: unknown,
-          callback: (key: unknown) => unknown,
-        ): unknown {
-          const collection = this as unknown as {
-            has(key: unknown): boolean;
-            get(key: unknown): unknown;
-            set(key: unknown, value: unknown): unknown;
-          };
-          if (collection.has(key)) return collection.get(key);
-          const value = callback(key);
-          collection.set(key, value);
-          return value;
-        };
+        Object.defineProperty(prototype, 'getOrInsertComputed', {
+          value: function (
+            key: unknown,
+            callback: (key: unknown) => unknown,
+          ): unknown {
+            const collection = this as unknown as {
+              has(key: unknown): boolean;
+              get(key: unknown): unknown;
+              set(key: unknown, value: unknown): unknown;
+            };
+            if (collection.has(key)) return collection.get(key);
+            const value = callback(key);
+            collection.set(key, value);
+            return value;
+          },
+          configurable: true,
+          writable: true,
+        });
       }
     };
 
