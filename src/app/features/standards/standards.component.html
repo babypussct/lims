@@ -11,6 +11,8 @@
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
           (bulkCoaSelect)="handleBulkCoaSelect($event)"
+          (openBulkTagModal)="showBulkTagModal.set(true)"
+          (openTagManager)="showTagManagerModal.set(true)"
           (openExportModal)="openExportModal()"
           (openCleanupModal)="showDataCleanupModal.set(true)">
       </app-standards-toolbar>
@@ -23,14 +25,21 @@
               [activeWidgetFilter]="activeWidgetFilter()"
               [sortOption]="sortOption()"
               [viewMode]="viewMode()"
-              [stats]="stats()"
+              [stats]="groupFilteredStats()"
               [visibleCount]="visibleItems().length"
               [filteredCount]="filteredItems().length"
               [isLoading]="isLoading()"
+              [tagOptions]="tagCatalog.selectableOptions()"
+              [methodTagFilter]="activeMethodTagFilter()"
+              [deviceOptions]="tagCatalog.deviceOptions"
+              [deviceFilter]="activeDeviceFilter()"
+              [stockSummary]="filteredStockSummary()"
               (searchTermChange)="onSearchInput($event)"
               (activeWidgetFilterChange)="activeWidgetFilter.set($event)"
               (sortOptionChange)="onSortChange($event)"
-              (viewModeChange)="viewMode.set($event)">
+              (viewModeChange)="viewMode.set($event)"
+              (methodTagFilterChange)="activeMethodTagFilter.set($event)"
+              (deviceFilterChange)="activeDeviceFilter.set($event)">
           </app-standards-filter>
 
           <!-- Content Body -->
@@ -133,6 +142,24 @@
         @defer {
           <app-standards-bulk-coa-modal [isOpen]="showBulkCoaModal()" [items]="bulkCoaItems()" [allStandards]="allStandards()" [isUploading]="isBulkUploading()" [uploadComplete]="bulkUploadComplete()" (cancel)="cancelBulkCoa()" (confirm)="confirmBulkCoaUpload()"></app-standards-bulk-coa-modal>
         }
+      }
+
+      @if (showBulkTagModal()) {
+        <app-standards-bulk-tag-modal
+          [isOpen]="showBulkTagModal()"
+          [selectedCount]="selectedIds().size"
+          [tagOptions]="tagCatalog.selectableOptions()"
+          [isProcessing]="isProcessing()"
+          (cancel)="showBulkTagModal.set(false)"
+          (confirm)="confirmBulkTagUpdate($event)">
+        </app-standards-bulk-tag-modal>
+      }
+
+      @if (showTagManagerModal()) {
+        <app-standards-tag-manager-modal
+          [isOpen]="showTagManagerModal()"
+          (close)="showTagManagerModal.set(false)">
+        </app-standards-tag-manager-modal>
       }
 
       <!-- DATA CLEANUP MODAL -->

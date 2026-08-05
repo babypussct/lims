@@ -6,7 +6,7 @@ import {
   serverTimestamp, runTransaction, deleteField, query,
   where, limit, Unsubscribe, onSnapshot, getDocs
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus } from '../../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus, ReturnStandardResult } from '../../../core/models/standard.model';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
 import { canAssign } from '../../../shared/utils/standard-fefo';
@@ -24,6 +24,14 @@ import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/de
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
+import { StandardTagCatalogService } from './standard-tag-catalog.service';
+import {
+  assertTagLimit,
+  MAX_RETURN_TAGS,
+  normalizeTagKeysStrict,
+  resolveReturnTagMerge,
+  sanitizeLegacyTagKeys,
+} from './standard-tag.utils';
 
 /**
  * StandardRequestService — Vòng đời đầy đủ của StandardRequest.
@@ -42,6 +50,7 @@ export class StandardRequestService {
   private deltaSync = inject(DeltaSyncService);
   private notificationCenter = inject(NotificationCenterService);
   private readMonitor = inject(FirestoreReadMonitor);
+  private tagCatalog = inject(StandardTagCatalogService);
 
   constructor() {
     // Cleanup singleton khi user logout hoặc đổi account
@@ -173,6 +182,14 @@ export class StandardRequestService {
     if (isAssign && (!request.requestedBy || !request.requestedByName?.trim())) {
       throw new Error('Thiếu người được gán chuẩn.');
     }
+    if (request.finalSopTags !== undefined) {
+      throw new Error('Không được gửi finalSopTags khi tạo yêu cầu; Admin chỉ quyết định ở bước nhận trả.');
+    }
+    if (request.sopTags !== undefined) {
+      await this.tagCatalog.refresh();
+      request.sopTags = this.tagCatalog.assertSelectableKeys(request.sopTags, 'Nhãn yêu cầu');
+      assertTagLimit(request.sopTags, MAX_RETURN_TAGS, 'Nhãn yêu cầu');
+    }
 
     const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
     request.id = reqRef.id;
@@ -193,8 +210,14 @@ export class StandardRequestService {
       // FEFO là gợi ý (soft recommendation): UI đã hiển thị cảnh báo thứ tự ưu tiên,
       // nhưng không khóa cứng — người dùng được phép chọn lô bất kỳ còn sẵn sàng.
 
+      const {
+        finalSopTags: _finalSopTags,
+        tagMergeStatus: _tagMergeStatus,
+        tagMergeWarning: _tagMergeWarning,
+        ...requestWithoutAdminDecision
+      } = request;
       const trustedRequest: StandardRequest = {
-        ...request,
+        ...requestWithoutAdminDecision,
         standardId: standard.id,
         standardName: standard.name,
         lotNumber: standard.lot_number,
@@ -236,6 +259,14 @@ export class StandardRequestService {
   ): Promise<void> {
     const currentUser = this.auth.currentUser();
     if (!currentUser) throw new Error('Phiên đăng nhập không còn hợp lệ.');
+    if (updates.sopTags !== undefined) {
+      await this.tagCatalog.refresh();
+      const normalized = this.tagCatalog.assertSelectableKeys(updates.sopTags, 'Nhãn khi báo trả');
+      assertTagLimit(normalized, MAX_RETURN_TAGS, 'Nhãn khi báo trả');
+      // Normalize before entering the transaction so every write uses the
+      // exact same canonical casing (e.g. SOP-9.16 is never lowercased).
+      updates = { ...updates, sopTags: normalized };
+    }
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
     let reqData: StandardRequest | null = null;
 
@@ -292,6 +323,13 @@ export class StandardRequestService {
               : getStandardizedAmount(log.amount_used, log.unit || stockUnit, stockUnit);
             return sum + (normalized !== null && Number.isFinite(normalized) && normalized > 0 ? normalized : 0);
           }, 0);
+      }
+
+      // A normal staff return is allowed to carry an optional, catalog-backed
+      // proposal. [] is intentional and means the staff member reset tags
+      // before resubmitting the return.
+      if (updates.sopTags !== undefined && (status === 'PENDING_RETURN' || status === 'IN_PROGRESS')) {
+        safeUpdates['sopTags'] = updates.sopTags;
       }
 
       transaction.update(reqRef, {
@@ -453,15 +491,25 @@ export class StandardRequestService {
   async returnStandard(
     requestId: string, standardId: string,
     receiverId: string, receiverName: string,
-    isDepleted = false, amountUsed?: number, unit?: string, disposalReason?: string
-  ): Promise<void> {
+    isDepleted = false, amountUsed?: number, unit?: string, disposalReason?: string,
+    finalSopTags?: string[]
+  ): Promise<ReturnStandardResult> {
     const currentUser = this.auth.currentUser();
     if (!currentUser || !this.auth.canAssignStandards()) {
       throw new Error('Bạn không có quyền xác nhận nhận lại chuẩn.');
     }
+    if (finalSopTags !== undefined) {
+      await this.tagCatalog.refresh();
+      // A proposal can remain valid even if its source SOP/group was archived
+      // while the request was waiting for Admin. The request-specific
+      // existing-key exception is applied after reading the request below.
+      finalSopTags = normalizeTagKeysStrict(finalSopTags, 'Nhãn Admin xác nhận');
+      assertTagLimit(finalSopTags, MAX_RETURN_TAGS, 'Nhãn Admin xác nhận');
+    }
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
     let reqData: StandardRequest | null = null;
+    let returnResult: ReturnStandardResult = { tagMergeStatus: 'NOT_REQUESTED' };
 
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
@@ -478,6 +526,26 @@ export class StandardRequestService {
       if (stdData.current_request_id !== requestId || stdData.current_holder_uid !== reqData.requestedBy) {
         throw new Error('Chuẩn không còn được cấp theo yêu cầu này.');
       }
+
+      if (finalSopTags !== undefined) {
+        finalSopTags = this.tagCatalog.assertKnownOrExistingKeys(
+          finalSopTags,
+          reqData.sopTags || [],
+          'Nhãn Admin xác nhận'
+        );
+      }
+
+      let tagMerge: ReturnType<typeof resolveReturnTagMerge> = {
+        standardTags: sanitizeLegacyTagKeys(stdData.sop_tags),
+        status: 'NOT_REQUESTED',
+      };
+      if (finalSopTags !== undefined) {
+        tagMerge = resolveReturnTagMerge(stdData.sop_tags, finalSopTags);
+      }
+      returnResult = {
+        tagMergeStatus: tagMerge.status,
+        ...(tagMerge.warning ? { tagMergeWarning: tagMerge.warning } : {}),
+      };
 
       const stockUnit = stdData.unit || 'mg';
       const currentLogs = (reqData.usageLogs || []).filter(log => !log._isDeleted);
@@ -502,12 +570,14 @@ export class StandardRequestService {
       );
       const { adjustmentAmount, disposalAmount, remainingAmount: newAmount } = reconciliation;
 
-      transaction.update(stdRef, {
+      const standardUpdate: Record<string, any> = {
         status: isDepleted || newAmount <= 0 ? 'DEPLETED' : 'AVAILABLE',
         current_amount: newAmount,
         current_holder: deleteField(), current_holder_uid: deleteField(),
         current_request_id: deleteField(), lastUpdated: serverTimestamp()
-      });
+      };
+      if (tagMerge.status === 'MERGED') standardUpdate['sop_tags'] = tagMerge.standardTags;
+      transaction.update(stdRef, standardUpdate);
 
       const reqUpdateData: Record<string, any> = {
         status: 'COMPLETED', returnDate: Date.now(),
@@ -515,6 +585,12 @@ export class StandardRequestService {
         receivedByName: currentUser.displayName || currentUser.email || receiverName || receiverId,
         updatedAt: Date.now()
       };
+      if (finalSopTags !== undefined) {
+        reqUpdateData['finalSopTags'] = finalSopTags;
+        reqUpdateData['tagMergeStatus'] = tagMerge.status;
+        if (tagMerge.warning) reqUpdateData['tagMergeWarning'] = tagMerge.warning;
+        else reqUpdateData['tagMergeWarning'] = deleteField();
+      }
       if (disposalReason) reqUpdateData['disposalReason'] = disposalReason;
 
       const appendedLogs: UsageLog[] = [];
@@ -568,6 +644,7 @@ export class StandardRequestService {
         this.cache._mergeAndSave([freshStd], []);
       }
     } catch (e) { console.warn('[StandardRequestService] post-return cache merge failed:', e); }
+    return returnResult;
   }
 
   // ─── Hard Delete Request ──────────────────────────────────────────────────────

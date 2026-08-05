@@ -72,3 +72,19 @@ test('notifications are recipient-scoped and client creation is denied', () => {
   assert.match(notificationsBlock, /allow create: if false/);
   assert.match(notificationsBlock, /affectedKeys\(\)\.hasOnly\(\['isRead'\]\)/);
 });
+
+test('standard tag arrays are bounded and custom catalog uses soft delete', () => {
+  assert.match(rules, /validReturnTagArray/);
+  assert.match(rules, /validStandardTagArray/);
+  assert.match(rules, /sopTags is list && data\.sopTags\.size\(\) <= 10/);
+  assert.match(rules, /sop_tags is list && data\.sop_tags\.size\(\) <= 100/);
+  assert.match(rules, /device:gchrms/);
+  const tagBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/standard_tags/{tagId}'),
+    rules.indexOf('match /artifacts/{appId}/purchase_requests/{reqId}')
+  );
+  assert.match(tagBlock, /allow delete: if false/);
+  assert.match(tagBlock, /_isDeleted is bool/);
+  assert.match(tagBlock, /resource\.data\.locked == true/);
+  assert.match(tagBlock, /validManualCatalogItem/);
+});

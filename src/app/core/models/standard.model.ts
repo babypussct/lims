@@ -1,5 +1,103 @@
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 
+export type StandardTagSource = 'SOP' | 'TARGET_GROUP' | 'CUSTOM';
+export type StandardTagCatalogOrigin = 'MANUAL' | 'ACCREDITATION_SCOPE';
+export type StandardTagTemplateKind = 'TEST_METHOD';
+
+export type StandardDeviceCode =
+  | 'GC'
+  | 'GCECD'
+  | 'GCMS'
+  | 'GCMSMS'
+  | 'GCHRMS'
+  | 'LCMSMS'
+  | 'ICPMS'
+  | 'HPLC'
+  | 'HPLCUVVIS'
+  | 'HPLCFLD'
+  | 'HPLCDAD'
+  | 'HPLCPDA'
+  | 'IC'
+  | 'UVVIS'
+  | 'AASFLAME'
+  | 'ELISA';
+
+export interface StandardDeviceOption {
+  key: string;
+  code: StandardDeviceCode;
+  label: string;
+  aliases: string[];
+  color: string;
+  sortOrder: number;
+}
+
+export interface StandardTagOption {
+  key: string;
+  label: string;
+  description?: string;
+  source: StandardTagSource;
+  origin?: StandardTagCatalogOrigin;
+  templateKind?: StandardTagTemplateKind;
+  methodCode?: string;
+  methodSeries?: string;
+  deviceCodes?: StandardDeviceCode[];
+  sourceLabCode?: string;
+  sourceDecision?: string;
+  sourceValidFrom?: string;
+  sourceValidTo?: string;
+  supersededByDecision?: string;
+  color?: string;
+  selectable: boolean;
+  archived?: boolean;
+}
+
+export interface StandardTagCatalogItem {
+  id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  color?: string;
+  origin?: StandardTagCatalogOrigin;
+  templateKind?: StandardTagTemplateKind;
+  methodCode?: string;
+  deviceCodes?: StandardDeviceCode[];
+  sourceAgency?: string;
+  sourceDecision?: string;
+  sourceLabCode?: string;
+  sourceDocument?: string;
+  sourceSha256?: string;
+  sourceValidFrom?: string;
+  sourceValidTo?: string;
+  sourcePages?: string;
+  supersededByDecision?: string;
+  supersededAt?: string;
+  seedVersion?: string;
+  sortOrder?: number;
+  locked?: boolean;
+  createdAt?: any;
+  createdBy?: string;
+  lastUpdated?: any;
+  _isDeleted?: boolean;
+}
+
+export type StandardTagMergeStatus = 'NOT_REQUESTED' | 'MERGED' | 'SKIPPED_LIMIT';
+
+export interface ReturnStandardResult {
+  tagMergeStatus: StandardTagMergeStatus;
+  tagMergeWarning?: string;
+}
+
+export interface BulkTagFailure {
+  standardId: string;
+  reason: string;
+}
+
+export interface BulkTagUpdateResult {
+  successIds: string[];
+  failed: BulkTagFailure[];
+  skippedIds: string[];
+}
+
 export interface UsageLog {
   id?: string;
   date: string;
@@ -85,6 +183,13 @@ export interface ReferenceStandard {
   current_request_id?: string; // ID of the active request
   has_pending_request?: boolean; // Flag if there is a pending borrowing request
 
+  /** Canonical accumulated tag keys (sop:, target-group:, custom:). */
+  sop_tags?: string[];
+  /** UI-only derived secondary labels; never persisted to Firestore. */
+  derivedDeviceCodes?: StandardDeviceCode[];
+  /** UI-only method labels; canonical persisted values remain sop_tags. */
+  derivedMethodLabels?: string[];
+
   restock_requested?: boolean; // Flag if purchased has been requested
   coa_requested_by?: string; // UID of user who requested CoA upload
   lastUpdated?: any;
@@ -149,6 +254,13 @@ export interface StandardRequest {
   disposalReason?: string;
   receivedBy?: string;
   receivedByName?: string;
+
+  /** Optional staff proposal when reporting a return. */
+  sopTags?: string[];
+  /** Final tag decision recorded by Admin for this return. */
+  finalSopTags?: string[];
+  tagMergeStatus?: StandardTagMergeStatus;
+  tagMergeWarning?: string;
   
   // Usage tracking
   totalAmountUsed: number;

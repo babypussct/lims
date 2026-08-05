@@ -95,6 +95,58 @@ service cloud.firestore {
       return hasPermission(appId, 'sop_approve') || hasPermission(appId, 'batch_run');
     }
 
+    // Tag arrays are optional for backward compatibility, but whenever they
+    // are present they must remain bounded lists. The client performs strict
+    // canonical-key validation; Rules enforce the non-bypassable shape/size
+    // invariant at the database boundary.
+    function noDerivedDeviceKeys(value) {
+      return value is list && !value.hasAny([
+        'device:gc', 'device:gcecd', 'device:gcms', 'device:gcmsms',
+        'device:gchrms', 'device:lcmsms', 'device:icpms', 'device:hplc',
+        'device:hplcuvvis', 'device:hplcfld', 'device:hplcdad', 'device:hplcpda',
+        'device:ic', 'device:uvvis', 'device:aasflame', 'device:elisa'
+      ]);
+    }
+
+    function validReturnTagArray(data) {
+      return !('sopTags' in data) || (data.sopTags is list && data.sopTags.size() <= 10 && noDerivedDeviceKeys(data.sopTags));
+    }
+
+    function validStandardTagArray(data) {
+      return !('sop_tags' in data) || (data.sop_tags is list && data.sop_tags.size() <= 100 && noDerivedDeviceKeys(data.sop_tags));
+    }
+
+    function validFinalReturnTagArray(data) {
+      return !('finalSopTags' in data) || (data.finalSopTags is list && data.finalSopTags.size() <= 10 && noDerivedDeviceKeys(data.finalSopTags));
+    }
+
+    function validCatalogName(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100;
+    }
+
+    function validManualCatalogItem(data) {
+      return validCatalogName(data) && data.origin == 'MANUAL' && data.locked == false &&
+        !data.keys().hasAny(['methodCode', 'deviceCodes', 'sourceDecision', 'sourceLabCode', 'sourceDocument', 'sourceSha256', 'seedVersion']);
+    }
+
+    function validAccreditationCatalogItem(data) {
+      return validCatalogName(data) &&
+        data.origin == 'ACCREDITATION_SCOPE' && data.locked == true &&
+        data.templateKind == 'TEST_METHOD' &&
+        data.name is string && data.code == data.name && data.methodCode == data.name &&
+        data.methodCode.matches('^NAFI6/H-[0-9]+\\.[0-9]+$') &&
+        data.sourceAgency is string && data.sourceAgency.size() > 0 &&
+        data.sourceDecision is string && data.sourceDecision.size() > 0 &&
+        data.sourceLabCode is string && data.sourceLabCode.size() > 0 &&
+        data.sourceDocument is string && data.sourceDocument.size() > 0 &&
+        data.sourceSha256 is string && data.sourceSha256.matches('^[A-Fa-f0-9]{64}$') &&
+        data.sourceValidFrom is string && data.sourceValidFrom.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.sourceValidTo is string && data.sourceValidTo.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.sourcePages is string && data.sourcePages.size() <= 100 &&
+        data.deviceCodes is list && data.deviceCodes.size() <= 5 &&
+        data.deviceCodes.hasOnly(['GC', 'GCECD', 'GCMS', 'GCMSMS', 'GCHRMS', 'LCMSMS', 'ICPMS', 'HPLC', 'HPLCUVVIS', 'HPLCFLD', 'HPLCDAD', 'HPLCPDA', 'IC', 'UVVIS', 'AASFLAME', 'ELISA']);
+    }
+
     // --- CAU HINH HE THONG VA VAI TRO ---
     
     // Moi nguoi dung da dang nhap deu co the doc thong tin co ban de hien thi avatar,
@@ -188,13 +240,14 @@ service cloud.firestore {
     // MODULE CHUAN DOI CHIEU (REFERENCE STANDARDS)
     match /artifacts/{appId}/reference_standards/{stdId} {
       allow read: if hasPermission(appId, 'standard_view');
-      allow create: if hasPermission(appId, 'standard_edit');
-      allow update: if hasPermission(appId, 'standard_edit') 
+      allow create: if hasPermission(appId, 'standard_edit') && validStandardTagArray(request.resource.data);
+      allow update: if hasPermission(appId, 'standard_edit') && validStandardTagArray(request.resource.data)
         || (
           hasPermission(appId, 'standard_approve') &&
+          validStandardTagArray(request.resource.data) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'status', 'current_holder', 'current_holder_uid', 'current_request_id',
-            'has_pending_request', 'restock_requested', 'current_amount', 'date_opened', 'lastUpdated'
+            'has_pending_request', 'restock_requested', 'current_amount', 'date_opened', 'sop_tags', 'lastUpdated'
           ]) &&
           request.resource.data.current_amount >= 0
         )
@@ -267,13 +320,14 @@ service cloud.firestore {
         hasPermission(appId, 'standard_log_delete') || (
         isSignedIn() && resource.data.requestedBy == request.auth.uid
       );
-      allow create: if canOperateStandards(appId) || (
+      allow create: if (canOperateStandards(appId) && validReturnTagArray(request.resource.data) && validFinalReturnTagArray(request.resource.data)) || (
         hasPermission(appId, 'standard_request') &&
         request.resource.data.requestedBy == request.auth.uid &&
         request.resource.data.status == 'PENDING_APPROVAL' &&
-        request.resource.data.totalAmountUsed == 0
+        request.resource.data.totalAmountUsed == 0 &&
+        validReturnTagArray(request.resource.data) && validFinalReturnTagArray(request.resource.data)
       );
-      allow update: if canOperateStandards(appId) || (
+      allow update: if (canOperateStandards(appId) && validReturnTagArray(request.resource.data) && validFinalReturnTagArray(request.resource.data)) || (
         hasPermission(appId, 'standard_log_delete') &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           '_isDeleted', 'status', 'usageLogs', 'totalAmountUsed',
@@ -286,8 +340,9 @@ service cloud.firestore {
         request.resource.data.requestedBy == resource.data.requestedBy &&
         request.resource.data.standardId == resource.data.standardId &&
         request.resource.data.totalAmountUsed >= 0 &&
+        validReturnTagArray(request.resource.data) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status', 'totalAmountUsed', 'reportedDepleted', 'usageLogs', 'updatedAt', 'lastUpdated'
+          'status', 'totalAmountUsed', 'reportedDepleted', 'sopTags', 'usageLogs', 'updatedAt', 'lastUpdated'
         ]) && (
           (
             request.resource.data.status == resource.data.status &&
@@ -298,6 +353,28 @@ service cloud.firestore {
           (resource.data.status == 'PENDING_DEPLETION' && request.resource.data.status == 'IN_PROGRESS')
         )
       );
+      allow delete: if false;
+    }
+
+    // Central custom catalog. Physical deletes are forbidden; lifecycle uses
+    // the _isDeleted tombstone so historical request/standard keys can still
+    // resolve their labels.
+    match /artifacts/{appId}/standard_tags/{tagId} {
+      allow read: if hasPermission(appId, 'standard_view');
+      allow create: if hasPermission(appId, 'standard_edit') && (
+        validManualCatalogItem(request.resource.data) ||
+        validAccreditationCatalogItem(request.resource.data)
+      );
+      allow update: if hasPermission(appId, 'standard_edit') &&
+        request.resource.data._isDeleted is bool && (
+          (resource.data.locked == true && validAccreditationCatalogItem(request.resource.data) &&
+            request.resource.data.origin == resource.data.origin &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'description', 'deviceCodes', 'color', 'sourcePages', 'sortOrder',
+              '_isDeleted', 'supersededByDecision', 'supersededAt', 'lastUpdated'
+            ])) ||
+          (resource.data.locked != true && validManualCatalogItem(request.resource.data))
+        );
       allow delete: if false;
     }
     match /artifacts/{appId}/purchase_requests/{reqId} {

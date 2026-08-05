@@ -25,6 +25,11 @@ import { StateService } from '../../../core/services/state.service';
                   <i class="fa-solid fa-print"></i> In {{selectedCount()}} nhãn
               </button>
               @if (canEditStandards() || state.showLockedFeatures()) {
+                  <button [appLockPermission]="'standard_edit'" (click)="openBulkTagModal.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 rounded-lg shadow-sm shadow-fuchsia-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
+                      <i class="fa-solid fa-tags"></i> Gán nhãn
+                  </button>
+              }
+              @if (canEditStandards() || state.showLockedFeatures()) {
                   <button [appLockPermission]="'standard_edit'" (click)="deleteSelected.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg shadow-sm shadow-red-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
                       @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-eye-slash"></i> } Ẩn {{selectedCount()}} mục
                   </button>
@@ -58,6 +63,9 @@ import { StateService } from '../../../core/services/state.service';
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openCleanupModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn Hóa Tên Chất Chuẩn
+                    </button>
+                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openTagManager)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-tags text-fuchsia-500 w-4"></i> Quản lý danh mục nhãn
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tải nhiều CoA lên</div>
@@ -100,6 +108,8 @@ export class StandardsToolbarComponent {
   bulkCoaSelect = output<any>();
   openExportModal = output<void>();
   openCleanupModal = output<void>();
+  openBulkTagModal = output<void>();
+  openTagManager = output<void>();
 
   toggleFunctionMenu(event: MouseEvent) {
     event.stopPropagation();

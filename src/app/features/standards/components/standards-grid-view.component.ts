@@ -55,6 +55,12 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}
                                            </span>
                                        }
+                                       @for (method of (std.derivedMethodLabels || []).slice(0, 4); track method) {
+                                           <span class="bg-indigo-50/70 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-md text-[10px] font-black border border-indigo-100 dark:border-indigo-800/40 whitespace-nowrap"><i class="fa-solid fa-flask-vial mr-1"></i>{{method}}</span>
+                                       }
+                                       @for (device of std.derivedDeviceCodes || []; track device) {
+                                           <span class="bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-1 rounded-md text-[10px] font-black border border-fuchsia-100 dark:border-fuchsia-800/40 whitespace-nowrap"><i class="fa-solid fa-microchip mr-1"></i>{{device}}</span>
+                                       }
                                    </div>
                                    <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-indigo-600 dark:accent-indigo-500 cursor-pointer shrink-0 mt-0.5">
                                </div>

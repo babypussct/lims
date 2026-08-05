@@ -9,11 +9,14 @@ import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
+import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
+import { sanitizeLegacyTagKeys } from '../services/standard-tag.utils';
+import { StandardTagPickerComponent } from './standard-tag-picker.component';
 
 @Component({
   selector: 'app-standards-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, StandardTagPickerComponent],
   template: `
       <!-- ADD/EDIT MODAL (3 TABS) -->
       @if (isOpen()) {
@@ -54,6 +57,17 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                             <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
                                 <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: 10mg"></div>
                                 <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: BCBW1234"></div>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <app-standard-tag-picker
+                                    [selectedKeys]="standardSopTags()"
+                                    [options]="tagCatalog.selectableOptions()"
+                                    [max]="100"
+                                    label="Nhãn phương pháp / SOP"
+                                    (selectedKeysChange)="standardSopTags.set($event)"
+                                />
+                                <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500 italic">Thiết bị như GCMS, GCMSMS, LCMSMS... được suy ra từ nhãn phương pháp, không lưu thành nhãn độc lập.</p>
                             </div>
                         </div>
 
@@ -163,10 +177,13 @@ export class StandardsFormModalComponent {
   googleDriveService = inject(GoogleDriveService);
   auth = inject(AuthService);
   notificationCenter = inject(NotificationCenterService);
+  tagCatalog = inject(StandardTagCatalogService);
 
   isProcessing = signal(false);
   isUploading = signal(false);
   isDriveUploading = signal(false);
+  standardSopTags = signal<string[]>([]);
+  private originalStandardSopTags: string[] = [];
   unitOptions = UNIT_OPTIONS;
 
   form: FormGroup = this.fb.group({
@@ -186,8 +203,12 @@ export class StandardsFormModalComponent {
             if (currentStd) {
                 this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
                 this.form.patchValue(currentStd as any); 
+                this.originalStandardSopTags = sanitizeLegacyTagKeys(currentStd.sop_tags || []);
+                this.standardSopTags.set([...this.originalStandardSopTags]);
             } else {
                 this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
+                this.originalStandardSopTags = [];
+                this.standardSopTags.set([]);
             }
         }
     });
@@ -302,7 +323,13 @@ export class StandardsFormModalComponent {
         }
 
         if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
-        const standardData: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
+        const standardData: ReferenceStandard = {
+            ...val as any,
+            name: val.name?.trim(),
+            internal_id: val.internal_id?.toUpperCase().trim(),
+            location: val.location?.trim(),
+            sop_tags: [...this.standardSopTags()],
+        };
     
         if (this.std()) {
             const originalStd = this.std()!;
@@ -322,7 +349,9 @@ export class StandardsFormModalComponent {
                 (standardData as any).coa_requested_by = null;
             }
 
-            await this.stdService.updateStandard(standardData);
+            await this.stdService.updateStandard(standardData, {
+                originalTags: this.originalStandardSopTags,
+            });
             if (coaNotification) {
                 const admin = this.auth.currentUser();
                 await this.notificationCenter.publish({
@@ -352,6 +381,8 @@ export class StandardsFormModalComponent {
                 manufacturer: val.manufacturer,
                 received_date: val.received_date
             });
+            this.originalStandardSopTags = [];
+            this.standardSopTags.set([]);
         } else {
             this.closeModal.emit();
         }

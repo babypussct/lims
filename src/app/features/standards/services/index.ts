@@ -9,3 +9,4 @@ export { StandardCrudService }    from './standard-crud.service';
 export { StandardUsageService }   from './standard-usage.service';
 export { StandardRequestService } from './standard-request.service';
 export { StandardImportService }  from './standard-import.service';
+export { StandardTagCatalogService } from './standard-tag-catalog.service';

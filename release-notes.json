@@ -1,19 +1,23 @@
 {
-  "title": "Cải thiện Giao Nhận Mẫu và khả năng tương thích PWA",
+  "title": "Quản lý nhãn phương pháp hóa học và đồng bộ trả chất chuẩn",
   "highlights": [
-    "Giao Nhận Mẫu hiển thị đúng khi sidebar mở rộng và topbar đang bật.",
-    "Excel trên PWA giữ khu vực chuyển sheet rõ ràng, có thể cuộn ngang trên màn hình hẹp.",
-    "PDF trên PWA được xử lý ổn định hơn trên các WebView cũ."
+    "Bổ sung 119 mã phương pháp hóa học NAFI6/H-* từ danh mục VILAS 2025; không nhập các nhãn lõi sinh học.",
+    "Đồng bộ sopTags xuyên suốt luồng KNV báo trả và Admin xác nhận nhập kho trả, giữ đúng quyết định cuối cùng.",
+    "Tra cứu, lọc và thống kê chất chuẩn theo phương pháp thử và thiết bị phân tích."
   ],
   "features": [
-    "PDF worker được cache để mở tài liệu ổn định hơn khi mạng chập chờn hoặc ngoại tuyến."
+    "Catalog nhãn trung tâm cho phương pháp hóa học và nhãn thiết bị phụ như GCMS, GCMSMS, GCHRMS, LCMSMS, ICPMS và HPLC.",
+    "Gán nhãn hàng loạt an toàn với ADD, REMOVE và REPLACE; cảnh báo mạnh khi thay thế toàn bộ nhãn.",
+    "Tự động hiển thị nhãn thiết bị suy dẫn từ phương pháp mà không lưu trùng vào request hoặc chất chuẩn."
   ],
   "improvements": [
-    "Khu vực xem tài liệu thích ứng với vùng an toàn ở mép dưới màn hình điện thoại.",
-    "Lớp chọn văn bản PDF được tách khỏi phần hiển thị, giúp PDF vẫn đọc được khi lớp tương tác không tương thích."
+    "Tổng tồn kho được gom theo từng đơn vị đo thực tế và hiển thị kèm tổng số lọ.",
+    "Chuẩn hóa key bảo toàn casing ID gốc, giới hạn 10 nhãn khi báo trả và 100 nhãn trên chất chuẩn.",
+    "Bổ sung bộ chọn nhãn cho KNV/Admin, bộ lọc phương pháp–thiết bị và quản trị catalog custom tag."
   ],
   "fixes": [
-    "Sửa lỗi nội dung vùng chuyển sheet Excel bị che hoặc không thể nhấn trên PWA.",
-    "Sửa lỗi PDF báo undefined is not a function trong một số môi trường PWA."
+    "Không còn mất nhãn âm thầm: vượt giới hạn sẽ báo lỗi rõ ràng bằng assertTagLimit.",
+    "Firestore Rules kiểm tra kiểu mảng, giới hạn độ dài và khóa hard-delete đối với standard_tags.",
+    "Bulk update giới hạn 400 ghi mỗi batch và dùng arrayUnion/arrayRemove để tránh ghi đè nhãn đồng thời."
   ]
 }

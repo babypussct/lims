@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.04-b10
+## Phiên bản hiện tại: v26.08.05-b03
+
+### v26.08.05-b03
+
+#### 🚀 Tính năng mới
+
+- **Catalog phương pháp hóa học VILAS:** Bổ sung 119 mã NAFI6/H-* từ danh mục VILAS 2025; chỉ bao gồm phương pháp thử hóa học.
+- **Nhãn thiết bị phụ:** Hiển thị và lọc thiết bị suy dẫn như GCMS, GCMSMS, GCHRMS, LCMSMS, ICPMS và HPLC mà không làm tăng số nhãn lưu trữ.
+- **Gán nhãn hàng loạt:** Hỗ trợ ADD, REMOVE và REPLACE với xác nhận mạnh cho thao tác thay thế toàn bộ.
+
+#### ⚡ Tối ưu & cải tiến
+
+- **Đồng bộ luồng trả chất chuẩn:** KNV có thể thêm hoặc reset `sopTags`; Admin quyết định `finalSopTags` khi nhận trả và hệ thống ghi nhất quán vào request lẫn standard.
+- **Tồn kho theo đơn vị:** Tổng hợp riêng mg, ml, tube... và hiển thị kèm tổng số lọ để tránh cộng sai đơn vị.
+- **Catalog nhãn trung tâm:** Nạp trực tiếp Target Groups, hỗ trợ custom tag, fallback rõ ràng cho SOP/Group đã lưu trữ và bảo toàn casing của ID gốc.
+
+#### 🐛 Sửa lỗi & an toàn dữ liệu
+
+- Giới hạn 10 nhãn khi báo trả, 100 nhãn trên chất chuẩn và 400 ghi mỗi batch; vượt giới hạn báo lỗi rõ ràng thay vì mất nhãn âm thầm.
+- Firestore Rules kiểm tra mảng và độ dài `sopTags`/`sop_tags`, đồng thời cấm hard-delete `standard_tags`.
+- Dùng `arrayUnion`/`arrayRemove` cho bulk ADD/REMOVE để không ghi đè nhãn do thao tác đồng thời.
 
 ### v26.08.04-b10
 

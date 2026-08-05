@@ -53,6 +53,8 @@ import { StateService } from '../../../core/services/state.service';
                               <div class="flex flex-wrap gap-2 mt-auto">
                                   @if(std.internal_id) { <span class="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-black border border-indigo-100 dark:border-indigo-800/50 tracking-tight">{{std.internal_id}}</span> }
                                   @if(std.location) { <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}</span> }
+                                  @for (method of (std.derivedMethodLabels || []).slice(0, 4); track method) { <span class="px-2 py-1 rounded-md bg-indigo-50/70 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-black border border-indigo-100 dark:border-indigo-800/40"><i class="fa-solid fa-flask-vial mr-1"></i>{{method}}</span> }
+                                  @for (device of std.derivedDeviceCodes || []; track device) { <span class="px-2 py-1 rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-black border border-fuchsia-100 dark:border-fuchsia-800/40"><i class="fa-solid fa-microchip mr-1"></i>{{device}}</span> }
                               </div>
                           </div>
                        </td>

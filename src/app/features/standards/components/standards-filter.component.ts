@@ -1,6 +1,8 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { StandardDeviceCode, StandardDeviceOption, StandardTagOption } from '../../../core/models/standard.model';
+import { formatStockSummary, StockSummaryResult } from '../services/standard-tag.utils';
 
 @Component({
   selector: 'app-standards-filter',
@@ -52,12 +54,32 @@ import { FormsModule } from '@angular/forms';
               </button>
            </div>
        </div>
+
+       <div class="flex flex-col sm:flex-row gap-2">
+           <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm h-[30px] flex-1">
+               <span class="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-flask mr-1"></i> Phương pháp:</span>
+               <select [ngModel]="methodTagFilter()" (ngModelChange)="methodTagFilterChange.emit($event || null)" class="min-w-0 flex-1 bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1">
+                   <option [ngValue]="null">Tất cả phương pháp</option>
+                   @for (option of tagOptions(); track option.key) { <option [ngValue]="option.key">{{option.label}}</option> }
+               </select>
+           </div>
+           <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm h-[30px] flex-1">
+               <span class="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-microchip mr-1"></i> Thiết bị:</span>
+               <select [ngModel]="deviceFilter()" (ngModelChange)="deviceFilterChange.emit($event)" class="min-w-0 flex-1 bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1">
+                   <option value="all">Tất cả thiết bị</option>
+                   @for (device of deviceOptions(); track device.code) { <option [value]="device.code">{{device.label}}</option> }
+               </select>
+           </div>
+       </div>
        
        <!-- Search Stats -->
        <div class="flex justify-between items-center px-1">
            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">
                Hiển thị: {{visibleCount()}} / {{filteredCount()}} kết quả 
                @if(searchTerm()) { <span class="text-indigo-500 dark:text-indigo-400">(Lọc theo "{{searchTerm()}}")</span> }
+           </span>
+           <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-300 text-right" title="Tồn kho được cộng riêng theo từng đơn vị, không quy đổi chéo">
+               Tồn: {{stockSummaryText()}}
            </span>
            @if(isLoading()) { <span class="text-[9px] text-blue-500 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
        </div>
@@ -73,11 +95,19 @@ export class StandardsFilterComponent {
   visibleCount = input<number>(0);
   filteredCount = input<number>(0);
   isLoading = input<boolean>(false);
+  tagOptions = input<StandardTagOption[]>([]);
+  methodTagFilter = input<string | null>(null);
+  deviceOptions = input<readonly StandardDeviceOption[]>([]);
+  deviceFilter = input<StandardDeviceCode | 'all'>('all');
+  stockSummary = input<StockSummaryResult>({ totalContainers: 0, byUnit: [] });
+  stockSummaryText = computed(() => formatStockSummary(this.stockSummary()));
 
   searchTermChange = output<string>();
   activeWidgetFilterChange = output<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>();
   sortOptionChange = output<string>();
   viewModeChange = output<'list' | 'grid'>();
+  methodTagFilterChange = output<string | null>();
+  deviceFilterChange = output<StandardDeviceCode | 'all'>();
 
   onSearchInput(val: string) {
     this.searchTermChange.emit(val);

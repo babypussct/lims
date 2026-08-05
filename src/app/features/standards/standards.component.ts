@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem, StandardDeviceCode, StandardTagOption } from '../../core/models/standard.model';
 import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
 import { getSameStandardLots, isFefoCandidate, sortStandardsByFefo } from '../../shared/utils/standard-fefo';
 import { ToastService } from '../../core/services/toast.service';
@@ -32,11 +32,15 @@ import { StandardsGridViewComponent } from './components/standards-grid-view.com
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
 import { StandardsDataCleanupModalComponent } from './components/standards-data-cleanup-modal.component';
 import { StandardsBackfillModalComponent, BackfillData } from './components/standards-backfill-modal.component';
+import { StandardsBulkTagModalComponent } from './components/standards-bulk-tag-modal.component';
+import { StandardsTagManagerModalComponent } from './components/standards-tag-manager-modal.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
+import { StandardTagCatalogService } from './services/standard-tag-catalog.service';
+import { StandardBulkTagMode, summarizeStockByUnit, StockSummaryResult } from './services/standard-tag.utils';
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -53,6 +57,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   googleDriveService = inject(GoogleDriveService);
   printService = inject(PrintService);
   progressService = inject(ProgressService);
+  tagCatalog = inject(StandardTagCatalogService);
   datePipe = inject(DatePipe);
   Math = Math;
   isLoading = signal(true);
@@ -61,6 +66,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   isImporting = signal(false);
   isParsingImport = signal(false);
   isProcessing = signal(false); // Hardened UX State
+  showTagManagerModal = signal(false);
 
   // Responsive view mode: mobile (touch device) defaults to grid, desktop defaults to list
   private mobileMediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
@@ -74,6 +80,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   allStandards = signal<ReferenceStandard[]>([]); // Holds ALL data from Firebase stream
   displayLimit = signal<number>(50); // Virtual scroll limit
   activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>('all');
+  activeMethodTagFilter = signal<string | null>(null);
+  activeDeviceFilter = signal<StandardDeviceCode | 'all'>('all');
   private snapshotUnsub?: Unsubscribe;
 
   // --- Export State ---
@@ -126,6 +134,20 @@ export class StandardsComponent implements OnInit, OnDestroy {
       let data = this.allStandards().filter(item => !item._isDeleted && (item.status as any) !== 'DELETED');
       const term = this.searchTerm().trim().toLowerCase();
       const widgetFilter = this.activeWidgetFilter();
+
+      const methodKey = this.activeMethodTagFilter();
+      if (methodKey) data = data.filter(item => (item.sop_tags || []).includes(methodKey));
+      const device = this.activeDeviceFilter();
+      if (device !== 'all') {
+          data = data.filter(item => {
+              const codes = new Set<StandardDeviceCode>();
+              for (const key of item.sop_tags || []) {
+                  const option = this.tagCatalog.resolveTag(key);
+                  for (const code of option.deviceCodes || []) codes.add(code);
+              }
+              return codes.has(device);
+          });
+      }
 
       // 1. WIDGET FILTER
       if (widgetFilter !== 'all') {
@@ -209,14 +231,25 @@ export class StandardsComponent implements OnInit, OnDestroy {
       });
   });
 
+  /** Overview numbers always follow the active method/device/widget/search set. */
+  groupFilteredStats = computed(() => this.computeStats(this.filteredItems()));
+  filteredStockSummary = computed<StockSummaryResult>(() => summarizeStockByUnit(this.filteredItems()));
+
   // Display subset for DOM performance
   visibleItems = computed(() => {
-      return this.filteredItems().slice(0, this.displayLimit());
+      return this.filteredItems().slice(0, this.displayLimit()).map(item => ({
+          ...item,
+          derivedDeviceCodes: this.tagCatalog.deriveDeviceCodes(item.sop_tags),
+          derivedMethodLabels: (item.sop_tags || [])
+              .map(key => this.tagCatalog.resolveTag(key).methodCode || this.tagCatalog.resolveTag(key).label)
+              .filter(Boolean),
+      }));
   });
 
   hasMore = computed(() => this.visibleItems().length < this.filteredItems().length);
 
   selectedIds = signal<Set<string>>(new Set());
+  showBulkTagModal = signal(false);
 
   /** Danh sach lo cung ten voi selectedStd(), da sap xep FEFO. Dung cho Assign Modal. */
   sameNameAsSelected = computed(() => {
@@ -375,6 +408,31 @@ export class StandardsComponent implements OnInit, OnDestroy {
   toggleAll() {
       if (this.isAllSelected()) this.selectedIds.set(new Set());
       else this.selectedIds.set(new Set(this.visibleItems().map(i => i.id)));
+  }
+
+  async confirmBulkTagUpdate(data: { tags: string[]; mode: StandardBulkTagMode }): Promise<void> {
+      if (this.isProcessing()) return;
+      const ids = [...this.selectedIds()];
+      if (!ids.length) return;
+      if (data.mode === 'REPLACE' && !await this.confirmationService.confirm({
+          message: `REPLACE sẽ thay thế toàn bộ nhãn trên ${ids.length} lọ. Tiếp tục?`,
+          confirmText: 'Xác nhận REPLACE',
+          isDangerous: true,
+      })) return;
+      this.isProcessing.set(true);
+      try {
+          const result = await this.stdService.bulkUpdateStandardTags(ids, data.tags, data.mode);
+          const message = `Đã cập nhật ${result.successIds.length} lọ` +
+              (result.failed.length ? `; ${result.failed.length} lỗi` : '') +
+              (result.skippedIds.length ? `; ${result.skippedIds.length} không còn tồn tại` : '');
+          this.toast.show(message, result.failed.length ? 'error' : 'success');
+          this.showBulkTagModal.set(false);
+          if (!result.failed.length) this.selectedIds.set(new Set());
+      } catch (error: any) {
+          this.toast.show('Lỗi gán nhãn: ' + (error?.message || error), 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
   refreshData() {
@@ -1042,6 +1100,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   { header: 'Phan loai',     key: 'pl',      width: 17 },
                   { header: 'Ma quan ly',    key: 'mql',     width: 14 },
                   { header: 'Ten chuan',     key: 'ten',     width: 32 },
+                  { header: 'Phuong phap',   key: 'methods', width: 28 },
+                  { header: 'Thiet bi',      key: 'devices', width: 20 },
+                  { header: 'Phong thi nghiem', key: 'lab', width: 18 },
+                  { header: 'Quyet dinh',     key: 'decision', width: 24 },
                   { header: 'So lo',         key: 'lot',     width: 14 },
                   { header: 'Hang san xuat', key: 'hang',    width: 22 },
                   { header: 'Ma Catalog',    key: 'catalog', width: 16 },
@@ -1059,6 +1121,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   { header: 'Phan loai',     key: 'pl',       width: 17 },
                   { header: 'Ma quan ly',    key: 'mql',      width: 14 },
                   { header: 'Ten chuan',     key: 'ten',      width: 32 },
+                  { header: 'Phuong phap',   key: 'methods',  width: 28 },
+                  { header: 'Thiet bi',      key: 'devices',  width: 20 },
+                  { header: 'Phong thi nghiem', key: 'lab', width: 18 },
+                  { header: 'Quyet dinh',     key: 'decision', width: 24 },
                   { header: 'Ten hoa hoc',   key: 'tenhh',    width: 28 },
                   { header: 'So CAS',        key: 'cas',      width: 14 },
                   { header: 'Ma Catalog',    key: 'catalog',  width: 16 },
@@ -1128,10 +1194,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
           let stt = 1;
 
           const buildRowData = (item: any, label: string, sttVal: number | string): Record<string, any> => {
+              const methodLabels = (item.sop_tags || [])
+                  .map((key: string) => this.tagCatalog.resolveTag(key).methodCode || this.tagCatalog.resolveTag(key).label)
+                  .join(', ');
+              const methodOptions: StandardTagOption[] = (item.sop_tags || []).map((key: string) => this.tagCatalog.resolveTag(key));
+              const sourceLabs = [...new Set(methodOptions.map(option => option.sourceLabCode).filter(Boolean))].join(', ');
+              const sourceDecisions = [...new Set(methodOptions.map(option => option.sourceDecision).filter(Boolean))].join(', ');
+              const deviceLabels = this.tagCatalog.deriveDeviceCodes(item.sop_tags).join(', ');
               if (isExpiry) {
                   return {
                       stt: sttVal, pl: label,
                       mql: item.internal_id || '', ten: item.name,
+                      methods: methodLabels, devices: deviceLabels, lab: sourceLabs, decision: sourceDecisions,
                       lot: item.lot_number || '', hang: item.manufacturer || '',
                       catalog: item.product_code || '',
                       luong: item.current_amount, dv: item.unit,
@@ -1144,6 +1218,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
               return {
                   stt: sttVal, pl: label,
                   mql: item.internal_id || '', ten: item.name,
+                  methods: methodLabels, devices: deviceLabels, lab: sourceLabs, decision: sourceDecisions,
                   tenhh: item.chemical_name || '', cas: item.cas_number || '',
                   catalog: item.product_code || '', lot: item.lot_number || '',
                   dtk: item.purity || '', hang: item.manufacturer || '',
@@ -1256,6 +1331,27 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // Private helpers
+
+  private computeStats(data: ReferenceStandard[]) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const threeMonthsEnd = new Date(now.getFullYear(), now.getMonth() + 4, 1).getTime();
+      let expired = 0;
+      let expiringSoon = 0;
+      let expiring3Months = 0;
+      let lowStock = 0;
+      for (const item of data) {
+          if ((item.current_amount / (item.initial_amount || 1)) <= 0.2) lowStock++;
+          if (!item.expiry_date) continue;
+          const expDate = new Date(item.expiry_date).getTime();
+          if (expDate < today) expired++;
+          else if (expDate <= thirtyDays) expiringSoon++;
+          if (expDate >= thisMonthStart && expDate < threeMonthsEnd) expiring3Months++;
+      }
+      return { expired, expiringSoon, expiring3Months, lowStock, total: data.length };
+  }
 
   private normalizeStr(s: string): string {
       return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();

@@ -459,7 +459,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.activeModal.set('return');
   }
 
-  async confirmReturn(data: { amount: number, isDepleted: boolean }) {
+  async confirmReturn(data: { amount: number, isDepleted: boolean, sopTags: string[] }) {
       const req = this.selectedRequest();
       if (!req || !req.id || this.isProcessing()) return;
       
@@ -469,21 +469,27 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       try {
           if (isForce) {
               const user = this.auth.currentUser();
-              await this.stdService.returnStandard(
+              const result = await this.stdService.returnStandard(
                   req.id, 
                   req.standardId, 
                   user?.uid || '', 
                   user?.displayName || user?.email || 'Unknown', 
                   data.isDepleted, 
                   data.amount, 
-                  req.standardDetails?.unit || 'mg'
+                  req.standardDetails?.unit || 'mg',
+                  undefined,
+                  data.sopTags
               );
               this.toast.show('Đã thu hồi chuẩn thành công', 'success');
+              if (result.tagMergeStatus === 'SKIPPED_LIMIT') {
+                  this.toast.show(result.tagMergeWarning || 'Đã hoàn trả kho nhưng chưa gộp được nhãn vì chất chuẩn đã đủ giới hạn.', 'info');
+              }
           } else {
               // Employee -> Pending Admin Receive
               await this.stdService.updateRequestStatus(req.id, 'PENDING_RETURN', { 
                   totalAmountUsed: data.amount,
-                  reportedDepleted: data.isDepleted
+                  reportedDepleted: data.isDepleted,
+                  sopTags: data.sopTags
               });
               this.toast.show('Đã báo cáo trả chuẩn', 'success');
           }
@@ -559,7 +565,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.activeModal.set('adminReceive');
   }
 
-  async confirmAdminReceive(data: { amount: number, isDepleted: boolean, disposalReason: string }) {
+  async confirmAdminReceive(data: { amount: number, isDepleted: boolean, disposalReason: string, finalSopTags: string[] }) {
       const req = this.selectedRequest();
       if (!req || !req.id || this.isProcessing()) return;
       const user = this.auth.currentUser();
@@ -568,7 +574,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.isProcessing.set(true);
       try {
           const reason = data.disposalReason.trim();
-          await this.stdService.returnStandard(
+          const result = await this.stdService.returnStandard(
               req.id,
               req.standardId,
               user.uid,
@@ -576,9 +582,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               data.isDepleted,
               data.amount,
               req.standardDetails?.unit || 'mg',
-              data.isDepleted && reason ? reason : undefined
+              data.isDepleted && reason ? reason : undefined,
+              data.finalSopTags
           );
           this.toast.show('Đã xác nhận nhận lại chuẩn thành công', 'success');
+          if (result.tagMergeStatus === 'SKIPPED_LIMIT') {
+              this.toast.show(result.tagMergeWarning || 'Đã nhập kho trả nhưng chưa gộp được nhãn vì chất chuẩn đã đủ giới hạn.', 'info');
+          }
           this.closeActionModal();
       } catch (e: any) {
           this.toast.show('Lỗi: ' + e.message, 'error');

@@ -20,13 +20,14 @@ import { QueryDocumentSnapshot, QueryConstraint, Unsubscribe } from 'firebase/fi
 import {
   ReferenceStandard, StandardCleanupBatch, StandardNameUpdate, UsageLog, StandardsPage,
   ImportPreviewItem, ImportUsageLogPreviewItem,
-  StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus
+  StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus, BulkTagUpdateResult, ReturnStandardResult
 } from '../../core/models/standard.model';
 
 import { StandardCacheService }   from './services/standard-cache.service';
 import { StandardCrudService }    from './services/standard-crud.service';
 import { StandardUsageService }   from './services/standard-usage.service';
 import { StandardRequestService } from './services/standard-request.service';
+import { StandardBulkTagMode } from './services/standard-tag.utils';
 import {
   StandardImportSaveResult,
   StandardImportService,
@@ -95,8 +96,8 @@ export class StandardService {
   async addStandard(std: ReferenceStandard): Promise<void> {
     return this.crud.addStandard(std);
   }
-  async updateStandard(std: ReferenceStandard): Promise<void> {
-    return this.crud.updateStandard(std);
+  async updateStandard(std: ReferenceStandard, tagDelta?: { originalTags: readonly string[] }): Promise<void> {
+    return this.crud.updateStandard(std, tagDelta);
   }
   async updateStandardNames(updates: StandardNameUpdate[]): Promise<string> {
     return this.crud.updateStandardNames(updates);
@@ -112,6 +113,9 @@ export class StandardService {
   }
   async updateStandardStock(stdId: string, newAmount: number, reason: string): Promise<void> {
     return this.crud.updateStandardStock(stdId, newAmount, reason);
+  }
+  async bulkUpdateStandardTags(ids: readonly string[], tags: unknown, mode: StandardBulkTagMode): Promise<BulkTagUpdateResult> {
+    return this.crud.bulkUpdateStandardTags(ids, tags, mode);
   }
   async deleteStandard(id: string, name?: string): Promise<void> {
     return this.crud.deleteStandard(id, name);
@@ -218,9 +222,10 @@ export class StandardService {
   async returnStandard(
     requestId: string, standardId: string,
     receiverId: string, receiverName: string,
-    isDepleted?: boolean, amountUsed?: number, unit?: string, disposalReason?: string
-  ): Promise<void> {
-    return this.request.returnStandard(requestId, standardId, receiverId, receiverName, isDepleted, amountUsed, unit, disposalReason);
+    isDepleted?: boolean, amountUsed?: number, unit?: string, disposalReason?: string,
+    finalSopTags?: string[]
+  ): Promise<ReturnStandardResult> {
+    return this.request.returnStandard(requestId, standardId, receiverId, receiverName, isDepleted, amountUsed, unit, disposalReason, finalSopTags);
   }
   async hardDeleteRequest(request: StandardRequest): Promise<void> {
     return this.request.hardDeleteRequest(request);

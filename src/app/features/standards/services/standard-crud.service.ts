@@ -4,7 +4,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDocs, getDoc, updateDoc, setDoc, writeBatch,
   serverTimestamp, deleteField, query, orderBy, limit, startAfter,
-  where, QueryDocumentSnapshot, QueryConstraint, runTransaction
+  where, QueryDocumentSnapshot, QueryConstraint, runTransaction, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import {
   ReferenceStandard,
@@ -13,11 +13,23 @@ import {
   StandardNameSnapshot,
   StandardNameUpdate,
   StandardsPage,
+  BulkTagUpdateResult,
 } from '../../../core/models/standard.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { generateSlug, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
+import { StandardTagCatalogService } from './standard-tag-catalog.service';
+import {
+  applyTagMode,
+  assertTagLimit,
+  MAX_BULK_WRITES,
+  MAX_STANDARD_TAGS,
+  mergeUniqueTagKeys,
+  normalizeTagKeysStrict,
+  StandardBulkTagMode,
+  sanitizeLegacyTagKeys,
+} from './standard-tag.utils';
 
 /**
  * StandardCrudService — Các thao tác CRUD cơ bản trên ReferenceStandard.
@@ -32,6 +44,7 @@ export class StandardCrudService {
   private toast = inject(ToastService);
   private cache = inject(StandardCacheService);
   private notificationCenter = inject(NotificationCenterService);
+  private tagCatalog = inject(StandardTagCatalogService);
 
   // ─── Search Key ──────────────────────────────────────────────────────────────
   generateSearchKey(std: ReferenceStandard): string {
@@ -90,13 +103,20 @@ export class StandardCrudService {
   async addStandard(std: ReferenceStandard): Promise<void> {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền thêm chuẩn.');
     this.validateStandardAmounts(std);
+    if (std.sop_tags !== undefined) {
+      std.sop_tags = normalizeTagKeysStrict(std.sop_tags, 'Nhãn chất chuẩn');
+      assertTagLimit(std.sop_tags, MAX_STANDARD_TAGS, 'Nhãn chất chuẩn');
+      await this.tagCatalog.refresh();
+      std.sop_tags = this.tagCatalog.assertSelectableKeys(std.sop_tags, 'Nhãn chất chuẩn');
+    }
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+    const { derivedDeviceCodes: _derivedDeviceCodes, derivedMethodLabels: _derivedMethodLabels, ...persistedStandard } = std;
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (snapshot.exists()) throw new Error('Mã chuẩn đã tồn tại; không thể ghi đè bằng thao tác thêm mới.');
       transaction.set(ref, sanitizeForFirebase({
-        ...std,
+        ...persistedStandard,
         status: std.current_amount <= 0 ? 'DEPLETED' : 'AVAILABLE',
         _isDeleted: false,
         lastUpdated: serverTimestamp()
@@ -106,15 +126,42 @@ export class StandardCrudService {
     await this.fb.updateMetadata('standards');
   }
 
-  async updateStandard(std: ReferenceStandard): Promise<void> {
+  async updateStandard(
+    std: ReferenceStandard,
+    tagDelta?: { originalTags: readonly string[] }
+  ): Promise<void> {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật chuẩn.');
     this.validateStandardAmounts(std);
+    if (std.sop_tags !== undefined) {
+      std.sop_tags = normalizeTagKeysStrict(std.sop_tags, 'Nhãn chất chuẩn');
+      assertTagLimit(std.sop_tags, MAX_STANDARD_TAGS, 'Nhãn chất chuẩn');
+      await this.tagCatalog.refresh();
+    }
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
       const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+      let tagsToPersist: string[] | undefined;
+      if (std.sop_tags !== undefined) {
+        const requestedTags = this.tagCatalog.assertKnownOrExistingKeys(std.sop_tags, fresh.sop_tags || [], 'Nhãn chất chuẩn');
+        if (tagDelta) {
+          // Recompute the user's add/remove intent against the transaction's
+          // fresh snapshot so a concurrent return or bulk ADD is preserved.
+          const originalTags = sanitizeLegacyTagKeys(tagDelta.originalTags);
+          const added = requestedTags.filter(key => !originalTags.includes(key));
+          const removed = new Set(originalTags.filter(key => !requestedTags.includes(key)));
+          const freshTags = sanitizeLegacyTagKeys(fresh.sop_tags);
+          tagsToPersist = mergeUniqueTagKeys(
+            freshTags.filter(key => !removed.has(key)),
+            added
+          );
+          assertTagLimit(tagsToPersist, MAX_STANDARD_TAGS, 'Nhãn chất chuẩn');
+        } else {
+          tagsToPersist = requestedTags;
+        }
+      }
       const workflowActive = fresh.status === 'IN_USE' || Boolean(
         fresh.current_holder || fresh.current_holder_uid || fresh.current_request_id || fresh.has_pending_request
       );
@@ -129,20 +176,25 @@ export class StandardCrudService {
         coa_requested_by: _coaRequester,
         lastUpdated: _lastUpdated,
         _isDeleted: _deleted,
+        derivedDeviceCodes: _derivedDeviceCodes,
+        derivedMethodLabels: _derivedMethodLabels,
+        sop_tags: _sopTags,
         initial_amount: requestedInitialAmount,
         current_amount: requestedCurrentAmount,
         unit: requestedUnit,
         ...metadata
       } = std;
       const currentAmount = workflowActive ? fresh.current_amount : requestedCurrentAmount;
-      transaction.update(ref, sanitizeForFirebase({
+      const persistedMetadata: Record<string, any> = {
         ...metadata,
         initial_amount: workflowActive ? fresh.initial_amount : requestedInitialAmount,
         current_amount: currentAmount,
         unit: workflowActive ? fresh.unit : requestedUnit,
         status: workflowActive ? fresh.status : (currentAmount <= 0 ? 'DEPLETED' : 'AVAILABLE'),
         lastUpdated: serverTimestamp()
-      }));
+      };
+      if (tagsToPersist !== undefined) persistedMetadata['sop_tags'] = tagsToPersist;
+      transaction.update(ref, sanitizeForFirebase(persistedMetadata));
     });
     await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
@@ -404,6 +456,97 @@ export class StandardCrudService {
     });
     await this.logGlobalActivity('UPDATE_STOCK', `Cập nhật tồn kho: ${newAmount} (${reason})`, stdId);
     await this.fb.updateMetadata('standards');
+  }
+
+  /**
+   * Safe bulk tag assignment. ADD/REMOVE use Firestore array transforms to
+   * avoid clobbering concurrent edits; REPLACE intentionally writes the full
+   * array and is limited to the same bounded batch size.
+   */
+  async bulkUpdateStandardTags(
+    ids: readonly string[],
+    tags: unknown,
+    mode: StandardBulkTagMode
+  ): Promise<BulkTagUpdateResult> {
+    if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền gán nhãn chất chuẩn.');
+    const selected = normalizeTagKeysStrict(tags, 'Nhãn bulk');
+    if (selected.length > MAX_STANDARD_TAGS) throw new Error(`Nhãn bulk tối đa ${MAX_STANDARD_TAGS} nhãn.`);
+    await this.tagCatalog.refresh();
+    const uniqueIds = [...new Set(ids.map(id => String(id || '').trim()).filter(Boolean))];
+    if (!uniqueIds.length) return { successIds: [], failed: [], skippedIds: [] };
+
+    const successIds: string[] = [];
+    const failed: { standardId: string; reason: string }[] = [];
+    const skippedIds: string[] = [];
+    for (let offset = 0; offset < uniqueIds.length; offset += MAX_BULK_WRITES) {
+      const chunk = uniqueIds.slice(offset, offset + MAX_BULK_WRITES);
+      const refs = chunk.map(id => doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
+      const snapshots = await Promise.all(refs.map(ref => getDoc(ref)));
+      const batch = writeBatch(this.fb.db);
+      let writeCount = 0;
+      const chunkSuccessIds: string[] = [];
+      snapshots.forEach((snapshot, index) => {
+        const id = chunk[index];
+        if (!snapshot.exists()) {
+          skippedIds.push(id);
+          return;
+        }
+        const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+        try {
+          if (selected.length === 0 && mode !== 'REPLACE') {
+            // ADD/REMOVE with an empty selection is a true no-op: do not
+            // touch lastUpdated or create an unnecessary Firestore write.
+            successIds.push(id);
+            return;
+          }
+          if (mode === 'ADD' || mode === 'REPLACE') {
+            this.tagCatalog.assertSelectableKeys(selected, `Nhãn bulk ${mode}`);
+          } else {
+            this.tagCatalog.assertKnownOrExistingKeys(selected, fresh.sop_tags || [], 'Nhãn bulk REMOVE');
+          }
+          const next = applyTagMode(fresh.sop_tags, selected, mode);
+          const ref = refs[index];
+          if (mode === 'ADD') {
+            // For malformed legacy arrays, replace with the sanitized result;
+            // otherwise arrayUnion preserves concurrent additions.
+            const legacy = sanitizeLegacyTagKeys(fresh.sop_tags);
+            const currentRaw = Array.isArray(fresh.sop_tags) ? fresh.sop_tags : [];
+            const updateValue = JSON.stringify(legacy) === JSON.stringify(currentRaw)
+              ? arrayUnion(...selected)
+              : next;
+            batch.update(ref, { sop_tags: updateValue, lastUpdated: serverTimestamp() });
+          } else if (mode === 'REMOVE') {
+            const legacy = sanitizeLegacyTagKeys(fresh.sop_tags);
+            const currentRaw = Array.isArray(fresh.sop_tags) ? fresh.sop_tags : [];
+            const updateValue = JSON.stringify(legacy) === JSON.stringify(currentRaw)
+              ? arrayRemove(...selected)
+              : next;
+            batch.update(ref, { sop_tags: updateValue, lastUpdated: serverTimestamp() });
+          } else {
+            batch.update(ref, { sop_tags: next, lastUpdated: serverTimestamp() });
+          }
+          successIds.push(id);
+          chunkSuccessIds.push(id);
+          writeCount++;
+        } catch (error: any) {
+          failed.push({ standardId: id, reason: error?.message || 'Không thể tính tập nhãn mới.' });
+        }
+      });
+      if (writeCount > 0) {
+        try {
+          await batch.commit();
+        } catch (error: any) {
+          for (const id of chunkSuccessIds) {
+            const successIndex = successIds.indexOf(id);
+            if (successIndex >= 0) successIds.splice(successIndex, 1);
+            failed.push({ standardId: id, reason: error?.message || 'Batch commit thất bại.' });
+          }
+        }
+      }
+    }
+    this.cache.invalidateLocalStandardsCache();
+    await this.logGlobalActivity('BULK_UPDATE_STANDARD_TAGS', `Gán nhãn ${mode} cho ${successIds.length} lô chuẩn.`);
+    return { successIds, failed, skippedIds };
   }
 
   async deleteStandard(id: string, name = ''): Promise<void> {

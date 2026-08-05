@@ -1,5 +1,5 @@
 
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { 
   collection, doc, getDocs, setDoc, deleteDoc, 
@@ -11,6 +11,8 @@ import { TargetGroup } from '../../core/models/sop.model';
 export class TargetService {
   private fb = inject(FirebaseService);
   private groupsPromise?: Promise<TargetGroup[]>;
+  private readonly groupsSignal = signal<TargetGroup[]>([]);
+  readonly groups = this.groupsSignal.asReadonly();
 
   private get collectionRef() {
     return collection(this.fb.db, `artifacts/${this.fb.APP_ID}/target_groups`);
@@ -20,7 +22,11 @@ export class TargetService {
     if (!this.groupsPromise || forceRefresh) {
       const q = query(this.collectionRef, orderBy('name'));
       this.groupsPromise = getDocs(q)
-        .then(snapshot => snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TargetGroup)))
+        .then(snapshot => {
+          const groups = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TargetGroup));
+          this.groupsSignal.set(groups);
+          return groups;
+        })
         .catch(error => {
           this.groupsPromise = undefined;
           throw error;
@@ -39,11 +45,13 @@ export class TargetService {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/target_groups/${group.id}`);
     await setDoc(ref, { ...group, lastUpdated: serverTimestamp() });
     this.groupsPromise = undefined;
+    await this.getAllGroups(true);
   }
 
   async deleteGroup(id: string): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/target_groups/${id}`);
     await deleteDoc(ref);
     this.groupsPromise = undefined;
+    await this.getAllGroups(true);
   }
 }

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.05-b02",
-    "title": "Cải thiện Giao Nhận Mẫu và khả năng tương thích PWA",
+    "version": "v26.08.05-b03",
+    "title": "Quản lý nhãn phương pháp hóa học và đồng bộ trả chất chuẩn",
     "features": [
-      "Giao Nhận Mẫu hiển thị đúng khi sidebar mở rộng và topbar đang bật.",
-      "Excel trên PWA giữ khu vực chuyển sheet rõ ràng, có thể cuộn ngang trên màn hình hẹp.",
-      "PDF trên PWA được xử lý ổn định hơn trên các WebView cũ.",
-      "PDF worker được cache để mở tài liệu ổn định hơn khi mạng chập chờn hoặc ngoại tuyến.",
-      "Khu vực xem tài liệu thích ứng với vùng an toàn ở mép dưới màn hình điện thoại."
+      "Bổ sung 119 mã phương pháp hóa học NAFI6/H-* từ danh mục VILAS 2025; không nhập các nhãn lõi sinh học.",
+      "Đồng bộ sopTags xuyên suốt luồng KNV báo trả và Admin xác nhận nhập kho trả, giữ đúng quyết định cuối cùng.",
+      "Tra cứu, lọc và thống kê chất chuẩn theo phương pháp thử và thiết bị phân tích.",
+      "Catalog nhãn trung tâm cho phương pháp hóa học và nhãn thiết bị phụ như GCMS, GCMSMS, GCHRMS, LCMSMS, ICPMS và HPLC.",
+      "Gán nhãn hàng loạt an toàn với ADD, REMOVE và REPLACE; cảnh báo mạnh khi thay thế toàn bộ nhãn."
     ]
   },
   "assetGroups": [

@@ -1,8 +1,11 @@
 import { Component, Input, Output, EventEmitter, signal, effect, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StandardRequest, ReferenceStandard } from '../../../../core/models/standard.model';
 import { getStandardizedAmount, formatNum } from '../../../../shared/utils/utils';
+import { StandardTagCatalogService } from '../../services/standard-tag-catalog.service';
+import { MAX_RETURN_TAGS, sanitizeLegacyTagKeys } from '../../services/standard-tag.utils';
 
 export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminReceive' | null;
 
@@ -191,6 +194,25 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <label for="isDepleted" class="text-sm font-bold text-amber-700 dark:amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
                   </div>
 
+                  <div class="space-y-2 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
+                      <div class="flex items-center justify-between">
+                          <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Nhãn phương pháp / SOP <span class="font-medium text-indigo-500">(khuyến nghị, {{returnSopTags().length}}/{{maxReturnTags}})</span></label>
+                          <button type="button" (click)="returnSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
+                      </div>
+                      <div class="flex gap-2">
+                          <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
+                              <option value="">Chọn nhãn trong danh mục...</option>
+                              @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{option.label}}</option> }
+                          </select>
+                          <button type="button" (click)="addReturnTag()" [disabled]="!returnTagToAdd() || returnSopTags().length >= maxReturnTags" class="rounded-xl bg-indigo-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5">
+                          @for (key of returnSopTags(); track key) {
+                              <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300">{{tagCatalog.resolveTag(key).label}}<button type="button" (click)="removeReturnTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                          }
+                      </div>
+                  </div>
+
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
                       <button (click)="onReturn()" [disabled]="returnAmount() === null || returnAmount()! < minimumLoggedAmount() || isProcessing || (!(request.usageLogs?.length) && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
@@ -286,6 +308,25 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       </div>
                   }
 
+                  <div class="space-y-2 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
+                      <div class="flex items-center justify-between">
+                          <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Nhãn quyết định cuối của Admin <span class="font-medium text-indigo-500">({{adminFinalSopTags().length}}/{{maxReturnTags}})</span></label>
+                          <button type="button" (click)="adminFinalSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
+                      </div>
+                      <div class="flex gap-2">
+                          <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
+                              <option value="">Chọn nhãn trong danh mục...</option>
+                              @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{option.label}}</option> }
+                          </select>
+                          <button type="button" (click)="addAdminTag()" [disabled]="!adminTagToAdd() || adminFinalSopTags().length >= maxReturnTags" class="rounded-xl bg-indigo-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5">
+                          @for (key of adminFinalSopTags(); track key) {
+                              <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300">{{tagCatalog.resolveTag(key).label}}<button type="button" (click)="removeAdminTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                          }
+                      </div>
+                  </div>
+
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
                       <button (click)="onAdminReceive()" [disabled]="adminReceiveAmount() === null || adminReceiveAmount()! < minimumLoggedAmount() || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
@@ -299,6 +340,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
   `
 })
 export class RequestsActionModalsComponent implements OnChanges {
+  readonly tagCatalog = inject(StandardTagCatalogService);
   @Input() activeModal: ActionModalMode = null;
   @Input() request: StandardRequest | null = null;
   @Input() standard: ReferenceStandard | null = null;
@@ -310,8 +352,8 @@ export class RequestsActionModalsComponent implements OnChanges {
   @Output() approveAction = new EventEmitter<{ expectedAmount: number | null, purpose: string }>();
   @Output() rejectAction = new EventEmitter<{ reason: string }>();
   @Output() logUsageAction = new EventEmitter<{ amount: number, purpose: string }>();
-  @Output() returnAction = new EventEmitter<{ amount: number, isDepleted: boolean }>();
-  @Output() adminReceiveAction = new EventEmitter<{ amount: number, isDepleted: boolean, disposalReason: string }>();
+  @Output() returnAction = new EventEmitter<{ amount: number, isDepleted: boolean, sopTags: string[] }>();
+  @Output() adminReceiveAction = new EventEmitter<{ amount: number, isDepleted: boolean, disposalReason: string, finalSopTags: string[] }>();
 
   // State properties
 
@@ -325,10 +367,17 @@ export class RequestsActionModalsComponent implements OnChanges {
 
   returnAmount = signal<number | null>(null);
   returnIsDepleted = signal<boolean>(false);
+  returnSopTags = signal<string[]>([]);
+  returnTagToAdd = signal<string>('');
 
   adminReceiveAmount = signal<number | null>(null);
   adminReceiveIsDepleted = signal<boolean>(false);
   adminReceiveDisposalReason = signal<string>('');
+  adminFinalSopTags = signal<string[]>([]);
+  adminTagToAdd = signal<string>('');
+
+  readonly tagOptions = this.tagCatalog.selectableOptions;
+  readonly maxReturnTags = MAX_RETURN_TAGS;
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['activeModal'] || changes['request']) {
@@ -342,6 +391,13 @@ export class RequestsActionModalsComponent implements OnChanges {
            }
            if (!this.adminReceiveIsDepleted() && req.reportedDepleted) {
               this.adminReceiveIsDepleted.set(req.reportedDepleted);
+           }
+           if (this.adminFinalSopTags().length === 0 && req.sopTags?.length) {
+              this.adminFinalSopTags.set(sanitizeLegacyTagKeys(req.sopTags));
+           }
+        } else if (mode === 'return' && req) {
+           if (this.returnSopTags().length === 0 && req.sopTags?.length) {
+              this.returnSopTags.set(sanitizeLegacyTagKeys(req.sopTags));
            }
         } else if (mode === 'approve' && req) {
            if (!this.approvePurpose()) {
@@ -363,10 +419,14 @@ export class RequestsActionModalsComponent implements OnChanges {
     
     this.returnAmount.set(null);
     this.returnIsDepleted.set(false);
+    this.returnSopTags.set([]);
+    this.returnTagToAdd.set('');
     
     this.adminReceiveAmount.set(null);
     this.adminReceiveIsDepleted.set(false);
     this.adminReceiveDisposalReason.set('');
+    this.adminFinalSopTags.set([]);
+    this.adminTagToAdd.set('');
   }
 
   onClose() {
@@ -402,7 +462,8 @@ export class RequestsActionModalsComponent implements OnChanges {
     if (this.isProcessing || amount === null || !Number.isFinite(amount) || amount < this.minimumLoggedAmount()) return;
     this.returnAction.emit({
         amount,
-        isDepleted: this.returnIsDepleted()
+        isDepleted: this.returnIsDepleted(),
+        sopTags: this.returnSopTags()
     });
   }
 
@@ -412,8 +473,31 @@ export class RequestsActionModalsComponent implements OnChanges {
     this.adminReceiveAction.emit({
         amount,
         isDepleted: this.adminReceiveIsDepleted(),
-      disposalReason: this.adminReceiveDisposalReason()
+      disposalReason: this.adminReceiveDisposalReason(),
+      finalSopTags: this.adminFinalSopTags()
     });
+  }
+
+  addReturnTag(): void {
+    const key = this.returnTagToAdd();
+    if (!key || this.returnSopTags().includes(key) || this.returnSopTags().length >= MAX_RETURN_TAGS) return;
+    this.returnSopTags.update(tags => [...tags, key]);
+    this.returnTagToAdd.set('');
+  }
+
+  removeReturnTag(key: string): void {
+    this.returnSopTags.update(tags => tags.filter(item => item !== key));
+  }
+
+  addAdminTag(): void {
+    const key = this.adminTagToAdd();
+    if (!key || this.adminFinalSopTags().includes(key) || this.adminFinalSopTags().length >= MAX_RETURN_TAGS) return;
+    this.adminFinalSopTags.update(tags => [...tags, key]);
+    this.adminTagToAdd.set('');
+  }
+
+  removeAdminTag(key: string): void {
+    this.adminFinalSopTags.update(tags => tags.filter(item => item !== key));
   }
 
   formatNum = formatNum;
