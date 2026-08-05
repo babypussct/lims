@@ -51,7 +51,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
   standalone: true,
   imports: [CommonModule, FormsModule, AgGridAngular, DocumentPreviewModalComponent],
   template: `
-    <div class="h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-2 md:p-3 relative animate-fade-in overflow-hidden">
+    <div class="documents-page-enter h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-2 md:p-3 relative overflow-hidden">
       
       <!-- Compact header and primary actions -->
       <div class="flex items-center justify-between gap-2 mb-2 bg-white dark:bg-slate-800 px-2.5 py-2 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
@@ -447,6 +447,15 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
     }
     :host-context(.dark) ::ng-deep .documents-grid-meta {
       color: #94a3b8;
+    }
+    /* Keep the route host free of transform so preview dialogs remain fixed
+       to the viewport while the page enters. */
+    .documents-page-enter {
+      animation: documents-page-enter 180ms ease-out both;
+    }
+    @keyframes documents-page-enter {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
   `]
 })

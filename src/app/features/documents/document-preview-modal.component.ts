@@ -26,10 +26,10 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
   standalone: true,
   imports: [CommonModule, ExcelDocumentViewerComponent, PdfDocumentViewerComponent],
   template: `
-    <div class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm p-0 md:p-2 lg:p-3 animate-fade-in"
+    <div class="document-preview-overlay fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm p-0 md:p-2 lg:p-3 animate-fade-in"
          (mousedown)="closeMenus()">
       <section #dialog
-               class="w-full h-full min-h-0 bg-white dark:bg-slate-900 md:rounded-2xl shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col"
+               class="document-preview-dialog w-full h-full min-h-0 bg-white dark:bg-slate-900 md:rounded-2xl shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col"
                role="dialog"
                aria-modal="true"
                aria-labelledby="document-preview-title"
@@ -208,6 +208,12 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
     </div>
   `,
   styles: [`
+    .document-preview-overlay {
+      min-height: 100dvh;
+    }
+    .document-preview-dialog {
+      min-height: 0;
+    }
     .preview-action-button {
       height: 2.25rem;
       padding-inline: .7rem;

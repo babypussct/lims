@@ -253,10 +253,12 @@ interface ExcelColumnOption {
         </ag-grid-angular>
       </div>
 
-      <div class="h-9 shrink-0 flex items-center bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-700">
-        <div class="flex-1 min-w-0 h-full flex items-center overflow-x-auto scrollbar-none px-1">
+      <div class="excel-sheet-tabs relative z-20 shrink-0 flex items-center bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-700">
+        <div class="flex-1 min-w-0 h-full flex items-center overflow-x-auto overscroll-x-contain scrollbar-none px-1">
           @for (sheetName of sheetNames(); track sheetName) {
             <button type="button" (click)="selectSheet(sheetName)"
+                    role="tab"
+                    [attr.aria-selected]="activeSheet() === sheetName"
                     class="h-8 px-3 border-r border-slate-200 dark:border-slate-700 text-[11px] font-bold whitespace-nowrap transition-colors"
                     [class.bg-white]="activeSheet() === sheetName"
                     [class.dark:bg-slate-800]="activeSheet() === sheetName"
@@ -458,6 +460,17 @@ interface ExcelColumnOption {
     }
     @media (max-width: 640px) {
       :host ::ng-deep .excel-preview-grid .ag-cell { font-size: 11px; padding-inline: 5px; }
+    }
+    .excel-sheet-tabs {
+      height: 2.25rem;
+      min-height: 2.25rem;
+    }
+    @media (max-width: 767px) {
+      .excel-sheet-tabs {
+        height: auto;
+        min-height: calc(2.25rem + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+      }
     }
   `],
 })

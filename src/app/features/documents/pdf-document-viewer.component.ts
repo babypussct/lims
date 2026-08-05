@@ -27,6 +27,17 @@ interface PdfPageDescriptor {
   height: number;
 }
 
+interface PromiseCapability<T> {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+}
+
+interface KeyedCollectionPrototype {
+  getOrInsert?: (key: unknown, value: unknown) => unknown;
+  getOrInsertComputed?: (key: unknown, callback: (key: unknown) => unknown) => unknown;
+}
+
 @Component({
   selector: 'app-pdf-document-viewer',
   standalone: true,
@@ -465,6 +476,7 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
     this.cancelRendering();
     this.pageObserver?.disconnect();
     try {
+      this.ensurePdfJsRuntimeCompatibility();
       // The legacy bundle includes the Map/WeakMap compatibility layer required
       // by Chrome versions that do not yet implement getOrInsertComputed.
       const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -517,7 +529,7 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
     this.pageObserver?.disconnect();
     const viewport = this.pdfViewport?.nativeElement;
     const shells = this.pdfPageShells?.toArray() || [];
-    if (!viewport || !shells.length) return;
+    if (!viewport || !shells.length || typeof IntersectionObserver !== 'function') return;
     this.pageObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
@@ -560,21 +572,35 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
       this.renderTasks.delete(pageNumber);
       if (token !== this.loadToken) return;
 
+      this.clearTextLayer(textContainer);
       this.textLayers.get(pageNumber)?.cancel();
-      textContainer.replaceChildren();
-      textContainer.style.setProperty('--total-scale-factor', String(this.zoom()));
-      const textContent = await page.getTextContent();
-      const textLayer = new pdfjs.TextLayer({
-        textContentSource: textContent,
-        container: textContainer,
-        viewport,
-      });
-      this.textLayers.set(pageNumber, textLayer);
-      await textLayer.render();
-      textContainer.style.width = `${Math.floor(viewport.width)}px`;
-      textContainer.style.height = `${Math.floor(viewport.height)}px`;
-      if (textLayer.textContentItemsStr.some(value => value.trim().length > 0)) {
-        this.hasSelectableText.set(true);
+      this.textLayers.delete(pageNumber);
+
+      // Older PWA WebViews can render the canvas but fail inside PDF.js'
+      // ReadableStream/DOM text-layer path. Keep the PDF readable and make
+      // text selection an optional enhancement instead of failing the page.
+      if (typeof ReadableStream === 'function' && typeof pdfjs.TextLayer === 'function') {
+        try {
+          textContainer.style.setProperty('--total-scale-factor', String(this.zoom()));
+          const textContent = await page.getTextContent();
+          const textLayer = new pdfjs.TextLayer({
+            textContentSource: textContent,
+            container: textContainer,
+            viewport,
+          });
+          this.textLayers.set(pageNumber, textLayer);
+          await textLayer.render();
+          textContainer.style.width = `${Math.floor(viewport.width)}px`;
+          textContainer.style.height = `${Math.floor(viewport.height)}px`;
+          if (Array.isArray(textLayer.textContentItemsStr) &&
+              textLayer.textContentItemsStr.some(value => value.trim().length > 0)) {
+            this.hasSelectableText.set(true);
+          }
+        } catch (textLayerError) {
+          this.textLayers.delete(pageNumber);
+          this.clearTextLayer(textContainer);
+          console.warn('[PDF] Text layer disabled for this page:', textLayerError);
+        }
       }
       this.renderedSignatures.set(pageNumber, signature);
       this.applySearchHighlights(pageNumber);
@@ -668,6 +694,63 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
     this.renderingPages.set(pages);
   }
 
+  private clearTextLayer(container: HTMLElement): void {
+    while (container.firstChild) container.removeChild(container.firstChild);
+  }
+
+  private ensurePdfJsRuntimeCompatibility(): void {
+    const promiseConstructor = Promise as PromiseConstructor & {
+      withResolvers?: <T>() => PromiseCapability<T>;
+    };
+    if (!promiseConstructor.withResolvers) {
+      promiseConstructor.withResolvers = <T>() => {
+        let resolve!: (value: T | PromiseLike<T>) => void;
+        let reject!: (reason?: unknown) => void;
+        const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+          resolve = resolvePromise;
+          reject = rejectPromise;
+        });
+        return { promise, resolve, reject };
+      };
+    }
+
+    const installGetOrInsert = (prototype: KeyedCollectionPrototype): void => {
+      if (!prototype.getOrInsert) {
+        prototype.getOrInsert = function (key: unknown, value: unknown): unknown {
+          const collection = this as unknown as {
+            has(key: unknown): boolean;
+            get(key: unknown): unknown;
+            set(key: unknown, value: unknown): unknown;
+          };
+          if (collection.has(key)) return collection.get(key);
+          collection.set(key, value);
+          return value;
+        };
+      }
+      if (!prototype.getOrInsertComputed) {
+        prototype.getOrInsertComputed = function (
+          key: unknown,
+          callback: (key: unknown) => unknown,
+        ): unknown {
+          const collection = this as unknown as {
+            has(key: unknown): boolean;
+            get(key: unknown): unknown;
+            set(key: unknown, value: unknown): unknown;
+          };
+          if (collection.has(key)) return collection.get(key);
+          const value = callback(key);
+          collection.set(key, value);
+          return value;
+        };
+      }
+    };
+
+    installGetOrInsert(Map.prototype as unknown as KeyedCollectionPrototype);
+    if (typeof WeakMap !== 'undefined') {
+      installGetOrInsert(WeakMap.prototype as unknown as KeyedCollectionPrototype);
+    }
+  }
+
   private openSearch(): void {
     this.searchOpen.set(true);
     setTimeout(() => {
@@ -697,7 +780,8 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
         const page = await document.getPage(pageNumber);
         const content = await page.getTextContent();
         let textItemIndex = 0;
-        content.items.forEach(item => {
+        const items = Array.isArray(content.items) ? content.items : [];
+        items.forEach(item => {
           if (!('str' in item)) return;
           const text = this.normalize(item.str);
           let start = 0;

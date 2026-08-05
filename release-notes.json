@@ -1,20 +1,19 @@
 {
-  "title": "Trang Chủ tải nhẹ hơn theo quyền truy cập",
+  "title": "Cải thiện Giao Nhận Mẫu và khả năng tương thích PWA",
   "highlights": [
-    "Trang Chủ chỉ tải các khu vực phù hợp với quyền được cấp.",
-    "Mở hệ thống nhẹ hơn đối với tài khoản không sử dụng Báo cáo hoặc Vận hành SOP.",
-    "Các thao tác duyệt và vận hành vẫn cập nhật số liệu đầy đủ."
+    "Giao Nhận Mẫu hiển thị đúng khi sidebar mở rộng và topbar đang bật.",
+    "Excel trên PWA giữ khu vực chuyển sheet rõ ràng, có thể cuộn ngang trên màn hình hẹp.",
+    "PDF trên PWA được xử lý ổn định hơn trên các WebView cũ."
   ],
   "features": [
-    "Báo cáo chỉ tải khi tài khoản có quyền Xem Báo cáo.",
-    "Bảng theo dõi mẫu chỉ tải khi tài khoản có quyền Vận hành SOP."
+    "PDF worker được cache để mở tài liệu ổn định hơn khi mạng chập chờn hoặc ngoại tuyến."
   ],
   "improvements": [
-    "Các khu vực bị khóa không còn tải dữ liệu nền không cần thiết.",
-    "Các dữ liệu thống kê đã có trong phiên được dùng lại khi thay đổi khoảng ngày."
+    "Khu vực xem tài liệu thích ứng với vùng an toàn ở mép dưới màn hình điện thoại.",
+    "Lớp chọn văn bản PDF được tách khỏi phần hiển thị, giúp PDF vẫn đọc được khi lớp tương tác không tương thích."
   ],
   "fixes": [
-    "Ngăn tài khoản thiếu quyền Báo cáo đọc dữ liệu thống kê chỉ dùng cho màn hình Báo cáo.",
-    "Ngăn tải danh sách chất chuẩn và bảng theo dõi mẫu khi khu vực tương ứng đang bị khóa."
+    "Sửa lỗi nội dung vùng chuyển sheet Excel bị che hoặc không thể nhấn trên PWA.",
+    "Sửa lỗi PDF báo undefined is not a function trong một số môi trường PWA."
   ]
 }

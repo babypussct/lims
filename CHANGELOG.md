@@ -2,7 +2,14 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.04-b09
+## Phiên bản hiện tại: v26.08.04-b10
+
+### v26.08.04-b10
+
+- Cải thiện giao diện **Giao Nhận Mẫu** để cửa sổ xem tài liệu không bị sidebar mở rộng hoặc topbar che mất.
+- Khu vực chuyển sheet Excel trên PWA luôn nổi rõ, có thể cuộn ngang và không bị che ở mép dưới màn hình.
+- Tăng khả năng tương thích khi đọc PDF trên PWA; nếu lớp chọn văn bản gặp lỗi, nội dung PDF vẫn được hiển thị để xem.
+- Cache PDF worker trong PWA để việc mở tài liệu ổn định hơn khi mạng chập chờn hoặc ứng dụng hoạt động ngoại tuyến.
 
 ### v26.08.04-b09
 
