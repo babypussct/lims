@@ -1,11 +1,16 @@
 {
-  "title": "Tối ưu nhãn phương pháp và sửa lớp phủ xem tài liệu",
+  "title": "Tối ưu nhãn phương pháp, cải tiến hiệu suất hệ thống và danh mục phương pháp hóa học",
   "highlights": [
-    "Nhãn phương pháp dài được rút gọn thành mã phương pháp và kỹ thuật phân tích để bộ lọc, thẻ đã chọn luôn gọn và dễ đọc.",
-    "Người dùng vẫn có thể xem đầy đủ tên phép thử qua chú thích khi rê chuột vào nhãn hoặc lựa chọn đang dùng."
+    "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
+    "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng.",
+    "Tối ưu hóa việc hiển thị nhãn phương pháp trên toàn bộ hệ thống."
   ],
   "features": [
-    "Bổ sung định dạng nhãn ngắn theo cấu trúc mã phương pháp và thiết bị, ví dụ NAFI6/H-9.4 · GC-MS/MS."
+    "Cho phép chọn và gắn nhiều phương pháp hóa học cùng lúc khi báo trả Kết quả hoặc quản lý Chất chuẩn.",
+    "Hiển thị tên phép thử tiếng Việt đi kèm mã phương pháp trên các danh sách, bộ lọc và khi xuất dữ liệu ra Excel.",
+    "Trình xem tài liệu PDF được nâng cấp, hoạt động ổn định trên nhiều thiết bị.",
+    "Tối ưu hiển thị nhãn phương pháp, giúp tên phương pháp được tự động chuẩn hóa.",
+    "Bổ sung định dạng nhãn ngắn theo cấu trúc mã phương pháp và thiết bị, ví dụ NAFI6/H-9.4 · GC-MS/MS.
   ],
   "improvements": [
     "Thẻ phương pháp đã chọn hỗ trợ xuống tối đa hai dòng và không làm tràn chiều rộng khu vực nhập liệu.",
