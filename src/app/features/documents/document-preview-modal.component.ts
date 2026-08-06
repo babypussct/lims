@@ -35,8 +35,8 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
                aria-labelledby="document-preview-title"
                tabindex="-1"
                (mousedown)="$event.stopPropagation()">
-        <header class="min-h-14 md:h-14 shrink-0 flex items-center gap-2 px-2.5 md:px-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-          <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+        <header class="document-preview-header min-h-14 md:h-14 shrink-0 flex items-center gap-2 px-2.5 md:px-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+          <div class="document-preview-file-icon w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                [class.bg-red-50]="kind() === 'pdf'" [class.dark:bg-red-950]="kind() === 'pdf'"
                [class.text-red-600]="kind() === 'pdf'"
                [class.bg-emerald-50]="kind() === 'excel'" [class.dark:bg-emerald-950]="kind() === 'excel'"
@@ -51,7 +51,7 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
             <h2 id="document-preview-title"
                 class="text-sm md:text-[15px] font-black text-slate-800 dark:text-white truncate leading-tight"
                 [title]="item.name">{{ item.name }}</h2>
-            <div class="mt-0.5 flex items-center gap-1.5 text-[10px] md:text-[11px] font-semibold text-slate-400 whitespace-nowrap overflow-hidden">
+            <div class="document-preview-meta mt-0.5 flex items-center gap-1.5 text-[10px] md:text-[11px] font-semibold text-slate-400 whitespace-nowrap overflow-hidden">
               <span class="uppercase">{{ typeLabel() }}</span>
               <span>•</span>
               <span>{{ formatSize(item.size) }}</span>
@@ -209,9 +209,16 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
   `,
   styles: [`
     .document-preview-overlay {
+      height: 100dvh;
       min-height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      padding-top: max(0px, env(safe-area-inset-top));
+      padding-bottom: max(0px, env(safe-area-inset-bottom));
     }
     .document-preview-dialog {
+      height: 100%;
+      max-height: 100%;
       min-height: 0;
     }
     .preview-action-button {
@@ -264,6 +271,19 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
     :host-context(.dark) .preview-icon-button:hover { color: #f0abfc; background: rgba(112,26,117,.3); }
     :host-context(.dark) .preview-menu-item { color: #e2e8f0; }
     :host-context(.dark) .preview-menu-item:hover { background: #334155; }
+    @media (max-width: 640px), (max-height: 640px) {
+      .document-preview-header {
+        min-height: 3rem;
+        height: 3rem;
+      }
+      .document-preview-file-icon {
+        width: 2rem;
+        height: 2rem;
+      }
+      .document-preview-meta {
+        display: none;
+      }
+    }
   `],
 })
 export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -272,6 +292,7 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
 
   @ViewChild('dialog') dialog?: ElementRef<HTMLElement>;
   @ViewChild('closeButton') closeButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild(ExcelDocumentViewerComponent) excelViewer?: ExcelDocumentViewerComponent;
 
   private readonly driveService = inject(GoogleDriveService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -349,6 +370,10 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
+      if (this.kind() === 'excel' && this.excelViewer?.handleEscape()) {
+        event.preventDefault();
+        return;
+      }
       if (this.mobileMenuOpen()) {
         this.mobileMenuOpen.set(false);
       } else if (document.fullscreenElement) {

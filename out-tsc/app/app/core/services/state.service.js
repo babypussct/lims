@@ -1,0 +1,1740 @@
+import { Injectable, signal, computed, inject, effect, Injector } from '@angular/core';
+import { FirebaseService } from './firebase.service';
+import { AuthService } from './auth.service';
+import { collection, onSnapshot, doc, getDoc, runTransaction, addDoc, updateDoc, query, orderBy, limit, where, serverTimestamp, increment, setDoc, getDocs, deleteField, writeBatch } from 'firebase/firestore';
+import { ToastService } from './toast.service';
+import { ConfirmationService } from './confirmation.service';
+import { CalculatorService } from './calculator.service';
+import { buildScopedDeltaKey, DeltaSyncService } from './delta-sync.service';
+import { StatsService } from './stats.service';
+import { FirestoreReadMonitor } from './firestore-read-monitor.service';
+import { sanitizeForFirebase } from '../../shared/utils/utils';
+import { timestampToMillis } from '../../shared/utils/timestamp';
+import { TargetService } from '../../features/targets/target.service';
+import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
+import { resolveMetadataSyncToast } from './notification-policy';
+import * as i0 from "@angular/core";
+export class StateService {
+    clearOfflineState() {
+        this.isOffline.set(false);
+        this.offlineSource.set('');
+    }
+    constructor() {
+        this.fb = inject(FirebaseService);
+        this.auth = inject(AuthService);
+        this.toast = inject(ToastService);
+        this.confirmationService = inject(ConfirmationService);
+        this.injector = inject(Injector);
+        this.deltaSync = inject(DeltaSyncService);
+        this.targetService = inject(TargetService);
+        this.statsService = inject(StatsService);
+        this.readMonitor = inject(FirestoreReadMonitor);
+        this.listeners = [];
+        this.initGeneration = 0;
+        this.globalLogsCache = [];
+        this.personalLogsCache = [];
+        this.ON_DEMAND_CACHE_TTL_MS = 2 * 60 * 1000;
+        this.allStandardRequestsLoadedAt = 0;
+        this.referenceStandardsLoadedAt = 0;
+        // --- DATA SIGNALS ---
+        this.inventory = signal([]);
+        this.inventoryMap = computed(() => {
+            const map = {};
+            this.inventory().forEach(i => map[i.id] = i);
+            return map;
+        });
+        this.sops = signal([]);
+        this.requests = signal([]);
+        this.standards = signal([]);
+        this.standardRequests = signal([]);
+        this.allStandardRequests = signal([]);
+        this.approvedRequests = signal([]);
+        this.logs = signal([]);
+        this.printableLogs = signal([]);
+        this.stats = signal({ totalSopsRun: 0, totalItemsUsed: 0 });
+        this.printConfig = signal({
+            footerText: 'Cam kết sử dụng đúng mục đích.', showSignature: false
+        });
+        // NEW: Safety Configuration
+        this.safetyConfig = signal({
+            defaultMargin: 10,
+            rules: {}
+        });
+        // NEW: Categories
+        this.categories = signal([
+            { id: 'reagent', name: 'Hóa chất thông dụng' },
+            { id: 'solvent', name: 'Dung môi (Solvent)' },
+            { id: 'standard', name: 'Chất chuẩn (Standard)' },
+            { id: 'consumable', name: 'Vật tư (Consumable)' },
+            { id: 'kit', name: 'Kit xét nghiệm' }
+        ]);
+        this.categoriesMap = computed(() => {
+            const map = new Map();
+            this.categories().forEach(c => map.set(c.id, c.name));
+            return map;
+        });
+        // NEW: Avatar Style Preference (Default: bottts-neutral for modern look)
+        this.avatarStyle = signal('bottts-neutral');
+        // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
+        this.usersInfoCache = signal(new Map());
+        this.systemVersion = signal('v26.08.06-b04');
+        this.maintenanceMode = signal(false);
+        this.maintenanceMessage = signal('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
+        this.maintenanceScheduledTime = signal(null);
+        this.showLockedFeatures = signal(false);
+        this.selectedSop = signal(null);
+        this.editingSop = signal(null);
+        this.cachedCalculatorState = signal(null);
+        this.currentUser = this.auth.currentUser;
+        this.isAdmin = computed(() => this.auth.currentUser()?.role === 'manager');
+        this.isSystemHealthy = signal(true);
+        this.permissionError = signal(false);
+        // Trạng thái kết nối Firestore — hiển thị banner khi listener lỗi
+        this.isOffline = signal(false);
+        this.offlineSource = signal('');
+        // UI STATE
+        this.sidebarOpen = signal(false);
+        this.sidebarCollapsed = signal(localStorage.getItem('sidebar_collapsed') !== 'false' // Mặc định: collapsed (trừ khi user đã mở trước đó)
+        );
+        // --- FOCUS MODE (New Feature) ---
+        this.focusMode = signal(false);
+        // --- DARK MODE ---
+        this.darkMode = signal(false);
+        this.themeTransitioning = signal(false);
+        // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
+        this.CONFIG_CACHE_KEY = 'lims_cfg_cache';
+        this.CONFIG_VERSION_KEY = 'lims_cfg_version';
+        // Initialize Dark Mode from localStorage
+        const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+        this.darkMode.set(savedDarkMode);
+        this.applyDarkMode(savedDarkMode);
+        effect(() => {
+            const userId = this.auth.currentUserUid();
+            const perms = this.auth.userPermissions();
+            const scope = userId && perms.length > 0
+                ? `${userId}|${[...perms].sort().join(',')}`
+                : null;
+            if (scope) {
+                // Profile snapshots (for example an FCM token update) must not restart
+                // every Firestore listener when the effective auth scope is unchanged.
+                if (this.activeInitScope === scope)
+                    return;
+                this.activeInitScope = scope;
+                void this.initData();
+                // checkSystemHealth() removed from auto-call — call manually from Admin panel
+            }
+            else if (this.activeInitScope !== null) {
+                this.activeInitScope = null;
+                this.cleanupListeners();
+            }
+        });
+    }
+    toggleSidebar() { this.sidebarOpen.update(v => !v); }
+    closeSidebar() { this.sidebarOpen.set(false); }
+    toggleSidebarCollapse() {
+        this.sidebarCollapsed.update(v => {
+            const next = !v;
+            localStorage.setItem('sidebar_collapsed', String(next));
+            return next;
+        });
+    }
+    // Toggle Focus Mode
+    toggleFocusMode() { this.focusMode.update(v => !v); }
+    // Toggle Dark Mode
+    toggleDarkMode() {
+        if (this.themeTransitioning())
+            return;
+        const newVal = !this.darkMode();
+        const root = document.documentElement;
+        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+        const documentWithTransitions = document;
+        this.themeTransitioning.set(true);
+        root.classList.add('theme-switching');
+        const commitTheme = () => {
+            localStorage.setItem('darkMode', String(newVal));
+            this.applyDarkMode(newVal);
+            this.darkMode.set(newVal);
+        };
+        const finishTransition = () => {
+            requestAnimationFrame(() => {
+                root.classList.remove('theme-switching');
+                this.themeTransitioning.set(false);
+            });
+        };
+        if (documentWithTransitions.startViewTransition && !prefersReducedMotion && !root.classList.contains('performance-lite')) {
+            try {
+                documentWithTransitions.startViewTransition(commitTheme).finished.finally(finishTransition);
+                return;
+            }
+            catch {
+                // Fall back to an immediate, transition-free theme swap.
+            }
+        }
+        commitTheme();
+        finishTransition();
+    }
+    applyDarkMode(isDark) {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
+        }
+        else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+        }
+        document.querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', isDark ? '#0f172a' : '#f8f9fa');
+    }
+    cleanupListeners() {
+        this.initGeneration++;
+        this.listeners.forEach(unsub => unsub());
+        this.listeners = [];
+        this.approvedRunsSub = undefined;
+        this.logsSub = undefined;
+        this.personalLogsSub = undefined;
+        this.usersInfoSub = undefined;
+        this.globalLogsCache = [];
+        this.personalLogsCache = [];
+        this.allStandardRequestsLoad = undefined;
+        this.allStandardRequestsLoadedAt = 0;
+        this.referenceStandardsLoad = undefined;
+        this.referenceStandardsLoadedAt = 0;
+        if (this.sysConfigSub) {
+            this.sysConfigSub();
+            this.sysConfigSub = undefined;
+        }
+        if (this._unregisterStdReqListener) {
+            this._unregisterStdReqListener();
+            this._unregisterStdReqListener = undefined;
+        }
+        // Giữ singleton còn subscriber ở màn hình khác, nhưng hủy listener mồ côi sau
+        // khi quyền/scope thay đổi để tránh tiếp tục tốn reads cho cache không còn dùng.
+        this.deltaSync.destroyInactiveSingletons();
+        this.sops.set([]);
+        this.inventory.set([]);
+        this.standards.set([]);
+        this.requests.set([]);
+        this.approvedRequests.set([]);
+        this.standardRequests.set([]);
+        this.allStandardRequests.set([]);
+        this.logs.set([]);
+        this.printableLogs.set([]);
+        this.usersInfoCache.set(new Map());
+    }
+    ngOnDestroy() { this.cleanupListeners(); }
+    async initData() {
+        this.cleanupListeners();
+        const initGeneration = this.initGeneration;
+        this.permissionError.set(false);
+        const isCurrentInit = () => initGeneration === this.initGeneration;
+        const addListener = (unsub) => {
+            if (!isCurrentInit()) {
+                unsub();
+                return false;
+            }
+            this.listeners.push(unsub);
+            return true;
+        };
+        const handleError = (source) => (error) => {
+            if (!isCurrentInit())
+                return;
+            console.warn(`${source} listener error:`, error.message);
+            if (error.code === 'permission-denied') {
+                this.permissionError.set(true);
+            }
+            else {
+                // Lỗi mạng/quota → hiển thị banner offline cho user
+                this.isOffline.set(true);
+                this.offlineSource.set(source);
+            }
+        };
+        // 1. Inventory Listener — OPTIMIZED: onSnapshot → DeltaSync singleton (cursor-based)
+        // Trước: đọc toàn bộ collection mỗi lần login (~200+ reads)
+        // Sau: initial fetch 1 lần, sau đó chỉ delta kể từ cursor (~5-10 reads/lần)
+        if (this.auth.hasPermission('inventory_view')) {
+            const invCacheKey = buildScopedDeltaKey(`lims_inventory_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope());
+            const invSub = this.deltaSync.startSingletonListener({
+                cacheKey: invCacheKey,
+                cursorKey: buildScopedDeltaKey(`lims_inventory_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+                collectionPath: `artifacts/${this.fb.APP_ID}/inventory`,
+                maxCacheSize: 2000,
+                orderByField: 'lastUpdated',
+                orderDirection: 'desc',
+                isDeletedFn: (doc) => doc._isDeleted === true
+            }, (items) => {
+                if (!isCurrentInit())
+                    return;
+                this.inventory.set(items);
+            });
+            addListener(invSub);
+        }
+        // 2. SOPs Listener — OPTIMIZED: onSnapshot → DeltaSync singleton (cursor-based)
+        // Trước: đọc toàn bộ sops mỗi lần login
+        // Sau: initial fetch 1 lần, sau đó chỉ delta. isArchived=true bị lọc ra khỏi cache.
+        if (this.auth.hasPermission('sop_view')) {
+            const sopSub = this.deltaSync.startSingletonListener({
+                cacheKey: buildScopedDeltaKey(`lims_sops_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+                cursorKey: buildScopedDeltaKey(`lims_sops_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+                collectionPath: `artifacts/${this.fb.APP_ID}/sops`,
+                maxCacheSize: 500,
+                orderByField: 'lastUpdated',
+                orderDirection: 'desc',
+                isDeletedFn: (doc) => doc.isArchived === true
+            }, (items) => {
+                if (!isCurrentInit())
+                    return;
+                this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
+            });
+            addListener(sopSub);
+        }
+        // 3. Requests Listeners
+        if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
+            const requestsPath = `artifacts/${this.fb.APP_ID}/requests`;
+            let isFirstRequestsSnapshot = true;
+            const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc'), 
+            // Chỉ cần các yêu cầu đang chờ xử lý gần nhất trên bảng điều hành.
+            // Không để lịch sử pending cũ biến listener nền thành truy vấn không giới hạn.
+            limit(100)), (s) => {
+                this.readMonitor.record('onSnapshot', requestsPath, isFirstRequestsSnapshot
+                    ? s.size
+                    : s.docChanges().filter(change => change.type !== 'removed').length, { phase: isFirstRequestsSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache });
+                isFirstRequestsSnapshot = false;
+                const items = [];
+                s.forEach(d => items.push({ id: d.id, ...d.data() }));
+                if (!isCurrentInit())
+                    return;
+                this.requests.set(items);
+            }, handleError('Requests'));
+            addListener(reqSub);
+        }
+        // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
+        // statistics.component.ts uses loadAllStandardRequests() on-demand instead
+        // standard_requests: chỉ mở listener khi user có thể sử dụng màn hình
+        // yêu cầu/mượn chuẩn hoặc cần dữ liệu duyệt/nhật ký chuẩn.
+        const canUseStandardRequests = this.auth.canViewStandards()
+            || this.auth.hasPermission('standard_request')
+            || this.auth.canAssignStandards()
+            || this.auth.canViewStandardLogs()
+            || this.auth.canDeleteStandardLogs();
+        if (canUseStandardRequests) {
+            // Subscribe vào singleton của StandardRequestService
+            // (tránh tạo listener trùng lặp — tiết kiệm reads)
+            const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
+            if (!isCurrentInit())
+                return;
+            const reqService = this.injector.get(StandardRequestService);
+            if (this._unregisterStdReqListener)
+                this._unregisterStdReqListener();
+            // Lọc theo role ở client-side (singleton đã fetch đúng data theo role)
+            const isApprover = this.auth.canApproveStandards();
+            const validStatuses = isApprover
+                ? ['PENDING_APPROVAL', 'PENDING_RETURN']
+                : ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'];
+            const unregisterStdReqListener = reqService.startRequestsListener((reqs) => {
+                if (!isCurrentInit())
+                    return;
+                this.standardRequests.set(reqs.filter(r => !r._isDeleted && validStatuses.includes(r.status)));
+            });
+            if (isCurrentInit()) {
+                this._unregisterStdReqListener = unregisterStdReqListener;
+            }
+            else {
+                unregisterStdReqListener();
+                return;
+            }
+        }
+        // OPTIMIZED: allStandardRequests is now loaded on-demand via loadAllStandardRequests()
+        // Call it from statistics.component.ts / standard-requests page as needed
+        // Approved/result runs feed — now started on-demand via ensureApprovedRequestsListener().
+        // This avoids opening the broad result-history stream for users/routes that do not need it.
+        // 4. Logs Listener — now started on-demand via ensureLogsListener()
+        // Avoid opening activity/print-feed stream for every route immediately after login.
+        // 5. Stats — chỉ tải cho user có quyền Báo cáo
+        if (this.auth.canViewReports()) {
+            try {
+                const statsPath = `artifacts/${this.fb.APP_ID}/stats/master`;
+                const statSnap = await getDoc(doc(this.fb.db, statsPath));
+                this.readMonitor.record('getDoc', statsPath, 1);
+                if (!isCurrentInit())
+                    return;
+                if (statSnap.exists())
+                    this.stats.set(statSnap.data());
+            }
+            catch (e) {
+                console.warn('Stats load error:', e);
+            }
+        }
+        // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
+        await this.loadConfig(initGeneration);
+        if (!isCurrentInit())
+            return;
+        // 6.5. Users Info Cache — now started on-demand via ensureUserInfoCacheListener()
+        // Avatar cache is only needed on log/detail screens.
+        // 7. System Force Reload Listener & Delta Sync Architecture
+        let isFirstMetaLoad = true;
+        let lastSyncTimes = {};
+        const metadataPath = `artifacts/${this.fb.APP_ID}/system/metadata`;
+        let isFirstMetadataSnapshot = true;
+        const sysMetaSub = onSnapshot(doc(this.fb.db, metadataPath), (docSnap) => {
+            this.readMonitor.record('onSnapshot', metadataPath, 1, {
+                phase: isFirstMetadataSnapshot ? 'initial' : 'delta',
+                fromCache: docSnap.metadata.fromCache
+            });
+            isFirstMetadataSnapshot = false;
+            if (!isCurrentInit())
+                return;
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const forceTime = data['force_clear_cache_time'] || 0;
+                const localTime = Number(localStorage.getItem('lims_cache_purge_time') || 0);
+                if (forceTime > localTime) {
+                    localStorage.setItem('lims_cache_purge_time', forceTime.toString());
+                    this.toast.show('Quản trị viên vừa dọn dữ liệu hệ thống. Đang kết nối lại sau 2 giây...', 'info');
+                    setTimeout(() => {
+                        this.fb.purgeSystemCache();
+                    }, 2000);
+                    return;
+                }
+                // Delta Sync Logic
+                if (isFirstMetaLoad) {
+                    lastSyncTimes = { ...data };
+                    isFirstMetaLoad = false;
+                    return;
+                }
+                // Delta Sync Logic: mỗi field thay đổi hiện 1 toast riêng, độc lập nhau
+                if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
+                    lastSyncTimes['standards'] = data['standards'];
+                    this.referenceStandardsLoadedAt = 0;
+                    const syncToast = resolveMetadataSyncToast('standards', data['standards'], data['standards_event'], this.auth.currentUser()?.uid, '📊 Danh sách chuẩn đối chiếu vừa được cập nhật.');
+                    if (syncToast)
+                        this.toast.showEvent({ ...syncToast, type: 'info' });
+                }
+                if (data['inventory'] > (lastSyncTimes['inventory'] || 0)) {
+                    lastSyncTimes['inventory'] = data['inventory'];
+                    const syncToast = resolveMetadataSyncToast('inventory', data['inventory'], data['inventory_event'], this.auth.currentUser()?.uid, '🧪 Kho hóa chất vừa có thay đổi.');
+                    if (syncToast)
+                        this.toast.showEvent({ ...syncToast, type: 'info' });
+                }
+                if (data['config'] > (lastSyncTimes['config'] || 0)) {
+                    lastSyncTimes['config'] = data['config'];
+                    const wasMaintenance = this.maintenanceMode();
+                    // Tự động tải lại cấu hình ngầm để nhận trạng thái bảo trì hoặc cấu hình mới nhất
+                    this.loadConfig(initGeneration).then(() => {
+                        if (!isCurrentInit())
+                            return;
+                        if (wasMaintenance === this.maintenanceMode()) {
+                            this.toast.show('⚙️ Cấu hình hệ thống đã được cập nhật.', 'success');
+                        }
+                    });
+                }
+            }
+        }, handleError('System Metadata'));
+        addListener(sysMetaSub);
+    }
+    ensureLogsListener() {
+        if (this.logsSub || !this.auth.currentUser())
+            return;
+        const initGeneration = this.initGeneration;
+        const isCurrentInit = () => initGeneration === this.initGeneration;
+        const logsSyncConfig = {
+            cacheKey: buildScopedDeltaKey(`lims_logs_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+            cursorKey: buildScopedDeltaKey(`lims_logs_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+            collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
+            maxCacheSize: 200,
+            orderByField: 'timestamp',
+            orderDirection: 'desc'
+        };
+        const logSub = this.deltaSync.startSingletonListener(logsSyncConfig, (items) => {
+            if (!isCurrentInit())
+                return;
+            this.globalLogsCache = items;
+            this.publishActivityLogs();
+        });
+        this.logsSub = () => {
+            logSub();
+            this.logsSub = undefined;
+        };
+        this.listeners.push(this.logsSub);
+    }
+    ensurePersonalLogsListener() {
+        const displayName = this.auth.currentUser()?.displayName;
+        if (this.personalLogsSub || !this.auth.currentUser() || !displayName)
+            return;
+        const initGeneration = this.initGeneration;
+        const isCurrentInit = () => initGeneration === this.initGeneration;
+        // Không ghép where(user) với orderBy(lastUpdated) ở đây: Firestore sẽ
+        // yêu cầu composite index và gây failed-precondition trên project mới.
+        // Query chỉ có equality filter + limit dùng single-field index mặc định;
+        // kết quả được sắp xếp ở client và vẫn bounded ở 100 bản ghi.
+        const personalLogsPath = `artifacts/${this.fb.APP_ID}/logs`;
+        const personalLogsQuery = query(collection(this.fb.db, personalLogsPath), where('user', '==', displayName), limit(100));
+        let isFirstPersonalSnapshot = true;
+        const personalSub = onSnapshot(personalLogsQuery, (snapshot) => {
+            this.readMonitor.record('onSnapshot', personalLogsPath, isFirstPersonalSnapshot
+                ? snapshot.size
+                : snapshot.docChanges().filter(change => change.type !== 'removed').length, { phase: isFirstPersonalSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache });
+            isFirstPersonalSnapshot = false;
+            if (!isCurrentInit())
+                return;
+            const items = snapshot.docs.map(logDoc => ({
+                id: logDoc.id,
+                ...logDoc.data()
+            }));
+            items.sort((a, b) => this.getLogTime(b) - this.getLogTime(a));
+            this.personalLogsCache = items;
+            this.publishActivityLogs();
+        }, (error) => {
+            if (!isCurrentInit())
+                return;
+            console.warn('Personal logs listener error:', error.message);
+        });
+        this.personalLogsSub = () => {
+            personalSub();
+            this.personalLogsSub = undefined;
+        };
+        this.listeners.push(this.personalLogsSub);
+    }
+    publishActivityLogs() {
+        const merged = new Map();
+        [...this.globalLogsCache, ...this.personalLogsCache].forEach(log => {
+            if (log?.id)
+                merged.set(log.id, log);
+        });
+        const logs = Array.from(merged.values()).sort((a, b) => this.getLogTime(b) - this.getLogTime(a));
+        this.logs.set(logs);
+        this.printableLogs.set(logs.filter(l => l.printable === true));
+    }
+    getLogTime(log) {
+        return timestampToMillis(log.timestamp) ?? 0;
+    }
+    ensureApprovedRequestsListener() {
+        if (this.approvedRunsSub || !this.auth.currentUser())
+            return;
+        if (!(this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run') || this.auth.canViewReports()))
+            return;
+        const initGeneration = this.initGeneration;
+        const isCurrentInit = () => initGeneration === this.initGeneration;
+        const approvedRunsConfig = {
+            cacheKey: buildScopedDeltaKey(`lims_approved_requests_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+            cursorKey: buildScopedDeltaKey(`lims_approved_requests_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+            collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
+            maxCacheSize: 100, // Safe limit for localStorage
+            orderByField: 'approvedAt',
+            orderDirection: 'desc'
+        };
+        const appSub = this.deltaSync.startSingletonListener(approvedRunsConfig, (runs) => {
+            if (!isCurrentInit())
+                return;
+            // Lọc client-side để truy vấn cursor chỉ cần single-field index lastUpdated.
+            // Bộ lọc status trước đây bao phủ gần như mọi trạng thái và buộc Firestore
+            // yêu cầu một composite index không cần thiết.
+            this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
+        });
+        this.approvedRunsSub = () => {
+            appSub();
+            this.approvedRunsSub = undefined;
+        };
+        this.listeners.push(this.approvedRunsSub);
+    }
+    ensureUserInfoCacheListener() {
+        if (this.usersInfoSub || !this.auth.currentUser())
+            return;
+        const initGeneration = this.initGeneration;
+        const isCurrentInit = () => initGeneration === this.initGeneration;
+        // Avatar rendering only needs a bounded directory. An unbounded listener here
+        // re-read every user profile on each reconnect and was a major Spark amplifier.
+        const usersPath = `artifacts/${this.fb.APP_ID}/users`;
+        let isFirstUsersSnapshot = true;
+        const usersSub = onSnapshot(query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), limit(100)), (s) => {
+            this.readMonitor.record('onSnapshot', usersPath, isFirstUsersSnapshot
+                ? s.size
+                : s.docChanges().filter(change => change.type !== 'removed').length, { phase: isFirstUsersSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache });
+            isFirstUsersSnapshot = false;
+            const cacheMap = new Map();
+            s.forEach(d => {
+                const data = d.data();
+                if (data['displayName']) {
+                    cacheMap.set(data['displayName'], {
+                        avatarStyle: data['avatarStyle'] || this.avatarStyle(),
+                        photoURL: data['photoURL'] || ''
+                    });
+                }
+            });
+            if (!isCurrentInit())
+                return;
+            this.usersInfoCache.set(cacheMap);
+        }, (error) => {
+            if (!isCurrentInit())
+                return;
+            console.warn('Users Cache listener error:', error.message);
+            if (error.code === 'permission-denied')
+                this.permissionError.set(true);
+        });
+        this.usersInfoSub = () => {
+            usersSub();
+            this.usersInfoSub = undefined;
+        };
+        this.listeners.push(this.usersInfoSub);
+    }
+    ensureActivityFeedListeners() {
+        this.ensureLogsListener();
+        if (!this.auth.canViewReports()) {
+            this.ensurePersonalLogsListener();
+        }
+        this.ensureUserInfoCacheListener();
+    }
+    async loadConfig(initGeneration) {
+        const isLoadActive = () => initGeneration === undefined || initGeneration === this.initGeneration;
+        // Instant: apply from localStorage cache first (0 reads)
+        const hasCache = this._applyConfigFromCache();
+        if (!isLoadActive())
+            return;
+        // Background: fetch only '_metadata' to check if we need to download everything
+        try {
+            const base = `artifacts/${this.fb.APP_ID}/config`;
+            const metadataPath = `${base}/_metadata`;
+            const metaSnap = await getDoc(doc(this.fb.db, base, '_metadata'));
+            this.readMonitor.record('getDoc', metadataPath, 1);
+            if (!isLoadActive())
+                return;
+            const serverVersion = metaSnap.exists() ? metaSnap.data()['lastUpdated'] || 0 : 0;
+            const localVersion = Number(localStorage.getItem(this.CONFIG_VERSION_KEY) || 0);
+            // Tự động đăng ký listener realtime cho system config (bảo trì, khóa tính năng)
+            if (!this.sysConfigSub) {
+                this.sysConfigSub = onSnapshot(doc(this.fb.db, base, 'system'), (snap) => {
+                    if (!isLoadActive())
+                        return;
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        if (d['avatarStyle'])
+                            this.avatarStyle.set(d['avatarStyle']);
+                        if (d['maintenanceMode'] !== undefined)
+                            this.maintenanceMode.set(d['maintenanceMode']);
+                        if (d['maintenanceMessage'])
+                            this.maintenanceMessage.set(d['maintenanceMessage']);
+                        if (d['showLockedFeatures'] !== undefined)
+                            this.showLockedFeatures.set(d['showLockedFeatures']);
+                        this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
+                    }
+                });
+            }
+            // Nếu có cache và server chưa cập nhật gì mới => Dừng lại, dùng toàn bộ local cache!
+            // (Tiết kiệm 4 lượt Reads mỗi lần bật app)
+            if (hasCache && serverVersion > 0 && localVersion >= serverVersion) {
+                return;
+            }
+            // Nếu không có cache, hoặc Server báo có phiên bản cấu hình mới => Tải lại toàn bộ
+            const [printSnap, safetySnap, catSnap, sysSnap] = await Promise.all([
+                getDoc(doc(this.fb.db, base, 'print')),
+                getDoc(doc(this.fb.db, base, 'safety')),
+                getDoc(doc(this.fb.db, base, 'categories')),
+                getDoc(doc(this.fb.db, base, 'system')),
+            ]);
+            this.readMonitor.record('getDoc', `${base}/print`, 1);
+            this.readMonitor.record('getDoc', `${base}/safety`, 1);
+            this.readMonitor.record('getDoc', `${base}/categories`, 1);
+            this.readMonitor.record('getDoc', `${base}/system`, 1);
+            if (!isLoadActive())
+                return;
+            if (printSnap.exists())
+                this.printConfig.set(printSnap.data());
+            if (safetySnap.exists())
+                this.safetyConfig.set(safetySnap.data());
+            if (catSnap.exists() && catSnap.data()?.['items']) {
+                this.categories.set(catSnap.data()['items']);
+            }
+            if (sysSnap.exists()) {
+                const d = sysSnap.data();
+                // systemVersion is strictly controlled by package.json build sync
+                if (d['avatarStyle'])
+                    this.avatarStyle.set(d['avatarStyle']);
+                if (d['maintenanceMode'] !== undefined)
+                    this.maintenanceMode.set(d['maintenanceMode']);
+                if (d['maintenanceMessage'])
+                    this.maintenanceMessage.set(d['maintenanceMessage']);
+                if (d['showLockedFeatures'] !== undefined)
+                    this.showLockedFeatures.set(d['showLockedFeatures']);
+                this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
+            }
+            // Lưu lại vào trình duyệt cho lần sau
+            const cache = {
+                print: printSnap.exists() ? printSnap.data() : null,
+                safety: safetySnap.exists() ? safetySnap.data() : null,
+                categories: catSnap.exists() ? catSnap.data() : null,
+                system: sysSnap.exists() ? sysSnap.data() : null,
+            };
+            localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(cache));
+            localStorage.setItem(this.CONFIG_VERSION_KEY, serverVersion.toString());
+        }
+        catch (e) {
+            console.warn('Config load error:', e);
+        }
+    }
+    _applyConfigFromCache() {
+        try {
+            const raw = localStorage.getItem(this.CONFIG_CACHE_KEY);
+            if (!raw)
+                return false;
+            const cache = JSON.parse(raw);
+            if (cache.print)
+                this.printConfig.set(cache.print);
+            if (cache.safety)
+                this.safetyConfig.set(cache.safety);
+            if (cache.categories?.['items'])
+                this.categories.set(cache.categories['items']);
+            // systemVersion is strictly controlled by package.json build sync
+            if (cache.system?.['avatarStyle'])
+                this.avatarStyle.set(cache.system['avatarStyle']);
+            if (cache.system?.['maintenanceMode'] !== undefined)
+                this.maintenanceMode.set(cache.system['maintenanceMode']);
+            if (cache.system?.['maintenanceMessage'])
+                this.maintenanceMessage.set(cache.system['maintenanceMessage']);
+            if (cache.system?.['showLockedFeatures'] !== undefined)
+                this.showLockedFeatures.set(cache.system['showLockedFeatures']);
+            this.maintenanceScheduledTime.set(cache.system?.['maintenanceScheduledTime'] || null);
+            return true;
+        }
+        catch (_) {
+            return false; /* ignore stale/corrupt cache */
+        }
+    }
+    // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
+    async loadAllStandardRequests(forceRefresh = false) {
+        if (!forceRefresh && this.allStandardRequestsLoadedAt > 0
+            && Date.now() - this.allStandardRequestsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS)
+            return;
+        if (this.allStandardRequestsLoad)
+            return this.allStandardRequestsLoad;
+        const initGeneration = this.initGeneration;
+        const load = (async () => {
+            try {
+                const canReadAll = this.auth.canAssignStandards()
+                    || this.auth.canViewStandardLogs()
+                    || this.auth.canDeleteStandardLogs();
+                const currentUser = this.auth.currentUser();
+                if (!currentUser) {
+                    this.allStandardRequests.set([]);
+                    this.allStandardRequestsLoadedAt = Date.now();
+                    return;
+                }
+                const requestsPath = `artifacts/${this.fb.APP_ID}/standard_requests`;
+                const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
+                const requestService = this.injector.get(StandardRequestService);
+                const listenerCached = await requestService.getRequestsFromListenerCache();
+                if (listenerCached) {
+                    if (initGeneration !== this.initGeneration)
+                        return;
+                    const items = listenerCached
+                        .filter(request => !request._isDeleted)
+                        .sort((a, b) => (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
+                        - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0));
+                    this.allStandardRequests.set(items);
+                    this.allStandardRequestsLoadedAt = Date.now();
+                    this.readMonitor.record('getDocs', requestsPath, listenerCached.length, { phase: 'cache', fromCache: true });
+                    return;
+                }
+                const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
+                const source = canReadAll
+                    ? query(colRef, limit(1000))
+                    : query(colRef, where('requestedBy', '==', currentUser.uid), limit(1000));
+                const snap = await getDocs(source);
+                this.readMonitor.record('getDocs', requestsPath, snap.size);
+                if (initGeneration !== this.initGeneration)
+                    return;
+                const items = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(request => !request._isDeleted)
+                    .sort((a, b) => (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
+                    - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0));
+                this.allStandardRequests.set(items);
+                this.allStandardRequestsLoadedAt = Date.now();
+            }
+            catch (e) {
+                console.warn('loadAllStandardRequests error:', e);
+            }
+        })();
+        this.allStandardRequestsLoad = load;
+        try {
+            await load;
+        }
+        finally {
+            if (this.allStandardRequestsLoad === load)
+                this.allStandardRequestsLoad = undefined;
+        }
+    }
+    // ─── standards (reference_standards): Load on-demand for Statistics ───────────
+    // Replaces the removed realtime listener on the legacy 'standards' collection.
+    // Populates state.standards() signal so statistics.component.ts works unchanged.
+    async loadReferenceStandards(forceRefresh = false) {
+        if (!forceRefresh && this.referenceStandardsLoadedAt > 0
+            && Date.now() - this.referenceStandardsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS)
+            return;
+        if (this.referenceStandardsLoad)
+            return this.referenceStandardsLoad;
+        const initGeneration = this.initGeneration;
+        const load = (async () => {
+            try {
+                const cacheKey = buildScopedDeltaKey('lims_reference_standards_cache_' + this.fb.APP_ID, this.auth.getDeltaCacheScope());
+                const cached = this.deltaSync.getCache(cacheKey);
+                if (!forceRefresh && cached && cached.length > 0) {
+                    this.standards.set(cached.filter(standard => !standard._isDeleted && standard.status !== 'DELETED'));
+                    this.referenceStandardsLoadedAt = Date.now();
+                    this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, cached.length, { phase: 'cache', fromCache: true });
+                    return;
+                }
+                const standardsPath = `artifacts/${this.fb.APP_ID}/reference_standards`;
+                const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+                // Đồng bộ với giới hạn DeltaSync của reference_standards. Luồng này
+                // chỉ là fallback khi chưa có cache; tránh một getDocs không giới hạn
+                // nếu dữ liệu cũ đã phình lớn bất thường.
+                const snap = await getDocs(query(colRef, limit(10000)));
+                this.readMonitor.record('getDocs', standardsPath, snap.size);
+                if (initGeneration !== this.initGeneration)
+                    return;
+                const standards = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(standard => !standard._isDeleted && standard.status !== 'DELETED')
+                    .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
+                this.standards.set(standards);
+                this.referenceStandardsLoadedAt = Date.now();
+            }
+            catch (e) {
+                console.warn('loadReferenceStandards error:', e);
+            }
+        })();
+        this.referenceStandardsLoad = load;
+        try {
+            await load;
+        }
+        finally {
+            if (this.referenceStandardsLoad === load)
+                this.referenceStandardsLoad = undefined;
+        }
+    }
+    async checkSystemHealth() { return true; }
+    // Config save helpers — each refreshes the local cache after writing
+    async updateConfigMetadata() {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', '_metadata');
+        await setDoc(ref, { lastUpdated: Date.now() }, { merge: true });
+    }
+    async savePrintConfig(config) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print');
+        await setDoc(ref, config, { merge: true });
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async saveSafetyConfig(config) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
+        await setDoc(ref, config, { merge: true });
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async saveCategoriesConfig(items) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories');
+        await setDoc(ref, { items }, { merge: true });
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async saveSystemVersion(version) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+        await setDoc(ref, { version }, { merge: true });
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async saveAvatarStyle(style) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+        await setDoc(ref, { avatarStyle: style }, { merge: true });
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async saveMyAvatarStyle(style) {
+        const user = this.auth.currentUser();
+        if (!user)
+            return;
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'users', user.uid);
+        await updateDoc(ref, { avatarStyle: style });
+        // currentUser signal is updated automatically by AuthService's listener
+    }
+    getUserAvatarOptions(displayName) {
+        if (!displayName)
+            return { style: this.avatarStyle(), photoURL: null };
+        const cache = this.usersInfoCache().get(displayName);
+        if (cache) {
+            return { style: cache.avatarStyle, photoURL: cache.photoURL || null };
+        }
+        return { style: this.avatarStyle(), photoURL: null };
+    }
+    async saveMaintenanceConfig(mode, message, scheduledTime = null) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+        await setDoc(ref, {
+            maintenanceMode: mode,
+            maintenanceMessage: message,
+            maintenanceScheduledTime: scheduledTime
+        }, { merge: true });
+        // Ghi nhận Audit Log
+        let details = mode ? `Bật chế độ bảo trì. Nội dung: "${message}"` : 'Tắt chế độ bảo trì.';
+        if (scheduledTime) {
+            const formattedTime = new Date(scheduledTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+            details += ` (Lịch hẹn bảo trì: ${formattedTime})`;
+        }
+        await this.logMaintenanceActivity(mode ? 'MAINTENANCE_ON' : 'MAINTENANCE_OFF', details);
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async saveShowLockedFeaturesConfig(showLocked) {
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+        await setDoc(ref, {
+            showLockedFeatures: showLocked
+        }, { merge: true });
+        this.showLockedFeatures.set(showLocked);
+        await this.logMaintenanceActivity(showLocked ? 'SHOW_LOCKED_ON' : 'SHOW_LOCKED_OFF', showLocked ? 'Bật hiển thị tính năng khóa toàn hệ thống' : 'Tắt hiển thị tính năng khóa toàn hệ thống');
+        await this.updateConfigMetadata();
+        await this.loadConfig();
+    }
+    async logMaintenanceActivity(action, details) {
+        try {
+            const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+            await setDoc(logRef, {
+                action,
+                details,
+                timestamp: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
+                user: this.getCurrentUserName(),
+                printable: false
+            });
+        }
+        catch (e) {
+            console.warn("Failed to write maintenance audit log:", e);
+        }
+    }
+    getCurrentUserName() { return this.auth.currentUser()?.displayName || 'Người dùng không xác định'; }
+    // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndQueuePrint, approveRequest, revokeApproval, etc.)
+    // Omitted for brevity as no logic changed there
+    getItemsToDeduct(calculatedItems) {
+        const itemsToDeduct = new Map();
+        calculatedItems.forEach(item => {
+            if (item.isComposite) {
+                item.breakdown.forEach(sub => {
+                    const current = itemsToDeduct.get(sub.name) || 0;
+                    itemsToDeduct.set(sub.name, current + sub.totalNeed);
+                });
+            }
+            else {
+                const current = itemsToDeduct.get(item.name) || 0;
+                itemsToDeduct.set(item.name, current + item.stockNeed);
+            }
+        });
+        return Array.from(itemsToDeduct.entries()).map(([name, amount]) => ({ name, amount }));
+    }
+    mapToRequestItems(calculatedItems, invMap) {
+        const requestItems = [];
+        calculatedItems.forEach(item => {
+            if (item.isComposite) {
+                item.breakdown.forEach(sub => {
+                    const displayName = invMap[sub.name]?.name || sub.name;
+                    requestItems.push({
+                        name: sub.name, displayName,
+                        amount: sub.totalNeed, displayAmount: sub.displayAmount,
+                        baseAmount: sub.baseAmount,
+                        unit: sub.unit, stockUnit: sub.stockUnit
+                    });
+                });
+            }
+            else {
+                const displayName = invMap[item.name]?.name || item.name;
+                requestItems.push({
+                    name: item.name, displayName,
+                    amount: item.stockNeed, displayAmount: item.totalQty,
+                    baseAmount: item.baseAmount,
+                    unit: item.unit, stockUnit: item.stockUnit
+                });
+            }
+        });
+        return requestItems;
+    }
+    getStatsDateForRequest(req, fallbackDate) {
+        let date = req.approvedAt ? new Date(req.approvedAt.seconds * 1000) : (req.timestamp ? new Date(req.timestamp.seconds * 1000) : fallbackDate);
+        if (req.analysisDate) {
+            const parts = req.analysisDate.split('-');
+            if (parts.length === 3) {
+                date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            }
+        }
+        return date;
+    }
+    buildSopTraceability(sop) {
+        return {
+            sopVersion: sop.version || 1,
+            sopRef: sop.ref || '',
+            targetNames: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name]))
+        };
+    }
+    async buildTargetScopeTraceability(sop, formInputs) {
+        let availableGroups = [];
+        try {
+            availableGroups = await this.targetService.getAllGroups();
+        }
+        catch {
+            // Scope classification can still safely snapshot SOP-all/manual without current groups.
+        }
+        return sanitizeForFirebase(buildTargetScopeSnapshots({
+            sampleTargetMap: formInputs.sampleTargetMap,
+            fallbackTargetIds: formInputs.targetIds,
+            sopId: sop.id,
+            sopVersion: sop.version || 1,
+            sopTargetSnapshot: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name])),
+            availableGroups,
+            explicitGroupId: formInputs.explicitGroupId
+        }));
+    }
+    async buildLegacyTargetScopeTraceability(req, currentSop) {
+        if (req.targetScopeSnapshots?.length)
+            return req.targetScopeSnapshots;
+        let availableGroups = [];
+        try {
+            availableGroups = await this.targetService.getAllGroups();
+        }
+        catch {
+            // Historical SOP snapshot remains authoritative when group metadata is unavailable.
+        }
+        return sanitizeForFirebase(buildTargetScopeSnapshots({
+            sampleTargetMap: req.sampleTargetMap,
+            fallbackTargetIds: req.targetIds,
+            sopId: req.sopId,
+            sopVersion: req.sopVersion,
+            sopTargetSnapshot: req.targetNames || (currentSop
+                ? Object.fromEntries((currentSop.targets || []).map(target => [target.id, target.name]))
+                : undefined),
+            availableGroups
+        }));
+    }
+    hasValidAnalysisDate(value) {
+        if (typeof value !== 'string')
+            return false;
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        if (!match)
+            return false;
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const candidate = new Date(year, month - 1, day);
+        return candidate.getFullYear() === year
+            && candidate.getMonth() === month - 1
+            && candidate.getDate() === day;
+    }
+    async submitRequest(sop, calculatedItems, formInputs, invMap = {}) {
+        if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
+            this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi gửi yêu cầu.', 'error');
+            return;
+        }
+        try {
+            const requestItems = this.mapToRequestItems(calculatedItems, invMap);
+            const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
+            const reqData = {
+                sopId: sop.id,
+                sopName: sop.name,
+                items: requestItems,
+                status: 'pending',
+                timestamp: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
+                user: this.getCurrentUserName(),
+                inputs: formInputs,
+                margin: formInputs.safetyMargin || 0,
+                analysisDate: formInputs.analysisDate,
+                ...this.buildSopTraceability(sop)
+            };
+            reqData.targetScopeSnapshots = targetScopeSnapshots;
+            if (formInputs.sampleList)
+                reqData.sampleList = formInputs.sampleList;
+            if (formInputs.targetIds)
+                reqData.targetIds = formInputs.targetIds;
+            if (formInputs.sampleTargetMap)
+                reqData.sampleTargetMap = formInputs.sampleTargetMap;
+            if (formInputs.sampleDescriptionMap)
+                reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
+            await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), sanitizeForFirebase(reqData));
+            this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
+        }
+        catch (e) {
+            this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error');
+        }
+    }
+    async directApproveAndQueuePrint(sop, calculatedItems, formInputs, invMap = {}, options = {}) {
+        if (!this.auth.canApprove()) {
+            this.toast.show('Bạn không có quyền duyệt!', 'error');
+            return null;
+        }
+        if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
+            this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi duyệt.', 'error');
+            return null;
+        }
+        const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
+        const requestItems = this.mapToRequestItems(calculatedItems, invMap);
+        const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
+        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
+        const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+        try {
+            const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
+            await runTransaction(this.fb.db, async (transaction) => {
+                const invRefs = itemsToDeduct.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
+                const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
+                for (let i = 0; i < itemsToDeduct.length; i++) {
+                    const item = itemsToDeduct[i];
+                    const invSnap = invSnaps[i];
+                    if (!invSnap.exists())
+                        throw new Error(`Hóa chất "${item.name}" không tồn tại!`);
+                    const currentStock = invSnap.data()['stock'] || 0;
+                    if (currentStock < item.amount)
+                        throw new Error(`Kho không đủ "${item.name}". Tồn: ${currentStock}, Cần: ${item.amount}`);
+                }
+                for (let i = 0; i < itemsToDeduct.length; i++) {
+                    transaction.update(invRefs[i], { stock: increment(-itemsToDeduct[i].amount), lastUpdated: serverTimestamp() });
+                }
+                const reqData = {
+                    sopId: sop.id,
+                    sopName: sop.name,
+                    items: requestItems,
+                    status: 'approved',
+                    timestamp: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    approvedAt: serverTimestamp(),
+                    user: this.getCurrentUserName(),
+                    inputs: formInputs,
+                    margin: formInputs.safetyMargin || 0,
+                    analysisDate: formInputs.analysisDate,
+                    ...this.buildSopTraceability(sop)
+                };
+                reqData.targetScopeSnapshots = targetScopeSnapshots;
+                if (formInputs.sampleList)
+                    reqData.sampleList = formInputs.sampleList;
+                if (formInputs.targetIds)
+                    reqData.targetIds = formInputs.targetIds;
+                if (formInputs.sampleTargetMap)
+                    reqData.sampleTargetMap = formInputs.sampleTargetMap;
+                if (formInputs.sampleDescriptionMap)
+                    reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
+                transaction.set(reqRef, sanitizeForFirebase(reqData));
+                const printData = {
+                    sop,
+                    inputs: formInputs,
+                    margin: formInputs.safetyMargin || 0,
+                    items: calculatedItems,
+                    analysisDate: formInputs.analysisDate,
+                    requestId: reqRef.id
+                };
+                transaction.set(printJobRef, {
+                    ...sanitizeForFirebase(printData),
+                    createdAt: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    createdBy: this.getCurrentUserName()
+                });
+                transaction.set(logRef, sanitizeForFirebase({
+                    action: 'DIRECT_APPROVE',
+                    details: `Duyệt trực tiếp và đưa vào hàng đợi in SOP: ${sop.name}`,
+                    timestamp: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    user: this.getCurrentUserName(),
+                    printable: true,
+                    printJobId: printJobRef.id,
+                    requestId: reqRef.id,
+                    sopBasicInfo: {
+                        name: sop.name,
+                        category: sop.category,
+                        ref: sop.ref
+                    }
+                }));
+            });
+            if (options.showSuccessToast !== false) {
+                this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
+            }
+            let samples = 1;
+            let qcs = 0;
+            if (formInputs?.['n_sample'])
+                samples = Number(formInputs['n_sample']);
+            if (formInputs?.['n_qc'])
+                qcs = Number(formInputs['n_qc']);
+            this.statsService.incrementStats(this.getStatsDateForRequest({ analysisDate: formInputs?.analysisDate }, new Date()), sop.id, sop.name, samples, 1, qcs).catch(e => console.error(e));
+            return { logId: logRef.id, printJobId: printJobRef.id };
+        }
+        catch (e) {
+            if (e.code === 'resource-exhausted')
+                this.toast.show('Lỗi: Hết hạn mức Quota.', 'error');
+            else
+                this.toast.show(e.message, 'error');
+            return null;
+        }
+    }
+    async directApproveBatchPlan(planItems, invMap = {}) {
+        if (!this.auth.canRunBatch()) {
+            this.toast.show('Bạn không có quyền lập và vận hành mẻ.', 'error');
+            return null;
+        }
+        if (planItems.length === 0) {
+            this.toast.show('Kế hoạch không có mẻ nào để duyệt.', 'error');
+            return null;
+        }
+        if (planItems.some(item => !this.hasValidAnalysisDate(item.formInputs?.analysisDate))) {
+            this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ cho tất cả các mẻ.', 'error');
+            return null;
+        }
+        const deductions = new Map();
+        const requestItemsByBatch = [];
+        for (const item of planItems) {
+            const margin = Number(item.formInputs?.safetyMargin);
+            const hasInvalidCalculatedItem = item.calculatedItems.some(calculated => Boolean(calculated.validationError)
+                || calculated.displayWarning?.includes('Khác ĐV')
+                || (calculated.isComposite
+                    ? calculated.breakdown.some(sub => !Number.isFinite(sub.totalNeed)
+                        || sub.totalNeed < 0
+                        || sub.displayWarning?.includes('Khác ĐV'))
+                    : !Number.isFinite(calculated.stockNeed) || calculated.stockNeed < 0));
+            if (hasInvalidCalculatedItem
+                || !Number.isFinite(margin)
+                || (margin !== -1 && (margin < 0 || margin > 100))) {
+                this.toast.show(`Mẻ “${item.sop.name}” có công thức, đơn vị hoặc hao hụt không hợp lệ.`, 'error');
+                return null;
+            }
+            const batchDeductions = this.getItemsToDeduct(item.calculatedItems);
+            if (batchDeductions.some(deduction => !Number.isFinite(deduction.amount) || deduction.amount < 0)) {
+                this.toast.show(`Mẻ “${item.sop.name}” có lượng tiêu hao không hợp lệ.`, 'error');
+                return null;
+            }
+            batchDeductions.forEach(deduction => deductions.set(deduction.name, (deductions.get(deduction.name) || 0) + deduction.amount));
+            requestItemsByBatch.push(this.mapToRequestItems(item.calculatedItems, invMap));
+        }
+        const estimatedWrites = deductions.size + planItems.length * 3;
+        if (estimatedWrites > 450) {
+            this.toast.show('Kế hoạch quá lớn để duyệt nguyên tử. Hãy chia thành các kế hoạch nhỏ hơn.', 'error');
+            return null;
+        }
+        const planTimestamp = Date.now();
+        try {
+            const prepared = await Promise.all(planItems.map(async (item, index) => ({
+                ...item,
+                requestItems: requestItemsByBatch[index],
+                targetScopeSnapshots: await this.buildTargetScopeTraceability(item.sop, item.formInputs),
+                requestRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests')),
+                printJobRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs')),
+                logRef: doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', `TRC-${planTimestamp}-${index}-${Math.floor(Math.random() * 1000)}`)
+            })));
+            await runTransaction(this.fb.db, async (transaction) => {
+                const deductionEntries = Array.from(deductions.entries());
+                const inventoryRefs = deductionEntries.map(([name]) => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', name));
+                const inventorySnapshots = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
+                deductionEntries.forEach(([name, amount], index) => {
+                    const snapshot = inventorySnapshots[index];
+                    if (!snapshot.exists())
+                        throw new Error(`Hóa chất "${name}" không tồn tại!`);
+                    const currentStock = Number(snapshot.data()['stock'] || 0);
+                    if (currentStock < amount) {
+                        throw new Error(`Kho không đủ "${name}". Tồn: ${currentStock}, Cần: ${amount}`);
+                    }
+                });
+                deductionEntries.forEach(([, amount], index) => {
+                    transaction.update(inventoryRefs[index], {
+                        stock: increment(-amount),
+                        lastUpdated: serverTimestamp()
+                    });
+                });
+                prepared.forEach(item => {
+                    const reqData = {
+                        sopId: item.sop.id,
+                        sopName: item.sop.name,
+                        items: item.requestItems,
+                        status: 'approved',
+                        timestamp: serverTimestamp(),
+                        lastUpdated: serverTimestamp(),
+                        approvedAt: serverTimestamp(),
+                        user: this.getCurrentUserName(),
+                        inputs: item.formInputs,
+                        margin: item.formInputs.safetyMargin || 0,
+                        analysisDate: item.formInputs.analysisDate,
+                        targetScopeSnapshots: item.targetScopeSnapshots,
+                        ...this.buildSopTraceability(item.sop)
+                    };
+                    if (item.formInputs.sampleList)
+                        reqData.sampleList = item.formInputs.sampleList;
+                    if (item.formInputs.targetIds)
+                        reqData.targetIds = item.formInputs.targetIds;
+                    if (item.formInputs.sampleTargetMap)
+                        reqData.sampleTargetMap = item.formInputs.sampleTargetMap;
+                    if (item.formInputs.sampleDescriptionMap)
+                        reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
+                    transaction.set(item.requestRef, sanitizeForFirebase(reqData));
+                    const printData = {
+                        sop: item.sop,
+                        inputs: item.formInputs,
+                        margin: item.formInputs.safetyMargin || 0,
+                        items: item.calculatedItems,
+                        analysisDate: item.formInputs.analysisDate,
+                        requestId: item.requestRef.id
+                    };
+                    transaction.set(item.printJobRef, {
+                        ...sanitizeForFirebase(printData),
+                        createdAt: serverTimestamp(),
+                        lastUpdated: serverTimestamp(),
+                        createdBy: this.getCurrentUserName()
+                    });
+                    transaction.set(item.logRef, sanitizeForFirebase({
+                        action: 'DIRECT_APPROVE_PLAN',
+                        details: `Duyệt kế hoạch SmartBatch, SOP: ${item.sop.name}`,
+                        timestamp: serverTimestamp(),
+                        lastUpdated: serverTimestamp(),
+                        user: this.getCurrentUserName(),
+                        printable: true,
+                        printJobId: item.printJobRef.id,
+                        requestId: item.requestRef.id,
+                        planId: `PLAN-${planTimestamp}`,
+                        sopBasicInfo: {
+                            name: item.sop.name,
+                            category: item.sop.category,
+                            ref: item.sop.ref
+                        }
+                    }));
+                });
+            });
+            prepared.forEach(item => {
+                let samples = 1;
+                let qcs = 0;
+                if (item.formInputs?.['n_sample'])
+                    samples = Number(item.formInputs['n_sample']);
+                if (item.formInputs?.['n_qc'])
+                    qcs = Number(item.formInputs['n_qc']);
+                this.statsService.incrementStats(this.getStatsDateForRequest({ analysisDate: item.formInputs?.analysisDate }, new Date()), item.sop.id, item.sop.name, samples, 1, qcs).catch(e => console.error(e));
+            });
+            return prepared.map(item => ({
+                requestId: item.requestRef.id,
+                printJobId: item.printJobRef.id,
+                logId: item.logRef.id
+            }));
+        }
+        catch (e) {
+            this.toast.show(e?.message || 'Không thể duyệt kế hoạch SmartBatch.', 'error');
+            return null;
+        }
+    }
+    async approveRequest(req) {
+        if (!this.auth.canApprove())
+            return;
+        if (!this.hasValidAnalysisDate(req.analysisDate)) {
+            this.toast.show('Yêu cầu chưa có ngày kiểm nghiệm hợp lệ. Hãy bổ sung trước khi duyệt.', 'error');
+            return;
+        }
+        if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?'))
+            return;
+        const currentSop = this.sops().find(sop => sop.id === req.sopId);
+        try {
+            const targetScopeSnapshots = await this.buildLegacyTargetScopeTraceability(req, currentSop);
+            await runTransaction(this.fb.db, async (transaction) => {
+                const invRefs = req.items.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
+                const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
+                for (let i = 0; i < req.items.length; i++) {
+                    const item = req.items[i];
+                    const invSnap = invSnaps[i];
+                    if (!invSnap.exists())
+                        throw new Error(`Hóa chất "${item.name}" không tồn tại!`);
+                    const currentStock = invSnap.data()['stock'] || 0;
+                    if (currentStock < item.amount)
+                        throw new Error(`Kho không đủ "${item.name}". Hiện có: ${currentStock}, Cần: ${item.amount}`);
+                }
+                for (let i = 0; i < req.items.length; i++) {
+                    transaction.update(invRefs[i], { stock: increment(-req.items[i].amount), lastUpdated: serverTimestamp() });
+                }
+                const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
+                transaction.update(reqRef, {
+                    status: 'approved',
+                    analysisDate: req.analysisDate,
+                    inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
+                    approvedAt: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    targetScopeSnapshots,
+                    ...(currentSop ? {
+                        sopVersion: req.sopVersion ?? currentSop.version ?? 1,
+                        sopRef: req.sopRef ?? currentSop.ref ?? '',
+                        targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
+                    } : {})
+                });
+                const sop = currentSop;
+                const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+                if (sop && req.inputs) {
+                    const calcService = this.injector.get(CalculatorService);
+                    const calculatedItems = calcService.calculateSopNeeds(sop, req.inputs, req.margin || 0, this.inventoryMap(), {}, this.safetyConfig());
+                    calculatedItems.forEach(ci => {
+                        const ri = req.items.find(r => r.name === ci.name);
+                        if (ri && ri.displayName)
+                            ci.displayName = ri.displayName;
+                        if (ci.isComposite) {
+                            ci.breakdown.forEach(sub => {
+                                const riSub = req.items.find(r => r.name === sub.name);
+                                if (riSub && riSub.displayName)
+                                    sub.displayName = riSub.displayName;
+                            });
+                        }
+                    });
+                    const extendedInputs = { ...req.inputs };
+                    if (req.sampleList)
+                        extendedInputs.sampleList = req.sampleList;
+                    if (req.targetIds)
+                        extendedInputs.targetIds = req.targetIds;
+                    if (req.sampleTargetMap)
+                        extendedInputs.sampleTargetMap = req.sampleTargetMap;
+                    if (req.sampleDescriptionMap)
+                        extendedInputs.sampleDescriptionMap = req.sampleDescriptionMap;
+                    const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
+                    const printData = {
+                        sop,
+                        inputs: extendedInputs,
+                        margin: req.margin || 0,
+                        items: calculatedItems,
+                        analysisDate: req.analysisDate,
+                        requestId: req.id
+                    };
+                    transaction.set(printJobRef, {
+                        ...sanitizeForFirebase(printData),
+                        createdAt: serverTimestamp(),
+                        lastUpdated: serverTimestamp(),
+                        createdBy: this.getCurrentUserName()
+                    });
+                    transaction.set(logRef, sanitizeForFirebase({
+                        action: 'APPROVE_REQUEST',
+                        details: `Duyệt yêu cầu: ${req.sopName}`,
+                        timestamp: serverTimestamp(),
+                        lastUpdated: serverTimestamp(),
+                        user: this.getCurrentUserName(),
+                        printable: true,
+                        printJobId: printJobRef.id,
+                        requestId: req.id,
+                        sopBasicInfo: {
+                            name: sop.name,
+                            category: sop.category,
+                            ref: sop.ref
+                        }
+                    }));
+                }
+                else {
+                    transaction.set(logRef, sanitizeForFirebase({
+                        action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), lastUpdated: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
+                    }));
+                }
+            });
+            let samples = 1;
+            let qcs = 0;
+            if (req.sampleList && req.sampleList.length > 0)
+                samples = req.sampleList.length;
+            else if (req.inputs?.['n_sample'])
+                samples = Number(req.inputs['n_sample']);
+            if (req.inputs?.['n_qc'])
+                qcs = Number(req.inputs['n_qc']);
+            this.statsService.incrementStats(this.getStatsDateForRequest(req, new Date()), req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+            this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
+        }
+        catch (e) {
+            this.toast.show(e.message, 'error');
+        }
+    }
+    async revokeApproval(req, targetStatus = 'pending') {
+        if (!this.auth.canApprove())
+            return;
+        try {
+            await runTransaction(this.fb.db, async (transaction) => {
+                const invRefs = [];
+                const existingItems = [];
+                const readPromises = req.items.map(item => { const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name); return transaction.get(ref); });
+                const invSnaps = await Promise.all(readPromises);
+                for (let i = 0; i < invSnaps.length; i++) {
+                    if (invSnaps[i].exists()) {
+                        invRefs.push(invSnaps[i].ref);
+                        existingItems.push(req.items[i]);
+                    }
+                }
+                for (let i = 0; i < existingItems.length; i++) {
+                    transaction.update(invRefs[i], { stock: increment(existingItems[i].amount), lastUpdated: serverTimestamp() });
+                }
+                const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
+                const updates = {
+                    status: targetStatus,
+                    approvedAt: deleteField(),
+                    lastUpdated: serverTimestamp()
+                };
+                if (targetStatus === 'rejected') {
+                    updates.rejectedAt = serverTimestamp();
+                }
+                transaction.update(reqRef, updates);
+                const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+                const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
+                transaction.set(logRef, sanitizeForFirebase({
+                    action: targetStatus === 'rejected' ? 'REVOKE_AND_REJECT' : 'REVOKE_APPROVE',
+                    details: `${actionText}: ${req.sopName}`,
+                    timestamp: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    user: this.getCurrentUserName(),
+                    printable: false,
+                    requestId: req.id
+                }));
+            });
+            let samples = 1;
+            let qcs = 0;
+            if (req.sampleList && req.sampleList.length > 0)
+                samples = req.sampleList.length;
+            else if (req.inputs?.['n_sample'])
+                samples = Number(req.inputs['n_sample']);
+            if (req.inputs?.['n_qc'])
+                qcs = Number(req.inputs['n_qc']);
+            const reqDate = this.getStatsDateForRequest(req, new Date());
+            this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+            this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
+        }
+        catch (e) {
+            this.toast.show(e.message, 'error');
+        }
+    }
+    async updateApprovedRequest(req, sop, calculatedItems, formInputs, invMap = {}) {
+        if (!this.auth.canApprove())
+            return;
+        if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
+            this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi cập nhật.', 'error');
+            return false;
+        }
+        if (!await this.confirmationService.confirm('Xác nhận lưu thay đổi và cập nhật kho?'))
+            return;
+        try {
+            const oldItems = req.items;
+            const newItems = this.mapToRequestItems(calculatedItems, invMap);
+            const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
+            const previousPrintableLogDocs = (await getDocs(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), where('requestId', '==', req.id), where('printable', '==', true)))).docs;
+            const editDiff = this.buildRequestEditDiff(req, formInputs, newItems);
+            // Calculate inventory diff
+            const inventoryDiff = {};
+            // Add back old items (positive diff)
+            oldItems.forEach(item => {
+                inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) + item.amount;
+            });
+            // Subtract new items (negative diff)
+            const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
+            itemsToDeduct.forEach(item => {
+                inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) - item.amount;
+            });
+            // Round to avoid floating point issues
+            Object.keys(inventoryDiff).forEach(key => {
+                inventoryDiff[key] = Math.round(inventoryDiff[key] * 1000000) / 1000000;
+            });
+            await runTransaction(this.fb.db, async (transaction) => {
+                // 1. Check inventory for negative diffs
+                const invRefs = {};
+                const invSnaps = {};
+                for (const itemName of Object.keys(inventoryDiff)) {
+                    const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemName);
+                    invRefs[itemName] = ref;
+                    invSnaps[itemName] = await transaction.get(ref);
+                    if (inventoryDiff[itemName] < 0) {
+                        if (!invSnaps[itemName].exists())
+                            throw new Error(`Hóa chất "${itemName}" không tồn tại!`);
+                        const currentStock = invSnaps[itemName].data()['stock'] || 0;
+                        if (currentStock < Math.abs(inventoryDiff[itemName])) {
+                            throw new Error(`Kho không đủ "${itemName}" để cập nhật. Hiện có: ${currentStock}, Cần thêm: ${Math.abs(inventoryDiff[itemName])}`);
+                        }
+                    }
+                }
+                // 2. Update inventory
+                for (const itemName of Object.keys(inventoryDiff)) {
+                    if (inventoryDiff[itemName] !== 0) {
+                        transaction.set(invRefs[itemName], { stock: increment(inventoryDiff[itemName]), lastUpdated: serverTimestamp() }, { merge: true });
+                    }
+                }
+                // 3. Update request document
+                const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
+                const reqData = {
+                    items: newItems,
+                    inputs: formInputs,
+                    margin: formInputs.safetyMargin || 0,
+                    analysisDate: formInputs.analysisDate || null,
+                    updatedAt: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    ...this.buildSopTraceability(sop)
+                };
+                reqData.targetScopeSnapshots = targetScopeSnapshots;
+                if (formInputs.sampleList)
+                    reqData.sampleList = formInputs.sampleList;
+                else
+                    reqData.sampleList = deleteField();
+                if (formInputs.targetIds)
+                    reqData.targetIds = formInputs.targetIds;
+                else
+                    reqData.targetIds = deleteField();
+                if (formInputs.sampleTargetMap)
+                    reqData.sampleTargetMap = formInputs.sampleTargetMap;
+                else
+                    reqData.sampleTargetMap = deleteField();
+                if (formInputs.sampleDescriptionMap)
+                    reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
+                else if ('sampleDescriptionMap' in formInputs)
+                    reqData.sampleDescriptionMap = deleteField();
+                transaction.update(reqRef, sanitizeForFirebase(reqData));
+                // 4. Create a new log and print job for the update
+                const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+                previousPrintableLogDocs.forEach(logDoc => {
+                    transaction.update(logDoc.ref, {
+                        printable: false,
+                        supersededBy: logId,
+                        lastUpdated: serverTimestamp()
+                    });
+                    const oldPrintJobId = logDoc.data()['printJobId'];
+                    if (oldPrintJobId) {
+                        transaction.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', oldPrintJobId));
+                    }
+                });
+                const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
+                const printData = {
+                    sop,
+                    inputs: formInputs,
+                    margin: formInputs.safetyMargin || 0,
+                    items: calculatedItems,
+                    analysisDate: formInputs.analysisDate,
+                    requestId: req.id
+                };
+                transaction.set(printJobRef, {
+                    ...sanitizeForFirebase(printData),
+                    createdAt: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    createdBy: this.getCurrentUserName()
+                });
+                transaction.set(logRef, sanitizeForFirebase({
+                    action: 'EDIT_REQUEST',
+                    details: `Chỉnh sửa phiếu: ${req.sopName}`,
+                    timestamp: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    user: this.getCurrentUserName(),
+                    diff: editDiff,
+                    printable: true,
+                    printJobId: printJobRef.id,
+                    requestId: req.id,
+                    supersedesLogIds: previousPrintableLogDocs.map(d => d.id),
+                    sopBasicInfo: {
+                        name: sop.name,
+                        category: sop.category,
+                        ref: sop.ref
+                    }
+                }));
+            });
+            let oldSamples = 1;
+            let oldQcs = 0;
+            if (req.sampleList && req.sampleList.length > 0)
+                oldSamples = req.sampleList.length;
+            else if (req.inputs?.['n_sample'])
+                oldSamples = Number(req.inputs['n_sample']);
+            if (req.inputs?.['n_qc'])
+                oldQcs = Number(req.inputs['n_qc']);
+            let newSamples = 1;
+            let newQcs = 0;
+            if (formInputs.sampleList && formInputs.sampleList.length > 0)
+                newSamples = formInputs.sampleList.length;
+            else if (formInputs['n_sample'])
+                newSamples = Number(formInputs['n_sample']);
+            if (formInputs['n_qc'])
+                newQcs = Number(formInputs['n_qc']);
+            const sampleDelta = newSamples - oldSamples;
+            const qcDelta = newQcs - oldQcs;
+            if (sampleDelta !== 0) {
+                const reqDate = this.getStatsDateForRequest(req, new Date());
+                this.statsService.incrementStats(reqDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
+            }
+            if (qcDelta !== 0) {
+                const reqDate = this.getStatsDateForRequest(req, new Date());
+                this.statsService.incrementStats(reqDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+            }
+            this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');
+            return true;
+        }
+        catch (e) {
+            this.toast.show(e.message, 'error');
+            return false;
+        }
+    }
+    buildRequestEditDiff(req, formInputs, newItems) {
+        const diff = [];
+        const add = (field, oldValue, newValue) => {
+            if (JSON.stringify(oldValue ?? null) !== JSON.stringify(newValue ?? null)) {
+                diff.push({ field, oldValue: oldValue ?? null, newValue: newValue ?? null });
+            }
+        };
+        add('analysisDate', req.analysisDate, formInputs.analysisDate);
+        add('sampleList', req.sampleList || [], formInputs.sampleList || []);
+        add('targetIds', [...(req.targetIds || [])].sort(), [...(formInputs.targetIds || [])].sort());
+        add('sampleTargetMap', req.sampleTargetMap || {}, formInputs.sampleTargetMap || {});
+        add('sampleDescriptionMap', req.sampleDescriptionMap || req.inputs?.sampleDescriptionMap || {}, formInputs.sampleDescriptionMap || {});
+        add('margin', req.margin ?? req.inputs?.safetyMargin, formInputs.safetyMargin);
+        const ignoredInputKeys = new Set(['analysisDate', 'safetyMargin', 'sampleList', 'targetIds', 'sampleTargetMap', 'sampleDescriptionMap', 'explicitGroupId']);
+        const oldInputs = req.inputs || {};
+        const inputKeys = new Set([...Object.keys(oldInputs), ...Object.keys(formInputs || {})]);
+        inputKeys.forEach(key => {
+            if (!ignoredInputKeys.has(key))
+                add(`input.${key}`, oldInputs[key], formInputs[key]);
+        });
+        const summarizeItems = (items) => Object.fromEntries([...items].sort((a, b) => a.name.localeCompare(b.name)).map(item => [
+            item.name,
+            {
+                amount: Math.round(Number(item.amount || 0) * 1000000) / 1000000,
+                unit: item.stockUnit || item.unit || ''
+            }
+        ]));
+        add('inventoryItems', summarizeItems(req.items || []), summarizeItems(newItems || []));
+        return diff;
+    }
+    async rejectRequest(req) {
+        if (!this.auth.canApprove())
+            return;
+        if (!await this.confirmationService.confirm({ message: 'Từ chối yêu cầu này?', confirmText: 'Từ chối', isDangerous: true, }))
+            return;
+        try {
+            await updateDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id), { status: 'rejected', rejectedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+            this.toast.show('Đã từ chối', 'info');
+        }
+        catch (e) {
+            this.toast.show('Lỗi xử lý', 'error');
+        }
+    }
+    async deletePrintLog(logId, sopName, printJobId) {
+        try {
+            const batch = writeBatch(this.fb.db);
+            const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+            batch.update(logRef, { printable: false, lastUpdated: serverTimestamp() });
+            if (printJobId) {
+                const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
+                batch.delete(jobRef);
+            }
+            await batch.commit();
+            this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
+        }
+        catch (e) {
+            this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
+        }
+    }
+    async deleteSelectedPrintLogs(logs) {
+        try {
+            const batch = writeBatch(this.fb.db);
+            logs.forEach(log => {
+                batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false, lastUpdated: serverTimestamp() });
+                if (log.printJobId) {
+                    batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
+                }
+            });
+            await batch.commit();
+            this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
+        }
+        catch (e) {
+            this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
+        }
+    }
+    static { this.ɵfac = function StateService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || StateService)(); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: StateService, factory: StateService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(StateService, [{
+        type: Injectable,
+        args: [{ providedIn: 'root' }]
+    }], () => [], null); })();
+//# sourceMappingURL=state.service.js.map

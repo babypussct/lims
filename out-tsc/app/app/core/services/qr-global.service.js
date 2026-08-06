@@ -1,0 +1,127 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { ToastService } from './toast.service';
+import { StateService } from './state.service';
+import { parseGs1Data } from '../../shared/utils/gs1-parser';
+import * as i0 from "@angular/core";
+export class QrGlobalService {
+    constructor() {
+        this.router = inject(Router);
+        this.toast = inject(ToastService);
+        this.state = inject(StateService);
+        // State visibility of the scanner overlay
+        this.isScanning = signal(false);
+        // State for GS1 scanned data to show in modal
+        this.scannedGs1Data = signal(null);
+    }
+    startScan() {
+        this.isScanning.set(true);
+    }
+    stopScan() {
+        this.isScanning.set(false);
+    }
+    /**
+     * Central Logic to handle scanned codes
+     */
+    handleResult(rawValue) {
+        if (!rawValue)
+            return;
+        // 1. Close scanner immediately
+        this.stopScan();
+        // 2. Clean & Parse
+        let code = rawValue.trim();
+        // Handle URL format (e.g. from printed QR containing full URL)
+        if (code.includes('http') || code.includes('://')) {
+            try {
+                // Support: domain/#/traceability/ID
+                if (code.includes('#/traceability/')) {
+                    code = code.split('#/traceability/')[1].split('?')[0].split('/')[0];
+                }
+                // Support: ?id=ID
+                else if (code.includes('id=')) {
+                    code = new URL(code).searchParams.get('id') || code;
+                }
+            }
+            catch (e) {
+                console.warn("URL Parse Error", e);
+            }
+        }
+        const cleanCode = code.toUpperCase();
+        // 2.5. Check for auth QR TRƯỚC GS1 và toast (không hiển thị toast cho QR login)
+        // CASE A2: QR Login mới — format: LIMS_QR|sessionId|nonce (case-sensitive!)
+        if (rawValue.trimStart().startsWith('LIMS_QR|')) {
+            this.router.navigate(['/mobile-login'], { queryParams: { qr: rawValue.trim() } });
+            return;
+        }
+        // CASE A: Auth Handshake (Mobile Login) — format cũ
+        if (cleanCode.startsWith('SESS_')) {
+            this.router.navigate(['/mobile-login'], { queryParams: { qr: code } });
+            return;
+        }
+        // 2.6. Check for GS1 Data Matrix (Merck, etc.)
+        const gs1Data = parseGs1Data(cleanCode);
+        if (gs1Data.isGs1) {
+            if (gs1Data.error) {
+                this.toast.show(`Lỗi GS1: ${gs1Data.error}`, 'error');
+            }
+            else {
+                this.toast.show(`Nhận diện GS1: GTIN ${gs1Data.gtin}, Lô ${gs1Data.lotNumber || 'N/A'}`, 'success');
+            }
+            console.log('Parsed GS1 Data:', gs1Data);
+            this.scannedGs1Data.set(gs1Data);
+            return;
+        }
+        this.toast.show(`Đang xử lý: ${cleanCode}`, 'info');
+        // 3. Smart Routing Strategy
+        // CASE B: Traceability (Requests, Logs, Print Jobs)
+        if (cleanCode.startsWith('TRC-') || cleanCode.startsWith('REQ-') || cleanCode.startsWith('LOG-') || cleanCode.toLowerCase().startsWith('log_')) {
+            this.router.navigate(['/traceability', code]); // Keep original case for ID
+            return;
+        }
+        // CASE C: Inventory Item
+        if (cleanCode.startsWith('INV-') || cleanCode.startsWith('CH-')) {
+            this.router.navigate(['/inventory'], { queryParams: { search: code } });
+            return;
+        }
+        // CASE D: Reference Standard
+        if (cleanCode.startsWith('STD-')) {
+            this.router.navigate(['/standards'], { queryParams: { search: code } });
+            return;
+        }
+        // CASE E: SOP / Procedure
+        if (cleanCode.startsWith('SOP-')) {
+            // Option 1: Open Calculator with this SOP selected (if ID matches)
+            // Option 2: Search in Library
+            // We'll search in library for flexibility
+            this.router.navigate(['/calculator'], { queryParams: { search: code } });
+            return;
+        }
+        // CASE F: Recipe
+        if (cleanCode.startsWith('RCP-')) {
+            this.router.navigate(['/recipes'], { queryParams: { search: code } });
+            return;
+        }
+        // CASE G: User Config
+        if (cleanCode.startsWith('USR-')) {
+            this.router.navigate(['/config']);
+            return;
+        }
+        // CASE H: Firestore ID (Mã mẻ / Batch ID tự động của Firestore)
+        // Nhận diện chuỗi chính xác 20 ký tự alphanumeric
+        const firestoreIdRegex = /^[a-zA-Z0-9]{20}$/;
+        if (firestoreIdRegex.test(code)) {
+            this.router.navigate(['/results-view', code]);
+            return;
+        }
+        // CASE I: Fallback (Default Search in Inventory)
+        // If it looks like a number or generic string, try inventory
+        this.router.navigate(['/inventory'], { queryParams: { search: code } });
+    }
+    static { this.ɵfac = function QrGlobalService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || QrGlobalService)(); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: QrGlobalService, factory: QrGlobalService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(QrGlobalService, [{
+        type: Injectable,
+        args: [{ providedIn: 'root' }]
+    }], null, null); })();
+//# sourceMappingURL=qr-global.service.js.map

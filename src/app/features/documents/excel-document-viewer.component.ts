@@ -66,8 +66,10 @@ interface ExcelColumnOption {
   imports: [CommonModule, FormsModule, AgGridAngular],
   template: `
     <div class="relative h-full min-h-0 flex flex-col bg-white dark:bg-slate-900"
+         [class.excel-grid-focus]="gridFocusMode()"
          [attr.data-ag-theme-mode]="state.darkMode() ? 'dark' : 'light'">
-      <div class="min-h-11 shrink-0 flex items-center gap-1.5 px-2 md:px-3 py-1.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+      <div class="excel-toolbar min-h-11 shrink-0 flex items-center gap-1.5 px-2 md:px-3 py-1.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700"
+           [class.hidden]="gridFocusMode()">
         <button type="button" (click)="copySelection()"
                 class="excel-tool-button shrink-0"
                 [disabled]="!selection()"
@@ -100,7 +102,14 @@ interface ExcelColumnOption {
           <i class="fa-solid fa-lock mr-1.5"></i>Chỉ đọc · không thay đổi tệp gốc
         </span>
 
-        <div class="relative flex-1 sm:flex-none sm:w-72 ml-auto">
+        <button type="button" (click)="setGridFocusMode(true)"
+                class="excel-tool-button shrink-0 ml-auto sm:ml-0"
+                title="Mở rộng vùng thao tác sheet">
+          <i class="fa-solid fa-expand"></i>
+          <span class="hidden xl:inline">Mở rộng sheet</span>
+        </button>
+
+        <div class="relative flex-1 sm:flex-none sm:w-72 sm:ml-auto">
           <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
           <input #sheetSearch type="search" [ngModel]="searchQuery()"
                  (ngModelChange)="onSearch($event)"
@@ -210,7 +219,8 @@ interface ExcelColumnOption {
         </section>
       }
 
-      <div class="h-9 shrink-0 grid grid-cols-[70px_minmax(0,1fr)] border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950">
+      <div class="excel-formula-bar h-9 shrink-0 grid grid-cols-[70px_minmax(0,1fr)] border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
+           [class.hidden]="gridFocusMode()">
         <div class="flex items-center justify-center border-r border-slate-200 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300 tabular-nums px-1">
           {{ selectedAddress() }}
         </div>
@@ -223,6 +233,14 @@ interface ExcelColumnOption {
       </div>
 
       <div class="flex-1 min-h-0 relative">
+        @if (gridFocusMode()) {
+          <button type="button" (click)="setGridFocusMode(false)"
+                  class="excel-grid-focus-exit"
+                  title="Hiện lại thanh công cụ và thanh công thức">
+            <i class="fa-solid fa-compress"></i>
+            <span>Hiện công cụ</span>
+          </button>
+        }
         @if (loading()) {
           <div class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white dark:bg-slate-900">
             <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500"></i>
@@ -368,6 +386,30 @@ interface ExcelColumnOption {
     }
     .excel-search-button:hover:not(:disabled) { color: #047857; background: #d1fae5; }
     .excel-search-button:disabled { opacity: .35; }
+    .excel-grid-focus-exit {
+      position: absolute;
+      top: .4rem;
+      right: .55rem;
+      z-index: 30;
+      min-height: 2rem;
+      padding-inline: .65rem;
+      border-radius: .55rem;
+      border: 1px solid rgba(148, 163, 184, .75);
+      background: rgba(255, 255, 255, .92);
+      color: #475569;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .14);
+      backdrop-filter: blur(8px);
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .68rem;
+      font-weight: 800;
+    }
+    .excel-grid-focus-exit:hover { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
+    .excel-grid-focus .excel-sheet-tabs {
+      height: 2rem;
+      min-height: 2rem;
+    }
     :host ::ng-deep .excel-preview-grid .ag-root-wrapper {
       border: 0 !important;
       border-radius: 0 !important;
@@ -438,6 +480,11 @@ interface ExcelColumnOption {
     :host-context(.dark) .excel-tool-button { color: #cbd5e1; border-color: #475569; }
     :host-context(.dark) .excel-tool-active { color: #6ee7b7; border-color: #047857; background: rgba(6, 78, 59, .4); }
     :host-context(.dark) .excel-filter-panel { background: #1e293b; border-color: #475569; }
+    :host-context(.dark) .excel-grid-focus-exit {
+      background: rgba(15, 23, 42, .92);
+      border-color: #475569;
+      color: #cbd5e1;
+    }
     :host-context(.dark) .filter-field select,
     :host-context(.dark) .filter-field input {
       background: #0f172a;
@@ -540,6 +587,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   activeFilter = signal<{ column: number; operator: ExcelFilterOperator; value: string } | null>(null);
   activeSort = signal<{ column: number; direction: Exclude<ExcelSortDirection, 'none'> } | null>(null);
   filteredDataRows = signal(0);
+  gridFocusMode = signal(false);
 
   dimensionsLabel = computed(() =>
     `${this.visibleRows().toLocaleString('vi-VN')} dòng · ${this.visibleColumns()} cột`
@@ -591,6 +639,9 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
 
   ngAfterViewInit(): void {
     this.viewReady = true;
+    if (typeof window !== 'undefined' && (window.innerWidth <= 640 || window.innerHeight <= 700)) {
+      this.gridFocusMode.set(true);
+    }
     void this.loadWorkbook();
   }
 
@@ -611,9 +662,21 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.dragging = false;
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.filterPanelOpen.set(false);
+  handleEscape(): boolean {
+    if (this.filterPanelOpen()) {
+      this.filterPanelOpen.set(false);
+      return true;
+    }
+    if (this.gridFocusMode()) {
+      this.gridFocusMode.set(false);
+      return true;
+    }
+    return false;
+  }
+
+  setGridFocusMode(enabled: boolean): void {
+    this.gridFocusMode.set(enabled);
+    if (enabled) this.filterPanelOpen.set(false);
   }
 
   @HostListener('document:copy', ['$event'])
