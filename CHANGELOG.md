@@ -2,7 +2,16 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.06-b01
+## Phiên bản hiện tại: v26.08.06-b03
+
+### v26.08.06-b03
+
+#### 🚀 Tính năng mới
+
+- **Tối ưu nhãn phương pháp:** Tên phương pháp và nhãn được hiển thị rõ ràng, đầy đủ và đồng bộ hơn trên toàn hệ thống.
+- **Catalog 119 phương pháp hóa học:** Chỉ hiển thị các mã NAFI6/H-* được duyệt; loại bỏ mục nhóm/chỉ tiêu không phải nhãn phương pháp khỏi bộ chọn vận hành.
+- **Tên phép thử đi kèm mã:** Mỗi mã có mô tả tiếng Việt dạng “Xác định ...” trong catalog, chip, bộ lọc và export.
+- **Gán nhiều phương pháp:** Một chuẩn và một lần báo trả có thể lưu nhiều method tag trong cùng một mảng.
 
 ### v26.08.06-b01
 

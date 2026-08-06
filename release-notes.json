@@ -1,14 +1,15 @@
 {
-  "title": "Tăng tốc độ toàn hệ thống, cải tiến Yêu cầu chất chuẩn và chuẩn hóa Danh mục phương pháp",
+  "title": "Tối ưu hiển thị nhãn phương pháp và cải thiện quản lý tiêu chuẩn",
   "highlights": [
     "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
-    "Màn hình Yêu cầu chất chuẩn được làm gọn, giúp thao tác chọn và gửi yêu cầu dễ nhìn và nhanh hơn.",
-    "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng."
+    "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng.",
+    "Tối ưu hóa việc hiển thị nhãn phương pháp trên toàn bộ hệ thống."
   ],
   "features": [
     "Cho phép chọn và gắn nhiều phương pháp hóa học cùng lúc khi báo trả Kết quả hoặc quản lý Chất chuẩn.",
     "Hiển thị tên phép thử tiếng Việt đi kèm mã phương pháp trên các danh sách, bộ lọc và khi xuất dữ liệu ra Excel.",
-    "Trình xem tài liệu PDF được nâng cấp, hoạt động ổn định trên nhiều thiết bị và tương thích tốt với chế độ ứng dụng điện thoại."
+    "Trình xem tài liệu PDF được nâng cấp, hoạt động ổn định trên nhiều thiết bị.",
+    "Tối ưu hiển thị nhãn phương pháp, giúp tên phương pháp được tự động chuẩn hóa."
   ],
   "improvements": [
     "Bảng tin tự động tải dữ liệu nhanh hơn và chính xác theo quyền hạn của từng người dùng.",

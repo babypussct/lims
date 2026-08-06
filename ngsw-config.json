@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.06-b02",
+    "version": "v26.08.06-b03",
     "title": "Tăng tốc độ toàn hệ thống, cải tiến Yêu cầu chất chuẩn và chuẩn hóa Danh mục phương pháp",
     "features": [
       "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
