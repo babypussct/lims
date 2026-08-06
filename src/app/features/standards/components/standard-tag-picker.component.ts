@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StandardTagOption } from '../../../core/models/standard.model';
-import { formatMethodOptionLabel } from '../services/standard-tag.utils';
+import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../services/standard-tag.utils';
 
 /**
  * Shared picker for persisted standard/request tags.
@@ -43,10 +43,10 @@ import { formatMethodOptionLabel } from '../services/standard-tag.utils';
 
       <div class="min-h-8 flex flex-wrap gap-1.5">
         @for (key of selectedKeys(); track key) {
-          <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 px-2.5 py-1 text-[11px] font-bold">
-            {{ resolveLabel(key) }}
+          <span class="inline-flex max-w-full items-start gap-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 px-2.5 py-1 text-[11px] font-bold" [title]="resolveLabel(key)">
+            <span class="min-w-0 line-clamp-2 break-words">{{ resolveCompactLabel(key) }}</span>
             @if (!disabled()) {
-              <button type="button" (click)="removeTag(key)" class="text-indigo-400 hover:text-red-500" aria-label="Gỡ nhãn">×</button>
+              <button type="button" (click)="removeTag(key)" class="shrink-0 text-indigo-400 hover:text-red-500" aria-label="Gỡ nhãn">×</button>
             }
           </span>
         }
@@ -102,6 +102,11 @@ export class StandardTagPickerComponent {
   resolveLabel(key: string): string {
     const option = this.options().find(item => item.key === key);
     return option ? formatMethodOptionLabel(option) : `[Đã lưu trữ] ${key}`;
+  }
+
+  resolveCompactLabel(key: string): string {
+    const option = this.options().find(item => item.key === key);
+    return option ? formatMethodOptionLabelCompact(option) : `[Đã lưu trữ] ${key}`;
   }
 
   formatOptionLabel(option: StandardTagOption): string {

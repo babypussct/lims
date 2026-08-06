@@ -1,22 +1,20 @@
 {
-  "title": "Tăng tốc độ toàn hệ thống, cải tiến Yêu cầu chất chuẩn và chuẩn hóa Danh mục phương pháp",
+  "title": "Tối ưu nhãn phương pháp và sửa lớp phủ xem tài liệu",
   "highlights": [
-    "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
-    "Màn hình Yêu cầu chất chuẩn được làm gọn, giúp thao tác chọn và gửi yêu cầu dễ nhìn và nhanh hơn.",
-    "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng."
+    "Nhãn phương pháp dài được rút gọn thành mã phương pháp và kỹ thuật phân tích để bộ lọc, thẻ đã chọn luôn gọn và dễ đọc.",
+    "Người dùng vẫn có thể xem đầy đủ tên phép thử qua chú thích khi rê chuột vào nhãn hoặc lựa chọn đang dùng."
   ],
   "features": [
-    "Cho phép chọn và gắn nhiều phương pháp hóa học cùng lúc khi báo trả Kết quả hoặc quản lý Chất chuẩn.",
-    "Hiển thị tên phép thử tiếng Việt đi kèm mã phương pháp trên các danh sách, bộ lọc và khi xuất dữ liệu ra Excel.",
-    "Trình xem tài liệu PDF được nâng cấp, hoạt động ổn định trên nhiều thiết bị và tương thích tốt với chế độ ứng dụng điện thoại."
+    "Bổ sung định dạng nhãn ngắn theo cấu trúc mã phương pháp và thiết bị, ví dụ NAFI6/H-9.4 · GC-MS/MS."
   ],
   "improvements": [
-    "Bảng tin tự động tải dữ liệu nhanh hơn và chính xác theo quyền hạn của từng người dùng.",
-    "Danh sách các phương pháp hóa học tự động sắp xếp theo thứ tự số tự nhiên (ví dụ H-1.2 đứng trước H-1.10), giúp tìm kiếm bằng mắt thuận tiện hơn.",
-    "Giao diện màn hình Yêu cầu chất chuẩn được tinh chỉnh, giảm bớt các thao tác không cần thiết."
+    "Thẻ phương pháp đã chọn hỗ trợ xuống tối đa hai dòng và không làm tràn chiều rộng khu vực nhập liệu.",
+    "Bộ lọc phương pháp hiển thị nhãn ngắn nhưng vẫn giữ tên đầy đủ trong tooltip.",
+    "Tự động loại bỏ thiết bị trùng lặp và dùng tên kỹ thuật trong mô tả làm phương án dự phòng khi chưa có mã thiết bị."
   ],
   "fixes": [
-    "Khắc phục tình trạng hiển thị lệch giao diện hoặc giật lag khi mở xem các tài liệu SOP.",
-    "Xử lý dứt điểm hiện tượng tải trang chậm hoặc bị treo khi người dùng tra cứu lịch sử hoạt động cá nhân."
+    "Khắc phục nhãn phương pháp có tên phép thử dài làm giãn bộ lọc và chip trên màn hình nhỏ.",
+    "Khắc phục cửa sổ xem trước tài liệu bị Header và Sidebar che phủ bằng cách tách modal khỏi stacking context của hiệu ứng chuyển trang.",
+    "Bổ sung kiểm thử cho định dạng nhãn rút gọn để bảo đảm luôn ngắn hơn nhãn đầy đủ."
   ]
 }

@@ -2,7 +2,21 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.06-b01
+## Phiên bản hiện tại: v26.08.06-b03
+
+### v26.08.06-b03
+
+#### ⚡ Tối ưu & cải tiến
+
+- **Nhãn phương pháp gọn hơn:** Bộ lọc và thẻ đã chọn hiển thị mã phương pháp kèm kỹ thuật phân tích, ví dụ `NAFI6/H-9.4 · GC-MS/MS`, thay cho toàn bộ tên phép thử dài.
+- **Giữ đầy đủ thông tin:** Tên phép thử đầy đủ vẫn được hiển thị qua tooltip khi rê chuột vào bộ lọc hoặc thẻ phương pháp.
+- **Tương thích màn hình nhỏ:** Thẻ đã chọn hỗ trợ xuống tối đa hai dòng, không làm tràn hoặc kéo giãn khu vực nhập liệu.
+
+#### 🐛 Sửa lỗi & kiểm thử
+
+- **Lớp phủ xem tài liệu:** Tách modal xem trước khỏi stacking context của hiệu ứng chuyển trang, bảo đảm cửa sổ PDF/Excel luôn phủ đúng lên Header và Sidebar.
+- Loại bỏ thiết bị trùng lặp khi tạo nhãn ngắn và dùng kỹ thuật trích từ tên phương pháp làm phương án dự phòng.
+- Bổ sung kiểm thử định dạng nhãn rút gọn để bảo đảm nội dung ngắn hơn nhãn đầy đủ và giữ đúng mã thiết bị.
 
 ### v26.08.06-b01
 

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.06-b02",
-    "title": "Tăng tốc độ toàn hệ thống, cải tiến Yêu cầu chất chuẩn và chuẩn hóa Danh mục phương pháp",
+    "version": "v26.08.06-b03",
+    "title": "Tối ưu nhãn phương pháp và sửa lớp phủ xem tài liệu",
     "features": [
-      "Hệ thống tải dữ liệu mượt mà và nhanh hơn đáng kể khi mở Kho, tra cứu Lịch sử và xem Báo cáo.",
-      "Màn hình Yêu cầu chất chuẩn được làm gọn, giúp thao tác chọn và gửi yêu cầu dễ nhìn và nhanh hơn.",
-      "Bổ sung danh mục 119 phương pháp hóa học với tên phép thử tiếng Việt rõ ràng, được sắp xếp thông minh giúp tra cứu dễ dàng.",
-      "Cho phép chọn và gắn nhiều phương pháp hóa học cùng lúc khi báo trả Kết quả hoặc quản lý Chất chuẩn.",
-      "Hiển thị tên phép thử tiếng Việt đi kèm mã phương pháp trên các danh sách, bộ lọc và khi xuất dữ liệu ra Excel."
+      "Nhãn phương pháp dài được rút gọn thành mã phương pháp và kỹ thuật phân tích để bộ lọc, thẻ đã chọn luôn gọn và dễ đọc.",
+      "Người dùng vẫn có thể xem đầy đủ tên phép thử qua chú thích khi rê chuột vào nhãn hoặc lựa chọn đang dùng.",
+      "Bổ sung định dạng nhãn ngắn theo cấu trúc mã phương pháp và thiết bị, ví dụ NAFI6/H-9.4 · GC-MS/MS.",
+      "Thẻ phương pháp đã chọn hỗ trợ xuống tối đa hai dòng và không làm tràn chiều rộng khu vực nhập liệu.",
+      "Cửa sổ xem trước tài liệu nay luôn phủ đúng lên Header và Sidebar."
     ]
   },
   "assetGroups": [

@@ -2,7 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StandardDeviceCode, StandardDeviceOption, StandardTagOption } from '../../../core/models/standard.model';
-import { formatMethodOptionLabel, formatStockSummary, StockSummaryResult } from '../services/standard-tag.utils';
+import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSummary, StockSummaryResult } from '../services/standard-tag.utils';
 
 @Component({
   selector: 'app-standards-filter',
@@ -58,7 +58,7 @@ import { formatMethodOptionLabel, formatStockSummary, StockSummaryResult } from 
        <div class="flex flex-col sm:flex-row gap-2">
            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm h-[30px] flex-1">
                <span class="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-flask mr-1"></i> Phương pháp:</span>
-               <select [ngModel]="methodTagFilter()" (ngModelChange)="methodTagFilterChange.emit($event || null)" class="min-w-0 flex-1 bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1">
+               <select [ngModel]="methodTagFilter()" (ngModelChange)="methodTagFilterChange.emit($event || null)" [title]="selectedMethodTitle()" class="min-w-0 flex-1 bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1">
                    <option [ngValue]="null">Tất cả phương pháp</option>
                    @for (option of tagOptions(); track option.key) { <option [ngValue]="option.key">{{formatTagLabel(option)}}</option> }
                </select>
@@ -110,7 +110,12 @@ export class StandardsFilterComponent {
   deviceFilterChange = output<StandardDeviceCode | 'all'>();
 
   formatTagLabel(option: StandardTagOption): string {
-    return formatMethodOptionLabel(option);
+    return formatMethodOptionLabelCompact(option);
+  }
+
+  selectedMethodTitle(): string {
+    const selected = this.tagOptions().find(option => option.key === this.methodTagFilter());
+    return selected ? formatMethodOptionLabel(selected) : 'Tất cả phương pháp';
   }
 
   onSearchInput(val: string) {

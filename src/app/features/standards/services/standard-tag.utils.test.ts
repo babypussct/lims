@@ -7,6 +7,7 @@ import {
   buildTagKey,
   compareChemicalMethodCodes,
   formatMethodOptionLabel,
+  formatMethodOptionLabelCompact,
   formatStockSummary,
   mergeUniqueTagKeys,
   normalizeNafi6ChemicalMethodCode,
@@ -56,6 +57,15 @@ test('chemical method codes use natural numeric ordering', () => {
 test('catalog labels show the method code and Vietnamese test name together', () => {
   const option = VLAT_11669_CHEMICAL_METHOD_TAGS.find(item => item.methodCode === 'NAFI6/H-8.41')!;
   assert.match(formatMethodOptionLabel(option), /^NAFI6\/H-8\.41 — Xác định /);
+});
+
+test('compact method labels keep long method names out of filters and chips', () => {
+  const option = VLAT_11669_CHEMICAL_METHOD_TAGS.find(item => item.methodCode === 'NAFI6/H-9.4')!;
+  const fullLabel = formatMethodOptionLabel(option);
+  const compactLabel = formatMethodOptionLabelCompact(option);
+  assert.match(fullLabel, /Aldrin/);
+  assert.equal(compactLabel, 'NAFI6/H-9.4 · GC-MS/MS');
+  assert.ok(compactLabel.length < fullLabel.length);
 });
 
 test('tag limit reports overflow instead of silently dropping tags', () => {

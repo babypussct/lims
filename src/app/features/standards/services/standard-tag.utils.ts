@@ -2,6 +2,7 @@ import {
   StandardDeviceCode,
   StandardDeviceOption,
   StandardTagCatalogItem,
+  StandardTagOption,
   StandardTagSource,
 } from '../../../core/models/standard.model';
 
@@ -234,9 +235,44 @@ export function compareChemicalMethodCodes(left: unknown, right: unknown): numbe
   return a.localeCompare(b, 'vi', { sensitivity: 'base', numeric: true });
 }
 
-export function formatMethodOptionLabel(option: Pick<StandardTagCatalogItem, 'name' | 'methodName'> | { label: string; methodName?: string }): string {
-  const code = 'label' in option ? option.label : option.name;
+type MethodLabelOption =
+  | Pick<StandardTagCatalogItem, 'name' | 'methodName' | 'methodCode' | 'deviceCodes'>
+  | Pick<StandardTagOption, 'label' | 'methodName' | 'methodCode' | 'deviceCodes'>;
+
+function resolveMethodOptionCode(option: MethodLabelOption): string {
+  return option.methodCode?.trim() || ('label' in option ? option.label : option.name);
+}
+
+function extractMethodTechnique(methodName: string | undefined): string {
+  const text = methodName?.trim();
+  if (!text) return '';
+
+  const marker = 'phương pháp';
+  const markerIndex = text.toLocaleLowerCase('vi').lastIndexOf(marker);
+  if (markerIndex < 0) return '';
+
+  const technique = text
+    .slice(markerIndex + marker.length)
+    .trim()
+    .replace(/^[\s:;,.–—-]+/, '')
+    .replace(/\s*-\s*/g, '-')
+    .replace(/\s+/g, ' ');
+
+  return technique.length <= 80 ? technique : '';
+}
+
+export function formatMethodOptionLabel(option: MethodLabelOption): string {
+  const code = resolveMethodOptionCode(option);
   return option.methodName ? `${code} — ${option.methodName}` : code;
+}
+
+/** Compact label for constrained controls such as filters and selected chips. */
+export function formatMethodOptionLabelCompact(option: MethodLabelOption): string {
+  const code = resolveMethodOptionCode(option);
+  const deviceLabels = [...new Set(option.deviceCodes || [])]
+    .map(deviceCode => STANDARD_DEVICE_OPTIONS.find(item => item.code === deviceCode)?.label || deviceCode);
+  const technique = deviceLabels.join(', ') || extractMethodTechnique(option.methodName);
+  return technique ? `${code} · ${technique}` : code;
 }
 
 export function buildAccreditationMethodTagId(methodCode: string): string {

@@ -368,10 +368,11 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
         }
       </div>
 
-      @if (previewItem(); as item) {
-        <app-document-preview-modal [item]="item" (closed)="closePreview()"></app-document-preview-modal>
-      }
     </div>
+
+    @if (previewItem(); as item) {
+      <app-document-preview-modal [item]="item" (closed)="closePreview()"></app-document-preview-modal>
+    }
   `,
   styles: [`
     :host {
