@@ -21,7 +21,7 @@ router-outlet + * {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  animation: route-content-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: route-content-enter 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Modal layers inside routed pages must stay attached to the viewport. The
@@ -258,7 +258,7 @@ html.performance-lite .animate-fade-in {
 }
 
 html.performance-lite router-outlet + * {
-  animation: route-layer-enter 100ms ease-out both;
+  animation: route-layer-enter 100ms ease-out;
 }
 
 html.performance-lite .route-loading-layer {

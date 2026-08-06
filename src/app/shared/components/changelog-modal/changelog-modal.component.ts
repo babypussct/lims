@@ -15,18 +15,18 @@ import { StateService } from '../../../core/services/state.service';
            class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print cursor-pointer">
         
         <!-- Modal Card Container -->
-        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in cursor-default"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh] animate-bounce-in cursor-default"
              (click)="$event.stopPropagation()">
           
           <!-- Modal Header -->
-          <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-purple-50/50 dark:from-slate-850 dark:to-slate-900">
-            <div class="flex items-center gap-3">
+          <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start sm:items-center gap-3 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-purple-50/50 dark:from-slate-850 dark:to-slate-900">
+            <div class="flex items-start sm:items-center gap-3 min-w-0">
               <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20 shrink-0">
                 <i class="fa-solid fa-scroll text-lg"></i>
               </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <h3 class="text-lg font-black text-slate-800 dark:text-white tracking-tight leading-none">Nhật Ký Cập Nhật</h3>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-black text-slate-800 dark:text-white tracking-tight leading-tight">Nhật Ký Cập Nhật</h3>
                   <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                     {{ state.systemVersion() }}
                   </span>
@@ -43,7 +43,7 @@ import { StateService } from '../../../core/services/state.service';
           </div>
 
           <!-- Search / Filter Bar -->
-          <div class="px-6 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+          <div class="px-4 sm:px-6 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 flex-1">
               <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs pl-1"></i>
               <input type="text" [(ngModel)]="searchQuery" 
@@ -64,12 +64,12 @@ import { StateService } from '../../../core/services/state.service';
           </div>
 
           <!-- Modal Body (Timeline List) -->
-          <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+          <div class="px-4 sm:px-6 py-5 sm:py-6 overflow-y-auto custom-scrollbar flex-1 min-h-0">
             @if (changelogService.loading()) {
-              <div class="space-y-6 animate-pulse" aria-live="polite" aria-busy="true">
+              <div class="relative ml-2 border-l-2 border-blue-200 dark:border-blue-900/60 pl-5 space-y-6 animate-pulse" aria-live="polite" aria-busy="true">
                 @for (placeholder of [1, 2, 3]; track placeholder) {
-                  <div class="relative pl-6 space-y-3">
-                    <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-200 dark:bg-blue-900"></div>
+                  <div class="relative space-y-3 min-w-0">
+                    <div class="absolute -left-[29px] top-0 w-4 h-4 rounded-full bg-blue-200 dark:bg-blue-900"></div>
                     <div class="h-4 w-28 rounded bg-slate-200 dark:bg-slate-800"></div>
                     <div class="h-5 w-3/4 rounded bg-slate-200 dark:bg-slate-800"></div>
                     <div class="h-16 w-full rounded-2xl bg-slate-100 dark:bg-slate-800/70"></div>
@@ -77,10 +77,11 @@ import { StateService } from '../../../core/services/state.service';
                 }
               </div>
             } @else {
-              @for (item of filteredList(); track item.version) {
-              <div class="relative pl-6 border-l-2 border-blue-500/30 dark:border-blue-500/20 last:border-l-0">
+              <div class="relative ml-2 border-l-2 border-blue-500/30 dark:border-blue-500/20 pl-5 space-y-6">
+                @for (item of filteredList(); track item.version) {
+              <article class="relative min-w-0">
                 <!-- Timeline Dot -->
-                <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm"></div>
+                <div class="absolute -left-[29px] top-0 w-4 h-4 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm"></div>
 
                 <div class="flex items-center justify-between gap-2 mb-2">
                   <div class="flex items-center gap-2">
@@ -132,8 +133,9 @@ import { StateService } from '../../../core/services/state.service';
                     </ul>
                   </div>
                 }
+              </article>
+                }
               </div>
-              }
 
               @if (filteredList().length === 0) {
                 <div class="text-center py-10 text-slate-400 dark:text-slate-500">
@@ -145,7 +147,7 @@ import { StateService } from '../../../core/services/state.service';
           </div>
 
           <!-- Modal Footer -->
-          <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between gap-4">
+          <div class="px-4 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between gap-4">
             <button (click)="navigateToFullChangelog()" 
                     class="text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 transition">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> Xem Toàn Bộ Lịch Sử

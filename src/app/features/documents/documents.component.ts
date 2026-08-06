@@ -50,6 +50,9 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
   selector: 'app-documents',
   standalone: true,
   imports: [CommonModule, FormsModule, AgGridAngular, DocumentPreviewModalComponent],
+  host: {
+    '[class.document-preview-active]': 'previewItem() !== null'
+  },
   template: `
     <div class="documents-page-enter h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-2 md:p-3 relative overflow-hidden">
       
@@ -380,6 +383,10 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
       height: 100%;
       min-height: 0;
     }
+    :host(.document-preview-active) {
+      position: relative;
+      z-index: 200;
+    }
     .custom-scrollbar::-webkit-scrollbar {
       height: 6px;
       width: 6px;
@@ -452,7 +459,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
     /* Keep the route host free of transform so preview dialogs remain fixed
        to the viewport while the page enters. */
     .documents-page-enter {
-      animation: documents-page-enter 180ms ease-out both;
+      animation: documents-page-enter 180ms ease-out;
     }
     @keyframes documents-page-enter {
       from { opacity: 0; }

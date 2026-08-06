@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.06-b03",
-    "title": "Tối ưu nhãn phương pháp, cải tiến hiệu suất hệ thống và danh mục phương pháp hóa học",
+    "version": "v26.08.06-b04",
+    "title": "Sửa lớp phủ xem tài liệu và căn chỉnh Nhật Ký Cập Nhật",
     "features": [
-      "Nhãn phương pháp dài được rút gọn thành mã phương pháp và kỹ thuật phân tích để bộ lọc, thẻ đã chọn luôn gọn và dễ đọc.",
-      "Người dùng vẫn có thể xem đầy đủ tên phép thử qua chú thích khi rê chuột vào nhãn hoặc lựa chọn đang dùng.",
-      "Bổ sung định dạng nhãn ngắn theo cấu trúc mã phương pháp và thiết bị, ví dụ NAFI6/H-9.4 · GC-MS/MS.",
-      "Thẻ phương pháp đã chọn hỗ trợ xuống tối đa hai dòng và không làm tràn chiều rộng khu vực nhập liệu.",
-      "Cửa sổ xem trước tài liệu nay luôn phủ đúng lên Header và Sidebar."
+      "Cửa sổ xem trước PDF và Excel trong Phiếu Giao Nhận Mẫu phủ trọn màn hình, không còn bị Header hoặc Sidebar che nội dung.",
+      "Nhật Ký Cập Nhật được căn lại theo một trục thời gian liên tục, dễ đọc hơn trên máy tính và điện thoại.",
+      "Tối ưu khoảng cách, kích thước tiêu đề, ô tìm kiếm và thẻ nội dung của Nhật Ký Cập Nhật theo từng kích thước màn hình.",
+      "Loại bỏ trạng thái stacking context tồn tại sau hiệu ứng chuyển trang để các lớp phủ trong ứng dụng hoạt động nhất quán hơn.",
+      "Nâng lớp chứa trình xem PDF/Excel lên trên AppHeaderComponent, Sidebar và thanh điều hướng khi tài liệu đang mở."
     ]
   },
   "assetGroups": [

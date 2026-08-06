@@ -2,7 +2,20 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.06-b03
+## Phiên bản hiện tại: v26.08.06-b04
+
+### v26.08.06-b04
+
+#### ⚡ Tối ưu & cải tiến
+
+- **Trình xem Phiếu Giao Nhận Mẫu:** Loại bỏ stacking context tồn tại sau hiệu ứng chuyển trang và nâng lớp chứa tài liệu khi modal mở, giúp PDF/Excel luôn phủ đúng toàn bộ vùng ứng dụng.
+- **Nhật Ký Cập Nhật responsive:** Điều chỉnh khoảng cách, tiêu đề, ô tìm kiếm và thẻ nội dung để trang lẫn modal hiển thị cân đối hơn trên desktop và điện thoại.
+
+#### 🐛 Sửa lỗi
+
+- Sửa trình xem PDF/Excel bị `AppHeaderComponent`, sidebar hoặc thanh điều hướng đè lên nội dung.
+- Sửa đường timeline và dấu mốc trong **Nhật Ký Cập Nhật** bị lệch so với phần nội dung.
+- Sửa `release-notes.json` thiếu dấu đóng chuỗi làm bước kiểm tra release và build thất bại.
 
 ### v26.08.06-b03
 
