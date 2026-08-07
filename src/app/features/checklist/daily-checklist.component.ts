@@ -6,7 +6,6 @@ import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
 import { TargetGroup } from '../../core/models/sop.model';
-import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
@@ -28,11 +27,7 @@ import {
 } from './daily-screen-layout-planner';
 import { TargetService } from '../targets/target.service';
 import { getCanonicalId } from '../results/shared/compound-id-resolver';
-
-interface AvailableDateOption {
-  value: string;
-  label: string;
-}
+import { computeTargetSignature } from '../targets/target-scope-classifier';
 
 @Component({
   selector: 'app-daily-checklist',
@@ -745,16 +740,14 @@ export class DailyChecklistComponent implements OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly targetService = inject(TargetService);
 
-  readonly selectedDate = signal(toLocalDateInputValue());
+  readonly today = toLocalDateInputValue();
+  readonly selectedDate = signal(this.today);
   readonly dateRequests = signal<Request[]>([]);
-  readonly availableDates = signal<string[]>([]);
   readonly loading = signal(true);
-  readonly loadingDates = signal(false);
   readonly loadedBatchCount = signal(0);
   readonly dataError = signal<string | null>(null);
   readonly usingOfflineCache = signal(false);
   readonly lastLoadedAt = signal<Date | null>(null);
-  readonly hasMoreDates = signal(false);
   readonly sopFilter = signal('all');
   readonly searchTerm = signal('');
   readonly printGeneratedAt = signal(new Date());
@@ -806,8 +799,8 @@ export class DailyChecklistComponent implements OnDestroy {
     }
   }
 
-  private dateOptionsCursor: QueryDocumentSnapshot | null = null;
   private dateLoadToken = 0;
+  private targetGroupsResolved = false;
 
   private readonly targetNameMap = computed(() => {
     const map = new Map<string, string>();
@@ -820,16 +813,7 @@ export class DailyChecklistComponent implements OnDestroy {
     return map;
   });
 
-  readonly availableDateOptions = computed<AvailableDateOption[]>(() =>
-    this.availableDates().map(value => ({ value, label: this.formatDate(value) }))
-  );
-
-  readonly hasOlderDate = computed(() => {
-    const index = this.availableDates().indexOf(this.selectedDate());
-    return index >= 0 && (index < this.availableDates().length - 1 || this.hasMoreDates());
-  });
-
-  readonly hasNewerDate = computed(() => this.availableDates().indexOf(this.selectedDate()) > 0);
+  readonly hasNewerDate = computed(() => this.selectedDate() < this.today);
 
   readonly dayBatches = computed<ApprovedBatchOverview[]>(() => {
     const targetNames = this.targetNameMap();
@@ -956,35 +940,19 @@ export class DailyChecklistComponent implements OnDestroy {
   }
 
   onDateChange(value: string): void {
-    if (!isValidDateInput(value) || !this.availableDates().includes(value)) return;
+    if (!isValidDateInput(value)) return;
     this.selectedDate.set(value);
     this.clearFilters();
     void this.loadSelectedDate();
   }
 
-  async moveAvailableDate(direction: 'older' | 'newer'): Promise<void> {
-    let dates = this.availableDates();
-    let currentIndex = dates.indexOf(this.selectedDate());
-    if (currentIndex < 0) return;
-
-    if (direction === 'older' && currentIndex === dates.length - 1 && this.hasMoreDates()) {
-      try {
-        do {
-          await this.loadMoreDateOptions();
-        } while (
-          !this.availableDates().some(date => date < this.selectedDate())
-          && this.hasMoreDates()
-        );
-      } catch (error) {
-        this.handleLoadError(error);
-        return;
-      }
-      dates = this.availableDates();
-      currentIndex = dates.indexOf(this.selectedDate());
-    }
-
-    const targetIndex = direction === 'older' ? currentIndex + 1 : currentIndex - 1;
-    if (targetIndex >= 0 && targetIndex < dates.length) this.onDateChange(dates[targetIndex]);
+  moveAvailableDate(direction: 'older' | 'newer'): void {
+    const [year, month, day] = this.selectedDate().split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + (direction === 'older' ? -1 : 1));
+    const nextDate = toLocalDateInputValue(date);
+    if (direction === 'newer' && nextDate > this.today) return;
+    this.onDateChange(nextDate);
   }
 
   refreshData(): void {
@@ -1219,19 +1187,9 @@ export class DailyChecklistComponent implements OnDestroy {
   private async initializeTracker(): Promise<void> {
     this.loading.set(true);
     try {
-      const targetGroupsPromise = this.targetService.getAllGroups().catch(error => {
-        console.warn('[DailySampleTracker] Target groups unavailable:', error);
-        return [] as TargetGroup[];
-      });
-      do {
-        await this.loadMoreDateOptions(this.availableDates().length === 0);
-      } while (this.availableDates().length === 0 && this.hasMoreDates());
-
-      const dates = this.availableDates();
-      const today = toLocalDateInputValue();
-      this.selectedDate.set(dates.includes(today) ? today : (dates[0] || today));
-      const [, targetGroups] = await Promise.all([this.loadSelectedDate(), targetGroupsPromise]);
-      this.availableTargetGroups.set(targetGroups);
+      this.selectedDate.set(this.today);
+      // Chưa quét lịch sử; giữ nút ngày cũ khả dụng để chỉ tải khi người dùng yêu cầu.
+      await this.loadSelectedDate(false, false);
     } catch (error) {
       this.handleLoadError(error);
     } finally {
@@ -1241,41 +1199,18 @@ export class DailyChecklistComponent implements OnDestroy {
 
   private async refreshTracker(): Promise<void> {
     try {
-      this.dateOptionsCursor = null;
-      this.hasMoreDates.set(false);
-      await this.loadMoreDateOptions(true);
-      if (!this.availableDates().includes(this.selectedDate())) {
-        this.availableDates.update(dates => [this.selectedDate(), ...dates].sort((a, b) => b.localeCompare(a)));
-      }
-      await this.loadSelectedDate();
+      // Làm mới đúng document của ngày đang xem.
+      await this.loadSelectedDate(true);
     } catch (error) {
       this.handleLoadError(error);
       this.loading.set(false);
     }
   }
 
-  private async loadMoreDateOptions(reset = false): Promise<void> {
-    if (this.loadingDates()) return;
-    this.loadingDates.set(true);
-    try {
-      if (reset) this.dateOptionsCursor = null;
-      const page = await this.dataService.loadDateOptionsPage(this.dateOptionsCursor);
-      const nextDates = reset
-        ? page.dates
-        : Array.from(new Set([...this.availableDates(), ...page.dates]));
-      this.availableDates.set(nextDates.sort((a, b) => b.localeCompare(a)));
-      this.dateOptionsCursor = page.cursor;
-      this.hasMoreDates.set(page.hasMore);
-      if (page.source === 'cache') this.usingOfflineCache.set(true);
-    } finally {
-      this.loadingDates.set(false);
-    }
-  }
-
-  private async loadSelectedDate(): Promise<void> {
+  private async loadSelectedDate(forceRefresh = false, manageLoading = true): Promise<Request[] | null> {
     const selectedDate = this.selectedDate();
     const token = ++this.dateLoadToken;
-    this.loading.set(true);
+    if (manageLoading) this.loading.set(true);
     this.loadedBatchCount.set(0);
     this.dataError.set(null);
     try {
@@ -1283,17 +1218,61 @@ export class DailyChecklistComponent implements OnDestroy {
         selectedDate,
         count => {
           if (token === this.dateLoadToken) this.loadedBatchCount.set(count);
-        }
+        },
+        forceRefresh
       );
-      if (token !== this.dateLoadToken) return;
+      if (token !== this.dateLoadToken) return null;
       this.dateRequests.set(result.requests);
       this.usingOfflineCache.set(result.source === 'cache');
       this.lastLoadedAt.set(new Date());
+      await this.ensureTargetGroupsForRequests(result.requests);
+      return result.requests;
     } catch (error) {
       if (token === this.dateLoadToken) this.handleLoadError(error);
+      return null;
     } finally {
-      if (token === this.dateLoadToken) this.loading.set(false);
+      if (manageLoading && token === this.dateLoadToken) this.loading.set(false);
     }
+  }
+
+  private async ensureTargetGroupsForRequests(requests: Request[]): Promise<void> {
+    const cachedGroups = this.targetService.groups();
+    if (cachedGroups.length > 0) {
+      this.availableTargetGroups.set(cachedGroups);
+      this.targetGroupsResolved = true;
+      return;
+    }
+    if (this.targetGroupsResolved || !this.requestsNeedTargetGroups(requests)) return;
+
+    try {
+      const groups = await this.targetService.getAllGroups();
+      this.availableTargetGroups.set(groups);
+      this.targetGroupsResolved = true;
+    } catch (error) {
+      console.warn('[DailySampleTracker] Target groups unavailable:', error);
+    }
+  }
+
+  private requestsNeedTargetGroups(requests: Request[]): boolean {
+    return requests.some(request => {
+      const sampleTargetMap = request.sampleTargetMap ?? request.inputs?.sampleTargetMap ?? {};
+      const targetSets = Object.values(sampleTargetMap)
+        .filter((ids): ids is string[] => Array.isArray(ids));
+      const fallbackTargets = request.targetIds ?? request.inputs?.targetIds ?? [];
+      if (targetSets.length === 0 && Array.isArray(fallbackTargets)) targetSets.push(fallbackTargets);
+
+      const storedSignatures = new Set(
+        (request.targetScopeSnapshots || []).map(snapshot => snapshot.signature)
+      );
+      const sopTargetIds = Object.keys(request.targetNames || {});
+      const sopSignature = sopTargetIds.length > 0 ? computeTargetSignature(sopTargetIds) : null;
+
+      return targetSets.some(targetIds => {
+        if (targetIds.length === 0) return false;
+        const signature = computeTargetSignature(targetIds);
+        return !storedSignatures.has(signature) && signature !== sopSignature;
+      });
+    });
   }
 
   private handleLoadError(error: unknown): void {

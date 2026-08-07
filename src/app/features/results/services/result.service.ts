@@ -5,6 +5,10 @@ import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, de
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { DailyChecklistMaterializerService } from '../../../core/services/daily-checklist-materializer.service';
+import { Request } from '../../../core/models/request.model';
+import { DailyChecklistEntry } from '../../../core/models/daily-checklist.model';
+import { buildDailyChecklistEntry } from '../../../core/utils/daily-checklist-projection';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +18,7 @@ export class ResultService {
   private auth = inject(AuthService);
   private reportService = inject(ReportService);
   private toast = inject(ToastService);
+  private dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
 
   private getDocRef(requestId: string) {
     // Tái sử dụng collection 'requests' để có đầy đủ quyền đọc/ghi trên Production
@@ -357,6 +362,14 @@ export class ResultService {
       }));
       
       const batch = writeBatch(this.fb.db);
+      const dailyEntriesByDate = new Map<string, DailyChecklistEntry[]>();
+      const queueDailyEntry = (request: Request): void => {
+        const entry = buildDailyChecklistEntry(request);
+        if (!entry || !request.analysisDate) return;
+        const entries = dailyEntriesByDate.get(request.analysisDate) || [];
+        entries.push(entry);
+        dailyEntriesByDate.set(request.analysisDate, entries);
+      };
       
       // 1. Cập nhật tài liệu metadata ( requests )
       const summaryPayload: any = {
@@ -411,6 +424,12 @@ export class ResultService {
         metaUpdatePayload.resultStatusReason = 'data_entry_started';
       }
       batch.update(metaRef, metaUpdatePayload);
+      queueDailyEntry({
+        id: requestId,
+        ...metaData,
+        status: metaUpdatePayload.status || metaData['status'],
+        analysisResultSummary: summaryPayload
+      } as Request);
       
       // 2. Lưu trữ dữ liệu lưới kết quả chi tiết ( results_details )
       //    KHÔNG lưu publishedBackup vào đây để tránh vượt giới hạn 40.000 index entries
@@ -481,10 +500,19 @@ export class ResultService {
               childMetaUpdatePayload.resultStatusReason = 'data_entry_started';
             }
             batch.update(childReqRef, childMetaUpdatePayload);
+            queueDailyEntry({
+              id: childId,
+              ...childMeta,
+              status: childMetaUpdatePayload.status || childMeta['status'],
+              analysisResultSummary: summaryPayload
+            } as Request);
           }
         }
       }
       
+      dailyEntriesByDate.forEach((entries, analysisDate) => {
+        this.dailyChecklistMaterializer.setBatchEntries(batch, analysisDate, entries);
+      });
       await batch.commit();
 
       if (isManualSave) {
@@ -996,11 +1024,21 @@ export class ResultService {
     if (!allPublished || !allHaveResults) return false;
 
     try {
-      await updateDoc(this.getDocRef(requestId), {
+      const metaRef = this.getDocRef(requestId);
+      const metaSnap = await getDoc(metaRef);
+      if (!metaSnap.exists()) return false;
+      const batch = writeBatch(this.fb.db);
+      batch.update(metaRef, {
         status: 'completed',
         resultStatusReason: 'reconciled',
         lastUpdated: serverTimestamp()
       });
+      this.dailyChecklistMaterializer.setBatchEntry(batch, {
+        id: requestId,
+        ...metaSnap.data(),
+        status: 'completed'
+      } as Request);
+      await batch.commit();
       await this.logActivity(
         'RECONCILE_RESULT_STATUS',
         `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ draft sang completed (ID: ${requestId})`,

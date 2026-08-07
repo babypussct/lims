@@ -272,12 +272,12 @@ interface ExcelColumnOption {
       </div>
 
       <div class="excel-sheet-tabs relative z-20 shrink-0 flex items-center bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-700">
-        <div class="flex-1 min-w-0 h-full flex items-center overflow-x-auto overscroll-x-contain scrollbar-none px-1">
+        <div class="excel-sheet-tabs-scroll flex-1 min-w-0 h-full flex items-center overflow-x-auto overscroll-x-contain scrollbar-none px-1">
           @for (sheetName of sheetNames(); track sheetName) {
             <button type="button" (click)="selectSheet(sheetName)"
                     role="tab"
                     [attr.aria-selected]="activeSheet() === sheetName"
-                    class="h-8 px-3 border-r border-slate-200 dark:border-slate-700 text-[11px] font-bold whitespace-nowrap transition-colors"
+                    class="excel-sheet-tab h-8 px-3 border-r border-slate-200 dark:border-slate-700 text-[11px] font-bold whitespace-nowrap transition-colors"
                     [class.bg-white]="activeSheet() === sheetName"
                     [class.dark:bg-slate-800]="activeSheet() === sheetName"
                     [class.text-emerald-700]="activeSheet() === sheetName"
@@ -407,8 +407,20 @@ interface ExcelColumnOption {
     }
     .excel-grid-focus-exit:hover { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
     .excel-grid-focus .excel-sheet-tabs {
-      height: 2rem;
-      min-height: 2rem;
+      height: auto;
+      min-height: 2.5rem;
+    }
+    .excel-sheet-tabs-scroll {
+      min-height: 2.5rem;
+      -webkit-overflow-scrolling: touch;
+      scroll-padding-inline: .5rem;
+      touch-action: pan-x;
+    }
+    .excel-sheet-tab {
+      flex: none;
+      min-height: 2.5rem;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     :host ::ng-deep .excel-preview-grid .ag-root-wrapper {
       border: 0 !important;
@@ -509,14 +521,24 @@ interface ExcelColumnOption {
       :host ::ng-deep .excel-preview-grid .ag-cell { font-size: 11px; padding-inline: 5px; }
     }
     .excel-sheet-tabs {
-      height: 2.25rem;
-      min-height: 2.25rem;
+      height: auto;
+      min-height: 2.5rem;
     }
     @media (max-width: 767px) {
-      .excel-sheet-tabs {
+      .excel-sheet-tabs,
+      .excel-grid-focus .excel-sheet-tabs {
         height: auto;
-        min-height: calc(2.25rem + env(safe-area-inset-bottom));
-        padding-bottom: env(safe-area-inset-bottom);
+        min-height: calc(2.75rem + max(env(safe-area-inset-bottom), .5rem));
+        padding-bottom: max(env(safe-area-inset-bottom), .5rem);
+      }
+      .excel-sheet-tabs-scroll {
+        min-height: 2.75rem;
+        align-items: stretch;
+      }
+      .excel-sheet-tab {
+        height: auto;
+        min-height: 2.75rem;
+        padding-inline: 1rem;
       }
     }
   `],

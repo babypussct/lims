@@ -431,6 +431,10 @@ service cloud.firestore {
         allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
       }
     }
+    match /artifacts/{appId}/daily_checklists/{analysisDate} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+    }
     match /artifacts/{appId}/results_details/{docId} {
       allow read, write: if isSignedIn();
     }

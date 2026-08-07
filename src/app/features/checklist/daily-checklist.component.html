@@ -31,29 +31,22 @@
 
       <!-- Right: Date navigation + Print button -->
       <div class="flex items-center gap-2 w-full md:w-auto ml-auto">
-        <button type="button" (click)="moveAvailableDate('older')" [disabled]="!hasOlderDate()"
-                aria-label="Ngày có dữ liệu cũ hơn" title="Ngày có dữ liệu cũ hơn"
+        <button type="button" (click)="moveAvailableDate('older')" [disabled]="loading()"
+                aria-label="Ngày trước" title="Ngày trước"
                 class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95 flex items-center justify-center bg-white dark:bg-slate-800">
           <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
         </button>
 
         <label class="relative flex-1 md:flex-none min-w-0">
-          <span class="sr-only">Ngày có dữ liệu</span>
+          <span class="sr-only">Chọn ngày theo dõi</span>
           <i class="fa-regular fa-calendar absolute inset-y-0 left-3 hidden sm:flex items-center text-blue-500 text-sm pointer-events-none" aria-hidden="true"></i>
-          <select [ngModel]="selectedDate()" (ngModelChange)="onDateChange($event)"
-                  [disabled]="availableDateOptions().length === 0" aria-label="Ngày có dữ liệu"
-                  class="w-full md:w-56 h-10 pl-3 sm:pl-9 pr-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-205 disabled:opacity-50">
-            @if (availableDateOptions().length === 0) {
-              <option value="">Chưa có ngày dữ liệu</option>
-            }
-            @for (date of availableDateOptions(); track date.value) {
-              <option [value]="date.value">{{date.label}}</option>
-            }
-          </select>
+          <input type="date" [ngModel]="selectedDate()" (ngModelChange)="onDateChange($event)"
+                 [max]="today" aria-label="Chọn ngày theo dõi"
+                 class="w-full md:w-56 h-10 pl-3 sm:pl-9 pr-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-205" />
         </label>
 
         <button type="button" (click)="moveAvailableDate('newer')" [disabled]="!hasNewerDate()"
-                aria-label="Ngày có dữ liệu mới hơn" title="Ngày có dữ liệu mới hơn"
+                aria-label="Ngày sau" title="Ngày sau"
                 class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95 flex items-center justify-center bg-white dark:bg-slate-800">
           <i class="fa-solid fa-chevron-right text-xs" aria-hidden="true"></i>
         </button>

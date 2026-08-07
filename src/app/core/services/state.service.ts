@@ -13,6 +13,7 @@ import { CalculatorService } from './calculator.service';
 import { buildScopedDeltaKey, DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
 import { StatsService } from './stats.service';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
+import { DailyChecklistMaterializerService } from './daily-checklist-materializer.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -26,6 +27,7 @@ import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 import { resolveMetadataSyncToast } from './notification-policy';
+import { buildDailyChecklistEntry } from '../utils/daily-checklist-projection';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -50,6 +52,7 @@ export class StateService implements OnDestroy {
   private targetService = inject(TargetService);
   private statsService = inject(StatsService);
   private readMonitor = inject(FirestoreReadMonitor);
+  private dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
 
   private listeners: Unsubscribe[] = [];
   private initGeneration = 0;
@@ -1247,6 +1250,10 @@ export class StateService implements OnDestroy {
         if (formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
 
         transaction.set(reqRef, sanitizeForFirebase(reqData));
+        this.dailyChecklistMaterializer.setTransactionEntry(transaction, {
+          id: reqRef.id,
+          ...reqData
+        } as Request);
 
         const printData: PrintData = {
           sop,
@@ -1348,7 +1355,8 @@ export class StateService implements OnDestroy {
       requestItemsByBatch.push(this.mapToRequestItems(item.calculatedItems, invMap));
     }
 
-    const estimatedWrites = deductions.size + planItems.length * 3;
+    const dailyDocumentWrites = new Set(planItems.map(item => item.formInputs.analysisDate)).size;
+    const estimatedWrites = deductions.size + planItems.length * 3 + dailyDocumentWrites;
     if (estimatedWrites > 450) {
       this.toast.show('Kế hoạch quá lớn để duyệt nguyên tử. Hãy chia thành các kế hoạch nhỏ hơn.', 'error');
       return null;
@@ -1394,6 +1402,7 @@ export class StateService implements OnDestroy {
           });
         });
 
+        const dailyEntriesByDate = new Map<string, NonNullable<ReturnType<typeof buildDailyChecklistEntry>>[]>();
         prepared.forEach(item => {
           const reqData: any = {
             sopId: item.sop.id,
@@ -1415,6 +1424,12 @@ export class StateService implements OnDestroy {
           if (item.formInputs.sampleTargetMap) reqData.sampleTargetMap = item.formInputs.sampleTargetMap;
           if (item.formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
           transaction.set(item.requestRef, sanitizeForFirebase(reqData));
+          const dailyEntry = buildDailyChecklistEntry({ id: item.requestRef.id, ...reqData } as Request);
+          if (dailyEntry) {
+            const dateEntries = dailyEntriesByDate.get(item.formInputs.analysisDate) || [];
+            dateEntries.push(dailyEntry);
+            dailyEntriesByDate.set(item.formInputs.analysisDate, dateEntries);
+          }
 
           const printData: PrintData = {
             sop: item.sop,
@@ -1447,6 +1462,9 @@ export class StateService implements OnDestroy {
               ref: item.sop.ref
             }
           }));
+        });
+        dailyEntriesByDate.forEach((entries, analysisDate) => {
+          this.dailyChecklistMaterializer.setTransactionEntries(transaction, analysisDate, entries);
         });
       });
 
@@ -1501,6 +1519,19 @@ export class StateService implements OnDestroy {
           inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
           approvedAt: serverTimestamp(),
           lastUpdated: serverTimestamp(),
+          targetScopeSnapshots,
+          ...(currentSop ? {
+            sopVersion: req.sopVersion ?? currentSop.version ?? 1,
+            sopRef: req.sopRef ?? currentSop.ref ?? '',
+            targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
+          } : {})
+        });
+        this.dailyChecklistMaterializer.setTransactionEntry(transaction, {
+          ...req,
+          status: 'approved',
+          analysisDate: req.analysisDate,
+          inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
+          approvedAt: serverTimestamp(),
           targetScopeSnapshots,
           ...(currentSop ? {
             sopVersion: req.sopVersion ?? currentSop.version ?? 1,
@@ -1614,6 +1645,11 @@ export class StateService implements OnDestroy {
           updates.rejectedAt = serverTimestamp();
         }
         transaction.update(reqRef, updates);
+        this.dailyChecklistMaterializer.deleteTransactionEntry(
+          transaction,
+          req.analysisDate,
+          req.id
+        );
 
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
@@ -1633,7 +1669,7 @@ export class StateService implements OnDestroy {
       else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
       if (req.inputs?.['n_qc']) qcs = Number(req.inputs['n_qc']);
       const reqDate = this.getStatsDateForRequest(req, new Date());
-      this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+      this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs, true).catch(e => console.error(e));
 
       this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
@@ -1728,6 +1764,23 @@ export class StateService implements OnDestroy {
         else if ('sampleDescriptionMap' in formInputs) reqData.sampleDescriptionMap = deleteField();
 
         transaction.update(reqRef, sanitizeForFirebase(reqData));
+        const updatedProjection: Request = {
+          ...req,
+          items: newItems,
+          inputs: formInputs,
+          margin: formInputs.safetyMargin || 0,
+          analysisDate: formInputs.analysisDate,
+          sampleList: formInputs.sampleList || [],
+          targetIds: formInputs.targetIds || [],
+          sampleTargetMap: formInputs.sampleTargetMap || {},
+          sampleDescriptionMap: formInputs.sampleDescriptionMap,
+          targetScopeSnapshots,
+          ...this.buildSopTraceability(sop)
+        };
+        if (req.analysisDate !== formInputs.analysisDate) {
+          this.dailyChecklistMaterializer.deleteTransactionEntry(transaction, req.analysisDate, req.id);
+        }
+        this.dailyChecklistMaterializer.setTransactionEntry(transaction, updatedProjection);
 
         // 4. Create a new log and print job for the update
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -1790,16 +1843,20 @@ export class StateService implements OnDestroy {
       else if (formInputs['n_sample']) newSamples = Number(formInputs['n_sample']);
       if (formInputs['n_qc']) newQcs = Number(formInputs['n_qc']);
 
-      const sampleDelta = newSamples - oldSamples;
-      const qcDelta = newQcs - oldQcs;
-
-      if (sampleDelta !== 0) {
-        const reqDate = this.getStatsDateForRequest(req, new Date());
-        this.statsService.incrementStats(reqDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
-      }
-      if (qcDelta !== 0) {
-        const reqDate = this.getStatsDateForRequest(req, new Date());
-        this.statsService.incrementStats(reqDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+      const oldStatsDate = this.getStatsDateForRequest(req, new Date());
+      const newStatsDate = this.getStatsDateForRequest({ analysisDate: formInputs.analysisDate }, new Date());
+      if (oldStatsDate.toDateString() !== newStatsDate.toDateString()) {
+        this.statsService.incrementStats(oldStatsDate, req.sopId, req.sopName, oldSamples, 1, oldQcs, true).catch(e => console.error(e));
+        this.statsService.incrementStats(newStatsDate, sop.id, sop.name, newSamples, 1, newQcs).catch(e => console.error(e));
+      } else {
+        const sampleDelta = newSamples - oldSamples;
+        const qcDelta = newQcs - oldQcs;
+        if (sampleDelta !== 0) {
+          this.statsService.incrementStats(oldStatsDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
+        }
+        if (qcDelta !== 0) {
+          this.statsService.incrementStats(oldStatsDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+        }
       }
 
       this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');

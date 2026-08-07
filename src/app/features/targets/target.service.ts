@@ -6,10 +6,12 @@ import {
   query, orderBy, serverTimestamp, getDoc
 } from 'firebase/firestore';
 import { TargetGroup } from '../../core/models/sop.model';
+import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor.service';
 
 @Injectable({ providedIn: 'root' })
 export class TargetService {
   private fb = inject(FirebaseService);
+  private readMonitor = inject(FirestoreReadMonitor);
   private groupsPromise?: Promise<TargetGroup[]>;
   private readonly groupsSignal = signal<TargetGroup[]>([]);
   readonly groups = this.groupsSignal.asReadonly();
@@ -23,6 +25,12 @@ export class TargetService {
       const q = query(this.collectionRef, orderBy('name'));
       this.groupsPromise = getDocs(q)
         .then(snapshot => {
+          this.readMonitor.record(
+            'getDocs',
+            `artifacts/${this.fb.APP_ID}/target_groups`,
+            snapshot.size,
+            { phase: 'initial', fromCache: snapshot.metadata.fromCache }
+          );
           const groups = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TargetGroup));
           this.groupsSignal.set(groups);
           return groups;
@@ -38,6 +46,12 @@ export class TargetService {
   async getGroupById(id: string): Promise<TargetGroup | undefined> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/target_groups/${id}`);
     const snap = await getDoc(ref);
+    this.readMonitor.record(
+      'getDoc',
+      `artifacts/${this.fb.APP_ID}/target_groups/${id}`,
+      snap.exists() ? 1 : 0,
+      { fromCache: snap.metadata.fromCache }
+    );
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as TargetGroup) : undefined;
   }
 
