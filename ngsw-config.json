@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.06-b04",
-    "title": "Sửa lớp phủ xem tài liệu và căn chỉnh Nhật Ký Cập Nhật",
+    "version": "v26.08.07-b02",
+    "title": "Sửa lỗi che khuất tài liệu và cải thiện Nhật Ký Cập Nhật",
     "features": [
-      "Cửa sổ xem trước PDF và Excel trong Phiếu Giao Nhận Mẫu phủ trọn màn hình, không còn bị Header hoặc Sidebar che nội dung.",
-      "Nhật Ký Cập Nhật được căn lại theo một trục thời gian liên tục, dễ đọc hơn trên máy tính và điện thoại.",
-      "Tối ưu khoảng cách, kích thước tiêu đề, ô tìm kiếm và thẻ nội dung của Nhật Ký Cập Nhật theo từng kích thước màn hình.",
-      "Loại bỏ trạng thái stacking context tồn tại sau hiệu ứng chuyển trang để các lớp phủ trong ứng dụng hoạt động nhất quán hơn.",
-      "Nâng lớp chứa trình xem PDF/Excel lên trên AppHeaderComponent, Sidebar và thanh điều hướng khi tài liệu đang mở."
+      "Cửa sổ xem trước PDF và Excel trong Phiếu Giao Nhận Mẫu phủ trọn màn hình, không còn bị thanh điều hướng hoặc menu che khuất.",
+      "Nhật Ký Cập Nhật được hiển thị theo một trục thời gian liên tục, dễ đọc hơn trên cả máy tính và điện thoại.",
+      "Tự động điều chỉnh khoảng cách, kích thước chữ và ô tìm kiếm của Nhật Ký Cập Nhật để hiển thị rõ ràng hơn trên các cỡ màn hình khác nhau.",
+      "Các cửa sổ chức năng và lớp phủ mở lên mượt mà và hoạt động ổn định hơn sau khi chuyển trang.",
+      "Khắc phục lỗi màn hình xem tài liệu bị thanh điều hướng và menu che mất một phần nội dung."
     ]
   },
   "assetGroups": [
