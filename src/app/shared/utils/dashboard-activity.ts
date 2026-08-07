@@ -1,4 +1,5 @@
 export type DashboardActivityCategory = 'ALL' | 'SOP' | 'STOCK' | 'STANDARD' | 'APPROVE' | 'SYSTEM';
+export type DashboardActivityDataScope = 'global' | 'personal';
 
 export interface DashboardActivityLog {
   action: string;
@@ -10,6 +11,10 @@ const STANDARD_ACTIONS = new Set([
   'BACKFILL_USAGE_LOG',
   'DELETE_USAGE_LOG'
 ]);
+
+export function getDashboardActivityDataScope(canViewReports: boolean): DashboardActivityDataScope {
+  return canViewReports ? 'global' : 'personal';
+}
 
 export function isStandardActivityAction(action: string): boolean {
   return action.includes('STANDARD') || action.includes('COA') || STANDARD_ACTIONS.has(action);

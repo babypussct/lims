@@ -761,13 +761,16 @@ export class DeltaSyncService {
 
   private async _fetchInitialBatch<T>(config: DeltaSyncConfig): Promise<T[]> {
     const colRef = collection(this.fb, config.collectionPath);
-    const maxCacheSize = config.maxCacheSize || 1000;
+    const maxCacheSize = config.maxCacheSize ?? 1000;
     const constraints = config.queryConstraints || [];
     const initialOrderField = config.initialOrderByField || 'lastUpdated';
     const initialOrderDirection = config.initialOrderDirection || 'desc';
+    const limitConstraints: QueryConstraint[] = Number.isFinite(maxCacheSize)
+      ? [limit(maxCacheSize)]
+      : [];
     const initialQuery = config.initialCollectionScan
-      ? query(colRef, ...constraints, limit(maxCacheSize))
-      : query(colRef, ...constraints, orderBy(initialOrderField, initialOrderDirection), limit(maxCacheSize));
+      ? query(colRef, ...constraints, ...limitConstraints)
+      : query(colRef, ...constraints, orderBy(initialOrderField, initialOrderDirection), ...limitConstraints);
     const snapshot = await getDocs(initialQuery);
     this.readMonitor.record('getDocs', config.collectionPath, snapshot.size, { phase: 'initial' });
 
@@ -803,7 +806,7 @@ export class DeltaSyncService {
   ): number {
     const sortField = config.orderByField || 'timestamp';
     const sortDirection = config.orderDirection || 'desc';
-    const maxCacheSize = config.maxCacheSize || 1000;
+    const maxCacheSize = config.maxCacheSize ?? 1000;
     const storedCursor = this._loadCursor(config.cursorKey, config);
     const cursorMillis = getMaxDeltaCursorMillis(items, observedCursorMillis, storedCursor);
     sortAndTrimDeltaItems(items, sortField, sortDirection, maxCacheSize);

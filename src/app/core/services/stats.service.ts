@@ -129,6 +129,23 @@ export class StatsService {
     return result;
   }
 
+  /** Load the complete monthly aggregate history for the All time dashboard view. */
+  async getAllMonthlyStats(): Promise<Record<string, MonthlyStatsDoc>> {
+    const result: Record<string, MonthlyStatsDoc> = {};
+    if (!this.auth.canViewReports()) return result;
+
+    try {
+      const statsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/monthly_stats`);
+      const snapshot = await getDocs(statsRef);
+      snapshot.forEach(monthDoc => {
+        result[monthDoc.id] = monthDoc.data() as MonthlyStatsDoc;
+      });
+    } catch (e) {
+      console.error('Error fetching all monthly stats:', e);
+    }
+    return result;
+  }
+
   /**
    * Script Backfill có thể gọi nhiều lần, phân trang theo thời gian để không làm treo UI.
    * Quét tất cả Requests từ startDate đến endDate và ghi đè vào bảng monthly_stats.

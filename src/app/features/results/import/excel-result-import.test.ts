@@ -8,6 +8,7 @@ import {
   getRelevantExcelImportSheetNames,
   parseMassHunterResultWorkbook
 } from './excel-result-import';
+import type { ExcelImportContext } from './excel-result-import.models';
 
 function makeWorkbook(sheetName = 'Bifenthrin') {
   const rows: any[][] = Array.from({ length: 18 }, () => []);
@@ -39,7 +40,7 @@ function makeWorkbook(sheetName = 'Bifenthrin') {
   return workbook;
 }
 
-function makeContext(printFormType: 'formCheck' | 'formDon') {
+function makeContext(printFormType: 'formCheck' | 'formDon'): ExcelImportContext {
   return {
     run: {
       sampleList: ['BL01', 'MINH_BL01', 'MINH_SP01'],
@@ -160,7 +161,7 @@ test('SOP-01 maps dated samples and recognizes BLANK, SPIKE and SPIKE_N rows', (
 
 test('maps sequence names in xxx_day_sample format for SOPs other than SOP-01', () => {
   const workbook = makeWorkbook();
-  workbook.Sheets.Bifenthrin['I15'] = {
+  workbook.Sheets['Bifenthrin']['I15'] = {
     t: 's',
     v: 'TT_TBVTV_27_U01.D'
   };
@@ -419,7 +420,7 @@ test('rounds only numeric Final-Conc. when the user selects decimal places', () 
 
 test('treats zero Final-Conc. as ND on both Form Check and Form Đơn', () => {
   const workbook = makeWorkbook();
-  workbook.Sheets.Bifenthrin['X15'] = { t: 's', v: '0.000' };
+  workbook.Sheets['Bifenthrin']['X15'] = { t: 's', v: '0.000' };
   const parsed = parseMassHunterResultWorkbook(XLSX, workbook);
 
   const checkContext = makeContext('formCheck');

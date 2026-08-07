@@ -467,7 +467,13 @@ service cloud.firestore {
     match /artifacts/{appId}/logs/{logId} {
       allow create: if isSignedIn();
       allow get: if true; // Public read cho phep quet QR code truy xuat nguon goc
-      allow list: if isSignedIn();
+      // Report viewers/managers may query the global audit trail. Other signed-in
+      // users can only list documents whose user field matches their own profile;
+      // Firestore therefore rejects an unconstrained global collection query.
+      allow list: if hasPermission(appId, 'report_view') || (
+        userExists(appId) &&
+        resource.data.get('user', '') == getUserProfile(appId).get('displayName', '')
+      );
       allow update, delete: if isManager(appId);
     }
   }

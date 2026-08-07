@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   filterDashboardActivityLogs,
+  getDashboardActivityDataScope,
   isStandardActivityAction,
   matchesDashboardActivityCategory
 } from './dashboard-activity';
@@ -15,6 +16,11 @@ test('classifies backfill and usage rollback as standard activity', () => {
   assert.equal(isStandardActivityAction('BACKFILL_USAGE_LOG'), true);
   assert.equal(isStandardActivityAction('DELETE_USAGE_LOG'), true);
   assert.equal(matchesDashboardActivityCategory('BACKFILL_USAGE_LOG', 'SYSTEM'), false);
+});
+
+test('users without report permission are restricted to the personal activity scope', () => {
+  assert.equal(getDashboardActivityDataScope(false), 'personal');
+  assert.equal(getDashboardActivityDataScope(true), 'global');
 });
 
 test('filters before applying the dashboard display limit', () => {

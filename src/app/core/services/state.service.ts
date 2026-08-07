@@ -27,6 +27,7 @@ import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 import { resolveMetadataSyncToast } from './notification-policy';
+import { getDashboardActivityDataScope } from '../../shared/utils/dashboard-activity';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -58,6 +59,7 @@ export class StateService implements OnDestroy {
   private approvedRunsSub?: Unsubscribe;
   private logsSub?: Unsubscribe;
   private personalLogsSub?: Unsubscribe;
+  private globalLogsSyncKeys?: { cacheKey: string; cursorKey: string };
   private usersInfoSub?: Unsubscribe;
   /** Singleton request listener — unregister callback (không hủy listener) */
   private _unregisterStdReqListener?: () => void;
@@ -120,7 +122,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.07-b06');
+  systemVersion = signal<string>('v26.08.08-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -276,6 +278,7 @@ export class StateService implements OnDestroy {
       this._unregisterStdReqListener();
       this._unregisterStdReqListener = undefined;
     }
+    this.clearGlobalActivityLogCache();
     // Giữ singleton còn subscriber ở màn hình khác, nhưng hủy listener mồ côi sau
     // khi quyền/scope thay đổi để tránh tiếp tục tốn reads cho cache không còn dùng.
     this.deltaSync.destroyInactiveSingletons();
@@ -538,7 +541,7 @@ export class StateService implements OnDestroy {
   }
 
   ensureLogsListener(): void {
-    if (this.logsSub || !this.auth.currentUser()) return;
+    if (this.logsSub || !this.auth.currentUser() || !this.auth.canViewReports()) return;
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
 
@@ -549,6 +552,10 @@ export class StateService implements OnDestroy {
       maxCacheSize: 200,
       orderByField: 'timestamp',
       orderDirection: 'desc'
+    };
+    this.globalLogsSyncKeys = {
+      cacheKey: logsSyncConfig.cacheKey,
+      cursorKey: logsSyncConfig.cursorKey
     };
 
     const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
@@ -623,6 +630,14 @@ export class StateService implements OnDestroy {
     this.printableLogs.set(logs.filter(l => l.printable === true));
   }
 
+  private clearGlobalActivityLogCache(): void {
+    const keys = this.globalLogsSyncKeys;
+    if (!keys) return;
+    this.deltaSync.destroySingleton(keys.cacheKey);
+    this.deltaSync.clearCache(keys.cacheKey, keys.cursorKey);
+    this.globalLogsSyncKeys = undefined;
+  }
+
   private getLogTime(log: Log): number {
     return timestampToMillis(log.timestamp) ?? 0;
   }
@@ -635,10 +650,14 @@ export class StateService implements OnDestroy {
     const isCurrentInit = () => initGeneration === this.initGeneration;
 
     const approvedRunsConfig: DeltaSyncConfig = {
-      cacheKey: buildScopedDeltaKey(`lims_approved_requests_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
-      cursorKey: buildScopedDeltaKey(`lims_approved_requests_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      // Use a new cache namespace so legacy 100-item caches are never treated as complete history.
+      cacheKey: buildScopedDeltaKey(`lims_approved_requests_all_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      cursorKey: buildScopedDeltaKey(`lims_approved_requests_all_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
       collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
-      maxCacheSize: 100, // Safe limit for localStorage
+      // Historical consumers must not silently turn "all time" into the latest N requests.
+      // DeltaSync treats Infinity as an unbounded in-memory initial scan and simply skips
+      // persistent cache writes if browser storage cannot hold the full history.
+      maxCacheSize: Number.POSITIVE_INFINITY,
       orderByField: 'approvedAt',
       orderDirection: 'desc'
     };
@@ -706,10 +725,18 @@ export class StateService implements OnDestroy {
   }
 
   ensureActivityFeedListeners(): void {
-    this.ensureLogsListener();
-    if (!this.auth.canViewReports()) {
+    const scope = getDashboardActivityDataScope(this.auth.canViewReports());
+    if (scope === 'global') {
+      if (this.personalLogsSub) this.personalLogsSub();
+      this.personalLogsCache = [];
+      this.ensureLogsListener();
+    } else {
+      if (this.logsSub) this.logsSub();
+      this.clearGlobalActivityLogCache();
+      this.globalLogsCache = [];
       this.ensurePersonalLogsListener();
     }
+    this.publishActivityLogs();
     this.ensureUserInfoCacheListener();
   }
 

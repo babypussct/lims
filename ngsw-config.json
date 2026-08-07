@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.07-b06",
-    "title": "Tìm Kiếm Và Lọc Phương Pháp Tiện Lợi Hơn Trong Quản Lý Chất Chuẩn",
+    "version": "v26.08.08-b01",
+    "title": "Trải Nghiệm Xem Bảng Điều Khiển Đầy Đủ Và Chính Xác Hơn",
     "features": [
-      "Tìm kiếm phương pháp phân tích dễ dàng hơn: hỗ trợ gõ không dấu, tìm theo mã, tên hoặc mô tả.",
-      "Lọc nhanh phương pháp theo nhóm Kỹ thuật (thiết bị) để không phải lướt qua danh sách dài.",
-      "Giao diện bộ lọc gọn gàng hơn, tăng không gian hiển thị danh sách Chất chuẩn trên màn hình.",
-      "Bộ lọc phương pháp mới cho phép tìm kiếm trực tiếp bằng văn bản (có hoặc không dấu).",
-      "Bổ sung khả năng thu hẹp danh mục phương pháp dựa trên nhóm Kỹ thuật."
+      "Hỗ trợ xem toàn bộ dữ liệu thống kê từ trước đến nay trên Bảng điều khiển thay vì bị giới hạn trong 90 ngày.",
+      "Các biểu đồ và thẻ KPI hiển thị số liệu thống nhất và chính xác hơn, không còn bị thiếu dữ liệu của ngày cuối cùng.",
+      "Danh sách 'Hoạt động hôm nay' tự động làm mới khi qua ngày mới mà không cần tải lại trang.",
+      "Bổ sung khả năng xem báo cáo và dữ liệu thống kê không giới hạn thời gian (chế độ Tất cả thời gian).",
+      "Hệ thống tự động điều chỉnh lại cho đúng nếu người dùng vô tình chọn ngày bắt đầu sau ngày kết thúc trên bộ lọc thời gian."
     ]
   },
   "assetGroups": [

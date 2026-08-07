@@ -1,19 +1,19 @@
 {
-  "title": "Tìm Kiếm Và Lọc Phương Pháp Tiện Lợi Hơn Trong Quản Lý Chất Chuẩn",
+  "title": "Trải Nghiệm Xem Bảng Điều Khiển Đầy Đủ Và Chính Xác Hơn",
   "highlights": [
-    "Tìm kiếm phương pháp phân tích dễ dàng hơn: hỗ trợ gõ không dấu, tìm theo mã, tên hoặc mô tả.",
-    "Lọc nhanh phương pháp theo nhóm Kỹ thuật (thiết bị) để không phải lướt qua danh sách dài.",
-    "Giao diện bộ lọc gọn gàng hơn, tăng không gian hiển thị danh sách Chất chuẩn trên màn hình."
+    "Hỗ trợ xem toàn bộ dữ liệu thống kê từ trước đến nay trên Bảng điều khiển thay vì bị giới hạn trong 90 ngày.",
+    "Các biểu đồ và thẻ KPI hiển thị số liệu thống nhất và chính xác hơn, không còn bị thiếu dữ liệu của ngày cuối cùng.",
+    "Danh sách 'Hoạt động hôm nay' tự động làm mới khi qua ngày mới mà không cần tải lại trang."
   ],
   "features": [
-    "Bộ lọc phương pháp mới cho phép tìm kiếm trực tiếp bằng văn bản (có hoặc không dấu).",
-    "Bổ sung khả năng thu hẹp danh mục phương pháp dựa trên nhóm Kỹ thuật."
+    "Bổ sung khả năng xem báo cáo và dữ liệu thống kê không giới hạn thời gian (chế độ Tất cả thời gian)."
   ],
   "improvements": [
-    "Loại bỏ tình trạng chọn sai tổ hợp Phương pháp và Kỹ thuật không tương thích, giúp hiển thị kết quả chính xác hơn.",
-    "Thu gọn khu vực bộ lọc khi chưa cần tìm kiếm chi tiết để tiết kiệm không gian màn hình."
+    "Hệ thống tự động điều chỉnh lại cho đúng nếu người dùng vô tình chọn ngày bắt đầu sau ngày kết thúc trên bộ lọc thời gian.",
+    "Hỗ trợ thao tác bằng bàn phím (phím Tab, Enter, Space) tiện lợi hơn khi tương tác với các thẻ KPI.",
+    "Nâng cao độ an toàn và tốc độ tải trang bằng cách tối ưu hóa quá trình xử lý quyền hạn của người dùng."
   ],
   "fixes": [
-    "Sửa lỗi bộ lọc 'Kỹ thuật / nhóm phương pháp' hiển thị sai số lượng, giúp nhóm các phương pháp lại chính xác hơn (ví dụ LC-MS/MS, GC-MS/MS) để dễ dàng thu hẹp kết quả."
+    "Khắc phục lỗi biểu đồ và số liệu thống kê tính sai khoảng ngày, đảm bảo dữ liệu của ngày cuối cùng luôn được bao gồm đầy đủ."
   ]
 }

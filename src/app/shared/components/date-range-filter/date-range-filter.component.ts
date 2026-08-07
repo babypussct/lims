@@ -2,6 +2,7 @@
 import { Component, signal, output, input, effect, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { normalizeManualDateRange } from '../../utils/date-range';
 
 export type DateRangePreset = 'all' | 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_quarter' | 'this_year' | 'custom';
 
@@ -179,8 +180,14 @@ export class DateRangeFilterComponent {
   }
 
   onManualDateChange(type: 'start' | 'end', value: string) {
-      if (type === 'start') this.startDate.set(value);
-      else this.endDate.set(value);
+      const normalized = normalizeManualDateRange(
+          type,
+          value,
+          this.startDate(),
+          this.endDate()
+      );
+      this.startDate.set(normalized.start);
+      this.endDate.set(normalized.end);
       
       this.activePreset.set('custom');
       this.currentLabel.set('Tùy chỉnh');

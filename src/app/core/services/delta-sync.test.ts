@@ -134,6 +134,16 @@ test('sorts timestamp and natural string fields before trimming', () => {
   assert.deepEqual(names.map(item => item.name), ['Item 1', 'Item 2', 'Item 10']);
 });
 
+test('keeps the complete history when cache size is explicitly unbounded', () => {
+  const items = [
+    { id: 'old', updated: 1000 },
+    { id: 'middle', updated: 2000 },
+    { id: 'new', updated: 3000 }
+  ];
+  sortAndTrimDeltaItems(items, 'updated', 'desc', Number.POSITIVE_INFINITY);
+  assert.deepEqual(items.map(item => item.id), ['new', 'middle', 'old']);
+});
+
 test('updates the canonical array without replacing its identity', () => {
   const cache = [{ id: 'old' }];
   const identity = cache;

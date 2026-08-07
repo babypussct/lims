@@ -7,12 +7,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { StatsService, MonthlyStatsDoc } from '../../core/services/stats.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { StandardService } from '../standards/standard.service'; 
-import { InventoryItem } from '../../core/models/inventory.model';
 import { ReferenceStandard } from '../../core/models/standard.model';
-import { Request } from '../../core/models/request.model';
-import { ToastService } from '../../core/services/toast.service';
 import { QrGlobalService } from '../../core/services/qr-global.service'; // Import Global Service
-import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
+import { formatNum, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import {
@@ -21,38 +18,19 @@ import {
   isStandardActivityAction
 } from '../../shared/utils/dashboard-activity';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
+import {
+  createInclusiveDateRange,
+  enumerateInclusiveDates,
+  getDateBoundsFromMonthlyStats,
+  InclusiveDateRange,
+  toLocalDateKey
+} from '../../shared/utils/date-range';
 
 interface PriorityStandard {
     name: string;
     daysLeft: number;
     date: string;
     status: 'expired' | 'warning' | 'safe' | 'error';
-}
-
-// Thêm interface để cache _date
-interface ParsedRequest extends Request {
-    _date: Date;
-}
-
-interface BatchHistoryItem {
-    id: string; // Request ID / Trace ID
-    timestamp: any;
-    user: string;
-    sampleCount: number;
-    sampleList: string[]; // Raw list for this batch
-    sampleDisplay: string; // Formatted range for this batch
-}
-
-interface KanbanColumn {
-    sopName: string;
-    sopId: string;
-    totalSamples: number;
-    sampleList: string[]; // Aggregated list
-    sampleDisplay: string; // Formatted aggregated list
-    users: Set<string>;
-    batchCount: number; 
-    lastRun: Date; 
-    history: BatchHistoryItem[]; // Detailed history for modal
 }
 
 import { DailyChecklistComponent } from '../checklist/daily-checklist.component';
@@ -72,7 +50,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   stdService = inject(StandardService);
   auth = inject(AuthService); 
   router: Router = inject(Router);
-  toast = inject(ToastService);
   qrService = inject(QrGlobalService);
   changelogService = inject(ChangelogService);
   statsService = inject(StatsService);
@@ -94,7 +71,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
-  formatSampleList = formatSampleList;
 
   isLoading = signal(true);
   lowStockItems = computed(() => {
@@ -118,9 +94,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Custom SOP distribution list for charts legend
   sopDistribution = signal<{ name: string, count: number, percent: number, color: string }[]>([]);
-
-  // Modal State
-  selectedSopDetails = signal<KanbanColumn | null>(null);
 
   // Active SOP Filter
   selectedSopFilter = signal<string | null>(null);
@@ -253,6 +226,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private canViewActivityLog(log: { action?: string; user?: string }): boolean {
+      if (this.auth.canViewReports()) return true;
+
       const currentName = this.auth.currentUser()?.displayName;
       if (currentName && log.user === currentName) return true;
 
@@ -261,92 +236,64 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (this.isStandardLogAction(act)) return this.auth.canViewStandards();
       if (this.isSopLogAction(act)) return this.auth.canViewSop() || this.auth.canRunBatch();
       if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return this.auth.canManageSystem() || this.auth.canViewReports();
-      return true;
+      return false;
   }
 
   private getLocalYYYYMMDD(d: Date): string {
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
-  private _todayStr = this.getLocalYYYYMMDD(new Date());
+  private _todayStr = signal(this.getLocalYYYYMMDD(new Date()));
+  private _todayRolloverTimer: ReturnType<typeof setTimeout> | null = null;
+
   todayActivityCount = computed(() => {
       let logs = this.state.logs();
-      const isManager = this.auth.currentUser()?.role === 'manager';
-      if (!isManager) {
+      if (!this.auth.canViewReports()) {
           logs = logs.filter(l => this.canViewActivityLog(l));
       }
 
       return logs.filter(l => {
-          return timestampToLocalDateKey(l.timestamp) === this._todayStr;
+          return timestampToLocalDateKey(l.timestamp) === this._todayStr();
       }).length;
   });
 
-  private parseRequestDate(req: any): Date {
-      if (req.analysisDate) {
-          const parts = req.analysisDate.split('-');
-          if (parts.length === 3) {
-              return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-          }
-      }
-      const ts = req.approvedAt || req.timestamp;
-      return timestampToDate(ts) ?? new Date(0);
+  private getStatsDateBounds(): { start: string; end: string } | null {
+      return getDateBoundsFromMonthlyStats(this.statsData());
   }
 
-  // MỚI: Computed trung gian — parse date 1 lần duy nhất, filter isVirtualMaster
-  private _parsedRequests = computed<ParsedRequest[]>(() => {
-      return this.state.approvedRequests()
-          .filter(r => !r.isVirtualMaster)
-          .map(r => ({ ...r, _date: this.parseRequestDate(r) }));
-  });
+  private getActiveDateRange(): InclusiveDateRange {
+      const explicitRange = createInclusiveDateRange(this.startDate(), this.endDate());
+      if (explicitRange) return explicitRange;
 
-  private parseDateSafe(dateStr: string | null): Date | null {
-      if (!dateStr) return null;
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-          return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const allTimeBounds = this.getStatsDateBounds();
+      if (allTimeBounds) {
+          const allTimeRange = createInclusiveDateRange(allTimeBounds.start, allTimeBounds.end);
+          if (allTimeRange) return allTimeRange;
       }
-      return new Date(dateStr);
+
+      const todayKey = toLocalDateKey(new Date());
+      return createInclusiveDateRange(todayKey, todayKey)!;
   }
 
-  // MỚI: Computed slice theo date range hiện tại — dùng chung cho kanbanBoard, chartKpis, trendInfo(current)
-  private _rangeFilteredRequests = computed<ParsedRequest[]>(() => {
-      const all = this._parsedRequests();
-      const startStr = this.startDate();
-      const endStr = this.endDate();
-      if (!startStr || !endStr) return all; // Tất cả thời gian
-      
-      const start = this.parseDateSafe(startStr)!; start.setHours(0,0,0,0);
-      const end = this.parseDateSafe(endStr)!; end.setHours(23,59,59,999);
-      const filter = this.selectedSopFilter();
-      
-      return all.filter(r => {
-          const inRange = r._date >= start && r._date <= end;
-          const inSop = !filter || r.sopName === filter;
-          return inRange && inSop;
-      });
-  });
+  private scheduleTodayRollover(): void {
+      if (this._todayRolloverTimer) clearTimeout(this._todayRolloverTimer);
+      const now = new Date();
+      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 50);
+      this._todayRolloverTimer = setTimeout(() => {
+          this._todayStr.set(this.getLocalYYYYMMDD(new Date()));
+          this.scheduleTodayRollover();
+      }, Math.max(1000, nextDay.getTime() - now.getTime()));
+  }
 
   // TREND INDICATOR (Dynamic Comparison based on Date Filter)
   trendInfo = computed(() => {
       const filter = this.selectedSopFilter();
-      
-      const startStr = this.startDate();
-      const endStr = this.endDate();
-      
-      let currentStart = new Date(); currentStart.setHours(0,0,0,0);
-      let currentEnd = new Date(); currentEnd.setHours(23,59,59,999);
-      if (startStr && endStr) {
-          currentStart = this.parseDateSafe(startStr)!; currentStart.setHours(0,0,0,0);
-          currentEnd = this.parseDateSafe(endStr)!; currentEnd.setHours(23,59,59,999);
-      }
-      
-      const diffTime = Math.abs(currentEnd.getTime() - currentStart.getTime());
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      const currentRange = this.getActiveDateRange();
+      const currentDates = enumerateInclusiveDates(currentRange);
 
       // Calculate current total
       let currentTotal = 0;
-      for (let i = 0; i < diffDays; i++) {
-          const d = new Date(currentStart); d.setDate(d.getDate() + i);
+      for (const d of currentDates) {
           const dayStats = this.getDayStats(d);
           
           if (filter) {
@@ -357,11 +304,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
       }
 
-      const currentAvg = diffDays > 0 ? currentTotal / diffDays : currentTotal;
+      const currentAvg = currentTotal / currentRange.days;
 
       // Historical period (Period-over-Period)
-      const historyDays = diffDays > 0 ? diffDays : 1;
-      const historyEnd = new Date(currentStart); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
+      const historyDays = currentRange.days;
+      const historyEnd = new Date(currentRange.start); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
       const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
 
       // Daily totals for history
@@ -432,92 +379,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       };
   });
 
-  // KANBAN COMPUTED
-  kanbanBoard = computed<KanbanColumn[]>(() => {
-      const currentReqs = this._rangeFilteredRequests();
-      const groups = new Map<string, KanbanColumn>();
-
-      currentReqs.forEach(req => {
-          const d = req._date;
-
-          const key = req.sopName;
-          
-          if (!groups.has(key)) {
-              groups.set(key, {
-                  sopName: req.sopName,
-                  sopId: req.sopId,
-                  totalSamples: 0,
-                  sampleList: [],
-                  sampleDisplay: '',
-                  users: new Set<string>(), 
-                  batchCount: 0,
-                  lastRun: d,
-                  history: []
-              });
-          }
-
-          const col = groups.get(key)!;
-          col.batchCount++;
-          if (req.user) col.users.add(req.user);
-          if (d > col.lastRun) col.lastRun = d; 
-          
-          let currentBatchSamples: string[] = [];
-          if (req.sampleList && req.sampleList.length > 0) {
-              currentBatchSamples = req.sampleList;
-              col.sampleList.push(...req.sampleList);
-              col.totalSamples += req.sampleList.length;
-          } else {
-              const nSample = req.inputs?.['n_sample'] || 1;
-              col.totalSamples += Number(nSample);
-              currentBatchSamples = [`Batch #${req.id.substring(0,4)}`];
-              col.sampleList.push(...currentBatchSamples);
-          }
-
-          col.history.push({
-              id: req.id,
-              timestamp: d,
-              user: req.user || 'Unknown',
-              sampleCount: currentBatchSamples.length,
-              sampleList: currentBatchSamples,
-              sampleDisplay: this.formatSampleList(currentBatchSamples)
-          });
-      });
-
-      const result = Array.from(groups.values()).map(col => {
-          col.sampleList.sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
-          col.sampleDisplay = this.formatSampleList(col.sampleList);
-          col.history.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime());
-          return col;
-      });
-      const filter = this.selectedSopFilter();
-      const sorted = result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); 
-      if (filter) {
-          return sorted.filter(col => col.sopName === filter);
-      }
-      return sorted;
-  });
-
   chartKpis = computed(() => {
       const filter = this.selectedSopFilter();
-      
-      const startStr = this.startDate();
-      const endStr = this.endDate();
-      
-      let currentStart = new Date(); currentStart.setHours(0,0,0,0);
-      let currentEnd = new Date(); currentEnd.setHours(23,59,59,999);
-      if (startStr && endStr) {
-          currentStart = this.parseDateSafe(startStr)!; currentStart.setHours(0,0,0,0);
-          currentEnd = this.parseDateSafe(endStr)!; currentEnd.setHours(23,59,59,999);
-      }
-      
-      const diffTime = Math.abs(currentEnd.getTime() - currentStart.getTime());
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      const currentRange = this.getActiveDateRange();
 
       let totalSamples = 0;
       let totalBatches = 0;
 
-      for (let i = 0; i < diffDays; i++) {
-          const d = new Date(currentStart); d.setDate(d.getDate() + i);
+      for (const d of enumerateInclusiveDates(currentRange)) {
           const dayStats = this.getDayStats(d);
           
           if (filter) {
@@ -546,11 +415,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private _chartDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private _lastDarkMode: boolean | null = null;
   private chartLoader?: Promise<any>;
+  private _allStatsLoaded = false;
 
   constructor() {
+      this.scheduleTodayRollover();
+
       effect(() => {
           // Read dependencies to track
-          this.state.approvedRequests();
           this.startDate();
           this.endDate();
           this.selectedSopFilter();
@@ -563,7 +434,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
       });
 
-      // MỚI: Fetch Stats Data based on date range
+      // Fetch monthly aggregates for the selected inclusive range. All time
+      // deliberately uses monthly_stats as the historical source of truth.
       effect(() => {
           const user = this.auth.currentUser();
           const canViewReports = !!user && this.auth.canViewReports();
@@ -575,36 +447,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
           // the lock overlay.
           if (!canViewReports) {
               this.statsData.set({});
+              this._allStatsLoaded = false;
               return;
           }
 
-          const start = this.parseDateSafe(startStr);
-          const end = this.parseDateSafe(endStr);
-          if (start && end) {
-              const monthsToFetch = new Set<string>();
-              const diffDays = Math.round(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-              const historyDays = diffDays > 0 ? diffDays : 1;
-              const historyEnd = new Date(start); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
-              const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
-              
-              const d = new Date(historyStart);
-              d.setDate(1); // Set to 1st of the month to avoid month rollover bugs (e.g. May 31 + 1 month -> July 1)
-              while (d <= end) {
-                  const y = d.getFullYear();
-                  const m = String(d.getMonth() + 1).padStart(2, '0');
-                  monthsToFetch.add(`${y}-${m}`);
-                  d.setMonth(d.getMonth() + 1);
-               }
-              const keys = Array.from(monthsToFetch);
-              const cachedStats = this.statsData();
-              const missingKeys = keys.filter(key => !Object.prototype.hasOwnProperty.call(cachedStats, key));
-              if (missingKeys.length === 0) return;
-
-              this.statsService.getStatsForMonths(missingKeys).then(data => {
+          if (!startStr && !endStr) {
+              if (this._allStatsLoaded) return;
+              this._allStatsLoaded = true;
+              this.statsService.getAllMonthlyStats().then(data => {
                   if (!this.auth.canViewReports()) return;
-                  this.statsData.update(prev => ({ ...prev, ...data }));
-              }).catch(e => console.error("Error fetching stats:", e));
+                  this.statsData.set(data);
+              }).catch(e => {
+                  this._allStatsLoaded = false;
+                  console.error('Error fetching all-time stats:', e);
+              });
+              return;
           }
+
+          const range = createInclusiveDateRange(startStr, endStr);
+          if (!range) return;
+
+          const monthsToFetch = new Set<string>();
+          const historyStart = new Date(range.start);
+          historyStart.setDate(historyStart.getDate() - range.days);
+          historyStart.setDate(1);
+          const monthCursor = new Date(historyStart);
+          const rangeEnd = new Date(range.end);
+          rangeEnd.setHours(0, 0, 0, 0);
+          while (monthCursor <= rangeEnd) {
+              monthsToFetch.add(`${monthCursor.getFullYear()}-${String(monthCursor.getMonth() + 1).padStart(2, '0')}`);
+              monthCursor.setMonth(monthCursor.getMonth() + 1);
+          }
+
+          const cachedStats = this.statsData();
+          const missingKeys = Array.from(monthsToFetch)
+              .filter(key => !Object.prototype.hasOwnProperty.call(cachedStats, key));
+          if (missingKeys.length === 0) return;
+
+          this.statsService.getStatsForMonths(missingKeys).then(data => {
+              if (!this.auth.canViewReports()) return;
+              this.statsData.update(prev => ({ ...prev, ...data }));
+          }).catch(e => console.error('Error fetching stats:', e));
       });
 
       effect(() => {
@@ -612,9 +495,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           const permissions = this.auth.userPermissions();
           if (!user || permissions.length === 0) return;
 
-          if (this.auth.canViewReports()) {
-              this.state.ensureApprovedRequestsListener();
-          }
           this.state.ensureActivityFeedListeners();
       });
   }
@@ -654,6 +534,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
       if (this._chartDebounceTimer) clearTimeout(this._chartDebounceTimer);
+      if (this._todayRolloverTimer) clearTimeout(this._todayRolloverTimer);
       if (this.chartInstance) {
           this.chartInstance.destroy();
           this.chartInstance = null;
@@ -662,17 +543,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.doughnutChartInstance.destroy();
           this.doughnutChartInstance = null;
       }
-  }
-
-  private getToday(): string { return this.getLocalYYYYMMDD(new Date()); }
-  private getFirstDayOfMonth(): string { const d = new Date(); return this.getLocalYYYYMMDD(new Date(d.getFullYear(), d.getMonth(), 1)); }
-  private getThisWeekStart(): string {
-      const today = new Date();
-      const day = today.getDay();
-      const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
-      const start = new Date(today);
-      start.setDate(diffToMon);
-      return this.getLocalYYYYMMDD(start);
   }
 
   onDateRangeChange(range: { start: string, end: string, label: string }) {
@@ -690,25 +560,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   navTo(path: string) {
       this.router.navigate([`/${path}`]);
-  }
-
-  formatDateShort(date: Date): string {
-      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + 
-             date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-  }
-
-  openSopDetails(col: KanbanColumn) {
-      this.selectedSopDetails.set(col);
-  }
-
-  createBatchForSop(sopId: string) {
-      const sop = this.state.sops().find(s => s.id === sopId);
-      if (sop) {
-          this.state.selectedSop.set(sop);
-          this.router.navigate(['/calculator']);
-      } else {
-          this.toast.show('Không tìm thấy quy trình gốc.', 'error');
-      }
   }
 
   async initChart() {
@@ -751,41 +602,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       gradient.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(99, 102, 241, 0.2)'); 
       gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
-      let startStr = this.startDate();
-      let endStr = this.endDate();
-      if (!startStr || !endStr) {
-          const history = this._parsedRequests();
-          if (history.length > 0) {
-              startStr = this.getLocalYYYYMMDD(history[history.length - 1]._date);
-          } else {
-              const t = new Date();
-              t.setDate(t.getDate() - 30);
-              startStr = this.getLocalYYYYMMDD(t);
-          }
-          endStr = this.getLocalYYYYMMDD(new Date());
-          
-          const tempStart = this.parseDateSafe(startStr)!;
-          const tempEnd = this.parseDateSafe(endStr)!;
-          const diffDays = Math.round(Math.abs(tempEnd.getTime() - tempStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          if (diffDays > 90) {
-             const t = new Date(tempEnd);
-             t.setDate(t.getDate() - 89);
-             startStr = this.getLocalYYYYMMDD(t);
-          }
-      }
-
-      const start = this.parseDateSafe(startStr)!; start.setHours(0,0,0,0);
-      const end = this.parseDateSafe(endStr)!; end.setHours(23,59,59,999);
-      
-      const origStart = new Date(start);
-      const origEnd = new Date(end);
-
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      
-      const chartStart = new Date(start);
-      const chartEnd = new Date(end);
-      const chartDays = diffDays;
+      const chartRange = this.getActiveDateRange();
+      const chartDates = enumerateInclusiveDates(chartRange);
+      const chartDays = chartRange.days;
       
       const labels = [];
       const sampleData = new Array(chartDays).fill(0);
@@ -793,12 +612,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const dailyDetails: Record<string, number>[] = new Array(chartDays).fill(null).map(() => ({}));
       
       for (let i = 0; i < chartDays; i++) {
-          const d = new Date(chartStart); d.setDate(d.getDate() + i);
+          const d = chartDates[i];
           
           // Format label: 'T2 15/3'
           const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
           const dayName = days[d.getDay()];
-          const key = `${d.getDate()}/${d.getMonth() + 1}`;
+          const key = `${dayName} ${d.getDate()}/${d.getMonth() + 1}`;
           
           labels.push(key); 
       }
@@ -807,7 +626,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       // MỚI: Loop over chart range instead of history array
       for (let i = 0; i < chartDays; i++) {
-          const d = new Date(chartStart); d.setDate(d.getDate() + i);
+          const d = chartDates[i];
           const dayStats = this.getDayStats(d);
           
           if (filter) {
@@ -828,13 +647,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       // 1. SOP Distribution (always computed globally for the selected range to serve as selector legend)
       const sopCounts = new Map<string, number>();
-      for (let i = 0; i < chartDays; i++) {
-          const d = new Date(chartStart); d.setDate(d.getDate() + i);
-          if (d >= origStart && d <= origEnd) {
-              const dayStats = this.getDayStats(d);
-              for (const [sop, counts] of Object.entries(dayStats.sops)) {
-                  sopCounts.set(sop, (sopCounts.get(sop) || 0) + counts.samples);
-              }
+      for (const d of chartDates) {
+          const dayStats = this.getDayStats(d);
+          for (const [sop, counts] of Object.entries(dayStats.sops)) {
+              sopCounts.set(sop, (sopCounts.get(sop) || 0) + counts.samples);
           }
       }
 
@@ -1027,9 +843,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (daysLeft < 0) status = 'expired'; else if (daysLeft < 60) status = 'warning'; else status = 'safe';
       this.priorityStandard.set({ name: std.name, daysLeft, date: std.expiry_date, status });
   }
-
-
-  denyAccess() { this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error'); }
 
   handlePendingRequestsClick() {
       if (!this.auth.canViewSop() && !this.auth.canViewStandards()) return;
