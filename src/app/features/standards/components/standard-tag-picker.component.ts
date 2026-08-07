@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StandardTagOption } from '../../../core/models/standard.model';
 import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../services/standard-tag.utils';
@@ -18,28 +18,71 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
     <div class="space-y-2">
       <div class="flex items-center justify-between gap-2">
         <label class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ label() }}</label>
-        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">{{ selectedKeys().length }}/{{ max() }}</span>
+        <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-black text-slate-500 dark:text-slate-400">{{ selectedKeys().length }}/{{ max() }} nhãn</span>
       </div>
 
-      <div class="flex gap-2">
-        <select
-          [ngModel]="tagToAdd()"
-          (ngModelChange)="tagToAdd.set($event)"
-          [disabled]="disabled() || limitReached()"
-          class="min-w-0 flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-        >
-          <option value="">Chọn nhãn trong danh mục...</option>
-          @for (option of availableOptions(); track option.key) {
-            <option [value]="option.key">{{ formatOptionLabel(option) }}</option>
-          }
-        </select>
-        <button
-          type="button"
-          (click)="addTag()"
-          [disabled]="disabled() || !tagToAdd() || limitReached()"
-          class="rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-xs font-black disabled:opacity-40"
-        >Thêm</button>
-      </div>
+      @if (!disabled() && !limitReached()) {
+        <div class="rounded-xl border border-indigo-200 dark:border-indigo-800/70 bg-indigo-50/60 dark:bg-indigo-900/15 p-2.5">
+          <div class="mb-2 flex items-start gap-2 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+            <i class="fa-solid fa-layer-group mt-0.5 shrink-0"></i>
+            <span>Bạn có thể chọn nhiều nhãn liên tiếp trong cùng một lần mở danh sách.</span>
+          </div>
+
+          <div class="relative min-w-0">
+            <button
+              type="button"
+              (click)="toggleDropdown()"
+              [attr.aria-expanded]="dropdownOpen()"
+              class="flex w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-left text-sm text-slate-700 dark:text-slate-200 shadow-sm outline-none transition hover:border-indigo-300 dark:hover:border-indigo-700 focus:ring-2 focus:ring-indigo-500/30"
+            >
+              <i class="fa-solid fa-tags shrink-0 text-indigo-500"></i>
+              <span class="min-w-0 flex-1 font-bold">Chọn nhiều nhãn trong danh mục...</span>
+              <span class="shrink-0 text-[10px] font-bold text-slate-400">{{ availableOptions().length }} còn lại</span>
+              <i class="fa-solid fa-chevron-down shrink-0 text-[10px] text-slate-400 transition-transform" [class.rotate-180]="dropdownOpen()"></i>
+            </button>
+
+            @if (dropdownOpen()) {
+              <div class="absolute left-0 right-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
+                <div class="border-b border-slate-100 dark:border-slate-800 p-2">
+                  <div class="relative">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400"></i>
+                    <input
+                      type="text"
+                      [ngModel]="searchTerm()"
+                      (ngModelChange)="searchTerm.set($event)"
+                      (click)="$event.stopPropagation()"
+                      class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="Tìm nhanh nhãn..."
+                    >
+                  </div>
+                </div>
+
+                <div class="max-h-56 overflow-y-auto p-1.5 custom-scrollbar">
+                  @for (option of filteredOptions(); track option.key) {
+                    <button
+                      type="button"
+                      (click)="addTag(option.key)"
+                      class="flex w-full min-w-0 items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/25"
+                    >
+                      <span class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 text-[9px] text-indigo-600 dark:text-indigo-300">
+                        <i class="fa-solid fa-plus"></i>
+                      </span>
+                      <span class="min-w-0 flex-1 text-xs font-bold leading-snug text-slate-700 dark:text-slate-200 break-words">{{ formatOptionLabel(option) }}</span>
+                    </button>
+                  } @empty {
+                    <div class="px-3 py-5 text-center text-xs italic text-slate-400">Không còn nhãn phù hợp để thêm.</div>
+                  }
+                </div>
+
+                <div class="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 px-3 py-2">
+                  <span class="text-[10px] font-bold text-slate-400">Đã chọn {{ selectedKeys().length }} nhãn</span>
+                  <button type="button" (click)="closeDropdown()" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700">Xong</button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
 
       <div class="min-h-8 flex flex-wrap gap-1.5">
         @for (key of selectedKeys(); track key) {
@@ -65,6 +108,8 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
   `,
 })
 export class StandardTagPickerComponent {
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
+
   selectedKeys = input<string[]>([]);
   options = input<readonly StandardTagOption[]>([]);
   max = input(100);
@@ -73,20 +118,43 @@ export class StandardTagPickerComponent {
   allowClear = input(true);
 
   selectedKeysChange = output<string[]>();
-  tagToAdd = signal('');
+  dropdownOpen = signal(false);
+  searchTerm = signal('');
 
   availableOptions = computed(() => {
     const selected = new Set(this.selectedKeys());
     return this.options().filter(option => option.selectable && !selected.has(option.key));
   });
 
+  filteredOptions = computed(() => {
+    const query = this.searchTerm().trim().toLocaleLowerCase('vi');
+    if (!query) return this.availableOptions();
+    return this.availableOptions().filter(option => formatMethodOptionLabel(option).toLocaleLowerCase('vi').includes(query));
+  });
+
   limitReached = computed(() => this.selectedKeys().length >= this.max());
 
-  addTag(): void {
-    const key = this.tagToAdd();
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.dropdownOpen() && !this.elementRef.nativeElement.contains(event.target as Node)) {
+      this.closeDropdown();
+    }
+  }
+
+  toggleDropdown(): void {
+    if (this.disabled() || this.limitReached()) return;
+    this.dropdownOpen.update(open => !open);
+    if (!this.dropdownOpen()) this.searchTerm.set('');
+  }
+
+  closeDropdown(): void {
+    this.dropdownOpen.set(false);
+    this.searchTerm.set('');
+  }
+
+  addTag(key: string): void {
     if (!key || this.disabled() || this.limitReached() || this.selectedKeys().includes(key)) return;
     this.selectedKeysChange.emit([...this.selectedKeys(), key]);
-    this.tagToAdd.set('');
   }
 
   removeTag(key: string): void {

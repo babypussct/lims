@@ -136,9 +136,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const widgetFilter = this.activeWidgetFilter();
 
       const methodKey = this.activeMethodTagFilter();
-      if (methodKey) data = data.filter(item => (item.sop_tags || []).includes(methodKey));
-      const device = this.activeDeviceFilter();
-      if (device !== 'all') {
+      if (methodKey) {
+          // An exact method is the authoritative filter. The device facet is
+          // only a discovery aid for narrowing the method catalog.
+          data = data.filter(item => (item.sop_tags || []).includes(methodKey));
+      } else if (this.activeDeviceFilter() !== 'all') {
+          const device = this.activeDeviceFilter() as StandardDeviceCode;
           data = data.filter(item => {
               const codes = new Set<StandardDeviceCode>();
               for (const key of item.sop_tags || []) {

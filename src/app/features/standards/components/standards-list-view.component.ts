@@ -53,8 +53,22 @@ import { StateService } from '../../../core/services/state.service';
                               <div class="flex flex-wrap gap-2 mt-auto">
                                   @if(std.internal_id) { <span class="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-black border border-indigo-100 dark:border-indigo-800/50 tracking-tight">{{std.internal_id}}</span> }
                                   @if(std.location) { <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}</span> }
-                                  @for (method of (std.derivedMethodLabels || []).slice(0, 4); track method) { <span class="px-2 py-1 rounded-md bg-indigo-50/70 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-black border border-indigo-100 dark:border-indigo-800/40"><i class="fa-solid fa-flask-vial mr-1"></i>{{method}}</span> }
-                                  @for (device of std.derivedDeviceCodes || []; track device) { <span class="px-2 py-1 rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-black border border-fuchsia-100 dark:border-fuchsia-800/40"><i class="fa-solid fa-microchip mr-1"></i>{{device}}</span> }
+                                  @for (method of (std.derivedMethodLabels || []).slice(0, 2); track method) {
+                                      <span class="inline-flex max-w-[170px] items-center gap-1 rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/70 dark:bg-indigo-900/20 px-2 py-1 text-[10px] font-black text-indigo-700 dark:text-indigo-300" [title]="method">
+                                          <i class="fa-solid fa-flask-vial shrink-0 text-[9px]"></i><span class="truncate">{{method}}</span>
+                                      </span>
+                                  }
+                                  @if ((std.derivedMethodLabels || []).length > 2) {
+                                      <span class="inline-flex items-center rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-900/15 px-2 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300" [title]="(std.derivedMethodLabels || []).slice(2).join(', ')">+{{(std.derivedMethodLabels || []).length - 2}}</span>
+                                  }
+                                  @for (device of (std.derivedDeviceCodes || []).slice(0, 2); track device) {
+                                      <span class="inline-flex max-w-[110px] items-center gap-1 rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50 dark:bg-fuchsia-900/20 px-2 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300" [title]="device">
+                                          <i class="fa-solid fa-microchip shrink-0 text-[9px]"></i><span class="truncate">{{device}}</span>
+                                      </span>
+                                  }
+                                  @if ((std.derivedDeviceCodes || []).length > 2) {
+                                      <span class="inline-flex items-center rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/70 dark:bg-fuchsia-900/15 px-2 py-1 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300" [title]="(std.derivedDeviceCodes || []).slice(2).join(', ')">+{{(std.derivedDeviceCodes || []).length - 2}}</span>
+                                  }
                               </div>
                           </div>
                        </td>

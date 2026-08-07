@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.07-b04",
-    "title": "Cải Thiện Độ Ổn Định Khi Duyệt Mẻ Phân Tích Và Danh Sách Công Việc",
+    "version": "v26.08.07-b05",
+    "title": "Tìm Kiếm Và Lọc Phương Pháp Tiện Lợi Hơn Trong Quản Lý Chất Chuẩn",
     "features": [
-      "Đảm bảo thao tác lưu Kết quả và duyệt Mẻ phân tích luôn diễn ra nhanh chóng, an toàn, không bị ảnh hưởng bởi quá trình đồng bộ Danh sách công việc.",
-      "Danh sách công việc hàng ngày luôn hiển thị chính xác kể cả trong những ngày không có dữ liệu mới.",
-      "Tối ưu hóa quá trình đồng bộ Danh sách công việc ngầm, tách biệt hoàn toàn khỏi thao tác duyệt để tăng độ tin cậy và tốc độ xử lý.",
-      "Khắc phục sự cố gián đoạn khi duyệt hàng loạt Mẻ phân tích hoặc khi lưu Kết quả.",
-      "Sửa lỗi không hiển thị đúng thông tin Danh sách công việc ở một số ngày nhất định."
+      "Tìm kiếm phương pháp phân tích dễ dàng hơn: hỗ trợ gõ không dấu, tìm theo mã, tên hoặc mô tả.",
+      "Lọc nhanh phương pháp theo nhóm Kỹ thuật (thiết bị) để không phải lướt qua danh sách dài.",
+      "Giao diện bộ lọc gọn gàng hơn, tăng không gian hiển thị danh sách Chất chuẩn trên màn hình.",
+      "Bộ lọc phương pháp mới cho phép tìm kiếm trực tiếp bằng văn bản (có hoặc không dấu).",
+      "Bổ sung khả năng thu hẹp danh mục phương pháp dựa trên nhóm Kỹ thuật."
     ]
   },
   "assetGroups": [

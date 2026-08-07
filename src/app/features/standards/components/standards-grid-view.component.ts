@@ -55,11 +55,21 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}
                                            </span>
                                        }
-                                       @for (method of (std.derivedMethodLabels || []).slice(0, 4); track method) {
-                                           <span class="bg-indigo-50/70 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-md text-[10px] font-black border border-indigo-100 dark:border-indigo-800/40 whitespace-nowrap"><i class="fa-solid fa-flask-vial mr-1"></i>{{method}}</span>
+                                       @for (method of (std.derivedMethodLabels || []).slice(0, 2); track method) {
+                                           <span class="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/70 dark:bg-indigo-900/20 px-2 py-1 text-[10px] font-black text-indigo-700 dark:text-indigo-300" [title]="method">
+                                               <i class="fa-solid fa-flask-vial shrink-0 text-[9px]"></i><span class="truncate">{{method}}</span>
+                                           </span>
                                        }
-                                       @for (device of std.derivedDeviceCodes || []; track device) {
-                                           <span class="bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-1 rounded-md text-[10px] font-black border border-fuchsia-100 dark:border-fuchsia-800/40 whitespace-nowrap"><i class="fa-solid fa-microchip mr-1"></i>{{device}}</span>
+                                       @if ((std.derivedMethodLabels || []).length > 2) {
+                                           <span class="inline-flex items-center rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-900/15 px-2 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300" [title]="(std.derivedMethodLabels || []).slice(2).join(', ')">+{{(std.derivedMethodLabels || []).length - 2}}</span>
+                                       }
+                                       @for (device of (std.derivedDeviceCodes || []).slice(0, 2); track device) {
+                                           <span class="inline-flex max-w-[100px] items-center gap-1 rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50 dark:bg-fuchsia-900/20 px-2 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300" [title]="device">
+                                               <i class="fa-solid fa-microchip shrink-0 text-[9px]"></i><span class="truncate">{{device}}</span>
+                                           </span>
+                                       }
+                                       @if ((std.derivedDeviceCodes || []).length > 2) {
+                                           <span class="inline-flex items-center rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/70 dark:bg-fuchsia-900/15 px-2 py-1 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300" [title]="(std.derivedDeviceCodes || []).slice(2).join(', ')">+{{(std.derivedDeviceCodes || []).length - 2}}</span>
                                        }
                                    </div>
                                    <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-indigo-600 dark:accent-indigo-500 cursor-pointer shrink-0 mt-0.5">
