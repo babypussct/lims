@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.07-b02",
-    "title": "Sửa lỗi che khuất tài liệu và cải thiện Nhật Ký Cập Nhật",
+    "version": "v26.08.07-b03",
+    "title": "Đồng Bộ Danh Sách Công Việc Và Tối Ưu Trình Xem Excel",
     "features": [
-      "Cửa sổ xem trước PDF và Excel trong Phiếu Giao Nhận Mẫu phủ trọn màn hình, không còn bị thanh điều hướng hoặc menu che khuất.",
-      "Nhật Ký Cập Nhật được hiển thị theo một trục thời gian liên tục, dễ đọc hơn trên cả máy tính và điện thoại.",
-      "Tự động điều chỉnh khoảng cách, kích thước chữ và ô tìm kiếm của Nhật Ký Cập Nhật để hiển thị rõ ràng hơn trên các cỡ màn hình khác nhau.",
-      "Các cửa sổ chức năng và lớp phủ mở lên mượt mà và hoạt động ổn định hơn sau khi chuyển trang.",
-      "Khắc phục lỗi màn hình xem tài liệu bị thanh điều hướng và menu che mất một phần nội dung."
+      "Danh sách kiểm tra công việc hàng ngày (Daily Checklist) tự động cập nhật ngay khi bạn thay đổi trạng thái hoặc lưu kết quả của mẻ phân tích.",
+      "Thanh chuyển trang tính trong trình xem Excel trên điện thoại rộng rãi hơn, hỗ trợ cuộn ngang và không bị che khuất ở mép dưới màn hình.",
+      "Giao diện ứng dụng hỗ trợ hiển thị tràn viền mượt mà hơn trên các thiết bị di động đời mới.",
+      "Danh sách công việc hàng ngày đồng bộ ổn định và chính xác hơn với các mẻ phân tích ngay trong cùng một thao tác lưu dữ liệu."
     ]
   },
   "assetGroups": [
