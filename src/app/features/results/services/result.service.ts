@@ -510,10 +510,11 @@ export class ResultService {
         }
       }
       
-      dailyEntriesByDate.forEach((entries, analysisDate) => {
-        this.dailyChecklistMaterializer.setBatchEntries(batch, analysisDate, entries);
-      });
       await batch.commit();
+      await this.dailyChecklistMaterializer.materializeEntryGroupsBestEffort(
+        dailyEntriesByDate,
+        'ResultService.saveDraft'
+      );
 
       if (isManualSave) {
         const sopId = metaData['sopId'] || legacyResult['sopId'] || '';
@@ -1033,12 +1034,16 @@ export class ResultService {
         resultStatusReason: 'reconciled',
         lastUpdated: serverTimestamp()
       });
-      this.dailyChecklistMaterializer.setBatchEntry(batch, {
+      const completedProjection = {
         id: requestId,
         ...metaSnap.data(),
         status: 'completed'
-      } as Request);
+      } as Request;
       await batch.commit();
+      await this.dailyChecklistMaterializer.materializeRequestBestEffort(
+        completedProjection,
+        'ResultService.reconcileCompletionStatus'
+      );
       await this.logActivity(
         'RECONCILE_RESULT_STATUS',
         `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ draft sang completed (ID: ${requestId})`,

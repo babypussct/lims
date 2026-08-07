@@ -6,7 +6,7 @@ Tài liệu này áp dụng cho bản Angular/Vercel hiện tại và thay đổ
 
 - Chưa chạy backfill Firestore; chưa có ghi dữ liệu production từ script `backfill-daily-checklists.ts`.
 - TypeScript application và API đã type-check thành công trong môi trường kiểm tra.
-- Các test hiện có đã đạt, bao gồm 4 test daily checklist.
+- Bộ regression Daily Checklist đã đạt 11/11 khi chạy bằng Node trên JavaScript được compile từ test TypeScript; runner `tsx` trên máy kiểm tra vẫn bị blocker môi trường `uv_os_get_passwd ... ENOMEM`.
 - Angular production build chưa thể xác nhận trong sandbox vì Angular compiler bị chặn khi đọc đường dẫn ngoài workspace. Bắt buộc chạy lại build trên máy phát hành hoặc CI trước khi deploy.
 
 ## 1. Chuẩn bị
@@ -80,7 +80,29 @@ npx firebase-tools deploy --only firestore:rules --project lims-cloud-by-otada
 
 Xác nhận lệnh hoàn tất thành công trước khi deploy frontend.
 
-## 5. Chuẩn bị credential cho backfill
+## 5. Deploy hotfix Vercel trước khi backfill
+
+```powershell
+npx vercel --prod
+```
+
+Vercel sử dụng:
+
+- Build command: `npx ng build --configuration=production --no-progress`
+- Output directory: `dist/lims-cloud-pro/browser`
+
+Chỉ chấp nhận deployment khi Angular build hoàn tất không lỗi. Hotfix này phải lên trước backfill để document Daily Checklist bị thiếu vẫn fallback về `requests` thay vì biến thành ngày rỗng.
+
+## 6. Smoke test hotfix trước khi ghi production data
+
+1. Mở Daily Checklist tại một ngày có materialized document và xác nhận dữ liệu hiển thị đúng.
+2. Mở một ngày chưa có `daily_checklists/{date}` nhưng có request nguồn và xác nhận UI vẫn hiển thị nhờ fallback.
+3. Tạo/cập nhật một request thử nghiệm có `sampleDescriptionMap` chỉ chứa `{ nameSnapshot }`, không có `masterId`, và xác nhận nghiệp vụ nguồn vẫn thành công.
+4. Xác nhận lỗi projection giả lập/quan sát được không làm SmartBatch/direct approve thất bại.
+
+Chỉ tiếp tục backfill sau khi smoke test hotfix đạt.
+
+## 7. Chuẩn bị credential cho backfill
 
 Script hỗ trợ một trong hai cơ chế:
 
@@ -96,7 +118,7 @@ $env:LIMS_APP_ID = 'lims-cloud-fixed'
 
 Không in biến `FIREBASE_SERVICE_ACCOUNT` ra terminal, log CI hoặc artifact build.
 
-## 6. Dry-run backfill
+## 8. Dry-run backfill
 
 Dry-run đọc dữ liệu production và báo số request/ngày dự kiến, nhưng không ghi Firestore:
 
@@ -111,7 +133,7 @@ Kiểm tra output:
 - Không có lỗi credential hoặc project.
 - Có thông báo `Dry run: no Firestore writes were made.`
 
-## 7. Chạy backfill production
+## 9. Chạy backfill production
 
 Lệnh này ghi hoặc ghi đè các document theo ngày tại `artifacts/lims-cloud-fixed/daily_checklists` và tự reconciliation sau khi ghi:
 
@@ -121,7 +143,7 @@ npm run backfill:daily-checklists -- --app-id=lims-cloud-fixed
 
 Script chia batch tối đa 250 ngày/lần. Nếu một document gần giới hạn Firestore, script cảnh báo; nếu vượt ngưỡng an toàn, script dừng để tránh ghi document quá lớn.
 
-## 8. Xác minh độc lập sau backfill
+## 10. Xác minh độc lập sau backfill
 
 ```powershell
 npm run verify:daily-checklists -- --app-id=lims-cloud-fixed
@@ -133,31 +155,20 @@ Kết quả đạt phải có dạng:
 [Daily checklist] Reconciliation passed for <N> dates.
 ```
 
-Nếu có mismatch, không deploy frontend. Sửa nguyên nhân và chạy lại backfill; thao tác backfill là idempotent theo từng ngày vì dùng `batch.set` trên document ngày.
+Nếu có mismatch, giữ hotfix fallback đang chạy, sửa nguyên nhân và chạy lại backfill; thao tác backfill là idempotent theo từng ngày vì dùng `batch.set` trên document ngày.
 
-## 9. Deploy Vercel production
-
-```powershell
-npx vercel --prod
-```
-
-Vercel sử dụng:
-
-- Build command: `npx ng build --configuration=production --no-progress`
-- Output directory: `dist/lims-cloud-pro/browser`
-
-Chỉ chấp nhận deployment khi Angular build hoàn tất không lỗi.
-
-## 10. Smoke test production
+## 11. Smoke test sau backfill và quan sát fallback
 
 1. Đăng nhập bằng tài khoản hợp lệ.
 2. Mở Daily Checklist tại một ngày có dữ liệu lịch sử.
 3. Xác nhận danh sách mẫu và chỉ tiêu hiển thị đúng.
 4. Tạo hoặc cập nhật một request thử nghiệm có `analysisDate`, rồi reload Daily Checklist của ngày đó.
-5. Xác nhận người dùng không có quyền `batch_run` không thể ghi trái phép vào `daily_checklists`.
-6. Kiểm tra console trình duyệt và log Vercel không có lỗi mới.
+5. Lặp lại với `sampleDescriptionMap` chỉ có `nameSnapshot`, không có `masterId`.
+6. Xác nhận người dùng không có quyền `batch_run` không thể ghi trái phép vào `daily_checklists`.
+7. Theo dõi metric/log fallback legacy. Không xóa fallback trong cùng release với backfill; giữ ít nhất một chu kỳ release và chỉ bỏ khi verify coverage đầy đủ, không còn fallback bất thường.
+8. Kiểm tra console trình duyệt và log Vercel không có lỗi mới.
 
-## 11. Dọn credential
+## 12. Dọn credential
 
 ```powershell
 Remove-Item Env:FIREBASE_SERVICE_ACCOUNT -ErrorAction SilentlyContinue

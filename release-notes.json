@@ -1,13 +1,15 @@
 {
-  "title": "Đồng Bộ Danh Sách Công Việc Và Tối Ưu Trình Xem Excel",
+  "title": "Cải Thiện Độ Ổn Định Khi Duyệt Mẻ Phân Tích Và Danh Sách Công Việc",
   "highlights": [
-    "Danh sách kiểm tra công việc hàng ngày (Daily Checklist) tự động cập nhật ngay khi bạn thay đổi trạng thái hoặc lưu kết quả của mẻ phân tích.",
-    "Thanh chuyển trang tính trong trình xem Excel trên điện thoại rộng rãi hơn, hỗ trợ cuộn ngang và không bị che khuất ở mép dưới màn hình."
+    "Đảm bảo thao tác lưu Kết quả và duyệt Mẻ phân tích luôn diễn ra nhanh chóng, an toàn, không bị ảnh hưởng bởi quá trình đồng bộ Danh sách công việc.",
+    "Danh sách công việc hàng ngày luôn hiển thị chính xác kể cả trong những ngày không có dữ liệu mới."
   ],
   "features": [],
   "improvements": [
-    "Giao diện ứng dụng hỗ trợ hiển thị tràn viền mượt mà hơn trên các thiết bị di động đời mới.",
-    "Danh sách công việc hàng ngày đồng bộ ổn định và chính xác hơn với các mẻ phân tích ngay trong cùng một thao tác lưu dữ liệu."
+    "Tối ưu hóa quá trình đồng bộ Danh sách công việc ngầm, tách biệt hoàn toàn khỏi thao tác duyệt để tăng độ tin cậy và tốc độ xử lý."
   ],
-  "fixes": []
+  "fixes": [
+    "Khắc phục sự cố gián đoạn khi duyệt hàng loạt Mẻ phân tích hoặc khi lưu Kết quả.",
+    "Sửa lỗi không hiển thị đúng thông tin Danh sách công việc ở một số ngày nhất định."
+  ]
 }

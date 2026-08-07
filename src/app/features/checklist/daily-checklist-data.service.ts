@@ -22,35 +22,38 @@ import { Request } from '../../core/models/request.model';
 import { DailyChecklistDocument } from '../../core/models/daily-checklist.model';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor.service';
+import { DailyChecklistMaterializerService } from '../../core/services/daily-checklist-materializer.service';
 import {
   dailyChecklistDocumentToRequests,
   isDailyChecklistRequest,
   isValidDailyChecklistDate
 } from '../../core/utils/daily-checklist-projection';
+import {
+  DailyChecklistDateResult,
+  DailyChecklistResultCache,
+  shouldFallbackToLegacyRequests
+} from './daily-checklist-data-cache';
 
-export interface DailyChecklistDateResult {
-  requests: Request[];
-  source: 'server' | 'cache';
-  materialized: boolean;
-}
+export type { DailyChecklistDateResult } from './daily-checklist-data-cache';
 
 /**
- * One-document source of truth for the daily sample tracker.
- *
- * Dates on or after the rollout date never query `requests` when the daily
- * document is absent: an absent document means an empty day. The legacy query
- * remains only for older dates during the backfill transition.
+ * Reads the materialized daily document first and falls back to `requests`
+ * whenever that document is absent. An existing-but-empty document is an
+ * authoritative empty day.
  */
 @Injectable({ providedIn: 'root' })
 export class DailyChecklistDataService {
   private readonly fb = inject(FirebaseService);
   private readonly readMonitor = inject(FirestoreReadMonitor);
+  private readonly dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
   private readonly requestCacheTtlMs = 5 * 60 * 1000;
-  private readonly requestCache = new Map<string, { result: DailyChecklistDateResult; cachedAt: number }>();
+  private readonly requestCache = new DailyChecklistResultCache(this.requestCacheTtlMs);
   private readonly requestLoads = new Map<string, Promise<DailyChecklistDateResult>>();
-  private readonly legacyFallbackBefore = '2026-08-06';
   private readonly legacyPageSize = 100;
   private readonly documentSizeWarningBytes = 800 * 1024;
+  private readonly invalidationSubscription = this.dailyChecklistMaterializer.invalidatedDates$.subscribe(
+    analysisDate => this.invalidateDate(analysisDate)
+  );
 
   async loadRequestsForDate(
     analysisDate: string,
@@ -62,9 +65,9 @@ export class DailyChecklistDataService {
     }
 
     const cached = this.requestCache.get(analysisDate);
-    if (!forceRefresh && cached && Date.now() - cached.cachedAt < this.requestCacheTtlMs) {
-      onPage?.(cached.result.requests.length);
-      return this.cloneDateResult(cached.result);
+    if (!forceRefresh && cached) {
+      onPage?.(cached.requests.length);
+      return this.cloneDateResult(cached);
     }
 
     const inFlight = this.requestLoads.get(analysisDate);
@@ -74,12 +77,13 @@ export class DailyChecklistDataService {
       return this.cloneDateResult(result);
     }
 
-    if (forceRefresh) this.requestCache.delete(analysisDate);
+    if (forceRefresh) this.invalidateDate(analysisDate);
+    const cacheGeneration = this.requestCache.generation(analysisDate);
     const load = this.fetchRequestsForDate(analysisDate, onPage);
     this.requestLoads.set(analysisDate, load);
     try {
       const result = await load;
-      this.requestCache.set(analysisDate, { result, cachedAt: Date.now() });
+      this.requestCache.setIfCurrent(analysisDate, result, cacheGeneration);
       return this.cloneDateResult(result);
     } finally {
       if (this.requestLoads.get(analysisDate) === load) this.requestLoads.delete(analysisDate);
@@ -102,12 +106,15 @@ export class DailyChecklistDataService {
       return { requests, source: dailySnapshot.source, materialized: true };
     }
 
-    if (analysisDate >= this.legacyFallbackBefore) {
-      onPage?.(0);
-      return { requests: [], source: dailySnapshot.source, materialized: true };
-    }
+    return shouldFallbackToLegacyRequests(analysisDate, false)
+      ? this.fetchLegacyRequestsForDate(analysisDate, onPage)
+      : { requests: [], source: dailySnapshot.source, materialized: true };
+  }
 
-    return this.fetchLegacyRequestsForDate(analysisDate, onPage);
+  invalidateDate(analysisDate: string): void {
+    if (!isValidDailyChecklistDate(analysisDate)) return;
+    this.requestCache.invalidate(analysisDate);
+    this.requestLoads.delete(analysisDate);
   }
 
   private async fetchLegacyRequestsForDate(

@@ -27,7 +27,6 @@ import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 import { resolveMetadataSyncToast } from './notification-policy';
-import { buildDailyChecklistEntry } from '../utils/daily-checklist-projection';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -121,7 +120,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.07-b03');
+  systemVersion = signal<string>('v26.08.07-b04');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -1209,6 +1208,7 @@ export class StateService implements OnDestroy {
 
     const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+    let dailyProjection: Request | null = null;
 
     try {
       const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
@@ -1250,10 +1250,10 @@ export class StateService implements OnDestroy {
         if (formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
 
         transaction.set(reqRef, sanitizeForFirebase(reqData));
-        this.dailyChecklistMaterializer.setTransactionEntry(transaction, {
+        dailyProjection = {
           id: reqRef.id,
           ...reqData
-        } as Request);
+        } as Request;
 
         const printData: PrintData = {
           sop,
@@ -1286,6 +1286,12 @@ export class StateService implements OnDestroy {
           }
         }));
       });
+      if (dailyProjection) {
+        await this.dailyChecklistMaterializer.materializeRequestBestEffort(
+          dailyProjection,
+          'directApproveAndQueuePrint'
+        );
+      }
       if (options.showSuccessToast !== false) {
         this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
       }
@@ -1355,8 +1361,7 @@ export class StateService implements OnDestroy {
       requestItemsByBatch.push(this.mapToRequestItems(item.calculatedItems, invMap));
     }
 
-    const dailyDocumentWrites = new Set(planItems.map(item => item.formInputs.analysisDate)).size;
-    const estimatedWrites = deductions.size + planItems.length * 3 + dailyDocumentWrites;
+    const estimatedWrites = deductions.size + planItems.length * 3;
     if (estimatedWrites > 450) {
       this.toast.show('Kế hoạch quá lớn để duyệt nguyên tử. Hãy chia thành các kế hoạch nhỏ hơn.', 'error');
       return null;
@@ -1379,7 +1384,9 @@ export class StateService implements OnDestroy {
         )
       })));
 
+      let dailyProjections: Request[] = [];
       await runTransaction(this.fb.db, async transaction => {
+        dailyProjections = [];
         const deductionEntries = Array.from(deductions.entries());
         const inventoryRefs = deductionEntries.map(([name]) =>
           doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', name)
@@ -1402,7 +1409,6 @@ export class StateService implements OnDestroy {
           });
         });
 
-        const dailyEntriesByDate = new Map<string, NonNullable<ReturnType<typeof buildDailyChecklistEntry>>[]>();
         prepared.forEach(item => {
           const reqData: any = {
             sopId: item.sop.id,
@@ -1424,12 +1430,7 @@ export class StateService implements OnDestroy {
           if (item.formInputs.sampleTargetMap) reqData.sampleTargetMap = item.formInputs.sampleTargetMap;
           if (item.formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
           transaction.set(item.requestRef, sanitizeForFirebase(reqData));
-          const dailyEntry = buildDailyChecklistEntry({ id: item.requestRef.id, ...reqData } as Request);
-          if (dailyEntry) {
-            const dateEntries = dailyEntriesByDate.get(item.formInputs.analysisDate) || [];
-            dateEntries.push(dailyEntry);
-            dailyEntriesByDate.set(item.formInputs.analysisDate, dateEntries);
-          }
+          dailyProjections.push({ id: item.requestRef.id, ...reqData } as Request);
 
           const printData: PrintData = {
             sop: item.sop,
@@ -1463,10 +1464,11 @@ export class StateService implements OnDestroy {
             }
           }));
         });
-        dailyEntriesByDate.forEach((entries, analysisDate) => {
-          this.dailyChecklistMaterializer.setTransactionEntries(transaction, analysisDate, entries);
-        });
       });
+      await this.dailyChecklistMaterializer.materializeRequestsBestEffort(
+        dailyProjections,
+        'directApproveBatchPlan'
+      );
 
       prepared.forEach(item => {
         let samples = 1; let qcs = 0;
@@ -1497,6 +1499,19 @@ export class StateService implements OnDestroy {
 
     try {
       const targetScopeSnapshots = await this.buildLegacyTargetScopeTraceability(req, currentSop);
+      const approvedProjection: Request = {
+        ...req,
+        status: 'approved',
+        analysisDate: req.analysisDate,
+        inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
+        approvedAt: serverTimestamp(),
+        targetScopeSnapshots,
+        ...(currentSop ? {
+          sopVersion: req.sopVersion ?? currentSop.version ?? 1,
+          sopRef: req.sopRef ?? currentSop.ref ?? '',
+          targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
+        } : {})
+      };
       await runTransaction(this.fb.db, async (transaction) => {
         const invRefs = req.items.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
         const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
@@ -1526,20 +1541,6 @@ export class StateService implements OnDestroy {
             targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
           } : {})
         });
-        this.dailyChecklistMaterializer.setTransactionEntry(transaction, {
-          ...req,
-          status: 'approved',
-          analysisDate: req.analysisDate,
-          inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
-          approvedAt: serverTimestamp(),
-          targetScopeSnapshots,
-          ...(currentSop ? {
-            sopVersion: req.sopVersion ?? currentSop.version ?? 1,
-            sopRef: req.sopRef ?? currentSop.ref ?? '',
-            targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
-          } : {})
-        });
-
         const sop = currentSop;
 
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -1612,6 +1613,10 @@ export class StateService implements OnDestroy {
           }));
         }
       });
+      await this.dailyChecklistMaterializer.materializeRequestBestEffort(
+        approvedProjection,
+        'approveRequest'
+      );
 
       let samples = 1; let qcs = 0;
       if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
@@ -1645,12 +1650,6 @@ export class StateService implements OnDestroy {
           updates.rejectedAt = serverTimestamp();
         }
         transaction.update(reqRef, updates);
-        this.dailyChecklistMaterializer.deleteTransactionEntry(
-          transaction,
-          req.analysisDate,
-          req.id
-        );
-
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
         transaction.set(logRef, sanitizeForFirebase({
@@ -1663,6 +1662,11 @@ export class StateService implements OnDestroy {
           requestId: req.id
         }));
       });
+      await this.dailyChecklistMaterializer.deleteEntryBestEffort(
+        req.analysisDate,
+        req.id,
+        'revokeApproval'
+      );
 
       let samples = 1; let qcs = 0;
       if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
@@ -1693,6 +1697,19 @@ export class StateService implements OnDestroy {
         where('printable', '==', true)
       ))).docs;
       const editDiff = this.buildRequestEditDiff(req, formInputs, newItems);
+      const updatedProjection: Request = {
+        ...req,
+        items: newItems,
+        inputs: formInputs,
+        margin: formInputs.safetyMargin || 0,
+        analysisDate: formInputs.analysisDate,
+        sampleList: formInputs.sampleList || [],
+        targetIds: formInputs.targetIds || [],
+        sampleTargetMap: formInputs.sampleTargetMap || {},
+        sampleDescriptionMap: formInputs.sampleDescriptionMap,
+        targetScopeSnapshots,
+        ...this.buildSopTraceability(sop)
+      };
 
       // Calculate inventory diff
       const inventoryDiff: Record<string, number> = {};
@@ -1764,23 +1781,6 @@ export class StateService implements OnDestroy {
         else if ('sampleDescriptionMap' in formInputs) reqData.sampleDescriptionMap = deleteField();
 
         transaction.update(reqRef, sanitizeForFirebase(reqData));
-        const updatedProjection: Request = {
-          ...req,
-          items: newItems,
-          inputs: formInputs,
-          margin: formInputs.safetyMargin || 0,
-          analysisDate: formInputs.analysisDate,
-          sampleList: formInputs.sampleList || [],
-          targetIds: formInputs.targetIds || [],
-          sampleTargetMap: formInputs.sampleTargetMap || {},
-          sampleDescriptionMap: formInputs.sampleDescriptionMap,
-          targetScopeSnapshots,
-          ...this.buildSopTraceability(sop)
-        };
-        if (req.analysisDate !== formInputs.analysisDate) {
-          this.dailyChecklistMaterializer.deleteTransactionEntry(transaction, req.analysisDate, req.id);
-        }
-        this.dailyChecklistMaterializer.setTransactionEntry(transaction, updatedProjection);
 
         // 4. Create a new log and print job for the update
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -1832,6 +1832,11 @@ export class StateService implements OnDestroy {
           }
         }));
       });
+      await this.dailyChecklistMaterializer.syncRequestBestEffort(
+        updatedProjection,
+        req.analysisDate,
+        'updateApprovedRequest'
+      );
 
       let oldSamples = 1; let oldQcs = 0;
       if (req.sampleList && req.sampleList.length > 0) oldSamples = req.sampleList.length;
@@ -1908,6 +1913,11 @@ export class StateService implements OnDestroy {
     if (!await this.confirmationService.confirm({ message: 'Từ chối yêu cầu này?', confirmText: 'Từ chối', isDangerous: true, })) return;
     try {
       await updateDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id), { status: 'rejected', rejectedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+      await this.dailyChecklistMaterializer.deleteEntryBestEffort(
+        req.analysisDate,
+        req.id,
+        'rejectRequest'
+      );
       this.toast.show('Đã từ chối', 'info');
     } catch (e) { this.toast.show('Lỗi xử lý', 'error'); }
   }

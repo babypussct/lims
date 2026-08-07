@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.07-b03",
+  "version": "26.08.07-b04",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
@@ -18,7 +18,7 @@
     "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts",
     "test:excel-import": "tsx --test src/app/features/results/import/excel-result-import.test.ts",
     "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/core/services/calculator.service.test.ts",
-    "test:daily-checklists": "tsx --test src/app/core/utils/daily-checklist-projection.test.ts",
+    "test:daily-checklists": "tsx --test src/app/core/utils/daily-checklist-projection.test.ts src/app/core/utils/daily-checklist-hotfix.test.ts",
     "validate:release-notes": "node scripts/validate-release-notes.js",
     "migrate:releases": "node scripts/migrate-releases.js",
     "backfill:daily-checklists": "tsx scripts/backfill-daily-checklists.ts",
