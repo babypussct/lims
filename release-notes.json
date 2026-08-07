@@ -13,5 +13,7 @@
     "Loại bỏ tình trạng chọn sai tổ hợp Phương pháp và Kỹ thuật không tương thích, giúp hiển thị kết quả chính xác hơn.",
     "Thu gọn khu vực bộ lọc khi chưa cần tìm kiếm chi tiết để tiết kiệm không gian màn hình."
   ],
-  "fixes": []
+  "fixes": [
+    "Sửa lỗi bộ lọc 'Kỹ thuật / nhóm phương pháp' hiển thị sai số lượng, giúp nhóm các phương pháp lại chính xác hơn (ví dụ LC-MS/MS, GC-MS/MS) để dễ dàng thu hẹp kết quả."
+  ]
 }

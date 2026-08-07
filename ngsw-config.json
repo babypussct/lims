@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.07-b05",
+    "version": "v26.08.07-b06",
     "title": "Tìm Kiếm Và Lọc Phương Pháp Tiện Lợi Hơn Trong Quản Lý Chất Chuẩn",
     "features": [
       "Tìm kiếm phương pháp phân tích dễ dàng hơn: hỗ trợ gõ không dấu, tìm theo mã, tên hoặc mô tả.",

@@ -239,6 +239,14 @@ type MethodLabelOption =
   | Pick<StandardTagCatalogItem, 'name' | 'methodName' | 'methodCode' | 'deviceCodes'>
   | Pick<StandardTagOption, 'label' | 'methodName' | 'methodCode' | 'deviceCodes'>;
 
+const COMPACT_DEVICE_LABELS: Partial<Record<StandardDeviceCode, string>> = {
+  GCMS: 'GC-MS',
+  GCMSMS: 'GC-MS/MS',
+  GCHRMS: 'GC-HRMS',
+  LCMSMS: 'LC-MS/MS',
+  ICPMS: 'ICP-MS',
+};
+
 function resolveMethodOptionCode(option: MethodLabelOption): string {
   return option.methodCode?.trim() || ('label' in option ? option.label : option.name);
 }
@@ -270,7 +278,9 @@ export function formatMethodOptionLabel(option: MethodLabelOption): string {
 export function formatMethodOptionLabelCompact(option: MethodLabelOption): string {
   const code = resolveMethodOptionCode(option);
   const deviceLabels = [...new Set(option.deviceCodes || [])]
-    .map(deviceCode => STANDARD_DEVICE_OPTIONS.find(item => item.code === deviceCode)?.label || deviceCode);
+    .map(deviceCode => COMPACT_DEVICE_LABELS[deviceCode]
+      || STANDARD_DEVICE_OPTIONS.find(item => item.code === deviceCode)?.label
+      || deviceCode);
   const technique = deviceLabels.join(', ') || extractMethodTechnique(option.methodName);
   return technique ? `${code} · ${technique}` : code;
 }

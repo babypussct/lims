@@ -44,14 +44,45 @@ test('VLAT catalog contains only the reviewed 119 chemical methods', () => {
   });
 });
 
-test('VLAT catalog keeps the reviewed device overrides as secondary metadata', () => {
+test('VLAT catalog maps the reviewed method groups used by the technique facet', () => {
   const byCode = new Map(VLAT_11669_CHEMICAL_METHOD_TAGS.map(item => [item.methodCode, item]));
+  const deviceCounts = new Map<string, number>();
+  for (const item of VLAT_11669_CHEMICAL_METHOD_TAGS) {
+    for (const device of new Set(item.deviceCodes || [])) {
+      deviceCounts.set(device, (deviceCounts.get(device) || 0) + 1);
+    }
+  }
+
+  assert.deepEqual(Object.fromEntries(deviceCounts), {
+    UVVIS: 3,
+    IC: 2,
+    ELISA: 1,
+    AASFLAME: 1,
+    ICPMS: 10,
+    HPLC: 9,
+    HPLCPDA: 3,
+    HPLCUVVIS: 2,
+    HPLCDAD: 1,
+    HPLCFLD: 1,
+    LCMSMS: 47,
+    GCMS: 4,
+    GCMSMS: 11,
+    GCHRMS: 1,
+    GC: 1,
+    GCECD: 1,
+  });
+
+  assert.deepEqual(byCode.get('NAFI6/H-8.2')?.deviceCodes, ['LCMSMS']);
+  assert.deepEqual(byCode.get('NAFI6/H-8.21')?.deviceCodes, ['LCMSMS']);
   assert.deepEqual(byCode.get('NAFI6/H-8.41')?.deviceCodes, ['LCMSMS']);
+  assert.deepEqual(byCode.get('NAFI6/H-9.2')?.deviceCodes, ['GCMSMS']);
+  assert.deepEqual(byCode.get('NAFI6/H-9.5')?.deviceCodes, ['GCMS', 'GCMSMS']);
   assert.deepEqual(byCode.get('NAFI6/H-9.21')?.deviceCodes, ['GCMSMS']);
   assert.deepEqual(byCode.get('NAFI6/H-9.22')?.deviceCodes, ['GCECD']);
   assert.deepEqual(byCode.get('NAFI6/H-9.10')?.deviceCodes, ['GCHRMS']);
   assert.deepEqual(byCode.get('NAFI6/H-7.22')?.deviceCodes, ['HPLCDAD']);
   assert.deepEqual(byCode.get('NAFI6/H-7.17')?.deviceCodes, ['HPLCPDA']);
+  assert.deepEqual(byCode.get('NAFI6/H-7.24')?.deviceCodes, ['HPLCPDA']);
   assert.equal(byCode.has('NAFI6/H-8.15'), false);
-  assert.deepEqual(byCode.get('NAFI6/H-8.31')?.deviceCodes, undefined);
+  assert.equal(byCode.has('NAFI6/H-8.31'), false);
 });
