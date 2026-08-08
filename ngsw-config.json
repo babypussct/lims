@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.08-b01",
-    "title": "Trải Nghiệm Xem Bảng Điều Khiển Đầy Đủ Và Chính Xác Hơn",
+    "version": "v26.08.08-b02",
+    "title": "Nâng Cấp Trải Nghiệm Sử Dụng Và Điều Hướng Trên Điện Thoại",
     "features": [
-      "Hỗ trợ xem toàn bộ dữ liệu thống kê từ trước đến nay trên Bảng điều khiển thay vì bị giới hạn trong 90 ngày.",
-      "Các biểu đồ và thẻ KPI hiển thị số liệu thống nhất và chính xác hơn, không còn bị thiếu dữ liệu của ngày cuối cùng.",
-      "Danh sách 'Hoạt động hôm nay' tự động làm mới khi qua ngày mới mà không cần tải lại trang.",
-      "Bổ sung khả năng xem báo cáo và dữ liệu thống kê không giới hạn thời gian (chế độ Tất cả thời gian).",
-      "Hệ thống tự động điều chỉnh lại cho đúng nếu người dùng vô tình chọn ngày bắt đầu sau ngày kết thúc trên bộ lọc thời gian."
+      "Thanh điều hướng trên điện thoại hiển thị chính xác các chức năng theo quyền hạn thực tế và có thêm thông báo số lượng trên nút 'Quản Lý Yêu Cầu'.",
+      "Giao diện và các cửa sổ thông tin tự động căn chỉnh vừa vặn với màn hình điện thoại, không còn bị che khuất bởi cạnh dưới màn hình.",
+      "Lịch sử thao tác tự động bỏ qua các trang không hợp lệ, giúp người dùng luôn trở về đúng nơi an toàn khi sử dụng.",
+      "Gợi ý cài đặt ứng dụng vào điện thoại tự động ẩn đi sau khi người dùng đã cài đặt thành công, giảm thiểu các thông báo không cần thiết.",
+      "Người dùng giờ đây có thể tự do phóng to nội dung trên thiết bị di động bằng thao tác vuốt hai ngón tay để dễ dàng xem các chữ nhỏ."
     ]
   },
   "assetGroups": [

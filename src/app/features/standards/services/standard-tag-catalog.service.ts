@@ -317,7 +317,7 @@ export class StandardTagCatalogService {
     if (!writeIds.size) return preview;
 
     const current = new Map(this.customTags().map(item => [item.id, item]));
-    const writes: Array<{ ref: any; data: Record<string, any>; restore: boolean }> = [];
+    const writes: { ref: any; data: Record<string, any>; restore: boolean }[] = [];
     for (const item of VLAT_11669_CHEMICAL_METHOD_TAGS) {
       if (!writeIds.has(item.id)) continue;
       const old = current.get(item.id);

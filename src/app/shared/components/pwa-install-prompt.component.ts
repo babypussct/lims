@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, signal } from '@angular/core';
+import { Component, HostListener, Input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safari' | 'android' | 'pc_other' | null;
@@ -9,16 +9,33 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
   imports: [CommonModule],
   template: `
     @if (!isStandalone()) {
-      <!-- Nút Cài đặt PWA -->
-      <div class="text-center">
-          <button (click)="triggerInstall()" class="inline-flex items-center gap-2 px-4 py-2 bg-white/40 hover:bg-white/60 backdrop-blur-md rounded-full text-fuchsia-600 font-semibold text-[12px] transition-colors shadow-sm border border-white/50">
-              <i class="fa-solid fa-mobile-screen-button"></i> Hướng Dẫn Cài Đặt Ứng Dụng
-          </button>
-      </div>
+      @if (menuTile) {
+        <button
+          type="button"
+          (click)="triggerInstall()"
+          class="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform relative"
+          aria-label="Cài ứng dụng LIMS">
+          <span class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-xl transition-all border bg-gradient-to-tr shadow-sm from-teal-500/15 to-cyan-500/15 text-teal-600 dark:text-teal-400 border-teal-200/50 dark:border-teal-800/30">
+            <i class="fa-solid fa-download" aria-hidden="true"></i>
+          </span>
+          <span class="text-[10px] font-bold text-center leading-tight px-0.5 text-slate-500 dark:text-slate-400">Cài Ứng Dụng</span>
+        </button>
+      } @else {
+        <div class="text-center">
+            <button type="button" (click)="triggerInstall()" class="inline-flex items-center gap-2 px-4 py-2 bg-white/40 hover:bg-white/60 backdrop-blur-md rounded-full text-fuchsia-600 font-semibold text-[12px] transition-colors shadow-sm border border-white/50">
+                <i class="fa-solid fa-mobile-screen-button"></i> Hướng Dẫn Cài Đặt Ứng Dụng
+            </button>
+        </div>
+      }
 
       <!-- Overlay & Tooltip -->
       @if (showTooltip()) {
-          <div class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm animate-fade-in" (click)="closeTooltip()">
+          <div
+            class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Hướng dẫn cài đặt ứng dụng"
+            (click)="closeTooltip()">
               
               <!-- 1. iPhone Safari: Chỉ xuống đáy -->
               @if (osType() === 'ios_safari_phone') {
@@ -102,7 +119,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
               }
 
               <!-- Nút đóng chung nếu người dùng click ra ngoài chưa ăn -->
-              <button class="absolute top-8 right-8 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-colors" (click)="closeTooltip()">
+              <button type="button" aria-label="Đóng hướng dẫn cài đặt" class="absolute top-8 right-8 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-colors" (click)="closeTooltip()">
                   <i class="fa-solid fa-xmark text-xl"></i>
               </button>
 
@@ -110,9 +127,11 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
       }
     }
   `,
-  styles: []
+  styles: [':host { display: contents; }']
 })
 export class PwaInstallPromptComponent implements OnInit {
+  @Input() menuTile = false;
+
   osType = signal<OsType>(null);
   showTooltip = signal(false);
   isStandalone = signal(false);
@@ -128,6 +147,13 @@ export class PwaInstallPromptComponent implements OnInit {
   onBeforeInstallPrompt(e: Event) {
     e.preventDefault(); 
     this.deferredPrompt = e; 
+  }
+
+  @HostListener('window:appinstalled')
+  onAppInstalled() {
+    this.deferredPrompt = null;
+    this.showTooltip.set(false);
+    this.isStandalone.set(true);
   }
 
   checkStandaloneMode() {
@@ -172,6 +198,9 @@ export class PwaInstallPromptComponent implements OnInit {
   }
 
   async triggerInstall() {
+    this.checkStandaloneMode();
+    if (this.isStandalone()) return;
+
     // Nếu bắt được Native Prompt (Android Chrome, PC Chrome) -> Tự động gọi Native Popup
     if (this.deferredPrompt) {
       this.deferredPrompt.prompt(); 

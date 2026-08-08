@@ -40,6 +40,7 @@ interface PaletteItem {
         <!-- ── Sidebar Toggle ── -->
         <button
           (click)="state.toggleSidebarCollapse()"
+          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                  text-slate-400 dark:text-slate-500
                  hover:bg-slate-100 dark:hover:bg-slate-800
@@ -73,6 +74,7 @@ interface PaletteItem {
       <!-- ── Command Palette Trigger (real search, not just QR) ── -->
       <button
         (click)="openPalette()"
+        aria-label="Mở tìm kiếm chức năng"
         class="w-full h-9 px-0 lg:px-3 rounded-xl
                flex items-center justify-center lg:justify-start gap-2.5
                bg-slate-50 dark:bg-slate-800/80
@@ -124,6 +126,10 @@ interface PaletteItem {
 
         <button
           (click)="toggleProfileMenu()"
+          aria-controls="profile-menu"
+          [attr.aria-expanded]="profileMenuOpen()"
+          aria-haspopup="menu"
+          aria-label="Mở menu tài khoản"
           class="flex items-center gap-2.5 h-10 pl-1 pr-3 rounded-xl
                  border transition-all duration-200 group active:scale-[0.97]"
           [ngClass]="profileMenuOpen()
@@ -152,7 +158,7 @@ interface PaletteItem {
 
         <!-- ── Profile Dropdown ── -->
         @if (profileMenuOpen()) {
-          <div class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
+          <div id="profile-menu" role="menu" class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
               <span class="relative w-10 h-10 shrink-0">
                 <img
@@ -169,24 +175,24 @@ interface PaletteItem {
               </div>
             </div>
             <div class="p-2 space-y-0.5">
-              <button (click)="openAccountSettings()"
+              <button role="menuitem" (click)="openAccountSettings()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid fa-user-gear w-4 text-center text-slate-400"></i>
                 <span>Cài Đặt Tài Khoản</span>
               </button>
-              <button (click)="openChangelog()"
+              <button role="menuitem" (click)="openChangelog()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid fa-clock-rotate-left w-4 text-center text-slate-400"></i>
                 <span>Nhật ký thay đổi</span>
               </button>
-              <button (click)="toggleDarkMode()"
+              <button role="menuitem" (click)="toggleDarkMode()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid w-4 text-center text-slate-400"
                    [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
                 <span>{{ state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối' }}</span>
               </button>
               <div class="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
-              <button (click)="logout()"
+              <button role="menuitem" (click)="logout()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left font-semibold">
                 <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>
                 <span>Đăng Xuất</span>
@@ -202,6 +208,9 @@ interface PaletteItem {
     @if (paletteOpen()) {
       <div class="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] px-4
                   bg-slate-900/60 backdrop-blur-sm fade-in"
+           role="dialog"
+           aria-modal="true"
+           aria-label="Tìm kiếm chức năng"
            (click)="closePalette()">
 
         <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden fade-in"
@@ -213,6 +222,7 @@ interface PaletteItem {
             <input
               #paletteInput
               type="text"
+              aria-label="Tìm trang hoặc chức năng"
               [ngModel]="searchQuery()"
               (ngModelChange)="onSearchInput($event)"
               (keydown)="onPaletteKeydown($event)"

@@ -52,6 +52,8 @@ interface ResolvedNavigationGroup {
             <button
               type="button"
               (click)="toggleGroup(group.id)"
+              [attr.aria-expanded]="expandedGroups()[group.id]"
+              [attr.aria-controls]="'nav-group-' + group.id"
               class="w-full px-2.5 pt-3 pb-1.5 flex items-center justify-between rounded-lg text-left group/header hover:bg-slate-100/80 dark:hover:bg-slate-800/70 transition-colors">
               <div class="min-w-0 flex items-center gap-2">
                 <i class="fa-solid {{group.icon}} text-[10px] text-slate-400 dark:text-slate-500 group-hover/header:text-fuchsia-500"></i>
@@ -65,12 +67,15 @@ interface ResolvedNavigationGroup {
             </button>
 
             <div
+              [id]="'nav-group-' + group.id"
               class="space-y-1 overflow-hidden transition-all duration-300"
               [ngClass]="expandedGroups()[group.id] ? 'max-h-[640px] opacity-100 mt-1' : 'max-h-0 opacity-0 mt-0'">
               @for (item of group.items; track item.id) {
                 <button
                   type="button"
                   (click)="item.isLocked ? handleLockedClick(item) : navigateTo(item.path)"
+                  [attr.aria-current]="!item.isLocked && isActive(item.activeMatch) ? 'page' : null"
+                  [attr.aria-disabled]="item.isLocked ? 'true' : null"
                   class="group/item w-full min-h-11 px-2.5 py-2.5 rounded-xl flex items-center gap-2.5 text-left border transition-all duration-200 relative"
                   [ngClass]="[
                     item.isLocked ? 'cursor-not-allowed opacity-55 bg-slate-50/70 dark:bg-slate-800/30 border-transparent' : 'active:scale-[0.98]',

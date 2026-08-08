@@ -69,13 +69,14 @@ import { NavigationPanelComponent } from './navigation-panel.component';
                 type="button"
                 (click)="state.clearOfflineState()"
                 class="text-orange-500 hover:text-orange-700 dark:hover:text-orange-300 transition ml-3 shrink-0"
-                title="Đóng">
+                title="Đóng"
+                aria-label="Đóng thông báo mất kết nối">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
           }
 
-          <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20 md:pb-6">
+          <div class="app-content-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <router-outlet></router-outlet>
           </div>
         </div>
@@ -87,7 +88,18 @@ import { NavigationPanelComponent } from './navigation-panel.component';
         }
       }
     </div>
-  `
+  `,
+  styles: [`
+    .app-content-scroll {
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    @media (min-width: 768px) {
+      .app-content-scroll {
+        padding-bottom: 1.5rem;
+      }
+    }
+  `]
 })
 export class AppShellComponent {
   state = inject(StateService);

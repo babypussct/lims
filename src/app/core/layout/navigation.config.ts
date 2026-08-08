@@ -116,8 +116,11 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     title: 'Vận hành',
     icon: 'fa-layer-group',
     items: [
+      { id: 'calculator', name: 'Vận Hành SOP', icon: 'fa-calculator', path: 'calculator', activeMatch: ['/calculator'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW },
       { id: 'smart-batch', name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], access: PERMISSIONS.BATCH_RUN, lockPermission: PERMISSIONS.BATCH_RUN },
       { id: 'prep', name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'] },
+      { id: 'daily-checklist', name: 'Theo Dõi Mẫu Ngày', icon: 'fa-calendar-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW },
+      { id: 'traceability', name: 'Truy Xuất Nguồn Gốc', icon: 'fa-route', path: 'traceability', activeMatch: ['/traceability'] },
       { id: 'requests', name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, badgeKey: 'requests' },
       { id: 'results', name: 'Kết Quả Phân Tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW }
     ]
@@ -130,7 +133,16 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       { id: 'inventory', name: 'Kho Hóa Chất', icon: 'fa-boxes-stacked', path: 'inventory', activeMatch: ['/inventory', '/labels'], access: PERMISSIONS.INVENTORY_VIEW, lockPermission: PERMISSIONS.INVENTORY_VIEW },
       { id: 'standards', name: 'Chất Chuẩn Đối Chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], access: PERMISSIONS.STANDARD_VIEW, lockPermission: PERMISSIONS.STANDARD_VIEW },
       { id: 'standard-requests', name: 'Yêu Cầu Chất Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], access: PERMISSIONS.STANDARD_VIEW, lockPermission: PERMISSIONS.STANDARD_VIEW },
-      { id: 'standard-usage', name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], access: PERMISSIONS.STANDARD_LOG_VIEW, lockPermission: PERMISSIONS.STANDARD_LOG_VIEW }
+      { id: 'standard-usage', name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], access: PERMISSIONS.STANDARD_LOG_VIEW, lockPermission: PERMISSIONS.STANDARD_LOG_VIEW },
+      { id: 'recipes', name: 'Thư Viện Công Thức', icon: 'fa-book-bookmark', path: 'recipes', activeMatch: ['/recipes'], access: PERMISSIONS.RECIPE_VIEW, lockPermission: PERMISSIONS.RECIPE_VIEW }
+    ]
+  },
+  {
+    id: 'administration',
+    title: 'Quản trị',
+    icon: 'fa-screwdriver-wrench',
+    items: [
+      { id: 'editor', name: 'Trình Soạn SOP', icon: 'fa-pen-ruler', path: 'editor', activeMatch: ['/editor'], access: PERMISSIONS.SOP_EDIT, lockPermission: PERMISSIONS.SOP_EDIT }
     ]
   }
 ];
