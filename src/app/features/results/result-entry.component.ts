@@ -632,14 +632,21 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       }
     }
 
+    const isSop914ShortForm = this.configKey() === 'tbvtv-thuc-pham-gcmsms'
+      && currentDraft.page1Data?.['printFormType'] === 'formRutGon';
+    const preflightConfig = isSop914ShortForm
+      ? ANGULAR_SOP_CONFIG['tbvtv-thuc-pham-gcmsms-rut-gon']
+      : currentConf;
+
     const preflight = buildPublishPreflightSummary({
       run: currentRun,
       draft: currentDraft,
-      config: currentConf,
+      config: preflightConfig,
       configKey: this.configKey(),
       activeFilter: this.activeFilter(),
       samplesPerReport: this.samplesPerReport(),
-      unpublishedSamples: this.samplePublishProgress().unpublishedSamples
+      unpublishedSamples: this.samplePublishProgress().unpublishedSamples,
+      masterTargets: this.masterTargets()
     });
     if (!skipPreflight) {
       this.preflightSummary.set(preflight);

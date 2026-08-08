@@ -1,4 +1,9 @@
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
+import {
+  getAssignedTargetsForSample,
+  isCompoundAssigned,
+  SOP01_COLUMN_TO_CANONICAL
+} from './shared/compound-id-resolver';
 
 export interface PublishPreflightSummary {
   activeFilter: string;
@@ -17,6 +22,7 @@ export interface PublishPreflightArgs {
   activeFilter: string;
   samplesPerReport?: number | null;
   unpublishedSamples?: string[];
+  masterTargets?: any[];
 }
 
 export function buildPublishPreflightSummary(args: PublishPreflightArgs): PublishPreflightSummary {
@@ -27,7 +33,8 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
     configKey,
     activeFilter,
     samplesPerReport,
-    unpublishedSamples = []
+    unpublishedSamples = [],
+    masterTargets = []
   } = args;
 
   const includedSamples = (run.sampleList || []).filter((sample: string) => {
@@ -74,19 +81,60 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
     || configKey === 'trifluralin-gcms'
     || run.sopId === 'SOP-01'
     || run.sopId === 'SOP-03';
+  const isSop914 = configKey === 'tbvtv-thuc-pham-gcmsms'
+    || configKey === 'tbvtv-thuc-pham-gcmsms-rut-gon'
+    || run.sopId === '9.14-tbvtv-gcmsms';
+  const sampleTargetMap = run.sampleTargetMap ?? run.inputs?.sampleTargetMap;
+
+  const requiredResultKeysForSample = (sample: string): string[] => {
+    const assigned = getAssignedTargetsForSample(sample, sampleTargetMap);
+
+    if (config.formType === 'type3b' && Array.isArray(config.compounds)) {
+      if (!assigned) return [...config.compounds];
+      return config.compounds.filter((compound: string) =>
+        isCompoundAssigned(assigned, compound, masterTargets)
+      );
+    }
+
+    if (!assigned) return [...activeColumns];
+    return activeColumns.filter((column: string) => {
+      const canonical = SOP01_COLUMN_TO_CANONICAL[column] || column;
+      return isCompoundAssigned(assigned, canonical, masterTargets);
+    });
+  };
+
   const missingResultSamples = includedSamples.filter((sample: string) => {
     // Một số SOP dạng type2 quy ước ô kết quả trống là ND hợp lệ.
     // Preflight không tự ghi "ND" vào draft; chỉ không chặn publish.
     if (blankResultsMeanNd) return false;
 
     const row = draft.resultData?.[sample] || {};
+    const requiredKeys = requiredResultKeysForSample(sample);
+    if (requiredKeys.length === 0) return false;
+
+    if (isSop914) {
+      return requiredKeys.some((key: string) => !hasExplicitResultState(row, key));
+    }
+
     if (config.formType === 'type3b' && Array.isArray(config.compounds)) {
-      return !config.compounds.some((compound: string) => hasReportableValue(row[compound]) || row[`${compound}_nd`] === true);
+      return !config.compounds.some((compound: string) => hasExplicitResultState(row, compound));
     }
     return !activeColumns.some(col => hasReportableValue(row[col]));
   });
   if (missingResultSamples.length > 0) {
     blockers.push(`Có ${missingResultSamples.length} mẫu chưa có kết quả hoặc ND: ${missingResultSamples.slice(0, 8).join(', ')}${missingResultSamples.length > 8 ? '...' : ''}`);
+  }
+
+  if (isSop914) {
+    const invalidResultSamples = includedSamples.filter((sample: string) => {
+      const row = draft.resultData?.[sample] || {};
+      return requiredResultKeysForSample(sample).some((key: string) =>
+        hasExplicitResultState(row, key) && !hasValidSop914ResultState(row, key)
+      );
+    });
+    if (invalidResultSamples.length > 0) {
+      blockers.push(`Có ${invalidResultSamples.length} mẫu chứa giá trị kết quả không hợp lệ (chỉ chấp nhận số, ND/KPH hoặc <LOQ): ${invalidResultSamples.slice(0, 8).join(', ')}${invalidResultSamples.length > 8 ? '...' : ''}`);
+    }
   }
 
   const alreadyPublished = includedSamples.filter((sample: string) => !unpublishedSamples.includes(sample));
@@ -108,6 +156,25 @@ export function buildPublishPreflightSummary(args: PublishPreflightArgs): Publis
 
 function hasReportableValue(value: any): boolean {
   return value !== null && value !== undefined && String(value).trim() !== '' && value !== 'N/A';
+}
+
+function hasExplicitResultState(row: Record<string, any>, key: string): boolean {
+  return row[`${key}_nd`] === true || hasReportableValue(row[key]);
+}
+
+function hasValidSop914ResultState(row: Record<string, any>, key: string): boolean {
+  if (row[`${key}_nd`] === true) return true;
+  return isValidSop914ResultValue(row[key]);
+}
+
+function isValidSop914ResultValue(value: any): boolean {
+  if (!hasReportableValue(value)) return false;
+  if (typeof value === 'number') return Number.isFinite(value) && value >= 0;
+
+  const normalized = String(value).trim().toUpperCase();
+  if (normalized === 'ND' || normalized === 'KPH' || normalized === '<LOQ') return true;
+
+  return /^\d+(?:[.,]\d+)?(?:E[+-]?\d+)?$/.test(normalized);
 }
 
 function doesPrintFormExposeR2(configKey: string | null | undefined, printFormType: string): boolean {

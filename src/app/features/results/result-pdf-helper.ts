@@ -183,8 +183,15 @@ export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, acti
 
   // 4. Regular samples & dynamic SP_N every 10 samples
   const sampleList = currentRun.sampleList || [];
+  const filteredSamples = sampleList.filter((sampleCode: string) => {
+    const resObj = currentDraft.resultData[sampleCode] || {};
+    const prefix = /^[a-zA-Z]/.test(sampleCode) ? sampleCode.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter && !sampleCode.startsWith('QC_');
+  });
   let regularCount = 0;
-  sampleList.forEach((sampleCode: string) => {
+  filteredSamples.forEach((sampleCode: string) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
     const rowData: Record<string, any> = {
       loSo: resObj['loSo'] || '',
@@ -199,7 +206,7 @@ export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, acti
 
     regularCount++;
     if (regularCount % 10 === 0) {
-      const isLastSample = regularCount === sampleList.length;
+      const isLastSample = regularCount === filteredSamples.length;
       if (!isLastSample) {
         const n = regularCount / 10;
         const spikeNKey = `QC_SPIKE_${n}`;

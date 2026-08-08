@@ -7,11 +7,12 @@ import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.
 import { calculateSop01Recovery } from '../sop-01/sop-01-engine';
 import { navigateGrid } from '../shared/sop-grid-helper';
 import { getAssignedTargetsForSample, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
-
-const SOP914_FULL_TEMPLATE_DOC_ID = '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4';
-const SOP914_SHORT_TEMPLATE_DOC_ID = '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4';
-const SOP914_FULL_TEMPLATE_URL = `https://docs.google.com/document/d/${SOP914_FULL_TEMPLATE_DOC_ID}/edit`;
-const SOP914_SHORT_TEMPLATE_URL = `https://docs.google.com/document/d/${SOP914_SHORT_TEMPLATE_DOC_ID}/edit`;
+import {
+  deriveSop914DetectionFlags,
+  getSop914DefaultVial,
+  getSop914TemplateMetadata,
+  migrateSop914QcKeys
+} from './sop-914-entry.utils';
 
 @Component({
   selector: 'app-sop-tbvtv-thuc-pham-gcmsms-entry',
@@ -57,9 +58,9 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     this.checkboxList = [
       { key: 'qcKiemTraNoiBo', label: 'Mẫu kiểm tra nội bộ' },
       { key: 'qcThoiGianLuu', label: 'Độ lệch thời gian lưu' },
-      { key: 'qcNhanDangMauNhiem', label: 'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm' },
-      { key: 'qcNhanDangSpike', label: 'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb' },
-      { key: 'qcThuHoiIS', label: 'Độ thu hồi IS' },
+      { key: 'qcNhanDang', label: 'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm' },
+      { key: 'qcThemChuan', label: 'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb' },
+      { key: 'qcThuHoi', label: 'Độ thu hồi IS' },
       { key: 'qcDanhGiaChung', label: 'Đánh giá chung' }
     ];
 
@@ -73,6 +74,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     if (!currentPrintFormType || currentPrintFormType === 'formCheck' || currentPrintFormType === 'formDon') {
       this.draft.page1Data['printFormType'] = 'formDayDu';
     }
+    migrateSop914QcKeys(this.draft.page1Data);
     this.applyTemplateMetadata(this.draft.page1Data['printFormType']);
 
     // Khởi tạo trạng thái checkbox m = 10.0 g mặc định là true cho form đầy đủ
@@ -98,8 +100,8 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
     const qcKeysTrue = [
       'qcThoiGianLuu',
-      'qcNhanDangSpike',
-      'qcThuHoiIS',
+      'qcThemChuan',
+      'qcThuHoi',
       'qcDanhGiaChung'
     ];
     qcKeysTrue.forEach(k => {
@@ -108,8 +110,8 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
       }
     });
 
-    if (this.draft.page1Data['qcNhanDangMauNhiem'] === undefined || this.draft.page1Data['qcNhanDangMauNhiem'] === '') {
-      this.draft.page1Data['qcNhanDangMauNhiem'] = null;
+    if (this.draft.page1Data['qcNhanDang'] === undefined || this.draft.page1Data['qcNhanDang'] === '') {
+      this.draft.page1Data['qcNhanDang'] = null;
     }
     if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
       this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
@@ -124,11 +126,9 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
         sRes['khoiLuong'] = '10.0';
       }
       // Mặc định điền Vial bắt đầu từ 1.10 cho Form Rút Gọn
-      if (sRes['loSo'] === undefined || sRes['loSo'] === '') {
-        const currentVial = 10 + idx;
-        const rack = 1 + Math.floor((currentVial - 1) / 54);
-        const vial = ((currentVial - 1) % 54) + 1;
-        sRes['loSo'] = `${rack}.${vial}`;
+      const baseDefaultVial = String(9 + idx);
+      if (sRes['loSo'] === undefined || sRes['loSo'] === '' || sRes['loSo'] === baseDefaultVial) {
+        sRes['loSo'] = getSop914DefaultVial(idx);
       }
       if (sRes['selected'] === undefined) {
         sRes['selected'] = true;
@@ -146,10 +146,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   private applyTemplateMetadata(type: 'formDayDu' | 'formRutGon' | string) {
-    const isShort = type === 'formRutGon';
-    this.draft.page1Data['templateDocId'] = isShort ? SOP914_SHORT_TEMPLATE_DOC_ID : SOP914_FULL_TEMPLATE_DOC_ID;
-    this.draft.page1Data['templateDocUrl'] = isShort ? SOP914_SHORT_TEMPLATE_URL : SOP914_FULL_TEMPLATE_URL;
-    this.draft.page1Data['reportFormLabel'] = isShort ? 'FORM RÚT GỌN' : 'FORM ĐẦY ĐỦ';
+    Object.assign(this.draft.page1Data, getSop914TemplateMetadata(type));
   }
 
   private ensureQcRows() {
@@ -228,34 +225,33 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   override onDataChanged() {
-    let hasPositive = false;
     const sampleList = this.run?.sampleList || [];
-    const compounds = this.config?.compounds || [];
-    
-    for (const sample of sampleList) {
-      const row = this.draft.resultData[sample];
-      if (!row) continue;
-      
-      for (const c of compounds) {
-        const val = row[c];
-        if (val === undefined || val === null) continue;
-        const vStr = val.toString().trim().toUpperCase();
-        if (vStr !== '' && vStr !== 'ND' && vStr !== 'N/A' && vStr !== 'KPH') {
-          hasPositive = true;
-          break;
-        }
-      }
-      if (hasPositive) break;
-    }
+    const isShortForm = this.draft.page1Data['printFormType'] === 'formRutGon';
+    const resultKeys: string[] = isShortForm ? [...this.activeColumns] : (this.config?.compounds || []);
+    const detection = deriveSop914DetectionFlags(
+      sampleList,
+      this.draft.resultData,
+      resultKeys,
+      isShortForm,
+      (sampleCode, resultKey) => this.isTargetAssigned(sampleCode, resultKey)
+    );
 
-    if (hasPositive) {
-      if (this.draft.page1Data['qcNhanDangMauNhiem'] === null || this.draft.page1Data['qcNhanDangMauNhiem'] === undefined) {
-        this.draft.page1Data['qcNhanDangMauNhiem'] = true;
+    if (detection.hasPositive) {
+      this.draft.page1Data['checkTatCaND'] = false;
+      this.draft.page1Data['checkCoMauPhatHien'] = true;
+      if (this.draft.page1Data['qcNhanDang'] === null || this.draft.page1Data['qcNhanDang'] === undefined) {
+        this.draft.page1Data['qcNhanDang'] = true;
+      }
+    } else if (detection.hasAnyResultState) {
+      this.draft.page1Data['checkTatCaND'] = true;
+      this.draft.page1Data['checkCoMauPhatHien'] = false;
+      if (this.draft.page1Data['qcNhanDang'] === true) {
+        this.draft.page1Data['qcNhanDang'] = null;
       }
     } else {
-      if (this.draft.page1Data['qcNhanDangMauNhiem'] === true) {
-         this.draft.page1Data['qcNhanDangMauNhiem'] = null;
-      }
+      this.draft.page1Data['checkTatCaND'] = false;
+      this.draft.page1Data['checkCoMauPhatHien'] = false;
+      if (this.draft.page1Data['qcNhanDang'] === true) this.draft.page1Data['qcNhanDang'] = null;
     }
     
     super.onDataChanged();

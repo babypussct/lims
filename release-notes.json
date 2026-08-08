@@ -1,13 +1,16 @@
 {
-  "title": "Nâng Cấp Độ Chính Xác Quản Lý Chất Chuẩn",
+  "title": "Ổn Định Quy Trình Nhập Và Xuất Kết Quả SOP 9.14",
   "highlights": [
-    "Hệ thống quản lý Kho và Chất chuẩn được thắt chặt quy trình mượn, trả và ghi nhận tiêu hao, đảm bảo lượng tồn kho luôn khớp hoàn toàn với lịch sử sử dụng thực tế."
+    "Quy trình nhập và xuất kết quả SOP 9.14 được kiểm tra chặt chẽ hơn cho cả Form Đầy Đủ và Form Rút Gọn, giúp hạn chế xuất báo cáo khi dữ liệu còn thiếu hoặc không hợp lệ.",
+    "Form Rút Gọn chỉ đưa đúng các mẫu đang được chọn và đúng nhóm mẫu hiện tại vào báo cáo PDF."
   ],
   "features": [],
   "improvements": [
-    "Nâng cấp độ an toàn khi ghi nhận lượng tiêu hao chất chuẩn. Mọi thay đổi về tồn kho đều được hệ thống tự động đối chiếu và lưu vết chặt chẽ, ngăn chặn các sai sót khi thao tác."
+    "Đồng bộ trạng thái phát hiện/không phát hiện và các đánh giá QC của SOP 9.14 với dữ liệu thực tế sau mỗi lần chỉnh sửa kết quả.",
+    "Chuẩn hóa số lọ mặc định và thông tin mẫu biểu để Form Đầy Đủ và Form Rút Gọn luôn sử dụng đúng cấu hình báo cáo."
   ],
   "fixes": [
-    "Ngăn chặn triệt để các trường hợp thông tin lượng tiêu hao hoặc lịch sử sử dụng chất chuẩn bị cập nhật sai lệch, giúp đảm bảo số liệu Kho luôn chính xác tuyệt đối."
+    "Khắc phục lỗi kiểm tra trước khi xuất báo cáo Form Rút Gọn dùng sai cấu trúc kết quả và sai phạm vi chỉ tiêu được giao.",
+    "Ngăn xuất báo cáo SOP 9.14 khi còn thiếu chỉ tiêu được giao hoặc khi kết quả chứa giá trị ngoài các định dạng hợp lệ như số, ND/KPH hoặc <LOQ>."
   ]
 }

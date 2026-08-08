@@ -99,3 +99,36 @@ test('SOP-01 PDF keeps blank results blank and prints literal ND only when enter
   assert.equal(sample.kqFip, '');
   assert.equal(sample.kqFipDesl, 'ND');
 });
+
+test('SOP 9.14 compact PDF excludes unselected samples from the current chunk', () => {
+  const payload = buildFipronilPdfPayload(
+    {
+      page1Data: {
+        ngayNguoiPhanTich: '2026-08-08',
+        ngayNguoiThamTra: '2026-08-08'
+      },
+      resultData: {
+        A001: { selected: true, kqFip: 'ND' },
+        A002: { selected: false, kqFip: '1.2' },
+        B001: { selected: true, kqFip: '2.3' }
+      }
+    },
+    { sampleList: ['A001', 'A002', 'B001'] },
+    'A',
+    {
+      columns: {
+        maSoMau: 0,
+        loSo: 1,
+        kqFip: 2
+      }
+    },
+    formatDate,
+    getRunDate
+  );
+
+  const regularSamples = payload.samples
+    .map((row: any) => row.maSoMau)
+    .filter((code: string) => ['A001', 'A002', 'B001'].includes(code));
+
+  assert.deepEqual(regularSamples, ['A001']);
+});

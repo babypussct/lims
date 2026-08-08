@@ -229,3 +229,86 @@ test('warns when included samples were already published', () => {
   assert.equal(summary.blockers.length, 0);
   assert.ok(summary.warnings.some(message => message.includes('1 mẫu')));
 });
+
+test('SOP 9.14 compact preflight validates short-form columns for assigned targets', () => {
+  const summary = buildPublishPreflightSummary({
+    run: {
+      sopId: '9.14-tbvtv-gcmsms',
+      sampleList: ['A001'],
+      sampleTargetMap: { A001: ['fipronil'] }
+    },
+    draft: draft({
+      sopId: '9.14-tbvtv-gcmsms',
+      page1Data: {
+        ngayNguoiPhanTich: '2026-08-08',
+        ngayNguoiThamTra: '2026-08-08',
+        printFormType: 'formRutGon'
+      },
+      resultData: { A001: { selected: true, kqFip: 'ND' } }
+    }),
+    config: {
+      formType: 'type2',
+      columns: { maSoMau: 0, loSo: 1, kqFip: 2, kqClp: 3 }
+    },
+    configKey: 'tbvtv-thuc-pham-gcmsms',
+    activeFilter: 'ALL',
+    unpublishedSamples: ['A001']
+  });
+
+  assert.equal(summary.blockers.length, 0);
+});
+
+test('SOP 9.14 full preflight requires every assigned compound', () => {
+  const summary = buildPublishPreflightSummary({
+    run: {
+      sopId: '9.14-tbvtv-gcmsms',
+      sampleList: ['A001'],
+      sampleTargetMap: { A001: ['fipronil', 'chlorpyrifos'] }
+    },
+    draft: draft({
+      sopId: '9.14-tbvtv-gcmsms',
+      resultData: {
+        A001: {
+          selected: true,
+          fipronil: '1.2',
+          fipronil_nd: false,
+          chlorpyrifos: '',
+          chlorpyrifos_nd: false
+        }
+      }
+    }),
+    config: {
+      formType: 'type3b',
+      columns: {},
+      compounds: ['fipronil', 'chlorpyrifos']
+    },
+    configKey: 'tbvtv-thuc-pham-gcmsms',
+    activeFilter: 'ALL',
+    unpublishedSamples: ['A001']
+  });
+
+  assert.ok(summary.blockers.some(message => message.includes('chưa có kết quả')));
+});
+
+test('SOP 9.14 rejects arbitrary result strings and accepts documented result formats', () => {
+  const buildSummary = (value: string) => buildPublishPreflightSummary({
+    run: {
+      sopId: '9.14-tbvtv-gcmsms',
+      sampleList: ['A001'],
+      sampleTargetMap: { A001: ['fipronil'] }
+    },
+    draft: draft({
+      sopId: '9.14-tbvtv-gcmsms',
+      resultData: { A001: { selected: true, fipronil: value, fipronil_nd: false } }
+    }),
+    config: { formType: 'type3b', columns: {}, compounds: ['fipronil'] },
+    configKey: 'tbvtv-thuc-pham-gcmsms',
+    activeFilter: 'ALL',
+    unpublishedSamples: ['A001']
+  });
+
+  assert.ok(buildSummary('abc').blockers.some(message => message.includes('không hợp lệ')));
+  assert.equal(buildSummary('1.25').blockers.length, 0);
+  assert.equal(buildSummary('KPH').blockers.length, 0);
+  assert.equal(buildSummary('<LOQ').blockers.length, 0);
+});
