@@ -75,7 +75,7 @@ export class AppShellComponent {
         this.state = inject(StateService);
     }
     static { this.ɵfac = function AppShellComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || AppShellComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: AppShellComponent, selectors: [["app-shell"]], decls: 10, vars: 19, consts: [[1, "min-h-screen", "h-[100dvh]", "bg-gray-50", "dark:bg-slate-900", "flex", "overflow-hidden", "relative"], [1, "hidden", "md:block"], [1, "flex-1", "flex", "flex-col", "relative", "h-full", "transition-all", "duration-300", "ease-in-out", "overflow-hidden"], [1, "flex-1", "min-h-0", "flex", "flex-col", "overflow-hidden"], [1, "w-full", "bg-red-50", "dark:bg-red-900/20", "border", "border-red-100", "dark:border-red-800/30", "rounded-xl", "p-3", "mb-4", "flex", "items-center", "justify-between", "animate-bounce-in", "shadow-sm", "shrink-0"], [1, "w-full", "bg-orange-50", "dark:bg-orange-900/20", "border", "border-orange-200", "dark:border-orange-800/30", "rounded-xl", "p-3", "mb-4", "flex", "items-center", "justify-between", "animate-bounce-in", "shadow-sm", "shrink-0"], [1, "flex-1", "min-h-0", "overflow-y-auto", "custom-scrollbar", "pb-20", "md:pb-6"], [1, "flex", "items-center", "gap-2", "text-sm", "text-red-600", "dark:text-red-400", "font-bold"], [1, "fa-solid", "fa-triangle-exclamation"], [1, "flex", "items-center", "gap-2", "text-sm", "text-orange-700", "dark:text-orange-400", "font-bold"], [1, "fa-solid", "fa-plug-circle-xmark"], ["type", "button", "title", "\u0110\u00F3ng", 1, "text-orange-500", "hover:text-orange-700", "dark:hover:text-orange-300", "transition", "ml-3", "shrink-0", 3, "click"], [1, "fa-solid", "fa-xmark"]], template: function AppShellComponent_Template(rf, ctx) { if (rf & 1) {
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: AppShellComponent, selectors: [["app-shell"]], decls: 10, vars: 19, consts: [[1, "min-h-screen", "h-[100dvh]", "bg-gray-50", "dark:bg-slate-900", "flex", "overflow-hidden", "relative"], [1, "hidden", "md:block"], [1, "flex-1", "flex", "flex-col", "relative", "h-full", "transition-all", "duration-300", "ease-in-out", "overflow-hidden"], [1, "flex-1", "min-h-0", "flex", "flex-col", "overflow-hidden"], [1, "w-full", "bg-red-50", "dark:bg-red-900/20", "border", "border-red-100", "dark:border-red-800/30", "rounded-xl", "p-3", "mb-4", "flex", "items-center", "justify-between", "animate-bounce-in", "shadow-sm", "shrink-0"], [1, "w-full", "bg-orange-50", "dark:bg-orange-900/20", "border", "border-orange-200", "dark:border-orange-800/30", "rounded-xl", "p-3", "mb-4", "flex", "items-center", "justify-between", "animate-bounce-in", "shadow-sm", "shrink-0"], [1, "app-content-scroll", "flex-1", "min-h-0", "overflow-y-auto", "custom-scrollbar"], [1, "flex", "items-center", "gap-2", "text-sm", "text-red-600", "dark:text-red-400", "font-bold"], [1, "fa-solid", "fa-triangle-exclamation"], [1, "flex", "items-center", "gap-2", "text-sm", "text-orange-700", "dark:text-orange-400", "font-bold"], [1, "fa-solid", "fa-plug-circle-xmark"], ["type", "button", "title", "\u0110\u00F3ng", "aria-label", "\u0110\u00F3ng th\u00F4ng b\u00E1o m\u1EA5t k\u1EBFt n\u1ED1i", 1, "text-orange-500", "hover:text-orange-700", "dark:hover:text-orange-300", "transition", "ml-3", "shrink-0", 3, "click"], [1, "fa-solid", "fa-xmark"]], template: function AppShellComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "div", 0);
             i0.ɵɵtemplate(1, AppShellComponent_Conditional_1_Template, 4, 1, "div", 1)(2, AppShellComponent_Conditional_2_Template, 3, 1);
             i0.ɵɵelementStart(3, "main", 2)(4, "div", 3);
@@ -101,22 +101,17 @@ export class AppShellComponent {
             i0.ɵɵadvance(3);
             i0.ɵɵconditional(!ctx.state.focusMode() ? 9 : -1);
         } }, dependencies: [CommonModule,
-            RouterOutlet], encapsulation: 2, changeDetection: 0 }); }
+            RouterOutlet], styles: [".app-content-scroll[_ngcontent-%COMP%] {\n      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));\n    }\n\n    @media (min-width: 768px) {\n      .app-content-scroll[_ngcontent-%COMP%] {\n        padding-bottom: 1.5rem;\n      }\n    }"], changeDetection: 0 }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadataAsync(AppShellComponent, () => [import("./navigation-panel.component").then(m => m.NavigationPanelComponent), import("./app-header.component").then(m => m.AppHeaderComponent), import("./bottom-nav.component").then(m => m.BottomNavComponent)], (NavigationPanelComponent, AppHeaderComponent, BottomNavComponent) => { i0.ɵsetClassMetadata(AppShellComponent, [{
         type: Component,
-        args: [{
-                selector: 'app-shell',
-                standalone: true,
-                changeDetection: ChangeDetectionStrategy.OnPush,
-                imports: [
+        args: [{ selector: 'app-shell', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush, imports: [
                     CommonModule,
                     RouterOutlet,
                     AppHeaderComponent,
                     NavigationPanelComponent,
                     BottomNavComponent
-                ],
-                template: `
+                ], template: `
     <div class="min-h-screen h-[100dvh] bg-gray-50 dark:bg-slate-900 flex overflow-hidden relative">
 
       @if (!state.focusMode()) {
@@ -168,13 +163,14 @@ export class AppShellComponent {
                 type="button"
                 (click)="state.clearOfflineState()"
                 class="text-orange-500 hover:text-orange-700 dark:hover:text-orange-300 transition ml-3 shrink-0"
-                title="Đóng">
+                title="Đóng"
+                aria-label="Đóng thông báo mất kết nối">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
           }
 
-          <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20 md:pb-6">
+          <div class="app-content-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <router-outlet></router-outlet>
           </div>
         </div>
@@ -186,8 +182,7 @@ export class AppShellComponent {
         }
       }
     </div>
-  `
-            }]
+  `, styles: ["\n    .app-content-scroll {\n      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));\n    }\n\n    @media (min-width: 768px) {\n      .app-content-scroll {\n        padding-bottom: 1.5rem;\n      }\n    }\n  "] }]
     }], null, null); }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(AppShellComponent, { className: "AppShellComponent", filePath: "src/app/core/layout/app-shell.component.ts", lineNumber: 92 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(AppShellComponent, { className: "AppShellComponent", filePath: "src/app/core/layout/app-shell.component.ts", lineNumber: 104 }); })();
 //# sourceMappingURL=app-shell.component.js.map

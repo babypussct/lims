@@ -1,17 +1,13 @@
 {
-  "title": "Nâng Cấp Bảo Mật Và Cải Thiện Chia Nhóm Mẫu",
+  "title": "Nâng Cấp Độ Chính Xác Quản Lý Chất Chuẩn",
   "highlights": [
-    "Hệ thống bảo mật được thắt chặt: chỉ các nhân sự có thẩm quyền mới được thao tác trên Kết quả, Mẻ phân tích và SOP, đảm bảo an toàn dữ liệu tuyệt đối.",
-    "Tính năng tạo mẻ (SmartBatch) nhận diện chỉ tiêu thông minh và chính xác hơn, tự động đối chiếu các chỉ tiêu cũ bị lệch tên gọi hoặc mã.",
-    "Sửa lỗi tự động điền sai nền mẫu mặc định khi tạo nhóm mẫu mới, giúp kiểm nghiệm viên chủ động phân loại mẫu ngay từ đầu."
+    "Hệ thống quản lý Kho và Chất chuẩn được thắt chặt quy trình mượn, trả và ghi nhận tiêu hao, đảm bảo lượng tồn kho luôn khớp hoàn toàn với lịch sử sử dụng thực tế."
   ],
   "features": [],
   "improvements": [
-    "Giao diện Cấu hình được làm gọn gàng hơn, ẩn bớt các thông tin kỹ thuật không cần thiết đối với người sử dụng.",
-    "Lịch sử hệ thống ghi nhận thời gian chuẩn xác hơn bằng đồng hồ máy chủ, loại bỏ tình trạng lỗi do sai lệch múi giờ trên thiết bị cá nhân."
+    "Nâng cấp độ an toàn khi ghi nhận lượng tiêu hao chất chuẩn. Mọi thay đổi về tồn kho đều được hệ thống tự động đối chiếu và lưu vết chặt chẽ, ngăn chặn các sai sót khi thao tác."
   ],
   "fixes": [
-    "Khắc phục lỗi hệ thống không nhận diện được chỉ tiêu trong các Mẻ phân tích cũ, giúp các chức năng gợi ý SOP và kiểm tra độ phủ hoạt động trơn tru.",
-    "Khắc phục triệt để lỗi từ chối quyền truy cập (Permission Denied) thỉnh thoảng xảy ra khi người dùng gộp các mẻ phân tích thành Mẻ tổng hợp."
+    "Ngăn chặn triệt để các trường hợp thông tin lượng tiêu hao hoặc lịch sử sử dụng chất chuẩn bị cập nhật sai lệch, giúp đảm bảo số liệu Kho luôn chính xác tuyệt đối."
   ]
 }

@@ -159,9 +159,9 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
     if (term) {
         displayReqs = displayReqs.filter(r => 
-            removeAccents(r.standardName.toLowerCase()).includes(term) || 
-            removeAccents(r.requestedByName.toLowerCase()).includes(term) ||
-            (r.lotNumber && removeAccents(r.lotNumber.toLowerCase()).includes(term))
+            removeAccents((r.standardName || '').toLowerCase()).includes(term) ||
+            removeAccents((r.requestedByName || '').toLowerCase()).includes(term) ||
+            removeAccents((r.lotNumber || '').toLowerCase()).includes(term)
         );
     }
     
@@ -487,7 +487,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           } else {
               // Employee -> Pending Admin Receive
               await this.stdService.updateRequestStatus(req.id, 'PENDING_RETURN', { 
-                  totalAmountUsed: data.amount,
+                  reportedAmountUsed: data.amount,
+                  reportedUnit: req.standardDetails?.unit || 'mg',
                   reportedDepleted: data.isDepleted,
                   sopTags: data.sopTags
               });
@@ -512,11 +513,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           if (confirmed) {
               this.isProcessing.set(true);
               try {
-                  const sumLogs = (req.usageLogs || []).reduce((sum, log) => sum + (log.amount_used || 0), 0);
-                  await this.stdService.updateRequestStatus(req.id!, 'IN_PROGRESS', { 
-                      totalAmountUsed: sumLogs,
-                      reportedDepleted: false
-                  });
+                  await this.stdService.updateRequestStatus(req.id!, 'IN_PROGRESS');
                   this.toast.show('Đã hủy báo cáo trả', 'success');
               } catch (e: any) {
                   this.toast.show('Lỗi: ' + e.message, 'error');

@@ -7,7 +7,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { ResultService } from './services/result.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import * as i0 from "@angular/core";
@@ -1534,9 +1534,9 @@ export class ResultListComponent {
                 items: curveRun.items || [],
                 isVirtualMaster: true,
                 childRequestIds: sops.map(r => r.id),
-                timestamp: new Date(),
-                lastUpdated: new Date(),
-                approvedAt: new Date(),
+                timestamp: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
+                approvedAt: serverTimestamp(),
                 user: this.state.getCurrentUserName(),
                 inputs: {
                     ...(curveRun.inputs || {}),
@@ -1583,7 +1583,8 @@ export class ResultListComponent {
                 action: 'CREATE_VIRTUAL_MASTER',
                 details: `Đã tạo mẻ tổng hợp (gộp mẫu) cho ${masterId}`,
                 user: this.state.getCurrentUserName(),
-                timestamp: new Date(),
+                timestamp: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
                 requestId: masterId,
                 sopBasicInfo: {
                     name: curveRun.sopName,

@@ -390,6 +390,9 @@ export class StandardTagCatalogService {
     }
     toCustomOption(item, selectable) {
         const methodName = item.methodName || (item.methodCode ? getVlatMethodName(item.methodCode) : undefined);
+        const seed = item.origin === 'ACCREDITATION_SCOPE'
+            ? VLAT_11669_CHEMICAL_METHOD_TAGS.find(candidate => candidate.id === item.id)
+            : undefined;
         return {
             key: buildTagKey('CUSTOM', item.id),
             label: item.name,
@@ -400,7 +403,10 @@ export class StandardTagCatalogService {
             templateKind: item.templateKind,
             methodCode: item.methodCode,
             methodSeries: item.methodCode ? item.methodCode.slice('NAFI6/'.length).split('.')[0] : undefined,
-            deviceCodes: item.deviceCodes || [],
+            // Seeded accreditation methods are locked catalog entries. Prefer the
+            // reviewed in-app mapping so older Firestore documents with incomplete
+            // deviceCodes cannot make the technique facet/counts stale.
+            deviceCodes: seed?.deviceCodes ? [...seed.deviceCodes] : (item.deviceCodes || []),
             sourceLabCode: item.sourceLabCode,
             sourceDecision: item.sourceDecision,
             sourceValidFrom: item.sourceValidFrom,
@@ -486,7 +492,7 @@ export class StandardTagCatalogService {
                 targetId: targetId || null,
                 timestamp: serverTimestamp(),
                 lastUpdated: serverTimestamp(),
-                user: this.auth.currentUser()?.displayName || 'Hệ thống',
+                user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
             });
         }
         catch (error) {

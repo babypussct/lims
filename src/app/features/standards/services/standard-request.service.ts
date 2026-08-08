@@ -292,37 +292,27 @@ export class StandardRequestService {
           if (updates[key] !== undefined) safeUpdates[key] = updates[key];
         }
       }
-      if (updates.reportedDepleted !== undefined) safeUpdates['reportedDepleted'] = Boolean(updates.reportedDepleted);
-
       if (status === 'PENDING_RETURN') {
-        const reported = normalizeNonNegativeStandardAmount(
-          Number(updates.totalAmountUsed ?? freshRequest.totalAmountUsed ?? 0),
-          stockUnit,
+        const reportedAmount = Number(updates.reportedAmountUsed ?? freshRequest.totalAmountUsed ?? 0);
+        const reportedUnit = String(updates.reportedUnit || stockUnit);
+        const reportedNormalized = normalizeNonNegativeStandardAmount(
+          reportedAmount,
+          reportedUnit,
           stockUnit,
           'Tổng lượng đã dùng'
         );
-        const logged = (freshRequest.usageLogs || [])
-          .filter(log => !log._isDeleted)
-          .reduce((sum, log) => {
-            const normalized = log.normalized_unit === stockUnit && Number.isFinite(log.normalized_amount)
-              ? Number(log.normalized_amount)
-              : getStandardizedAmount(log.amount_used, log.unit || stockUnit, stockUnit);
-            return sum + (normalized !== null && Number.isFinite(normalized) && normalized > 0 ? normalized : 0);
-          }, 0);
-        if (reported + 1e-9 < logged) {
-          throw new Error(`Tổng lượng báo trả không thể nhỏ hơn ${logged} ${stockUnit} đã ghi nhận.`);
+        const previouslyAccounted = Number(freshRequest.totalAmountUsed || 0);
+        if (reportedNormalized + 1e-9 < previouslyAccounted) {
+          throw new Error(`Tổng lượng báo trả không thể nhỏ hơn ${previouslyAccounted} ${stockUnit} đã accounting.`);
         }
-        safeUpdates['totalAmountUsed'] = reported;
-      } else if (status === 'IN_PROGRESS' && freshRequest.status === 'PENDING_RETURN') {
-        safeUpdates['reportedDepleted'] = false;
-        safeUpdates['totalAmountUsed'] = (freshRequest.usageLogs || [])
-          .filter(log => !log._isDeleted)
-          .reduce((sum, log) => {
-            const normalized = log.normalized_unit === stockUnit && Number.isFinite(log.normalized_amount)
-              ? Number(log.normalized_amount)
-              : getStandardizedAmount(log.amount_used, log.unit || stockUnit, stockUnit);
-            return sum + (normalized !== null && Number.isFinite(normalized) && normalized > 0 ? normalized : 0);
-          }, 0);
+        safeUpdates['reportedAmountUsed'] = reportedAmount;
+        safeUpdates['reportedUnit'] = reportedUnit;
+        safeUpdates['reportedDepleted'] = Boolean(updates.reportedDepleted);
+      } else if (status === 'IN_PROGRESS' &&
+        (freshRequest.status === 'PENDING_RETURN' || freshRequest.status === 'PENDING_DEPLETION')) {
+        safeUpdates['reportedAmountUsed'] = deleteField();
+        safeUpdates['reportedUnit'] = deleteField();
+        safeUpdates['reportedDepleted'] = deleteField();
       }
 
       // A normal staff return is allowed to carry an optional, catalog-backed
@@ -549,22 +539,20 @@ export class StandardRequestService {
 
       const stockUnit = stdData.unit || 'mg';
       const currentLogs = (reqData.usageLogs || []).filter(log => !log._isDeleted);
-      const normalizedLogAmounts = currentLogs.map(log => {
-        const normalized = log.normalized_unit === stockUnit && Number.isFinite(log.normalized_amount)
-          ? Number(log.normalized_amount)
-          : getStandardizedAmount(log.amount_used, log.unit || stockUnit, stockUnit);
-        if (normalized === null || !Number.isFinite(normalized) || normalized < 0) {
-          throw new Error(`Nhật ký ${log.id || ''} có đơn vị không tương thích.`);
-        }
-        return normalized;
-      });
-      const previouslyLogged = normalizedLogAmounts.reduce((sum, amount) => sum + amount, 0);
-      const finalUnit = unit || stockUnit;
-      const enteredTotal = amountUsed ?? (reqData.totalAmountUsed || previouslyLogged);
-      const confirmedTotal = normalizeNonNegativeStandardAmount(enteredTotal, finalUnit, stockUnit, 'Tổng lượng đã dùng');
+      const previouslyAccounted = Number(reqData.totalAmountUsed || 0);
+      const enteredTotal = amountUsed ?? reqData.reportedAmountUsed ?? previouslyAccounted;
+      const finalUnit = amountUsed !== undefined
+        ? (unit || stockUnit)
+        : (reqData.reportedAmountUsed !== undefined ? (reqData.reportedUnit || stockUnit) : stockUnit);
+      const confirmedTotal = normalizeNonNegativeStandardAmount(
+        enteredTotal,
+        finalUnit,
+        stockUnit,
+        'Tổng lượng đã dùng'
+      );
       const reconciliation = reconcileStandardReturn(
         stdData.current_amount || 0,
-        normalizedLogAmounts,
+        previouslyAccounted,
         confirmedTotal,
         isDepleted
       );
@@ -602,6 +590,7 @@ export class StandardRequestService {
           timestamp: Date.now(),
           date: new Date().toISOString(),
           user: reqData!.requestedByName || receiverName,
+          userId: reqData!.requestedBy,
           amount_used: normalizedAmount,
           unit: stockUnit,
           normalized_amount: normalizedAmount,

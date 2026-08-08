@@ -8,11 +8,14 @@ import { CalculatorService } from './calculator.service';
 import { buildScopedDeltaKey, DeltaSyncService } from './delta-sync.service';
 import { StatsService } from './stats.service';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
+import { DailyChecklistMaterializerService } from './daily-checklist-materializer.service';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
 import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
+import { getCanonicalId } from '../../features/results/shared/compound-id-resolver';
 import { resolveMetadataSyncToast } from './notification-policy';
+import { getDashboardActivityDataScope } from '../../shared/utils/dashboard-activity';
 import * as i0 from "@angular/core";
 export class StateService {
     clearOfflineState() {
@@ -29,6 +32,7 @@ export class StateService {
         this.targetService = inject(TargetService);
         this.statsService = inject(StatsService);
         this.readMonitor = inject(FirestoreReadMonitor);
+        this.dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
         this.listeners = [];
         this.initGeneration = 0;
         this.globalLogsCache = [];
@@ -77,7 +81,7 @@ export class StateService {
         this.avatarStyle = signal('bottts-neutral');
         // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
         this.usersInfoCache = signal(new Map());
-        this.systemVersion = signal('v26.08.06-b04');
+        this.systemVersion = signal('v26.08.08-b03');
         this.maintenanceMode = signal(false);
         this.maintenanceMessage = signal('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
         this.maintenanceScheduledTime = signal(null);
@@ -93,7 +97,6 @@ export class StateService {
         this.isOffline = signal(false);
         this.offlineSource = signal('');
         // UI STATE
-        this.sidebarOpen = signal(false);
         this.sidebarCollapsed = signal(localStorage.getItem('sidebar_collapsed') !== 'false' // Mặc định: collapsed (trừ khi user đã mở trước đó)
         );
         // --- FOCUS MODE (New Feature) ---
@@ -129,8 +132,6 @@ export class StateService {
             }
         });
     }
-    toggleSidebar() { this.sidebarOpen.update(v => !v); }
-    closeSidebar() { this.sidebarOpen.set(false); }
     toggleSidebarCollapse() {
         this.sidebarCollapsed.update(v => {
             const next = !v;
@@ -209,6 +210,7 @@ export class StateService {
             this._unregisterStdReqListener();
             this._unregisterStdReqListener = undefined;
         }
+        this.clearGlobalActivityLogCache();
         // Giữ singleton còn subscriber ở màn hình khác, nhưng hủy listener mồ côi sau
         // khi quyền/scope thay đổi để tránh tiếp tục tốn reads cho cache không còn dùng.
         this.deltaSync.destroyInactiveSingletons();
@@ -434,7 +436,7 @@ export class StateService {
         addListener(sysMetaSub);
     }
     ensureLogsListener() {
-        if (this.logsSub || !this.auth.currentUser())
+        if (this.logsSub || !this.auth.currentUser() || !this.auth.canViewReports())
             return;
         const initGeneration = this.initGeneration;
         const isCurrentInit = () => initGeneration === this.initGeneration;
@@ -445,6 +447,10 @@ export class StateService {
             maxCacheSize: 200,
             orderByField: 'timestamp',
             orderDirection: 'desc'
+        };
+        this.globalLogsSyncKeys = {
+            cacheKey: logsSyncConfig.cacheKey,
+            cursorKey: logsSyncConfig.cursorKey
         };
         const logSub = this.deltaSync.startSingletonListener(logsSyncConfig, (items) => {
             if (!isCurrentInit())
@@ -506,6 +512,14 @@ export class StateService {
         this.logs.set(logs);
         this.printableLogs.set(logs.filter(l => l.printable === true));
     }
+    clearGlobalActivityLogCache() {
+        const keys = this.globalLogsSyncKeys;
+        if (!keys)
+            return;
+        this.deltaSync.destroySingleton(keys.cacheKey);
+        this.deltaSync.clearCache(keys.cacheKey, keys.cursorKey);
+        this.globalLogsSyncKeys = undefined;
+    }
     getLogTime(log) {
         return timestampToMillis(log.timestamp) ?? 0;
     }
@@ -517,10 +531,14 @@ export class StateService {
         const initGeneration = this.initGeneration;
         const isCurrentInit = () => initGeneration === this.initGeneration;
         const approvedRunsConfig = {
-            cacheKey: buildScopedDeltaKey(`lims_approved_requests_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
-            cursorKey: buildScopedDeltaKey(`lims_approved_requests_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+            // Use a new cache namespace so legacy 100-item caches are never treated as complete history.
+            cacheKey: buildScopedDeltaKey(`lims_approved_requests_all_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+            cursorKey: buildScopedDeltaKey(`lims_approved_requests_all_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
             collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
-            maxCacheSize: 100, // Safe limit for localStorage
+            // Historical consumers must not silently turn "all time" into the latest N requests.
+            // DeltaSync treats Infinity as an unbounded in-memory initial scan and simply skips
+            // persistent cache writes if browser storage cannot hold the full history.
+            maxCacheSize: Number.POSITIVE_INFINITY,
             orderByField: 'approvedAt',
             orderDirection: 'desc'
         };
@@ -579,10 +597,21 @@ export class StateService {
         this.listeners.push(this.usersInfoSub);
     }
     ensureActivityFeedListeners() {
-        this.ensureLogsListener();
-        if (!this.auth.canViewReports()) {
+        const scope = getDashboardActivityDataScope(this.auth.canViewReports());
+        if (scope === 'global') {
+            if (this.personalLogsSub)
+                this.personalLogsSub();
+            this.personalLogsCache = [];
+            this.ensureLogsListener();
+        }
+        else {
+            if (this.logsSub)
+                this.logsSub();
+            this.clearGlobalActivityLogCache();
+            this.globalLogsCache = [];
             this.ensurePersonalLogsListener();
         }
+        this.publishActivityLogs();
         this.ensureUserInfoCacheListener();
     }
     async loadConfig(initGeneration) {
@@ -909,7 +938,10 @@ export class StateService {
             console.warn("Failed to write maintenance audit log:", e);
         }
     }
-    getCurrentUserName() { return this.auth.currentUser()?.displayName || 'Người dùng không xác định'; }
+    getCurrentUserName() {
+        const user = this.auth.currentUser();
+        return user?.displayName || user?.email || user?.uid || 'Người dùng không xác định';
+    }
     // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndQueuePrint, approveRequest, revokeApproval, etc.)
     // Omitted for brevity as no logic changed there
     getItemsToDeduct(calculatedItems) {
@@ -968,7 +1000,10 @@ export class StateService {
         return {
             sopVersion: sop.version || 1,
             sopRef: sop.ref || '',
-            targetNames: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name]))
+            targetNames: Object.fromEntries((sop.targets || []).map(target => [
+                getCanonicalId(target.name || target.id),
+                target.name
+            ]))
         };
     }
     async buildTargetScopeTraceability(sop, formInputs) {
@@ -984,7 +1019,7 @@ export class StateService {
             fallbackTargetIds: formInputs.targetIds,
             sopId: sop.id,
             sopVersion: sop.version || 1,
-            sopTargetSnapshot: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name])),
+            sopTargetSnapshot: this.buildSopTraceability(sop).targetNames,
             availableGroups,
             explicitGroupId: formInputs.explicitGroupId
         }));
@@ -1076,6 +1111,7 @@ export class StateService {
         const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+        let dailyProjection = null;
         try {
             const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
             await runTransaction(this.fb.db, async (transaction) => {
@@ -1117,6 +1153,10 @@ export class StateService {
                 if (formInputs.sampleDescriptionMap)
                     reqData.sampleDescriptionMap = formInputs.sampleDescriptionMap;
                 transaction.set(reqRef, sanitizeForFirebase(reqData));
+                dailyProjection = {
+                    id: reqRef.id,
+                    ...reqData
+                };
                 const printData = {
                     sop,
                     inputs: formInputs,
@@ -1129,7 +1169,8 @@ export class StateService {
                     ...sanitizeForFirebase(printData),
                     createdAt: serverTimestamp(),
                     lastUpdated: serverTimestamp(),
-                    createdBy: this.getCurrentUserName()
+                    createdBy: this.getCurrentUserName(),
+                    createdByUid: this.auth.currentUser()?.uid || ''
                 });
                 transaction.set(logRef, sanitizeForFirebase({
                     action: 'DIRECT_APPROVE',
@@ -1147,6 +1188,9 @@ export class StateService {
                     }
                 }));
             });
+            if (dailyProjection) {
+                await this.dailyChecklistMaterializer.materializeRequestBestEffort(dailyProjection, 'directApproveAndQueuePrint');
+            }
             if (options.showSuccessToast !== false) {
                 this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
             }
@@ -1220,7 +1264,9 @@ export class StateService {
                 printJobRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs')),
                 logRef: doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', `TRC-${planTimestamp}-${index}-${Math.floor(Math.random() * 1000)}`)
             })));
+            let dailyProjections = [];
             await runTransaction(this.fb.db, async (transaction) => {
+                dailyProjections = [];
                 const deductionEntries = Array.from(deductions.entries());
                 const inventoryRefs = deductionEntries.map(([name]) => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', name));
                 const inventorySnapshots = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
@@ -1264,6 +1310,7 @@ export class StateService {
                     if (item.formInputs.sampleDescriptionMap)
                         reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
                     transaction.set(item.requestRef, sanitizeForFirebase(reqData));
+                    dailyProjections.push({ id: item.requestRef.id, ...reqData });
                     const printData = {
                         sop: item.sop,
                         inputs: item.formInputs,
@@ -1276,7 +1323,8 @@ export class StateService {
                         ...sanitizeForFirebase(printData),
                         createdAt: serverTimestamp(),
                         lastUpdated: serverTimestamp(),
-                        createdBy: this.getCurrentUserName()
+                        createdBy: this.getCurrentUserName(),
+                        createdByUid: this.auth.currentUser()?.uid || ''
                     });
                     transaction.set(item.logRef, sanitizeForFirebase({
                         action: 'DIRECT_APPROVE_PLAN',
@@ -1296,6 +1344,7 @@ export class StateService {
                     }));
                 });
             });
+            await this.dailyChecklistMaterializer.materializeRequestsBestEffort(dailyProjections, 'directApproveBatchPlan');
             prepared.forEach(item => {
                 let samples = 1;
                 let qcs = 0;
@@ -1328,6 +1377,19 @@ export class StateService {
         const currentSop = this.sops().find(sop => sop.id === req.sopId);
         try {
             const targetScopeSnapshots = await this.buildLegacyTargetScopeTraceability(req, currentSop);
+            const approvedProjection = {
+                ...req,
+                status: 'approved',
+                analysisDate: req.analysisDate,
+                inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
+                approvedAt: serverTimestamp(),
+                targetScopeSnapshots,
+                ...(currentSop ? {
+                    sopVersion: req.sopVersion ?? currentSop.version ?? 1,
+                    sopRef: req.sopRef ?? currentSop.ref ?? '',
+                    targetNames: req.targetNames ?? this.buildSopTraceability(currentSop).targetNames
+                } : {})
+            };
             await runTransaction(this.fb.db, async (transaction) => {
                 const invRefs = req.items.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
                 const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
@@ -1397,7 +1459,8 @@ export class StateService {
                         ...sanitizeForFirebase(printData),
                         createdAt: serverTimestamp(),
                         lastUpdated: serverTimestamp(),
-                        createdBy: this.getCurrentUserName()
+                        createdBy: this.getCurrentUserName(),
+                        createdByUid: this.auth.currentUser()?.uid || ''
                     });
                     transaction.set(logRef, sanitizeForFirebase({
                         action: 'APPROVE_REQUEST',
@@ -1421,6 +1484,7 @@ export class StateService {
                     }));
                 }
             });
+            await this.dailyChecklistMaterializer.materializeRequestBestEffort(approvedProjection, 'approveRequest');
             let samples = 1;
             let qcs = 0;
             if (req.sampleList && req.sampleList.length > 0)
@@ -1476,6 +1540,7 @@ export class StateService {
                     requestId: req.id
                 }));
             });
+            await this.dailyChecklistMaterializer.deleteEntryBestEffort(req.analysisDate, req.id, 'revokeApproval');
             let samples = 1;
             let qcs = 0;
             if (req.sampleList && req.sampleList.length > 0)
@@ -1485,7 +1550,7 @@ export class StateService {
             if (req.inputs?.['n_qc'])
                 qcs = Number(req.inputs['n_qc']);
             const reqDate = this.getStatsDateForRequest(req, new Date());
-            this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+            this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs, true).catch(e => console.error(e));
             this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
         }
         catch (e) {
@@ -1507,6 +1572,19 @@ export class StateService {
             const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
             const previousPrintableLogDocs = (await getDocs(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), where('requestId', '==', req.id), where('printable', '==', true)))).docs;
             const editDiff = this.buildRequestEditDiff(req, formInputs, newItems);
+            const updatedProjection = {
+                ...req,
+                items: newItems,
+                inputs: formInputs,
+                margin: formInputs.safetyMargin || 0,
+                analysisDate: formInputs.analysisDate,
+                sampleList: formInputs.sampleList || [],
+                targetIds: formInputs.targetIds || [],
+                sampleTargetMap: formInputs.sampleTargetMap || {},
+                sampleDescriptionMap: formInputs.sampleDescriptionMap,
+                targetScopeSnapshots,
+                ...this.buildSopTraceability(sop)
+            };
             // Calculate inventory diff
             const inventoryDiff = {};
             // Add back old items (positive diff)
@@ -1601,7 +1679,8 @@ export class StateService {
                     ...sanitizeForFirebase(printData),
                     createdAt: serverTimestamp(),
                     lastUpdated: serverTimestamp(),
-                    createdBy: this.getCurrentUserName()
+                    createdBy: this.getCurrentUserName(),
+                    createdByUid: this.auth.currentUser()?.uid || ''
                 });
                 transaction.set(logRef, sanitizeForFirebase({
                     action: 'EDIT_REQUEST',
@@ -1621,6 +1700,7 @@ export class StateService {
                     }
                 }));
             });
+            await this.dailyChecklistMaterializer.syncRequestBestEffort(updatedProjection, req.analysisDate, 'updateApprovedRequest');
             let oldSamples = 1;
             let oldQcs = 0;
             if (req.sampleList && req.sampleList.length > 0)
@@ -1637,15 +1717,21 @@ export class StateService {
                 newSamples = Number(formInputs['n_sample']);
             if (formInputs['n_qc'])
                 newQcs = Number(formInputs['n_qc']);
-            const sampleDelta = newSamples - oldSamples;
-            const qcDelta = newQcs - oldQcs;
-            if (sampleDelta !== 0) {
-                const reqDate = this.getStatsDateForRequest(req, new Date());
-                this.statsService.incrementStats(reqDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
+            const oldStatsDate = this.getStatsDateForRequest(req, new Date());
+            const newStatsDate = this.getStatsDateForRequest({ analysisDate: formInputs.analysisDate }, new Date());
+            if (oldStatsDate.toDateString() !== newStatsDate.toDateString()) {
+                this.statsService.incrementStats(oldStatsDate, req.sopId, req.sopName, oldSamples, 1, oldQcs, true).catch(e => console.error(e));
+                this.statsService.incrementStats(newStatsDate, sop.id, sop.name, newSamples, 1, newQcs).catch(e => console.error(e));
             }
-            if (qcDelta !== 0) {
-                const reqDate = this.getStatsDateForRequest(req, new Date());
-                this.statsService.incrementStats(reqDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+            else {
+                const sampleDelta = newSamples - oldSamples;
+                const qcDelta = newQcs - oldQcs;
+                if (sampleDelta !== 0) {
+                    this.statsService.incrementStats(oldStatsDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
+                }
+                if (qcDelta !== 0) {
+                    this.statsService.incrementStats(oldStatsDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+                }
             }
             this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');
             return true;
@@ -1692,6 +1778,7 @@ export class StateService {
             return;
         try {
             await updateDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id), { status: 'rejected', rejectedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+            await this.dailyChecklistMaterializer.deleteEntryBestEffort(req.analysisDate, req.id, 'rejectRequest');
             this.toast.show('Đã từ chối', 'info');
         }
         catch (e) {

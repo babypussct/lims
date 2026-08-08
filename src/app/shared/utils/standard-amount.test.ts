@@ -53,7 +53,7 @@ test('accepts zero only for non-negative confirmation values', () => {
 });
 
 test('reconciles only the unlogged delta on return', () => {
-  assert.deepEqual(reconcileStandardReturn(900, [40, 60], 120, false), {
+  assert.deepEqual(reconcileStandardReturn(900, 100, 120, false), {
     previouslyLogged: 100,
     confirmedUsed: 120,
     adjustmentAmount: 20,
@@ -64,7 +64,7 @@ test('reconciles only the unlogged delta on return', () => {
 });
 
 test('accounts for remaining stock as disposal when depleted', () => {
-  const result = reconcileStandardReturn(900, [100], 120, true);
+  const result = reconcileStandardReturn(900, 100, 120, true);
   assert.equal(result.adjustmentAmount, 20);
   assert.equal(result.disposalAmount, 880);
   assert.equal(result.remainingAmount, 0);
@@ -72,6 +72,6 @@ test('accounts for remaining stock as disposal when depleted', () => {
 });
 
 test('rejects return totals below logs and deltas above stock', () => {
-  assert.throws(() => reconcileStandardReturn(10, [5], 4, false), /không thể nhỏ hơn/);
-  assert.throws(() => reconcileStandardReturn(10, [5], 20, false), /Không đủ lượng tồn kho/);
+  assert.throws(() => reconcileStandardReturn(10, 5, 4, false), /không thể nhỏ hơn/);
+  assert.throws(() => reconcileStandardReturn(10, 5, 20, false), /Không đủ lượng tồn kho/);
 });

@@ -40,7 +40,7 @@ function StandardsListViewComponent_Conditional_19_Template(rf, ctx) { if (rf & 
     i0.ɵɵrepeater(i0.ɵɵpureFunction0(0, _c0));
 } }
 function StandardsListViewComponent_Conditional_20_For_1_Conditional_7_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 30)(1, "span", 69);
+    i0.ɵɵelementStart(0, "div", 30)(1, "span", 71);
     i0.ɵɵtext(2, "Synonyms:");
     i0.ɵɵelementEnd();
     i0.ɵɵtext(3);
@@ -62,7 +62,7 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_9_Template(
 } }
 function StandardsListViewComponent_Conditional_20_For_1_Conditional_10_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span", 33);
-    i0.ɵɵelement(1, "i", 70);
+    i0.ɵɵelement(1, "i", 72);
     i0.ɵɵtext(2);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -72,29 +72,53 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_10_Template
 } }
 function StandardsListViewComponent_Conditional_20_For_1_For_12_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span", 34);
-    i0.ɵɵelement(1, "i", 71);
-    i0.ɵɵtext(2);
-    i0.ɵɵelementEnd();
+    i0.ɵɵelement(1, "i", 73);
+    i0.ɵɵelementStart(2, "span", 74);
+    i0.ɵɵtext(3);
+    i0.ɵɵelementEnd()();
 } if (rf & 2) {
     const method_r4 = ctx.$implicit;
-    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("title", method_r4);
+    i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(method_r4);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_For_14_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_13_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span", 35);
-    i0.ɵɵelement(1, "i", 72);
-    i0.ɵɵtext(2);
+    i0.ɵɵtext(1);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
+    const std_r2 = i0.ɵɵnextContext().$implicit;
+    i0.ɵɵproperty("title", (std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(2, _c2)).slice(2).join(", "));
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1("+", (std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(3, _c2)).length - 2, "");
+} }
+function StandardsListViewComponent_Conditional_20_For_1_For_15_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "span", 36);
+    i0.ɵɵelement(1, "i", 75);
+    i0.ɵɵelementStart(2, "span", 74);
+    i0.ɵɵtext(3);
+    i0.ɵɵelementEnd()();
+} if (rf & 2) {
     const device_r5 = ctx.$implicit;
-    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("title", device_r5);
+    i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(device_r5);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_27_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "span", 39);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_16_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "span", 37);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const std_r2 = i0.ɵɵnextContext().$implicit;
+    i0.ɵɵproperty("title", (std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(2, _c2)).slice(2).join(", "));
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1("+", (std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(3, _c2)).length - 2, "");
+} }
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_29_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "span", 41);
     i0.ɵɵtext(1, "CAS:");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(2, "span", 73);
+    i0.ɵɵelementStart(2, "span", 76);
     i0.ɵɵtext(3);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -102,10 +126,10 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_27_Template
     i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(std_r2.cas_number);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_29_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_31_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span");
     i0.ɵɵtext(1, "Pur: ");
-    i0.ɵɵelementStart(2, "b", 74);
+    i0.ɵɵelementStart(2, "b", 77);
     i0.ɵɵtext(3);
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -113,10 +137,10 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_29_Template
     i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(std_r2.purity);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_30_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_32_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span");
     i0.ɵɵtext(1, "Pack: ");
-    i0.ɵɵelementStart(2, "b", 74);
+    i0.ɵɵelementStart(2, "b", 77);
     i0.ɵɵtext(3);
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -124,10 +148,10 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_30_Template
     i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(std_r2.pack_size);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_For_41_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 48);
-    i0.ɵɵelement(1, "i", 75);
-    i0.ɵɵelementStart(2, "span", 76);
+function StandardsListViewComponent_Conditional_20_For_1_For_43_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 50);
+    i0.ɵɵelement(1, "i", 78);
+    i0.ɵɵelementStart(2, "span", 79);
     i0.ɵɵtext(3);
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -138,12 +162,12 @@ function StandardsListViewComponent_Conditional_20_For_1_For_41_Template(rf, ctx
     i0.ɵɵadvance(2);
     i0.ɵɵtextInterpolate(info_r6.text);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_42_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 49);
-    i0.ɵɵelement(1, "i", 77);
-    i0.ɵɵelementStart(2, "span", 78);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_44_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 51);
+    i0.ɵɵelement(1, "i", 80);
+    i0.ɵɵelementStart(2, "span", 81);
     i0.ɵɵtext(3, "Nh\u1EADn: ");
-    i0.ɵɵelementStart(4, "b", 74);
+    i0.ɵɵelementStart(4, "b", 77);
     i0.ɵɵtext(5);
     i0.ɵɵpipe(6, "date");
     i0.ɵɵelementEnd()()();
@@ -152,27 +176,27 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_42_Template
     i0.ɵɵadvance(5);
     i0.ɵɵtextInterpolate(i0.ɵɵpipeBind2(6, 1, std_r2.received_date, "dd/MM/yyyy"));
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_51_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_53_Template(rf, ctx) { if (rf & 1) {
     const _r7 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 79);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_51_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r7); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openCoaPreview.emit({ url: std_r2.certificate_ref, event: $event })); });
-    i0.ɵɵelement(1, "i", 80);
+    i0.ɵɵelementStart(0, "button", 82);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_53_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r7); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openCoaPreview.emit({ url: std_r2.certificate_ref, event: $event })); });
+    i0.ɵɵelement(1, "i", 83);
     i0.ɵɵtext(2, " CoA");
     i0.ɵɵelementEnd();
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Conditional_1_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelement(0, "i", 82);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelement(0, "i", 85);
     i0.ɵɵtext(1, " \u0110ang upload... ");
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Conditional_2_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelement(0, "i", 83);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Conditional_2_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelement(0, "i", 86);
     i0.ɵɵtext(1, " Upload CoA ");
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Template(rf, ctx) { if (rf & 1) {
     const _r8 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 81);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r8); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.triggerQuickDriveUpload.emit({ std: std_r2, event: $event })); });
-    i0.ɵɵtemplate(1, StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Conditional_1_Template, 2, 0)(2, StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Conditional_2_Template, 2, 0);
+    i0.ɵɵelementStart(0, "button", 84);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r8); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.triggerQuickDriveUpload.emit({ std: std_r2, event: $event })); });
+    i0.ɵɵtemplate(1, StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Conditional_1_Template, 2, 0)(2, StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Conditional_2_Template, 2, 0);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const std_r2 = i0.ɵɵnextContext().$implicit;
@@ -181,9 +205,9 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Template
     i0.ɵɵadvance();
     i0.ɵɵconditional(ctx_r2.quickUploadStdId() === std_r2.id ? 1 : 2);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_53_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 56);
-    i0.ɵɵelement(1, "i", 84);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_55_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 58);
+    i0.ɵɵelement(1, "i", 87);
     i0.ɵɵtext(2);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -191,11 +215,11 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_53_Template
     i0.ɵɵadvance(2);
     i0.ɵɵtextInterpolate1(" ", std_r2.contract_ref, "");
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_57_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 59)(1, "div", 76);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_59_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 61)(1, "div", 79);
     i0.ɵɵtext(2, "Ng\u01B0\u1EDDi gi\u1EEF:");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(3, "div", 85);
+    i0.ɵɵelementStart(3, "div", 88);
     i0.ɵɵtext(4);
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -205,81 +229,81 @@ function StandardsListViewComponent_Conditional_20_For_1_Conditional_57_Template
     i0.ɵɵadvance();
     i0.ɵɵtextInterpolate(std_r2.current_holder);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_0_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "button", 86);
-    i0.ɵɵelement(1, "i", 89);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_0_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "button", 89);
+    i0.ɵɵelement(1, "i", 92);
     i0.ɵɵelementEnd();
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_1_Template(rf, ctx) { if (rf & 1) {
     const _r9 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 90);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_1_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r9); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openAssignModal.emit({ std: std_r2, isAssign: true })); });
-    i0.ɵɵelement(1, "i", 91);
+    i0.ɵɵelementStart(0, "button", 93);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_1_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r9); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openAssignModal.emit({ std: std_r2, isAssign: true })); });
+    i0.ɵɵelement(1, "i", 94);
     i0.ɵɵelementEnd();
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_2_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_2_Template(rf, ctx) { if (rf & 1) {
     const _r10 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 92);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_2_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r10); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openAssignModal.emit({ std: std_r2, isAssign: false })); });
-    i0.ɵɵelement(1, "i", 91);
+    i0.ɵɵelementStart(0, "button", 95);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_2_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r10); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openAssignModal.emit({ std: std_r2, isAssign: false })); });
+    i0.ɵɵelement(1, "i", 94);
     i0.ɵɵelementEnd();
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵtemplate(0, StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_0_Template, 2, 0, "button", 86)(1, StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_1_Template, 2, 0, "button", 87)(2, StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Conditional_2_Template, 2, 0, "button", 88);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵtemplate(0, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_0_Template, 2, 0, "button", 89)(1, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_1_Template, 2, 0, "button", 90)(2, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_2_Template, 2, 0, "button", 91);
 } if (rf & 2) {
     const std_r2 = i0.ɵɵnextContext().$implicit;
     const ctx_r2 = i0.ɵɵnextContext(2);
     i0.ɵɵconditional(std_r2.has_pending_request ? 0 : ctx_r2.canAssignStandards() ? 1 : ctx_r2.canRequestStandards() ? 2 : -1);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_62_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_64_Template(rf, ctx) { if (rf & 1) {
     const _r11 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 93);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_62_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r11); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.goToReturn.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 94);
-    i0.ɵɵelementEnd();
-} }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_0_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "button", 95);
+    i0.ɵɵelementStart(0, "button", 96);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_64_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r11); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.goToReturn.emit(std_r2)); });
     i0.ɵɵelement(1, "i", 97);
     i0.ɵɵelementEnd();
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_1_Template(rf, ctx) { if (rf & 1) {
-    const _r12 = i0.ɵɵgetCurrentView();
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Conditional_0_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "button", 98);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_1_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r12); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openPurchaseRequestModal.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 99);
+    i0.ɵɵelement(1, "i", 100);
     i0.ɵɵelementEnd();
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵtemplate(0, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_0_Template, 2, 0, "button", 95)(1, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Conditional_1_Template, 2, 0, "button", 96);
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+    const _r12 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "button", 101);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Conditional_1_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r12); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openPurchaseRequestModal.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 102);
+    i0.ɵɵelementEnd();
+} }
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵtemplate(0, StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Conditional_0_Template, 2, 0, "button", 98)(1, StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Conditional_1_Template, 2, 0, "button", 99);
 } if (rf & 2) {
     const std_r2 = i0.ɵɵnextContext().$implicit;
     const ctx_r2 = i0.ɵɵnextContext(2);
     i0.ɵɵconditional(std_r2.restock_requested ? 0 : ctx_r2.canRequestStandards() || ctx_r2.canAssignStandards() ? 1 : -1);
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_64_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_66_Template(rf, ctx) { if (rf & 1) {
     const _r13 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 100);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_64_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r13); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openPrintModal.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 101);
+    i0.ɵɵelementStart(0, "button", 103);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_66_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r13); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openPrintModal.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 104);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     i0.ɵɵproperty("appLockPermission", "standard_edit");
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_68_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_70_Template(rf, ctx) { if (rf & 1) {
     const _r14 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 102);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_68_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r14); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openEditModal.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 103);
+    i0.ɵɵelementStart(0, "button", 105);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_70_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r14); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openEditModal.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 106);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     i0.ɵɵproperty("appLockPermission", "standard_edit");
 } }
-function StandardsListViewComponent_Conditional_20_For_1_Conditional_69_Template(rf, ctx) { if (rf & 1) {
+function StandardsListViewComponent_Conditional_20_For_1_Conditional_71_Template(rf, ctx) { if (rf & 1) {
     const _r15 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 104);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_69_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r15); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openBackfillModal.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 105);
+    i0.ɵɵelementStart(0, "button", 107);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Conditional_71_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r15); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.openBackfillModal.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 108);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     i0.ɵɵproperty("appLockPermission", "standard_edit");
@@ -296,75 +320,77 @@ function StandardsListViewComponent_Conditional_20_For_1_Template(rf, ctx) { if 
     i0.ɵɵtemplate(7, StandardsListViewComponent_Conditional_20_For_1_Conditional_7_Template, 4, 2, "div", 30);
     i0.ɵɵelementStart(8, "div", 31);
     i0.ɵɵtemplate(9, StandardsListViewComponent_Conditional_20_For_1_Conditional_9_Template, 2, 1, "span", 32)(10, StandardsListViewComponent_Conditional_20_For_1_Conditional_10_Template, 3, 1, "span", 33);
-    i0.ɵɵrepeaterCreate(11, StandardsListViewComponent_Conditional_20_For_1_For_12_Template, 3, 1, "span", 34, i0.ɵɵrepeaterTrackByIdentity);
-    i0.ɵɵrepeaterCreate(13, StandardsListViewComponent_Conditional_20_For_1_For_14_Template, 3, 1, "span", 35, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵrepeaterCreate(11, StandardsListViewComponent_Conditional_20_For_1_For_12_Template, 4, 2, "span", 34, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵtemplate(13, StandardsListViewComponent_Conditional_20_For_1_Conditional_13_Template, 2, 4, "span", 35);
+    i0.ɵɵrepeaterCreate(14, StandardsListViewComponent_Conditional_20_For_1_For_15_Template, 4, 2, "span", 36, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵtemplate(16, StandardsListViewComponent_Conditional_20_For_1_Conditional_16_Template, 2, 4, "span", 37);
     i0.ɵɵelementEnd()()();
-    i0.ɵɵelementStart(15, "td", 36)(16, "div", 37);
-    i0.ɵɵtext(17);
+    i0.ɵɵelementStart(17, "td", 38)(18, "div", 39);
+    i0.ɵɵtext(19);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(18, "div", 38)(19, "span", 39);
-    i0.ɵɵtext(20, "LOT:");
+    i0.ɵɵelementStart(20, "div", 40)(21, "span", 41);
+    i0.ɵɵtext(22, "LOT:");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(21, "span", 40);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Template_span_click_21_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.copyText.emit({ text: std_r2.lot_number || "", event: $event })); });
-    i0.ɵɵtext(22);
+    i0.ɵɵelementStart(23, "span", 42);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Template_span_click_23_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.copyText.emit({ text: std_r2.lot_number || "", event: $event })); });
+    i0.ɵɵtext(24);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(23, "span", 39);
-    i0.ɵɵtext(24, "CODE:");
+    i0.ɵɵelementStart(25, "span", 41);
+    i0.ɵɵtext(26, "CODE:");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(25, "span", 40);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Template_span_click_25_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.copyText.emit({ text: std_r2.product_code || "", event: $event })); });
-    i0.ɵɵtext(26);
+    i0.ɵɵelementStart(27, "span", 42);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Template_span_click_27_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.copyText.emit({ text: std_r2.product_code || "", event: $event })); });
+    i0.ɵɵtext(28);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(27, StandardsListViewComponent_Conditional_20_For_1_Conditional_27_Template, 4, 1);
+    i0.ɵɵtemplate(29, StandardsListViewComponent_Conditional_20_For_1_Conditional_29_Template, 4, 1);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(28, "div", 41);
-    i0.ɵɵtemplate(29, StandardsListViewComponent_Conditional_20_For_1_Conditional_29_Template, 4, 1, "span")(30, StandardsListViewComponent_Conditional_20_For_1_Conditional_30_Template, 4, 1, "span");
+    i0.ɵɵelementStart(30, "div", 43);
+    i0.ɵɵtemplate(31, StandardsListViewComponent_Conditional_20_For_1_Conditional_31_Template, 4, 1, "span")(32, StandardsListViewComponent_Conditional_20_For_1_Conditional_32_Template, 4, 1, "span");
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(31, "td", 36)(32, "div", 42)(33, "span", 43);
-    i0.ɵɵtext(34);
-    i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(35, "span", 44);
+    i0.ɵɵelementStart(33, "td", 38)(34, "div", 44)(35, "span", 45);
     i0.ɵɵtext(36);
-    i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(37, "div", 45);
-    i0.ɵɵelement(38, "div", 46);
     i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(37, "span", 46);
+    i0.ɵɵtext(38);
+    i0.ɵɵelementEnd()();
     i0.ɵɵelementStart(39, "div", 47);
-    i0.ɵɵrepeaterCreate(40, StandardsListViewComponent_Conditional_20_For_1_For_41_Template, 4, 7, "div", 48, i0.ɵɵrepeaterTrackByIndex);
+    i0.ɵɵelement(40, "div", 48);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(42, StandardsListViewComponent_Conditional_20_For_1_Conditional_42_Template, 7, 4, "div", 49);
+    i0.ɵɵelementStart(41, "div", 49);
+    i0.ɵɵrepeaterCreate(42, StandardsListViewComponent_Conditional_20_For_1_For_43_Template, 4, 7, "div", 50, i0.ɵɵrepeaterTrackByIndex);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(43, "td", 36)(44, "div", 50)(45, "div", 51);
-    i0.ɵɵtext(46);
-    i0.ɵɵpipe(47, "date");
+    i0.ɵɵtemplate(44, StandardsListViewComponent_Conditional_20_For_1_Conditional_44_Template, 7, 4, "div", 51);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(48, "div", 52);
-    i0.ɵɵtext(49);
+    i0.ɵɵelementStart(45, "td", 38)(46, "div", 52)(47, "div", 53);
+    i0.ɵɵtext(48);
+    i0.ɵɵpipe(49, "date");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(50, "div", 54);
+    i0.ɵɵtext(51);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(50, "div", 53);
-    i0.ɵɵtemplate(51, StandardsListViewComponent_Conditional_20_For_1_Conditional_51_Template, 3, 0, "button", 54)(52, StandardsListViewComponent_Conditional_20_For_1_Conditional_52_Template, 3, 2, "button", 55)(53, StandardsListViewComponent_Conditional_20_For_1_Conditional_53_Template, 3, 1, "div", 56);
+    i0.ɵɵelementStart(52, "div", 55);
+    i0.ɵɵtemplate(53, StandardsListViewComponent_Conditional_20_For_1_Conditional_53_Template, 3, 0, "button", 56)(54, StandardsListViewComponent_Conditional_20_For_1_Conditional_54_Template, 3, 2, "button", 57)(55, StandardsListViewComponent_Conditional_20_For_1_Conditional_55_Template, 3, 1, "div", 58);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(54, "td", 57)(55, "span", 58);
-    i0.ɵɵtext(56);
+    i0.ɵɵelementStart(56, "td", 59)(57, "span", 60);
+    i0.ɵɵtext(58);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(57, StandardsListViewComponent_Conditional_20_For_1_Conditional_57_Template, 5, 2, "div", 59);
+    i0.ɵɵtemplate(59, StandardsListViewComponent_Conditional_20_For_1_Conditional_59_Template, 5, 2, "div", 61);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(58, "td", 57)(59, "div", 60)(60, "div", 61);
-    i0.ɵɵtemplate(61, StandardsListViewComponent_Conditional_20_For_1_Conditional_61_Template, 3, 1)(62, StandardsListViewComponent_Conditional_20_For_1_Conditional_62_Template, 2, 0, "button", 62)(63, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Template, 2, 1)(64, StandardsListViewComponent_Conditional_20_For_1_Conditional_64_Template, 2, 1, "button", 63);
+    i0.ɵɵelementStart(60, "td", 59)(61, "div", 62)(62, "div", 63);
+    i0.ɵɵtemplate(63, StandardsListViewComponent_Conditional_20_For_1_Conditional_63_Template, 3, 1)(64, StandardsListViewComponent_Conditional_20_For_1_Conditional_64_Template, 2, 0, "button", 64)(65, StandardsListViewComponent_Conditional_20_For_1_Conditional_65_Template, 2, 1)(66, StandardsListViewComponent_Conditional_20_For_1_Conditional_66_Template, 2, 1, "button", 65);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(65, "div", 64)(66, "button", 65);
-    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Template_button_click_66_listener() { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.viewHistory.emit(std_r2)); });
-    i0.ɵɵelement(67, "i", 66);
+    i0.ɵɵelementStart(67, "div", 66)(68, "button", 67);
+    i0.ɵɵlistener("click", function StandardsListViewComponent_Conditional_20_For_1_Template_button_click_68_listener() { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.viewHistory.emit(std_r2)); });
+    i0.ɵɵelement(69, "i", 68);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(68, StandardsListViewComponent_Conditional_20_For_1_Conditional_68_Template, 2, 1, "button", 67)(69, StandardsListViewComponent_Conditional_20_For_1_Conditional_69_Template, 2, 1, "button", 68);
+    i0.ɵɵtemplate(70, StandardsListViewComponent_Conditional_20_For_1_Conditional_70_Template, 2, 1, "button", 69)(71, StandardsListViewComponent_Conditional_20_For_1_Conditional_71_Template, 2, 1, "button", 70);
     i0.ɵɵelementEnd()()()();
 } if (rf & 2) {
-    let tmp_38_0;
-    let tmp_43_0;
+    let tmp_40_0;
+    let tmp_45_0;
     const std_r2 = ctx.$implicit;
     const ctx_r2 = i0.ɵɵnextContext(2);
-    i0.ɵɵproperty("ngClass", i0.ɵɵpureFunction2(41, _c1, ctx_r2.selectedIds().has(std_r2.id), std_r2.status === "DEPLETED" || std_r2.current_amount <= 0));
+    i0.ɵɵproperty("ngClass", i0.ɵɵpureFunction2(43, _c1, ctx_r2.selectedIds().has(std_r2.id), std_r2.status === "DEPLETED" || std_r2.current_amount <= 0));
     i0.ɵɵadvance(2);
     i0.ɵɵproperty("checked", ctx_r2.selectedIds().has(std_r2.id));
     i0.ɵɵadvance(3);
@@ -378,10 +404,14 @@ function StandardsListViewComponent_Conditional_20_For_1_Template(rf, ctx) { if 
     i0.ɵɵadvance();
     i0.ɵɵconditional(std_r2.location ? 10 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵrepeater((std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(44, _c2)).slice(0, 4));
+    i0.ɵɵrepeater((std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(46, _c2)).slice(0, 2));
     i0.ɵɵadvance(2);
-    i0.ɵɵrepeater(std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(45, _c2));
-    i0.ɵɵadvance(3);
+    i0.ɵɵconditional((std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(47, _c2)).length > 2 ? 13 : -1);
+    i0.ɵɵadvance();
+    i0.ɵɵrepeater((std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(48, _c2)).slice(0, 2));
+    i0.ɵɵadvance(2);
+    i0.ɵɵconditional((std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(49, _c2)).length > 2 ? 16 : -1);
+    i0.ɵɵadvance(2);
     i0.ɵɵproperty("title", std_r2.manufacturer);
     i0.ɵɵadvance();
     i0.ɵɵtextInterpolate(std_r2.manufacturer || "N/A");
@@ -390,11 +420,11 @@ function StandardsListViewComponent_Conditional_20_For_1_Template(rf, ctx) { if 
     i0.ɵɵadvance(4);
     i0.ɵɵtextInterpolate(std_r2.product_code || "-");
     i0.ɵɵadvance();
-    i0.ɵɵconditional(std_r2.cas_number ? 27 : -1);
+    i0.ɵɵconditional(std_r2.cas_number ? 29 : -1);
     i0.ɵɵadvance(2);
-    i0.ɵɵconditional(std_r2.purity ? 29 : -1);
+    i0.ɵɵconditional(std_r2.purity ? 31 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵconditional(std_r2.pack_size ? 30 : -1);
+    i0.ɵɵconditional(std_r2.pack_size ? 32 : -1);
     i0.ɵɵadvance(4);
     i0.ɵɵtextInterpolate(ctx_r2.formatNum(std_r2.current_amount));
     i0.ɵɵadvance(2);
@@ -405,41 +435,41 @@ function StandardsListViewComponent_Conditional_20_For_1_Template(rf, ctx) { if 
     i0.ɵɵadvance(2);
     i0.ɵɵrepeater(ctx_r2.getStorageInfo(std_r2.storage_condition));
     i0.ɵɵadvance(2);
-    i0.ɵɵconditional(std_r2.received_date ? 42 : -1);
+    i0.ɵɵconditional(std_r2.received_date ? 44 : -1);
     i0.ɵɵadvance(3);
     i0.ɵɵclassMap(ctx_r2.getExpiryClass(std_r2.expiry_date));
     i0.ɵɵadvance();
-    i0.ɵɵtextInterpolate(std_r2.expiry_date ? i0.ɵɵpipeBind2(47, 38, std_r2.expiry_date, "dd/MM/yyyy") : "N/A");
+    i0.ɵɵtextInterpolate(std_r2.expiry_date ? i0.ɵɵpipeBind2(49, 40, std_r2.expiry_date, "dd/MM/yyyy") : "N/A");
     i0.ɵɵadvance(2);
     i0.ɵɵclassMap(ctx_r2.getExpiryTimeClass(std_r2.expiry_date));
     i0.ɵɵadvance();
     i0.ɵɵtextInterpolate(ctx_r2.getExpiryTimeLeft(std_r2.expiry_date));
     i0.ɵɵadvance(2);
-    i0.ɵɵconditional(std_r2.certificate_ref ? 51 : ((tmp_38_0 = ctx_r2.currentUser()) == null ? null : tmp_38_0.role) === "manager" ? 52 : -1);
+    i0.ɵɵconditional(std_r2.certificate_ref ? 53 : ((tmp_40_0 = ctx_r2.currentUser()) == null ? null : tmp_40_0.role) === "manager" ? 54 : -1);
     i0.ɵɵadvance(2);
-    i0.ɵɵconditional(std_r2.contract_ref ? 53 : -1);
+    i0.ɵɵconditional(std_r2.contract_ref ? 55 : -1);
     i0.ɵɵadvance(2);
     i0.ɵɵproperty("ngClass", ctx_r2.getStandardStatus(std_r2).class);
     i0.ɵɵadvance();
     i0.ɵɵtextInterpolate(ctx_r2.getStandardStatus(std_r2).label);
     i0.ɵɵadvance();
-    i0.ɵɵconditional(std_r2.status === "IN_USE" && std_r2.current_holder ? 57 : -1);
+    i0.ɵɵconditional(std_r2.status === "IN_USE" && std_r2.current_holder ? 59 : -1);
     i0.ɵɵadvance(4);
-    i0.ɵɵconditional(ctx_r2.canAssign(std_r2) ? 61 : std_r2.status === "IN_USE" && (ctx_r2.canAssignStandards() || std_r2.current_holder_uid === ((tmp_43_0 = ctx_r2.currentUser()) == null ? null : tmp_43_0.uid)) ? 62 : std_r2.status === "DEPLETED" || std_r2.current_amount <= 0 ? 63 : -1);
+    i0.ɵɵconditional(ctx_r2.canAssign(std_r2) ? 63 : std_r2.status === "IN_USE" && (ctx_r2.canAssignStandards() || std_r2.current_holder_uid === ((tmp_45_0 = ctx_r2.currentUser()) == null ? null : tmp_45_0.uid)) ? 64 : std_r2.status === "DEPLETED" || std_r2.current_amount <= 0 ? 65 : -1);
     i0.ɵɵadvance(3);
-    i0.ɵɵconditional(ctx_r2.canEditStandards() || ctx_r2.state.showLockedFeatures() ? 64 : -1);
+    i0.ɵɵconditional(ctx_r2.canEditStandards() || ctx_r2.state.showLockedFeatures() ? 66 : -1);
     i0.ɵɵadvance(4);
-    i0.ɵɵconditional(ctx_r2.canEditStandards() || ctx_r2.state.showLockedFeatures() ? 68 : -1);
+    i0.ɵɵconditional(ctx_r2.canEditStandards() || ctx_r2.state.showLockedFeatures() ? 70 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵconditional(ctx_r2.canEditStandards() || ctx_r2.state.showLockedFeatures() ? 69 : -1);
+    i0.ɵɵconditional(ctx_r2.canEditStandards() || ctx_r2.state.showLockedFeatures() ? 71 : -1);
 } }
 function StandardsListViewComponent_Conditional_20_Conditional_2_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "tr")(1, "td", 106);
+    i0.ɵɵelementStart(0, "tr")(1, "td", 109);
     i0.ɵɵtext(2, "Kh\u00F4ng t\u00ECm th\u1EA5y d\u1EEF li\u1EC7u.");
     i0.ɵɵelementEnd()();
 } }
 function StandardsListViewComponent_Conditional_20_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵrepeaterCreate(0, StandardsListViewComponent_Conditional_20_For_1_Template, 70, 46, "tr", 25, _forTrack0);
+    i0.ɵɵrepeaterCreate(0, StandardsListViewComponent_Conditional_20_For_1_Template, 72, 50, "tr", 25, _forTrack0);
     i0.ɵɵtemplate(2, StandardsListViewComponent_Conditional_20_Conditional_2_Template, 3, 0, "tr");
 } if (rf & 2) {
     const ctx_r2 = i0.ɵɵnextContext();
@@ -486,7 +516,7 @@ export class StandardsListViewComponent {
         return this.items().length > 0 && this.items().every(i => this.selectedIds().has(i.id));
     }
     static { this.ɵfac = function StandardsListViewComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || StandardsListViewComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: StandardsListViewComponent, selectors: [["app-standards-list-view"]], inputs: { items: [1, "items"], isLoading: [1, "isLoading"], allStandardsLength: [1, "allStandardsLength"], selectedIds: [1, "selectedIds"], quickUploadStdId: [1, "quickUploadStdId"], canEditStandards: [1, "canEditStandards"], canAssignStandards: [1, "canAssignStandards"], canRequestStandards: [1, "canRequestStandards"], currentUser: [1, "currentUser"] }, outputs: { toggleSelection: "toggleSelection", toggleAll: "toggleAll", navigateToDetail: "navigateToDetail", copyText: "copyText", openCoaPreview: "openCoaPreview", triggerQuickDriveUpload: "triggerQuickDriveUpload", openAssignModal: "openAssignModal", goToReturn: "goToReturn", openPurchaseRequestModal: "openPurchaseRequestModal", openPrintModal: "openPrintModal", viewHistory: "viewHistory", openEditModal: "openEditModal", openBackfillModal: "openBackfillModal" }, decls: 21, vars: 2, consts: [[1, "min-w-[1000px]"], [1, "w-full", "text-sm", "text-left", "relative", "border-collapse"], [1, "text-[11px]", "text-slate-500", "dark:text-slate-400", "font-bold", "uppercase", "bg-slate-50", "dark:bg-slate-800/80", "sticky", "top-0", "z-10", "border-b", "border-slate-200", "dark:border-slate-700", "shadow-sm", "dark:shadow-none", "h-12", "tracking-wide"], [1, "px-4", "py-3", "w-10", "text-center"], ["type", "checkbox", 1, "w-4", "h-4", "accent-indigo-600", "dark:accent-indigo-500", "cursor-pointer", 3, "change", "checked"], [1, "px-4", "py-3", "w-[25%]"], [1, "px-4", "py-3", "w-[20%]"], [1, "px-4", "py-3", "w-[15%]"], [1, "px-4", "py-3", "w-[10%]", "text-center"], [1, "bg-white", "dark:bg-slate-900", "divide-y", "divide-slate-100", "dark:divide-slate-800"], [1, "h-24"], [1, "px-4"], ["width", "16px", "height", "16px"], [1, "px-4", "space-y-2"], ["width", "80%", "height", "16px"], ["width", "40%", "height", "12px"], ["width", "90%", "height", "12px"], ["width", "60%", "height", "12px"], ["width", "50%", "height", "20px"], ["width", "100%", "height", "6px"], ["width", "70%", "height", "14px"], ["width", "40%", "height", "10px"], [1, "px-4", "text-center"], ["width", "80px", "height", "24px", 1, "mx-auto", "rounded-full"], ["width", "60px", "height", "24px", 1, "mx-auto"], [1, "hover:bg-indigo-50/30", "dark:hover:bg-indigo-900/20", "transition", "group", "h-24", 3, "ngClass"], [1, "px-4", "py-3", "text-center", "align-top", "pt-4"], [1, "px-4", "py-3", "align-top"], [1, "flex", "flex-col", "h-full"], [1, "font-bold", "text-slate-800", "dark:text-slate-200", "text-base", "mb-1", "hover:text-indigo-600", "dark:hover:text-indigo-400", "transition", "cursor-pointer", "leading-snug", "break-words", 3, "click", "title"], [1, "text-xs", "text-slate-500", "dark:text-slate-400", "italic", "mb-2", "break-words", 3, "title"], [1, "flex", "flex-wrap", "gap-2", "mt-auto"], [1, "px-2.5", "py-1", "rounded-md", "bg-indigo-50", "dark:bg-indigo-900/30", "text-indigo-700", "dark:text-indigo-400", "text-sm", "font-black", "border", "border-indigo-100", "dark:border-indigo-800/50", "tracking-tight"], [1, "px-2", "py-1", "rounded-md", "bg-slate-100", "dark:bg-slate-800", "text-slate-600", "dark:text-slate-400", "text-xs", "font-bold", "border", "border-slate-200", "dark:border-slate-700", "flex", "items-center", "gap-1.5"], [1, "px-2", "py-1", "rounded-md", "bg-indigo-50/70", "dark:bg-indigo-900/20", "text-indigo-700", "dark:text-indigo-300", "text-[10px]", "font-black", "border", "border-indigo-100", "dark:border-indigo-800/40"], [1, "px-2", "py-1", "rounded-md", "bg-fuchsia-50", "dark:bg-fuchsia-900/20", "text-fuchsia-700", "dark:text-fuchsia-300", "text-[10px]", "font-black", "border", "border-fuchsia-100", "dark:border-fuchsia-800/40"], [1, "px-4", "py-3", "align-top", "border-l", "border-slate-50", "dark:border-slate-800"], [1, "text-xs", "font-bold", "text-slate-700", "dark:text-slate-300", "mb-1.5", "truncate", 3, "title"], [1, "grid", "grid-cols-[auto_1fr]", "gap-x-2", "gap-y-1", "text-[11px]", "text-slate-500", "dark:text-slate-400"], [1, "font-bold", "text-slate-400", "dark:text-slate-500"], ["title", "Nh\u1EA5n \u0111\u1EC3 sao ch\u00E9p", 1, "font-mono", "text-slate-700", "dark:text-slate-300", "cursor-pointer", "hover:text-blue-600", "dark:hover:text-blue-400", "hover:underline", "decoration-dotted", 3, "click"], [1, "mt-2", "pt-1", "border-t", "border-slate-100", "dark:border-slate-800", "text-[10px]", "flex", "items-center", "gap-2", "text-slate-500", "dark:text-slate-400"], [1, "flex", "items-baseline", "justify-between", "mb-1"], [1, "text-lg", "font-black", "text-emerald-600", "dark:text-emerald-400", "leading-none"], [1, "text-[10px]", "font-bold", "text-slate-400", "dark:text-slate-500", "ml-1"], [1, "w-full", "bg-slate-100", "dark:bg-slate-800", "rounded-full", "h-1.5", "mb-2", "overflow-hidden", "relative"], [1, "h-full", "rounded-full", "transition-all", "duration-500"], [1, "flex", "flex-col", "gap-1", "mt-1"], [1, "px-1.5", "py-0.5", "rounded", "text-[9px]", "flex", "items-center", "gap-1.5", "border", "w-fit", 3, "ngClass"], [1, "text-[10px]", "text-slate-500", "dark:text-slate-400", "mt-1.5", "flex", "items-center", "gap-1"], [1, "flex", "flex-col", "gap-0.5", "mb-2"], [1, "font-mono", "font-bold", "text-xs"], [1, "text-[10px]", "font-medium"], [1, "flex", "flex-col", "gap-1.5"], [1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-blue-600", "dark:text-blue-400", "bg-blue-50", "dark:bg-blue-900/30", "px-2", "py-1", "rounded", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "w-fit"], ["title", "Upload CoA nhanh qua Google Drive", 1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-amber-600", "dark:amber-400", "bg-amber-50", "dark:bg-amber-900/20", "px-2", "py-1", "rounded", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "w-fit", 3, "disabled"], ["title", "H\u1EE3p \u0111\u1ED3ng", 1, "text-[10px]", "text-slate-400", "dark:text-slate-500", "truncate", "max-w-[120px]", "flex", "items-center", "gap-1"], [1, "px-4", "py-3", "align-top", "text-center", "border-l", "border-slate-50", "dark:border-slate-800"], [1, "inline-block", "px-2", "py-1", "rounded-md", "text-[10px]", "font-bold", "uppercase", "border", "tracking-wide", "whitespace-nowrap", 3, "ngClass"], [1, "mt-2", "text-[10px]", "text-slate-500", "dark:text-slate-400"], [1, "flex", "flex-col", "items-center", "gap-2"], [1, "flex", "gap-1"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "active:scale-95"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "hover:bg-slate-900", "dark:hover:bg-slate-600", "shadow-md", "shadow-slate-200", "dark:shadow-none", "transition", "active:scale-95", 3, "appLockPermission"], [1, "flex", "gap-1", "opacity-0", "group-hover:opacity-100", "transition-opacity", "duration-200"], ["title", "L\u1ECBch s\u1EED", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-100", "dark:bg-slate-800", "text-slate-500", "dark:text-slate-400", "hover:bg-slate-200", "dark:hover:bg-slate-700", "transition", "border", "border-slate-200", "dark:border-slate-700", 3, "click"], [1, "fa-solid", "fa-clock-rotate-left", "text-[10px]"], ["title", "S\u1EEDa", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-white", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "text-blue-600", "dark:text-blue-400", "hover:bg-blue-50", "dark:hover:bg-blue-900/30", "transition", 3, "appLockPermission"], ["title", "Nh\u1EADp b\u00F9 nh\u1EADt k\u00FD s\u1EED d\u1EE5ng", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-purple-50", "dark:bg-purple-900/30", "border", "border-purple-200", "dark:border-purple-800/50", "text-purple-600", "dark:text-purple-400", "hover:bg-purple-100", "dark:hover:bg-purple-900/50", "transition", 3, "appLockPermission"], [1, "font-bold", "mr-1", "text-slate-400"], [1, "fa-solid", "fa-location-dot", "text-[10px]"], [1, "fa-solid", "fa-flask-vial", "mr-1"], [1, "fa-solid", "fa-microchip", "mr-1"], [1, "font-mono", "text-slate-700", "dark:text-slate-300"], [1, "text-slate-700", "dark:text-slate-300"], [1, "fa-solid", 3, "ngClass"], [1, "font-bold"], [1, "fa-solid", "fa-calendar-check", "text-[9px]", "text-blue-400", "dark:text-blue-500"], [1, "font-medium"], [1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-blue-600", "dark:text-blue-400", "bg-blue-50", "dark:bg-blue-900/30", "px-2", "py-1", "rounded", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "w-fit", 3, "click"], [1, "fa-solid", "fa-file-pdf"], ["title", "Upload CoA nhanh qua Google Drive", 1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-amber-600", "dark:amber-400", "bg-amber-50", "dark:bg-amber-900/20", "px-2", "py-1", "rounded", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "w-fit", 3, "click", "disabled"], [1, "fa-solid", "fa-spinner", "fa-spin"], [1, "fa-brands", "fa-google-drive"], [1, "fa-solid", "fa-file-contract"], [1, "truncate", "max-w-[100px]", "mx-auto", 3, "title"], ["disabled", "", "title", "\u0110ang c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u m\u01B0\u1EE3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-orange-100", "dark:bg-orange-900/30", "text-orange-400", "dark:text-orange-500", "cursor-not-allowed", "border", "border-orange-200", "dark:border-orange-800/50"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "active:scale-95"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "active:scale-95"], [1, "fa-solid", "fa-hourglass-half", "text-xs"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-hand-holding-hand", "text-xs"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-rotate-left", "text-xs"], ["title", "\u0110\u00E3 c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u mua", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-300", "dark:bg-slate-700", "text-slate-500", "cursor-not-allowed"], ["title", "\u0110\u1EC1 ngh\u1ECB mua", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "active:scale-95"], [1, "fa-solid", "fa-cart-arrow-down", "text-xs"], ["title", "\u0110\u1EC1 ngh\u1ECB mua", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-cart-plus", "text-xs"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "hover:bg-slate-900", "dark:hover:bg-slate-600", "shadow-md", "shadow-slate-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-print", "text-xs"], ["title", "S\u1EEDa", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-white", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "text-blue-600", "dark:text-blue-400", "hover:bg-blue-50", "dark:hover:bg-blue-900/30", "transition", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-pen", "text-[10px]"], ["title", "Nh\u1EADp b\u00F9 nh\u1EADt k\u00FD s\u1EED d\u1EE5ng", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-purple-50", "dark:bg-purple-900/30", "border", "border-purple-200", "dark:border-purple-800/50", "text-purple-600", "dark:text-purple-400", "hover:bg-purple-100", "dark:hover:bg-purple-900/50", "transition", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-pen-to-square", "text-[10px]"], ["colspan", "7", 1, "p-16", "text-center", "text-slate-400", "dark:text-slate-500", "italic"]], template: function StandardsListViewComponent_Template(rf, ctx) { if (rf & 1) {
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: StandardsListViewComponent, selectors: [["app-standards-list-view"]], inputs: { items: [1, "items"], isLoading: [1, "isLoading"], allStandardsLength: [1, "allStandardsLength"], selectedIds: [1, "selectedIds"], quickUploadStdId: [1, "quickUploadStdId"], canEditStandards: [1, "canEditStandards"], canAssignStandards: [1, "canAssignStandards"], canRequestStandards: [1, "canRequestStandards"], currentUser: [1, "currentUser"] }, outputs: { toggleSelection: "toggleSelection", toggleAll: "toggleAll", navigateToDetail: "navigateToDetail", copyText: "copyText", openCoaPreview: "openCoaPreview", triggerQuickDriveUpload: "triggerQuickDriveUpload", openAssignModal: "openAssignModal", goToReturn: "goToReturn", openPurchaseRequestModal: "openPurchaseRequestModal", openPrintModal: "openPrintModal", viewHistory: "viewHistory", openEditModal: "openEditModal", openBackfillModal: "openBackfillModal" }, decls: 21, vars: 2, consts: [[1, "min-w-[1000px]"], [1, "w-full", "text-sm", "text-left", "relative", "border-collapse"], [1, "text-[11px]", "text-slate-500", "dark:text-slate-400", "font-bold", "uppercase", "bg-slate-50", "dark:bg-slate-800/80", "sticky", "top-0", "z-10", "border-b", "border-slate-200", "dark:border-slate-700", "shadow-sm", "dark:shadow-none", "h-12", "tracking-wide"], [1, "px-4", "py-3", "w-10", "text-center"], ["type", "checkbox", 1, "w-4", "h-4", "accent-indigo-600", "dark:accent-indigo-500", "cursor-pointer", 3, "change", "checked"], [1, "px-4", "py-3", "w-[25%]"], [1, "px-4", "py-3", "w-[20%]"], [1, "px-4", "py-3", "w-[15%]"], [1, "px-4", "py-3", "w-[10%]", "text-center"], [1, "bg-white", "dark:bg-slate-900", "divide-y", "divide-slate-100", "dark:divide-slate-800"], [1, "h-24"], [1, "px-4"], ["width", "16px", "height", "16px"], [1, "px-4", "space-y-2"], ["width", "80%", "height", "16px"], ["width", "40%", "height", "12px"], ["width", "90%", "height", "12px"], ["width", "60%", "height", "12px"], ["width", "50%", "height", "20px"], ["width", "100%", "height", "6px"], ["width", "70%", "height", "14px"], ["width", "40%", "height", "10px"], [1, "px-4", "text-center"], ["width", "80px", "height", "24px", 1, "mx-auto", "rounded-full"], ["width", "60px", "height", "24px", 1, "mx-auto"], [1, "hover:bg-indigo-50/30", "dark:hover:bg-indigo-900/20", "transition", "group", "h-24", 3, "ngClass"], [1, "px-4", "py-3", "text-center", "align-top", "pt-4"], [1, "px-4", "py-3", "align-top"], [1, "flex", "flex-col", "h-full"], [1, "font-bold", "text-slate-800", "dark:text-slate-200", "text-base", "mb-1", "hover:text-indigo-600", "dark:hover:text-indigo-400", "transition", "cursor-pointer", "leading-snug", "break-words", 3, "click", "title"], [1, "text-xs", "text-slate-500", "dark:text-slate-400", "italic", "mb-2", "break-words", 3, "title"], [1, "flex", "flex-wrap", "gap-2", "mt-auto"], [1, "px-2.5", "py-1", "rounded-md", "bg-indigo-50", "dark:bg-indigo-900/30", "text-indigo-700", "dark:text-indigo-400", "text-sm", "font-black", "border", "border-indigo-100", "dark:border-indigo-800/50", "tracking-tight"], [1, "px-2", "py-1", "rounded-md", "bg-slate-100", "dark:bg-slate-800", "text-slate-600", "dark:text-slate-400", "text-xs", "font-bold", "border", "border-slate-200", "dark:border-slate-700", "flex", "items-center", "gap-1.5"], [1, "inline-flex", "max-w-[170px]", "items-center", "gap-1", "rounded-full", "border", "border-indigo-100", "dark:border-indigo-800/40", "bg-indigo-50/70", "dark:bg-indigo-900/20", "px-2", "py-1", "text-[10px]", "font-black", "text-indigo-700", "dark:text-indigo-300", 3, "title"], [1, "inline-flex", "items-center", "rounded-full", "border", "border-indigo-100", "dark:border-indigo-800/40", "bg-indigo-50/50", "dark:bg-indigo-900/15", "px-2", "py-1", "text-[10px]", "font-black", "text-indigo-600", "dark:text-indigo-300", 3, "title"], [1, "inline-flex", "max-w-[110px]", "items-center", "gap-1", "rounded-full", "border", "border-fuchsia-100", "dark:border-fuchsia-800/40", "bg-fuchsia-50", "dark:bg-fuchsia-900/20", "px-2", "py-1", "text-[10px]", "font-black", "text-fuchsia-700", "dark:text-fuchsia-300", 3, "title"], [1, "inline-flex", "items-center", "rounded-full", "border", "border-fuchsia-100", "dark:border-fuchsia-800/40", "bg-fuchsia-50/70", "dark:bg-fuchsia-900/15", "px-2", "py-1", "text-[10px]", "font-black", "text-fuchsia-600", "dark:text-fuchsia-300", 3, "title"], [1, "px-4", "py-3", "align-top", "border-l", "border-slate-50", "dark:border-slate-800"], [1, "text-xs", "font-bold", "text-slate-700", "dark:text-slate-300", "mb-1.5", "truncate", 3, "title"], [1, "grid", "grid-cols-[auto_1fr]", "gap-x-2", "gap-y-1", "text-[11px]", "text-slate-500", "dark:text-slate-400"], [1, "font-bold", "text-slate-400", "dark:text-slate-500"], ["title", "Nh\u1EA5n \u0111\u1EC3 sao ch\u00E9p", 1, "font-mono", "text-slate-700", "dark:text-slate-300", "cursor-pointer", "hover:text-blue-600", "dark:hover:text-blue-400", "hover:underline", "decoration-dotted", 3, "click"], [1, "mt-2", "pt-1", "border-t", "border-slate-100", "dark:border-slate-800", "text-[10px]", "flex", "items-center", "gap-2", "text-slate-500", "dark:text-slate-400"], [1, "flex", "items-baseline", "justify-between", "mb-1"], [1, "text-lg", "font-black", "text-emerald-600", "dark:text-emerald-400", "leading-none"], [1, "text-[10px]", "font-bold", "text-slate-400", "dark:text-slate-500", "ml-1"], [1, "w-full", "bg-slate-100", "dark:bg-slate-800", "rounded-full", "h-1.5", "mb-2", "overflow-hidden", "relative"], [1, "h-full", "rounded-full", "transition-all", "duration-500"], [1, "flex", "flex-col", "gap-1", "mt-1"], [1, "px-1.5", "py-0.5", "rounded", "text-[9px]", "flex", "items-center", "gap-1.5", "border", "w-fit", 3, "ngClass"], [1, "text-[10px]", "text-slate-500", "dark:text-slate-400", "mt-1.5", "flex", "items-center", "gap-1"], [1, "flex", "flex-col", "gap-0.5", "mb-2"], [1, "font-mono", "font-bold", "text-xs"], [1, "text-[10px]", "font-medium"], [1, "flex", "flex-col", "gap-1.5"], [1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-blue-600", "dark:text-blue-400", "bg-blue-50", "dark:bg-blue-900/30", "px-2", "py-1", "rounded", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "w-fit"], ["title", "Upload CoA nhanh qua Google Drive", 1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-amber-600", "dark:amber-400", "bg-amber-50", "dark:bg-amber-900/20", "px-2", "py-1", "rounded", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "w-fit", 3, "disabled"], ["title", "H\u1EE3p \u0111\u1ED3ng", 1, "text-[10px]", "text-slate-400", "dark:text-slate-500", "truncate", "max-w-[120px]", "flex", "items-center", "gap-1"], [1, "px-4", "py-3", "align-top", "text-center", "border-l", "border-slate-50", "dark:border-slate-800"], [1, "inline-block", "px-2", "py-1", "rounded-md", "text-[10px]", "font-bold", "uppercase", "border", "tracking-wide", "whitespace-nowrap", 3, "ngClass"], [1, "mt-2", "text-[10px]", "text-slate-500", "dark:text-slate-400"], [1, "flex", "flex-col", "items-center", "gap-2"], [1, "flex", "gap-1"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "active:scale-95"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "hover:bg-slate-900", "dark:hover:bg-slate-600", "shadow-md", "shadow-slate-200", "dark:shadow-none", "transition", "active:scale-95", 3, "appLockPermission"], [1, "flex", "gap-1", "opacity-0", "group-hover:opacity-100", "transition-opacity", "duration-200"], ["title", "L\u1ECBch s\u1EED", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-100", "dark:bg-slate-800", "text-slate-500", "dark:text-slate-400", "hover:bg-slate-200", "dark:hover:bg-slate-700", "transition", "border", "border-slate-200", "dark:border-slate-700", 3, "click"], [1, "fa-solid", "fa-clock-rotate-left", "text-[10px]"], ["title", "S\u1EEDa", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-white", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "text-blue-600", "dark:text-blue-400", "hover:bg-blue-50", "dark:hover:bg-blue-900/30", "transition", 3, "appLockPermission"], ["title", "Nh\u1EADp b\u00F9 nh\u1EADt k\u00FD s\u1EED d\u1EE5ng", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-purple-50", "dark:bg-purple-900/30", "border", "border-purple-200", "dark:border-purple-800/50", "text-purple-600", "dark:text-purple-400", "hover:bg-purple-100", "dark:hover:bg-purple-900/50", "transition", 3, "appLockPermission"], [1, "font-bold", "mr-1", "text-slate-400"], [1, "fa-solid", "fa-location-dot", "text-[10px]"], [1, "fa-solid", "fa-flask-vial", "shrink-0", "text-[9px]"], [1, "truncate"], [1, "fa-solid", "fa-microchip", "shrink-0", "text-[9px]"], [1, "font-mono", "text-slate-700", "dark:text-slate-300"], [1, "text-slate-700", "dark:text-slate-300"], [1, "fa-solid", 3, "ngClass"], [1, "font-bold"], [1, "fa-solid", "fa-calendar-check", "text-[9px]", "text-blue-400", "dark:text-blue-500"], [1, "font-medium"], [1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-blue-600", "dark:text-blue-400", "bg-blue-50", "dark:bg-blue-900/30", "px-2", "py-1", "rounded", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "w-fit", 3, "click"], [1, "fa-solid", "fa-file-pdf"], ["title", "Upload CoA nhanh qua Google Drive", 1, "flex", "items-center", "gap-1.5", "text-[10px]", "font-bold", "text-amber-600", "dark:amber-400", "bg-amber-50", "dark:bg-amber-900/20", "px-2", "py-1", "rounded", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "w-fit", 3, "click", "disabled"], [1, "fa-solid", "fa-spinner", "fa-spin"], [1, "fa-brands", "fa-google-drive"], [1, "fa-solid", "fa-file-contract"], [1, "truncate", "max-w-[100px]", "mx-auto", 3, "title"], ["disabled", "", "title", "\u0110ang c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u m\u01B0\u1EE3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-orange-100", "dark:bg-orange-900/30", "text-orange-400", "dark:text-orange-500", "cursor-not-allowed", "border", "border-orange-200", "dark:border-orange-800/50"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "active:scale-95"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "active:scale-95"], [1, "fa-solid", "fa-hourglass-half", "text-xs"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-hand-holding-hand", "text-xs"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-rotate-left", "text-xs"], ["title", "\u0110\u00E3 c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u mua", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-300", "dark:bg-slate-700", "text-slate-500", "cursor-not-allowed"], ["title", "\u0110\u1EC1 ngh\u1ECB mua", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "active:scale-95"], [1, "fa-solid", "fa-cart-arrow-down", "text-xs"], ["title", "\u0110\u1EC1 ngh\u1ECB mua", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-cart-plus", "text-xs"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "flex", "items-center", "justify-center", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "hover:bg-slate-900", "dark:hover:bg-slate-600", "shadow-md", "shadow-slate-200", "dark:shadow-none", "transition", "active:scale-95", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-print", "text-xs"], ["title", "S\u1EEDa", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-white", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "text-blue-600", "dark:text-blue-400", "hover:bg-blue-50", "dark:hover:bg-blue-900/30", "transition", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-pen", "text-[10px]"], ["title", "Nh\u1EADp b\u00F9 nh\u1EADt k\u00FD s\u1EED d\u1EE5ng", 1, "w-7", "h-7", "flex", "items-center", "justify-center", "rounded-lg", "bg-purple-50", "dark:bg-purple-900/30", "border", "border-purple-200", "dark:border-purple-800/50", "text-purple-600", "dark:text-purple-400", "hover:bg-purple-100", "dark:hover:bg-purple-900/50", "transition", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-pen-to-square", "text-[10px]"], ["colspan", "7", 1, "p-16", "text-center", "text-slate-400", "dark:text-slate-500", "italic"]], template: function StandardsListViewComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "div", 0)(1, "table", 1)(2, "thead", 2)(3, "tr")(4, "th", 3)(5, "input", 4);
             i0.ɵɵlistener("change", function StandardsListViewComponent_Template_input_change_5_listener() { return ctx.toggleAll.emit(); });
             i0.ɵɵelementEnd()();
@@ -566,8 +596,22 @@ export class StandardsListViewComponent {
                               <div class="flex flex-wrap gap-2 mt-auto">
                                   @if(std.internal_id) { <span class="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-black border border-indigo-100 dark:border-indigo-800/50 tracking-tight">{{std.internal_id}}</span> }
                                   @if(std.location) { <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}</span> }
-                                  @for (method of (std.derivedMethodLabels || []).slice(0, 4); track method) { <span class="px-2 py-1 rounded-md bg-indigo-50/70 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-black border border-indigo-100 dark:border-indigo-800/40"><i class="fa-solid fa-flask-vial mr-1"></i>{{method}}</span> }
-                                  @for (device of std.derivedDeviceCodes || []; track device) { <span class="px-2 py-1 rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-black border border-fuchsia-100 dark:border-fuchsia-800/40"><i class="fa-solid fa-microchip mr-1"></i>{{device}}</span> }
+                                  @for (method of (std.derivedMethodLabels || []).slice(0, 2); track method) {
+                                      <span class="inline-flex max-w-[170px] items-center gap-1 rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/70 dark:bg-indigo-900/20 px-2 py-1 text-[10px] font-black text-indigo-700 dark:text-indigo-300" [title]="method">
+                                          <i class="fa-solid fa-flask-vial shrink-0 text-[9px]"></i><span class="truncate">{{method}}</span>
+                                      </span>
+                                  }
+                                  @if ((std.derivedMethodLabels || []).length > 2) {
+                                      <span class="inline-flex items-center rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-900/15 px-2 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300" [title]="(std.derivedMethodLabels || []).slice(2).join(', ')">+{{(std.derivedMethodLabels || []).length - 2}}</span>
+                                  }
+                                  @for (device of (std.derivedDeviceCodes || []).slice(0, 2); track device) {
+                                      <span class="inline-flex max-w-[110px] items-center gap-1 rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50 dark:bg-fuchsia-900/20 px-2 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300" [title]="device">
+                                          <i class="fa-solid fa-microchip shrink-0 text-[9px]"></i><span class="truncate">{{device}}</span>
+                                      </span>
+                                  }
+                                  @if ((std.derivedDeviceCodes || []).length > 2) {
+                                      <span class="inline-flex items-center rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/70 dark:bg-fuchsia-900/15 px-2 py-1 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300" [title]="(std.derivedDeviceCodes || []).slice(2).join(', ')">+{{(std.derivedDeviceCodes || []).length - 2}}</span>
+                                  }
                               </div>
                           </div>
                        </td>
@@ -659,5 +703,5 @@ export class StandardsListViewComponent {
   `
             }]
     }], null, null); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(StandardsListViewComponent, { className: "StandardsListViewComponent", filePath: "src/app/features/standards/components/standards-list-view.component.ts", lineNumber: 148 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(StandardsListViewComponent, { className: "StandardsListViewComponent", filePath: "src/app/features/standards/components/standards-list-view.component.ts", lineNumber: 162 }); })();
 //# sourceMappingURL=standards-list-view.component.js.map

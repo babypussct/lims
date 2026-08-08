@@ -170,7 +170,7 @@ export class StandardUsageService {
         const requestRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
         const activityRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
         const backfilledAt = Date.now();
-        const enteredByName = currentUser.displayName || currentUser.email || 'Quản lý';
+        const enteredByName = currentUser.displayName || currentUser.email || currentUser.uid;
         await runTransaction(this.fb.db, async (transaction) => {
             const stdDoc = await transaction.get(stdRef);
             if (!stdDoc.exists())
@@ -265,17 +265,18 @@ export class StandardUsageService {
                 throw new Error(`Không đủ lượng tồn kho!`);
             const log = {
                 id: newLogRef.id, timestamp: Date.now(), date: new Date().toISOString(),
-                user: currentUser.displayName || currentUser.email || userName || userId,
+                user: reqData.requestedByName || currentUser.displayName || currentUser.email || userName || userId,
+                userId: currentUser.uid,
                 amount_used: amount,
                 unit,
                 normalized_amount: amountToDeduct,
                 normalized_unit: stockUnit,
                 purpose: purpose || 'Báo cáo sử dụng',
-                standardId: stdData.id, standardName: stdData.name, lotNumber: stdData.lot_number,
+                standardId, standardName: stdData.name, lotNumber: stdData.lot_number,
                 cas_number: stdData.cas_number, internalId: stdData.internal_id,
                 manufacturer: stdData.manufacturer, requestId
             };
-            transaction.set(newLogRef, log);
+            transaction.set(newLogRef, { ...log, lastUpdated: serverTimestamp() });
             const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
             transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
             const logDateStr = new Date().toISOString().split('T')[0];
@@ -287,10 +288,9 @@ export class StandardUsageService {
             if (!stdData.date_opened || logDateStr < stdData.date_opened)
                 stdUpdates['date_opened'] = logDateStr;
             transaction.update(stdRef, stdUpdates);
-            const currentLogs = reqData.usageLogs || [];
             transaction.update(reqRef, {
                 totalAmountUsed: (reqData.totalAmountUsed || 0) + amountToDeduct,
-                usageLogs: [...currentLogs, log],
+                lastUsageLogId: newLogRef.id,
                 updatedAt: Date.now(), lastUpdated: serverTimestamp()
             });
         });

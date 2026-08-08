@@ -48,6 +48,9 @@ test('batch_run cannot approve or arbitrarily rewrite an existing request', () =
   );
   assert.doesNotMatch(block, /allow write:\s*if[^;]*batch_run/);
   assert.match(block, /validBatchRequestUpdate\(appId\)/);
+  assert.match(rules, /function validResultUpdate\(\)/);
+  assert.match(rules, /function validLockUpdate\(appId\)/);
+  assert.match(rules, /function validVirtualMasterUpdate\(\)/);
   assert.match(rules, /fromStatus == 'approved' && toStatus == 'draft'/);
   assert.doesNotMatch(rules, /fromStatus == 'pending' && toStatus == 'approved'/);
 });

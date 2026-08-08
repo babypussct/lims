@@ -1,36 +1,36 @@
 import { Injectable, inject } from '@angular/core';
-import { collection, documentId, getDocs, getDocsFromServer, limit, orderBy, query, startAfter, where } from 'firebase/firestore';
+import { collection, doc, documentId, getDoc, getDocFromServer, getDocs, getDocsFromServer, limit, orderBy, query, startAfter, where } from 'firebase/firestore';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor.service';
-import { isTrackablePhysicalBatch, isValidDateInput } from './daily-checklist.utils';
+import { DailyChecklistMaterializerService } from '../../core/services/daily-checklist-materializer.service';
+import { dailyChecklistDocumentToRequests, isDailyChecklistRequest, isValidDailyChecklistDate } from '../../core/utils/daily-checklist-projection';
+import { DailyChecklistResultCache, shouldFallbackToLegacyRequests } from './daily-checklist-data-cache';
 import * as i0 from "@angular/core";
 /**
- * Date-scoped source of truth for the daily sample tracker.
- *
- * Queries are paginated by document ID so a busy analysis day is never cut off
- * by the global 100-request dashboard cache. Pages are loaded automatically for
- * the selected date; date options are loaded progressively as the user moves
- * backwards through history.
+ * Reads the materialized daily document first and falls back to `requests`
+ * whenever that document is absent. An existing-but-empty document is an
+ * authoritative empty day.
  */
 export class DailyChecklistDataService {
     constructor() {
         this.fb = inject(FirebaseService);
         this.readMonitor = inject(FirestoreReadMonitor);
-        this.requestsPageSize = 100;
-        this.dateScanPageSize = 50;
+        this.dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
         this.requestCacheTtlMs = 5 * 60 * 1000;
-        this.dateOptionsCacheTtlMs = 10 * 60 * 1000;
-        this.requestCache = new Map();
+        this.requestCache = new DailyChecklistResultCache(this.requestCacheTtlMs);
         this.requestLoads = new Map();
-        this.dateOptionsCache = new Map();
+        this.legacyPageSize = 100;
+        this.documentSizeWarningBytes = 800 * 1024;
+        this.invalidationSubscription = this.dailyChecklistMaterializer.invalidatedDates$.subscribe(analysisDate => this.invalidateDate(analysisDate));
     }
     async loadRequestsForDate(analysisDate, onPage, forceRefresh = false) {
-        if (!isValidDateInput(analysisDate))
-            return { requests: [], source: 'server' };
+        if (!isValidDailyChecklistDate(analysisDate)) {
+            return { requests: [], source: 'server', materialized: true };
+        }
         const cached = this.requestCache.get(analysisDate);
-        if (!forceRefresh && cached && Date.now() - cached.cachedAt < this.requestCacheTtlMs) {
-            onPage?.(cached.result.requests.length);
-            return this.cloneDateResult(cached.result);
+        if (!forceRefresh && cached) {
+            onPage?.(cached.requests.length);
+            return this.cloneDateResult(cached);
         }
         const inFlight = this.requestLoads.get(analysisDate);
         if (!forceRefresh && inFlight) {
@@ -39,12 +39,13 @@ export class DailyChecklistDataService {
             return this.cloneDateResult(result);
         }
         if (forceRefresh)
-            this.requestCache.delete(analysisDate);
+            this.invalidateDate(analysisDate);
+        const cacheGeneration = this.requestCache.generation(analysisDate);
         const load = this.fetchRequestsForDate(analysisDate, onPage);
         this.requestLoads.set(analysisDate, load);
         try {
             const result = await load;
-            this.requestCache.set(analysisDate, { result, cachedAt: Date.now() });
+            this.requestCache.setIfCurrent(analysisDate, result, cacheGeneration);
             return this.cloneDateResult(result);
         }
         finally {
@@ -53,74 +54,90 @@ export class DailyChecklistDataService {
         }
     }
     async fetchRequestsForDate(analysisDate, onPage) {
+        const dailyPath = `artifacts/${this.fb.APP_ID}/daily_checklists/${analysisDate}`;
+        const dailyRef = doc(this.fb.db, dailyPath);
+        const dailySnapshot = await this.getDailyDocumentPreferServer(dailyRef, dailyPath);
+        if (dailySnapshot.snapshot.exists()) {
+            const data = dailySnapshot.snapshot.data();
+            this.warnIfLargeDocument(dailyPath, data);
+            const requests = dailyChecklistDocumentToRequests(data, analysisDate);
+            onPage?.(requests.length);
+            return { requests, source: dailySnapshot.source, materialized: true };
+        }
+        return shouldFallbackToLegacyRequests(analysisDate, false)
+            ? this.fetchLegacyRequestsForDate(analysisDate, onPage)
+            : { requests: [], source: dailySnapshot.source, materialized: true };
+    }
+    invalidateDate(analysisDate) {
+        if (!isValidDailyChecklistDate(analysisDate))
+            return;
+        this.requestCache.invalidate(analysisDate);
+        this.requestLoads.delete(analysisDate);
+    }
+    async fetchLegacyRequestsForDate(analysisDate, onPage) {
         const requestsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/requests`);
-        const metricPath = `artifacts/${this.fb.APP_ID}/requests?analysisDate=${analysisDate}`;
+        const metricPath = `artifacts/${this.fb.APP_ID}/requests?analysisDate=${analysisDate}&legacyFallback=1`;
         const requests = new Map();
         let cursor = null;
         let source = 'server';
         do {
             const pageQuery = cursor
-                ? query(requestsRef, where('analysisDate', '==', analysisDate), orderBy(documentId()), startAfter(cursor), limit(this.requestsPageSize))
-                : query(requestsRef, where('analysisDate', '==', analysisDate), orderBy(documentId()), limit(this.requestsPageSize));
-            const page = await this.getPreferServer(pageQuery, metricPath, 'page');
+                ? query(requestsRef, where('analysisDate', '==', analysisDate), orderBy(documentId()), startAfter(cursor), limit(this.legacyPageSize))
+                : query(requestsRef, where('analysisDate', '==', analysisDate), orderBy(documentId()), limit(this.legacyPageSize));
+            const page = await this.getLegacyPagePreferServer(pageQuery, metricPath);
             if (page.source === 'cache')
                 source = 'cache';
             page.snapshot.docs.forEach(item => {
                 const request = { id: item.id, ...item.data() };
-                if (isTrackablePhysicalBatch(request))
+                if (isDailyChecklistRequest(request))
                     requests.set(request.id, request);
             });
             onPage?.(requests.size);
-            cursor = page.snapshot.docs.length === this.requestsPageSize
+            cursor = page.snapshot.docs.length === this.legacyPageSize
                 ? page.snapshot.docs[page.snapshot.docs.length - 1]
                 : null;
         } while (cursor);
-        return { requests: Array.from(requests.values()), source };
+        return { requests: Array.from(requests.values()), source, materialized: false };
     }
-    async loadDateOptionsPage(cursor = null, forceRefresh = false) {
-        const cacheKey = cursor
-            ? `${cursor.id}|${String(cursor.get('analysisDate') || '')}`
-            : '__first__';
-        const cached = this.dateOptionsCache.get(cacheKey);
-        if (!forceRefresh && cached && Date.now() - cached.cachedAt < this.dateOptionsCacheTtlMs) {
-            return { ...cached.page, dates: [...cached.page.dates] };
+    async getDailyDocumentPreferServer(documentRef, metricPath) {
+        try {
+            const snapshot = await getDocFromServer(documentRef);
+            this.readMonitor.record('getDoc', metricPath, 1);
+            return { snapshot, source: 'server' };
         }
-        if (forceRefresh)
-            this.dateOptionsCache.delete(cacheKey);
-        const requestsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/requests`);
-        const pageQuery = cursor
-            ? query(requestsRef, orderBy('analysisDate', 'desc'), startAfter(cursor), limit(this.dateScanPageSize))
-            : query(requestsRef, orderBy('analysisDate', 'desc'), limit(this.dateScanPageSize));
-        const page = await this.getPreferServer(pageQuery, `artifacts/${this.fb.APP_ID}/requests?orderBy=analysisDate:desc`, 'page');
-        const dates = Array.from(new Set(page.snapshot.docs
-            .map(item => ({ id: item.id, ...item.data() }))
-            .filter(isTrackablePhysicalBatch)
-            .map(request => request.analysisDate || '')
-            .filter(isValidDateInput))).sort((a, b) => b.localeCompare(a));
-        const result = {
-            dates,
-            cursor: page.snapshot.docs.length > 0 ? page.snapshot.docs[page.snapshot.docs.length - 1] : null,
-            hasMore: page.snapshot.docs.length === this.dateScanPageSize,
-            source: page.source
-        };
-        this.dateOptionsCache.set(cacheKey, { page: result, cachedAt: Date.now() });
-        return { ...result, dates: [...result.dates] };
+        catch {
+            const snapshot = await getDoc(documentRef);
+            const fromCache = snapshot.metadata.fromCache;
+            this.readMonitor.record('getDoc', metricPath, 1, { fromCache });
+            return { snapshot, source: fromCache ? 'cache' : 'server' };
+        }
     }
-    async getPreferServer(queryRef, metricPath, phase) {
+    async getLegacyPagePreferServer(queryRef, metricPath) {
         try {
             const snapshot = await getDocsFromServer(queryRef);
-            this.readMonitor.record('getDocs', metricPath, snapshot.size, { phase });
+            this.readMonitor.record('getDocs', metricPath, snapshot.size, { phase: 'page' });
             return { snapshot, source: 'server' };
         }
         catch {
             const snapshot = await getDocs(queryRef);
             const fromCache = snapshot.metadata.fromCache;
-            this.readMonitor.record('getDocs', metricPath, snapshot.size, { phase, fromCache });
+            this.readMonitor.record('getDocs', metricPath, snapshot.size, { phase: 'page', fromCache });
             return { snapshot, source: fromCache ? 'cache' : 'server' };
         }
     }
+    warnIfLargeDocument(path, data) {
+        try {
+            const bytes = new TextEncoder().encode(JSON.stringify(data)).byteLength;
+            if (bytes >= this.documentSizeWarningBytes) {
+                console.warn(`[DailyChecklist] Document ${path} is approximately ${Math.round(bytes / 1024)} KiB; consider sharding.`);
+            }
+        }
+        catch {
+            // Diagnostics must never block the daily board.
+        }
+    }
     cloneDateResult(result) {
-        return { requests: [...result.requests], source: result.source };
+        return { ...result, requests: [...result.requests] };
     }
     static { this.ɵfac = function DailyChecklistDataService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DailyChecklistDataService)(); }; }
     static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: DailyChecklistDataService, factory: DailyChecklistDataService.ɵfac, providedIn: 'root' }); }

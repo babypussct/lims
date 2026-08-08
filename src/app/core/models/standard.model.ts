@@ -268,10 +268,16 @@ export interface StandardRequest {
   
   // Usage tracking
   totalAmountUsed: number;
+  /** Requester-reported cumulative usage; never trusted as the accounting aggregate. */
+  reportedAmountUsed?: number;
+  /** Unit paired with reportedAmountUsed. */
+  reportedUnit?: string;
   /** Confirmed cumulative consumption, expressed in confirmedUnit. */
   confirmedAmountUsed?: number;
   confirmedUnit?: string;
   reportedDepleted?: boolean;
+  /** Correlation key of the latest secure usage journal event. */
+  lastUsageLogId?: string;
   usageLogs?: UsageLog[];
 
   // Historical backfill provenance

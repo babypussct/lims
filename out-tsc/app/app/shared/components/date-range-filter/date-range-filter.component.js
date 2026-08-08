@@ -1,6 +1,7 @@
 import { Component, signal, output, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { normalizeManualDateRange } from '../../utils/date-range';
 import * as i0 from "@angular/core";
 import * as i1 from "@angular/forms";
 function DateRangeFilterComponent_Conditional_7_Conditional_6_Template(rf, ctx) { if (rf & 1) {
@@ -199,10 +200,9 @@ export class DateRangeFilterComponent {
         this.isOpen.update(v => !v);
     }
     onManualDateChange(type, value) {
-        if (type === 'start')
-            this.startDate.set(value);
-        else
-            this.endDate.set(value);
+        const normalized = normalizeManualDateRange(type, value, this.startDate(), this.endDate());
+        this.startDate.set(normalized.start);
+        this.endDate.set(normalized.end);
         this.activePreset.set('custom');
         this.currentLabel.set('Tùy chỉnh');
         this.emitChange();
@@ -422,5 +422,5 @@ export class DateRangeFilterComponent {
   `
             }]
     }], () => [], null); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DateRangeFilterComponent, { className: "DateRangeFilterComponent", filePath: "src/app/shared/components/date-range-filter/date-range-filter.component.ts", lineNumber: 103 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DateRangeFilterComponent, { className: "DateRangeFilterComponent", filePath: "src/app/shared/components/date-range-filter/date-range-filter.component.ts", lineNumber: 104 }); })();
 //# sourceMappingURL=date-range-filter.component.js.map

@@ -2,13 +2,12 @@ import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { getStandardizedAmount, formatNum } from '../../../../shared/utils/utils';
+import { formatNum } from '../../../../shared/utils/utils';
 import { StandardTagCatalogService } from '../../services/standard-tag-catalog.service';
 import { MAX_RETURN_TAGS, formatMethodOptionLabel, sanitizeLegacyTagKeys } from '../../services/standard-tag.utils';
 import * as i0 from "@angular/core";
 import * as i1 from "@angular/common";
 import * as i2 from "@angular/forms";
-const _c0 = () => [];
 const _forTrack0 = ($index, $item) => $item.key;
 function RequestsActionModalsComponent_Conditional_0_Conditional_15_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "div", 8)(1, "span", 9);
@@ -180,14 +179,14 @@ function RequestsActionModalsComponent_Conditional_1_Template(rf, ctx) { if (rf 
     i0.ɵɵadvance(4);
     i0.ɵɵproperty("disabled", !ctx_r1.rejectReason().toString().trim() || ctx_r1.isProcessing);
 } }
-function RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_8_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "p", 79);
-    i0.ɵɵelement(1, "i", 82);
+function RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_6_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "p", 78);
+    i0.ɵɵelement(1, "i", 81);
     i0.ɵɵtext(2, " Kho \u0111\u00E3 \u0111\u01B0\u1EE3c tr\u1EEB theo t\u1EEBng \u0111\u1EE3t. N\u1EBFu s\u1ED1 x\u00E1c nh\u1EADn l\u1EDBn h\u01A1n t\u1ED5ng \u0111\u00E3 ghi, ph\u1EA7n ch\u00EAnh l\u1EC7ch s\u1EBD \u0111\u01B0\u1EE3c tr\u1EEB kho v\u00E0 t\u1EA1o nh\u1EADt k\u00FD \u0111i\u1EC1u ch\u1EC9nh. ");
     i0.ɵɵelementEnd();
 } }
-function RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_9_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "p", 80);
+function RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_7_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "p", 79);
     i0.ɵɵtext(1, " Kho \u0111\u00E3 \u0111\u01B0\u1EE3c tr\u1EEB theo t\u1EEBng \u0111\u1EE3t. S\u1ED1 b\u00E1o c\u00E1o b\u00EAn d\u01B0\u1EDBi ch\u1EC9 \u0111\u1EC3 admin x\u00E1c nh\u1EADn. ");
     i0.ɵɵelementEnd();
 } }
@@ -198,37 +197,32 @@ function RequestsActionModalsComponent_Conditional_2_Conditional_17_Template(rf,
     i0.ɵɵtext(3, " T\u1ED5ng \u0111\u00E3 ghi nh\u1EADn: ");
     i0.ɵɵelementStart(4, "span", 77);
     i0.ɵɵtext(5);
-    i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(6, "span", 78);
-    i0.ɵɵtext(7);
     i0.ɵɵelementEnd()();
-    i0.ɵɵtemplate(8, RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_8_Template, 3, 0, "p", 79)(9, RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_9_Template, 2, 0, "p", 80);
+    i0.ɵɵtemplate(6, RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_6_Template, 3, 0, "p", 78)(7, RequestsActionModalsComponent_Conditional_2_Conditional_17_Conditional_7_Template, 2, 0, "p", 79);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(10, "div")(11, "label", 23);
-    i0.ɵɵtext(12, "S\u1ED1 l\u01B0\u1EE3ng b\u00E1o c\u00E1o (ghi s\u1ED5)");
+    i0.ɵɵelementStart(8, "div")(9, "label", 23);
+    i0.ɵɵtext(10, "S\u1ED1 l\u01B0\u1EE3ng b\u00E1o c\u00E1o (ghi s\u1ED5)");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(13, "div", 24)(14, "input", 81);
-    i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_2_Conditional_17_Template_input_ngModelChange_14_listener($event) { i0.ɵɵrestoreView(_r5); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.returnAmount.set($event)); });
+    i0.ɵɵelementStart(11, "div", 24)(12, "input", 80);
+    i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_2_Conditional_17_Template_input_ngModelChange_12_listener($event) { i0.ɵɵrestoreView(_r5); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.returnAmount.set($event)); });
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(15, "span", 26);
-    i0.ɵɵtext(16);
+    i0.ɵɵelementStart(13, "span", 26);
+    i0.ɵɵtext(14);
     i0.ɵɵelementEnd()()();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext(2);
     i0.ɵɵadvance(5);
     i0.ɵɵtextInterpolate2("", ctx_r1.request.totalAmountUsed || 0, " ", (ctx_r1.standard == null ? null : ctx_r1.standard.unit) || (ctx_r1.request.standardDetails == null ? null : ctx_r1.request.standardDetails.unit) || "mg", "");
-    i0.ɵɵadvance(2);
-    i0.ɵɵtextInterpolate1("(", (ctx_r1.request.usageLogs || i0.ɵɵpureFunction0(7, _c0)).length, " \u0111\u1EE3t)");
     i0.ɵɵadvance();
-    i0.ɵɵconditional(ctx_r1.isForceReturn ? 8 : 9);
+    i0.ɵɵconditional(ctx_r1.isForceReturn ? 6 : 7);
     i0.ɵɵadvance(6);
     i0.ɵɵproperty("min", ctx_r1.minimumLoggedAmount())("ngModel", ctx_r1.returnAmount());
     i0.ɵɵadvance(2);
     i0.ɵɵtextInterpolate((ctx_r1.standard == null ? null : ctx_r1.standard.unit) || (ctx_r1.request.standardDetails == null ? null : ctx_r1.request.standardDetails.unit) || "mg");
 } }
 function RequestsActionModalsComponent_Conditional_2_Conditional_18_Conditional_9_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "p", 84);
-    i0.ɵɵelement(1, "i", 85);
+    i0.ɵɵelementStart(0, "p", 83);
+    i0.ɵɵelement(1, "i", 84);
     i0.ɵɵtext(2);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -243,13 +237,13 @@ function RequestsActionModalsComponent_Conditional_2_Conditional_18_Template(rf,
     i0.ɵɵelementStart(3, "span", 27);
     i0.ɵɵtext(4, "*");
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(5, "div", 24)(6, "input", 83);
+    i0.ɵɵelementStart(5, "div", 24)(6, "input", 82);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_2_Conditional_18_Template_input_ngModelChange_6_listener($event) { i0.ɵɵrestoreView(_r6); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.returnAmount.set($event)); });
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(7, "span", 26);
     i0.ɵɵtext(8);
     i0.ɵɵelementEnd()();
-    i0.ɵɵtemplate(9, RequestsActionModalsComponent_Conditional_2_Conditional_18_Conditional_9_Template, 3, 1, "p", 84);
+    i0.ɵɵtemplate(9, RequestsActionModalsComponent_Conditional_2_Conditional_18_Conditional_9_Template, 3, 1, "p", 83);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext(2);
@@ -275,7 +269,7 @@ function RequestsActionModalsComponent_Conditional_2_For_43_Template(rf, ctx) { 
     const _r8 = i0.ɵɵgetCurrentView();
     i0.ɵɵelementStart(0, "span", 71);
     i0.ɵɵtext(1);
-    i0.ɵɵelementStart(2, "button", 86);
+    i0.ɵɵelementStart(2, "button", 85);
     i0.ɵɵlistener("click", function RequestsActionModalsComponent_Conditional_2_For_43_Template_button_click_2_listener() { const key_r9 = i0.ɵɵrestoreView(_r8).$implicit; const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.removeReturnTag(key_r9)); });
     i0.ɵɵtext(3, "\u00D7");
     i0.ɵɵelementEnd()();
@@ -305,7 +299,7 @@ function RequestsActionModalsComponent_Conditional_2_Template(rf, ctx) { if (rf 
     i0.ɵɵelementStart(15, "span", 55);
     i0.ɵɵtext(16);
     i0.ɵɵelementEnd()()();
-    i0.ɵɵtemplate(17, RequestsActionModalsComponent_Conditional_2_Conditional_17_Template, 17, 8)(18, RequestsActionModalsComponent_Conditional_2_Conditional_18_Template, 10, 3, "div");
+    i0.ɵɵtemplate(17, RequestsActionModalsComponent_Conditional_2_Conditional_17_Template, 15, 6)(18, RequestsActionModalsComponent_Conditional_2_Conditional_18_Template, 10, 3, "div");
     i0.ɵɵelementStart(19, "div", 56)(20, "input", 57);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_2_Template_input_ngModelChange_20_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.returnIsDepleted.set($event)); });
     i0.ɵɵelementEnd();
@@ -355,7 +349,7 @@ function RequestsActionModalsComponent_Conditional_2_Template(rf, ctx) { if (rf 
     i0.ɵɵadvance(5);
     i0.ɵɵtextInterpolate2("", ctx_r1.formatNum((ctx_r1.standard == null ? null : ctx_r1.standard.current_amount) || (ctx_r1.request.standardDetails == null ? null : ctx_r1.request.standardDetails.current_amount) || 0), " ", (ctx_r1.standard == null ? null : ctx_r1.standard.unit) || (ctx_r1.request.standardDetails == null ? null : ctx_r1.request.standardDetails.unit) || "mg", "");
     i0.ɵɵadvance();
-    i0.ɵɵconditional((ctx_r1.request.usageLogs || i0.ɵɵpureFunction0(11, _c0)).length > 0 ? 17 : 18);
+    i0.ɵɵconditional((ctx_r1.request.totalAmountUsed || 0) > 0 ? 17 : 18);
     i0.ɵɵadvance(3);
     i0.ɵɵproperty("ngModel", ctx_r1.returnIsDepleted());
     i0.ɵɵadvance(8);
@@ -369,11 +363,11 @@ function RequestsActionModalsComponent_Conditional_2_Template(rf, ctx) { if (rf 
     i0.ɵɵadvance(3);
     i0.ɵɵrepeater(ctx_r1.returnSopTags());
     i0.ɵɵadvance(5);
-    i0.ɵɵproperty("disabled", ctx_r1.returnAmount() === null || ctx_r1.returnAmount() < ctx_r1.minimumLoggedAmount() || ctx_r1.isProcessing || !(ctx_r1.request.usageLogs == null ? null : ctx_r1.request.usageLogs.length) && ctx_r1.returnAmount() > ((ctx_r1.standard == null ? null : ctx_r1.standard.current_amount) || (ctx_r1.request.standardDetails == null ? null : ctx_r1.request.standardDetails.current_amount) || 0));
+    i0.ɵɵproperty("disabled", ctx_r1.returnAmount() === null || ctx_r1.returnAmount() < ctx_r1.minimumLoggedAmount() || ctx_r1.isProcessing);
 } }
 function RequestsActionModalsComponent_Conditional_3_Conditional_18_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "p", 84);
-    i0.ɵɵelement(1, "i", 85);
+    i0.ɵɵelementStart(0, "p", 83);
+    i0.ɵɵelement(1, "i", 84);
     i0.ɵɵtext(2);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -383,11 +377,11 @@ function RequestsActionModalsComponent_Conditional_3_Conditional_18_Template(rf,
 } }
 function RequestsActionModalsComponent_Conditional_3_Template(rf, ctx) { if (rf & 1) {
     const _r10 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "div", 0)(1, "div", 35)(2, "div", 87)(3, "h3", 88);
-    i0.ɵɵelement(4, "i", 89);
+    i0.ɵɵelementStart(0, "div", 0)(1, "div", 35)(2, "div", 86)(3, "h3", 87);
+    i0.ɵɵelement(4, "i", 88);
     i0.ɵɵtext(5, " Ghi Nh\u1EADn \u0110\u1EE3t D\u00F9ng ");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(6, "button", 90);
+    i0.ɵɵelementStart(6, "button", 89);
     i0.ɵɵlistener("click", function RequestsActionModalsComponent_Conditional_3_Template_button_click_6_listener() { i0.ɵɵrestoreView(_r10); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onClose()); });
     i0.ɵɵelement(7, "i", 20);
     i0.ɵɵelementEnd()();
@@ -396,25 +390,25 @@ function RequestsActionModalsComponent_Conditional_3_Template(rf, ctx) { if (rf 
     i0.ɵɵelementStart(12, "span", 27);
     i0.ɵɵtext(13, "*");
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(14, "div", 24)(15, "input", 91);
+    i0.ɵɵelementStart(14, "div", 24)(15, "input", 90);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_3_Template_input_ngModelChange_15_listener($event) { i0.ɵɵrestoreView(_r10); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.logUsageAmount.set($event)); });
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(16, "span", 26);
     i0.ɵɵtext(17);
     i0.ɵɵelementEnd()();
-    i0.ɵɵtemplate(18, RequestsActionModalsComponent_Conditional_3_Conditional_18_Template, 3, 1, "p", 84);
+    i0.ɵɵtemplate(18, RequestsActionModalsComponent_Conditional_3_Conditional_18_Template, 3, 1, "p", 83);
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(19, "div")(20, "label", 23);
     i0.ɵɵtext(21, "Ghi ch\u00FA \u0111\u1EE3t d\u00F9ng");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(22, "textarea", 92);
+    i0.ɵɵelementStart(22, "textarea", 91);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_3_Template_textarea_ngModelChange_22_listener($event) { i0.ɵɵrestoreView(_r10); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.logUsagePurpose.set($event)); });
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(23, "div", 93)(24, "button", 30);
+    i0.ɵɵelementStart(23, "div", 92)(24, "button", 30);
     i0.ɵɵlistener("click", function RequestsActionModalsComponent_Conditional_3_Template_button_click_24_listener() { i0.ɵɵrestoreView(_r10); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onClose()); });
     i0.ɵɵtext(25, "H\u1EE7y");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(26, "button", 94);
+    i0.ɵɵelementStart(26, "button", 93);
     i0.ɵɵlistener("click", function RequestsActionModalsComponent_Conditional_3_Template_button_click_26_listener() { i0.ɵɵrestoreView(_r10); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onLogUsage()); });
     i0.ɵɵtext(27, " L\u01B0u nh\u1EADt k\u00FD d\u00F9ng ");
     i0.ɵɵelementEnd()()()()();
@@ -433,12 +427,12 @@ function RequestsActionModalsComponent_Conditional_3_Template(rf, ctx) { if (rf 
 } }
 function RequestsActionModalsComponent_Conditional_4_Conditional_33_Template(rf, ctx) { if (rf & 1) {
     const _r12 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "div", 106)(1, "label", 23);
+    i0.ɵɵelementStart(0, "div", 105)(1, "label", 23);
     i0.ɵɵtext(2, "L\u00FD do h\u1EE7y chu\u1EA9n ");
     i0.ɵɵelementStart(3, "span", 27);
     i0.ɵɵtext(4, "*");
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(5, "textarea", 107);
+    i0.ɵɵelementStart(5, "textarea", 106);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_4_Conditional_33_Template_textarea_ngModelChange_5_listener($event) { i0.ɵɵrestoreView(_r12); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.adminReceiveDisposalReason.set($event)); });
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -461,7 +455,7 @@ function RequestsActionModalsComponent_Conditional_4_For_54_Template(rf, ctx) { 
     const _r14 = i0.ɵɵgetCurrentView();
     i0.ɵɵelementStart(0, "span", 71);
     i0.ɵɵtext(1);
-    i0.ɵɵelementStart(2, "button", 86);
+    i0.ɵɵelementStart(2, "button", 85);
     i0.ɵɵlistener("click", function RequestsActionModalsComponent_Conditional_4_For_54_Template_button_click_2_listener() { const key_r15 = i0.ɵɵrestoreView(_r14).$implicit; const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.removeAdminTag(key_r15)); });
     i0.ɵɵtext(3, "\u00D7");
     i0.ɵɵelementEnd()();
@@ -474,24 +468,24 @@ function RequestsActionModalsComponent_Conditional_4_For_54_Template(rf, ctx) { 
 } }
 function RequestsActionModalsComponent_Conditional_4_Template(rf, ctx) { if (rf & 1) {
     const _r11 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "div", 0)(1, "div", 95)(2, "div", 46)(3, "h3", 96);
-    i0.ɵɵelement(4, "i", 97);
+    i0.ɵɵelementStart(0, "div", 0)(1, "div", 94)(2, "div", 46)(3, "h3", 95);
+    i0.ɵɵelement(4, "i", 96);
     i0.ɵɵtext(5, " X\u00E1c Nh\u1EADn Nh\u1EADp Kho Tr\u1EA3 ");
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(6, "button", 49);
     i0.ɵɵlistener("click", function RequestsActionModalsComponent_Conditional_4_Template_button_click_6_listener() { i0.ɵɵrestoreView(_r11); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onClose()); });
     i0.ɵɵelement(7, "i", 20);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(8, "div", 98)(9, "div", 99)(10, "div", 8)(11, "span", 100);
+    i0.ɵɵelementStart(8, "div", 97)(9, "div", 98)(10, "div", 8)(11, "span", 99);
     i0.ɵɵtext(12, "NV b\u00E1o c\u00E1o d\u00F9ng");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(13, "span", 101);
+    i0.ɵɵelementStart(13, "span", 100);
     i0.ɵɵtext(14);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(15, "div", 8)(16, "span", 100);
+    i0.ɵɵelementStart(15, "div", 8)(16, "span", 99);
     i0.ɵɵtext(17, "Tr\u1EA1ng th\u00E1i");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(18, "span", 102);
+    i0.ɵɵelementStart(18, "span", 101);
     i0.ɵɵtext(19);
     i0.ɵɵelementEnd()()();
     i0.ɵɵelementStart(20, "div")(21, "label", 23);
@@ -499,19 +493,19 @@ function RequestsActionModalsComponent_Conditional_4_Template(rf, ctx) { if (rf 
     i0.ɵɵelementStart(23, "span", 27);
     i0.ɵɵtext(24, "*");
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(25, "div", 24)(26, "input", 103);
+    i0.ɵɵelementStart(25, "div", 24)(26, "input", 102);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_4_Template_input_ngModelChange_26_listener($event) { i0.ɵɵrestoreView(_r11); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.adminReceiveAmount.set($event)); });
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(27, "span", 26);
     i0.ɵɵtext(28);
     i0.ɵɵelementEnd()()();
-    i0.ɵɵelementStart(29, "div", 56)(30, "input", 104);
+    i0.ɵɵelementStart(29, "div", 56)(30, "input", 103);
     i0.ɵɵlistener("ngModelChange", function RequestsActionModalsComponent_Conditional_4_Template_input_ngModelChange_30_listener($event) { i0.ɵɵrestoreView(_r11); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.adminReceiveIsDepleted.set($event)); });
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(31, "label", 105);
+    i0.ɵɵelementStart(31, "label", 104);
     i0.ɵɵtext(32, "X\u00E1c nh\u1EADn chu\u1EA9n \u0111\u00E3 d\u00F9ng h\u1EBFt (H\u1EE7y chu\u1EA9n)");
     i0.ɵɵelementEnd()();
-    i0.ɵɵtemplate(33, RequestsActionModalsComponent_Conditional_4_Conditional_33_Template, 6, 1, "div", 106);
+    i0.ɵɵtemplate(33, RequestsActionModalsComponent_Conditional_4_Conditional_33_Template, 6, 1, "div", 105);
     i0.ɵɵelementStart(34, "div", 59)(35, "div", 60)(36, "label", 61);
     i0.ɵɵtext(37, "Ph\u01B0\u01A1ng ph\u00E1p quy\u1EBFt \u0111\u1ECBnh cu\u1ED1i c\u1EE7a Admin ");
     i0.ɵɵelementStart(38, "span", 62);
@@ -619,8 +613,8 @@ export class RequestsActionModalsComponent {
                 this.resetAllStates();
             }
             else if (mode === 'adminReceive' && req) {
-                if (this.adminReceiveAmount() === null && req.totalAmountUsed != null) {
-                    this.adminReceiveAmount.set(req.totalAmountUsed);
+                if (this.adminReceiveAmount() === null) {
+                    this.adminReceiveAmount.set(req.reportedAmountUsed ?? req.totalAmountUsed ?? 0);
                 }
                 if (!this.adminReceiveIsDepleted() && req.reportedDepleted) {
                     this.adminReceiveIsDepleted.set(req.reportedDepleted);
@@ -630,6 +624,9 @@ export class RequestsActionModalsComponent {
                 }
             }
             else if (mode === 'return' && req) {
+                if (this.returnAmount() === null) {
+                    this.returnAmount.set(req.reportedAmountUsed ?? req.totalAmountUsed ?? 0);
+                }
                 if (this.returnSopTags().length === 0 && req.sopTags?.length) {
                     this.returnSopTags.set(sanitizeLegacyTagKeys(req.sopTags));
                 }
@@ -726,22 +723,11 @@ export class RequestsActionModalsComponent {
         this.adminFinalSopTags.update(tags => tags.filter(item => item !== key));
     }
     minimumLoggedAmount() {
-        const standardUnit = this.standard?.unit || this.request?.standardDetails?.unit;
-        return (this.request?.usageLogs || [])
-            .filter(log => !log._isDeleted)
-            .reduce((sum, log) => {
-            if (standardUnit && log.normalized_unit === standardUnit && Number.isFinite(log.normalized_amount)) {
-                return sum + Number(log.normalized_amount);
-            }
-            const normalized = standardUnit
-                ? getStandardizedAmount(log.amount_used, log.unit || standardUnit, standardUnit)
-                : log.amount_used;
-            return sum + (normalized !== null && Number.isFinite(normalized) ? normalized : 0);
-        }, 0);
+        return Math.max(0, Number(this.request?.totalAmountUsed || 0));
     }
     static { this.ɵfac = function RequestsActionModalsComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || RequestsActionModalsComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: RequestsActionModalsComponent, selectors: [["app-requests-action-modals"]], inputs: { activeModal: "activeModal", request: "request", standard: "standard", isForceReturn: "isForceReturn", isProcessing: "isProcessing" }, outputs: { close: "close", approveAction: "approveAction", rejectAction: "rejectAction", logUsageAction: "logUsageAction", returnAction: "returnAction", adminReceiveAction: "adminReceiveAction" }, features: [i0.ɵɵNgOnChangesFeature], decls: 5, vars: 5, consts: [[1, "requests-modal-layer", "fixed", "inset-0", "z-[500]", "flex", "items-center", "justify-center", "p-4", "bg-slate-900/60", "backdrop-blur-sm", "fade-in"], ["role", "dialog", "aria-modal", "true", 1, "bg-white", "dark:bg-slate-900", "rounded-[2.5rem]", "shadow-2xl", "w-full", "max-w-3xl", "flex", "flex-col", "md:flex-row", "overflow-hidden", "animate-bounce-in", "border", "border-slate-100", "dark:border-slate-800", "max-h-[90vh]"], [1, "flex", "w-full", "md:w-2/5", "bg-slate-50", "dark:bg-slate-800/50", "p-6", "md:p-8", "flex-col", "border-b", "md:border-b-0", "md:border-r", "border-slate-100", "dark:border-slate-800", "shrink-0", "overflow-y-auto"], [1, "w-14", "h-14", "rounded-2xl", "bg-white", "dark:bg-slate-800", "text-emerald-600", "dark:text-emerald-400", "flex", "items-center", "justify-center", "text-2xl", "shadow-sm", "border", "border-slate-100", "dark:border-slate-700", "mb-6"], [1, "fa-solid", "fa-vial"], [1, "text-xl", "font-black", "text-slate-800", "dark:text-slate-100", "leading-tight", "mb-2", "line-clamp-2"], [1, "text-xs", "font-bold", "text-indigo-600", "dark:text-indigo-400", "uppercase", "tracking-widest", "mb-6"], [1, "space-y-4"], [1, "flex", "flex-col"], [1, "text-xs", "font-bold", "text-slate-400", "uppercase"], [1, "text-base", "font-bold", "text-slate-700", "dark:text-slate-200"], [1, "text-base", "font-bold", "text-emerald-600"], [1, "mt-auto", "pt-6", "border-t", "border-slate-200", "dark:border-slate-700"], [1, "bg-blue-50", "dark:bg-blue-900/20", "p-3", "rounded-2xl", "border", "border-blue-100", "dark:border-blue-800/30"], [1, "text-xs", "text-blue-700", "dark:text-blue-400", "leading-relaxed", "font-medium"], [1, "fa-solid", "fa-user-check", "mr-1"], [1, "flex-1", "p-6", "md:p-8", "flex", "flex-col", "bg-white", "dark:bg-slate-900", "overflow-y-auto"], [1, "flex", "justify-between", "items-center", "mb-6"], [1, "text-xl", "font-black", "text-slate-800", "dark:text-slate-100", "tracking-tight"], [1, "w-8", "h-8", "rounded-full", "hover:bg-slate-100", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-slate-400", "transition", 3, "click"], [1, "fa-solid", "fa-times"], [1, "flex-1", "space-y-5"], [1, "grid", "grid-cols-1", "md:grid-cols-1", "gap-4"], [1, "block", "text-sm", "font-bold", "text-slate-500", "dark:text-slate-400", "uppercase", "tracking-wider", "mb-2"], [1, "relative"], ["type", "number", "min", "0", "step", "any", "placeholder", "VD: 5", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", 3, "ngModelChange", "ngModel"], [1, "absolute", "right-4", "top-1/2", "-translate-y-1/2", "text-sm", "font-bold", "text-slate-400"], [1, "text-red-500"], ["rows", "3", "placeholder", "Nh\u1EADp m\u1EE5c \u0111\u00EDch b\u00E0n giao...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "focus:ring-4", "focus:ring-indigo-500/10", "transition-all", "outline-none", "resize-none", "placeholder-slate-300", 3, "ngModelChange", "ngModel"], [1, "flex", "justify-end", "gap-3", "mt-8", "pt-4", "border-t", "border-slate-100", "dark:border-slate-800"], [1, "px-6", "py-3", "text-slate-500", "dark:text-slate-400", "font-bold", "text-base", "hover:bg-slate-100", "dark:hover:bg-slate-800", "rounded-2xl", "transition", 3, "click"], [1, "px-8", "py-3", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-xl", "shadow-indigo-200", "dark:shadow-none", "transition", "disabled:opacity-50", "flex", "items-center", "gap-2", "active:scale-95", 3, "click", "disabled"], [1, "fa-solid", "fa-spinner", "fa-spin"], [1, "text-lg", "font-black", "text-indigo-600", "dark:text-indigo-400", "uppercase", "tracking-wide"], [1, "fa-solid", "fa-check-circle", "text-sm"], ["role", "dialog", "aria-modal", "true", 1, "bg-white", "dark:bg-slate-900", "rounded-[2.5rem]", "shadow-2xl", "w-full", "max-w-md", "overflow-hidden", "animate-bounce-in", "border", "border-slate-100", "dark:border-slate-800"], [1, "px-8", "py-6", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "justify-between", "items-center", "bg-red-50/50", "dark:bg-red-900/10"], [1, "font-black", "text-red-600", "dark:text-red-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-ban"], [1, "w-8", "h-8", "rounded-full", "hover:bg-white", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-red-400", "transition", 3, "click"], [1, "p-8", "bg-white", "dark:bg-slate-900"], [1, "mb-6"], [1, "text-base", "font-medium", "text-slate-600", "dark:text-slate-300"], ["rows", "3", "placeholder", "Nh\u1EADp l\u00FD do c\u1EE5 th\u1EC3...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-red-500", "focus:ring-4", "focus:ring-red-500/10", "transition-all", "outline-none", "resize-none", 3, "ngModelChange", "ngModel"], [1, "flex", "justify-end", "gap-3", "mt-8"], [1, "px-8", "py-3", "bg-red-600", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-red-700", "shadow-xl", "shadow-red-200", "dark:shadow-none", "transition", "disabled:opacity-50", 3, "click", "disabled"], [1, "px-8", "py-6", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "justify-between", "items-center", "bg-indigo-50/50", "dark:bg-indigo-900/10"], [1, "font-black", "text-indigo-600", "dark:text-indigo-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-rotate-left"], [1, "w-8", "h-8", "rounded-full", "hover:bg-white", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-indigo-400", "transition", 3, "click"], [1, "p-8", "space-y-6", "bg-white", "dark:bg-slate-900"], [1, "bg-indigo-50/50", "dark:bg-indigo-900/10", "p-4", "rounded-2xl", "border", "border-indigo-100/50", "dark:border-indigo-800/30"], [1, "font-black", "text-slate-800", "dark:text-slate-100", "leading-tight", "mb-2"], [1, "flex", "justify-between", "items-center"], [1, "text-xs", "font-bold", "text-slate-400", "uppercase", "tracking-widest"], [1, "font-black", "text-indigo-600"], [1, "flex", "items-center", "gap-3", "p-4", "bg-amber-50", "dark:bg-amber-900/10", "rounded-2xl", "border", "border-amber-100", "dark:border-amber-800/20"], ["type", "checkbox", "id", "isDepleted", 1, "w-5", "h-5", "accent-amber-600", "rounded-lg", 3, "ngModelChange", "ngModel"], ["for", "isDepleted", 1, "text-sm", "font-bold", "text-amber-700", "dark:amber-400", "cursor-pointer"], [1, "space-y-2", "rounded-2xl", "border", "border-indigo-100", "dark:border-indigo-800/30", "bg-indigo-50/40", "dark:bg-indigo-900/10", "p-4"], [1, "flex", "items-center", "justify-between"], [1, "text-sm", "font-black", "text-indigo-700", "dark:text-indigo-300"], [1, "font-medium", "text-indigo-500"], ["type", "button", 1, "text-xs", "font-bold", "text-slate-500", "hover:text-red-600", 3, "click"], [1, "text-[11px]", "text-indigo-600/80", "dark:text-indigo-300/80"], [1, "flex", "gap-2"], [1, "min-w-0", "flex-1", "rounded-xl", "border", "border-indigo-200", "dark:border-indigo-800", "bg-white", "dark:bg-slate-800", "px-3", "py-2", "text-sm", "font-bold", 3, "ngModelChange", "ngModel"], ["value", ""], [3, "value"], ["type", "button", 1, "rounded-xl", "bg-indigo-600", "px-3", "py-2", "text-white", "font-bold", "disabled:opacity-40", 3, "click", "disabled"], [1, "flex", "flex-wrap", "gap-1.5"], [1, "inline-flex", "items-center", "gap-1", "rounded-full", "bg-white", "dark:bg-slate-800", "border", "border-indigo-200", "dark:border-indigo-700", "px-2.5", "py-1", "text-xs", "font-bold", "text-indigo-700", "dark:text-indigo-300", 3, "title"], [1, "flex", "justify-end", "gap-3", "mt-4", "pt-4", "border-t", "border-slate-50", "dark:border-slate-800"], [1, "px-8", "py-3", "bg-indigo-600", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-indigo-700", "shadow-xl", "shadow-indigo-200", "dark:shadow-none", "transition", "disabled:opacity-50", 3, "click", "disabled"], [1, "bg-blue-50", "dark:bg-blue-900/20", "p-4", "rounded-2xl", "border", "border-blue-200", "dark:border-blue-800/40", "space-y-2"], [1, "flex", "items-center", "gap-2", "text-blue-700", "dark:text-blue-300", "font-black", "text-base"], [1, "fa-solid", "fa-circle-info"], [1, "text-blue-800", "dark:text-blue-200"], [1, "text-blue-500", "font-medium", "text-sm"], [1, "text-sm", "text-amber-700", "dark:text-amber-400", "bg-amber-50", "dark:bg-amber-900/20", "p-2", "rounded-xl", "border", "border-amber-200", "dark:border-amber-800/40"], [1, "text-sm", "text-blue-600", "dark:text-blue-400"], ["type", "number", "step", "any", "placeholder", "S\u1ED1 l\u01B0\u1EE3ng...", 1, "w-full", "px-4", "py-3", "bg-slate-100", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", "pr-12", 3, "ngModelChange", "min", "ngModel"], [1, "fa-solid", "fa-triangle-exclamation", "mr-1"], ["type", "number", "min", "0", "step", "any", "placeholder", "Nh\u1EADp s\u1ED1 l\u01B0\u1EE3ng...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", "pr-12", 3, "ngModelChange", "ngModel"], [1, "text-red-500", "text-xs", "font-bold", "mt-2", "flex", "items-center", "gap-1"], [1, "fa-solid", "fa-triangle-exclamation"], ["type", "button", 1, "text-indigo-400", "hover:text-red-500", 3, "click"], [1, "px-8", "py-6", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "justify-between", "items-center", "bg-teal-50/50", "dark:bg-teal-900/10"], [1, "font-black", "text-teal-600", "dark:text-teal-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-vial-circle-check"], [1, "w-8", "h-8", "rounded-full", "hover:bg-white", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-teal-400", "transition", 3, "click"], ["type", "number", "min", "0", "step", "any", "placeholder", "VD: 5.25", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-teal-500", "outline-none", "pr-12", 3, "ngModelChange", "ngModel"], ["rows", "2", "placeholder", "VD: D\u00F9ng cho m\u1EABu ph\u00E2n t\u00EDch l\u00F4 X...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-teal-500", "transition-all", "outline-none", "resize-none", 3, "ngModelChange", "ngModel"], [1, "flex", "justify-end", "gap-3", "mt-4"], [1, "px-8", "py-3", "bg-teal-600", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-teal-700", "shadow-xl", "shadow-teal-200", "dark:shadow-none", "transition", "disabled:opacity-50", 3, "click", "disabled"], ["role", "dialog", "aria-modal", "true", 1, "bg-white", "dark:bg-slate-900", "rounded-[2.5rem]", "shadow-2xl", "w-full", "max-w-lg", "overflow-hidden", "animate-bounce-in", "border", "border-slate-100", "dark:border-slate-800", "max-h-[90vh]", "flex", "flex-col"], [1, "font-black", "text-indigo-700", "dark:text-indigo-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-clipboard-check"], [1, "p-6", "md:p-8", "space-y-6", "bg-white", "dark:bg-slate-900", "overflow-y-auto"], [1, "grid", "grid-cols-1", "sm:grid-cols-2", "gap-4", "bg-slate-50", "dark:bg-slate-800/50", "p-6", "rounded-[2rem]", "border", "border-slate-100", "dark:border-slate-800", "shadow-inner"], [1, "text-xs", "font-bold", "text-slate-400", "uppercase", "tracking-widest", "mb-1"], [1, "text-xl", "font-black", "text-indigo-600"], [1, "text-base", "font-bold"], ["type", "number", "step", "any", "placeholder", "X\u00E1c nh\u1EADn s\u1ED1 l\u01B0\u1EE3ng th\u1EF1c t\u1EBF...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", "pr-12", 3, "ngModelChange", "min", "ngModel"], ["type", "checkbox", "id", "adminIsDepleted", 1, "w-5", "h-5", "accent-amber-600", "rounded-lg", 3, "ngModelChange", "ngModel"], ["for", "adminIsDepleted", 1, "text-sm", "font-bold", "text-amber-700", "dark:amber-400", "cursor-pointer"], [1, "fade-in"], ["rows", "2", "placeholder", "Nh\u1EADp l\u00FD do nh\u01B0: H\u1EBFt h\u1EA1n, h\u1ECFng, ho\u1EB7c d\u00F9ng h\u1EBFt...", 1, "w-full", "bg-red-50/50", "dark:bg-red-900/10", "border", "border-red-100", "dark:border-red-800/30", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-red-500", "outline-none", "resize-none", 3, "ngModelChange", "ngModel"]], template: function RequestsActionModalsComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵtemplate(0, RequestsActionModalsComponent_Conditional_0_Template, 56, 12, "div", 0)(1, RequestsActionModalsComponent_Conditional_1_Template, 29, 4, "div", 0)(2, RequestsActionModalsComponent_Conditional_2_Template, 49, 12, "div", 0)(3, RequestsActionModalsComponent_Conditional_3_Template, 28, 5, "div", 0)(4, RequestsActionModalsComponent_Conditional_4_Template, 60, 15, "div", 0);
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: RequestsActionModalsComponent, selectors: [["app-requests-action-modals"]], inputs: { activeModal: "activeModal", request: "request", standard: "standard", isForceReturn: "isForceReturn", isProcessing: "isProcessing" }, outputs: { close: "close", approveAction: "approveAction", rejectAction: "rejectAction", logUsageAction: "logUsageAction", returnAction: "returnAction", adminReceiveAction: "adminReceiveAction" }, features: [i0.ɵɵNgOnChangesFeature], decls: 5, vars: 5, consts: [[1, "requests-modal-layer", "fixed", "inset-0", "z-[500]", "flex", "items-center", "justify-center", "p-4", "bg-slate-900/60", "backdrop-blur-sm", "fade-in"], ["role", "dialog", "aria-modal", "true", 1, "bg-white", "dark:bg-slate-900", "rounded-[2.5rem]", "shadow-2xl", "w-full", "max-w-3xl", "flex", "flex-col", "md:flex-row", "overflow-hidden", "animate-bounce-in", "border", "border-slate-100", "dark:border-slate-800", "max-h-[90vh]"], [1, "flex", "w-full", "md:w-2/5", "bg-slate-50", "dark:bg-slate-800/50", "p-6", "md:p-8", "flex-col", "border-b", "md:border-b-0", "md:border-r", "border-slate-100", "dark:border-slate-800", "shrink-0", "overflow-y-auto"], [1, "w-14", "h-14", "rounded-2xl", "bg-white", "dark:bg-slate-800", "text-emerald-600", "dark:text-emerald-400", "flex", "items-center", "justify-center", "text-2xl", "shadow-sm", "border", "border-slate-100", "dark:border-slate-700", "mb-6"], [1, "fa-solid", "fa-vial"], [1, "text-xl", "font-black", "text-slate-800", "dark:text-slate-100", "leading-tight", "mb-2", "line-clamp-2"], [1, "text-xs", "font-bold", "text-indigo-600", "dark:text-indigo-400", "uppercase", "tracking-widest", "mb-6"], [1, "space-y-4"], [1, "flex", "flex-col"], [1, "text-xs", "font-bold", "text-slate-400", "uppercase"], [1, "text-base", "font-bold", "text-slate-700", "dark:text-slate-200"], [1, "text-base", "font-bold", "text-emerald-600"], [1, "mt-auto", "pt-6", "border-t", "border-slate-200", "dark:border-slate-700"], [1, "bg-blue-50", "dark:bg-blue-900/20", "p-3", "rounded-2xl", "border", "border-blue-100", "dark:border-blue-800/30"], [1, "text-xs", "text-blue-700", "dark:text-blue-400", "leading-relaxed", "font-medium"], [1, "fa-solid", "fa-user-check", "mr-1"], [1, "flex-1", "p-6", "md:p-8", "flex", "flex-col", "bg-white", "dark:bg-slate-900", "overflow-y-auto"], [1, "flex", "justify-between", "items-center", "mb-6"], [1, "text-xl", "font-black", "text-slate-800", "dark:text-slate-100", "tracking-tight"], [1, "w-8", "h-8", "rounded-full", "hover:bg-slate-100", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-slate-400", "transition", 3, "click"], [1, "fa-solid", "fa-times"], [1, "flex-1", "space-y-5"], [1, "grid", "grid-cols-1", "md:grid-cols-1", "gap-4"], [1, "block", "text-sm", "font-bold", "text-slate-500", "dark:text-slate-400", "uppercase", "tracking-wider", "mb-2"], [1, "relative"], ["type", "number", "min", "0", "step", "any", "placeholder", "VD: 5", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", 3, "ngModelChange", "ngModel"], [1, "absolute", "right-4", "top-1/2", "-translate-y-1/2", "text-sm", "font-bold", "text-slate-400"], [1, "text-red-500"], ["rows", "3", "placeholder", "Nh\u1EADp m\u1EE5c \u0111\u00EDch b\u00E0n giao...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "focus:ring-4", "focus:ring-indigo-500/10", "transition-all", "outline-none", "resize-none", "placeholder-slate-300", 3, "ngModelChange", "ngModel"], [1, "flex", "justify-end", "gap-3", "mt-8", "pt-4", "border-t", "border-slate-100", "dark:border-slate-800"], [1, "px-6", "py-3", "text-slate-500", "dark:text-slate-400", "font-bold", "text-base", "hover:bg-slate-100", "dark:hover:bg-slate-800", "rounded-2xl", "transition", 3, "click"], [1, "px-8", "py-3", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-xl", "shadow-indigo-200", "dark:shadow-none", "transition", "disabled:opacity-50", "flex", "items-center", "gap-2", "active:scale-95", 3, "click", "disabled"], [1, "fa-solid", "fa-spinner", "fa-spin"], [1, "text-lg", "font-black", "text-indigo-600", "dark:text-indigo-400", "uppercase", "tracking-wide"], [1, "fa-solid", "fa-check-circle", "text-sm"], ["role", "dialog", "aria-modal", "true", 1, "bg-white", "dark:bg-slate-900", "rounded-[2.5rem]", "shadow-2xl", "w-full", "max-w-md", "overflow-hidden", "animate-bounce-in", "border", "border-slate-100", "dark:border-slate-800"], [1, "px-8", "py-6", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "justify-between", "items-center", "bg-red-50/50", "dark:bg-red-900/10"], [1, "font-black", "text-red-600", "dark:text-red-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-ban"], [1, "w-8", "h-8", "rounded-full", "hover:bg-white", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-red-400", "transition", 3, "click"], [1, "p-8", "bg-white", "dark:bg-slate-900"], [1, "mb-6"], [1, "text-base", "font-medium", "text-slate-600", "dark:text-slate-300"], ["rows", "3", "placeholder", "Nh\u1EADp l\u00FD do c\u1EE5 th\u1EC3...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-red-500", "focus:ring-4", "focus:ring-red-500/10", "transition-all", "outline-none", "resize-none", 3, "ngModelChange", "ngModel"], [1, "flex", "justify-end", "gap-3", "mt-8"], [1, "px-8", "py-3", "bg-red-600", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-red-700", "shadow-xl", "shadow-red-200", "dark:shadow-none", "transition", "disabled:opacity-50", 3, "click", "disabled"], [1, "px-8", "py-6", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "justify-between", "items-center", "bg-indigo-50/50", "dark:bg-indigo-900/10"], [1, "font-black", "text-indigo-600", "dark:text-indigo-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-rotate-left"], [1, "w-8", "h-8", "rounded-full", "hover:bg-white", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-indigo-400", "transition", 3, "click"], [1, "p-8", "space-y-6", "bg-white", "dark:bg-slate-900"], [1, "bg-indigo-50/50", "dark:bg-indigo-900/10", "p-4", "rounded-2xl", "border", "border-indigo-100/50", "dark:border-indigo-800/30"], [1, "font-black", "text-slate-800", "dark:text-slate-100", "leading-tight", "mb-2"], [1, "flex", "justify-between", "items-center"], [1, "text-xs", "font-bold", "text-slate-400", "uppercase", "tracking-widest"], [1, "font-black", "text-indigo-600"], [1, "flex", "items-center", "gap-3", "p-4", "bg-amber-50", "dark:bg-amber-900/10", "rounded-2xl", "border", "border-amber-100", "dark:border-amber-800/20"], ["type", "checkbox", "id", "isDepleted", 1, "w-5", "h-5", "accent-amber-600", "rounded-lg", 3, "ngModelChange", "ngModel"], ["for", "isDepleted", 1, "text-sm", "font-bold", "text-amber-700", "dark:amber-400", "cursor-pointer"], [1, "space-y-2", "rounded-2xl", "border", "border-indigo-100", "dark:border-indigo-800/30", "bg-indigo-50/40", "dark:bg-indigo-900/10", "p-4"], [1, "flex", "items-center", "justify-between"], [1, "text-sm", "font-black", "text-indigo-700", "dark:text-indigo-300"], [1, "font-medium", "text-indigo-500"], ["type", "button", 1, "text-xs", "font-bold", "text-slate-500", "hover:text-red-600", 3, "click"], [1, "text-[11px]", "text-indigo-600/80", "dark:text-indigo-300/80"], [1, "flex", "gap-2"], [1, "min-w-0", "flex-1", "rounded-xl", "border", "border-indigo-200", "dark:border-indigo-800", "bg-white", "dark:bg-slate-800", "px-3", "py-2", "text-sm", "font-bold", 3, "ngModelChange", "ngModel"], ["value", ""], [3, "value"], ["type", "button", 1, "rounded-xl", "bg-indigo-600", "px-3", "py-2", "text-white", "font-bold", "disabled:opacity-40", 3, "click", "disabled"], [1, "flex", "flex-wrap", "gap-1.5"], [1, "inline-flex", "items-center", "gap-1", "rounded-full", "bg-white", "dark:bg-slate-800", "border", "border-indigo-200", "dark:border-indigo-700", "px-2.5", "py-1", "text-xs", "font-bold", "text-indigo-700", "dark:text-indigo-300", 3, "title"], [1, "flex", "justify-end", "gap-3", "mt-4", "pt-4", "border-t", "border-slate-50", "dark:border-slate-800"], [1, "px-8", "py-3", "bg-indigo-600", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-indigo-700", "shadow-xl", "shadow-indigo-200", "dark:shadow-none", "transition", "disabled:opacity-50", 3, "click", "disabled"], [1, "bg-blue-50", "dark:bg-blue-900/20", "p-4", "rounded-2xl", "border", "border-blue-200", "dark:border-blue-800/40", "space-y-2"], [1, "flex", "items-center", "gap-2", "text-blue-700", "dark:text-blue-300", "font-black", "text-base"], [1, "fa-solid", "fa-circle-info"], [1, "text-blue-800", "dark:text-blue-200"], [1, "text-sm", "text-amber-700", "dark:text-amber-400", "bg-amber-50", "dark:bg-amber-900/20", "p-2", "rounded-xl", "border", "border-amber-200", "dark:border-amber-800/40"], [1, "text-sm", "text-blue-600", "dark:text-blue-400"], ["type", "number", "step", "any", "placeholder", "S\u1ED1 l\u01B0\u1EE3ng...", 1, "w-full", "px-4", "py-3", "bg-slate-100", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", "pr-12", 3, "ngModelChange", "min", "ngModel"], [1, "fa-solid", "fa-triangle-exclamation", "mr-1"], ["type", "number", "min", "0", "step", "any", "placeholder", "Nh\u1EADp s\u1ED1 l\u01B0\u1EE3ng...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", "pr-12", 3, "ngModelChange", "ngModel"], [1, "text-red-500", "text-xs", "font-bold", "mt-2", "flex", "items-center", "gap-1"], [1, "fa-solid", "fa-triangle-exclamation"], ["type", "button", 1, "text-indigo-400", "hover:text-red-500", 3, "click"], [1, "px-8", "py-6", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "justify-between", "items-center", "bg-teal-50/50", "dark:bg-teal-900/10"], [1, "font-black", "text-teal-600", "dark:text-teal-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-vial-circle-check"], [1, "w-8", "h-8", "rounded-full", "hover:bg-white", "dark:hover:bg-slate-800", "flex", "items-center", "justify-center", "text-teal-400", "transition", 3, "click"], ["type", "number", "min", "0", "step", "any", "placeholder", "VD: 5.25", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-teal-500", "outline-none", "pr-12", 3, "ngModelChange", "ngModel"], ["rows", "2", "placeholder", "VD: D\u00F9ng cho m\u1EABu ph\u00E2n t\u00EDch l\u00F4 X...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-teal-500", "transition-all", "outline-none", "resize-none", 3, "ngModelChange", "ngModel"], [1, "flex", "justify-end", "gap-3", "mt-4"], [1, "px-8", "py-3", "bg-teal-600", "text-white", "font-bold", "text-base", "rounded-2xl", "hover:bg-teal-700", "shadow-xl", "shadow-teal-200", "dark:shadow-none", "transition", "disabled:opacity-50", 3, "click", "disabled"], ["role", "dialog", "aria-modal", "true", 1, "bg-white", "dark:bg-slate-900", "rounded-[2.5rem]", "shadow-2xl", "w-full", "max-w-lg", "overflow-hidden", "animate-bounce-in", "border", "border-slate-100", "dark:border-slate-800", "max-h-[90vh]", "flex", "flex-col"], [1, "font-black", "text-indigo-700", "dark:text-indigo-400", "text-xl", "flex", "items-center", "gap-2"], [1, "fa-solid", "fa-clipboard-check"], [1, "p-6", "md:p-8", "space-y-6", "bg-white", "dark:bg-slate-900", "overflow-y-auto"], [1, "grid", "grid-cols-1", "sm:grid-cols-2", "gap-4", "bg-slate-50", "dark:bg-slate-800/50", "p-6", "rounded-[2rem]", "border", "border-slate-100", "dark:border-slate-800", "shadow-inner"], [1, "text-xs", "font-bold", "text-slate-400", "uppercase", "tracking-widest", "mb-1"], [1, "text-xl", "font-black", "text-indigo-600"], [1, "text-base", "font-bold"], ["type", "number", "step", "any", "placeholder", "X\u00E1c nh\u1EADn s\u1ED1 l\u01B0\u1EE3ng th\u1EF1c t\u1EBF...", 1, "w-full", "px-4", "py-3", "bg-slate-50", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-indigo-500", "outline-none", "pr-12", 3, "ngModelChange", "min", "ngModel"], ["type", "checkbox", "id", "adminIsDepleted", 1, "w-5", "h-5", "accent-amber-600", "rounded-lg", 3, "ngModelChange", "ngModel"], ["for", "adminIsDepleted", 1, "text-sm", "font-bold", "text-amber-700", "dark:amber-400", "cursor-pointer"], [1, "fade-in"], ["rows", "2", "placeholder", "Nh\u1EADp l\u00FD do nh\u01B0: H\u1EBFt h\u1EA1n, h\u1ECFng, ho\u1EB7c d\u00F9ng h\u1EBFt...", 1, "w-full", "bg-red-50/50", "dark:bg-red-900/10", "border", "border-red-100", "dark:border-red-800/30", "rounded-2xl", "text-base", "font-bold", "text-slate-700", "dark:text-slate-200", "focus:border-red-500", "outline-none", "resize-none", 3, "ngModelChange", "ngModel"]], template: function RequestsActionModalsComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵtemplate(0, RequestsActionModalsComponent_Conditional_0_Template, 56, 12, "div", 0)(1, RequestsActionModalsComponent_Conditional_1_Template, 29, 4, "div", 0)(2, RequestsActionModalsComponent_Conditional_2_Template, 49, 11, "div", 0)(3, RequestsActionModalsComponent_Conditional_3_Template, 28, 5, "div", 0)(4, RequestsActionModalsComponent_Conditional_4_Template, 60, 15, "div", 0);
         } if (rf & 2) {
             i0.ɵɵconditional(ctx.activeModal === "approve" && ctx.request ? 0 : -1);
             i0.ɵɵadvance();
@@ -897,12 +883,11 @@ export class RequestsActionModalsComponent {
                       </div>
                   </div>
 
-                  @if ((request.usageLogs || []).length > 0) {
+                  @if ((request.totalAmountUsed || 0) > 0) {
                       <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-200 dark:border-blue-800/40 space-y-2">
                           <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-base">
                               <i class="fa-solid fa-circle-info"></i>
                               Tổng đã ghi nhận: <span class="text-blue-800 dark:text-blue-200">{{request.totalAmountUsed || 0}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
-                              <span class="text-blue-500 font-medium text-sm">({{(request.usageLogs || []).length}} đợt)</span>
                           </div>
                           @if (isForceReturn) {
                               <p class="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
@@ -963,7 +948,7 @@ export class RequestsActionModalsComponent {
 
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onReturn()" [disabled]="returnAmount() === null || returnAmount()! < minimumLoggedAmount() || isProcessing || (!(request.usageLogs?.length) && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onReturn()" [disabled]="returnAmount() === null || returnAmount()! < minimumLoggedAmount() || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                           Xác nhận trả
                       </button>
                   </div>
@@ -1111,5 +1096,5 @@ export class RequestsActionModalsComponent {
         }], adminReceiveAction: [{
             type: Output
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(RequestsActionModalsComponent, { className: "RequestsActionModalsComponent", filePath: "src/app/features/standards/requests/components/requests-action-modals.component.ts", lineNumber: 344 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(RequestsActionModalsComponent, { className: "RequestsActionModalsComponent", filePath: "src/app/features/standards/requests/components/requests-action-modals.component.ts", lineNumber: 343 }); })();
 //# sourceMappingURL=requests-action-modals.component.js.map

@@ -4,6 +4,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteField, onSnapshot, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { ReportService } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { DailyChecklistMaterializerService } from '../../../core/services/daily-checklist-materializer.service';
+import { buildDailyChecklistEntry } from '../../../core/utils/daily-checklist-projection';
 import * as i0 from "@angular/core";
 export class ResultService {
     constructor() {
@@ -11,6 +13,7 @@ export class ResultService {
         this.auth = inject(AuthService);
         this.reportService = inject(ReportService);
         this.toast = inject(ToastService);
+        this.dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
     }
     getDocRef(requestId) {
         // Tái sử dụng collection 'requests' để có đầy đủ quyền đọc/ghi trên Production
@@ -65,7 +68,7 @@ export class ResultService {
                 details,
                 timestamp: serverTimestamp(),
                 lastUpdated: serverTimestamp(),
-                user: this.auth.currentUser()?.displayName || 'Hệ thống',
+                user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
                 targetId: requestId,
                 requestId,
                 sopId,
@@ -304,6 +307,15 @@ export class ResultService {
                 ...(draft.resultData || {})
             }));
             const batch = writeBatch(this.fb.db);
+            const dailyEntriesByDate = new Map();
+            const queueDailyEntry = (request) => {
+                const entry = buildDailyChecklistEntry(request);
+                if (!entry || !request.analysisDate)
+                    return;
+                const entries = dailyEntriesByDate.get(request.analysisDate) || [];
+                entries.push(entry);
+                dailyEntriesByDate.set(request.analysisDate, entries);
+            };
             // 1. Cập nhật tài liệu metadata ( requests )
             const summaryPayload = {
                 version: draft.version !== undefined ? draft.version : (metaData['analysisResultSummary']?.['version'] || legacyResult['version'] || 0),
@@ -371,6 +383,12 @@ export class ResultService {
                 metaUpdatePayload.resultStatusReason = 'data_entry_started';
             }
             batch.update(metaRef, metaUpdatePayload);
+            queueDailyEntry({
+                id: requestId,
+                ...metaData,
+                status: metaUpdatePayload.status || metaData['status'],
+                analysisResultSummary: summaryPayload
+            });
             // 2. Lưu trữ dữ liệu lưới kết quả chi tiết ( results_details )
             //    KHÔNG lưu publishedBackup vào đây để tránh vượt giới hạn 40.000 index entries
             //    Dữ liệu backup đã được lưu an toàn trong sub-collection history khi xuất bản.
@@ -434,10 +452,17 @@ export class ResultService {
                             childMetaUpdatePayload.resultStatusReason = 'data_entry_started';
                         }
                         batch.update(childReqRef, childMetaUpdatePayload);
+                        queueDailyEntry({
+                            id: childId,
+                            ...childMeta,
+                            status: childMetaUpdatePayload.status || childMeta['status'],
+                            analysisResultSummary: summaryPayload
+                        });
                     }
                 }
             }
             await batch.commit();
+            await this.dailyChecklistMaterializer.materializeEntryGroupsBestEffort(dailyEntriesByDate, 'ResultService.saveDraft');
             if (isManualSave) {
                 const sopId = metaData['sopId'] || legacyResult['sopId'] || '';
                 const sopName = metaData['sopName'] || legacyResult['sopName'] || '';
@@ -855,11 +880,23 @@ export class ResultService {
         if (!allPublished || !allHaveResults)
             return false;
         try {
-            await updateDoc(this.getDocRef(requestId), {
+            const metaRef = this.getDocRef(requestId);
+            const metaSnap = await getDoc(metaRef);
+            if (!metaSnap.exists())
+                return false;
+            const batch = writeBatch(this.fb.db);
+            batch.update(metaRef, {
                 status: 'completed',
                 resultStatusReason: 'reconciled',
                 lastUpdated: serverTimestamp()
             });
+            const completedProjection = {
+                id: requestId,
+                ...metaSnap.data(),
+                status: 'completed'
+            };
+            await batch.commit();
+            await this.dailyChecklistMaterializer.materializeRequestBestEffort(completedProjection, 'ResultService.reconcileCompletionStatus');
             await this.logActivity('RECONCILE_RESULT_STATUS', `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ draft sang completed (ID: ${requestId})`, requestId, draft.sopId || '', draft.sopName || '');
             return true;
         }

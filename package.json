@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.08-b03",
+  "version": "26.08.08-b04",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
@@ -17,13 +17,14 @@
     "test:notifications": "tsx --test api/notification-utils.test.ts src/app/core/services/notification-policy.test.ts src/app/core/services/toast.service.test.ts",
     "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts",
     "test:excel-import": "tsx --test src/app/features/results/import/excel-result-import.test.ts",
-    "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/features/targets/target-scope-classifier.spec.ts src/app/core/services/calculator.service.test.ts src/app/core/services/smart-batch-security-rules.test.ts && npm run test:firestore-rules",
-    "test:firestore-rules": "firebase --project demo-lims-smart-batch-rules emulators:exec --only firestore \"tsx --test src/app/core/services/smart-batch-firestore-rules.emulator.test.ts\"",
+    "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/features/targets/target-scope-classifier.spec.ts src/app/core/services/calculator.service.test.ts src/app/core/services/smart-batch-security-rules.test.ts scripts/standard-request-security-audit.test.ts && npm run test:firestore-rules",
+    "test:firestore-rules": "node scripts/run-firestore-rules-tests.js",
     "test:daily-checklists": "tsx --test src/app/core/utils/daily-checklist-projection.test.ts src/app/core/utils/daily-checklist-hotfix.test.ts",
     "validate:release-notes": "node scripts/validate-release-notes.js",
     "migrate:releases": "node scripts/migrate-releases.js",
     "backfill:daily-checklists": "tsx scripts/backfill-daily-checklists.ts",
     "verify:daily-checklists": "tsx scripts/backfill-daily-checklists.ts --verify-only",
+    "audit:standard-request-security": "tsx scripts/audit-standard-request-security.ts",
     "lint": "ng lint",
     "typecheck:api": "tsc -p tsconfig.api.json --noEmit",
     "dump-sops": "node scratch/dump_all_sops.js"

@@ -3,7 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StandardRequest, ReferenceStandard } from '../../../../core/models/standard.model';
-import { getStandardizedAmount, formatNum } from '../../../../shared/utils/utils';
+import { formatNum } from '../../../../shared/utils/utils';
 import { StandardTagCatalogService } from '../../services/standard-tag-catalog.service';
 import { MAX_RETURN_TAGS, formatMethodOptionLabel, sanitizeLegacyTagKeys } from '../../services/standard-tag.utils';
 
@@ -150,12 +150,11 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       </div>
                   </div>
 
-                  @if ((request.usageLogs || []).length > 0) {
+                  @if ((request.totalAmountUsed || 0) > 0) {
                       <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-200 dark:border-blue-800/40 space-y-2">
                           <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-base">
                               <i class="fa-solid fa-circle-info"></i>
                               Tổng đã ghi nhận: <span class="text-blue-800 dark:text-blue-200">{{request.totalAmountUsed || 0}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
-                              <span class="text-blue-500 font-medium text-sm">({{(request.usageLogs || []).length}} đợt)</span>
                           </div>
                           @if (isForceReturn) {
                               <p class="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
@@ -216,7 +215,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onReturn()" [disabled]="returnAmount() === null || returnAmount()! < minimumLoggedAmount() || isProcessing || (!(request.usageLogs?.length) && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0))" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onReturn()" [disabled]="returnAmount() === null || returnAmount()! < minimumLoggedAmount() || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                           Xác nhận trả
                       </button>
                   </div>
@@ -392,8 +391,8 @@ export class RequestsActionModalsComponent implements OnChanges {
         if (!mode) {
            this.resetAllStates();
         } else if (mode === 'adminReceive' && req) {
-           if (this.adminReceiveAmount() === null && req.totalAmountUsed != null) {
-              this.adminReceiveAmount.set(req.totalAmountUsed);
+           if (this.adminReceiveAmount() === null) {
+              this.adminReceiveAmount.set(req.reportedAmountUsed ?? req.totalAmountUsed ?? 0);
            }
            if (!this.adminReceiveIsDepleted() && req.reportedDepleted) {
               this.adminReceiveIsDepleted.set(req.reportedDepleted);
@@ -402,6 +401,9 @@ export class RequestsActionModalsComponent implements OnChanges {
               this.adminFinalSopTags.set(sanitizeLegacyTagKeys(req.sopTags));
            }
         } else if (mode === 'return' && req) {
+           if (this.returnAmount() === null) {
+              this.returnAmount.set(req.reportedAmountUsed ?? req.totalAmountUsed ?? 0);
+           }
            if (this.returnSopTags().length === 0 && req.sopTags?.length) {
               this.returnSopTags.set(sanitizeLegacyTagKeys(req.sopTags));
            }
@@ -509,17 +511,6 @@ export class RequestsActionModalsComponent implements OnChanges {
   formatNum = formatNum;
 
   minimumLoggedAmount(): number {
-    const standardUnit = this.standard?.unit || this.request?.standardDetails?.unit;
-    return (this.request?.usageLogs || [])
-      .filter(log => !log._isDeleted)
-      .reduce((sum, log) => {
-        if (standardUnit && log.normalized_unit === standardUnit && Number.isFinite(log.normalized_amount)) {
-          return sum + Number(log.normalized_amount);
-        }
-        const normalized = standardUnit
-          ? getStandardizedAmount(log.amount_used, log.unit || standardUnit, standardUnit)
-          : log.amount_used;
-        return sum + (normalized !== null && Number.isFinite(normalized) ? normalized : 0);
-      }, 0);
+    return Math.max(0, Number(this.request?.totalAmountUsed || 0));
   }
 }

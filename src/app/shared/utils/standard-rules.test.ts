@@ -21,13 +21,76 @@ test('standard requests are owner-scoped and physical deletes are denied', () =>
     rules.indexOf('match /artifacts/{appId}/purchase_requests/{reqId}')
   );
   assert.match(requestsBlock, /resource\.data\.requestedBy == request\.auth\.uid/);
-  assert.match(requestsBlock, /request\.resource\.data\.requestedBy == request\.auth\.uid/);
+  assert.match(rules, /request\.resource\.data\.requestedBy == request\.auth\.uid/);
+  assert.match(requestsBlock, /function validStandardRequestCreate\(appId\)/);
+  assert.match(requestsBlock, /function validStandardRequestRollback\(appId\)/);
+  assert.match(requestsBlock, /function validRequesterStandardRequestUpdate\(appId\)/);
+  assert.match(requestsBlock, /function validStandardRequestUpdate\(appId\)/);
+  assert.match(requestsBlock, /validStandardRequestCreate\(appId\)/);
+  assert.match(requestsBlock, /validStandardRequestUpdate\(appId\)/);
   assert.match(requestsBlock, /allow delete: if false/);
 });
 
-test('requester stock writes can only reduce non-negative stock', () => {
-  assert.match(rules, /request\.resource\.data\.current_amount >= 0/);
-  assert.match(rules, /request\.resource\.data\.current_amount <= resource\.data\.current_amount/);
+test('reference standard update branches are named helpers instead of one compound rule', () => {
+  const standardsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/reference_standards/{stdId}'),
+    rules.indexOf('match /artifacts/{appId}/standard_cleanup_batches/{batchId}')
+  );
+  assert.match(standardsBlock, /allow update: if canUpdateReferenceStandard\(appId\)/);
+  assert.match(standardsBlock, /function canApproveReferenceStandardUpdate\(appId\)/);
+  assert.match(standardsBlock, /function canRequesterUpdateReferenceStandard\(appId\)/);
+  assert.match(standardsBlock, /function canRollbackReferenceStandardUpdate\(appId\)/);
+  assert.match(standardsBlock, /function canUpdateReferenceStandard\(appId\)/);
+});
+
+test('stats writes require an operational stats permission rather than any signed-in user', () => {
+  const statsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/stats/{docId}'),
+    rules.indexOf('match /artifacts/{appId}/monthly_stats/{docId}')
+  );
+  const monthlyStatsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/monthly_stats/{docId}'),
+    rules.indexOf('match /artifacts/{appId}/notifications/{docId}')
+  );
+  assert.match(statsBlock, /allow write: if canUpdateStats\(appId\)/);
+  assert.match(monthlyStatsBlock, /allow write: if canUpdateStats\(appId\)/);
+  assert.doesNotMatch(statsBlock, /allow write: if isSignedIn\(\)/);
+  assert.doesNotMatch(monthlyStatsBlock, /allow write: if isSignedIn\(\)/);
+});
+
+test('requester stock writes require the correlated secure usage protocol', () => {
+  const standardsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/reference_standards/{stdId}'),
+    rules.indexOf('match /artifacts/{appId}/standard_cleanup_batches/{batchId}')
+  );
+  assert.match(rules, /function validRequesterUsageStateTransition\(appId, stdId, logId\)/);
+  assert.match(rules, /function validRequesterUsageJournalCreate\(appId, stdId, logId, data\)/);
+  assert.match(standardsBlock, /function validRequesterUsageTransaction\(appId\)/);
+  assert.match(standardsBlock, /validRequesterUsageStateTransition\(appId, stdId, usageLogId\)/);
+  assert.match(rules, /getAfter\(\/databases\/\$\(database\)\/documents\/artifacts\/\$\(appId\)\/standard_usages\/\$\(logId\)\)/);
+  assert.doesNotMatch(standardsBlock, /current_amount <= resource\.data\.current_amount/);
+});
+
+test('requester request mutations keep admin fields and legacy accounting outside lifecycle allowlists', () => {
+  const requestsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/standard_requests/{reqId}'),
+    rules.indexOf('match /artifacts/{appId}/purchase_requests/{reqId}')
+  );
+  const requesterCreate = requestsBlock.slice(
+    requestsBlock.indexOf('function validRequesterStandardRequestCreate(appId)'),
+    requestsBlock.indexOf('function validStandardRequestCreate(appId)')
+  );
+  const requesterLifecycle = requestsBlock.slice(
+    requestsBlock.indexOf('function validRequesterReturnSubmission(appId)'),
+    requestsBlock.indexOf('function validRequesterStandardRequestUpdate(appId)')
+  );
+  assert.match(requesterCreate, /data\.keys\(\)\.hasOnly/);
+  assert.doesNotMatch(requesterCreate, /finalSopTags/);
+  assert.doesNotMatch(requesterCreate, /confirmedAmountUsed/);
+  assert.doesNotMatch(requesterCreate, /receivedBy/);
+  assert.doesNotMatch(requesterLifecycle, /usageLogs/);
+  assert.doesNotMatch(requesterLifecycle, /totalAmountUsed/);
+  assert.match(requestsBlock, /changed\.hasOnly\(\['totalAmountUsed', 'lastUsageLogId', 'updatedAt', 'lastUpdated'\]\)/);
 });
 
 test('batch operators can only deduct inventory stock through constrained updates', () => {

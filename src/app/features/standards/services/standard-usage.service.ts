@@ -330,18 +330,19 @@ export class StandardUsageService {
 
       const log: UsageLog = {
         id: newLogRef.id, timestamp: Date.now(), date: new Date().toISOString(),
-        user: currentUser.displayName || currentUser.email || userName || userId,
+        user: reqData.requestedByName || currentUser.displayName || currentUser.email || userName || userId,
+        userId: currentUser.uid,
         amount_used: amount,
         unit,
         normalized_amount: amountToDeduct,
         normalized_unit: stockUnit,
         purpose: purpose || 'Báo cáo sử dụng',
-        standardId: stdData.id, standardName: stdData.name, lotNumber: stdData.lot_number,
+        standardId, standardName: stdData.name, lotNumber: stdData.lot_number,
         cas_number: stdData.cas_number, internalId: stdData.internal_id,
         manufacturer: stdData.manufacturer, requestId
       };
 
-      transaction.set(newLogRef, log);
+      transaction.set(newLogRef, { ...log, lastUpdated: serverTimestamp() });
       const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
       transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
 
@@ -354,10 +355,9 @@ export class StandardUsageService {
       if (!stdData.date_opened || logDateStr < stdData.date_opened) stdUpdates['date_opened'] = logDateStr;
       transaction.update(stdRef, stdUpdates);
 
-      const currentLogs = reqData.usageLogs || [];
       transaction.update(reqRef, {
         totalAmountUsed: (reqData.totalAmountUsed || 0) + amountToDeduct,
-        usageLogs: [...currentLogs, log],
+        lastUsageLogId: newLogRef.id,
         updatedAt: Date.now(), lastUpdated: serverTimestamp()
       });
     });

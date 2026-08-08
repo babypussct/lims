@@ -335,7 +335,7 @@ export class AppHeaderComponent {
             i0.ɵɵqueryRefresh(_t = i0.ɵɵloadQuery()) && (ctx.paletteInput = _t.first);
         } }, hostBindings: function AppHeaderComponent_HostBindings(rf, ctx) { if (rf & 1) {
             i0.ɵɵlistener("keydown", function AppHeaderComponent_keydown_HostBindingHandler($event) { return ctx.handleKeyboardEvent($event); }, false, i0.ɵɵresolveWindow)("keydown.escape", function AppHeaderComponent_keydown_escape_HostBindingHandler() { return ctx.onEscape(); }, false, i0.ɵɵresolveDocument);
-        } }, decls: 33, vars: 30, consts: [["paletteInput", ""], [1, "hidden", "md:grid", "fixed", "top-0", "right-0", "z-[45]", "h-14", "items-center", "gap-3", "px-5", "grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)]", "lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22.5rem)_minmax(0,1fr)]", "bg-white/80", "dark:bg-slate-900/80", "backdrop-blur-xl", "border-b", "border-slate-200/50", "dark:border-slate-800/50", "transition-[left]", "duration-300", "ease-in-out"], [1, "flex", "items-center", "gap-2", "min-w-0"], [1, "w-9", "h-9", "rounded-xl", "flex", "items-center", "justify-center", "shrink-0", "text-slate-400", "dark:text-slate-500", "hover:bg-slate-100", "dark:hover:bg-slate-800", "hover:text-fuchsia-500", "dark:hover:text-fuchsia-400", "transition-all", "duration-200", "active:scale-90", 3, "click", "title"], [1, "fa-solid", "text-[13px]", "transition-transform", "duration-300"], ["type", "button", "title", "V\u1EC1 Trang Ch\u1EE7", "aria-label", "V\u1EC1 Trang Ch\u1EE7", 1, "w-8", "h-8", "rounded-lg", "flex", "items-center", "justify-center", "shrink-0", "text-fuchsia-500", "dark:text-fuchsia-400", "hover:bg-fuchsia-50", "dark:hover:bg-fuchsia-950/40", "transition-all", "duration-200", "active:scale-90", 3, "click"], [1, "fa-solid", "fa-house", "text-[12px]"], [1, "text-sm", "font-bold", "text-slate-700", "dark:text-slate-200", "truncate"], ["title", "T\u00ECm ki\u1EBFm trang ho\u1EB7c qu\u00E9t m\u00E3 (Ctrl+K)", 1, "w-full", "h-9", "px-0", "lg:px-3", "rounded-xl", "flex", "items-center", "justify-center", "lg:justify-start", "gap-2.5", "bg-slate-50", "dark:bg-slate-800/80", "border", "border-slate-200/60", "dark:border-slate-700/60", "text-slate-400", "dark:text-slate-500", "hover:border-fuchsia-300", "dark:hover:border-fuchsia-700", "hover:text-fuchsia-500", "dark:hover:text-fuchsia-400", "transition-all", "duration-200", "group", "cursor-pointer", 3, "click"], [1, "fa-solid", "fa-magnifying-glass", "text-[11px]", "group-hover:scale-110", "transition-transform"], [1, "text-xs", "font-medium", "hidden", "lg:inline", "flex-1", "text-left", "truncate"], [1, "hidden", "xl:inline-flex", "items-center", "gap-0.5", "h-5", "px-1.5", "rounded-md", "bg-white", "dark:bg-slate-700", "border", "border-slate-200", "dark:border-slate-600", "text-[10px]", "font-bold", "text-slate-400", "dark:text-slate-500", "shadow-sm"], [1, "flex", "items-center", "justify-end", "gap-2", "min-w-0"], [1, "w-9", "h-9", "rounded-xl", "flex", "items-center", "justify-center", "shrink-0", "bg-white", "dark:bg-slate-800", "border", "border-slate-200/60", "dark:border-slate-700/60", "text-slate-500", "dark:text-slate-400", "hover:text-fuchsia-500", "dark:hover:text-fuchsia-400", "hover:border-fuchsia-300", "dark:hover:border-fuchsia-700", "hover:shadow-md", "hover:shadow-fuchsia-500/5", "transition-all", "duration-200", "shadow-sm", "active:scale-95", "disabled:pointer-events-none", 3, "click", "disabled", "title"], [1, "fa-solid", "text-sm", "transition-transform", "duration-300"], [3, "headerMode"], [1, "relative"], [1, "fixed", "inset-0", "z-[55]"], ["title", "T\u00E0i kho\u1EA3n", 1, "flex", "items-center", "gap-2.5", "h-10", "pl-1", "pr-3", "rounded-xl", "border", "transition-all", "duration-200", "group", "active:scale-[0.97]", 3, "click", "ngClass"], [1, "relative", "w-8", "h-8", "shrink-0", 3, "title"], ["alt", "User", 1, "w-8", "h-8", "rounded-lg", "bg-white", "dark:bg-slate-800", "border", "border-slate-200/50", "dark:border-slate-700/50", "object-cover", 3, "src"], [1, "absolute", "-right-0.5", "-bottom-0.5", "w-2.5", "h-2.5", "rounded-full", "border-2", "border-white", "dark:border-slate-800", 3, "ngClass"], [1, "hidden", "xl:block", "text-left", "min-w-0"], [1, "text-xs", "font-bold", "text-slate-700", "dark:text-slate-200", "truncate", "max-w-[100px]"], [1, "text-[10px]", "text-slate-400", "dark:text-slate-500", "truncate"], [1, "fa-solid", "fa-chevron-down", "text-[9px]", "text-slate-400", "transition-transform", "duration-200"], [1, "absolute", "right-0", "top-full", "mt-2", "w-72", "rounded-2xl", "border", "border-slate-200", "dark:border-slate-700", "bg-white", "dark:bg-slate-900", "text-slate-700", "dark:text-slate-200", "shadow-2xl", "overflow-hidden", "z-[60]", "fade-in"], [1, "fixed", "inset-0", "z-[200]", "flex", "items-start", "justify-center", "pt-[15vh]", "px-4", "bg-slate-900/60", "backdrop-blur-sm", "fade-in"], [1, "fixed", "inset-0", "z-[55]", 3, "click"], [1, "px-4", "py-3", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "items-center", "gap-3"], [1, "relative", "w-10", "h-10", "shrink-0"], ["alt", "User", 1, "w-10", "h-10", "rounded-full", "bg-white", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "object-cover", 3, "src"], [1, "absolute", "right-0", "bottom-0", "w-3", "h-3", "rounded-full", "border-2", "border-white", "dark:border-slate-900", 3, "ngClass", "title"], [1, "min-w-0", "flex-1"], [1, "text-sm", "font-bold", "truncate"], [1, "text-[11px]", "text-slate-400", "dark:text-slate-500", "truncate"], [1, "p-2", "space-y-0.5"], [1, "w-full", "flex", "items-center", "gap-3", "px-3", "py-2.5", "text-sm", "rounded-xl", "hover:bg-slate-50", "dark:hover:bg-slate-800", "transition-colors", "text-left", 3, "click"], [1, "fa-solid", "fa-user-gear", "w-4", "text-center", "text-slate-400"], [1, "fa-solid", "fa-clock-rotate-left", "w-4", "text-center", "text-slate-400"], [1, "fa-solid", "w-4", "text-center", "text-slate-400"], [1, "h-px", "bg-slate-100", "dark:bg-slate-800", "my-1"], [1, "w-full", "flex", "items-center", "gap-3", "px-3", "py-2.5", "text-sm", "rounded-xl", "text-red-600", "dark:text-red-400", "hover:bg-red-50", "dark:hover:bg-red-900/20", "transition-colors", "text-left", "font-semibold", 3, "click"], [1, "fa-solid", "fa-arrow-right-from-bracket", "w-4", "text-center"], [1, "fixed", "inset-0", "z-[200]", "flex", "items-start", "justify-center", "pt-[15vh]", "px-4", "bg-slate-900/60", "backdrop-blur-sm", "fade-in", 3, "click"], [1, "w-full", "max-w-lg", "bg-white", "dark:bg-slate-900", "rounded-2xl", "shadow-2xl", "border", "border-slate-200", "dark:border-slate-800", "overflow-hidden", "fade-in", 3, "click"], [1, "flex", "items-center", "gap-3", "px-4", "h-14", "border-b", "border-slate-100", "dark:border-slate-800"], [1, "fa-solid", "fa-magnifying-glass", "text-fuchsia-500", "text-sm"], ["type", "text", "placeholder", "T\u00ECm trang, t\u00EDnh n\u0103ng ho\u1EB7c qu\u00E9t m\u00E3...", 1, "flex-1", "bg-transparent", "text-sm", "font-medium", "text-slate-700", "dark:text-slate-200", "placeholder:text-slate-400", "outline-none", 3, "ngModelChange", "keydown", "ngModel"], [1, "text-[10px]", "font-bold", "text-slate-400", "bg-slate-100", "dark:bg-slate-800", "px-1.5", "py-0.5", "rounded-md", "border", "border-slate-200", "dark:border-slate-700"], [1, "max-h-[50vh]", "overflow-y-auto", "custom-scrollbar", "py-2"], [1, "px-4", "py-8", "text-center", "text-sm", "text-slate-400"], [1, "fa-solid", "fa-search", "text-2xl", "mb-2", "block", "opacity-30"], [1, "w-full", "flex", "items-center", "gap-3", "px-4", "py-2.5", "text-left", "transition-colors", "duration-100", 3, "ngClass"], [1, "w-full", "flex", "items-center", "gap-3", "px-4", "py-2.5", "text-left", "transition-colors", "duration-100", 3, "click", "ngClass"], [1, "w-8", "h-8", "rounded-lg", "flex", "items-center", "justify-center", "shrink-0", "transition-colors", 3, "ngClass"], [1, "flex-1", "min-w-0"], [1, "text-sm", "font-semibold", "truncate"], [1, "text-[10px]", "text-slate-400", "dark:text-slate-500"], [1, "text-[9px]", "font-bold", "text-fuchsia-400", "bg-fuchsia-50", "dark:bg-fuchsia-900/30", "px-1.5", "py-0.5", "rounded", "border", "border-fuchsia-200/50", "dark:border-fuchsia-800/30"]], template: function AppHeaderComponent_Template(rf, ctx) { if (rf & 1) {
+        } }, decls: 33, vars: 32, consts: [["paletteInput", ""], [1, "hidden", "md:grid", "fixed", "top-0", "right-0", "z-[45]", "h-14", "items-center", "gap-3", "px-5", "grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)]", "lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22.5rem)_minmax(0,1fr)]", "bg-white/80", "dark:bg-slate-900/80", "backdrop-blur-xl", "border-b", "border-slate-200/50", "dark:border-slate-800/50", "transition-[left]", "duration-300", "ease-in-out"], [1, "flex", "items-center", "gap-2", "min-w-0"], [1, "w-9", "h-9", "rounded-xl", "flex", "items-center", "justify-center", "shrink-0", "text-slate-400", "dark:text-slate-500", "hover:bg-slate-100", "dark:hover:bg-slate-800", "hover:text-fuchsia-500", "dark:hover:text-fuchsia-400", "transition-all", "duration-200", "active:scale-90", 3, "click", "title"], [1, "fa-solid", "text-[13px]", "transition-transform", "duration-300"], ["type", "button", "title", "V\u1EC1 Trang Ch\u1EE7", "aria-label", "V\u1EC1 Trang Ch\u1EE7", 1, "w-8", "h-8", "rounded-lg", "flex", "items-center", "justify-center", "shrink-0", "text-fuchsia-500", "dark:text-fuchsia-400", "hover:bg-fuchsia-50", "dark:hover:bg-fuchsia-950/40", "transition-all", "duration-200", "active:scale-90", 3, "click"], [1, "fa-solid", "fa-house", "text-[12px]"], [1, "text-sm", "font-bold", "text-slate-700", "dark:text-slate-200", "truncate"], ["aria-label", "M\u1EDF t\u00ECm ki\u1EBFm ch\u1EE9c n\u0103ng", "title", "T\u00ECm ki\u1EBFm trang ho\u1EB7c qu\u00E9t m\u00E3 (Ctrl+K)", 1, "w-full", "h-9", "px-0", "lg:px-3", "rounded-xl", "flex", "items-center", "justify-center", "lg:justify-start", "gap-2.5", "bg-slate-50", "dark:bg-slate-800/80", "border", "border-slate-200/60", "dark:border-slate-700/60", "text-slate-400", "dark:text-slate-500", "hover:border-fuchsia-300", "dark:hover:border-fuchsia-700", "hover:text-fuchsia-500", "dark:hover:text-fuchsia-400", "transition-all", "duration-200", "group", "cursor-pointer", 3, "click"], [1, "fa-solid", "fa-magnifying-glass", "text-[11px]", "group-hover:scale-110", "transition-transform"], [1, "text-xs", "font-medium", "hidden", "lg:inline", "flex-1", "text-left", "truncate"], [1, "hidden", "xl:inline-flex", "items-center", "gap-0.5", "h-5", "px-1.5", "rounded-md", "bg-white", "dark:bg-slate-700", "border", "border-slate-200", "dark:border-slate-600", "text-[10px]", "font-bold", "text-slate-400", "dark:text-slate-500", "shadow-sm"], [1, "flex", "items-center", "justify-end", "gap-2", "min-w-0"], [1, "w-9", "h-9", "rounded-xl", "flex", "items-center", "justify-center", "shrink-0", "bg-white", "dark:bg-slate-800", "border", "border-slate-200/60", "dark:border-slate-700/60", "text-slate-500", "dark:text-slate-400", "hover:text-fuchsia-500", "dark:hover:text-fuchsia-400", "hover:border-fuchsia-300", "dark:hover:border-fuchsia-700", "hover:shadow-md", "hover:shadow-fuchsia-500/5", "transition-all", "duration-200", "shadow-sm", "active:scale-95", "disabled:pointer-events-none", 3, "click", "disabled", "title"], [1, "fa-solid", "text-sm", "transition-transform", "duration-300"], [3, "headerMode"], [1, "relative"], [1, "fixed", "inset-0", "z-[55]"], ["aria-controls", "profile-menu", "aria-haspopup", "menu", "aria-label", "M\u1EDF menu t\u00E0i kho\u1EA3n", "title", "T\u00E0i kho\u1EA3n", 1, "flex", "items-center", "gap-2.5", "h-10", "pl-1", "pr-3", "rounded-xl", "border", "transition-all", "duration-200", "group", "active:scale-[0.97]", 3, "click", "ngClass"], [1, "relative", "w-8", "h-8", "shrink-0", 3, "title"], ["alt", "User", 1, "w-8", "h-8", "rounded-lg", "bg-white", "dark:bg-slate-800", "border", "border-slate-200/50", "dark:border-slate-700/50", "object-cover", 3, "src"], [1, "absolute", "-right-0.5", "-bottom-0.5", "w-2.5", "h-2.5", "rounded-full", "border-2", "border-white", "dark:border-slate-800", 3, "ngClass"], [1, "hidden", "xl:block", "text-left", "min-w-0"], [1, "text-xs", "font-bold", "text-slate-700", "dark:text-slate-200", "truncate", "max-w-[100px]"], [1, "text-[10px]", "text-slate-400", "dark:text-slate-500", "truncate"], [1, "fa-solid", "fa-chevron-down", "text-[9px]", "text-slate-400", "transition-transform", "duration-200"], ["id", "profile-menu", "role", "menu", 1, "absolute", "right-0", "top-full", "mt-2", "w-72", "rounded-2xl", "border", "border-slate-200", "dark:border-slate-700", "bg-white", "dark:bg-slate-900", "text-slate-700", "dark:text-slate-200", "shadow-2xl", "overflow-hidden", "z-[60]", "fade-in"], ["role", "dialog", "aria-modal", "true", "aria-label", "T\u00ECm ki\u1EBFm ch\u1EE9c n\u0103ng", 1, "fixed", "inset-0", "z-[200]", "flex", "items-start", "justify-center", "pt-[15vh]", "px-4", "bg-slate-900/60", "backdrop-blur-sm", "fade-in"], [1, "fixed", "inset-0", "z-[55]", 3, "click"], [1, "px-4", "py-3", "border-b", "border-slate-100", "dark:border-slate-800", "flex", "items-center", "gap-3"], [1, "relative", "w-10", "h-10", "shrink-0"], ["alt", "User", 1, "w-10", "h-10", "rounded-full", "bg-white", "dark:bg-slate-800", "border", "border-slate-200", "dark:border-slate-700", "object-cover", 3, "src"], [1, "absolute", "right-0", "bottom-0", "w-3", "h-3", "rounded-full", "border-2", "border-white", "dark:border-slate-900", 3, "ngClass", "title"], [1, "min-w-0", "flex-1"], [1, "text-sm", "font-bold", "truncate"], [1, "text-[11px]", "text-slate-400", "dark:text-slate-500", "truncate"], [1, "p-2", "space-y-0.5"], ["role", "menuitem", 1, "w-full", "flex", "items-center", "gap-3", "px-3", "py-2.5", "text-sm", "rounded-xl", "hover:bg-slate-50", "dark:hover:bg-slate-800", "transition-colors", "text-left", 3, "click"], [1, "fa-solid", "fa-user-gear", "w-4", "text-center", "text-slate-400"], [1, "fa-solid", "fa-clock-rotate-left", "w-4", "text-center", "text-slate-400"], [1, "fa-solid", "w-4", "text-center", "text-slate-400"], [1, "h-px", "bg-slate-100", "dark:bg-slate-800", "my-1"], ["role", "menuitem", 1, "w-full", "flex", "items-center", "gap-3", "px-3", "py-2.5", "text-sm", "rounded-xl", "text-red-600", "dark:text-red-400", "hover:bg-red-50", "dark:hover:bg-red-900/20", "transition-colors", "text-left", "font-semibold", 3, "click"], [1, "fa-solid", "fa-arrow-right-from-bracket", "w-4", "text-center"], ["role", "dialog", "aria-modal", "true", "aria-label", "T\u00ECm ki\u1EBFm ch\u1EE9c n\u0103ng", 1, "fixed", "inset-0", "z-[200]", "flex", "items-start", "justify-center", "pt-[15vh]", "px-4", "bg-slate-900/60", "backdrop-blur-sm", "fade-in", 3, "click"], [1, "w-full", "max-w-lg", "bg-white", "dark:bg-slate-900", "rounded-2xl", "shadow-2xl", "border", "border-slate-200", "dark:border-slate-800", "overflow-hidden", "fade-in", 3, "click"], [1, "flex", "items-center", "gap-3", "px-4", "h-14", "border-b", "border-slate-100", "dark:border-slate-800"], [1, "fa-solid", "fa-magnifying-glass", "text-fuchsia-500", "text-sm"], ["type", "text", "aria-label", "T\u00ECm trang ho\u1EB7c ch\u1EE9c n\u0103ng", "placeholder", "T\u00ECm trang, t\u00EDnh n\u0103ng ho\u1EB7c qu\u00E9t m\u00E3...", 1, "flex-1", "bg-transparent", "text-sm", "font-medium", "text-slate-700", "dark:text-slate-200", "placeholder:text-slate-400", "outline-none", 3, "ngModelChange", "keydown", "ngModel"], [1, "text-[10px]", "font-bold", "text-slate-400", "bg-slate-100", "dark:bg-slate-800", "px-1.5", "py-0.5", "rounded-md", "border", "border-slate-200", "dark:border-slate-700"], [1, "max-h-[50vh]", "overflow-y-auto", "custom-scrollbar", "py-2"], [1, "px-4", "py-8", "text-center", "text-sm", "text-slate-400"], [1, "fa-solid", "fa-search", "text-2xl", "mb-2", "block", "opacity-30"], [1, "w-full", "flex", "items-center", "gap-3", "px-4", "py-2.5", "text-left", "transition-colors", "duration-100", 3, "ngClass"], [1, "w-full", "flex", "items-center", "gap-3", "px-4", "py-2.5", "text-left", "transition-colors", "duration-100", 3, "click", "ngClass"], [1, "w-8", "h-8", "rounded-lg", "flex", "items-center", "justify-center", "shrink-0", "transition-colors", 3, "ngClass"], [1, "flex-1", "min-w-0"], [1, "text-sm", "font-semibold", "truncate"], [1, "text-[10px]", "text-slate-400", "dark:text-slate-500"], [1, "text-[9px]", "font-bold", "text-fuchsia-400", "bg-fuchsia-50", "dark:bg-fuchsia-900/30", "px-1.5", "py-0.5", "rounded", "border", "border-fuchsia-200/50", "dark:border-fuchsia-800/30"]], template: function AppHeaderComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "header", 1)(1, "div", 2)(2, "button", 3);
             i0.ɵɵlistener("click", function AppHeaderComponent_Template_button_click_2_listener() { return ctx.state.toggleSidebarCollapse(); });
             i0.ɵɵelement(3, "i", 4);
@@ -380,12 +380,13 @@ export class AppHeaderComponent {
             i0.ɵɵelementEnd()()();
             i0.ɵɵtemplate(32, AppHeaderComponent_Conditional_32_Template, 11, 2, "div", 27);
         } if (rf & 2) {
-            let tmp_16_0;
             let tmp_18_0;
-            let tmp_19_0;
+            let tmp_20_0;
+            let tmp_21_0;
             i0.ɵɵstyleProp("left", ctx.state.focusMode() ? "0" : ctx.state.sidebarCollapsed() ? "0" : "16rem");
             i0.ɵɵadvance(2);
             i0.ɵɵproperty("title", ctx.state.sidebarCollapsed() ? "M\u1EDF r\u1ED9ng sidebar" : "Thu g\u1ECDn sidebar");
+            i0.ɵɵattribute("aria-label", ctx.state.sidebarCollapsed() ? "M\u1EDF r\u1ED9ng sidebar" : "Thu g\u1ECDn sidebar");
             i0.ɵɵadvance();
             i0.ɵɵclassProp("fa-bars", ctx.state.sidebarCollapsed())("fa-chevron-left", !ctx.state.sidebarCollapsed());
             i0.ɵɵadvance(5);
@@ -401,16 +402,17 @@ export class AppHeaderComponent {
             i0.ɵɵconditional(ctx.profileMenuOpen() ? 20 : -1);
             i0.ɵɵadvance();
             i0.ɵɵproperty("ngClass", ctx.profileMenuOpen() ? "bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200 dark:border-fuchsia-800/50 shadow-md shadow-fuchsia-500/10" : "bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 shadow-sm");
+            i0.ɵɵattribute("aria-expanded", ctx.profileMenuOpen());
             i0.ɵɵadvance();
             i0.ɵɵproperty("title", ctx.isOnline() ? "\u0110ang tr\u1EF1c tuy\u1EBFn" : "\u0110ang ngo\u1EA1i tuy\u1EBFn");
             i0.ɵɵadvance();
-            i0.ɵɵproperty("src", ctx.getAvatarUrl((tmp_16_0 = ctx.auth.currentUser()) == null ? null : tmp_16_0.displayName, ((tmp_16_0 = ctx.auth.currentUser()) == null ? null : tmp_16_0.avatarStyle) || ctx.state.avatarStyle(), (tmp_16_0 = ctx.auth.currentUser()) == null ? null : tmp_16_0.photoURL), i0.ɵɵsanitizeUrl);
+            i0.ɵɵproperty("src", ctx.getAvatarUrl((tmp_18_0 = ctx.auth.currentUser()) == null ? null : tmp_18_0.displayName, ((tmp_18_0 = ctx.auth.currentUser()) == null ? null : tmp_18_0.avatarStyle) || ctx.state.avatarStyle(), (tmp_18_0 = ctx.auth.currentUser()) == null ? null : tmp_18_0.photoURL), i0.ɵɵsanitizeUrl);
             i0.ɵɵadvance();
             i0.ɵɵproperty("ngClass", ctx.isOnline() ? "bg-emerald-500" : "bg-red-500");
             i0.ɵɵadvance(3);
-            i0.ɵɵtextInterpolate1(" ", (tmp_18_0 = ctx.auth.currentUser()) == null ? null : tmp_18_0.displayName, " ");
+            i0.ɵɵtextInterpolate1(" ", (tmp_20_0 = ctx.auth.currentUser()) == null ? null : tmp_20_0.displayName, " ");
             i0.ɵɵadvance(2);
-            i0.ɵɵtextInterpolate1(" ", (tmp_19_0 = ctx.auth.currentUser()) == null ? null : tmp_19_0.role, " ");
+            i0.ɵɵtextInterpolate1(" ", (tmp_21_0 = ctx.auth.currentUser()) == null ? null : tmp_21_0.role, " ");
             i0.ɵɵadvance();
             i0.ɵɵclassProp("rotate-180", ctx.profileMenuOpen());
             i0.ɵɵadvance();
@@ -441,6 +443,7 @@ export class AppHeaderComponent {
         <!-- ── Sidebar Toggle ── -->
         <button
           (click)="state.toggleSidebarCollapse()"
+          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                  text-slate-400 dark:text-slate-500
                  hover:bg-slate-100 dark:hover:bg-slate-800
@@ -474,6 +477,7 @@ export class AppHeaderComponent {
       <!-- ── Command Palette Trigger (real search, not just QR) ── -->
       <button
         (click)="openPalette()"
+        aria-label="Mở tìm kiếm chức năng"
         class="w-full h-9 px-0 lg:px-3 rounded-xl
                flex items-center justify-center lg:justify-start gap-2.5
                bg-slate-50 dark:bg-slate-800/80
@@ -525,6 +529,10 @@ export class AppHeaderComponent {
 
         <button
           (click)="toggleProfileMenu()"
+          aria-controls="profile-menu"
+          [attr.aria-expanded]="profileMenuOpen()"
+          aria-haspopup="menu"
+          aria-label="Mở menu tài khoản"
           class="flex items-center gap-2.5 h-10 pl-1 pr-3 rounded-xl
                  border transition-all duration-200 group active:scale-[0.97]"
           [ngClass]="profileMenuOpen()
@@ -553,7 +561,7 @@ export class AppHeaderComponent {
 
         <!-- ── Profile Dropdown ── -->
         @if (profileMenuOpen()) {
-          <div class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
+          <div id="profile-menu" role="menu" class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
               <span class="relative w-10 h-10 shrink-0">
                 <img
@@ -570,24 +578,24 @@ export class AppHeaderComponent {
               </div>
             </div>
             <div class="p-2 space-y-0.5">
-              <button (click)="openAccountSettings()"
+              <button role="menuitem" (click)="openAccountSettings()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid fa-user-gear w-4 text-center text-slate-400"></i>
                 <span>Cài Đặt Tài Khoản</span>
               </button>
-              <button (click)="openChangelog()"
+              <button role="menuitem" (click)="openChangelog()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid fa-clock-rotate-left w-4 text-center text-slate-400"></i>
                 <span>Nhật ký thay đổi</span>
               </button>
-              <button (click)="toggleDarkMode()"
+              <button role="menuitem" (click)="toggleDarkMode()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid w-4 text-center text-slate-400"
                    [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
                 <span>{{ state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối' }}</span>
               </button>
               <div class="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
-              <button (click)="logout()"
+              <button role="menuitem" (click)="logout()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left font-semibold">
                 <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>
                 <span>Đăng Xuất</span>
@@ -603,6 +611,9 @@ export class AppHeaderComponent {
     @if (paletteOpen()) {
       <div class="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] px-4
                   bg-slate-900/60 backdrop-blur-sm fade-in"
+           role="dialog"
+           aria-modal="true"
+           aria-label="Tìm kiếm chức năng"
            (click)="closePalette()">
 
         <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden fade-in"
@@ -614,6 +625,7 @@ export class AppHeaderComponent {
             <input
               #paletteInput
               type="text"
+              aria-label="Tìm trang hoặc chức năng"
               [ngModel]="searchQuery()"
               (ngModelChange)="onSearchInput($event)"
               (keydown)="onPaletteKeydown($event)"
@@ -670,5 +682,5 @@ export class AppHeaderComponent {
             type: HostListener,
             args: ['document:keydown.escape']
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(AppHeaderComponent, { className: "AppHeaderComponent", filePath: "src/app/core/layout/app-header.component.ts", lineNumber: 262 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(AppHeaderComponent, { className: "AppHeaderComponent", filePath: "src/app/core/layout/app-header.component.ts", lineNumber: 272 }); })();
 //# sourceMappingURL=app-header.component.js.map

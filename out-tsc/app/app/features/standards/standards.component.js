@@ -414,10 +414,13 @@ export class StandardsComponent {
             const term = this.searchTerm().trim().toLowerCase();
             const widgetFilter = this.activeWidgetFilter();
             const methodKey = this.activeMethodTagFilter();
-            if (methodKey)
+            if (methodKey) {
+                // An exact method is the authoritative filter. The device facet is
+                // only a discovery aid for narrowing the method catalog.
                 data = data.filter(item => (item.sop_tags || []).includes(methodKey));
-            const device = this.activeDeviceFilter();
-            if (device !== 'all') {
+            }
+            else if (this.activeDeviceFilter() !== 'all') {
+                const device = this.activeDeviceFilter();
                 data = data.filter(item => {
                     const codes = new Set();
                     for (const key of item.sop_tags || []) {

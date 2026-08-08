@@ -49,14 +49,57 @@ const METHOD_CODES = [
     // H-13 (3)
     'NAFI6/H-13.1', 'NAFI6/H-13.2', 'NAFI6/H-13.4',
 ];
-const DEVICE_OVERRIDES = {
-    'NAFI6/H-8.41': ['LCMSMS'],
+/**
+ * Device metadata is used by the standards method-discovery facet. Keep the
+ * mapping at method level so the UI counts methods, not just the handful of
+ * historical examples that were previously populated.
+ */
+const METHOD_DEVICE_OVERRIDES = {
+    'NAFI6/H-1.8': ['UVVIS'],
+    'NAFI6/H-1.26': ['IC'],
+    'NAFI6/H-2.2': ['UVVIS'],
+    'NAFI6/H-2.15': ['UVVIS'],
+    'NAFI6/H-3.1': ['IC'],
+    'NAFI6/H-5.1': ['ELISA'],
+    'NAFI6/H-6.1': ['AASFLAME'],
+    'NAFI6/H-7.16': ['HPLCPDA'],
+    'NAFI6/H-7.17': ['HPLCPDA'],
+    'NAFI6/H-7.18': ['HPLCUVVIS'],
+    'NAFI6/H-7.19': ['HPLCUVVIS'],
+    'NAFI6/H-7.22': ['HPLCDAD'],
+    'NAFI6/H-7.23': ['HPLCFLD'],
+    'NAFI6/H-7.24': ['HPLCPDA'],
+    'NAFI6/H-9.1': ['GCMS'],
+    'NAFI6/H-9.2': ['GCMSMS'],
+    'NAFI6/H-9.3': ['GCMS'],
+    'NAFI6/H-9.4': ['GCMSMS'],
+    'NAFI6/H-9.5': ['GCMS', 'GCMSMS'],
+    'NAFI6/H-9.6': ['GCMSMS'],
+    'NAFI6/H-9.7': ['GCMSMS'],
+    'NAFI6/H-9.10': ['GCHRMS'],
+    'NAFI6/H-9.11': ['GCMSMS'],
+    'NAFI6/H-9.14': ['GCMSMS'],
+    'NAFI6/H-9.16': ['GCMSMS'],
+    'NAFI6/H-9.17': ['GC'],
+    'NAFI6/H-9.20': ['GCMSMS'],
     'NAFI6/H-9.21': ['GCMSMS'],
     'NAFI6/H-9.22': ['GCECD'],
-    'NAFI6/H-9.10': ['GCHRMS'],
-    'NAFI6/H-7.22': ['HPLCDAD'],
-    'NAFI6/H-7.17': ['HPLCPDA'],
+    'NAFI6/H-9.23': ['GCMS'],
+    'NAFI6/H-9.24': ['GCMSMS'],
 };
+function getMethodDeviceCodes(methodCode) {
+    const explicit = METHOD_DEVICE_OVERRIDES[methodCode];
+    if (explicit)
+        return [...explicit];
+    const series = deriveMethodSeries(methodCode);
+    if (series === 'H-6')
+        return ['ICPMS'];
+    if (series === 'H-7')
+        return ['HPLC'];
+    if (series === 'H-8')
+        return ['LCMSMS'];
+    return [];
+}
 const SOURCE_PAGE_OVERRIDES = {
     'NAFI6/H-8.41': 'PDF 30',
     'NAFI6/H-9.21': 'PDF 19',
@@ -83,7 +126,7 @@ export const VLAT_11669_CHEMICAL_METHOD_TAGS = SORTED_METHOD_CODES.map((rawCode,
         origin: VLAT_11669_SOURCE.origin,
         templateKind: VLAT_11669_SOURCE.templateKind,
         methodCode,
-        deviceCodes: [...(DEVICE_OVERRIDES[methodCode] || [])],
+        deviceCodes: getMethodDeviceCodes(methodCode),
         sourceAgency: VLAT_11669_SOURCE.sourceAgency,
         sourceDecision: VLAT_11669_SOURCE.sourceDecision,
         sourceLabCode: VLAT_11669_SOURCE.sourceLabCode,

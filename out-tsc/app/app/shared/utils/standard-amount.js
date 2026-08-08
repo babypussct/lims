@@ -52,25 +52,24 @@ export function normalizeNonNegativeStandardAmount(amount, fromUnit, toUnit, fie
         return 0;
     return normalizePositiveStandardAmount(amount, fromUnit, toUnit, fieldLabel);
 }
-export function reconcileStandardReturn(currentStock, normalizedLogAmounts, confirmedUsed, isDepleted) {
+export function reconcileStandardReturn(currentStock, previouslyAccounted, confirmedUsed, isDepleted) {
     if (!Number.isFinite(currentStock) || currentStock < 0)
         throw new Error('Tồn kho hiện tại không hợp lệ.');
+    if (!Number.isFinite(previouslyAccounted) || previouslyAccounted < 0) {
+        throw new Error('Tổng lượng đã accounting không hợp lệ.');
+    }
     if (!Number.isFinite(confirmedUsed) || confirmedUsed < 0)
         throw new Error('Tổng lượng xác nhận không hợp lệ.');
-    if (normalizedLogAmounts.some(amount => !Number.isFinite(amount) || amount < 0)) {
-        throw new Error('Nhật ký sử dụng chứa số lượng không hợp lệ.');
+    if (confirmedUsed + 1e-9 < previouslyAccounted) {
+        throw new Error(`Tổng xác nhận không thể nhỏ hơn ${previouslyAccounted} đã accounting.`);
     }
-    const previouslyLogged = normalizedLogAmounts.reduce((sum, amount) => sum + amount, 0);
-    if (confirmedUsed + 1e-9 < previouslyLogged) {
-        throw new Error(`Tổng xác nhận không thể nhỏ hơn ${previouslyLogged} đã ghi nhận.`);
-    }
-    const adjustmentAmount = Math.max(0, confirmedUsed - previouslyLogged);
+    const adjustmentAmount = Math.max(0, confirmedUsed - previouslyAccounted);
     if (adjustmentAmount > currentStock + 1e-9)
         throw new Error('Không đủ lượng tồn kho để xác nhận trả chuẩn.');
     const remainingAfterAdjustment = Math.max(0, currentStock - adjustmentAmount);
     const disposalAmount = isDepleted ? remainingAfterAdjustment : 0;
     return {
-        previouslyLogged,
+        previouslyLogged: previouslyAccounted,
         confirmedUsed,
         adjustmentAmount,
         disposalAmount,

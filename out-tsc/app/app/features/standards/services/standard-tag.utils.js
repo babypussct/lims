@@ -191,6 +191,13 @@ export function compareChemicalMethodCodes(left, right) {
         return 1;
     return a.localeCompare(b, 'vi', { sensitivity: 'base', numeric: true });
 }
+const COMPACT_DEVICE_LABELS = {
+    GCMS: 'GC-MS',
+    GCMSMS: 'GC-MS/MS',
+    GCHRMS: 'GC-HRMS',
+    LCMSMS: 'LC-MS/MS',
+    ICPMS: 'ICP-MS',
+};
 function resolveMethodOptionCode(option) {
     return option.methodCode?.trim() || ('label' in option ? option.label : option.name);
 }
@@ -218,7 +225,9 @@ export function formatMethodOptionLabel(option) {
 export function formatMethodOptionLabelCompact(option) {
     const code = resolveMethodOptionCode(option);
     const deviceLabels = [...new Set(option.deviceCodes || [])]
-        .map(deviceCode => STANDARD_DEVICE_OPTIONS.find(item => item.code === deviceCode)?.label || deviceCode);
+        .map(deviceCode => COMPACT_DEVICE_LABELS[deviceCode]
+        || STANDARD_DEVICE_OPTIONS.find(item => item.code === deviceCode)?.label
+        || deviceCode);
     const technique = deviceLabels.join(', ') || extractMethodTechnique(option.methodName);
     return technique ? `${code} · ${technique}` : code;
 }

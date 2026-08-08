@@ -14,7 +14,10 @@ export function getSampleDescriptionSnapshot(map, sampleCode) {
         return undefined;
     const value = entry;
     const nameSnapshot = String(value.nameSnapshot || '').trim();
-    return nameSnapshot ? { masterId: value.masterId || undefined, nameSnapshot } : undefined;
+    if (!nameSnapshot)
+        return undefined;
+    const masterId = String(value.masterId || '').trim();
+    return masterId ? { masterId, nameSnapshot } : { nameSnapshot };
 }
 export function setSampleDescriptionSnapshot(current, sampleCode, snapshot) {
     const normalized = normalizeSampleCode(sampleCode);
@@ -22,7 +25,8 @@ export function setSampleDescriptionSnapshot(current, sampleCode, snapshot) {
     const displayCode = sampleCode.trim();
     const nameSnapshot = snapshot?.nameSnapshot?.trim();
     if (normalized && displayCode && nameSnapshot) {
-        next[displayCode] = { masterId: snapshot?.masterId || undefined, nameSnapshot };
+        const masterId = snapshot?.masterId?.trim();
+        next[displayCode] = masterId ? { masterId, nameSnapshot } : { nameSnapshot };
     }
     return next;
 }

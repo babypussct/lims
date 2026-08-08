@@ -2770,27 +2770,6 @@ export class SmartBatchComponent {
                 missingSampleNames: Array.from(missingSamples).slice(0, 3).join(', ') + (missingSamples.size > 3 ? '...' : '')
             };
         });
-        // --- COMPUTED: SPLIT WIZARD LOGIC ---
-        this.filteredSopsForSplit = computed(() => {
-            const s = this.splitState();
-            // Only active in Step 3
-            if (s.step !== 3)
-                return [];
-            const allSops = this.state.sops().filter(sop => !sop.isArchived);
-            const reqTargets = s.selectedTargets;
-            if (reqTargets.size === 0)
-                return []; // Should not happen due to validation
-            // Filter Logic: Reuse buildSopSuggestion for consistency
-            const inventory = this.state.inventoryMap();
-            const allTargets = this.allAvailableTargets();
-            return allSops.filter(sop => {
-                const reqIdsArray = Array.from(reqTargets);
-                // Matrix type is undefined here since split wizard doesn't care about matrix constraint initially, 
-                // or we assume the source block's matrix? Actually split wizard doesn't have matrixType.
-                const sug = this.buildSopSuggestion(sop, reqIdsArray, allTargets, inventory, undefined);
-                return sug && !sug.isPartial; // Must cover 100% of the selected targets
-            });
-        });
         effect(() => {
             const activeIds = new Set(this.activeSops().map(s => s.id));
             if (this.singleForcedSopId() && !activeIds.has(this.singleForcedSopId())) {
@@ -2989,8 +2968,7 @@ export class SmartBatchComponent {
     }
     // ... Block management helpers ...
     addBlock() {
-        const defaultMatrix = this.availableMatrices().find(m => m.isDefault);
-        this.blocks.update(b => [...b, this.createEmptyBlock(`Nhóm mẫu #${b.length + 1}`, defaultMatrix?.id)]);
+        this.blocks.update(b => [...b, this.createEmptyBlock(`Nhóm mẫu #${b.length + 1}`)]);
     }
     removeBlock(index) { this.blocks.update(b => b.filter((_, i) => i !== index)); }
     duplicateBlock(index) {
@@ -3139,10 +3117,6 @@ export class SmartBatchComponent {
         this.setupDataLoadPromise = Promise.all([
             this.matrixTypeService.getAll().then(m => {
                 this.availableMatrices.set(m);
-                const defaultMatrix = m.find(x => x.isDefault);
-                if (defaultMatrix && this.blocks().length === 1 && !this.blocks()[0].matrixType) {
-                    this.updateBlockMatrix(0, defaultMatrix.id);
-                }
             }),
             this.masterDeviceService.getAll().then(d => this.availableDevices.set(d)),
             this.sampleDescriptionMasterService.getActive()
@@ -3165,13 +3139,16 @@ export class SmartBatchComponent {
     }
     importGroup(g) {
         const idx = this.currentBlockIndexForGroupImport();
+        const groupTargetIds = g.targets
+            .map(target => getCanonicalId(target.name || target.id))
+            .filter(Boolean);
         if (idx === -2) {
             this.singleSelectedTargets.update(set => {
                 const hadTargets = set.size > 0;
-                const next = new Set(set);
-                g.targets.forEach(t => next.add(t.id));
+                const next = new Set(Array.from(set, getCanonicalId).filter(Boolean));
+                groupTargetIds.forEach(targetId => next.add(targetId));
                 this.singleSourceGroupId.set(!hadTargets
-                    && computeTargetSignature([...next]) === computeTargetSignature(g.targets.map(target => target.id))
+                    && computeTargetSignature([...next]) === computeTargetSignature(groupTargetIds)
                     ? g.id
                     : null);
                 return next;
@@ -3182,10 +3159,10 @@ export class SmartBatchComponent {
             this.blocks.update(b => {
                 const n = [...b];
                 const hadTargets = n[idx].selectedTargets.size > 0;
-                const set = new Set(n[idx].selectedTargets);
-                g.targets.forEach(t => set.add(t.id));
+                const set = new Set(Array.from(n[idx].selectedTargets, getCanonicalId).filter(Boolean));
+                groupTargetIds.forEach(targetId => set.add(targetId));
                 const exactGroup = !hadTargets
-                    && computeTargetSignature([...set]) === computeTargetSignature(g.targets.map(target => target.id));
+                    && computeTargetSignature([...set]) === computeTargetSignature(groupTargetIds);
                 n[idx] = {
                     ...n[idx],
                     selectedTargets: set,
@@ -3832,6 +3809,23 @@ export class SmartBatchComponent {
         }
     }
     // --- Auto-Fix Logic (Modal) ---
+    canonicalTargetSet(targetIds) {
+        const canonical = new Set();
+        for (const targetId of targetIds) {
+            const canonicalId = getCanonicalId(targetId);
+            if (canonicalId)
+                canonical.add(canonicalId);
+        }
+        return canonical;
+    }
+    selectedTargetSetHas(targetIds, targetId) {
+        return this.canonicalTargetSet(targetIds).has(getCanonicalId(targetId));
+    }
+    selectedTargetSetWithout(targetIds, targetId) {
+        const canonical = this.canonicalTargetSet(targetIds);
+        canonical.delete(getCanonicalId(targetId));
+        return canonical;
+    }
     fixCoverage() {
         const unmapped = this.unmappedTasks();
         if (unmapped.length === 0)
@@ -3848,7 +3842,7 @@ export class SmartBatchComponent {
             const block = this.blocks().find(b => {
                 const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(Boolean);
                 // check if sample is in this block and target is selected
-                return samples.includes(task.sample) && b.selectedTargets.has(task.targetId);
+                return samples.includes(task.sample) && this.selectedTargetSetHas(b.selectedTargets, task.targetId);
             });
             const blockId = block?.id ?? -1;
             const key = `${task.targetId}__${blockId}`;
@@ -3923,8 +3917,7 @@ export class SmartBatchComponent {
             .map(block => {
             if (block.id !== blockId)
                 return block;
-            const selectedTargets = new Set(block.selectedTargets);
-            selectedTargets.delete(targetId);
+            const selectedTargets = this.selectedTargetSetWithout(block.selectedTargets, targetId);
             return {
                 ...block,
                 selectedTargets,
@@ -3941,10 +3934,13 @@ export class SmartBatchComponent {
             if (sourceIndex < 0)
                 return blocks;
             const source = blocks[sourceIndex];
-            if (source.selectedTargets.size === 1 && source.selectedTargets.has(targetId)) {
+            const canonicalTargetId = getCanonicalId(targetId);
+            const canonicalSourceTargets = this.canonicalTargetSet(source.selectedTargets);
+            if (canonicalSourceTargets.size === 1 && canonicalSourceTargets.has(canonicalTargetId)) {
                 const next = [...blocks];
                 next[sourceIndex] = {
                     ...source,
+                    selectedTargets: canonicalSourceTargets,
                     forcedSopId: options.forcedSopId,
                     matrixType: options.clearMatrix ? undefined : source.matrixType,
                     sourceGroupId: undefined,
@@ -3952,14 +3948,13 @@ export class SmartBatchComponent {
                 };
                 return next;
             }
-            const remainingTargets = new Set(source.selectedTargets);
-            remainingTargets.delete(targetId);
+            const remainingTargets = this.selectedTargetSetWithout(canonicalSourceTargets, canonicalTargetId);
             const dedicatedSamples = parseUniqueSampleCodes(affectedSamples.join('\n'));
             const dedicated = {
                 ...this.createEmptyBlock(`${source.name} — ${targetName}`, options.clearMatrix ? undefined : source.matrixType),
                 id: Date.now() + blocks.length + Math.floor(Math.random() * 1000),
                 rawSamples: dedicatedSamples.join('\n'),
-                selectedTargets: new Set([targetId]),
+                selectedTargets: new Set([canonicalTargetId]),
                 forcedSopId: options.forcedSopId,
                 sourceGroupModified: true,
                 sampleDescriptionMap: subsetSampleDescriptionMap(source.sampleDescriptionMap, dedicatedSamples)

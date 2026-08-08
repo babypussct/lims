@@ -40,7 +40,7 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditiona
 } }
 function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_9_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span", 14);
-    i0.ɵɵelement(1, "i", 51);
+    i0.ɵɵelement(1, "i", 53);
     i0.ɵɵtext(2);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -50,26 +50,50 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditiona
 } }
 function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_11_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span", 15);
-    i0.ɵɵelement(1, "i", 52);
-    i0.ɵɵtext(2);
-    i0.ɵɵelementEnd();
+    i0.ɵɵelement(1, "i", 54);
+    i0.ɵɵelementStart(2, "span", 55);
+    i0.ɵɵtext(3);
+    i0.ɵɵelementEnd()();
 } if (rf & 2) {
     const method_r3 = ctx.$implicit;
-    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("title", method_r3);
+    i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(method_r3);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_13_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_12_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "span", 16);
-    i0.ɵɵelement(1, "i", 53);
-    i0.ɵɵtext(2);
+    i0.ɵɵtext(1);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
+    const std_r2 = i0.ɵɵnextContext().$implicit;
+    i0.ɵɵproperty("title", (std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(2, _c2)).slice(2).join(", "));
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1("+", (std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(3, _c2)).length - 2, "");
+} }
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_14_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "span", 17);
+    i0.ɵɵelement(1, "i", 56);
+    i0.ɵɵelementStart(2, "span", 55);
+    i0.ɵɵtext(3);
+    i0.ɵɵelementEnd()();
+} if (rf & 2) {
     const device_r4 = ctx.$implicit;
-    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("title", device_r4);
+    i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(device_r4);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_18_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "p", 20)(1, "span", 54);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_15_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "span", 18);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const std_r2 = i0.ɵɵnextContext().$implicit;
+    i0.ɵɵproperty("title", (std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(2, _c2)).slice(2).join(", "));
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1("+", (std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(3, _c2)).length - 2, "");
+} }
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_20_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "p", 22)(1, "span", 57);
     i0.ɵɵtext(2, "Synonyms:");
     i0.ɵɵelementEnd();
     i0.ɵɵtext(3);
@@ -79,10 +103,10 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditiona
     i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(std_r2.chemical_name);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_54_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 38);
-    i0.ɵɵelement(1, "i", 55);
-    i0.ɵɵelementStart(2, "span", 56);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_56_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 40);
+    i0.ɵɵelement(1, "i", 58);
+    i0.ɵɵelementStart(2, "span", 59);
     i0.ɵɵtext(3);
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -93,10 +117,10 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_54_Tem
     i0.ɵɵadvance(2);
     i0.ɵɵtextInterpolate(info_r6.text);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_55_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 39);
-    i0.ɵɵelement(1, "i", 57);
-    i0.ɵɵelementStart(2, "span", 58);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_57_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 41);
+    i0.ɵɵelement(1, "i", 60);
+    i0.ɵɵelementStart(2, "span", 61);
     i0.ɵɵtext(3);
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -104,12 +128,12 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditiona
     i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(std_r2.current_holder);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_56_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 40);
-    i0.ɵɵelement(1, "i", 59);
-    i0.ɵɵelementStart(2, "span", 60);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_58_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 42);
+    i0.ɵɵelement(1, "i", 62);
+    i0.ɵɵelementStart(2, "span", 63);
     i0.ɵɵtext(3, "Nh\u1EADn: ");
-    i0.ɵɵelementStart(4, "b", 61);
+    i0.ɵɵelementStart(4, "b", 64);
     i0.ɵɵtext(5);
     i0.ɵɵpipe(6, "date");
     i0.ɵɵelementEnd()()();
@@ -118,24 +142,24 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditiona
     i0.ɵɵadvance(5);
     i0.ɵɵtextInterpolate(i0.ɵɵpipeBind2(6, 1, std_r2.received_date, "dd/MM/yyyy"));
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_64_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_66_Template(rf, ctx) { if (rf & 1) {
     const _r7 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 62);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_64_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r7); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openCoaPreview.emit({ url: std_r2.certificate_ref, event: $event })); });
-    i0.ɵɵelement(1, "i", 63);
+    i0.ɵɵelementStart(0, "button", 65);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_66_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r7); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openCoaPreview.emit({ url: std_r2.certificate_ref, event: $event })); });
+    i0.ɵɵelement(1, "i", 66);
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Conditional_1_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelement(0, "i", 65);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelement(0, "i", 68);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Conditional_2_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelement(0, "i", 66);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Conditional_2_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelement(0, "i", 69);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Template(rf, ctx) { if (rf & 1) {
     const _r8 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 64);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r8); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.triggerQuickDriveUpload.emit({ std: std_r2, event: $event })); });
-    i0.ɵɵtemplate(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Conditional_1_Template, 1, 0, "i", 65)(2, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Conditional_2_Template, 1, 0, "i", 66);
+    i0.ɵɵelementStart(0, "button", 67);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r8); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.triggerQuickDriveUpload.emit({ std: std_r2, event: $event })); });
+    i0.ɵɵtemplate(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Conditional_1_Template, 1, 0, "i", 68)(2, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Conditional_2_Template, 1, 0, "i", 69);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const std_r2 = i0.ɵɵnextContext().$implicit;
@@ -144,68 +168,68 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditiona
     i0.ɵɵadvance();
     i0.ɵɵconditional(ctx_r4.quickUploadStdId() === std_r2.id ? 1 : 2);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_68_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_70_Template(rf, ctx) { if (rf & 1) {
     const _r9 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 67);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_68_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r9); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openPrintModal.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 68);
+    i0.ɵɵelementStart(0, "button", 70);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_70_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r9); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openPrintModal.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 71);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     i0.ɵɵproperty("appLockPermission", "standard_edit");
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_0_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "button", 69);
-    i0.ɵɵelement(1, "i", 72);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_0_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "button", 72);
+    i0.ɵɵelement(1, "i", 75);
     i0.ɵɵtext(2, " Ch\u1EDD Duy\u1EC7t ");
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_1_Template(rf, ctx) { if (rf & 1) {
     const _r10 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 73);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_1_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r10); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openAssignModal.emit({ std: std_r2, isAssign: true })); });
-    i0.ɵɵelement(1, "i", 74);
+    i0.ɵɵelementStart(0, "button", 76);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_1_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r10); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openAssignModal.emit({ std: std_r2, isAssign: true })); });
+    i0.ɵɵelement(1, "i", 77);
     i0.ɵɵtext(2, " G\u00E1n ");
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_2_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_2_Template(rf, ctx) { if (rf & 1) {
     const _r11 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 75);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_2_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r11); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openAssignModal.emit({ std: std_r2, isAssign: false })); });
-    i0.ɵɵelement(1, "i", 74);
+    i0.ɵɵelementStart(0, "button", 78);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_2_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r11); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openAssignModal.emit({ std: std_r2, isAssign: false })); });
+    i0.ɵɵelement(1, "i", 77);
     i0.ɵɵtext(2, " M\u01B0\u1EE3n ");
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵtemplate(0, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_0_Template, 3, 0, "button", 69)(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_1_Template, 3, 0, "button", 70)(2, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Conditional_2_Template, 3, 0, "button", 71);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵtemplate(0, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_0_Template, 3, 0, "button", 72)(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_1_Template, 3, 0, "button", 73)(2, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_2_Template, 3, 0, "button", 74);
 } if (rf & 2) {
     const std_r2 = i0.ɵɵnextContext().$implicit;
     const ctx_r4 = i0.ɵɵnextContext(3);
     i0.ɵɵconditional(std_r2.has_pending_request ? 0 : ctx_r4.canAssignStandards() ? 1 : ctx_r4.canRequestStandards() ? 2 : -1);
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_70_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_72_Template(rf, ctx) { if (rf & 1) {
     const _r12 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 76);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_70_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r12); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.goToReturn.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 77);
+    i0.ɵɵelementStart(0, "button", 79);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_72_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r12); const std_r2 = i0.ɵɵnextContext().$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.goToReturn.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 80);
     i0.ɵɵtext(2, " Tr\u1EA3 Chu\u1EA9n ");
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_0_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "button", 78);
-    i0.ɵɵelement(1, "i", 80);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Conditional_0_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "button", 81);
+    i0.ɵɵelement(1, "i", 83);
     i0.ɵɵtext(2, " \u0110\u00E3 Y/C ");
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Conditional_1_Template(rf, ctx) { if (rf & 1) {
     const _r13 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 81);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_1_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r13); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openPurchaseRequestModal.emit(std_r2)); });
-    i0.ɵɵelement(1, "i", 82);
+    i0.ɵɵelementStart(0, "button", 84);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Conditional_1_Template_button_click_0_listener($event) { i0.ɵɵrestoreView(_r13); const std_r2 = i0.ɵɵnextContext(2).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.openPurchaseRequestModal.emit(std_r2)); });
+    i0.ɵɵelement(1, "i", 85);
     i0.ɵɵtext(2, " \u0110\u1EC1 Ngh\u1ECB Mua ");
     i0.ɵɵelementEnd();
 } }
-function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵtemplate(0, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_0_Template, 3, 0, "button", 78)(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Conditional_1_Template, 3, 0, "button", 79);
+function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵtemplate(0, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Conditional_0_Template, 3, 0, "button", 81)(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Conditional_1_Template, 3, 0, "button", 82);
 } if (rf & 2) {
     const std_r2 = i0.ɵɵnextContext().$implicit;
     const ctx_r4 = i0.ɵɵnextContext(3);
@@ -220,86 +244,88 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template(r
     i0.ɵɵtext(7);
     i0.ɵɵelementEnd();
     i0.ɵɵtemplate(8, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_8_Template, 2, 1, "span", 13)(9, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_9_Template, 3, 1, "span", 14);
-    i0.ɵɵrepeaterCreate(10, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_11_Template, 3, 1, "span", 15, i0.ɵɵrepeaterTrackByIdentity);
-    i0.ɵɵrepeaterCreate(12, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_13_Template, 3, 1, "span", 16, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵrepeaterCreate(10, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_11_Template, 4, 2, "span", 15, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵtemplate(12, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_12_Template, 2, 4, "span", 16);
+    i0.ɵɵrepeaterCreate(13, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_14_Template, 4, 2, "span", 17, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵtemplate(15, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_15_Template, 2, 4, "span", 18);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(14, "input", 17);
-    i0.ɵɵlistener("change", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_input_change_14_listener() { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.toggleSelection.emit(std_r2.id)); });
+    i0.ɵɵelementStart(16, "input", 19);
+    i0.ɵɵlistener("change", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_input_change_16_listener() { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.toggleSelection.emit(std_r2.id)); });
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(15, "div", 18);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_div_click_15_listener() { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.navigateToDetail.emit(std_r2)); });
-    i0.ɵɵelementStart(16, "h3", 19);
-    i0.ɵɵtext(17);
+    i0.ɵɵelementStart(17, "div", 20);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_div_click_17_listener() { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.navigateToDetail.emit(std_r2)); });
+    i0.ɵɵelementStart(18, "h3", 21);
+    i0.ɵɵtext(19);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(18, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_18_Template, 4, 1, "p", 20);
+    i0.ɵɵtemplate(20, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_20_Template, 4, 1, "p", 22);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(19, "div", 21)(20, "div", 22);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_div_click_20_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.copyText.emit({ text: std_r2.lot_number || "", event: $event })); });
-    i0.ɵɵelementStart(21, "div", 23);
-    i0.ɵɵtext(22, "Lot ");
-    i0.ɵɵelement(23, "i", 24);
+    i0.ɵɵelementStart(21, "div", 23)(22, "div", 24);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_div_click_22_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.copyText.emit({ text: std_r2.lot_number || "", event: $event })); });
+    i0.ɵɵelementStart(23, "div", 25);
+    i0.ɵɵtext(24, "Lot ");
+    i0.ɵɵelement(25, "i", 26);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(24, "div", 25);
-    i0.ɵɵtext(25);
+    i0.ɵɵelementStart(26, "div", 27);
+    i0.ɵɵtext(27);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(26, "div", 26);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_div_click_26_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.copyText.emit({ text: std_r2.product_code || "", event: $event })); });
-    i0.ɵɵelementStart(27, "div", 23);
-    i0.ɵɵtext(28, "Code ");
-    i0.ɵɵelement(29, "i", 24);
+    i0.ɵɵelementStart(28, "div", 28);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_div_click_28_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); return i0.ɵɵresetView(ctx_r4.copyText.emit({ text: std_r2.product_code || "", event: $event })); });
+    i0.ɵɵelementStart(29, "div", 25);
+    i0.ɵɵtext(30, "Code ");
+    i0.ɵɵelement(31, "i", 26);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(30, "div", 25);
-    i0.ɵɵtext(31);
+    i0.ɵɵelementStart(32, "div", 27);
+    i0.ɵɵtext(33);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(32, "div", 27)(33, "div", 28);
-    i0.ɵɵtext(34, "Mfg");
+    i0.ɵɵelementStart(34, "div", 29)(35, "div", 30);
+    i0.ɵɵtext(36, "Mfg");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(35, "div", 29);
-    i0.ɵɵtext(36);
+    i0.ɵɵelementStart(37, "div", 31);
+    i0.ɵɵtext(38);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(37, "div", 27)(38, "div", 28);
-    i0.ɵɵtext(39, "CAS");
+    i0.ɵɵelementStart(39, "div", 29)(40, "div", 30);
+    i0.ɵɵtext(41, "CAS");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(40, "div", 25);
-    i0.ɵɵtext(41);
+    i0.ɵɵelementStart(42, "div", 27);
+    i0.ɵɵtext(43);
     i0.ɵɵelementEnd()()();
-    i0.ɵɵelementStart(42, "div", 30)(43, "div", 31)(44, "span", 32);
-    i0.ɵɵtext(45, "T\u1ED3n kho");
+    i0.ɵɵelementStart(44, "div", 32)(45, "div", 33)(46, "span", 34);
+    i0.ɵɵtext(47, "T\u1ED3n kho");
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(46, "span", 33);
-    i0.ɵɵtext(47);
-    i0.ɵɵelementStart(48, "small", 34);
+    i0.ɵɵelementStart(48, "span", 35);
     i0.ɵɵtext(49);
+    i0.ɵɵelementStart(50, "small", 36);
+    i0.ɵɵtext(51);
     i0.ɵɵelementEnd()()();
-    i0.ɵɵelementStart(50, "div", 35);
-    i0.ɵɵelement(51, "div", 36);
-    i0.ɵɵelementEnd();
     i0.ɵɵelementStart(52, "div", 37);
-    i0.ɵɵrepeaterCreate(53, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_54_Template, 4, 7, "div", 38, i0.ɵɵrepeaterTrackByIndex);
-    i0.ɵɵtemplate(55, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_55_Template, 4, 1, "div", 39);
+    i0.ɵɵelement(53, "div", 38);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(56, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_56_Template, 7, 4, "div", 40);
+    i0.ɵɵelementStart(54, "div", 39);
+    i0.ɵɵrepeaterCreate(55, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_For_56_Template, 4, 7, "div", 40, i0.ɵɵrepeaterTrackByIndex);
+    i0.ɵɵtemplate(57, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_57_Template, 4, 1, "div", 41);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(57, "div", 41)(58, "div", 42)(59, "span", 32);
-    i0.ɵɵtext(60, "H\u1EBFt h\u1EA1n");
+    i0.ɵɵtemplate(58, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_58_Template, 7, 4, "div", 42);
     i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(61, "span", 43);
-    i0.ɵɵtext(62);
+    i0.ɵɵelementStart(59, "div", 43)(60, "div", 44)(61, "span", 34);
+    i0.ɵɵtext(62, "H\u1EBFt h\u1EA1n");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(63, "span", 45);
+    i0.ɵɵtext(64);
     i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(63, "div", 44);
-    i0.ɵɵtemplate(64, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_64_Template, 2, 0, "button", 45)(65, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_65_Template, 3, 2, "button", 46);
-    i0.ɵɵelementStart(66, "button", 47);
-    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_button_click_66_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.viewHistory.emit(std_r2)); });
-    i0.ɵɵelement(67, "i", 48);
+    i0.ɵɵelementStart(65, "div", 46);
+    i0.ɵɵtemplate(66, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_66_Template, 2, 0, "button", 47)(67, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_67_Template, 3, 2, "button", 48);
+    i0.ɵɵelementStart(68, "button", 49);
+    i0.ɵɵlistener("click", function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template_button_click_68_listener($event) { const std_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r4 = i0.ɵɵnextContext(3); $event.stopPropagation(); return i0.ɵɵresetView(ctx_r4.viewHistory.emit(std_r2)); });
+    i0.ɵɵelement(69, "i", 50);
     i0.ɵɵelementEnd();
-    i0.ɵɵtemplate(68, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_68_Template, 2, 1, "button", 49)(69, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_69_Template, 3, 1)(70, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_70_Template, 3, 0, "button", 50)(71, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Template, 2, 1);
+    i0.ɵɵtemplate(70, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_70_Template, 2, 1, "button", 51)(71, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_71_Template, 3, 1)(72, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_72_Template, 3, 0, "button", 52)(73, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Conditional_73_Template, 2, 1);
     i0.ɵɵelementEnd()()()();
 } if (rf & 2) {
-    let tmp_36_0;
     let tmp_38_0;
+    let tmp_40_0;
     const std_r2 = ctx.$implicit;
     const ctx_r4 = i0.ɵɵnextContext(3);
-    i0.ɵɵproperty("ngClass", i0.ɵɵpureFunction3(27, _c1, !ctx_r4.selectedIds().has(std_r2.id), ctx_r4.selectedIds().has(std_r2.id), std_r2.status === "DEPLETED" || std_r2.current_amount <= 0));
+    i0.ɵɵproperty("ngClass", i0.ɵɵpureFunction3(29, _c1, !ctx_r4.selectedIds().has(std_r2.id), ctx_r4.selectedIds().has(std_r2.id), std_r2.status === "DEPLETED" || std_r2.current_amount <= 0));
     i0.ɵɵadvance(2);
     i0.ɵɵclassMap(ctx_r4.getExpiryBarClass(std_r2.expiry_date));
     i0.ɵɵadvance(4);
@@ -311,15 +337,19 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template(r
     i0.ɵɵadvance();
     i0.ɵɵconditional(std_r2.location ? 9 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵrepeater((std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(31, _c2)).slice(0, 4));
+    i0.ɵɵrepeater((std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(33, _c2)).slice(0, 2));
     i0.ɵɵadvance(2);
-    i0.ɵɵrepeater(std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(32, _c2));
+    i0.ɵɵconditional((std_r2.derivedMethodLabels || i0.ɵɵpureFunction0(34, _c2)).length > 2 ? 12 : -1);
+    i0.ɵɵadvance();
+    i0.ɵɵrepeater((std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(35, _c2)).slice(0, 2));
     i0.ɵɵadvance(2);
+    i0.ɵɵconditional((std_r2.derivedDeviceCodes || i0.ɵɵpureFunction0(36, _c2)).length > 2 ? 15 : -1);
+    i0.ɵɵadvance();
     i0.ɵɵproperty("checked", ctx_r4.selectedIds().has(std_r2.id));
     i0.ɵɵadvance(3);
     i0.ɵɵtextInterpolate(std_r2.name);
     i0.ɵɵadvance();
-    i0.ɵɵconditional(std_r2.chemical_name ? 18 : -1);
+    i0.ɵɵconditional(std_r2.chemical_name ? 20 : -1);
     i0.ɵɵadvance(7);
     i0.ɵɵtextInterpolate(std_r2.lot_number || "-");
     i0.ɵɵadvance(6);
@@ -339,23 +369,23 @@ function StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template(r
     i0.ɵɵadvance(2);
     i0.ɵɵrepeater(ctx_r4.getStorageInfo(std_r2.storage_condition));
     i0.ɵɵadvance(2);
-    i0.ɵɵconditional(std_r2.status === "IN_USE" && std_r2.current_holder ? 55 : -1);
+    i0.ɵɵconditional(std_r2.status === "IN_USE" && std_r2.current_holder ? 57 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵconditional(std_r2.received_date ? 56 : -1);
+    i0.ɵɵconditional(std_r2.received_date ? 58 : -1);
     i0.ɵɵadvance(5);
     i0.ɵɵclassMap(ctx_r4.getExpiryTimeClass(std_r2.expiry_date));
     i0.ɵɵadvance();
     i0.ɵɵtextInterpolate(ctx_r4.getExpiryTimeLeft(std_r2.expiry_date) || "N/A");
     i0.ɵɵadvance(2);
-    i0.ɵɵconditional(std_r2.certificate_ref ? 64 : ((tmp_36_0 = ctx_r4.currentUser()) == null ? null : tmp_36_0.role) === "manager" ? 65 : -1);
+    i0.ɵɵconditional(std_r2.certificate_ref ? 66 : ((tmp_38_0 = ctx_r4.currentUser()) == null ? null : tmp_38_0.role) === "manager" ? 67 : -1);
     i0.ɵɵadvance(4);
-    i0.ɵɵconditional(ctx_r4.canEditStandards() || ctx_r4.state.showLockedFeatures() ? 68 : -1);
+    i0.ɵɵconditional(ctx_r4.canEditStandards() || ctx_r4.state.showLockedFeatures() ? 70 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵconditional(ctx_r4.canAssign(std_r2) ? 69 : std_r2.status === "IN_USE" && (ctx_r4.canAssignStandards() || std_r2.current_holder_uid === ((tmp_38_0 = ctx_r4.currentUser()) == null ? null : tmp_38_0.uid)) ? 70 : std_r2.status === "DEPLETED" || std_r2.current_amount <= 0 ? 71 : -1);
+    i0.ɵɵconditional(ctx_r4.canAssign(std_r2) ? 71 : std_r2.status === "IN_USE" && (ctx_r4.canAssignStandards() || std_r2.current_holder_uid === ((tmp_40_0 = ctx_r4.currentUser()) == null ? null : tmp_40_0.uid)) ? 72 : std_r2.status === "DEPLETED" || std_r2.current_amount <= 0 ? 73 : -1);
 } }
 function StandardsGridViewComponent_Conditional_2_Conditional_1_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "div", 4);
-    i0.ɵɵrepeaterCreate(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template, 72, 33, "div", 6, _forTrack0);
+    i0.ɵɵrepeaterCreate(1, StandardsGridViewComponent_Conditional_2_Conditional_1_For_2_Template, 74, 37, "div", 6, _forTrack0);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const ctx_r4 = i0.ɵɵnextContext(2);
@@ -402,7 +432,7 @@ export class StandardsGridViewComponent {
         this.canAssign = canAssign;
     }
     static { this.ɵfac = function StandardsGridViewComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || StandardsGridViewComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: StandardsGridViewComponent, selectors: [["app-standards-grid-view"]], inputs: { items: [1, "items"], isLoading: [1, "isLoading"], allStandardsLength: [1, "allStandardsLength"], selectedIds: [1, "selectedIds"], quickUploadStdId: [1, "quickUploadStdId"], canEditStandards: [1, "canEditStandards"], canAssignStandards: [1, "canAssignStandards"], canRequestStandards: [1, "canRequestStandards"], currentUser: [1, "currentUser"] }, outputs: { toggleSelection: "toggleSelection", navigateToDetail: "navigateToDetail", copyText: "copyText", openCoaPreview: "openCoaPreview", triggerQuickDriveUpload: "triggerQuickDriveUpload", openAssignModal: "openAssignModal", goToReturn: "goToReturn", openPurchaseRequestModal: "openPurchaseRequestModal", openPrintModal: "openPrintModal", viewHistory: "viewHistory" }, decls: 3, vars: 1, consts: [[1, "p-4", "bg-slate-50/30", "dark:bg-slate-900/50"], [1, "grid", "grid-cols-1", "md:grid-cols-2", "lg:grid-cols-3", "xl:grid-cols-4", "gap-4"], ["height", "280px"], [1, "py-16", "text-center", "text-slate-400", "dark:text-slate-500", "italic", "w-full", "border-t", "border-transparent"], [1, "grid", "grid-cols-1", "md:grid-cols-2", "lg:grid-cols-3", "xl:grid-cols-4", "2xl:grid-cols-5", "gap-4"], [1, "fa-solid", "fa-box-open", "text-4xl", "mb-2", "text-slate-300", "dark:text-slate-600"], [1, "bg-white", "dark:bg-slate-800", "rounded-2xl", "border", "transition-all", "duration-200", "flex", "flex-col", "relative", "group", "h-full", "hover:-translate-y-1", "hover:shadow-lg", "dark:hover:shadow-none", "overflow-hidden", 3, "ngClass"], [1, "w-full", "h-1.5", "flex", "bg-slate-100", "dark:bg-slate-700", "shrink-0"], [1, "h-full", "w-full"], [1, "p-4", "flex", "flex-col", "h-full"], [1, "flex", "justify-between", "items-start", "mb-3"], [1, "flex", "flex-wrap", "gap-1.5", "items-start", "pr-2"], [1, "px-2.5", "py-1", "rounded-md", "text-[10px]", "font-bold", "uppercase", "border", "tracking-wide", "whitespace-nowrap", "shadow-sm", "dark:shadow-none", 3, "ngClass"], [1, "bg-indigo-50", "dark:bg-indigo-900/30", "text-indigo-700", "dark:text-indigo-400", "px-2.5", "py-1", "rounded-md", "text-sm", "font-black", "uppercase", "tracking-wider", "border", "border-indigo-100", "dark:border-indigo-800/50", "shadow-sm", "dark:shadow-none", "whitespace-nowrap"], [1, "bg-white", "dark:bg-slate-800", "text-slate-600", "dark:text-slate-400", "px-2.5", "py-1", "rounded-md", "text-xs", "font-bold", "border", "border-slate-200", "dark:border-slate-700", "flex", "items-center", "gap-1.5", "shadow-sm", "dark:shadow-none", "whitespace-nowrap"], [1, "bg-indigo-50/70", "dark:bg-indigo-900/20", "text-indigo-700", "dark:text-indigo-300", "px-2", "py-1", "rounded-md", "text-[10px]", "font-black", "border", "border-indigo-100", "dark:border-indigo-800/40", "whitespace-nowrap"], [1, "bg-fuchsia-50", "dark:bg-fuchsia-900/20", "text-fuchsia-700", "dark:text-fuchsia-300", "px-2", "py-1", "rounded-md", "text-[10px]", "font-black", "border", "border-fuchsia-100", "dark:border-fuchsia-800/40", "whitespace-nowrap"], ["type", "checkbox", 1, "w-5", "h-5", "accent-indigo-600", "dark:accent-indigo-500", "cursor-pointer", "shrink-0", "mt-0.5", 3, "change", "checked"], [1, "mb-4", "cursor-pointer", 3, "click"], [1, "font-bold", "text-slate-800", "dark:text-slate-200", "text-base", "leading-snug", "mb-1", "hover:text-indigo-600", "dark:hover:text-indigo-400", "transition", "break-words"], [1, "text-xs", "text-slate-500", "dark:text-slate-400", "italic", "font-medium", "break-words"], [1, "grid", "grid-cols-2", "gap-px", "bg-slate-100", "dark:bg-slate-700", "rounded-lg", "overflow-hidden", "border", "border-slate-100", "dark:border-slate-700", "mb-4", "text-[11px]"], ["title", "Copy Lot", 1, "bg-white", "dark:bg-slate-800", "p-2", "hover:bg-blue-50", "dark:hover:bg-blue-900/20", "transition", "cursor-pointer", "group/cell", 3, "click"], [1, "text-slate-400", "dark:text-slate-500", "font-bold", "uppercase", "mb-0.5", "flex", "justify-between"], [1, "fa-regular", "fa-copy", "opacity-0", "group-hover/cell:opacity-100"], [1, "font-mono", "font-bold", "text-slate-700", "dark:text-slate-300", "truncate"], ["title", "Copy Code", 1, "bg-white", "dark:bg-slate-800", "p-2", "hover:bg-blue-50", "dark:hover:bg-blue-900/20", "transition", "cursor-pointer", "group/cell", 3, "click"], [1, "bg-white", "dark:bg-slate-800", "p-2"], [1, "text-slate-400", "dark:text-slate-500", "font-bold", "uppercase", "mb-0.5"], [1, "font-bold", "text-slate-700", "dark:text-slate-300", "truncate", 3, "title"], [1, "mt-auto"], [1, "flex", "justify-between", "items-end", "mb-1"], [1, "text-[9px]", "font-bold", "text-slate-400", "dark:text-slate-500", "uppercase"], [1, "font-black", "text-indigo-600", "dark:text-indigo-400", "text-lg", "leading-none"], [1, "text-xs", "font-bold", "text-slate-400", "dark:text-slate-500"], [1, "w-full", "bg-slate-100", "dark:bg-slate-700", "rounded-full", "h-1.5", "overflow-hidden", "mb-3"], [1, "bg-indigo-500", "h-1.5", "rounded-full", "transition-all"], [1, "flex", "flex-wrap", "gap-1", "mb-2", "min-h-[22px]"], [1, "px-1.5", "py-0.5", "rounded", "text-[9px]", "flex", "items-center", "gap-1", "border", 3, "ngClass"], ["title", "Ng\u01B0\u1EDDi \u0111ang gi\u1EEF", 1, "px-1.5", "py-0.5", "rounded", "text-[9px]", "flex", "items-center", "gap-1", "border", "bg-blue-50", "text-blue-600", "border-blue-200"], [1, "text-[10px]", "text-slate-500", "dark:text-slate-400", "mb-3", "flex", "items-center", "gap-1"], [1, "pt-3", "border-t", "border-slate-100", "dark:border-slate-700", "flex", "items-center", "justify-between", "gap-2"], [1, "flex", "flex-col"], [1, "text-xs", "font-bold"], [1, "flex", "gap-1", "flex-wrap", "justify-end"], ["title", "Xem CoA", 1, "w-8", "h-8", "rounded-lg", "bg-blue-50", "dark:bg-blue-900/30", "text-blue-600", "dark:text-blue-400", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "flex", "items-center", "justify-center"], ["title", "Upload CoA qua Google Drive", 1, "w-8", "h-8", "rounded-lg", "bg-amber-50", "dark:bg-amber-900/20", "text-amber-600", "dark:amber-400", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "flex", "items-center", "justify-center", 3, "disabled"], ["title", "L\u1ECBch s\u1EED", 1, "w-8", "h-8", "rounded-lg", "bg-slate-50", "dark:bg-slate-800", "text-slate-500", "dark:text-slate-400", "border", "border-slate-200", "dark:border-slate-700", "hover:bg-slate-100", "dark:hover:bg-slate-700", "transition", "flex", "items-center", "justify-center", 3, "click"], [1, "fa-solid", "fa-clock-rotate-left", "text-xs"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "border", "border-slate-700", "dark:border-slate-600", "hover:bg-slate-900", "dark:hover:bg-slate-600", "transition", "flex", "items-center", "justify-center", 3, "appLockPermission"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], [1, "fa-solid", "fa-location-dot", "text-[10px]"], [1, "fa-solid", "fa-flask-vial", "mr-1"], [1, "fa-solid", "fa-microchip", "mr-1"], [1, "font-bold", "mr-1", "text-slate-400"], [1, "fa-solid", 3, "ngClass"], [1, "font-bold"], [1, "fa-solid", "fa-user"], [1, "font-bold", "truncate", "max-w-[80px]"], [1, "fa-solid", "fa-calendar-check", "text-[9px]", "text-blue-400", "dark:text-blue-500"], [1, "font-medium"], [1, "text-slate-700", "dark:text-slate-300"], ["title", "Xem CoA", 1, "w-8", "h-8", "rounded-lg", "bg-blue-50", "dark:bg-blue-900/30", "text-blue-600", "dark:text-blue-400", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "flex", "items-center", "justify-center", 3, "click"], [1, "fa-solid", "fa-file-pdf", "text-xs"], ["title", "Upload CoA qua Google Drive", 1, "w-8", "h-8", "rounded-lg", "bg-amber-50", "dark:bg-amber-900/20", "text-amber-600", "dark:amber-400", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "flex", "items-center", "justify-center", 3, "click", "disabled"], [1, "fa-solid", "fa-spinner", "fa-spin", "text-xs"], [1, "fa-brands", "fa-google-drive", "text-xs"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "border", "border-slate-700", "dark:border-slate-600", "hover:bg-slate-900", "dark:hover:bg-slate-600", "transition", "flex", "items-center", "justify-center", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-print", "text-xs"], ["disabled", "", "title", "\u0110ang c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u m\u01B0\u1EE3n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-orange-100", "dark:bg-orange-900/30", "text-orange-400", "dark:text-orange-500", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "cursor-not-allowed", "border", "border-orange-200", "dark:border-orange-800/50"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], [1, "fa-solid", "fa-hourglass-half"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-hand-holding-hand"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-rotate-left"], ["title", "\u0110\u00E3 c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u mua", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-slate-300", "dark:bg-slate-700", "text-slate-500", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "cursor-not-allowed"], ["title", "\u0110\u1EC1 ngh\u1ECB mua s\u1EAFm", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], [1, "fa-solid", "fa-cart-arrow-down"], ["title", "\u0110\u1EC1 ngh\u1ECB mua s\u1EAFm", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-cart-plus"]], template: function StandardsGridViewComponent_Template(rf, ctx) { if (rf & 1) {
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: StandardsGridViewComponent, selectors: [["app-standards-grid-view"]], inputs: { items: [1, "items"], isLoading: [1, "isLoading"], allStandardsLength: [1, "allStandardsLength"], selectedIds: [1, "selectedIds"], quickUploadStdId: [1, "quickUploadStdId"], canEditStandards: [1, "canEditStandards"], canAssignStandards: [1, "canAssignStandards"], canRequestStandards: [1, "canRequestStandards"], currentUser: [1, "currentUser"] }, outputs: { toggleSelection: "toggleSelection", navigateToDetail: "navigateToDetail", copyText: "copyText", openCoaPreview: "openCoaPreview", triggerQuickDriveUpload: "triggerQuickDriveUpload", openAssignModal: "openAssignModal", goToReturn: "goToReturn", openPurchaseRequestModal: "openPurchaseRequestModal", openPrintModal: "openPrintModal", viewHistory: "viewHistory" }, decls: 3, vars: 1, consts: [[1, "p-4", "bg-slate-50/30", "dark:bg-slate-900/50"], [1, "grid", "grid-cols-1", "md:grid-cols-2", "lg:grid-cols-3", "xl:grid-cols-4", "gap-4"], ["height", "280px"], [1, "py-16", "text-center", "text-slate-400", "dark:text-slate-500", "italic", "w-full", "border-t", "border-transparent"], [1, "grid", "grid-cols-1", "md:grid-cols-2", "lg:grid-cols-3", "xl:grid-cols-4", "2xl:grid-cols-5", "gap-4"], [1, "fa-solid", "fa-box-open", "text-4xl", "mb-2", "text-slate-300", "dark:text-slate-600"], [1, "bg-white", "dark:bg-slate-800", "rounded-2xl", "border", "transition-all", "duration-200", "flex", "flex-col", "relative", "group", "h-full", "hover:-translate-y-1", "hover:shadow-lg", "dark:hover:shadow-none", "overflow-hidden", 3, "ngClass"], [1, "w-full", "h-1.5", "flex", "bg-slate-100", "dark:bg-slate-700", "shrink-0"], [1, "h-full", "w-full"], [1, "p-4", "flex", "flex-col", "h-full"], [1, "flex", "justify-between", "items-start", "mb-3"], [1, "flex", "flex-wrap", "gap-1.5", "items-start", "pr-2"], [1, "px-2.5", "py-1", "rounded-md", "text-[10px]", "font-bold", "uppercase", "border", "tracking-wide", "whitespace-nowrap", "shadow-sm", "dark:shadow-none", 3, "ngClass"], [1, "bg-indigo-50", "dark:bg-indigo-900/30", "text-indigo-700", "dark:text-indigo-400", "px-2.5", "py-1", "rounded-md", "text-sm", "font-black", "uppercase", "tracking-wider", "border", "border-indigo-100", "dark:border-indigo-800/50", "shadow-sm", "dark:shadow-none", "whitespace-nowrap"], [1, "bg-white", "dark:bg-slate-800", "text-slate-600", "dark:text-slate-400", "px-2.5", "py-1", "rounded-md", "text-xs", "font-bold", "border", "border-slate-200", "dark:border-slate-700", "flex", "items-center", "gap-1.5", "shadow-sm", "dark:shadow-none", "whitespace-nowrap"], [1, "inline-flex", "max-w-[150px]", "items-center", "gap-1", "rounded-full", "border", "border-indigo-100", "dark:border-indigo-800/40", "bg-indigo-50/70", "dark:bg-indigo-900/20", "px-2", "py-1", "text-[10px]", "font-black", "text-indigo-700", "dark:text-indigo-300", 3, "title"], [1, "inline-flex", "items-center", "rounded-full", "border", "border-indigo-100", "dark:border-indigo-800/40", "bg-indigo-50/50", "dark:bg-indigo-900/15", "px-2", "py-1", "text-[10px]", "font-black", "text-indigo-600", "dark:text-indigo-300", 3, "title"], [1, "inline-flex", "max-w-[100px]", "items-center", "gap-1", "rounded-full", "border", "border-fuchsia-100", "dark:border-fuchsia-800/40", "bg-fuchsia-50", "dark:bg-fuchsia-900/20", "px-2", "py-1", "text-[10px]", "font-black", "text-fuchsia-700", "dark:text-fuchsia-300", 3, "title"], [1, "inline-flex", "items-center", "rounded-full", "border", "border-fuchsia-100", "dark:border-fuchsia-800/40", "bg-fuchsia-50/70", "dark:bg-fuchsia-900/15", "px-2", "py-1", "text-[10px]", "font-black", "text-fuchsia-600", "dark:text-fuchsia-300", 3, "title"], ["type", "checkbox", 1, "w-5", "h-5", "accent-indigo-600", "dark:accent-indigo-500", "cursor-pointer", "shrink-0", "mt-0.5", 3, "change", "checked"], [1, "mb-4", "cursor-pointer", 3, "click"], [1, "font-bold", "text-slate-800", "dark:text-slate-200", "text-base", "leading-snug", "mb-1", "hover:text-indigo-600", "dark:hover:text-indigo-400", "transition", "break-words"], [1, "text-xs", "text-slate-500", "dark:text-slate-400", "italic", "font-medium", "break-words"], [1, "grid", "grid-cols-2", "gap-px", "bg-slate-100", "dark:bg-slate-700", "rounded-lg", "overflow-hidden", "border", "border-slate-100", "dark:border-slate-700", "mb-4", "text-[11px]"], ["title", "Copy Lot", 1, "bg-white", "dark:bg-slate-800", "p-2", "hover:bg-blue-50", "dark:hover:bg-blue-900/20", "transition", "cursor-pointer", "group/cell", 3, "click"], [1, "text-slate-400", "dark:text-slate-500", "font-bold", "uppercase", "mb-0.5", "flex", "justify-between"], [1, "fa-regular", "fa-copy", "opacity-0", "group-hover/cell:opacity-100"], [1, "font-mono", "font-bold", "text-slate-700", "dark:text-slate-300", "truncate"], ["title", "Copy Code", 1, "bg-white", "dark:bg-slate-800", "p-2", "hover:bg-blue-50", "dark:hover:bg-blue-900/20", "transition", "cursor-pointer", "group/cell", 3, "click"], [1, "bg-white", "dark:bg-slate-800", "p-2"], [1, "text-slate-400", "dark:text-slate-500", "font-bold", "uppercase", "mb-0.5"], [1, "font-bold", "text-slate-700", "dark:text-slate-300", "truncate", 3, "title"], [1, "mt-auto"], [1, "flex", "justify-between", "items-end", "mb-1"], [1, "text-[9px]", "font-bold", "text-slate-400", "dark:text-slate-500", "uppercase"], [1, "font-black", "text-indigo-600", "dark:text-indigo-400", "text-lg", "leading-none"], [1, "text-xs", "font-bold", "text-slate-400", "dark:text-slate-500"], [1, "w-full", "bg-slate-100", "dark:bg-slate-700", "rounded-full", "h-1.5", "overflow-hidden", "mb-3"], [1, "bg-indigo-500", "h-1.5", "rounded-full", "transition-all"], [1, "flex", "flex-wrap", "gap-1", "mb-2", "min-h-[22px]"], [1, "px-1.5", "py-0.5", "rounded", "text-[9px]", "flex", "items-center", "gap-1", "border", 3, "ngClass"], ["title", "Ng\u01B0\u1EDDi \u0111ang gi\u1EEF", 1, "px-1.5", "py-0.5", "rounded", "text-[9px]", "flex", "items-center", "gap-1", "border", "bg-blue-50", "text-blue-600", "border-blue-200"], [1, "text-[10px]", "text-slate-500", "dark:text-slate-400", "mb-3", "flex", "items-center", "gap-1"], [1, "pt-3", "border-t", "border-slate-100", "dark:border-slate-700", "flex", "items-center", "justify-between", "gap-2"], [1, "flex", "flex-col"], [1, "text-xs", "font-bold"], [1, "flex", "gap-1", "flex-wrap", "justify-end"], ["title", "Xem CoA", 1, "w-8", "h-8", "rounded-lg", "bg-blue-50", "dark:bg-blue-900/30", "text-blue-600", "dark:text-blue-400", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "flex", "items-center", "justify-center"], ["title", "Upload CoA qua Google Drive", 1, "w-8", "h-8", "rounded-lg", "bg-amber-50", "dark:bg-amber-900/20", "text-amber-600", "dark:amber-400", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "flex", "items-center", "justify-center", 3, "disabled"], ["title", "L\u1ECBch s\u1EED", 1, "w-8", "h-8", "rounded-lg", "bg-slate-50", "dark:bg-slate-800", "text-slate-500", "dark:text-slate-400", "border", "border-slate-200", "dark:border-slate-700", "hover:bg-slate-100", "dark:hover:bg-slate-700", "transition", "flex", "items-center", "justify-center", 3, "click"], [1, "fa-solid", "fa-clock-rotate-left", "text-xs"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "border", "border-slate-700", "dark:border-slate-600", "hover:bg-slate-900", "dark:hover:bg-slate-600", "transition", "flex", "items-center", "justify-center", 3, "appLockPermission"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], [1, "fa-solid", "fa-location-dot", "text-[10px]"], [1, "fa-solid", "fa-flask-vial", "shrink-0", "text-[9px]"], [1, "truncate"], [1, "fa-solid", "fa-microchip", "shrink-0", "text-[9px]"], [1, "font-bold", "mr-1", "text-slate-400"], [1, "fa-solid", 3, "ngClass"], [1, "font-bold"], [1, "fa-solid", "fa-user"], [1, "font-bold", "truncate", "max-w-[80px]"], [1, "fa-solid", "fa-calendar-check", "text-[9px]", "text-blue-400", "dark:text-blue-500"], [1, "font-medium"], [1, "text-slate-700", "dark:text-slate-300"], ["title", "Xem CoA", 1, "w-8", "h-8", "rounded-lg", "bg-blue-50", "dark:bg-blue-900/30", "text-blue-600", "dark:text-blue-400", "border", "border-blue-100", "dark:border-blue-800/50", "hover:bg-blue-100", "dark:hover:bg-blue-900/50", "transition", "flex", "items-center", "justify-center", 3, "click"], [1, "fa-solid", "fa-file-pdf", "text-xs"], ["title", "Upload CoA qua Google Drive", 1, "w-8", "h-8", "rounded-lg", "bg-amber-50", "dark:bg-amber-900/20", "text-amber-600", "dark:amber-400", "border", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100", "dark:hover:bg-amber-900/40", "transition", "flex", "items-center", "justify-center", 3, "click", "disabled"], [1, "fa-solid", "fa-spinner", "fa-spin", "text-xs"], [1, "fa-brands", "fa-google-drive", "text-xs"], ["title", "In nh\u00E3n", 1, "w-8", "h-8", "rounded-lg", "bg-slate-800", "dark:bg-slate-700", "text-white", "border", "border-slate-700", "dark:border-slate-600", "hover:bg-slate-900", "dark:hover:bg-slate-600", "transition", "flex", "items-center", "justify-center", 3, "click", "appLockPermission"], [1, "fa-solid", "fa-print", "text-xs"], ["disabled", "", "title", "\u0110ang c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u m\u01B0\u1EE3n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-orange-100", "dark:bg-orange-900/30", "text-orange-400", "dark:text-orange-500", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "cursor-not-allowed", "border", "border-orange-200", "dark:border-orange-800/50"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], [1, "fa-solid", "fa-hourglass-half"], ["title", "G\u00E1n cho m\u01B0\u1EE3n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-emerald-600", "dark:bg-emerald-500", "text-white", "hover:bg-emerald-700", "dark:hover:bg-emerald-600", "shadow-md", "shadow-emerald-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-hand-holding-hand"], ["title", "M\u01B0\u1EE3n chu\u1EA9n n\u00E0y", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-indigo-600", "dark:bg-indigo-500", "text-white", "hover:bg-indigo-700", "dark:hover:bg-indigo-600", "shadow-md", "shadow-indigo-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], ["title", "Tr\u1EA3 chu\u1EA9n", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-rose-600", "dark:bg-rose-500", "text-white", "hover:bg-rose-700", "dark:hover:bg-rose-600", "shadow-md", "shadow-rose-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-rotate-left"], ["title", "\u0110\u00E3 c\u00F3 ng\u01B0\u1EDDi y\u00EAu c\u1EA7u mua", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-slate-300", "dark:bg-slate-700", "text-slate-500", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "cursor-not-allowed"], ["title", "\u0110\u1EC1 ngh\u1ECB mua s\u1EAFm", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95"], [1, "fa-solid", "fa-cart-arrow-down"], ["title", "\u0110\u1EC1 ngh\u1ECB mua s\u1EAFm", 1, "w-auto", "px-3", "h-8", "rounded-lg", "bg-amber-500", "dark:bg-amber-600", "text-white", "hover:bg-amber-600", "dark:hover:bg-amber-500", "shadow-md", "shadow-amber-200", "dark:shadow-none", "transition", "flex", "items-center", "justify-center", "gap-1", "font-bold", "text-xs", "active:scale-95", 3, "click"], [1, "fa-solid", "fa-cart-plus"]], template: function StandardsGridViewComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "div", 0);
             i0.ɵɵtemplate(1, StandardsGridViewComponent_Conditional_1_Template, 3, 1, "div", 1)(2, StandardsGridViewComponent_Conditional_2_Template, 2, 1);
             i0.ɵɵelementEnd();
@@ -461,11 +491,21 @@ export class StandardsGridViewComponent {
                                                <i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}
                                            </span>
                                        }
-                                       @for (method of (std.derivedMethodLabels || []).slice(0, 4); track method) {
-                                           <span class="bg-indigo-50/70 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-md text-[10px] font-black border border-indigo-100 dark:border-indigo-800/40 whitespace-nowrap"><i class="fa-solid fa-flask-vial mr-1"></i>{{method}}</span>
+                                       @for (method of (std.derivedMethodLabels || []).slice(0, 2); track method) {
+                                           <span class="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/70 dark:bg-indigo-900/20 px-2 py-1 text-[10px] font-black text-indigo-700 dark:text-indigo-300" [title]="method">
+                                               <i class="fa-solid fa-flask-vial shrink-0 text-[9px]"></i><span class="truncate">{{method}}</span>
+                                           </span>
                                        }
-                                       @for (device of std.derivedDeviceCodes || []; track device) {
-                                           <span class="bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-1 rounded-md text-[10px] font-black border border-fuchsia-100 dark:border-fuchsia-800/40 whitespace-nowrap"><i class="fa-solid fa-microchip mr-1"></i>{{device}}</span>
+                                       @if ((std.derivedMethodLabels || []).length > 2) {
+                                           <span class="inline-flex items-center rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-900/15 px-2 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300" [title]="(std.derivedMethodLabels || []).slice(2).join(', ')">+{{(std.derivedMethodLabels || []).length - 2}}</span>
+                                       }
+                                       @for (device of (std.derivedDeviceCodes || []).slice(0, 2); track device) {
+                                           <span class="inline-flex max-w-[100px] items-center gap-1 rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50 dark:bg-fuchsia-900/20 px-2 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300" [title]="device">
+                                               <i class="fa-solid fa-microchip shrink-0 text-[9px]"></i><span class="truncate">{{device}}</span>
+                                           </span>
+                                       }
+                                       @if ((std.derivedDeviceCodes || []).length > 2) {
+                                           <span class="inline-flex items-center rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/70 dark:bg-fuchsia-900/15 px-2 py-1 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300" [title]="(std.derivedDeviceCodes || []).slice(2).join(', ')">+{{(std.derivedDeviceCodes || []).length - 2}}</span>
                                        }
                                    </div>
                                    <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-indigo-600 dark:accent-indigo-500 cursor-pointer shrink-0 mt-0.5">
@@ -596,5 +636,5 @@ export class StandardsGridViewComponent {
   `
             }]
     }], null, null); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(StandardsGridViewComponent, { className: "StandardsGridViewComponent", filePath: "src/app/features/standards/components/standards-grid-view.component.ts", lineNumber: 192 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(StandardsGridViewComponent, { className: "StandardsGridViewComponent", filePath: "src/app/features/standards/components/standards-grid-view.component.ts", lineNumber: 202 }); })();
 //# sourceMappingURL=standards-grid-view.component.js.map

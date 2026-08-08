@@ -11,6 +11,7 @@ import {
 import {
   Timestamp,
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
@@ -19,6 +20,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
   where
 } from 'firebase/firestore';
 
@@ -105,9 +107,118 @@ async function seedBaseData(): Promise<void> {
         details: 'Batch B print job',
         printable: true,
         timestamp: seedTime
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-requester`), {
+        id: 'std-requester',
+        name: 'Requester Standard',
+        lot_number: 'LOT-SECURE-1',
+        initial_amount: 100,
+        current_amount: 100,
+        unit: 'mg',
+        status: 'IN_USE',
+        current_holder: users.batchA.displayName,
+        current_holder_uid: users.batchA.uid,
+        current_request_id: 'requester-lifecycle',
+        has_pending_request: false,
+        restock_requested: false,
+        lastUpdated: seedTime
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-create`), {
+        id: 'std-create',
+        name: 'Create Standard',
+        lot_number: 'LOT-CREATE-1',
+        initial_amount: 50,
+        current_amount: 50,
+        unit: 'mg',
+        status: 'AVAILABLE',
+        has_pending_request: false,
+        lastUpdated: seedTime
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`), {
+        id: 'requester-lifecycle',
+        requestedBy: users.batchA.uid,
+        requestedByName: users.batchA.displayName,
+        standardId: 'std-requester',
+        standardName: 'Requester Standard',
+        lotNumber: 'LOT-SECURE-1',
+        requestDate: 1_700_000_000_000,
+        purpose: 'Secure usage test',
+        status: 'IN_PROGRESS',
+        totalAmountUsed: 0,
+        sopTags: [],
+        usageLogs: [],
+        createdAt: 1_700_000_000_000,
+        updatedAt: 1_700_000_000_000,
+        _isDeleted: false,
+        lastUpdated: seedTime
       })
     ]);
   });
+}
+
+function requesterCreatePayload(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id,
+    standardId: 'std-create',
+    standardName: 'Create Standard',
+    lotNumber: 'LOT-CREATE-1',
+    requestedBy: users.batchA.uid,
+    requestedByName: users.batchA.displayName,
+    requestDate: 1_786_182_400_000,
+    purpose: 'Requester create test',
+    status: 'PENDING_APPROVAL',
+    totalAmountUsed: 0,
+    usageLogs: [],
+    createdAt: 1_786_182_400_000,
+    updatedAt: 1_786_182_400_000,
+    _isDeleted: false,
+    lastUpdated: serverTimestamp(),
+    ...overrides
+  };
+}
+
+function secureUsageJournal(logId: string, amount = 10, overrides: Record<string, unknown> = {}) {
+  return {
+    id: logId,
+    date: '2026-08-08T10:00:00.000Z',
+    timestamp: 1_786_182_400_000,
+    user: users.batchA.displayName,
+    userId: users.batchA.uid,
+    amount_used: amount,
+    unit: 'mg',
+    normalized_amount: amount,
+    normalized_unit: 'mg',
+    purpose: 'Secure usage event',
+    standardId: 'std-requester',
+    standardName: 'Requester Standard',
+    lotNumber: 'LOT-SECURE-1',
+    requestId: 'requester-lifecycle',
+    lastUpdated: serverTimestamp(),
+    ...overrides
+  };
+}
+
+function buildSecureUsageBatch(logId: string, amount = 10) {
+  const batchDb = dbFor(users.batchA);
+  const batch = writeBatch(batchDb);
+  const journal = secureUsageJournal(logId, amount);
+  batch.update(doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester`), {
+    current_amount: 100 - amount,
+    status: amount === 100 ? 'DEPLETED' : 'IN_USE',
+    lastUpdated: serverTimestamp()
+  });
+  batch.update(doc(batchDb, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`), {
+    totalAmountUsed: amount,
+    lastUsageLogId: logId,
+    updatedAt: 1_786_182_400_001,
+    lastUpdated: serverTimestamp()
+  });
+  batch.set(
+    doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester/logs/${logId}`),
+    journal
+  );
+  batch.set(doc(batchDb, `artifacts/${APP_ID}/standard_usages/${logId}`), journal);
+  return batch;
 }
 
 before(async () => {
@@ -166,6 +277,321 @@ test('batch_run, sop_approve and manager can read print jobs but viewer cannot',
     await assertSucceeds(getDoc(doc(dbFor(user), printJobPath)));
   }
   await assertFails(getDoc(doc(dbFor(users.viewer), printJobPath)));
+});
+
+test('stats writes require batch_run, sop_approve or manager privileges', async () => {
+  const statsPaths = [
+    `artifacts/${APP_ID}/stats/master`,
+    `artifacts/${APP_ID}/monthly_stats/2026-08`
+  ];
+
+  for (const statsPath of statsPaths) {
+    await assertFails(setDoc(doc(dbFor(users.viewer), statsPath), {
+      '2026-08-08': { totalSamples: 1, totalBatches: 1, totalQcs: 0, sops: {} }
+    }));
+
+    for (const user of [users.batchA, users.approver, users.manager]) {
+      await assertSucceeds(setDoc(doc(dbFor(user), statsPath), {
+        '2026-08-08': { totalSamples: 1, totalBatches: 1, totalQcs: 0, sops: {} }
+      }));
+    }
+  }
+});
+
+test('requester usage succeeds only as one correlated atomic accounting transaction', async () => {
+  const batchDb = dbFor(users.batchA);
+  const standardRef = doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester`);
+  const requestRef = doc(batchDb, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`);
+  const subLogRef = doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester/logs/usage-good`);
+  const globalLogRef = doc(batchDb, `artifacts/${APP_ID}/standard_usages/usage-good`);
+  const journal = secureUsageJournal('usage-good', 10);
+  const batch = writeBatch(batchDb);
+
+  batch.update(standardRef, {
+    current_amount: 90,
+    status: 'IN_USE',
+    lastUpdated: serverTimestamp()
+  });
+  batch.update(requestRef, {
+    totalAmountUsed: 10,
+    lastUsageLogId: 'usage-good',
+    updatedAt: 1_786_182_400_001,
+    lastUpdated: serverTimestamp()
+  });
+  batch.set(subLogRef, journal);
+  batch.set(globalLogRef, journal);
+
+  await assertSucceeds(batch.commit());
+
+  const [standardSnap, requestSnap, subLogSnap, globalLogSnap] = await Promise.all([
+    getDoc(standardRef),
+    getDoc(requestRef),
+    getDoc(subLogRef),
+    getDoc(doc(dbFor(users.manager), `artifacts/${APP_ID}/standard_usages/usage-good`))
+  ]);
+  assert.equal(standardSnap.data()?.['current_amount'], 90);
+  assert.equal(requestSnap.data()?.['totalAmountUsed'], 10);
+  assert.equal(requestSnap.data()?.['lastUsageLogId'], 'usage-good');
+  assert.equal(subLogSnap.data()?.['normalized_amount'], 10);
+  assert.equal(globalLogSnap.data()?.['requestId'], 'requester-lifecycle');
+});
+
+test('requester cannot mutate stock or accounting aggregate without the complete journal protocol', async () => {
+  const batchDb = dbFor(users.batchA);
+  const standardRef = doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester`);
+  const requestRef = doc(batchDb, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`);
+
+  await assertFails(updateDoc(standardRef, {
+    current_amount: 90,
+    status: 'IN_USE',
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(requestRef, {
+    totalAmountUsed: 10,
+    lastUsageLogId: 'aggregate-only',
+    updatedAt: 1_786_182_400_002,
+    lastUpdated: serverTimestamp()
+  }));
+
+  const missingJournals = writeBatch(batchDb);
+  missingJournals.update(standardRef, {
+    current_amount: 90,
+    status: 'IN_USE',
+    lastUpdated: serverTimestamp()
+  });
+  missingJournals.update(requestRef, {
+    totalAmountUsed: 10,
+    lastUsageLogId: 'missing-journals',
+    updatedAt: 1_786_182_400_003,
+    lastUpdated: serverTimestamp()
+  });
+  await assertFails(missingJournals.commit());
+});
+
+test('requester journal creation is denied without matching stock and request writes', async () => {
+  const batchDb = dbFor(users.batchA);
+  await assertFails(setDoc(
+    doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester/logs/journal-only`),
+    secureUsageJournal('journal-only', 10)
+  ));
+  await assertFails(setDoc(
+    doc(batchDb, `artifacts/${APP_ID}/standard_usages/journal-only`),
+    secureUsageJournal('journal-only', 10)
+  ));
+});
+
+test('requester secure usage rejects mismatched journal amount, identity and ownership', async () => {
+  const batchDb = dbFor(users.batchA);
+  const cases = [
+    { logId: 'bad-amount', journal: secureUsageJournal('bad-amount', 9) },
+    { logId: 'bad-user', journal: secureUsageJournal('bad-user', 10, { userId: users.batchB.uid }) },
+    { logId: 'bad-request', journal: secureUsageJournal('bad-request', 10, { requestId: 'other-request' }) }
+  ];
+
+  for (const item of cases) {
+    const batch = writeBatch(batchDb);
+    batch.update(doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester`), {
+      current_amount: 90,
+      status: 'IN_USE',
+      lastUpdated: serverTimestamp()
+    });
+    batch.update(doc(batchDb, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`), {
+      totalAmountUsed: 10,
+      lastUsageLogId: item.logId,
+      updatedAt: 1_786_182_400_004,
+      lastUpdated: serverTimestamp()
+    });
+    batch.set(doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester/logs/${item.logId}`), item.journal);
+    batch.set(doc(batchDb, `artifacts/${APP_ID}/standard_usages/${item.logId}`), item.journal);
+    await assertFails(batch.commit());
+  }
+});
+
+test('requester secure usage rejects another user request, wrong holder and wrong current request', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await updateDoc(doc(db, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`), {
+      requestedBy: users.batchB.uid,
+      requestedByName: users.batchB.displayName
+    });
+  });
+  await assertFails(buildSecureUsageBatch('wrong-request-owner').commit());
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await updateDoc(doc(db, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`), {
+      requestedBy: users.batchA.uid,
+      requestedByName: users.batchA.displayName
+    });
+    await updateDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-requester`), {
+      current_holder_uid: users.batchB.uid,
+      current_holder: users.batchB.displayName
+    });
+  });
+  await assertFails(buildSecureUsageBatch('wrong-holder').commit());
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await updateDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-requester`), {
+      current_holder_uid: users.batchA.uid,
+      current_holder: users.batchA.displayName,
+      current_request_id: 'other-request'
+    });
+    await setDoc(doc(db, `artifacts/${APP_ID}/standard_requests/other-request`), {
+      id: 'other-request',
+      requestedBy: users.batchA.uid,
+      requestedByName: users.batchA.displayName,
+      standardId: 'std-requester',
+      standardName: 'Requester Standard',
+      requestDate: 1_700_000_000_000,
+      purpose: 'Other secure request',
+      status: 'IN_PROGRESS',
+      totalAmountUsed: 0,
+      usageLogs: [],
+      createdAt: 1_700_000_000_000,
+      updatedAt: 1_700_000_000_000,
+      _isDeleted: false,
+      lastUpdated: Timestamp.fromMillis(1_700_000_000_000)
+    });
+  });
+  await assertFails(buildSecureUsageBatch('wrong-current-request').commit());
+});
+
+test('requester secure usage requires an IN_PROGRESS request', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(
+      doc(context.firestore(), `artifacts/${APP_ID}/standard_requests/requester-lifecycle`),
+      { status: 'PENDING_RETURN' }
+    );
+  });
+  await assertFails(buildSecureUsageBatch('wrong-request-status').commit());
+});
+
+test('requester cannot edit or delete historical usage journals', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    const journal = {
+      ...secureUsageJournal('historic-log', 10),
+      lastUpdated: seedTime
+    };
+    await Promise.all([
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-requester/logs/historic-log`), journal),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_usages/historic-log`), journal)
+    ]);
+  });
+
+  const batchDb = dbFor(users.batchA);
+  for (const path of [
+    `artifacts/${APP_ID}/reference_standards/std-requester/logs/historic-log`,
+    `artifacts/${APP_ID}/standard_usages/historic-log`
+  ]) {
+    const ref = doc(batchDb, path);
+    await assertFails(updateDoc(ref, { purpose: 'tampered', lastUpdated: serverTimestamp() }));
+    await assertFails(deleteDoc(ref));
+  }
+});
+
+test('requester create enforces the trusted request schema and canonical identities', async () => {
+  const batchDb = dbFor(users.batchA);
+  const goodId = 'requester-create-good';
+  await assertSucceeds(setDoc(
+    doc(batchDb, `artifacts/${APP_ID}/standard_requests/${goodId}`),
+    requesterCreatePayload(goodId)
+  ));
+
+  const invalidCases: Array<[string, Record<string, unknown>]> = [
+    ['spoof-user', { requestedBy: users.batchB.uid }],
+    ['spoof-user-name', { requestedByName: users.batchB.displayName }],
+    ['spoof-standard-name', { standardName: 'Forged Standard' }],
+    ['spoof-lot', { lotNumber: 'FORGED-LOT' }],
+    ['empty-purpose', { purpose: '' }],
+    ['admin-final-tags', { finalSopTags: [] }],
+    ['admin-confirmed', { confirmedAmountUsed: 0 }],
+    ['admin-received', { receivedBy: users.batchA.uid, receivedByName: users.batchA.displayName }],
+    ['deleted-on-create', { _isDeleted: true }],
+    ['unknown-field', { attackerControlled: true }],
+    ['nonzero-total', { totalAmountUsed: 1 }],
+    ['seeded-usage-logs', { usageLogs: [{ id: 'fake' }] }]
+  ];
+
+  for (const [suffix, overrides] of invalidCases) {
+    const id = `requester-create-${suffix}`;
+    await assertFails(setDoc(
+      doc(batchDb, `artifacts/${APP_ID}/standard_requests/${id}`),
+      requesterCreatePayload(id, overrides)
+    ));
+  }
+
+  for (const field of ['standardName', 'requestedByName', 'purpose'] as const) {
+    const id = `requester-create-missing-${field}`;
+    const payload = requesterCreatePayload(id) as Record<string, unknown>;
+    delete payload[field];
+    await assertFails(setDoc(
+      doc(batchDb, `artifacts/${APP_ID}/standard_requests/${id}`),
+      payload
+    ));
+  }
+});
+
+test('requester lifecycle can report and resume but cannot rewrite accounting or admin fields', async () => {
+  const batchDb = dbFor(users.batchA);
+  const lifecycleRef = doc(batchDb, `artifacts/${APP_ID}/standard_requests/requester-lifecycle`);
+
+  await assertFails(updateDoc(lifecycleRef, {
+    status: 'PENDING_RETURN',
+    reportedAmountUsed: 10,
+    reportedUnit: 'mg',
+    reportedDepleted: false,
+    sopTags: [],
+    usageLogs: [{ id: 'fake', amount_used: 10 }],
+    updatedAt: 1_786_182_400_009,
+    lastUpdated: serverTimestamp()
+  }));
+
+  await assertSucceeds(updateDoc(lifecycleRef, {
+    status: 'PENDING_RETURN',
+    reportedAmountUsed: 10,
+    reportedUnit: 'mg',
+    reportedDepleted: false,
+    sopTags: [],
+    updatedAt: 1_786_182_400_010,
+    lastUpdated: serverTimestamp()
+  }));
+
+  await assertFails(updateDoc(lifecycleRef, {
+    totalAmountUsed: 10,
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(lifecycleRef, {
+    usageLogs: [{ id: 'fake', amount_used: 10 }],
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(lifecycleRef, {
+    finalSopTags: [],
+    lastUpdated: serverTimestamp()
+  }));
+
+  await assertSucceeds(updateDoc(lifecycleRef, {
+    status: 'IN_PROGRESS',
+    reportedAmountUsed: deleteField(),
+    reportedUnit: deleteField(),
+    reportedDepleted: deleteField(),
+    updatedAt: 1_786_182_400_011,
+    lastUpdated: serverTimestamp()
+  }));
+});
+
+test('approver may write admin-only return fields that requester cannot', async () => {
+  const approverRef = doc(dbFor(users.approver), `artifacts/${APP_ID}/standard_requests/requester-lifecycle`);
+  await assertSucceeds(updateDoc(approverRef, {
+    finalSopTags: [],
+    confirmedAmountUsed: 0,
+    confirmedUnit: 'mg',
+    receivedBy: users.approver.uid,
+    receivedByName: users.approver.displayName,
+    lastUpdated: serverTimestamp()
+  }));
 });
 
 test('print job creation binds ownership to the authenticated creator', async () => {
