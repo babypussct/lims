@@ -219,7 +219,7 @@ export class StandardUsageService {
     const requestRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
     const activityRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
     const backfilledAt = Date.now();
-    const enteredByName = currentUser.displayName || currentUser.email || 'Quản lý';
+    const enteredByName = currentUser.displayName || currentUser.email || currentUser.uid;
 
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);

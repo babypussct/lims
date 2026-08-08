@@ -101,3 +101,23 @@ test('legacy request without scope snapshots uses derived classification', () =>
   assert.equal(result.kind, 'sop-all');
   assert.equal(result.traceability, 'legacy-derived');
 });
+
+test('legacy SOP target ids are reconciled through the canonical target name', () => {
+  const result = classifyTargetScope({
+    assignedTargetIds: ['acephate'],
+    sopId: 'SOP-LEGACY',
+    sopTargetSnapshot: { 'legacy-target-id': 'Acephate' }
+  });
+  assert.equal(result.kind, 'sop-all');
+  assert.deepEqual(result.sourceTargetIds, ['acephate']);
+});
+
+test('SopTarget snapshots use the same name-first canonical identity as Smart Batch', () => {
+  const snapshots = buildTargetScopeSnapshots({
+    sampleTargetMap: { M1: ['acephate'] },
+    sopId: 'SOP-LEGACY',
+    sopTargetSnapshot: [{ id: 'legacy-target-id', name: 'Acephate' }]
+  });
+  assert.equal(snapshots[0].kind, 'sop-all');
+  assert.deepEqual(snapshots[0].assignedTargetIds, ['acephate']);
+});

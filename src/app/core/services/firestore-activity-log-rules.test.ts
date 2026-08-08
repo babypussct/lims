@@ -14,7 +14,7 @@ test('activity log list access is not granted to every signed-in user', () => {
   assert.match(block, /allow list:\s*if\s+hasPermission\(appId,\s*'report_view'\)/);
   assert.match(
     block,
-    /resource\.data\.get\('user',\s*''\)\s*==\s*getUserProfile\(appId\)\.get\('displayName',\s*''\)/
+    /isCurrentActorName\(appId,\s*resource\.data\.get\('user',\s*''\)\)/
   );
 });
 

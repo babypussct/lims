@@ -81,6 +81,111 @@ service cloud.firestore {
       return userExists(appId) && evaluateUserPermission(appId, getUserProfile(appId), permission);
     }
 
+    // Operational data must follow the same active-role boundary as the client.
+    // In particular, viewer/pending profiles do not gain write access through
+    // permissive signed-in fallbacks.
+    function isActiveUser(appId) {
+      return userExists(appId) &&
+        ['manager', 'staff'].hasAny([getUserProfile(appId).get('role', 'pending')]);
+    }
+
+    function canUseSopWorkspace(appId) {
+      return isActiveUser(appId) && hasPermission(appId, 'sop_view');
+    }
+
+    function canEditResults(appId) {
+      return isActiveUser(appId) &&
+        (hasPermission(appId, 'batch_run') || hasPermission(appId, 'sop_approve'));
+    }
+
+    function isCurrentActorName(appId, value) {
+      let profile = getUserProfile(appId);
+      return value is string && (
+        value == profile.get('displayName', '') ||
+        value == profile.get('email', '') ||
+        value == request.auth.token.get('email', '') ||
+        value == request.auth.uid
+      );
+    }
+
+    function validAuditLogCreate(appId, data) {
+      return isActiveUser(appId) &&
+        isCurrentActorName(appId, data.get('user', '')) &&
+        data.get('action', '') is string &&
+        data.get('action', '').size() > 0 &&
+        data.get('action', '').size() <= 100 &&
+        data.get('details', '') is string &&
+        data.get('details', '').size() <= 2000 &&
+        data.timestamp == request.time &&
+        (!('lastUpdated' in data) || data.lastUpdated == request.time);
+    }
+
+    function canCreateAuditLog(appId) {
+      return isManager(appId) || (
+        isActiveUser(appId) && (
+          hasPermission(appId, 'inventory_edit') ||
+          hasPermission(appId, 'standard_request') ||
+          hasPermission(appId, 'standard_edit') ||
+          hasPermission(appId, 'standard_approve') ||
+          hasPermission(appId, 'standard_log_delete') ||
+          hasPermission(appId, 'recipe_edit') ||
+          hasPermission(appId, 'sop_edit') ||
+          hasPermission(appId, 'sop_approve') ||
+          hasPermission(appId, 'batch_run')
+        )
+      );
+    }
+
+    function validRequestCreate(appId, data) {
+      return canEditResults(appId) &&
+        data.get('sopId', '') is string && data.get('sopId', '').size() > 0 &&
+        data.get('sopName', '') is string && data.get('sopName', '').size() > 0 &&
+        data.get('items', []) is list &&
+        ['pending', 'approved'].hasAny([data.get('status', '')]) &&
+        isCurrentActorName(appId, data.get('user', '')) &&
+        data.timestamp == request.time &&
+        data.lastUpdated == request.time &&
+        (data.get('status', '') != 'approved' || data.approvedAt == request.time);
+    }
+
+    function validResultLifecycleTransition() {
+      let fromStatus = resource.data.get('status', '');
+      let toStatus = request.resource.data.get('status', fromStatus);
+      return toStatus == fromStatus ||
+        (fromStatus == 'approved' && toStatus == 'draft') ||
+        (fromStatus == 'draft' && ['draft', 'completed'].hasAny([toStatus])) ||
+        (fromStatus == 'completed' && ['draft', 'completed'].hasAny([toStatus]));
+    }
+
+    function validBatchRequestUpdate(appId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let resultFields = [
+        'status', 'resultStatusReason', 'analysisResultSummary', 'analysisResult',
+        'parentMasterId', 'lastUpdated'
+      ];
+      let lockFields = ['lockedBy', 'lockedByName', 'lockedAt', 'lastActiveAt', 'lastUpdated'];
+      let resultUpdate = changed.hasOnly(resultFields) && validResultLifecycleTransition() &&
+        (!changed.hasAny(['status']) || request.resource.data.get('resultStatusReason', '') is string);
+      let acquireLock = changed.hasOnly(lockFields) && changed.hasAny(['lockedBy']) &&
+        request.resource.data.get('lockedBy', '') == request.auth.token.get('email', '') &&
+        isCurrentActorName(appId, request.resource.data.get('lockedByName', ''));
+      let heartbeat = changed.hasOnly(['lastActiveAt', 'lastUpdated']) &&
+        resource.data.get('lockedBy', '') == request.auth.token.get('email', '');
+      let releaseLock = changed.hasOnly(lockFields) &&
+        resource.data.get('lockedBy', '') == request.auth.token.get('email', '') &&
+        !('lockedBy' in request.resource.data);
+      let repairVirtualMaster = resource.data.get('isVirtualMaster', false) == true &&
+        changed.hasOnly(['targetIds', 'targetNames', 'sampleTargetMap', 'lastUpdated']);
+      let linkVirtualMaster = changed.hasOnly(['parentMasterId', 'lastUpdated']);
+      let deleteVirtualMaster = resource.data.get('isVirtualMaster', false) == true &&
+        changed.hasOnly(['_isDeleted', 'status', 'lastUpdated']) &&
+        request.resource.data.get('_isDeleted', false) == true &&
+        request.resource.data.get('status', '') == 'REJECTED';
+      return isActiveUser(appId) && hasPermission(appId, 'batch_run') &&
+        (resultUpdate || acquireLock || heartbeat || releaseLock ||
+         repairVirtualMaster || linkVirtualMaster || deleteVirtualMaster);
+    }
+
     function canOperateStandards(appId) {
       return hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_approve');
     }
@@ -423,12 +528,14 @@ service cloud.firestore {
     // MODULE YEU CAU KIEM NGHIEM VA KET QUA (REQUESTS)
     match /artifacts/{appId}/requests/{reqId} {
       allow get: if true; // Public read cho phep truy xuat ket qua/QR code khong can dang nhap
-      allow list: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+      allow list: if canUseSopWorkspace(appId);
+      allow create: if validRequestCreate(appId, request.resource.data);
+      allow update: if isManager(appId) || hasPermission(appId, 'sop_approve') || validBatchRequestUpdate(appId);
+      allow delete: if isManager(appId);
 
       match /history/{histId} {
-        allow read: if isSignedIn();
-        allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+        allow read: if canUseSopWorkspace(appId);
+        allow write: if canEditResults(appId);
       }
     }
     match /artifacts/{appId}/daily_checklists/{analysisDate} {
@@ -436,13 +543,28 @@ service cloud.firestore {
       allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
     }
     match /artifacts/{appId}/results_details/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if canUseSopWorkspace(appId);
+      allow create, update: if canEditResults(appId) &&
+        request.resource.data.get('requestId', docId) == docId;
+      allow delete: if canEditResults(appId) &&
+        get(/databases/$(database)/documents/artifacts/$(appId)/requests/$(docId)).data.get('isVirtualMaster', false) == true;
     }
 
     // Yeu cau in an nhan / barcode (Print Jobs)
     match /artifacts/{appId}/print_jobs/{jobId} {
-      allow read: if true; // Public read cho phep may in hoac client quet barcode khong can login
-      allow write: if isSignedIn();
+      allow get, list: if canUseSopWorkspace(appId);
+      allow create: if canEditResults(appId) &&
+        request.resource.data.get('requestId', '') is string &&
+        request.resource.data.get('requestId', '').size() > 0 &&
+        request.resource.data.get('createdByUid', '') == request.auth.uid &&
+        isCurrentActorName(appId, request.resource.data.get('createdBy', '')) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.lastUpdated == request.time;
+      allow update: if false;
+      allow delete: if isManager(appId) || hasPermission(appId, 'sop_approve') || (
+        isActiveUser(appId) && hasPermission(appId, 'batch_run') &&
+        resource.data.get('createdByUid', '') == request.auth.uid
+      );
     }
 
     // Thu vien Target Master
@@ -451,28 +573,32 @@ service cloud.firestore {
       allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
     }
     match /artifacts/{appId}/master_targets/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isManager(appId);
     }
     match /artifacts/{appId}/master_analytes/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isManager(appId);
     }
     match /artifacts/{appId}/matrix_types/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isManager(appId);
     }
     match /artifacts/{appId}/master_devices/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isManager(appId);
     }
 
     // Lich su Audit Trail / Nhat ky he thong chung (Logs)
     match /artifacts/{appId}/logs/{logId} {
-      allow create: if isSignedIn();
+      allow create: if canCreateAuditLog(appId) && validAuditLogCreate(appId, request.resource.data);
       allow get: if true; // Public read cho phep quet QR code truy xuat nguon goc
       // Report viewers/managers may query the global audit trail. Other signed-in
       // users can only list documents whose user field matches their own profile;
       // Firestore therefore rejects an unconstrained global collection query.
       allow list: if hasPermission(appId, 'report_view') || (
         userExists(appId) &&
-        resource.data.get('user', '') == getUserProfile(appId).get('displayName', '')
+        isCurrentActorName(appId, resource.data.get('user', ''))
       );
       allow update, delete: if isManager(appId);
     }

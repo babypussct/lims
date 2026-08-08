@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.08-b02",
+  "version": "26.08.08-b03",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
@@ -17,7 +17,8 @@
     "test:notifications": "tsx --test api/notification-utils.test.ts src/app/core/services/notification-policy.test.ts src/app/core/services/toast.service.test.ts",
     "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts",
     "test:excel-import": "tsx --test src/app/features/results/import/excel-result-import.test.ts",
-    "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/core/services/calculator.service.test.ts",
+    "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/features/targets/target-scope-classifier.spec.ts src/app/core/services/calculator.service.test.ts src/app/core/services/smart-batch-security-rules.test.ts && npm run test:firestore-rules",
+    "test:firestore-rules": "firebase --project demo-lims-smart-batch-rules emulators:exec --only firestore \"tsx --test src/app/core/services/smart-batch-firestore-rules.emulator.test.ts\"",
     "test:daily-checklists": "tsx --test src/app/core/utils/daily-checklist-projection.test.ts src/app/core/utils/daily-checklist-hotfix.test.ts",
     "validate:release-notes": "node scripts/validate-release-notes.js",
     "migrate:releases": "node scripts/migrate-releases.js",
@@ -64,6 +65,7 @@
     "@angular/cli": "^19.0.0",
     "@angular/compiler-cli": "^19.0.0",
     "@capacitor/cli": "^6.2.1",
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/jsbarcode": "^3.11.4",
     "@types/node": "^18.0.0",
     "@types/qrcode": "^1.5.6",
@@ -71,6 +73,7 @@
     "angular-eslint": "21.0.1",
     "autoprefixer": "^10.4.19",
     "eslint": "^9.39.1",
+    "firebase-tools": "^15.26.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "ts-node": "^10.9.2",

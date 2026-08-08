@@ -1,18 +1,17 @@
 {
-  "title": "Nâng Cấp Trải Nghiệm Sử Dụng Và Điều Hướng Trên Điện Thoại",
+  "title": "Nâng Cấp Bảo Mật Và Cải Thiện Chia Nhóm Mẫu",
   "highlights": [
-    "Thanh điều hướng trên điện thoại hiển thị chính xác các chức năng theo quyền hạn thực tế và có thêm thông báo số lượng trên nút 'Quản Lý Yêu Cầu'.",
-    "Giao diện và các cửa sổ thông tin tự động căn chỉnh vừa vặn với màn hình điện thoại, không còn bị che khuất bởi cạnh dưới màn hình.",
-    "Lịch sử thao tác tự động bỏ qua các trang không hợp lệ, giúp người dùng luôn trở về đúng nơi an toàn khi sử dụng."
+    "Hệ thống bảo mật được thắt chặt: chỉ các nhân sự có thẩm quyền mới được thao tác trên Kết quả, Mẻ phân tích và SOP, đảm bảo an toàn dữ liệu tuyệt đối.",
+    "Tính năng tạo mẻ (SmartBatch) nhận diện chỉ tiêu thông minh và chính xác hơn, tự động đối chiếu các chỉ tiêu cũ bị lệch tên gọi hoặc mã.",
+    "Sửa lỗi tự động điền sai nền mẫu mặc định khi tạo nhóm mẫu mới, giúp kiểm nghiệm viên chủ động phân loại mẫu ngay từ đầu."
   ],
   "features": [],
   "improvements": [
-    "Gợi ý cài đặt ứng dụng vào điện thoại tự động ẩn đi sau khi người dùng đã cài đặt thành công, giảm thiểu các thông báo không cần thiết.",
-    "Người dùng giờ đây có thể tự do phóng to nội dung trên thiết bị di động bằng thao tác vuốt hai ngón tay để dễ dàng xem các chữ nhỏ.",
-    "Lịch sử 'Xem gần đây' tự động loại bỏ các lối tắt dẫn tới chức năng ngoài phân quyền, nâng cao độ an toàn và tránh gây nhầm lẫn.",
-    "Cải thiện khả năng hỗ trợ các công cụ đọc màn hình, giúp thông báo rõ ràng hơn về tình trạng các cửa sổ bật lên và các nút biểu tượng."
+    "Giao diện Cấu hình được làm gọn gàng hơn, ẩn bớt các thông tin kỹ thuật không cần thiết đối với người sử dụng.",
+    "Lịch sử hệ thống ghi nhận thời gian chuẩn xác hơn bằng đồng hồ máy chủ, loại bỏ tình trạng lỗi do sai lệch múi giờ trên thiết bị cá nhân."
   ],
   "fixes": [
-    "Khắc phục hiện tượng giao diện điện thoại hiển thị thanh menu không đồng bộ theo quyền hạn và loại bỏ các cửa sổ tự cuộn bị sai kích thước."
+    "Khắc phục lỗi hệ thống không nhận diện được chỉ tiêu trong các Mẻ phân tích cũ, giúp các chức năng gợi ý SOP và kiểm tra độ phủ hoạt động trơn tru.",
+    "Khắc phục triệt để lỗi từ chối quyền truy cập (Permission Denied) thỉnh thoảng xảy ra khi người dùng gộp các mẻ phân tích thành Mẻ tổng hợp."
   ]
 }

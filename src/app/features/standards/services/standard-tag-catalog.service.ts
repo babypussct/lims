@@ -541,7 +541,7 @@ export class StandardTagCatalogService {
         targetId: targetId || null,
         timestamp: serverTimestamp(),
         lastUpdated: serverTimestamp(),
-        user: this.auth.currentUser()?.displayName || 'Hệ thống',
+        user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
       });
     } catch (error) {
       console.warn('[StandardTagCatalogService] Activity log failed:', error);

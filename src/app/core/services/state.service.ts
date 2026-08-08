@@ -26,6 +26,7 @@ import { sanitizeForFirebase } from '../../shared/utils/utils';
 import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
+import { getCanonicalId } from '../../features/results/shared/compound-id-resolver';
 import { resolveMetadataSyncToast } from './notification-policy';
 import { getDashboardActivityDataScope } from '../../shared/utils/dashboard-activity';
 
@@ -122,7 +123,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.08-b02');
+  systemVersion = signal<string>('v26.08.08-b03');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -1060,7 +1061,10 @@ export class StateService implements OnDestroy {
     }
   }
 
-  public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Người dùng không xác định'; }
+  public getCurrentUserName(): string {
+    const user = this.auth.currentUser();
+    return user?.displayName || user?.email || user?.uid || 'Người dùng không xác định';
+  }
 
   // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndQueuePrint, approveRequest, revokeApproval, etc.)
   // Omitted for brevity as no logic changed there
@@ -1122,7 +1126,10 @@ export class StateService implements OnDestroy {
     return {
       sopVersion: sop.version || 1,
       sopRef: sop.ref || '',
-      targetNames: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name]))
+      targetNames: Object.fromEntries((sop.targets || []).map(target => [
+        getCanonicalId(target.name || target.id),
+        target.name
+      ]))
     };
   }
 
@@ -1138,7 +1145,7 @@ export class StateService implements OnDestroy {
       fallbackTargetIds: formInputs.targetIds,
       sopId: sop.id,
       sopVersion: sop.version || 1,
-      sopTargetSnapshot: Object.fromEntries((sop.targets || []).map(target => [target.id, target.name])),
+      sopTargetSnapshot: this.buildSopTraceability(sop).targetNames,
       availableGroups,
       explicitGroupId: formInputs.explicitGroupId
     }));
@@ -1291,7 +1298,8 @@ export class StateService implements OnDestroy {
           ...sanitizeForFirebase(printData),
           createdAt: serverTimestamp(),
           lastUpdated: serverTimestamp(),
-          createdBy: this.getCurrentUserName()
+          createdBy: this.getCurrentUserName(),
+          createdByUid: this.auth.currentUser()?.uid || ''
         });
 
         transaction.set(logRef, sanitizeForFirebase({
@@ -1468,7 +1476,8 @@ export class StateService implements OnDestroy {
             ...sanitizeForFirebase(printData),
             createdAt: serverTimestamp(),
             lastUpdated: serverTimestamp(),
-            createdBy: this.getCurrentUserName()
+            createdBy: this.getCurrentUserName(),
+            createdByUid: this.auth.currentUser()?.uid || ''
           });
 
           transaction.set(item.logRef, sanitizeForFirebase({
@@ -1613,7 +1622,8 @@ export class StateService implements OnDestroy {
             ...sanitizeForFirebase(printData),
             createdAt: serverTimestamp(),
             lastUpdated: serverTimestamp(),
-            createdBy: this.getCurrentUserName()
+            createdBy: this.getCurrentUserName(),
+            createdByUid: this.auth.currentUser()?.uid || ''
           });
 
           transaction.set(logRef, sanitizeForFirebase({
@@ -1835,7 +1845,8 @@ export class StateService implements OnDestroy {
           ...sanitizeForFirebase(printData),
           createdAt: serverTimestamp(),
           lastUpdated: serverTimestamp(),
-          createdBy: this.getCurrentUserName()
+          createdBy: this.getCurrentUserName(),
+          createdByUid: this.auth.currentUser()?.uid || ''
         });
 
         transaction.set(logRef, sanitizeForFirebase({

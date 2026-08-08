@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -115,64 +115,8 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   recycleItems = signal<any[]>([]);
   private xlsxLoader?: Promise<typeof import('xlsx')>;
 
-  firestoreRules = computed(() => {
-    const appId = this.fb.APP_ID;
-    return `service cloud.firestore {
-  match /databases/{database}/documents {
-    function isManager() {
-      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) &&
-             'role' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
-             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager';
-    }
-    function isApprover() {
-      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) &&
-             'permissions' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
-             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions.hasAny(['standard_approve']);
-    }
-    function isAuth() { return request.auth != null; }
-
-    match /artifacts/${appId} {
-        match /auth_sessions/{sessionId} { allow read, write: if true; }
-        match /users/{userId} {
-          allow read: if isAuth();
-          allow write: if isAuth() && (isManager() || request.auth.uid == userId);
-        }
-        match /recipes/{recipeId} { allow read, write: if isAuth(); }
-        match /logs/{logId}      { allow read: if true; allow write: if isAuth(); }
-        match /print_jobs/{jobId}{ allow read: if true; allow write: if isAuth(); }
-        match /requests/{reqId}  {
-          allow read: if true;
-          allow write: if isAuth();
-          match /history/{version} { allow read, write: if isAuth(); }
-        }
-        match /standard_requests/{reqId} {
-          allow list: if isAuth();
-          allow get: if isAuth() && (isManager() || isApprover() || resource.data.requestedBy == request.auth.uid);
-          allow create: if isAuth() && (isManager() || isApprover() || request.resource.data.requestedBy == request.auth.uid);
-          allow update: if isAuth() && (isManager() || isApprover() || (resource.data.requestedBy == request.auth.uid && request.resource.data.requestedBy == request.auth.uid));
-          allow delete: if isAuth() && (isManager() || isApprover() || resource.data.requestedBy == request.auth.uid);
-        }
-        match /inventory/{docId}            { allow read, write: if isAuth(); }
-        match /inventory/{docId}/history/{historyId} { allow read, write: if isAuth(); }
-        match /sops/{docId}                 { allow read, write: if isAuth(); }
-        match /reference_standards/{docId}  { allow read, write: if isAuth(); }
-        match /reference_standards/{docId}/logs/{logId} { allow read, write: if isAuth(); }
-        match /standard_usages/{docId}      { allow read, write: if isAuth(); }
-        match /purchase_requests/{docId}    { allow read, write: if isAuth(); }
-        match /notifications/{docId}        { allow read, write: if isAuth(); }
-        match /system_updates/{docId}       { allow read: if isAuth(); allow write: if isManager(); }
-        match /system/{docId}               { allow read: if isAuth(); allow write: if isManager(); }
-        match /stats/{docId}                { allow read: if isAuth(); allow write: if isAuth(); }
-        match /config/{docId}               { allow read: if isAuth(); allow write: if isManager(); }
-        match /master_targets/{docId}       { allow read, write: if isAuth(); }
-        match /master_analytes/{docId}      { allow read, write: if isAuth(); }
-        match /target_groups/{docId}        { allow read, write: if isAuth(); }
-        match /sample_description_master/{docId} { allow read: if isAuth(); allow write: if isManager(); }
-        match /results_details/{docId}      { allow read, write: if isAuth(); }
-    }
-  }
-}`;
-  });
+  readonly firestoreRulesNotice =
+    'Rules triển khai được quản lý trong file firestore.rules của mã nguồn. Màn hình Config không còn nhúng hoặc sao chép bản rules để tránh phát tán cấu hình cũ.';
 
   newUpdateContent = '';
   newUpdateType = 'info';
@@ -448,8 +392,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           this.toast.show(`Không thể lưu cấu hình in: ${e?.message || e}`, 'error');
       }
   }
-  copyRules() { navigator.clipboard.writeText(this.firestoreRules()).then(() => this.toast.show('Đã sao chép quy tắc!')); }
-
   async exportData() {
       try {
           const data = await this.fb.exportData();

@@ -57,19 +57,28 @@ export function computeTargetSignature(targetIds: readonly string[] | undefined)
 }
 
 export function computeTargetGroupRevision(group: TargetGroup): string {
-  return `v1:${group.id.length}:${group.id}:${computeTargetSignature(group.targets.map(target => target.id || target.name))}`;
+  return `v1:${group.id.length}:${group.id}:${computeTargetSignature(group.targets.map(target => target.name || target.id))}`;
 }
 
-function snapshotTargetIds(snapshot?: Readonly<Record<string, string>> | readonly SopTarget[]): string[] {
+function snapshotTargetIdCandidates(
+  snapshot?: Readonly<Record<string, string>> | readonly SopTarget[]
+): string[][] {
   if (!snapshot) return [];
   if (Array.isArray(snapshot)) {
-    return canonicalizeTargetIds(snapshot.map(target => target.id || target.name));
+    return [canonicalizeTargetIds(snapshot.map(target => target.name || target.id))];
   }
-  return canonicalizeTargetIds(Object.keys(snapshot));
+
+  const byStoredId = canonicalizeTargetIds(Object.keys(snapshot));
+  const byTargetName = canonicalizeTargetIds(
+    Object.entries(snapshot).map(([legacyId, targetName]) => targetName || legacyId)
+  );
+  return computeTargetSignature(byStoredId) === computeTargetSignature(byTargetName)
+    ? [byStoredId]
+    : [byTargetName, byStoredId];
 }
 
 function groupTargetIds(group: TargetGroup): string[] {
-  return canonicalizeTargetIds(group.targets.map(target => target.id || target.name));
+  return canonicalizeTargetIds(group.targets.map(target => target.name || target.id));
 }
 
 function sameTargetSet(left: readonly string[], right: readonly string[]): boolean {
@@ -101,8 +110,9 @@ export function classifyTargetScope(options: ClassifyTargetScopeOptions): Target
     return { ...base, kind: 'unassigned', traceability: 'legacy-derived' };
   }
 
-  const sopTargetIds = snapshotTargetIds(options.sopTargetSnapshot);
-  if (sopTargetIds.length && sameTargetSet(assignedTargetIds, sopTargetIds)) {
+  const sopTargetIds = snapshotTargetIdCandidates(options.sopTargetSnapshot)
+    .find(candidate => candidate.length > 0 && sameTargetSet(assignedTargetIds, candidate));
+  if (sopTargetIds) {
     return {
       ...base,
       kind: 'sop-all',

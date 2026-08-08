@@ -131,7 +131,7 @@ export class PrintQueueComponent implements OnInit {
   formatDate = formatDate;
 
   ngOnInit() {
-      this.state.ensureLogsListener();
+      this.state.ensureActivityFeedListeners();
       if (this.state.printableLogs().length > 0) {
           this.isLoading.set(false);
       } else {

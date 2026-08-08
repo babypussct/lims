@@ -93,7 +93,7 @@ export class ResultService {
         details,
         timestamp: serverTimestamp(),
         lastUpdated: serverTimestamp(),
-        user: this.auth.currentUser()?.displayName || 'Hệ thống',
+        user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
         targetId: requestId,
         requestId,
         sopId,

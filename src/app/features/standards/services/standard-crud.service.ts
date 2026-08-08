@@ -723,7 +723,7 @@ export class StandardCrudService {
     await setDoc(logRef, {
       id: logRef.id, action, details,
       timestamp: serverTimestamp(), lastUpdated: serverTimestamp(),
-      user: this.auth.currentUser()?.displayName || 'Hệ thống',
+      user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
       targetId: targetId ?? null
     });
   }
