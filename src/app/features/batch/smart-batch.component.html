@@ -1098,7 +1098,7 @@
                                                         <div class="flex gap-0.5 mt-1 opacity-70">
                                                             @for(ghs of item.ghsWarnings; track ghs) {
                                                                 @if(ghs.startsWith('GHS')) {
-                                                                    <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                                    <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [alt]="GHS_DICT[ghs].label" [title]="GHS_DICT[ghs].label" />
                                                                 }
                                                             }
                                                         </div>
@@ -1136,7 +1136,7 @@
                                     @for(code of aggregateGHSWarnings(); track code) {
                                         @if(code.startsWith('GHS')) {
                                             <div class="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-orange-100 dark:border-orange-800">
-                                                <img [src]="GHS_DICT[code].iconUrl" class="w-6 h-6" [title]="GHS_DICT[code].label"/>
+                                                <img [src]="GHS_DICT[code].iconUrl" class="w-6 h-6" [alt]="GHS_DICT[code].label" [title]="GHS_DICT[code].label"/>
                                             </div>
                                         }
                                     }

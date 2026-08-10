@@ -7,6 +7,7 @@ import { MasterTargetService } from './master-target.service'; // Use Master Ser
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
+import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.directive';
 import { TargetGroup, SopTarget, MasterAnalyte } from '../../core/models/sop.model';
 import { generateSlug } from '../../shared/utils/utils';
 import { Router } from '@angular/router';
@@ -14,7 +15,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-target-group-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective],
   template: `
     <div class="h-full flex flex-col fade-in bg-slate-50 relative pb-10">
         
@@ -76,7 +77,7 @@ import { Router } from '@angular/router';
             <div class="flex-1 bg-slate-50 flex flex-col overflow-hidden relative">
                 @if (isEditing()) {
                     <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                        <form [formGroup]="form" class="max-w-4xl mx-auto space-y-6">
+                        <form id="target-group-form" appFormLabelA11y [formGroup]="form" class="max-w-4xl mx-auto space-y-6">
                             
                             <!-- Header Info -->
                             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">

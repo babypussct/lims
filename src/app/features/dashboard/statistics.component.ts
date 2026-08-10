@@ -10,6 +10,8 @@ import { Log } from '../../core/models/log.model';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 import { timestampToDate, timestampToMillis } from '../../shared/utils/timestamp';
+import { ToastService } from '../../core/services/toast.service';
+import { ConfirmationService } from '../../core/services/confirmation.service';
 
 interface NxtReportItem {
   id: string;
@@ -34,6 +36,8 @@ export class StatisticsComponent {
   auth = inject(AuthService); 
   invService = inject(InventoryService);
   statsService = inject(StatsService);
+  toast = inject(ToastService);
+  confirmation = inject(ConfirmationService);
   formatDate = formatDate;
   formatNum = formatNum;
   cleanName = cleanName;
@@ -566,7 +570,7 @@ export class StatisticsComponent {
       } catch (e) {
           console.error(e);
           this.isExporting.set(false);
-          alert('Đã xảy ra lỗi trong quá trình cấu trúc Báo cáo Excel. Vui lòng F5 và kiểm tra Logs.');
+          this.toast.show('Đã xảy ra lỗi trong quá trình cấu trúc Báo cáo Excel. Vui lòng tải lại và kiểm tra Logs.', 'error');
       }
   }
 
@@ -626,7 +630,7 @@ export class StatisticsComponent {
     
     // Check permission (only Manager)
     if (this.auth.currentUser()?.role !== 'manager') {
-        alert('Bạn không có quyền chạy Backfill.');
+        this.toast.show('Bạn không có quyền chạy Backfill.', 'error');
         return;
     }
 
@@ -638,7 +642,11 @@ export class StatisticsComponent {
     // Sử dụng từ đầu năm nếu bộ lọc hiện tại ngắn hơn
     const startStr = selectedStart > currentYearStart ? currentYearStart : selectedStart;
 
-    if (!confirm(`Bạn có chắc chắn muốn tổng hợp lại toàn bộ số liệu thống kê từ ${startStr} đến ${endStr} không?\nQuá trình này sẽ nạp lại đầy đủ dữ liệu các tháng trước để so sánh xu hướng.`)) {
+    if (!await this.confirmation.confirm({
+        message: `Bạn có chắc chắn muốn tổng hợp lại toàn bộ số liệu thống kê từ ${startStr} đến ${endStr} không?\nQuá trình này sẽ nạp lại đầy đủ dữ liệu các tháng trước để so sánh xu hướng.`,
+        confirmText: 'Chạy Backfill',
+        isDangerous: true
+    })) {
         return;
     }
 
@@ -659,7 +667,7 @@ export class StatisticsComponent {
         setTimeout(() => this.isBackfilling.set(false), 2000);
     } catch (e: any) {
         console.error(e);
-        alert('Lỗi khi chạy backfill: ' + e.message);
+        this.toast.show('Lỗi khi chạy backfill: ' + e.message, 'error');
     } finally {
         this.isBackfilling.set(false);
         this.backfillProgressText.set('');

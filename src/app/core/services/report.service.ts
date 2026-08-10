@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
+import { AuthService } from './auth.service';
+import { FirebaseService } from './firebase.service';
 
 export interface SampleResult {
   loSo: string;
@@ -27,6 +29,7 @@ export interface ReportMetadata {
 
 export interface GenerateReportPayload {
   action: 'generate_pdf';
+  requestId: string;
   sopId: string;
   metadata: ReportMetadata;
   samples: SampleResult[];
@@ -36,6 +39,7 @@ export interface GenerateReportPayload {
 
 export interface ReportResult {
   success: boolean;
+  requestId?: string;
   docId: string;
   pdfId: string;
   docsUrl: string;
@@ -49,9 +53,25 @@ export interface ReportResult {
 @Injectable({ providedIn: 'root' })
 export class ReportService {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
+  private fb = inject(FirebaseService);
 
   /** URL của GAS Web App — deploy xong paste vào environment.gasReportUrl */
   private readonly GAS_URL = environment.gasReportUrl || '';
+
+  private async withMutationAuth<T extends object>(payload: T): Promise<T & { idToken: string; appId: string }> {
+    const idToken = await this.auth.getIdToken();
+    if (!idToken) {
+      throw new Error('Phiên đăng nhập đã hết hạn hoặc chưa sẵn sàng. Vui lòng đăng nhập lại trước khi thao tác báo cáo.');
+    }
+
+    const appId = String(this.fb.APP_ID || '').trim();
+    if (!appId) {
+      throw new Error('Không xác định được LIMS appId cho thao tác báo cáo.');
+    }
+
+    return { ...payload, idToken, appId };
+  }
 
   /**
    * Tạo báo cáo PDF từ dữ liệu nhập kết quả.
@@ -68,8 +88,9 @@ export class ReportService {
 
     // GAS Web App không nhận Content-Type: application/json trực tiếp
     // Cần gửi dưới dạng text/plain để tránh CORS preflight
+    const authenticatedPayload = await this.withMutationAuth(payload);
     const result = await firstValueFrom(
-      this.http.post<ReportResult>(this.GAS_URL, JSON.stringify(payload), {
+      this.http.post<ReportResult>(this.GAS_URL, JSON.stringify(authenticatedPayload), {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
       })
     );
@@ -84,21 +105,26 @@ export class ReportService {
   /**
    * Yêu cầu GAS lưu trữ và dọn dẹp các tệp cũ bị hủy
    */
-  async archiveReports(files: { pdfUrl?: string; docsUrl?: string }[]): Promise<any> {
+  async archiveReports(files: { pdfUrl?: string; docsUrl?: string }[], requestId: string): Promise<any> {
     if (!this.GAS_URL) {
       throw new Error('Chưa cấu hình GAS Web App URL.');
     }
     const payload = {
       action: 'archive_reports',
+      requestId,
       files: files.filter(f => f.pdfUrl || f.docsUrl)
     };
     if (payload.files.length === 0) return { success: true };
 
+    const authenticatedPayload = await this.withMutationAuth(payload);
     const result = await firstValueFrom(
-      this.http.post<any>(this.GAS_URL, JSON.stringify(payload), {
+      this.http.post<any>(this.GAS_URL, JSON.stringify(authenticatedPayload), {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
       })
     );
+    if (!result?.success) {
+      throw new Error(result?.error || 'Không thể lưu trữ báo cáo trên GAS.');
+    }
     return result;
   }
 
@@ -115,12 +141,14 @@ export class ReportService {
    * Dùng làm reference để xây cho các SOP khác.
    */
   buildTrifluralinPayload(
+    requestId: string,
     batchCode: string,
     metadata: ReportMetadata,
     samples: SampleResult[]
   ): GenerateReportPayload {
     return {
       action: 'generate_pdf',
+      requestId,
       sopId: 'trifluralin-gcms',
       metadata: {
         ...metadata,
@@ -153,8 +181,9 @@ export class ReportService {
       sopId
     };
 
+    const authenticatedPayload = await this.withMutationAuth(payload);
     return firstValueFrom(
-      this.http.post<any>(this.GAS_URL, JSON.stringify(payload), {
+      this.http.post<any>(this.GAS_URL, JSON.stringify(authenticatedPayload), {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
         observe: 'events',
         reportProgress: true

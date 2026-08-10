@@ -25,11 +25,12 @@ import {
   ExcelImportCandidateKind,
   ExcelImportContext
 } from '../import/excel-result-import.models';
+import { ModalA11yDirective } from '../../../shared/directives/modal-a11y.directive';
 
 @Component({
   selector: 'app-excel-result-import-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalA11yDirective],
   templateUrl: './excel-result-import-modal.component.html'
 })
 export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {

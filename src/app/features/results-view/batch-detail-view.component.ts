@@ -17,6 +17,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { resolveCompoundDisplayName, isCompoundAssigned } from '../results/shared/compound-id-resolver';
 import { MasterTargetService } from '../targets/master-target.service';
 import { timestampToDate } from '../../shared/utils/timestamp';
+import { ConfirmationService } from '../../core/services/confirmation.service';
 
 @Component({
   selector: 'app-batch-detail-view',
@@ -570,6 +571,7 @@ import { timestampToDate } from '../../shared/utils/timestamp';
   styles: []
 })
 export class BatchDetailViewComponent implements OnInit, OnDestroy {
+  confirmation = inject(ConfirmationService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private state = inject(StateService);
@@ -1454,9 +1456,11 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const run = this.run();
     if (!user || !run) return;
     
-    const confirmed = confirm(
-      `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển sang màn hình Nhập kết quả. Thao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem.`
-    );
+    const confirmed = await this.confirmation.confirm({
+      message: `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển sang màn hình Nhập kết quả. Thao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem.`,
+      confirmText: 'Giành quyền chỉnh sửa',
+      isDangerous: true
+    });
     if (confirmed) {
       this.isLoading.set(true);
       await this.resultService.acquireLock(this.requestId, user.email, user.displayName);

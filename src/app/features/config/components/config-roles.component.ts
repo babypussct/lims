@@ -5,11 +5,13 @@ import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService, PERMISSIONS } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { generateSlug } from '../../../shared/utils/utils';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
+import { FormLabelA11yDirective } from '../../../shared/directives/form-label-a11y.directive';
 
 @Component({
   selector: 'app-config-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, FormLabelA11yDirective],
   template: `
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-6 fade-in">
         <!-- Header -->
@@ -118,7 +120,7 @@ import { generateSlug } from '../../../shared/utils/utils';
 
                 <!-- Form Body -->
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
-                    <form [formGroup]="roleForm" class="space-y-4">
+                    <form id="role-config-form" appFormLabelA11y [formGroup]="roleForm" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Role Name -->
                             <div>
@@ -188,6 +190,7 @@ import { generateSlug } from '../../../shared/utils/utils';
   `
 })
 export class ConfigRolesComponent implements OnInit {
+    confirmation = inject(ConfirmationService);
   private fb = inject(FirebaseService);
   private toast = inject(ToastService);
   private formBuilder = inject(FormBuilder);
@@ -378,7 +381,11 @@ export class ConfigRolesComponent implements OnInit {
           this.toast.show('Không thể xóa vai trò hệ thống mặc định.', 'error');
           return;
       }
-      if (confirm(`Bạn có chắc chắn muốn xóa vai trò "${role.name}"? Quyền truy cập của nhân viên thuộc nhóm này sẽ bị ảnh hưởng.`)) {
+      if (await this.confirmation.confirm({
+          message: `Bạn có chắc chắn muốn xóa vai trò "${role.name}"? Quyền truy cập của nhân viên thuộc nhóm này sẽ bị ảnh hưởng.`,
+          confirmText: 'Xóa vai trò',
+          isDangerous: true
+      })) {
           try {
               await this.fb.deleteRoleConfig(role.id);
               this.toast.show(`Đã xóa vai trò "${role.name}".`, 'success');

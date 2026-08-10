@@ -1,7 +1,64 @@
 
 function generateType2_3aReport(body, sopConfig, metadata, samples) {
   fillTextFields(body, sopConfig, metadata);
-  fillSampleTable(body, sopConfig, samples);
+  return fillSampleTable(body, sopConfig, samples);
+}
+
+function generateCustomSingleAnalyteType2Report(templateId, metadata, samples, folder, fileName, sopId, logPrefix) {
+  const sopConfig = CONFIG.SOP_CONFIG[sopId];
+
+  if (!sopConfig) {
+    throw new Error(`Missing SOP config for custom Type2 report: ${sopId}`);
+  }
+
+  return generateReportFromTemplate(templateId, folder, fileName, ({ body }) => {
+    fillTextFields(body, sopConfig, metadata);
+
+    const tables = body.getTables();
+    let calibrationTable = null;
+    let numRows = 0;
+    for (let t = 0; t < tables.length; t++) {
+      const candidate = tables[t];
+      const rCount = candidate.getNumRows();
+      if (rCount < 8) continue;
+
+      const lastRowText = candidate.getRow(rCount - 1).getCell(0).getText().trim();
+      if (lastRowText.indexOf('R2') !== -1 || lastRowText.indexOf('R²') !== -1 || lastRowText.indexOf('R 2') !== -1) {
+        calibrationTable = candidate;
+        numRows = rCount;
+        break;
+      }
+    }
+
+    if (calibrationTable) {
+      Logger.log(`[${logPrefix}] Tìm thấy bảng đường chuẩn (${numRows} dòng).`);
+      const r2Val = metadata.r2 !== undefined && metadata.r2 !== null ? metadata.r2 : '';
+      const r2RowIdx = numRows - 1;
+      setCellText(calibrationTable.getRow(r2RowIdx), 1, r2Val, null, sopConfig.defaultFontSize);
+
+      const calibPoints = metadata.calibPoints || [];
+      const startPtRowIdx = numRows - 7;
+      for (let i = 0; i < 6; i++) {
+        const rowIdx = startPtRowIdx + i;
+        const row = calibrationTable.getRow(rowIdx);
+        if (i < calibPoints.length) {
+          const pt = calibPoints[i];
+          setCellText(row, 0, `C${i}`, null, sopConfig.defaultFontSize);
+          setCellText(row, 1, pt.loSo !== undefined && pt.loSo !== null ? pt.loSo : '', null, sopConfig.defaultFontSize);
+          setCellText(row, 2, pt.hamLuong !== undefined && pt.hamLuong !== null ? pt.hamLuong : '', null, sopConfig.defaultFontSize);
+        } else {
+          setCellText(row, 0, '', null, sopConfig.defaultFontSize);
+          setCellText(row, 1, '', null, sopConfig.defaultFontSize);
+          setCellText(row, 2, '', null, sopConfig.defaultFontSize);
+        }
+      }
+    } else {
+      Logger.log(`[${logPrefix}] CẢNH BÁO: Không tìm thấy bảng đường chuẩn.`);
+    }
+
+    const renderStats = fillSampleTable(body, sopConfig, samples);
+    assertPostGenerationReportComplete(body, sopConfig, metadata, samples, renderStats);
+  });
 }
 
 /**
@@ -11,7 +68,7 @@ function fillTextFields(body, sopConfig, metadata) {
   // 1. Text replacements đơn giản
   if (sopConfig.textReplacements) {
     for (const [searchText, fieldName] of Object.entries(sopConfig.textReplacements)) {
-      const value = metadata[fieldName] || '';
+      const value = metadata[fieldName] !== undefined && metadata[fieldName] !== null ? metadata[fieldName] : '';
       body.replaceText(searchText, value);
     }
   }
@@ -40,13 +97,13 @@ function fillTextFields(body, sopConfig, metadata) {
   // 2.1 Điền các Checkbox dùng chung (Khối lượng, Loại mẫu, Tình trạng) nếu có ở cấp độ biểu mẫu
   // Truyền metadata vào vị trí sample vì đối với Type 2/3A, thông tin chung áp dụng cho toàn mẻ
   if (typeof fillCommonSampleCheckboxes === 'function') {
-    fillCommonSampleCheckboxes(body, metadata, metadata);
+    fillCommonSampleCheckboxes(body, metadata, metadata, sopConfig);
   }
 
   // 3. Custom: Xử lý điền Ngày tháng thông qua placeholder trên biểu mẫu (date1, date2)
   if (sopConfig.signaturePlaceholders) {
     for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
-      const textVal = metadata[fieldName] || '';
+      const textVal = metadata[fieldName] !== undefined && metadata[fieldName] !== null ? metadata[fieldName].toString() : '';
       if (!textVal) continue;
       
       // Tách lấy phần Ngày (ví dụ: "19/05/2026 / Ong Thanh Dat" -> "19/05/2026")
@@ -56,6 +113,36 @@ function fillTextFields(body, sopConfig, metadata) {
       body.replaceText(placeholderText, dateOnly);
     }
   }
+}
+
+function assertSampleTableAvailable(currentTableIdx, tablesLength, tablesPerPage) {
+  if (currentTableIdx >= tablesLength) {
+    throw new Error(`Số lượng mẫu vượt quá dung lượng tối đa của template (${tablesLength / tablesPerPage} trang).`);
+  }
+}
+
+function assertAllSamplesRendered(sampleIdx, totalSamples) {
+  if (sampleIdx !== totalSamples) {
+    throw new Error(`Report chưa render đủ mẫu: ${sampleIdx}/${totalSamples}.`);
+  }
+}
+
+function buildSamplePaginationPlan(totalSamples, usableSlotsPerPage, existingSampleTablesCount) {
+  if (!Number.isInteger(totalSamples) || totalSamples < 0) {
+    throw new Error(`Invalid totalSamples for pagination: ${totalSamples}`);
+  }
+  if (!Number.isInteger(usableSlotsPerPage) || usableSlotsPerPage < 1) {
+    throw new Error(`Invalid usableSlotsPerPage for pagination: ${usableSlotsPerPage}`);
+  }
+  if (!Number.isInteger(existingSampleTablesCount) || existingSampleTablesCount < 1) {
+    throw new Error(`Invalid existingSampleTablesCount for pagination: ${existingSampleTablesCount}`);
+  }
+
+  const totalPagesNeeded = Math.ceil(totalSamples / usableSlotsPerPage);
+  return {
+    totalPagesNeeded,
+    pagesToClone: Math.max(0, totalPagesNeeded - existingSampleTablesCount),
+  };
 }
 
 /**
@@ -105,9 +192,9 @@ function fillSampleTable(body, sopConfig, samples) {
   }
   if (usableSlotsPerPage === 0) usableSlotsPerPage = 1;
 
-  const totalPagesNeeded = Math.ceil(samples.length / usableSlotsPerPage);
-  
-  Logger.log(`[TableFit] sampleTableIndex=${sampleTableIndex} | endSampleRowIdx=${endSampleRowIdx} | usableSlotsPerPage=${usableSlotsPerPage} | totalPagesNeeded=${totalPagesNeeded}`);
+  let existingSampleTablesCount = 0;
+  const initTables = body.getTables();
+  // tablesPerPage được xác định sau khi khoanh vùng page2Elements; tạm hoãn pagination plan tới lúc đó.
 
   // Định vị bảng mẫu và chỉ mục của nó trong body để chuẩn bị nhân bản nếu cần
   const lastTableChildIdx = body.getChildIndex(sampleTable);
@@ -217,16 +304,19 @@ function fillSampleTable(body, sopConfig, samples) {
   Logger.log(`[TableFit] Số bảng trên mỗi trang kết quả (tablesPerPage) = ${tablesPerPage}`);
 
   // 1.5. ĐỘNG CƠ NHÂN BẢN TRANG TỰ ĐỘNG THẾ HỆ MỚI (UNIVERSAL PAGE DUPLICATOR)
-  let existingSampleTablesCount = 0;
-  const initTables = body.getTables();
+  existingSampleTablesCount = 0;
   for (let idx = sampleTableIndex; idx < initTables.length; idx += tablesPerPage) {
     existingSampleTablesCount++;
   }
   if (existingSampleTablesCount === 0) existingSampleTablesCount = 1;
 
+  const paginationPlan = buildSamplePaginationPlan(samples.length, usableSlotsPerPage, existingSampleTablesCount);
+  const totalPagesNeeded = paginationPlan.totalPagesNeeded;
+  Logger.log(`[TableFit] sampleTableIndex=${sampleTableIndex} | endSampleRowIdx=${endSampleRowIdx} | usableSlotsPerPage=${usableSlotsPerPage} | totalPagesNeeded=${totalPagesNeeded}`);
+
   // Nếu số lượng trang kết quả cần dùng lớn hơn số trang sẵn có trong template
-  if (totalPagesNeeded > existingSampleTablesCount) {
-    const pagesToClone = totalPagesNeeded - existingSampleTablesCount;
+  if (paginationPlan.pagesToClone > 0) {
+    const pagesToClone = paginationPlan.pagesToClone;
     Logger.log(`[TableFit] Tiến hành nhân bản thêm ${pagesToClone} trang kết quả...`);
     
     // Nhân bản thêm số trang còn thiếu
@@ -249,7 +339,11 @@ function fillSampleTable(body, sopConfig, samples) {
           // Loại bỏ bất kỳ dấu ngắt trang ẩn nào bên trong đoạn văn copy
           for (let i = clonedPara.getNumChildren() - 1; i >= 0; i--) {
             if (clonedPara.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
-              try { clonedPara.removeChild(clonedPara.getChild(i)); } catch(e) {}
+              try {
+                clonedPara.removeChild(clonedPara.getChild(i));
+              } catch(e) {
+                Logger.log(`[Type2_3A][optional-format] Không thể xóa PAGE_BREAK ẩn trong paragraph clone: ${e.toString()}`);
+              }
             }
           }
           
@@ -268,7 +362,9 @@ function fillSampleTable(body, sopConfig, samples) {
             try {
               clonedPara.setAttributes({[DocumentApp.Attribute.PAGE_BREAK_BEFORE]: true});
               clonedPara.setSpacingBefore(0);
-            } catch(e) {}
+            } catch(e) {
+              Logger.log(`[Type2_3A][optional-format] Không thể áp dụng PAGE_BREAK_BEFORE cho paragraph đầu trang clone: ${e.toString()}`);
+            }
             firstParagraphCloned = true;
           }
           
@@ -289,7 +385,7 @@ function fillSampleTable(body, sopConfig, samples) {
                   body.removeChild(middlePara);
                   Logger.log(`[TableFit] Đã dọn dẹp thành công paragraph trống tự động giữa bảng và dòng ghi chú`);
                 } catch(e) {
-                  Logger.log(`[TableFit] Không thể xóa paragraph trống ở giữa: ${e.toString()}`);
+                  Logger.log(`[Type2_3A][optional-cleanup] Không thể xóa paragraph trống ở giữa: ${e.toString()}`);
                 }
               }
             }
@@ -327,10 +423,7 @@ function fillSampleTable(body, sopConfig, samples) {
     const currentTableIdx = sampleTableIndex + p * tablesPerPage;
     
     // Đảm bảo không bị tràn mảng nếu mẫu nhiều vượt quá số lượng trang thực tế trong file
-    if (currentTableIdx >= tables.length) {
-      Logger.log(`CẢNH BÁO: Số lượng mẫu vượt quá dung lượng tối đa của template (${tables.length / tablesPerPage} trang).`);
-      break;
-    }
+    assertSampleTableAvailable(currentTableIdx, tables.length, tablesPerPage);
     
     const currentTable = tables[currentTableIdx];
     let rowIdx = startRow;
@@ -359,13 +452,13 @@ function fillSampleTable(body, sopConfig, samples) {
         
         let textVal = '';
         if (colKey === 'loSo') {
-          textVal = sample.loSo || '';
+          textVal = sample.loSo !== undefined && sample.loSo !== null ? sample.loSo : '';
         } else if (colKey === 'maSoMau') {
-          textVal = sample.maSoMau || '';
+          textVal = sample.maSoMau !== undefined && sample.maSoMau !== null ? sample.maSoMau : '';
         } else if (colKey === 'nd') {
           textVal = sample.nd ? '☑' : '☐';
         } else if (colKey === 'ghiChu') {
-          textVal = sample.ghiChu || '';
+          textVal = sample.ghiChu !== undefined && sample.ghiChu !== null ? sample.ghiChu : '';
         } else {
           // Các cột chỉ tiêu kết quả hoặc QC (kqTrifluralin, kqFip, qc1,...)
           textVal = sample[colKey] !== undefined ? sample[colKey] : (sample.kq !== undefined ? sample.kq : '');
@@ -402,6 +495,8 @@ function fillSampleTable(body, sopConfig, samples) {
       rowIdx++;
     }
   }
+
+  assertAllSamplesRendered(sampleIdx, samples.length);
 
   // 3. CẬP NHẬT TRANG (TRANG: X/Y) TRỰC TIẾP TRÊN BIỂU MẪU GỐC
   try {
@@ -464,7 +559,7 @@ function fillSampleTable(body, sopConfig, samples) {
       if (!found) Logger.log(`[TableFit] Cảnh báo: Không tìm thấy nhãn "Trang:" cho trang kết quả ${resultPageNum}`);
     }
   } catch(e) {
-    Logger.log(`[TableFit] Lỗi khi cập nhật số Trang: X/Y: ${e.toString()}`);
+    Logger.log(`[Type2_3A][optional-pagination] Lỗi khi cập nhật số Trang: X/Y: ${e.toString()}`);
   }
 
   // 3.5. TỰ ĐỘNG CẮT (TRUNCATE) CÁC TRANG DƯ THỪA NẾU CÓ TRANG TRỐNG DƯ THỪA TRONG TEMPLATE GỐC
@@ -533,6 +628,7 @@ function fillSampleTable(body, sopConfig, samples) {
         try {
           body.removeChild(child);
         } catch(e) {
+          Logger.log(`[Autocut][optional-cleanup] Không thể remove child, thử clear fallback: ${e.toString()}`);
           try {
             if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
               child.asParagraph().clear();
@@ -545,13 +641,15 @@ function fillSampleTable(body, sopConfig, samples) {
                 }
               }
             }
-          } catch(err) {}
+          } catch(err) {
+            Logger.log(`[Autocut][optional-cleanup] Không thể clear child sau khi remove thất bại: ${err.toString()}`);
+          }
           activeIndex++;
         }
       }
     }
   } catch(e) {
-    Logger.log(`[Autocut] Lỗi khi cắt trang thừa: ${e.toString()}`);
+    Logger.log(`[Autocut][optional-cleanup] Lỗi khi cắt trang thừa: ${e.toString()}`);
   }
 
   // 4. TIẾN HÀNH DỌN DẸP DẤU NGẮT TRANG & DÒNG TRỐNG THỪA Ở CUỐI TÀI LIỆU ĐÃ CẮT
@@ -566,27 +664,33 @@ function fillSampleTable(body, sopConfig, samples) {
         try {
           body.removeChild(lastChild);
           removed = true;
-        } catch(err) {}
+        } catch(err) {
+          Logger.log(`[Autocut][optional-cleanup] Không thể xóa PAGE_BREAK cuối document: ${err.toString()}`);
+        }
       } else if (lastChild.getType() === DocumentApp.ElementType.PARAGRAPH) {
         const p = lastChild.asParagraph();
         for (let c = p.getNumChildren() - 1; c >= 0; c--) {
           if (p.getChild(c).getType() === DocumentApp.ElementType.PAGE_BREAK) {
             try {
               p.removeChild(p.getChild(c));
-            } catch(err) {}
+            } catch(err) {
+              Logger.log(`[Autocut][optional-cleanup] Không thể xóa PAGE_BREAK trong paragraph cuối: ${err.toString()}`);
+            }
           }
         }
         if (p.getText().trim() === "" && p.getNumChildren() === 0 && body.getNumChildren() > 1) {
           try {
             body.removeChild(p);
             removed = true;
-          } catch(err) {}
+          } catch(err) {
+            Logger.log(`[Autocut][optional-cleanup] Không thể xóa paragraph rỗng cuối document: ${err.toString()}`);
+          }
         }
       }
       if (!removed) break;
     }
   } catch(e) {
-    Logger.log(`[Autocut] Lỗi trong vòng lặp dọn dẹp: ${e.toString()}`);
+    Logger.log(`[Autocut][optional-cleanup] Lỗi trong vòng lặp dọn dẹp: ${e.toString()}`);
   }
 
   try {
@@ -605,7 +709,17 @@ function fillSampleTable(body, sopConfig, samples) {
         }
       }
     }
-  } catch(e) {}
+  } catch(e) {
+    Logger.log(`[Autocut][optional-format] Không thể thu nhỏ paragraph rỗng cuối document: ${e.toString()}`);
+  }
+
+  return {
+    reporter: 'type2_3a',
+    mode: 'samplePages',
+    renderedSampleCount: sampleIdx,
+    logicalPageCount: totalPagesNeeded,
+    samplesPerLogicalPage: usableSlotsPerPage,
+  };
 }
 
 
@@ -613,24 +727,9 @@ function fillSampleTable(body, sopConfig, samples) {
 /**
  * Xử lý đánh dấu ☑/☐ Đạt hoặc Không đạt trong bảng QC
  */
-function fillQcTableCheckboxes(body, sopConfig, metadata) {
-  const tables = body.getTables();
-  let qcTable = null;
-  for (let i = 0; i < tables.length; i++) {
-    const t = tables[i];
-    if (t.getNumRows() >= 7) {
-      const headerText = t.getRow(0).getCell(0).getText();
-      if (headerText.includes("Thông số đánh giá")) {
-        qcTable = t;
-        break;
-      }
-    }
-  }
-
-  if (!qcTable) {
-    Logger.log("[QcTable] Không tìm thấy bảng QC để điền!");
-    return;
-  }
+function fillQcTableCheckboxes(body, sopConfig, metadata, sopId) {
+  const resolvedSopId = sopId || 'fipronil-style';
+  const qcTable = requireFipronilQcTable(body, sopConfig, resolvedSopId);
 
   const checkboxLines = sopConfig.checkboxLines;
   const numRows = qcTable.getNumRows();

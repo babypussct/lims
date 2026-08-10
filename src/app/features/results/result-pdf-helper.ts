@@ -12,7 +12,7 @@ export function mapCompoundToKey(c: string): string {
 export function isDetectedValue(val: any): boolean {
   if (val === undefined || val === null) return false;
   const s = String(val).trim().toUpperCase();
-  return s !== '' && s !== 'ND' && s !== 'ND' && s !== 'N/A' && s !== '—';
+  return s !== '' && s !== 'ND' && s !== 'N/A' && s !== '—';
 }
 
 export function buildTargetMetadata(compounds: string[], masterTargets: any[], sopIdOrConfigKey?: string | null) {
@@ -30,8 +30,8 @@ export function buildTargetMetadata(compounds: string[], masterTargets: any[], s
       targetInfo[canonical] = {
           displayName: displayName,
           unit: master?.default_unit || 'ppb',
-          lod: master?.default_lod || '',
-          loq: master?.default_loq || ''
+          lod: master?.default_lod ?? '',
+          loq: master?.default_loq ?? ''
       };
   });
   return targetInfo;
@@ -58,7 +58,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
   samplesPayload.push({
     loSo: blankObj['loSo'] || '1',
     maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
-    kqTrifluralin: blankObj['kqTrifluralin'] === 'N/A' ? '' : (blankObj['kqTrifluralin'] || ''),
+    kqTrifluralin: blankObj['kqTrifluralin'] === 'N/A' ? '' : (blankObj['kqTrifluralin'] ?? ''),
     ghiChu: blankObj['ghiChu'] || ''
   });
 
@@ -67,7 +67,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
   samplesPayload.push({
     loSo: spikeObj['loSo'] || '2',
     maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
-    kqTrifluralin: spikeObj['kqTrifluralin'] === 'N/A' ? '' : (spikeObj['kqTrifluralin'] || ''),
+    kqTrifluralin: spikeObj['kqTrifluralin'] === 'N/A' ? '' : (spikeObj['kqTrifluralin'] ?? ''),
     ghiChu: spikeObj['ghiChu'] || ''
   });
 
@@ -78,7 +78,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     samplesPayload.push({
       loSo: resObj['loSo'] || '',
       maSoMau: sampleCode,
-      kqTrifluralin: resObj['kqTrifluralin'] === 'N/A' ? '' : (resObj['kqTrifluralin'] || ''),
+      kqTrifluralin: resObj['kqTrifluralin'] === 'N/A' ? '' : (resObj['kqTrifluralin'] ?? ''),
       ghiChu: resObj['ghiChu'] || ''
     });
 
@@ -92,7 +92,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
         samplesPayload.push({
           loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
           maSoMau: `SPIKE_${n}`,
-          kqTrifluralin: spikeNObj['kqTrifluralin'] === 'N/A' ? '' : (spikeNObj['kqTrifluralin'] || ''),
+          kqTrifluralin: spikeNObj['kqTrifluralin'] === 'N/A' ? '' : (spikeNObj['kqTrifluralin'] ?? ''),
           ghiChu: spikeNObj['ghiChu'] || ''
         });
       }
@@ -108,7 +108,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
       loSo: prefixFinal['loSo'] || mainFinal['loSo'] || spikeObj['loSo'] || '2',
       kqTrifluralin: prefixFinal['kqTrifluralin'] !== undefined && prefixFinal['kqTrifluralin'] !== '' 
         ? prefixFinal['kqTrifluralin'] 
-        : (mainFinal['kqTrifluralin'] || ''),
+        : (mainFinal['kqTrifluralin'] ?? ''),
       ghiChu: prefixFinal['ghiChu'] !== undefined && prefixFinal['ghiChu'] !== ''
         ? prefixFinal['ghiChu']
         : (mainFinal['ghiChu'] || '')
@@ -127,8 +127,8 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
     ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
     ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
-    R2: currentDraft.page1Data['r2'] || '',
-    heSoR2: currentDraft.page1Data['r2'] || ''
+    R2: currentDraft.page1Data['r2'] ?? '',
+    heSoR2: currentDraft.page1Data['r2'] ?? ''
   };
 
   if (mappedMetadata.calibPoints && Array.isArray(mappedMetadata.calibPoints)) {
@@ -269,7 +269,7 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
     Object.keys(currentConf.columns).forEach((col: string) => {
       if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
         if (col === 'kqDichlorvos') {
-          let mergedVal = resObj['kqDichlorvos'] || '';
+          let mergedVal = resObj['kqDichlorvos'] ?? '';
           let note = (resObj['ghiChu'] || '').trim();
           if (note) {
             if (!note.startsWith('(') || !note.endsWith(')')) {
@@ -325,7 +325,7 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
     Object.keys(currentConf.columns).forEach((col: string) => {
       if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
         if (col === 'kqDichlorvos') {
-          let mergedVal = resObj['kqDichlorvos'] || '';
+          let mergedVal = resObj['kqDichlorvos'] ?? '';
           let note = (resObj['ghiChu'] || '').trim();
           if (note) {
             if (!note.startsWith('(') || !note.endsWith(')')) {
@@ -365,15 +365,15 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
     ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
     
     // Thêm các biến dự phòng cho R2
-    R2: currentDraft.page1Data['r2'] || '',
-    heSoR2: currentDraft.page1Data['r2'] || '',
+    R2: currentDraft.page1Data['r2'] ?? '',
+    heSoR2: currentDraft.page1Data['r2'] ?? '',
     
     // Các biến flatten cho calibPoints để hiển thị trên PDF Form Đơn
     ...(currentDraft.page1Data['calibPoints'] || []).reduce((acc: any, pt: any, index: number) => {
       acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
       acc[`calib_loSo_${index}`] = pt.loSo;
       acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
-      acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+      acc[`calib_hamLuong_${index}`] = pt.hamLuong ?? '';
       return acc;
     }, {})
   };
@@ -410,7 +410,7 @@ export function buildChloroformPdfPayload(currentDraft: any, currentRun: any, ac
     Object.keys(currentConf.columns).forEach((col: string) => {
       if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
         if (col === 'kqChloroform') {
-          let mergedVal = resObj['kqChloroform'] || '';
+          let mergedVal = resObj['kqChloroform'] ?? '';
           let note = (resObj['ghiChu'] || '').trim();
           if (note) {
             if (!note.startsWith('(') || !note.endsWith(')')) {
@@ -467,7 +467,7 @@ export function buildChloroformPdfPayload(currentDraft: any, currentRun: any, ac
     Object.keys(currentConf.columns).forEach((col: string) => {
       if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
         if (col === 'kqChloroform') {
-          let mergedVal = resObj['kqChloroform'] || '';
+          let mergedVal = resObj['kqChloroform'] ?? '';
           let note = (resObj['ghiChu'] || '').trim();
           if (note) {
             if (!note.startsWith('(') || !note.endsWith(')')) {
@@ -508,8 +508,8 @@ export function buildChloroformPdfPayload(currentDraft: any, currentRun: any, ac
     ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
     
     // Thêm các biến dự phòng cho R2
-    R2: currentDraft.page1Data['r2'] || '',
-    heSoR2: currentDraft.page1Data['r2'] || ''
+    R2: currentDraft.page1Data['r2'] ?? '',
+    heSoR2: currentDraft.page1Data['r2'] ?? ''
   };
 
   // Đảm bảo calibPoints có đủ các trường tên điểm, số vial để template PDF map đúng
@@ -521,7 +521,7 @@ export function buildChloroformPdfPayload(currentDraft: any, currentRun: any, ac
         loSo: pt.vialNo || pt.loSo,
         tenDiem: pt.tenDiem || pt.loSo,
         vialNo: pt.vialNo || pt.loSo,
-        hamLuong: pt.hamLuong || ''
+        hamLuong: pt.hamLuong ?? ''
       };
       // Flatten into root metadata variables for easy placeholder {{calib_loSo_X}} usage
       mappedMetadata[`calib_tenDiem_${index}`] = flattenedPt.tenDiem;
@@ -1048,9 +1048,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       spikeName: currentDraft.page1Data['spikeName'] || 'SPIKE',
       hasFinal: currentDraft.page1Data['hasFinal'] === true,
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
-      r2: currentDraft.page1Data['r2'] || '',
-      R2: currentDraft.page1Data['r2'] || '',
-      heSoR2: currentDraft.page1Data['r2'] || '',
+      r2: currentDraft.page1Data['r2'] ?? '',
+      R2: currentDraft.page1Data['r2'] ?? '',
+      heSoR2: currentDraft.page1Data['r2'] ?? '',
       compoundsToPrint: compoundsToPrint,
       targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       prefix: prefixForReport,
@@ -1120,7 +1120,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+          return isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal ?? '');
         }));
 
         if (uniqueVals.size === 1) {
@@ -1141,7 +1141,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            const displayVal = isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal ?? '');
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
@@ -1391,9 +1391,9 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       spikeName: currentDraft.page1Data['spikeName'] || 'SPIKE',
       hasFinal: currentDraft.page1Data['hasFinal'] === true,
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
-      r2: currentDraft.page1Data['r2'] || '',
-      R2: currentDraft.page1Data['r2'] || '',
-      heSoR2: currentDraft.page1Data['r2'] || '',
+      r2: currentDraft.page1Data['r2'] ?? '',
+      R2: currentDraft.page1Data['r2'] ?? '',
+      heSoR2: currentDraft.page1Data['r2'] ?? '',
       compoundsToPrint: compoundsToPrint,
       targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       prefix: prefixForReport,
@@ -1407,7 +1407,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
         acc[`calib_loSo_${index}`] = pt.loSo;
         acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
-        acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+        acc[`calib_hamLuong_${index}`] = pt.hamLuong ?? '';
         return acc;
       }, {})
     },
@@ -1471,7 +1471,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+          return isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal ?? '');
         }));
 
         if (uniqueVals.size === 1) {
@@ -1492,7 +1492,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            const displayVal = isNd ? 'ND' : (sVal === 'N/A' ? 'N/A' : sVal ?? '');
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
@@ -1742,9 +1742,9 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       spikeName: currentDraft.page1Data['spikeName'] || 'SPIKE',
       hasFinal: currentDraft.page1Data['hasFinal'] === true,
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
-      r2: currentDraft.page1Data['r2'] || '',
-      R2: currentDraft.page1Data['r2'] || '',
-      heSoR2: currentDraft.page1Data['r2'] || '',
+      r2: currentDraft.page1Data['r2'] ?? '',
+      R2: currentDraft.page1Data['r2'] ?? '',
+      heSoR2: currentDraft.page1Data['r2'] ?? '',
       compoundsToPrint: compoundsToPrint,
       targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       prefix: prefixForReport,
@@ -1758,7 +1758,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
         acc[`calib_loSo_${index}`] = pt.loSo;
         acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
-        acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+        acc[`calib_hamLuong_${index}`] = pt.hamLuong ?? '';
         return acc;
       }, {})
     },
@@ -1820,6 +1820,12 @@ export function buildUnifiedType3bPdfPayload(
 
   const filteredSamples = sampleList.filter(filterSample);
 
+  const rawResultText = (value: unknown): string =>
+    value === undefined || value === null ? '' : String(value);
+
+  const isExplicitNd = (resObj: any, compound: string): boolean =>
+    resObj?.[`${compound}_nd`] === true || rawResultText(resObj?.[compound]).trim().toUpperCase() === 'ND';
+
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
   // Chỉ ghép mã mẫu vào kết quả khi một phiếu thực sự có nhiều mẫu.
   // Nếu luồng tách phiếu chỉ còn một mẫu, kết quả phải là "8.565", không phải
@@ -1840,8 +1846,8 @@ export function buildUnifiedType3bPdfPayload(
     targetInfo[canonicalId] = {
       displayName: displayName,
       unit: master?.default_unit || 'ppb',
-      lod: master?.default_lod || '',
-      loq: master?.default_loq || ''
+      lod: master?.default_lod ?? '',
+      loq: master?.default_loq ?? ''
     };
   });
 
@@ -1865,11 +1871,9 @@ export function buildUnifiedType3bPdfPayload(
       };
     }
     const isNd = resObj[`${compound}_nd`] === true;
-    const rawVal = resObj[compound] !== undefined && resObj[compound] !== null
-      ? String(resObj[compound]) : '';
-    const val = (rawVal === 'N/A') ? '' : rawVal;
+    const rawVal = rawResultText(resObj[compound]);
     return {
-      [compound]: isNd ? '' : val,
+      [compound]: isNd ? '' : rawVal,
       [`${compound}_nd`]: isNd,
       [`${compound}_qc1`]: resObj[`${compound}_qc1`] || '',
       [`${compound}_qc2`]: resObj[`${compound}_qc2`] || '',
@@ -1928,25 +1932,24 @@ export function buildUnifiedType3bPdfPayload(
         rowData[`${c}_qc2`] = 'N/A';
         rowData[`${c}_qc3`] = 'N/A';
       } else {
-        const hasDetection = filteredSamples.some((s: string) => 
-          isAssigned(s, c) && 
-          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          isDetectedValue(currentDraft.resultData[s]?.[c])
+        const assignedSamples = filteredSamples.filter((s: string) => isAssigned(s, c));
+        const allExplicitNd = assignedSamples.length > 0 && assignedSamples.every((s: string) =>
+          isExplicitNd(currentDraft.resultData[s] || {}, c)
         );
 
-        if (!hasDetection) {
+        if (allExplicitNd) {
           rowData[`${c}_nd`] = true;
           rowData[c] = '';
         } else {
           rowData[`${c}_nd`] = false;
           const resultParts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            const isNd = sRes[`${c}_nd`] === true;
-            const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'ND' : sVal);
-            return displayVal ? `${s}: ${displayVal}` : `${s}:`;
+            const displayVal = !isAssigned(s, c)
+              ? 'N/A'
+              : (isExplicitNd(sRes, c) ? 'ND' : rawResultText(sRes[c]));
+            return `${s}: ${displayVal}`;
           });
-          rowData[c] = resultParts.filter(p => !p.endsWith(':')).join('; ');
+          rowData[c] = resultParts.join('; ');
         }
 
         rowData[`${c}_qc1`] = getMergedQc(c, 'qc1');
@@ -1987,10 +1990,7 @@ export function buildUnifiedType3bPdfPayload(
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     (currentConf.compounds as string[]).forEach(c => {
-      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A';
-      const val = resObj[c];
-      const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
-      let finalResultStr = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
+      let finalResultStr = isExplicitNd(resObj, c) ? 'ND' : rawResultText(resObj[c]);
       
       let note = (resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '').trim();
       if (note) {
@@ -2037,9 +2037,8 @@ export function buildUnifiedType3bPdfPayload(
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          const isNd = sRes[`${c}_nd`] === true;
-          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return !isAssigned(sCode, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'ND' : sVal);
+          if (!isAssigned(sCode, c)) return 'N/A';
+          return isExplicitNd(sRes, c) ? 'ND' : rawResultText(sRes[c]);
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
@@ -2050,20 +2049,17 @@ export function buildUnifiedType3bPdfPayload(
       if (!assigned) {
         acc[c] = 'N/A';
       } else {
-        const hasDetection = filteredSamples.some((s: string) => 
-          isAssigned(s, c) && 
-          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          isDetectedValue(currentDraft.resultData[s]?.[c])
+        const assignedSamples = filteredSamples.filter((s: string) => isAssigned(s, c));
+        const allExplicitNd = assignedSamples.length > 0 && assignedSamples.every((s: string) =>
+          isExplicitNd(currentDraft.resultData[s] || {}, c)
         );
-        if (!hasDetection) {
+        if (allExplicitNd) {
           acc[c] = 'ND';
         } else {
           const parts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             if (!isAssigned(s, c)) return `${s}: N/A`;
-            const isNd = sRes[`${c}_nd`] === true;
-            const val = sRes[c] || '';
-            const displayVal = (isNd || !isDetectedValue(val)) ? 'ND' : val;
+            const displayVal = isExplicitNd(sRes, c) ? 'ND' : rawResultText(sRes[c]);
             return `${s}: ${displayVal}`;
           });
           acc[c] = parts.join('; ');
@@ -2093,7 +2089,7 @@ export function buildUnifiedType3bPdfPayload(
       const resObj = currentDraft.resultData[s] || {};
       const detected: string[] = [];
       (currentConf.compounds as string[]).forEach(c => {
-        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c] && resObj[c] !== 'N/A') {
+        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && isDetectedValue(resObj[c])) {
           detected.push(`${c}: ${resObj[c]}`);
         }
       });
@@ -2143,7 +2139,7 @@ export function buildUnifiedType3bPdfPayload(
           loSo: pt.vialNo || pt.loSo,
           tenDiem: pt.tenDiem || pt.loSo,
           vialNo: pt.vialNo || pt.loSo,
-          hamLuong: pt.hamLuong || ''
+          hamLuong: pt.hamLuong ?? ''
         };
       }),
       // Các biến dự phòng flatten cho calibPoints
@@ -2151,12 +2147,12 @@ export function buildUnifiedType3bPdfPayload(
         acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
         acc[`calib_loSo_${index}`] = pt.loSo;
         acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
-        acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+        acc[`calib_hamLuong_${index}`] = pt.hamLuong ?? '';
         return acc;
       }, {}),
-      r2: currentDraft.page1Data['r2'] || '',
-      R2: currentDraft.page1Data['r2'] || '',
-      heSoR2: currentDraft.page1Data['r2'] || '',
+      r2: currentDraft.page1Data['r2'] ?? '',
+      R2: currentDraft.page1Data['r2'] ?? '',
+      heSoR2: currentDraft.page1Data['r2'] ?? '',
       compoundsToPrint,
       targetInfo,
       prefix: prefixForReport,

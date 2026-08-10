@@ -274,6 +274,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
       'piperonyl_butoxide',
       'propanil',
       'propoxur',
+      'silafluofen',
       'simazine',
       'tebufenpyrad',
       'atrazine',

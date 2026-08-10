@@ -1,16 +1,16 @@
 {
-  "title": "Ổn Định Quy Trình Nhập Và Xuất Kết Quả SOP 9.14",
+  "title": "Triển Khai Đồng Bộ Và An Toàn Báo Cáo GAS",
   "highlights": [
-    "Quy trình nhập và xuất kết quả SOP 9.14 được kiểm tra chặt chẽ hơn cho cả Form Đầy Đủ và Form Rút Gọn, giúp hạn chế xuất báo cáo khi dữ liệu còn thiếu hoặc không hợp lệ.",
-    "Form Rút Gọn chỉ đưa đúng các mẫu đang được chọn và đúng nhóm mẫu hiện tại vào báo cáo PDF."
+    "Luồng báo cáo GAS được chuẩn hóa theo requestId, kiểm soát quyền truy cập, chống lặp và xác thực upload trước khi xử lý.",
+    "Đồng bộ 51 chỉ tiêu nhóm I giữa GAS và Angular, bao gồm silafluofen, với regression kiểm tra parity canonical cho các SOP Type 3B."
   ],
   "features": [],
   "improvements": [
-    "Đồng bộ trạng thái phát hiện/không phát hiện và các đánh giá QC của SOP 9.14 với dữ liệu thực tế sau mỗi lần chỉnh sửa kết quả.",
-    "Chuẩn hóa số lọ mặc định và thông tin mẫu biểu để Form Đầy Đủ và Form Rút Gọn luôn sử dụng đúng cấu hình báo cáo."
+    "Giữ nguyên các trạng thái dữ liệu phân biệt như 0, ND, N/A, chuỗi rỗng và missing trong payload báo cáo.",
+    "Bổ sung kiểm tra route, template, cột kết quả và mapping analyte giữa caller Angular với cấu hình GAS."
   ],
   "fixes": [
-    "Khắc phục lỗi kiểm tra trước khi xuất báo cáo Form Rút Gọn dùng sai cấu trúc kết quả và sai phạm vi chỉ tiêu được giao.",
-    "Ngăn xuất báo cáo SOP 9.14 khi còn thiếu chỉ tiêu được giao hoặc khi kết quả chứa giá trị ngoài các định dạng hợp lệ như số, ND/KPH hoặc <LOQ>."
+    "Khắc phục các đường gọi báo cáo GAS chưa có xác thực/ủy quyền, xử lý lặp và kiểm soát archive/template/upload đầy đủ.",
+    "Đồng bộ cấu hình nhom-i sau xác nhận nghiệp vụ; giữ silafluofen trong GAS và bổ sung vào contract Angular."
   ]
 }

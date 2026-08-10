@@ -415,7 +415,7 @@
                                     <div class="flex gap-0.5 opacity-70">
                                       @for(ghs of item.ghsWarnings; track ghs) {
                                         @if(ghs.startsWith('GHS')) {
-                                          <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                          <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [alt]="GHS_DICT[ghs].label" [title]="GHS_DICT[ghs].label" />
                                         }
                                       }
                                     </div>
@@ -458,7 +458,7 @@
                                             <div class="flex gap-0.5 opacity-70">
                                               @for(ghs of sub.ghsWarnings; track ghs) {
                                                 @if(ghs.startsWith('GHS')) {
-                                                  <img [src]="GHS_DICT[ghs].iconUrl" class="w-2.5 h-2.5" [title]="GHS_DICT[ghs].label" />
+                                                  <img [src]="GHS_DICT[ghs].iconUrl" class="w-2.5 h-2.5" [alt]="GHS_DICT[ghs].label" [title]="GHS_DICT[ghs].label" />
                                                 }
                                               }
                                             </div>
@@ -497,7 +497,7 @@
                         @for(code of aggregateGHSWarnings(); track code) {
                           @if(code.startsWith('GHS')) {
                             <div class="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-orange-100 dark:border-orange-800 group relative">
-                              <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 flex-shrink-0" [title]="GHS_DICT[code].label"/>
+                              <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 flex-shrink-0" [alt]="GHS_DICT[code].label" [title]="GHS_DICT[code].label"/>
                               <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">{{GHS_DICT[code].label}}</div>
                             </div>
                           }

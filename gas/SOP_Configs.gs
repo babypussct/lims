@@ -259,6 +259,14 @@ const CONFIG = {
   // Root folder ID chứa tất cả báo cáo (thư mục "LIMS_Reports" trên Drive)
   ROOT_FOLDER_ID: '1B8KctFU-KDCPAwxrg8N75Sipk5SlGJkE',
 
+  // Firebase Web API key là public project identifier (cùng giá trị phía Angular),
+  // dùng để gọi Auth accounts:lookup nhằm verify ID token trước mutation.
+  FIREBASE_AUTH: {
+    PROJECT_ID: 'lims-cloud-by-otada',
+    WEB_API_KEY: 'AIzaSyDZmI3PE-j1ZhkqUd3mQaYmX1pJpWqtwck',
+    APP_ID: 'lims-cloud-fixed',
+  },
+
   // Template Google Doc IDs cho từng SOP (cập nhật sau khi upload file form gốc lên Drive)
   // Định dạng: 'config-key': 'GOOGLE_DOC_ID'  // SOP-XX | file gốc: <tên file>
   TEMPLATES: {
@@ -267,7 +275,9 @@ const CONFIG = {
     'dichlorvos-gcms':        '15Vg_kdrEx1DQ-LyLuZVo8sKnjW7JFV7mQDAEE3xKywY',   // Dichlorvos/Dipterex(Trichlorfon)
     'chloroform-gcms':        '1Qfg1k_Y3GLWhOj9oCoQW6sahMNoVN7GhU6u5NMSYrBo',   // Chloroform (GC-MS/MS)
     'chlor-huu-co':           '1xQNkNRcPtfmQjwyv5F2qx1E2VbCmeuPbnfCK3_AgAGQ',   // (filebieumau_FORM_TRANG4.docx)
+    'chlor-huu-co-don':       '1JhO-qVV6-KFw9zq2ARCYyVwlQoj6xFjFHlrBsjNGbH8',   // Nhóm Chlor hữu cơ - Form Đơn
     'lan-huu-co':             '1nSWI-KDXhcnzZK3k0X5o0Wn2rXQ2XeRx87jx8WJAM60',   // SOP-02 | TÊN Nhóm Lân hữu cơ (GC-MS/MS)
+    'lan-huu-co-don':         '1kR2sljh1LPoXj8jkmYq5f3ZZapkBg4XlWqQTO5Z3c1Y',   // Nhóm Lân hữu cơ - Form Đơn
     'nhom-cuc':               '1ugk8Xx-LHYD7xrarxE01pG96fIA5Po7OMdjQ8htrys0',   // Nhóm Cúc (GC-MS/MS) - Form Check
     'nhom-cuc-don':           '1rlN0iNEG_beYHBX7VRsoJ6QQsMerKxian8OJni0Ha9A',   // Nhóm Cúc (GC-MS/MS) - Form Đơn
     'nhom-i':                 '10mLbrtKEa7g9wSfT-Iprjfm4KuOY9YBd-yfof_Z-Ckw',   // Nhóm I (GC-MS/MS) - Form Check
@@ -276,6 +286,29 @@ const CONFIG = {
     'tbvtv-trong-nuoc-gcmsms-don':  '1cF4lX-lotjbV2GSDOqpsfwFuQK2TJcxg8w1RsCMMBLE',
     'tbvtv-thuc-pham-gcmsms':       '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4',
     'tbvtv-thuc-pham-gcmsms-rut-gon': '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4',
+  },
+
+  TEMPLATE_VARIANTS: {
+    'lan-huu-co': {
+      formCheck: 'lan-huu-co',
+      formDon: 'lan-huu-co-don',
+    },
+    'chlor-huu-co': {
+      formCheck: 'chlor-huu-co',
+      formDon: 'chlor-huu-co-don',
+    },
+    'nhom-cuc': {
+      formCheck: 'nhom-cuc',
+      formDon: 'nhom-cuc-don',
+    },
+    'nhom-i': {
+      formCheck: 'nhom-i',
+      formDon: 'nhom-i-don',
+    },
+    'tbvtv-trong-nuoc-gcmsms': {
+      formCheck: 'tbvtv-trong-nuoc-gcmsms',
+      formDon: 'tbvtv-trong-nuoc-gcmsms-don',
+    },
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)
@@ -668,7 +701,7 @@ const CONFIG = {
         'DDE-p,p\'', 'DDT-o,p\'', 'DDT-p,p\'', 'Dieldrin', 'Endosulfan I (alpha isomer)',
         'Endosulfan II (beta isomer)', 'Endosulfan sulfate', 'Endrin', 'Heptachlor', 'Heptachlor endo-epoxide (isomer A)',
         'Heptachlor exo-epoxide (isomer B)', 'Hexachlorobenzene', 'Isodrin', 'Methoxychlor, p,p\'-', 'Mirex',
-        'Pendimethalin', 'Pirimiphos methyl', 'lambda-Cyhalothrin', 'Edifenphos', 'Azinphos-methyl', 'Cypermethrins'
+        'Pendimethalin'
       ]
     }
   }

@@ -5,6 +5,7 @@ import { ReferenceStandard, StandardCleanupBatch } from '../../../core/models/st
 import { ProgressService } from '../../../core/services/progress.service';
 import { PubchemService } from '../../../core/services/pubchem.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import {
   normalizeChemicalNames,
   parseChemicalNames,
@@ -448,6 +449,7 @@ export class StandardsDataCleanupModalComponent {
   private pubchemService = inject(PubchemService);
   private standardService = inject(StandardService);
   private toast = inject(ToastService);
+  private confirmation = inject(ConfirmationService);
   private progressService = inject(ProgressService);
 
   groups = signal<CleanupGroup[]>([]);
@@ -673,7 +675,11 @@ export class StandardsDataCleanupModalComponent {
 
   async undoBatch(batch: StandardCleanupBatch): Promise<void> {
     if (batch.status !== 'APPLIED' || this.undoingBatchId()) return;
-    if (!confirm(`Hoàn tác phiên ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về CAS, tên và metadata trước khi chuẩn hóa.`)) return;
+    if (!await this.confirmation.confirm({
+      message: `Hoàn tác phiên ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về CAS, tên và metadata trước khi chuẩn hóa.`,
+      confirmText: 'Hoàn tác phiên',
+      isDangerous: true
+    })) return;
 
     this.undoingBatchId.set(batch.id);
     try {
@@ -802,11 +808,11 @@ export class StandardsDataCleanupModalComponent {
     const assessment = this.currentCasAssessment();
     if (!issue || assessment.quality !== 'valid' || !assessment.normalizedCas) return;
     const normalizedCas = assessment.normalizedCas;
-    if (!confirm(
+    if (!await this.confirmation.confirm({ message:
       `Sửa CAS cho ${issue.standard.internal_id || issue.standard.id}?\n\n`
       + `${issue.originalCas || 'Trống'}  →  ${normalizedCas}\n\n`
       + 'Thay đổi được lưu thành một phiên và có thể hoàn tác.'
-    )) return;
+      , confirmText: 'Sửa CAS', isDangerous: true })) return;
 
     const pageBeforeSave = this.currentPageIndex();
     const workspaceBeforeSave = this.workspace();
@@ -949,7 +955,11 @@ export class StandardsDataCleanupModalComponent {
     const riskWarning = group.risk.level === 'high'
       ? '\nĐây là nhóm rủi ro cao; mỗi hồ sơ sẽ giữ đề xuất tên riêng.'
       : '';
-    if (!confirm(`Lưu ${selected.length} hồ sơ trong nhóm CAS ${group.cas}?${riskWarning}\n\nChỉ trường danh pháp và metadata chuẩn hóa được cập nhật.`)) return;
+    if (!await this.confirmation.confirm({
+      message: `Lưu ${selected.length} hồ sơ trong nhóm CAS ${group.cas}?${riskWarning}\n\nChỉ trường danh pháp và metadata chuẩn hóa được cập nhật.`,
+      confirmText: 'Lưu chuẩn hóa',
+      isDangerous: true
+    })) return;
 
     this.isProcessing.set(true);
     const pageBeforeSave = this.currentPageIndex();

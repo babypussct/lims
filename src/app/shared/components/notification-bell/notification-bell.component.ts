@@ -27,7 +27,11 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
       <!-- ════ BOTTOM NAV TAB (Mobile) ════ -->
       <button
         id="notif-bell-mobile"
+        type="button"
         (click)="onToggle($event)"
+        [attr.aria-label]="unreadCount() > 0 ? 'Mở thông báo, ' + unreadCount() + ' chưa đọc' : 'Mở thông báo'"
+        [attr.aria-expanded]="panel.isOpen()"
+        aria-controls="notification-panel"
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
         class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform select-none">
 
@@ -63,7 +67,11 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
       <!-- ════ HEADER ACTION BUTTON (Desktop) ════ -->
       <button
         id="notif-bell-header"
+        type="button"
         (click)="onToggle($event)"
+        [attr.aria-label]="unreadCount() > 0 ? 'Mở thông báo, ' + unreadCount() + ' chưa đọc' : 'Mở thông báo'"
+        [attr.aria-expanded]="panel.isOpen()"
+        aria-controls="notification-panel"
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
         class="relative w-9 h-9 rounded-xl flex items-center justify-center
                transition-all duration-200 active:scale-95 select-none"
@@ -102,7 +110,11 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
       <!-- ════ BADGE ON AVATAR (Sidebar Footer) ════ -->
       <button
         id="notif-bell-badge"
+        type="button"
         (click)="onToggle($event)"
+        [attr.aria-label]="unreadCount() > 0 ? 'Mở thông báo, ' + unreadCount() + ' chưa đọc' : 'Mở thông báo'"
+        [attr.aria-expanded]="panel.isOpen()"
+        aria-controls="notification-panel"
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
         class="relative flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-md transition-all hover:scale-115 active:scale-90 z-10 select-none cursor-pointer"
         [ngClass]="unreadCount() > 0
@@ -129,7 +141,11 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
       <!-- ════ DEFAULT: STANDALONE BUTTON ════ -->
       <button
         id="notif-bell-default"
+        type="button"
         (click)="onToggle($event)"
+        [attr.aria-label]="unreadCount() > 0 ? 'Mở thông báo, ' + unreadCount() + ' chưa đọc' : 'Mở thông báo'"
+        [attr.aria-expanded]="panel.isOpen()"
+        aria-controls="notification-panel"
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
         class="bell-btn relative w-10 h-10 flex items-center justify-center rounded-2xl transition-all duration-200 active:scale-95 overflow-visible select-none"
         [class.bell-btn--active]="panel.isOpen()"

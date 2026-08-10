@@ -12,7 +12,7 @@ import { StateService } from '../../../core/services/state.service';
   standalone: true,
   imports: [CommonModule, SkeletonComponent, LockPermissionDirective],
   template: `
-    <div class="min-w-[1000px]"> 
+    <div class="min-w-[1000px]" role="region" aria-label="Bảng danh sách chuẩn">
        <table class="w-full text-sm text-left relative border-collapse">
           <thead class="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none h-12 tracking-wide">
              <tr>

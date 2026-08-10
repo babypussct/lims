@@ -8,11 +8,7 @@ function generateCustomReport_tbvtv_thuc_pham_gcmsms_rut_gon(templateId, metadat
 }
 
 function generateFipronilChlorpyrifosStyleReport_(templateId, metadata, samples, folder, fileName, version, sopConfigKey) {
-  const templateFile = DriveApp.getFileById(templateId);
-  const newFile = templateFile.makeCopy(fileName, folder);
-  const docId = newFile.getId();
-  const doc = DocumentApp.openById(docId);
-  const body = doc.getBody();
+  return generateReportFromTemplate(templateId, folder, fileName, ({ body }) => {
 
   const sopConfig = CONFIG.SOP_CONFIG[sopConfigKey] || CONFIG.SOP_CONFIG['fipronil-chlorpyrifos'];
 
@@ -94,58 +90,25 @@ function generateFipronilChlorpyrifosStyleReport_(templateId, metadata, samples,
   }
 
   // 2. Điền Bảng QC (Xử lý ô Checkbox Đạt/Không đạt nằm ở cột 3 của hàng tương ứng)
-  fillQcTableCheckboxes(body, sopConfig, metadata);
+  fillQcTableCheckboxes(body, sopConfig, metadata, sopConfigKey);
 
   // 3. Tìm và điền bảng đường chuẩn (Table 0: 6 dòng × 4 cột)
-  const tables = body.getTables();
-  let calibrationTable = null;
-  for (let t = 0; t < tables.length; t++) {
-    const candidate = tables[t];
-    if (candidate.getNumRows() === 6) {
-      const cellText = candidate.getRow(0).getCell(0).getText();
-      if (cellText.includes("Điểm chuẩn") || cellText.includes("Vial No")) {
-        calibrationTable = candidate;
-        break;
-      }
-    }
-  }
-
-  if (calibrationTable) {
-    Logger.log(`[FipronilCustom] Tìm thấy bảng đường chuẩn (6 dòng).`);
-    const calibPoints = metadata.calibPoints || [];
-    for (let i = 0; i < 5; i++) {
-      const pt = calibPoints[i] || { vialNo: '', loSo: '' };
-      const rowIdx = 1 + i; // Dòng 0 là header
-      const row = calibrationTable.getRow(rowIdx);
-      // Điền Vial No. (Cột index 3)
-      setCellText(row, 3, pt.vialNo || pt.loSo || '');
-    }
-  } else {
-    Logger.log('[FipronilCustom] CẢNH BÁO: Không tìm thấy bảng đường chuẩn.');
+  const calibrationTable = requireFipronilCalibrationTable(body, sopConfigKey);
+  Logger.log(`[FipronilCustom] Tìm thấy bảng đường chuẩn (6 dòng).`);
+  const calibPoints = metadata.calibPoints || [];
+  for (let i = 0; i < 5; i++) {
+    const pt = calibPoints[i] || { vialNo: '', loSo: '' };
+    const rowIdx = 1 + i; // Dòng 0 là header
+    const row = calibrationTable.getRow(rowIdx);
+    // Điền Vial No. (Cột index 3)
+    const vialValue = pt.vialNo !== undefined && pt.vialNo !== null
+      ? pt.vialNo
+      : (pt.loSo !== undefined && pt.loSo !== null ? pt.loSo : '');
+    setCellText(row, 3, vialValue);
   }
 
   // 4. Điền bảng mẫu kết quả chính (sử dụng logic fillSampleTable chuẩn)
-  fillSampleTable(body, sopConfig, samples);
-
-  // 5. Lưu doc
-  doc.saveAndClose();
-
-  // Export PDF
-  const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
-  const pdfName = fileName + '.pdf';
-  const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
-
-  const pdfUrl     = pdfFile.getUrl();
-  const docsUrl    = `https://docs.google.com/document/d/${docId}/edit`;
-  const pdfViewUrl = pdfFile.getDownloadUrl();
-
-  return {
-    docId,
-    pdfId:       pdfFile.getId(),
-    docsUrl,
-    pdfUrl,
-    pdfViewUrl,
-    fileName,
-    createdAt:   new Date().toISOString(),
-  };
+  const renderStats = fillSampleTable(body, sopConfig, samples);
+  assertPostGenerationReportComplete(body, sopConfig, metadata, samples, renderStats);
+  });
 }

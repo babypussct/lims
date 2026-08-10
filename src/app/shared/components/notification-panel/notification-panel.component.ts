@@ -6,6 +6,8 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AppNotification, NotificationType } from '../../../core/models/notification.model';
+import { formatNotificationFilterCount } from './notification-panel.utils';
+import { ModalA11yDirective } from '../../directives/modal-a11y.directive';
 
 type TabId = 'all' | 'unread' | 'actionable' | 'system';
 
@@ -23,7 +25,7 @@ interface DateGroup {
 @Component({
   selector: 'app-notification-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ModalA11yDirective],
   template: `
     @if (panel.isOpen()) {
       <!-- Backdrop -->
@@ -35,9 +37,12 @@ interface DateGroup {
 
       <!-- Main Drawer / Popover Container -->
       <div
-        role="dialog"
-        aria-label="Trung tâm Thông báo"
+        appModalA11y
+        modalLabelledBy="notification-panel-title"
+        modalDescribedBy="notification-panel-summary"
+        (modalEscape)="panel.close()"
         class="notif-drawer fixed z-[200] flex flex-col"
+        id="notification-panel"
         [ngStyle]="panelPos">
 
         <!-- Mobile Drag Indicator -->
@@ -48,8 +53,8 @@ interface DateGroup {
         <!-- ── Header ── -->
         <div class="notif-header shrink-0">
           <div class="min-w-0">
-            <h2 class="font-extrabold text-slate-950 dark:text-slate-50 text-[22px] leading-tight">Thông báo</h2>
-            <div class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <h2 id="notification-panel-title" class="font-extrabold text-slate-950 dark:text-slate-50 text-[22px] leading-tight">Thông báo</h2>
+            <div id="notification-panel-summary" class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400" aria-live="polite">
               @if (unreadCount() > 0) {
                 <span><b class="text-blue-600 dark:text-blue-400">{{ unreadCount() }}</b> thông báo chưa đọc</span>
               } @else {
@@ -61,7 +66,9 @@ interface DateGroup {
           <div class="flex items-center gap-1.5">
             @if (unreadCount() > 0) {
               <button
+                type="button"
                 (click)="markAllAsRead()"
+                aria-label="Đánh dấu tất cả đã đọc"
                 class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300
                        hover:bg-blue-100 dark:hover:bg-blue-950/50 hover:text-blue-600 dark:hover:text-blue-400
                        transition-all active:scale-95 flex items-center justify-center"
@@ -73,7 +80,11 @@ interface DateGroup {
             @if (totalCount() > 0) {
               <div class="relative notif-actions-wrapper">
                 <button
+                  type="button"
                   (click)="toggleActionsMenu()"
+                  aria-label="Tùy chọn thông báo"
+                  [attr.aria-expanded]="showActionsMenu()"
+                  aria-haspopup="menu"
                   class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
                          hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100
                          transition-all active:scale-90"
@@ -82,14 +93,14 @@ interface DateGroup {
                 </button>
 
                 @if (showActionsMenu()) {
-                  <div class="notif-actions-dropdown">
+                  <div class="notif-actions-dropdown" role="menu" aria-label="Tùy chọn thông báo">
                     @if (readCount() > 0) {
-                      <button (click)="onDeleteRead()" class="notif-action-item">
+                      <button type="button" (click)="onDeleteRead()" class="notif-action-item" role="menuitem">
                         <i class="fa-solid fa-check-double text-emerald-500"></i>
                         <span>Xóa đã đọc ({{ readCount() }})</span>
                       </button>
                     }
-                    <button (click)="onDeleteAll()" class="notif-action-item notif-action-item--danger">
+                    <button type="button" (click)="onDeleteAll()" class="notif-action-item notif-action-item--danger" role="menuitem">
                       <i class="fa-solid fa-trash-can text-red-500"></i>
                       <span>Xóa tất cả ({{ totalCount() }})</span>
                     </button>
@@ -99,7 +110,9 @@ interface DateGroup {
             }
 
             <button
+              type="button"
               (click)="panel.close()"
+              aria-label="Đóng trung tâm thông báo"
               class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
                      hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100
                      transition-all active:scale-90">
@@ -110,16 +123,19 @@ interface DateGroup {
 
         <!-- ── Segmented Control Tab Filter Bar ── -->
         <div class="notif-tab-bar shrink-0">
-          <div class="notif-tab-container">
+          <div class="notif-tab-container" role="tablist" aria-label="Bộ lọc thông báo">
             @for (tab of tabs; track tab.id) {
               <button
+                type="button"
                 (click)="activeTab.set(tab.id)"
+                role="tab"
+                [attr.aria-selected]="activeTab() === tab.id"
                 class="notif-tab"
                 [class.notif-tab--active]="activeTab() === tab.id">
-                <span>{{ tab.label }}</span>
+                <span class="notif-tab-label">{{ tab.label }}</span>
                 @if (tab.count() > 0) {
                   <span class="notif-tab-count" [class.notif-tab-count--active]="activeTab() === tab.id">
-                    {{ tab.count() }}
+                    {{ formatFilterCount(tab.count()) }}
                   </span>
                 }
               </button>
@@ -155,7 +171,12 @@ interface DateGroup {
               <!-- Items in group -->
               @for (n of group.items; track n.id) {
                 <div
+                  role="button"
+                  tabindex="0"
                   (click)="onNotificationClick(n)"
+                  (keydown.enter)="onNotificationKeydown($event, n)"
+                  (keydown.space)="onNotificationKeydown($event, n)"
+                  [attr.aria-label]="notificationAriaLabel(n)"
                   class="notif-item group relative"
                   [class.notif-item--unread]="!n.isRead">
 
@@ -185,7 +206,8 @@ interface DateGroup {
                       </div>
 
                       @if (n.message && n.message.length > 90) {
-                        <button (click)="toggleExpand(n, $event)"
+                        <button type="button" (click)="toggleExpand(n, $event)"
+                                [attr.aria-label]="isExpanded(n) ? 'Ẩn bớt nội dung thông báo' : 'Xem thêm nội dung thông báo'"
                                 class="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
                           {{ isExpanded(n) ? 'Ẩn bớt ↑' : 'Xem thêm ↓' }}
                         </button>
@@ -194,7 +216,7 @@ interface DateGroup {
                       <!-- Action Button Chip -->
                       @if (n.actionUrl) {
                         <div class="mt-1.5 flex items-center">
-                          <span class="notif-action-chip" [ngClass]="getChipClass(n.type)">
+                          <span class="notif-action-chip" [ngClass]="getChipClass(n.type)" aria-hidden="true">
                             <span>{{ getActionLabel(n.type) }}</span>
                             <i class="fa-solid fa-arrow-right text-[9px] transition-transform group-hover:translate-x-0.5"></i>
                           </span>
@@ -210,14 +232,18 @@ interface DateGroup {
                     <div class="notif-item-actions">
                       @if (!n.isRead) {
                         <button
+                          type="button"
                           (click)="markAsRead(n.id!, $event)"
+                          aria-label="Đánh dấu thông báo đã đọc"
                           class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-950/60 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300 flex items-center justify-center transition-all"
                           title="Đánh dấu đã đọc">
                           <i class="fa-solid fa-check text-[10px]"></i>
                         </button>
                       }
                       <button
+                        type="button"
                         (click)="deleteNotification(n, $event)"
+                        aria-label="Xóa thông báo"
                         class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 flex items-center justify-center transition-all"
                         title="Xoá thông báo">
                         <i class="fa-solid fa-trash-can text-[10px]"></i>
@@ -230,7 +256,7 @@ interface DateGroup {
 
             @if (hasMore()) {
               <div class="p-3">
-                <button (click)="loadMore()" class="notif-load-more-btn">
+                <button type="button" (click)="loadMore()" class="notif-load-more-btn">
                   <i class="fa-solid fa-chevron-down text-[10px]"></i>
                   <span>Xem thêm {{ totalCount() - displayLimit() }} thông báo</span>
                 </button>
@@ -249,6 +275,7 @@ interface DateGroup {
             }
           </span>
           <button
+            type="button"
             (click)="goToSettings()"
             class="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5">
             <i class="fa-solid fa-gear text-[10px]"></i>
@@ -280,6 +307,7 @@ interface DateGroup {
         0 2px 4px rgba(0, 0, 0, 0.08);
       animation: notifPopUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       overflow: hidden;
+      contain: layout paint;
     }
 
     :host-context(.dark) .notif-drawer {
@@ -376,9 +404,9 @@ interface DateGroup {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 3px;
+      gap: 2px;
       min-width: 0;
-      padding: 7px 4px;
+      padding: 7px 3px;
       border-radius: 999px;
       font-size: 11px;
       font-weight: 700;
@@ -387,6 +415,12 @@ interface DateGroup {
       border: none;
       cursor: pointer;
       white-space: nowrap;
+    }
+
+    .notif-tab-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     :host-context(.dark) .notif-tab {
@@ -425,6 +459,7 @@ interface DateGroup {
       border-radius: 999px;
       font-size: 9px;
       font-weight: 800;
+      flex: 0 0 auto;
       background: rgba(100, 116, 139, 0.15);
       color: #64748b;
     }
@@ -664,8 +699,9 @@ interface DateGroup {
     @media (max-width: 767px) {
       .notif-backdrop {
         background: rgba(15, 23, 42, 0.55);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        /* Blur is expensive while the bottom sheet and list are composited. */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
       }
 
       .notif-drawer {
@@ -676,11 +712,26 @@ interface DateGroup {
         max-height: 85vh !important;
         border-radius: 18px 18px 0 0 !important;
         animation: notifSheetSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        overscroll-behavior: contain;
       }
 
       @keyframes notifSheetSlideUp {
         from { transform: translateY(100%); }
         to   { transform: translateY(0); }
+      }
+    }
+
+    @media (max-width: 360px) {
+      .notif-tab {
+        font-size: 10px;
+        padding-inline: 2px;
+      }
+
+      .notif-tab-count {
+        min-width: 14px;
+        height: 14px;
+        padding-inline: 2px;
+        font-size: 8px;
       }
     }
 
@@ -703,6 +754,7 @@ export class NotificationPanelComponent {
   unreadCount   = this.notificationService.unreadCount;
   totalCount    = this.notificationService.totalCount;
   displayLimit  = this.notificationService.displayLimit;
+  formatFilterCount = formatNotificationFilterCount;
 
   hasMore   = computed(() => this.displayLimit() < this.totalCount());
   readCount = computed(() => Math.max(0, this.totalCount() - this.unreadCount()));
@@ -922,6 +974,17 @@ export class NotificationPanelComponent {
     if (!n.isRead && n.id) this.notificationService.markAsRead(n.id);
     this.panel.close();
     if (n.actionUrl) this.router.navigateByUrl(n.actionUrl);
+  }
+
+  onNotificationKeydown(event: Event, notification: AppNotification): void {
+    event.preventDefault();
+    void this.onNotificationClick(notification);
+  }
+
+  notificationAriaLabel(notification: AppNotification): string {
+    const state = notification.isRead ? 'Đã đọc' : 'Chưa đọc';
+    const action = notification.actionUrl ? ` ${this.getActionLabel(notification.type)}.` : '';
+    return `${notification.title}. ${notification.message}. ${state}.${action}`;
   }
 
   goToSettings() {

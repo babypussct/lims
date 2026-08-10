@@ -150,7 +150,7 @@
   <!-- Publish Preflight Modal -->
   @if (showPreflightModal() && preflightSummary()) {
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-2xl w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+       <div appModalA11y aria-label="Kiểm tra trước khi tạo báo cáo" (modalEscape)="closePreflightModal()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-2xl w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div class="flex items-start justify-between gap-4 mb-5">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -163,7 +163,7 @@
               </p>
             </div>
           </div>
-          <button (click)="closePreflightModal()" class="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">
+           <button type="button" aria-label="Đóng kiểm tra trước khi tạo báo cáo" (click)="closePreflightModal()" class="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -216,11 +216,11 @@
         </div>
 
         <div class="flex gap-3 mt-6">
-          <button (click)="closePreflightModal()"
+           <button type="button" (click)="closePreflightModal()"
                   class="flex-1 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl transition">
             Quay lại kiểm tra
           </button>
-          <button (click)="confirmPublishAfterPreflight()"
+           <button type="button" (click)="confirmPublishAfterPreflight()"
                   [disabled]="preflightSummary()!.blockers.length > 0 || isProcessing()"
                   class="flex-1 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition disabled:opacity-40">
             Tiếp tục tạo PDF
@@ -233,7 +233,7 @@
   <!-- Reset Confirmation Modal -->
   @if (showResetModal()) {
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+       <div appModalA11y aria-label="Đưa mẻ về trạng thái ban đầu" (modalEscape)="closeResetModal()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div class="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
           <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-lg">
             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -257,11 +257,11 @@
         </div>
         
         <div class="flex gap-3">
-          <button (click)="closeResetModal()" 
+           <button type="button" (click)="closeResetModal()"
                   class="flex-1 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl transition">
             Hủy Bỏ
           </button>
-          <button (click)="triggerResetResults()" 
+           <button type="button" (click)="triggerResetResults()"
                   [disabled]="resetConfirmText() !== 'XÓA' || isProcessing()"
                   class="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-40">
             Xóa và Khởi Tạo Lại

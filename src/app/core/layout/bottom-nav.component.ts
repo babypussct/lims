@@ -10,6 +10,7 @@ import { AuthService } from '../services/auth.service';
 import { QrGlobalService } from '../services/qr-global.service';
 import { StateService } from '../services/state.service';
 import { ToastService } from '../services/toast.service';
+import { ModalA11yDirective } from '../../shared/directives/modal-a11y.directive';
 import {
   NAVIGATION_GROUPS,
   NavigationAccess,
@@ -56,7 +57,7 @@ interface VisitedPage {
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule, NotificationBellComponent, PwaInstallPromptComponent],
+  imports: [CommonModule, RouterModule, NotificationBellComponent, PwaInstallPromptComponent, ModalA11yDirective],
   template: `
     @if (showMenu() || isClosing()) {
       <div
@@ -66,10 +67,10 @@ interface VisitedPage {
         (click)="closeMenu()"></div>
 
       <div
+        appModalA11y
+        modalLabelledBy="bottom-nav-menu-title"
+        (modalEscape)="closeMenu()"
         id="bottom-nav-menu"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Menu điều hướng"
         class="fixed bottom-0 right-0 left-0 z-[50] max-h-[calc(100dvh-env(safe-area-inset-top,0px)-0.5rem)] flex flex-col
                bg-white dark:bg-slate-900 rounded-t-[32px]
                shadow-[0_-10px_40px_rgba(0,0,0,0.2)] border-t border-slate-200 dark:border-slate-800
@@ -80,6 +81,8 @@ interface VisitedPage {
         (touchstart)="onTouchStartPanel($event)"
         (touchmove)="onTouchMovePanel($event)"
         (touchend)="onTouchEndPanel()">
+
+        <h2 id="bottom-nav-menu-title" class="sr-only">Menu điều hướng</h2>
 
         <button
           type="button"

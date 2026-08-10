@@ -9,11 +9,12 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { MasterAnalyte } from '../../core/models/sop.model';
 import { generateSlug, formatDate } from '../../shared/utils/utils';
 import { Router } from '@angular/router';
+import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.directive';
 
 @Component({
   selector: 'app-master-target-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective],
   template: `
     <div class="h-full flex flex-col fade-in bg-slate-50 relative pb-10">
         
@@ -136,7 +137,7 @@ import { Router } from '@angular/router';
                     </div>
                     
                     <div class="p-6 overflow-y-auto">
-                        <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+                        <form id="master-target-form" appFormLabelA11y [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên chỉ tiêu <span class="text-red-500">*</span></label>
                                 <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-indigo-500 transition" placeholder="VD: Chloramphenicol">
@@ -276,7 +277,11 @@ export class MasterTargetManagerComponent implements OnInit {
   });
 
   async migrateHyphenToUnderscore() {
-      if (!confirm('Are you sure you want to run the full migration replacing hyphens with underscores in IDs? This will modify master_analytes, targetGroups, sops, and requests.')) return;
+      if (!await this.confirmation.confirm({
+          message: 'Are you sure you want to run the full migration replacing hyphens with underscores in IDs? This will modify master_analytes, targetGroups, sops, and requests.',
+          confirmText: 'Run migration',
+          isDangerous: true
+      })) return;
       this.isProcessing.set(true);
       try {
           const { getDocs, collection, writeBatch, doc, serverTimestamp } = await import('firebase/firestore');

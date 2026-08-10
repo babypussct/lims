@@ -1,6 +1,109 @@
 
+function buildQcCheckboxLabels(value) {
+  if (value === true) {
+    return {
+      datCheck: "☑ Đạt",
+      khongDatCheck: "☐ Không đạt",
+      naCheck: "☐ N/A",
+    };
+  }
+  if (value === false) {
+    return {
+      datCheck: "☐ Đạt",
+      khongDatCheck: "☑ Không đạt",
+      naCheck: "☐ N/A",
+    };
+  }
+  return {
+    datCheck: "☐ Đạt",
+    khongDatCheck: "☐ Không đạt",
+    naCheck: "☑ N/A",
+  };
+}
+
+function valueOrEmpty(value) {
+  return value !== undefined && value !== null ? value : '';
+}
+
+function firstDefinedValue(primary, secondary, fallback) {
+  if (primary !== undefined && primary !== null) return primary;
+  if (secondary !== undefined && secondary !== null) return secondary;
+  return fallback;
+}
+
+function resolveFormDonResultValue(sample, compoundName, backendKey) {
+  if (sample.compoundResults && sample.compoundResults[backendKey] !== undefined && sample.compoundResults[backendKey] !== null) {
+    return sample.compoundResults[backendKey];
+  }
+  if (sample.compoundResults && sample.compoundResults[compoundName] !== undefined && sample.compoundResults[compoundName] !== null) {
+    return sample.compoundResults[compoundName];
+  }
+  return firstDefinedValue(sample[compoundName], sample.kq, 'ND');
+}
+
+function resolveCompoundDisplayName(compoundId, metadata) {
+  const rawId = valueOrEmpty(compoundId).toString().trim();
+  if (!rawId) return '';
+
+  const targetInfo = metadata && metadata.targetInfo;
+  if (targetInfo && typeof targetInfo === 'object') {
+    const directTarget = targetInfo[rawId];
+    if (directTarget && directTarget.displayName !== undefined && directTarget.displayName !== null) {
+      const directName = directTarget.displayName.toString().trim();
+      if (directName) return directName;
+    }
+
+    for (const targetKey of Object.keys(targetInfo)) {
+      const target = targetInfo[targetKey];
+      if (!target || target.canonicalId !== rawId || target.displayName === undefined || target.displayName === null) continue;
+      const mappedName = target.displayName.toString().trim();
+      if (mappedName) return mappedName;
+    }
+  }
+
+  if (typeof COMPOUND_TO_CANONICAL !== 'undefined') {
+    if (COMPOUND_TO_CANONICAL[rawId]) return rawId;
+    for (const displayName of Object.keys(COMPOUND_TO_CANONICAL)) {
+      if (COMPOUND_TO_CANONICAL[displayName] === rawId) return displayName;
+    }
+  }
+
+  // A canonical-looking identifier must never leak into an official report.
+  if (rawId.indexOf('_') !== -1) {
+    throw new Error('[FormDon-Type3B] Missing displayName for canonical compound: ' + rawId);
+  }
+  return rawId;
+}
+
+function resolveType3bFormDonCompounds(sopConfig, metadata) {
+  const requested = metadata && metadata.compoundsToPrint;
+  if (requested !== undefined && requested !== null && !Array.isArray(requested)) {
+    throw new Error('[FormDon-Type3B] Invalid compoundsToPrint: expected array');
+  }
+
+  let compounds = Array.isArray(requested) ? requested.slice() : [];
+  if (compounds.length === 0) {
+    if (metadata && metadata.activeCompound) {
+      compounds = [metadata.activeCompound];
+    } else if (sopConfig.compounds && sopConfig.compounds.length > 0) {
+      compounds = [sopConfig.compounds[0]];
+    } else {
+      compounds = [''];
+    }
+  }
+  return compounds;
+}
+
 function generateType3bReport(body, sopConfig, metadata, samples) {
   const printFormType = metadata.printFormType || 'formCheck';
+  const renderStats = {
+    reporter: 'type3b',
+    mode: printFormType === 'formDon' ? 'formDon' : 'formCheck',
+    renderedSampleCount: samples.length,
+    logicalPageCount: 0,
+    renderedCompoundIds: [],
+    formDonResults: [],
+  };
   
   const numChildren = body.getNumChildren();
   const children = [];
@@ -11,19 +114,11 @@ function generateType3bReport(body, sopConfig, metadata, samples) {
   if (printFormType === 'formDon') {
     // === FORM ĐƠN ===
     // Lặp theo từng hoạt chất (1 hoạt chất = 1 trang)
-    let compounds = metadata.compoundsToPrint || [];
-    if (compounds.length === 0) {
-      if (metadata.activeCompound) {
-        compounds = [metadata.activeCompound];
-      } else if (sopConfig.compounds && sopConfig.compounds.length > 0) {
-        compounds = [sopConfig.compounds[0]];
-      } else {
-        compounds = [''];
-      }
-    }
+    const compounds = resolveType3bFormDonCompounds(sopConfig, metadata);
     
     for (let c = 0; c < compounds.length; c++) {
       const compoundName = compounds[c];
+      const compoundDisplayName = resolveCompoundDisplayName(compoundName, metadata);
       let pageElements = [];
       
       if (c === 0) {
@@ -56,7 +151,7 @@ function generateType3bReport(body, sopConfig, metadata, samples) {
       }
       
       // Xử lý điền tên hoạt chất vào header (XÁC ĐỊNH DƯ LƯỢNG ...)
-      if (compoundName) {
+      if (compoundDisplayName) {
         for (const element of pageElements) {
           if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
             const pText = element.asParagraph().getText();
@@ -69,13 +164,19 @@ function generateType3bReport(body, sopConfig, metadata, samples) {
                   const start = found.getStartOffset();
                   const end = found.getEndOffsetInclusive();
                   textEl.deleteText(start, end);
-                  textEl.insertText(start, compoundName.toUpperCase());
-                } catch(e) {}
+                  textEl.insertText(start, compoundDisplayName.toUpperCase());
+                } catch(e) {
+                  Logger.log(`[Type3B][required-header] Không thể thay tên hoạt chất trong header: ${e.toString()}`);
+                  throw e;
+                }
               } else {
                 try {
                   const textEl = para.editAsText();
-                  textEl.appendText(' ' + compoundName.toUpperCase());
-                } catch(e) {}
+                  textEl.appendText(' ' + compoundDisplayName.toUpperCase());
+                } catch(e) {
+                  Logger.log(`[Type3B][required-header] Không thể thêm tên hoạt chất vào header: ${e.toString()}`);
+                  throw e;
+                }
               }
             }
           }
@@ -85,7 +186,14 @@ function generateType3bReport(body, sopConfig, metadata, samples) {
       // Với form Đơn, mẫu phân tích là mẫu đầu tiên (nếu có)
       const sampleToUse = samples.length > 0 ? samples[0] : {};
       fillType3bSampleForElements(pageElements, sopConfig, metadata, sampleToUse);
-      _fillFormDonTablesDynamically(pageElements, metadata, samples, compoundName, sopConfig);
+      const formDonStats = _fillFormDonTablesDynamically(pageElements, metadata, samples, compoundName, sopConfig);
+      renderStats.logicalPageCount++;
+      renderStats.renderedCompoundIds.push(compoundName === undefined || compoundName === null ? '' : String(compoundName));
+      renderStats.formDonResults.push({
+        compoundId: compoundName === undefined || compoundName === null ? '' : String(compoundName),
+        resultTableCount: formDonStats.resultTableCount,
+        resultRowsWritten: formDonStats.resultRowsWritten,
+      });
     }
     
   } else {
@@ -116,9 +224,11 @@ function generateType3bReport(body, sopConfig, metadata, samples) {
       }
       fillType3bSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
     }
+    renderStats.logicalPageCount = samples.length;
   }
   
   cleanLastPageBreak(body);
+  return renderStats;
 }
 
 /**
@@ -126,6 +236,43 @@ function generateType3bReport(body, sopConfig, metadata, samples) {
  */
 function fillType3bSample(body, sopConfig, metadata, sample) {
   fillType3bSampleForElements([body], sopConfig, metadata, sample);
+}
+
+function isType3BTargetAssigned(sampleTargetMap, sampleCode, compoundDisplayName) {
+  if (!sampleTargetMap || !sampleCode || !compoundDisplayName) return true;
+
+  const canonicalId = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[compoundDisplayName])
+    ? COMPOUND_TO_CANONICAL[compoundDisplayName]
+    : compoundDisplayName.toLowerCase().replace(/[^a-z0-9\-_]/g, '');
+
+  const subCodes = sampleCode.split(';').map(function(code) { return code.trim(); }).filter(Boolean);
+  const codesToCheck = subCodes.length > 0 ? subCodes : [sampleCode];
+  let hasExplicitAssignmentData = false;
+
+  for (const sc of codesToCheck) {
+    const matchKey = Object.keys(sampleTargetMap).find(function(key) {
+      return key.toLowerCase().trim() === sc.toLowerCase().trim();
+    });
+    const assignedTargetIds = matchKey ? sampleTargetMap[matchKey] : null;
+
+    // Missing/empty mapping for one sub-code must not override restrictions from another sub-code.
+    // Only fall back to "show all" when none of the grouped sub-codes has explicit assignment data.
+    if (!Array.isArray(assignedTargetIds) || assignedTargetIds.length === 0) continue;
+    hasExplicitAssignmentData = true;
+
+    if (assignedTargetIds.includes(canonicalId)) return true;
+
+    const cNorm = canonicalId.replace(/[^a-z0-9]/g, '');
+    const hasMatch = assignedTargetIds.some(function(targetId) {
+      const tNorm = targetId.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cNorm === 'heptachlor' && tNorm.includes('epoxide')) return false;
+      if (tNorm === 'heptachlor' && cNorm.includes('epoxide')) return false;
+      return tNorm === cNorm;
+    });
+    if (hasMatch) return true;
+  }
+
+  return !hasExplicitAssignmentData;
 }
 
 /**
@@ -137,50 +284,19 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
   // Bộ lọc chỉ định (Target Assignment Resolver) — V2: Canonical ID
   const sampleTargetMap = metadata.sampleTargetMap || (metadata.inputs && metadata.inputs.sampleTargetMap) || null;
   const isTargetAssignedForGas = function(sampleCode, compoundDisplayName) {
-    if (!sampleTargetMap || !sampleCode || !compoundDisplayName) return true;
-    
-    // Bước 1: Chuyển display name → canonical id qua COMPOUND_TO_CANONICAL
-    const canonicalId = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[compoundDisplayName])
-      ? COMPOUND_TO_CANONICAL[compoundDisplayName]
-      : compoundDisplayName.toLowerCase().replace(/[^a-z0-9\-_]/g, '');
-    
-    const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
-    const codesToCheck = subCodes.length > 0 ? subCodes : [sampleCode];
-    
-    for (const sc of codesToCheck) {
-      const matchKey = Object.keys(sampleTargetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
-      const assignedTargetIds = matchKey ? sampleTargetMap[matchKey] : null;
-      
-      // Fallback an toàn: nếu không tìm thấy cấu hình của mẫu này → hiển thị tất cả
-      if (!assignedTargetIds || assignedTargetIds.length === 0) return true;
-      
-      // Bước 2: So sánh canonical id trực tiếp (fast path)
-      if (assignedTargetIds.includes(canonicalId)) return true;
-      
-      // Bước 3: Fallback fuzzy — cho dữ liệu cũ chưa migrate hoặc edge cases
-      const cNorm = canonicalId.replace(/[^a-z0-9]/g, '');
-      const hasMatch = assignedTargetIds.some(tId => {
-        const tNorm = tId.toLowerCase().replace(/[^a-z0-9]/g, '');
-        // Bảo vệ: tránh Heptachlor khớp nhầm Heptachlor-epoxide
-        if (cNorm === 'heptachlor' && tNorm.includes('epoxide')) return false;
-        if (tNorm === 'heptachlor' && cNorm.includes('epoxide')) return false;
-        return tNorm === cNorm;
-      });
-      if (hasMatch) return true;
-    }
-    return false;
+    return isType3BTargetAssigned(sampleTargetMap, sampleCode, compoundDisplayName);
   };
   
   for (const element of elements) {
 
 
     // 1. Thay thế thông tin mẻ và mã số mẫu cơ bản
-    element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
-    element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
+    element.replaceText('{{MaSoMau}}', valueOrEmpty(sample.maSoMau).toString());
+    element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + valueOrEmpty(sample.maSoMau).toString());
     
     // 1.0.1 custom: Điền Mã hồ sơ
     try {
-      const maHoSoVal = (metadata.maHoSo || "").trim();
+      const maHoSoVal = valueOrEmpty(metadata.maHoSo).toString().trim();
       if (maHoSoVal) {
         let found = element.findText('(?i)Mã\\s*hồ\\s*sơ[^:\\n]*:');
         while (found) {
@@ -215,7 +331,8 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         }
       }
     } catch (e) {
-      Logger.log(`[Type3BCustom] Lỗi khi điền Mã hồ sơ: ${e.toString()}`);
+      Logger.log(`[Type3B][required-metadata] Lỗi khi điền Mã hồ sơ: ${e.toString()}`);
+      throw e;
     }
 
     // 1.0.2 custom: Điền bảng đường chuẩn (6 dòng)
@@ -231,8 +348,12 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
       for (let t = 0; t < tables.length; t++) {
         const candidate = tables[t];
         if (candidate.getNumRows() === 6) {
-          const cellText = candidate.getRow(0).getCell(0).getText();
-          if (cellText.includes("Điểm chuẩn") || cellText.includes("Vial No") || cellText.includes("Vial") || cellText.includes("Điểm")) {
+          const candidateHeaderRow = candidate.getRow(0);
+          const candidateHeaderTexts = [];
+          for (let c = 0; c < candidateHeaderRow.getNumCells(); c++) {
+            candidateHeaderTexts.push(candidateHeaderRow.getCell(c).getText());
+          }
+          if (isType3bCustomCalibrationHeaderCandidate(candidateHeaderTexts)) {
             calibrationTable = candidate;
             break;
           }
@@ -242,33 +363,35 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
       if (calibrationTable) {
         const calibPoints = metadata.calibPoints || [];
         const numRows = calibrationTable.getNumRows();
+        const hRow = calibrationTable.getRow(0);
+        const headerTexts = [];
+        for (let c = 0; c < hRow.getNumCells(); c++) {
+          headerTexts.push(hRow.getCell(c).getText());
+        }
+        const calibrationColumns = resolveType3bCustomCalibrationHeaderColumns(headerTexts);
+        const vialCol = calibrationColumns.vialCol;
+        const nongDoCol = calibrationColumns.kqCol;
+
         for (let i = 0; i < Math.min(calibPoints.length, numRows - 1); i++) {
           const pt = calibPoints[i] || { vialNo: '', loSo: '', hamLuong: '' };
           const rowIdx = 1 + i;
           const row = calibrationTable.getRow(rowIdx);
           
-          const hRow = calibrationTable.getRow(0);
-          let vialCol = -1, nongDoCol = -1;
-          for (let c = 0; c < hRow.getNumCells(); c++) {
-            const txt = hRow.getCell(c).getText().toLowerCase();
-            if (txt.includes('vial') || txt.includes('lọ') || txt.includes('lo')) vialCol = c;
-            if (txt.includes('nồng độ') || txt.includes('nong do') || txt.includes('ppb') || txt.includes('µg') || txt.includes('ng')) nongDoCol = c;
-          }
-          if (vialCol === -1) vialCol = 1;
-          if (nongDoCol === -1) nongDoCol = 2;
-          
           try {
             if (vialCol >= 0 && vialCol < row.getNumCells()) {
-              row.getCell(vialCol).setText(pt.vialNo || pt.loSo || '');
+              row.getCell(vialCol).setText(firstDefinedValue(pt.vialNo, pt.loSo, '').toString());
             }
             if (nongDoCol >= 0 && nongDoCol < row.getNumCells() && pt.hamLuong !== undefined && pt.hamLuong !== null) {
               row.getCell(nongDoCol).setText(pt.hamLuong.toString());
             }
-          } catch(e) {}
+          } catch(e) {
+            Logger.log(`[Type3B][required-calibration] Không thể ghi điểm chuẩn ${i}: ${e.toString()}`);
+            throw e;
+          }
         }
         
         // Điền hệ số R2
-        const r2Val = (metadata.r2 || metadata.R2 || '').toString();
+        const r2Val = firstDefinedValue(metadata.r2, metadata.R2, '').toString();
         if (r2Val) {
           for (let r = 0; r < numRows; r++) {
             const rowText = calibrationTable.getRow(r).getText().toLowerCase();
@@ -290,16 +413,17 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         }
       }
     } catch (e) {
-      Logger.log(`[Type3BCustom] Lỗi khi điền bảng đường chuẩn: ${e.toString()}`);
+      Logger.log(`[Type3B][required-calibration] Lỗi khi điền bảng đường chuẩn: ${e.toString()}`);
+      throw e;
     }
 
     // 1.1 Gọi hàm dùng chung để tick Checkbox Khối lượng, Loại mẫu, Tình trạng mẫu
-    fillCommonSampleCheckboxes(element, metadata, sample);
+    fillCommonSampleCheckboxes(element, metadata, sample, sopConfig);
     
     // 2. Thay thế chữ ký và ngày tháng
     if (sopConfig.signaturePlaceholders) {
       for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
-        const textVal = metadata[fieldName] || '';
+        const textVal = valueOrEmpty(metadata[fieldName]).toString();
         if (textVal) {
           const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
           element.replaceText(placeholderText, dateOnly);
@@ -401,24 +525,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             }
 
             if (fieldName) {
-              // Default to true (Đạt) if undefined in metadata/sample
-              const val = allFields[fieldName] !== undefined ? allFields[fieldName] : true;
+              // Missing QC data is N/A, never an implicit pass.
+              const val = allFields[fieldName];
               const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
-              
-              let datCheck, khongDatCheck, naCheck;
-              if (val === true) {
-                datCheck = "☑ Đạt";
-                khongDatCheck = "☐ Không đạt";
-                naCheck = "☐ N/A";
-              } else if (val === false) {
-                datCheck = "☐ Đạt";
-                khongDatCheck = "☑ Không đạt";
-                naCheck = "☐ N/A";
-              } else { // null (N/A)
-                datCheck = "☐ Đạt";
-                khongDatCheck = "☐ Không đạt";
-                naCheck = "☑ N/A";
-              }
+              const { datCheck, khongDatCheck, naCheck } = buildQcCheckboxLabels(val);
 
               evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
               evalCell.replaceText('[☐□☑] Đạt', datCheck);
@@ -536,7 +646,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
                         textElement.deleteText(insertPos + 1, insertPos + match[0].length);
                       }
                     }
-                  } catch(e) {}
+                  } catch(e) {
+                    Logger.log(`[Type3B][required-result] Không thể clear checkbox ND cho hoạt chất không được chỉ định: ${e.toString()}`);
+                    throw e;
+                  }
                 }
               }
               _setNthQcCheckboxInCells(segmentCells, 0, 'Đ', false);
@@ -572,7 +685,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
                       textElement.insertText(insertPos, charToInsert);
                       textElement.deleteText(insertPos + 1, insertPos + match[0].length);
                     }
-                  } catch(e) {}
+                  } catch(e) {
+                    Logger.log(`[Type3B][required-result] Không thể cập nhật checkbox ND: ${e.toString()}`);
+                    throw e;
+                  }
                   
                   // Điền số kết quả đè lên dãy dấu chấm
                   if (!isNd && resultVal) {
@@ -588,7 +704,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
                           const charsToDelete = Math.min(resultVal.length, dMatch[0].length);
                           dText.deleteText(insertPos + resultVal.length, insertPos + resultVal.length + charsToDelete - 1);
                         }
-                      } catch(e) {}
+                      } catch(e) {
+                        Logger.log(`[Type3B][required-result] Không thể ghi kết quả định lượng: ${e.toString()}`);
+                        throw e;
+                      }
                     }
                   }
                   break; // Xử lý xong phần kết quả của compound này
@@ -642,6 +761,8 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
       break;
     }
   }
+
+  if (!isChromTable) return;
   
   for (let r = 1; r < table.getNumRows(); r++) {
     const row = table.getRow(r);
@@ -752,7 +873,10 @@ function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
           if (nextIndex < text.length && text.charAt(nextIndex) === 'ạ') {
             isFalseMatch = true;
           }
-        } catch(e) {}
+        } catch(e) {
+          Logger.log(`[Type3B][required-qc] Không thể kiểm tra false-match checkbox QC trong cells: ${e.toString()}`);
+          throw e;
+        }
       }
 
       if (!isFalseMatch) {
@@ -765,7 +889,10 @@ function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
               textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
               textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
             }
-          } catch(e) {}
+          } catch(e) {
+            Logger.log(`[Type3B][required-qc] Không thể cập nhật checkbox QC trong cells: ${e.toString()}`);
+            throw e;
+          }
           return; // Đã tìm thấy và tick xong
         }
         matchIndex++;
@@ -788,7 +915,10 @@ function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
         if (nextIndex < text.length && text.charAt(nextIndex) === 'ạ') {
           isFalseMatch = true;
         }
-      } catch(e) {}
+      } catch(e) {
+        Logger.log(`[Type3B][required-qc] Không thể kiểm tra false-match generic checkbox: ${e.toString()}`);
+        throw e;
+      }
     }
 
     if (!isFalseMatch) {
@@ -800,7 +930,10 @@ function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
           textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
           textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
         }
-      } catch(e) {}
+      } catch(e) {
+        Logger.log(`[Type3B][required-qc] Không thể cập nhật generic checkbox: ${e.toString()}`);
+        throw e;
+      }
     }
     found = cell.findText(pattern, found);
   }
@@ -829,7 +962,10 @@ function _setNthQcCheckboxInRow(row, targetIndex, labelPattern, isChecked) {
           textElement.insertText(insertPos, charToInsert);
           textElement.deleteText(insertPos + 1, insertPos + match[0].length);
         }
-      } catch(e) {}
+      } catch(e) {
+        Logger.log(`[Type3B][required-qc] Không thể cập nhật checkbox QC trong row: ${e.toString()}`);
+        throw e;
+      }
       break;
     }
     found = row.findText(pattern, found);
@@ -851,7 +987,7 @@ function cleanLastPageBreak(body) {
       }
     }
   } catch(e) {
-    Logger.log(`[Autocut 3B] Không thể dọn dẹp PageBreak cuối: ${e.toString()}`);
+    Logger.log(`[Autocut 3B][optional-cleanup] Không thể dọn dẹp PageBreak cuối: ${e.toString()}`);
   }
 }
 
@@ -916,11 +1052,198 @@ function _getPayloadKey(compoundName) {
   if (legacyMap[compoundName]) return legacyMap[compoundName];
   // Últimate fallback: CamelCase normalize từ display string
   return compoundName.replace(/-([a-z])/gi, function(match, letter) { return letter.toUpperCase(); }).replace(/[-_,\s'\(\)]/g, '');
-}/**
+}
+
+function normalizeFormDonHeaderText(value) {
+  let text = value === undefined || value === null ? '' : value.toString().toLowerCase();
+  try {
+    text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch (e) {
+    Logger.log(`[Type3B][optional-normalize] String.normalize không khả dụng, dùng fallback không dấu một phần: ${e.toString()}`);
+  }
+  return text.replace(/đ/g, 'd').replace(/\s+/g, ' ').trim();
+}
+
+function resolveUniqueFormDonHeaderColumn(headerTexts, tableName, columnName, matcher, optional) {
+  const matches = [];
+  for (let i = 0; i < headerTexts.length; i++) {
+    const normalized = normalizeFormDonHeaderText(headerTexts[i]);
+    if (matcher(normalized)) matches.push(i);
+  }
+
+  if (matches.length === 0) {
+    if (optional) return -1;
+    throw new Error('[FormDon-Type3B] Template contract invalid for ' + tableName + ': missing required header "' + columnName + '"');
+  }
+  if (matches.length > 1) {
+    throw new Error('[FormDon-Type3B] Template contract invalid for ' + tableName + ': duplicate/ambiguous header "' + columnName + '" at columns ' + matches.join(', '));
+  }
+  return matches[0];
+}
+
+function assertDistinctFormDonHeaderColumns(tableName, columns) {
+  const ownersByIndex = {};
+  Object.keys(columns).forEach(function(columnName) {
+    const index = columns[columnName];
+    if (index < 0) return;
+    if (ownersByIndex[index]) {
+      throw new Error('[FormDon-Type3B] Template contract invalid for ' + tableName + ': column ' + index + ' matches both "' + ownersByIndex[index] + '" and "' + columnName + '"');
+    }
+    ownersByIndex[index] = columnName;
+  });
+}
+
+function resolveFormDonCalibrationHeaderColumns(headerTexts) {
+  const columns = {
+    diemChuan: resolveUniqueFormDonHeaderColumn(headerTexts, 'calibration table', 'Điểm chuẩn', function(text) {
+      return text.includes('diem chuan') || text.includes('ten diem');
+    }, false),
+    vial: resolveUniqueFormDonHeaderColumn(headerTexts, 'calibration table', 'Vial/Lọ số', function(text) {
+      return text.includes('vial') || text.includes('lo so');
+    }, false),
+    nongDo: resolveUniqueFormDonHeaderColumn(headerTexts, 'calibration table', 'Nồng độ', function(text) {
+      return text.includes('ml') || text.includes('nong do');
+    }, false),
+    area: resolveUniqueFormDonHeaderColumn(headerTexts, 'calibration table', 'Area/Diện tích', function(text) {
+      return text.includes('area') || text.includes('dien tich');
+    }, true),
+  };
+  assertDistinctFormDonHeaderColumns('calibration table', columns);
+  return {
+    loSoCol: columns.diemChuan,
+    vialCol: columns.vial,
+    kqCol: columns.nongDo,
+    areaCol: columns.area,
+  };
+}
+
+function isType3bCustomCalibrationHeaderCandidate(headerTexts) {
+  let hasVial = false;
+  let hasConcentration = false;
+
+  for (let i = 0; i < headerTexts.length; i++) {
+    const text = normalizeFormDonHeaderText(headerTexts[i]);
+    if (text.includes('vial') || text.includes('lo so')) hasVial = true;
+    if (text.includes('nong do') || text.includes('ml')) hasConcentration = true;
+  }
+
+  return hasVial && hasConcentration;
+}
+
+function resolveType3bCustomCalibrationHeaderColumns(headerTexts) {
+  const columns = {
+    vial: resolveUniqueFormDonHeaderColumn(headerTexts, 'custom calibration table', 'Vial/Lọ số', function(text) {
+      return text.includes('vial') || text.includes('lo so');
+    }, false),
+    nongDo: resolveUniqueFormDonHeaderColumn(headerTexts, 'custom calibration table', 'Nồng độ', function(text) {
+      return text.includes('ml') || text.includes('nong do');
+    }, false),
+  };
+  assertDistinctFormDonHeaderColumns('custom calibration table', columns);
+  return {
+    vialCol: columns.vial,
+    kqCol: columns.nongDo,
+  };
+}
+
+function getType3bTableHeaderTexts(table) {
+  if (!table || typeof table.getNumRows !== 'function' || table.getNumRows() < 1) return [];
+  const headerRow = table.getRow(0);
+  const headerTexts = [];
+  for (let c = 0; c < headerRow.getNumCells(); c++) {
+    headerTexts.push(headerRow.getCell(c).getText());
+  }
+  return headerTexts;
+}
+
+function isFormDonCalibrationTableCandidate(table) {
+  if (!table || typeof table.getNumRows !== 'function' || table.getNumRows() < 2) return false;
+  const headerTexts = getType3bTableHeaderTexts(table);
+  let hasPoint = false;
+  let hasVial = false;
+  let hasConcentration = false;
+  let hasSampleOrMass = false;
+
+  for (let i = 0; i < headerTexts.length; i++) {
+    const text = normalizeFormDonHeaderText(headerTexts[i]);
+    if (text.includes('diem chuan') || text.includes('ten diem')) hasPoint = true;
+    if (text.includes('vial') || text.includes('lo so')) hasVial = true;
+    if (text.includes('nong do') || text.includes('ml')) hasConcentration = true;
+    if (text.includes('ma so mau') || text.includes('ma mau') || text.includes('mau thu') || text.includes('khoi luong')) {
+      hasSampleOrMass = true;
+    }
+  }
+
+  if (hasPoint || (hasVial && hasConcentration && !hasSampleOrMass)) return true;
+
+  if (table.getNumRows() >= 5) {
+    const lastRowText = normalizeFormDonHeaderText(table.getRow(table.getNumRows() - 1).getText());
+    if (lastRowText.includes('r2') || lastRowText.includes('r²')) return true;
+  }
+  return false;
+}
+
+function isFormDonResultTableCandidate(table) {
+  if (!table || typeof table.getNumRows !== 'function' || table.getNumRows() < 2) return false;
+  const headerTexts = getType3bTableHeaderTexts(table);
+  let hasSample = false;
+  let hasMass = false;
+  let hasDilution = false;
+  let hasVial = false;
+  let hasResult = false;
+
+  for (let i = 0; i < headerTexts.length; i++) {
+    const text = normalizeFormDonHeaderText(headerTexts[i]);
+    if (text.includes('ma so mau') || text.includes('ma mau') || text.includes('mau thu')) hasSample = true;
+    if ((text.includes('(g)') && !text.includes('g/g')) || text.includes('khoi luong')) hasMass = true;
+    if (text.includes('pha loang') || /(^|[\s(/])f($|[\s)])/i.test(text)) hasDilution = true;
+    if (text.includes('vial') || text.includes('batch') || text.includes('lo so')) hasVial = true;
+    if (text.includes('g/g') || text.includes('ket qua') || text.includes('nong do')) hasResult = true;
+  }
+
+  const semanticCount = [hasSample, hasMass, hasDilution, hasVial, hasResult].filter(Boolean).length;
+  return semanticCount >= 2 && (hasSample || hasMass);
+}
+
+function resolveFormDonResultHeaderColumns(headerTexts) {
+  const columns = {
+    maSoMau: resolveUniqueFormDonHeaderColumn(headerTexts, 'result table', 'Mã số mẫu', function(text) {
+      return text.includes('ma so mau') || text.includes('ma mau') || text.includes('mau thu');
+    }, false),
+    khoiLuong: resolveUniqueFormDonHeaderColumn(headerTexts, 'result table', 'Khối lượng', function(text) {
+      return (text.includes('(g)') && !text.includes('g/g')) || text.includes('khoi luong');
+    }, false),
+    heSoPhaLoang: resolveUniqueFormDonHeaderColumn(headerTexts, 'result table', 'Hệ số pha loãng F', function(text) {
+      return text.includes('pha loang') || /(^|[\s(/])f($|[\s)])/i.test(text);
+    }, false),
+    loSo: resolveUniqueFormDonHeaderColumn(headerTexts, 'result table', 'Vial/Lọ số', function(text) {
+      return text.includes('vial') || text.includes('batch') || text.includes('lo so');
+    }, false),
+    ketQua: resolveUniqueFormDonHeaderColumn(headerTexts, 'result table', 'Kết quả', function(text) {
+      return text.includes('g/g') || text.includes('ket qua') || text.includes('nong do');
+    }, false),
+    ghiChu: resolveUniqueFormDonHeaderColumn(headerTexts, 'result table', 'Ghi chú', function(text) {
+      return text.includes('ghi chu') || text.includes('note');
+    }, true),
+  };
+  assertDistinctFormDonHeaderColumns('result table', columns);
+  return {
+    maSoMauCol: columns.maSoMau,
+    khoiLuongCol: columns.khoiLuong,
+    fCol: columns.heSoPhaLoang,
+    loSoCol: columns.loSo,
+    kqCol: columns.ketQua,
+    ghiChuCol: columns.ghiChu,
+  };
+}
+
+/**
  * Tu dong nhan dien va dien Bang Duong Chuan & Bang Ket Qua cho Form Don cua SOP Type 3B
  */
 function _fillFormDonTablesDynamically(pageElements, metadata, samples, compoundName, sopConfig) {
   let tables = [];
+  let resultTableCount = 0;
+  let resultRowsWritten = 0;
   for (const element of pageElements) {
     if (element.getType() === DocumentApp.ElementType.TABLE) {
       tables.push(element.asTable());
@@ -934,43 +1257,31 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
     const numRows = table.getNumRows();
     if (numRows < 2) continue;
     
-    const headerRowText = table.getRow(0).getText().toLowerCase();
-    
-    // 1. Nhan dien Bang Duong Chuan (ASCII-only matching + Vietnamese)
-    let isCalib = (headerRowText.includes('vial') || headerRowText.includes('điểm chuẩn') || headerRowText.includes('diem chuan')) && 
-                  (headerRowText.includes('ml') || headerRowText.includes('ng/ml') || headerRowText.includes('nồng độ') || headerRowText.includes('nong do'));
-    if (!isCalib && numRows >= 5) {
-      const lastRowText = table.getRow(numRows - 1).getText().toLowerCase();
-      if (lastRowText.includes('r2') || lastRowText.includes('r²')) isCalib = true;
-    }
+    // 1. Nhận diện Bảng Đường Chuẩn bằng cùng semantic contract dùng cho preflight.
+    const isCalib = isFormDonCalibrationTableCandidate(table);
     
     if (isCalib) {
       Logger.log('[FormDon-Type3B] Found Calibration Table for ' + compoundName);
       const calibPoints = metadata.calibPoints || [];
-      const hRow = table.getRow(0);
-      let loSoCol = -1, vialCol = -1, kqCol = -1, areaCol = -1;
-      
-      for (let c = 0; c < hRow.getNumCells(); c++) {
-        const txt = hRow.getCell(c).getText().toLowerCase();
-        if (c === 0) loSoCol = c;
-        if (txt.includes('vial') || txt.includes('lọ số') || txt.includes('lo so')) vialCol = c;
-        if (txt.includes('ml') || txt.includes('nồng độ') || txt.includes('nong do')) kqCol = c;
-        if (txt.includes('area') || txt.includes('diện tích') || txt.includes('dien tich')) areaCol = c;
-      }
-      
-      if (loSoCol === -1) loSoCol = 0;
-      if (vialCol === -1) vialCol = 1;
-      if (kqCol === -1) kqCol = 2;
+      const headerTexts = getType3bTableHeaderTexts(table);
+      const calibrationColumns = resolveFormDonCalibrationHeaderColumns(headerTexts);
+      const loSoCol = calibrationColumns.loSoCol;
+      const vialCol = calibrationColumns.vialCol;
+      const kqCol = calibrationColumns.kqCol;
+      const areaCol = calibrationColumns.areaCol;
       
       for (let ptIdx = 0; ptIdx < Math.min(calibPoints.length, numRows - 2); ptIdx++) {
         const pt = calibPoints[ptIdx] || {};
         const row = table.getRow(ptIdx + 1);
         try {
-          if (loSoCol >= 0 && loSoCol < row.getNumCells()) setCellText(row, loSoCol, (pt.loSo || pt.vialNo || '').toString(), null, sopConfig.defaultFontSize);
-          if (vialCol >= 0 && vialCol < row.getNumCells()) setCellText(row, vialCol, (pt.vialNo || pt.loSo || '').toString(), null, sopConfig.defaultFontSize);
-          if (kqCol >= 0 && kqCol < row.getNumCells()) setCellText(row, kqCol, (pt.hamLuong || '').toString(), null, sopConfig.defaultFontSize);
-          if (areaCol >= 0 && areaCol < row.getNumCells()) setCellText(row, areaCol, (pt.dienTich || pt.area || '').toString(), null, sopConfig.defaultFontSize);
-        } catch(e) {}
+          if (loSoCol >= 0 && loSoCol < row.getNumCells()) setCellText(row, loSoCol, firstDefinedValue(pt.loSo, pt.vialNo, '').toString(), null, sopConfig.defaultFontSize);
+          if (vialCol >= 0 && vialCol < row.getNumCells()) setCellText(row, vialCol, firstDefinedValue(pt.vialNo, pt.loSo, '').toString(), null, sopConfig.defaultFontSize);
+          if (kqCol >= 0 && kqCol < row.getNumCells()) setCellText(row, kqCol, valueOrEmpty(pt.hamLuong).toString(), null, sopConfig.defaultFontSize);
+          if (areaCol >= 0 && areaCol < row.getNumCells()) setCellText(row, areaCol, firstDefinedValue(pt.dienTich, pt.area, '').toString(), null, sopConfig.defaultFontSize);
+        } catch(e) {
+          Logger.log(`[FormDon-Type3B][required-calibration] Không thể ghi điểm chuẩn ${ptIdx}: ${e.toString()}`);
+          throw e;
+        }
       }
       
       for (let r = 0; r < numRows; r++) {
@@ -980,7 +1291,7 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
           try {
             const targetCell = row.getCell(row.getNumCells() - 1);
             const cellText = targetCell.getText();
-            const r2Val = (metadata.r2 || '').toString();
+            const r2Val = valueOrEmpty(metadata.r2).toString();
             
             if (cellText.includes('…') || cellText.includes('...')) {
               if (typeof replaceDotsSafely === 'function') {
@@ -994,41 +1305,30 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
             } else {
               setCellText(row, row.getNumCells() - 1, r2Val, null, sopConfig.defaultFontSize);
             }
-          } catch(e) {}
+          } catch(e) {
+            Logger.log(`[FormDon-Type3B][required-calibration] Không thể ghi R2: ${e.toString()}`);
+            throw e;
+          }
         }
       }
       continue;
     }
     
-    // 2. Nhan dien Bang Ket Qua (ASCII-only matching + Vietnamese)
-    let isResultTable = headerRowText.includes('vial') && headerRowText.includes('(g)');
-    if (!isResultTable) {
-      if (headerRowText.includes('khối lượng') || headerRowText.includes('khoi luong') || headerRowText.includes('mã số') || headerRowText.includes('mẫu thử')) {
-        isResultTable = true;
-      }
-    }
+    // 2. Nhận diện Bảng Kết Quả bằng cùng semantic contract dùng cho preflight.
+    const isResultTable = isFormDonResultTableCandidate(table);
     
     if (isResultTable) {
       Logger.log('[FormDon-Type3B] Found Results Table for ' + compoundName);
+      resultTableCount++;
       
-      const hRow = table.getRow(0);
-      let maSoMauCol = -1, khoiLuongCol = -1, fCol = -1, loSoCol = -1, kqCol = -1, ghiChuCol = -1;
-      for (let c = 0; c < hRow.getNumCells(); c++) {
-        const txt = hRow.getCell(c).getText().toLowerCase();
-        if (c === 0) maSoMauCol = c;
-        if ((txt.includes('(g)') && !txt.includes('g/g')) || txt.includes('khối lượng') || txt.includes('khoi luong')) khoiLuongCol = c;
-        if (txt.includes(' f') || txt.endsWith('f') || txt === 'f' || txt.includes('pha loãng') || txt.includes('pha loang')) fCol = c;
-        if (txt.includes('vial') || txt.includes('batch') || txt.includes('lọ số') || txt.includes('lo so')) loSoCol = c;
-        if (txt.includes('g/g') || txt.includes('kết quả') || txt.includes('ket qua') || txt.includes('nồng độ') || txt.includes('nong do')) kqCol = c;
-        if (txt.includes('ghi chú') || txt.includes('ghi chu') || txt.includes('note')) ghiChuCol = c;
-      }
-      
-      if (maSoMauCol === -1) maSoMauCol = 0;
-      if (khoiLuongCol === -1) khoiLuongCol = 1;
-      if (fCol === -1) fCol = 2;
-      if (loSoCol === -1) loSoCol = 3;
-      if (kqCol === -1) kqCol = 4;
-      // Không gán mặc định cho ghiChuCol vì nó có thể không tồn tại
+      const headerTexts = getType3bTableHeaderTexts(table);
+      const resultColumns = resolveFormDonResultHeaderColumns(headerTexts);
+      const maSoMauCol = resultColumns.maSoMauCol;
+      const khoiLuongCol = resultColumns.khoiLuongCol;
+      const fCol = resultColumns.fCol;
+      const loSoCol = resultColumns.loSoCol;
+      const kqCol = resultColumns.kqCol;
+      const ghiChuCol = resultColumns.ghiChuCol;
       
       const backendKey = (compoundName || '').replace(/[^a-zA-Z0-9_]/g, '');
       let rowIdx = 1;
@@ -1042,30 +1342,31 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
           row = table.appendTableRow(templateRow.copy());
         }
         
-        let kqVal = '';
-        if (sample.compoundResults && sample.compoundResults[backendKey] !== undefined) {
-          kqVal = sample.compoundResults[backendKey];
-        } else if (sample.compoundResults && sample.compoundResults[compoundName] !== undefined) {
-          kqVal = sample.compoundResults[compoundName];
-        } else {
-          kqVal = sample[compoundName] || sample.kq || 'ND';
-        }
-        if (kqVal === 'N/A' || kqVal === '') kqVal = 'ND';
+        const kqVal = resolveFormDonResultValue(sample, compoundName, backendKey);
         
         try {
           const chunkSize = sopConfig.maSoMauChunkSize || 0;
-          if (maSoMauCol >= 0 && maSoMauCol < row.getNumCells()) setCellText(row, maSoMauCol, (sample.maSoMau || '').toString(), chunkSize, sopConfig.defaultFontSize);
+          if (maSoMauCol >= 0 && maSoMauCol < row.getNumCells()) setCellText(row, maSoMauCol, valueOrEmpty(sample.maSoMau).toString(), chunkSize, sopConfig.defaultFontSize);
           if (khoiLuongCol >= 0 && khoiLuongCol < row.getNumCells()) setCellText(row, khoiLuongCol, (sample.khoiLuong || '10.0').toString(), null, sopConfig.defaultFontSize);
           if (fCol >= 0 && fCol < row.getNumCells()) setCellText(row, fCol, (sample.heSoPhaLoang || sample.hSoPhaLoang || '1').toString(), null, sopConfig.defaultFontSize);
-          if (loSoCol >= 0 && loSoCol < row.getNumCells()) setCellText(row, loSoCol, (sample.loSo || '').toString(), null, sopConfig.defaultFontSize);
-          if (kqCol >= 0 && kqCol < row.getNumCells()) setCellText(row, kqCol, (kqVal || '').toString(), null, sopConfig.defaultFontSize);
-          if (ghiChuCol >= 0 && ghiChuCol < row.getNumCells()) setCellText(row, ghiChuCol, (sample.ghiChu || '').toString(), null, sopConfig.defaultFontSize);
-        } catch(e) {}
+          if (loSoCol >= 0 && loSoCol < row.getNumCells()) setCellText(row, loSoCol, valueOrEmpty(sample.loSo).toString(), null, sopConfig.defaultFontSize);
+          if (kqCol >= 0 && kqCol < row.getNumCells()) setCellText(row, kqCol, valueOrEmpty(kqVal).toString(), null, sopConfig.defaultFontSize);
+          if (ghiChuCol >= 0 && ghiChuCol < row.getNumCells()) setCellText(row, ghiChuCol, valueOrEmpty(sample.ghiChu).toString(), null, sopConfig.defaultFontSize);
+        } catch(e) {
+          Logger.log(`[FormDon-Type3B][required-result] Không thể ghi dòng kết quả sample ${sIdx}: ${e.toString()}`);
+          throw e;
+        }
         
+        resultRowsWritten++;
         rowIdx++;
       }
     }
   }
+
+  return {
+    resultTableCount,
+    resultRowsWritten,
+  };
 }
 
 

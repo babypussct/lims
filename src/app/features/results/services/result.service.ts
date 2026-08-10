@@ -718,6 +718,22 @@ export class ResultService {
   /**
    * Xuất bản PDF báo cáo và lưu backup trực tiếp vào Sub-collection history
    */
+  private buildGeneratePdfRequestId(
+    batchRequestId: string,
+    version: number,
+    prefix?: string,
+    includedSamples?: string[]
+  ): string {
+    const reportScope = `${prefix ?? 'ALL'}|${[...(includedSamples || [])].sort().join(',')}`;
+    let hash = 2166136261;
+    for (let i = 0; i < reportScope.length; i++) {
+      hash ^= reportScope.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const scopeHash = (hash >>> 0).toString(16).padStart(8, '0');
+    return `pdf:${batchRequestId}:v${version}:${scopeHash}`;
+  }
+
   async publishReport(
     requestId: string,
     draftData: Partial<AnalysisResultDraft>,
@@ -787,6 +803,7 @@ export class ResultService {
 
       // Gán version vào payload gửi sang Google Apps Script
       payload.version = nextVersion;
+      payload.requestId = this.buildGeneratePdfRequestId(requestId, nextVersion, prefix, includedSamples);
 
       // 2. Gọi API GAS tạo báo cáo PDF
       this.toast.show(`Đang gửi lệnh tạo báo cáo PDF bản v${nextVersion}${isPrefixReport ? ' (nhóm ' + (prefix === '' ? 'Không tiền tố' : prefix) + ')' : ''} sang Google Docs...`, 'info');
@@ -1143,7 +1160,7 @@ export class ResultService {
       // 2. Gọi sang GAS để dọn dẹp lưu trữ toàn bộ các file này
       if (filesToArchive.length > 0) {
         this.toast.show('Đang di chuyển toàn bộ file báo cáo liên quan vào thư mục Archived...', 'info');
-        await this.reportService.archiveReports(filesToArchive);
+        await this.reportService.archiveReports(filesToArchive, requestId);
       }
 
       // 3. Lưu bản báo cáo hiện tại vào lịch sử kể cả khi mẻ đang draft.

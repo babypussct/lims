@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shared keyboard focus contract. Feature-local outline utilities should not
+   erase this stronger focus state because these selectors include the element
+   type and are declared after Tailwind utilities. */
+:is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--ui-focus-ring, rgba(99, 102, 241, 0.78));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.78);
+}
+
+.dark :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  --ui-focus-ring: rgba(129, 140, 248, 0.95);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
 /* 
   Global Styles 
   Note: Tailwind CSS is now loaded via PostCSS to optimize for production.

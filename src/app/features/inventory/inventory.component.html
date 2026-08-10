@@ -99,7 +99,7 @@
                         }
                     } @else {
                         @for (item of items(); track item.id) {
-                            <div (click)="openModal(item)" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 active:scale-98 transition-transform">
+                            <div role="button" tabindex="0" [attr.aria-label]="'Mở chi tiết ' + item.name" (click)="openModal(item)" (keydown.enter)="openModal(item)" (keydown.space)="openModal(item); $event.preventDefault()" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 active:scale-98 transition-transform">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm dark:shadow-none shrink-0" [class]="getIconGradient(item)">
@@ -112,7 +112,7 @@
                                                 <div class="flex gap-1 mt-1">
                                                     @for(ghs of item.ghsWarnings; track ghs) {
                                                         @if(GHS_DICT[ghs]) {
-                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [title]="GHS_DICT[ghs].label" />
+                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [alt]="GHS_DICT[ghs].label" [title]="GHS_DICT[ghs].label" />
                                                         }
                                                     }
                                                 </div>
@@ -139,7 +139,7 @@
                                     <div [appLockPermission]="'inventory_edit'" class="flex items-center justify-end" (click)="$event.stopPropagation()">
                                         <div class="flex items-center gap-2">
                                             <input #quickInputMobile type="text" inputmode="text" [disabled]="isProcessing()" class="w-24 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 rounded-lg text-center focus:border-fuchsia-500 dark:focus:border-fuchsia-500 outline-none font-bold text-slate-700 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-900/50" [placeholder]="'+/- (' + item.unit + ')'" (keyup.enter)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''">
-                                            <button (click)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''" class="h-8 px-3 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none text-[11px] font-bold gap-1.5"><i class="fa-solid fa-bolt"></i> Nhanh</button>
+                                            <button type="button" aria-label="Cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''" class="h-8 px-3 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none text-[11px] font-bold gap-1.5"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Nhanh</button>
                                         </div>
                                     </div>
                                 </div>
@@ -168,7 +168,7 @@
                     </thead>
                     <tbody class="text-sm text-slate-600 dark:text-slate-400">
                         @for (item of items(); track item.id) {
-                            <tr class="bg-white dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-700/30 transition group cursor-pointer border-b border-slate-50 dark:border-slate-700/50" (click)="openModal(item)">
+                            <tr role="button" tabindex="0" [attr.aria-label]="'Mở chi tiết ' + (item.name || item.id)" class="bg-white dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-700/30 transition group cursor-pointer border-b border-slate-50 dark:border-slate-700/50" (click)="openModal(item)" (keydown.enter)="openModal(item)" (keydown.space)="openModal(item); $event.preventDefault()">
                                 <td class="px-4 py-2 pl-6">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm dark:shadow-none shrink-0" [class]="getIconGradient(item)">
@@ -182,7 +182,7 @@
                                                     <div class="flex gap-0.5 opacity-60">
                                                         @for(ghs of item.ghsWarnings; track ghs) {
                                                             @if(GHS_DICT[ghs]) {
-                                                                <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [title]="GHS_DICT[ghs].label" />
+                                                                <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [alt]="GHS_DICT[ghs].label" [title]="GHS_DICT[ghs].label" />
                                                             }
                                                         }
                                                     </div>
@@ -205,10 +205,10 @@
                                     <td *appHasPermission="'inventory_edit'" class="px-4 py-2 text-right border-l border-slate-50 dark:border-slate-700/50" (click)="$event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
                                             <input #quickInput type="text" [disabled]="isProcessing()" class="w-20 px-1 py-0.5 text-[10px] border border-slate-200 dark:border-slate-600 rounded text-center focus:border-fuchsia-500 dark:focus:border-fuchsia-500 outline-none font-bold text-slate-700 dark:text-slate-300 font-mono bg-white dark:bg-slate-800" [placeholder]="'+/- (' + item.unit + ')'" (keyup.enter)="quickUpdate(item, quickInput.value); quickInput.value=''">
-                                            <button (click)="quickUpdate(item, quickInput.value); quickInput.value=''" class="w-6 h-6 flex items-center justify-center rounded bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none"><i class="fa-solid fa-check text-[10px]"></i></button>
+                                            <button type="button" aria-label="Lưu cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInput.value); quickInput.value=''" class="w-6 h-6 flex items-center justify-center rounded bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none"><i class="fa-solid fa-check text-[10px]" aria-hidden="true"></i></button>
                                         </div>
                                     </td>
-                                <td class="px-4 py-2 text-center border-l border-slate-50"><button (click)="openModal(item)" class="text-blue-600 hover:text-blue-800 transition px-1"><i class="fa-solid fa-pen text-xs"></i></button></td>
+                                <td class="px-4 py-2 text-center border-l border-slate-50"><button type="button" aria-label="Chỉnh sửa vật tư" (click)="openModal(item)" class="text-blue-600 hover:text-blue-800 transition px-1"><i class="fa-solid fa-pen text-xs" aria-hidden="true"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -222,7 +222,7 @@
                 <div class="w-full md:w-72 border-r border-slate-100 dark:border-slate-700/50 overflow-y-auto p-3 bg-slate-50/50 dark:bg-slate-900/20 h-1/3 md:h-full shrink-0">
                     <h6 class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase pl-1 mb-2 sticky top-0 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm py-1 z-10">Chọn Quy Trình</h6>
                     @for (sop of state.sops(); track sop.id) {
-                        <div (click)="selectedSopForCap.set(sop)" 
+                        <div role="button" tabindex="0" [attr.aria-label]="'Chọn quy trình ' + sop.name" [attr.aria-pressed]="selectedSopForCap()?.id === sop.id" (click)="selectedSopForCap.set(sop)" (keydown.enter)="selectedSopForCap.set(sop)" (keydown.space)="selectedSopForCap.set(sop); $event.preventDefault()"
                              class="p-2.5 rounded-lg mb-1.5 cursor-pointer transition flex items-center gap-3 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm dark:hover:shadow-none active:scale-95 border"
                              [class]="selectedSopForCap()?.id === sop.id ? 'bg-white dark:bg-slate-800 shadow-sm dark:shadow-none border-fuchsia-200 dark:border-fuchsia-500/30 ring-1 ring-fuchsia-100 dark:ring-fuchsia-500/20' : 'border-transparent'">
                             <div>
@@ -304,8 +304,8 @@
 
       <!-- MOBILE FAB (ADD BUTTON) -->
       @if (activeTab() === 'list') {
-          <button [appLockPermission]="'inventory_edit'" (click)="openModal()" class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-full shadow-lg shadow-slate-400 dark:shadow-none flex items-center justify-center z-30 transition-transform active:scale-90 animate-bounce-in">
-              <i class="fa-solid fa-plus text-xl"></i>
+          <button type="button" aria-label="Thêm hóa chất hoặc vật tư" title="Thêm hóa chất hoặc vật tư" [appLockPermission]="'inventory_edit'" (click)="openModal()" class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-full shadow-lg shadow-slate-400 dark:shadow-none flex items-center justify-center z-30 transition-transform active:scale-90 animate-bounce-in">
+              <i class="fa-solid fa-plus text-xl" aria-hidden="true"></i>
           </button>
       }
 
@@ -314,21 +314,21 @@
          @defer {
             <div class="fixed inset-0 z-[99] flex items-end md:items-center justify-center bg-black/30 dark:bg-black/50 backdrop-blur-sm fade-in" (click)="closeModal()">
                 <!-- Dynamic classes for Bottom Sheet on Mobile vs Center Modal on Desktop -->
-                <div class="bg-white dark:bg-slate-800 w-full md:max-w-2xl overflow-hidden flex flex-col animate-slide-up shadow-2xl dark:shadow-none
+                <div appModalA11y modalLabelledBy="inventory-modal-title" modalDescribedBy="inventory-modal-description" (modalEscape)="closeModal()" class="bg-white dark:bg-slate-800 w-full md:max-w-2xl overflow-hidden flex flex-col animate-slide-up shadow-2xl dark:shadow-none
                             rounded-t-2xl md:rounded-2xl 
                             h-[85vh] md:h-auto md:max-h-[90vh]" 
                      (click)="$event.stopPropagation()">
                    
                    <div class="p-4 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center shrink-0">
                       <div>
-                          <h5 class="font-bold text-slate-800 dark:text-slate-100 text-base">{{ isEditing() ? 'Cập nhật' : 'Thêm mới' }}</h5>
-                          <p class="text-[10px] text-slate-400 dark:text-slate-500">Thông tin chi tiết hóa chất</p>
+                          <h5 id="inventory-modal-title" class="font-bold text-slate-800 dark:text-slate-100 text-base">{{ isEditing() ? 'Cập nhật' : 'Thêm mới' }}</h5>
+                          <p id="inventory-modal-description" class="text-[10px] text-slate-400 dark:text-slate-500">Thông tin chi tiết hóa chất</p>
                       </div>
-                      <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition active:scale-90"><i class="fa-solid fa-times"></i></button>
+                      <button type="button" aria-label="Đóng biểu mẫu hóa chất" (click)="closeModal()" class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition active:scale-90"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
                    </div>
                    
                    <div class="flex-1 overflow-y-auto p-5 md:p-6 bg-slate-50 dark:bg-slate-900/50 custom-scrollbar">
-                       <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+                       <form id="inventory-form" appFormLabelA11y [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                            <!-- Form Controls -->
                            <div>
                                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Tên hóa chất</label>
@@ -381,7 +381,7 @@
                                        <div (click)="toggleGhs(code)" 
                                             class="cursor-pointer border rounded-lg p-1.5 flex flex-col items-center text-center transition active:scale-95 bg-white dark:bg-slate-800 opacity-60 hover:opacity-100"
                                             [class]="form.get('ghsWarnings')?.value?.includes(code) ? '!border-red-500 ring-1 ring-red-200 dark:ring-red-900/50 !opacity-100 shadow-sm bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'">
-                                           <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="code" />
+                                           <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="GHS_DICT[code].label" />
                                            <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code].label">{{GHS_DICT[code].label}}</span>
                                        </div>
                                    }

@@ -7,6 +7,7 @@ import { ResultService } from './services/result.service';
 import { MasterTargetService } from '../targets/master-target.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { ToastService } from '../../core/services/toast.service';
+import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import {
   resolveConfigKey,
@@ -40,6 +41,7 @@ import { ResultActiveReportsPanelComponent } from './components/result-active-re
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
 import { SopEntryOutletComponent } from './components/sop-entry-outlet.component';
 import { ExcelResultImportModalComponent } from './components/excel-result-import-modal.component';
+import { ModalA11yDirective } from '../../shared/directives/modal-a11y.directive';
 
 type AutoSaveStatus = 'synced' | 'modified' | 'saving' | 'error';
 
@@ -63,7 +65,8 @@ interface AutoSaveEnvelope {
     ResultActiveReportsPanelComponent,
     ResultEntryHeaderComponent,
     SopEntryOutletComponent,
-    ExcelResultImportModalComponent
+    ExcelResultImportModalComponent,
+    ModalA11yDirective
   ],
   templateUrl: './result-entry.component.html'
 })
@@ -73,6 +76,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
   private resultService = inject(ResultService);
   private toast = inject(ToastService);
+  private confirmation = inject(ConfirmationService);
   private sanitizer = inject(DomSanitizer);
   private masterService = inject(MasterTargetService);
   private auth = inject(AuthService);
@@ -569,9 +573,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const run = this.run();
     if (!user || !run) return;
     
-    const confirmed = confirm(
-      `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem. Dữ liệu chưa lưu của họ có thể bị mất.`
-    );
+    const confirmed = await this.confirmation.confirm({
+      message: `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem. Dữ liệu chưa lưu của họ có thể bị mất.`,
+      confirmText: 'Giành quyền chỉnh sửa',
+      isDangerous: true
+    });
     if (confirmed) {
       this.isLoading.set(true);
       await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
@@ -599,7 +605,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     if (this.isProcessing()) return;
     
     const displayName = prefix && prefix !== 'ALL' ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
-    const confirmed = confirm(`Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}${displayName}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`);
+    const confirmed = await this.confirmation.confirm({
+      message: `Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}${displayName}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`,
+      confirmText: 'Khôi phục phiên bản',
+      isDangerous: true
+    });
     if (!confirmed) return;
 
     this.closeRestoreMenu();
@@ -815,7 +825,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    */
   async triggerUnlockToEdit() {
     if (this.isProcessing()) return;
-    const confirmed = confirm('Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nSau khi chỉnh sửa xong, lần xuất bản tiếp theo sẽ tạo ra một bản báo cáo phiên bản mới (tăng 1 version) mà không xóa bản cũ.');
+    const confirmed = await this.confirmation.confirm({
+      message: 'Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nSau khi chỉnh sửa xong, lần xuất bản tiếp theo sẽ tạo ra một bản báo cáo phiên bản mới (tăng 1 version) mà không xóa bản cũ.',
+      confirmText: 'Mở khóa chỉnh sửa',
+      isDangerous: true
+    });
     if (!confirmed) return;
 
     this.isSavingDraft.set(true);
@@ -892,7 +906,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     if (!this.run()?.isVirtualMaster || this.isProcessing()) return;
     
     // Yêu cầu confirm
-    if (!confirm('Bạn có chắc chắn muốn gỡ gộp và xóa mẻ tổng hợp này không?\nDữ liệu kết quả mẫu đã nhập sẽ vẫn được giữ nguyên ở các mẻ con.')) {
+    if (!await this.confirmation.confirm({
+      message: 'Bạn có chắc chắn muốn gỡ gộp và xóa mẻ tổng hợp này không?\nDữ liệu kết quả mẫu đã nhập sẽ vẫn được giữ nguyên ở các mẻ con.',
+      confirmText: 'Gỡ gộp và xóa',
+      isDangerous: true
+    })) {
       return;
     }
 

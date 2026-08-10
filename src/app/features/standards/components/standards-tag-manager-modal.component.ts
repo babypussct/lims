@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { StandardTagOption } from '../../../core/models/standard.model';
 import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
 import { compareChemicalMethodCodes, parseTagKeyStrict } from '../services/standard-tag.utils';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 
 type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccreditationMethodImport']>>;
 
@@ -111,6 +112,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
   `,
 })
 export class StandardsTagManagerModalComponent {
+  readonly confirmation = inject(ConfirmationService);
   isOpen = input(false);
   close = output<void>();
 
@@ -175,7 +177,8 @@ export class StandardsTagManagerModalComponent {
   }
 
   async softDelete(key: string): Promise<void> {
-    if (this.isBusy() || !window.confirm('Ẩn nhãn này? Lịch sử cũ vẫn giữ nguyên label.')) return;
+    if (this.isBusy()) return;
+    if (!await this.confirmation.confirm({ message: 'Ẩn nhãn này? Lịch sử cũ vẫn giữ nguyên label.', confirmText: 'Ẩn nhãn', isDangerous: true })) return;
     await this.runCatalogAction(() => this.catalog.softDeleteCustomTag(parseTagKeyStrict(key).id), 'Đã ẩn nhãn.');
   }
 
@@ -204,7 +207,10 @@ export class StandardsTagManagerModalComponent {
 
   async importSeed(): Promise<void> {
     if (this.isBusy() || !this.preview() || this.preview()!.conflictIds.length > 0) return;
-    if (!window.confirm(`Nạp ${this.preview()!.createIds.length + this.preview()!.updateIds.length + this.preview()!.restoreIds.length} nhãn phương pháp?`)) return;
+    if (!await this.confirmation.confirm({
+      message: `Nạp ${this.preview()!.createIds.length + this.preview()!.updateIds.length + this.preview()!.restoreIds.length} nhãn phương pháp?`,
+      confirmText: 'Nạp nhãn'
+    })) return;
     this.isBusy.set(true);
     try {
       const result = await this.catalog.upsertAccreditationMethodTags({ restoreArchivedFromSameSeed: this.restoreArchivedFromSameSeed() });
