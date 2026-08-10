@@ -42,9 +42,10 @@
 
 - [x] Firestore Rules kiểm soát định dạng mã, registry, request snapshot và log snapshot.
 - [x] Regression test cho mã hợp lệ/không hợp lệ/chuẩn hóa/trùng vòng đời.
+- [x] Regression test khóa vòng lặp tự quét khi modal đổi trạng thái `isScanning`/`isApplying`.
 - [ ] Regression test cho add/release/reuse và lịch sử không bị trộn.
 - [ ] Regression test cho đồng bộ dry-run/apply/idempotency/conflict.
-- [ ] Chạy typecheck, test standards, rules emulator và build.
+- [x] Chạy typecheck, test standards, rules emulator và build.
 - [ ] Xác minh production audit sau khi có phiên đăng nhập/quyền được phê duyệt.
 
 ## Ghi chú vận hành
@@ -53,13 +54,20 @@
 - `internal_id` là mã duy nhất người dùng nhìn thấy và có thể được cấp lại theo thời gian.
 - Không được ghi đè bản ghi chuẩn cũ để tạo chuẩn vật lý mới.
 
-## Trạng thái kiểm chứng (2026-08-10)
+## Trạng thái kiểm chứng (2026-08-11)
 
 - [x] Đã triển khai quy tắc duy nhất `internal_id`: chuẩn hóa trim/uppercase, đúng 4 ký tự, bắt đầu bằng `A`, `B` hoặc `C`.
 - [x] Đã triển khai registry nội bộ để khóa quyền sở hữu hiện tại; registry không phải mã thứ hai cho người dùng.
 - [x] Đã triển khai trả mã thủ công và tái cấp an toàn; tự tái cấp chỉ khi hồ sơ cũ hết HSD và không còn holder/request/workflow mở.
 - [x] Đã triển khai công cụ dry-run/apply đồng bộ dữ liệu cũ cho `reference_standards`, `standard_requests`, `purchase_requests`, `standard_usages` và log lồng.
 - [x] Đã thêm batch audit trước/sau, xử lý xung đột, nhập sửa thủ công có kiểm tra và không đoán mã cho bản ghi thiếu/sai.
-- [x] `npm run test:standards`: **100/100**; `npm run test:firestore-rules`: **18/18**; `git diff --check`: không có whitespace error.
-- [ ] Typecheck/build production: còn chưa đạt do `src/app/app.routes.ts` đang import `./features/preparation/smart-prep.component`, nhưng file `.ts` này đang bị xoá trong worktree ngoài phạm vi mã chuẩn.
+- [x] `npm run test:standards`: **102/102**; `npm run test:firestore-rules`: **18/18**; `git diff --check`: không có whitespace error.
+- [x] Typecheck/build production: `npm.cmd run build` pass, gồm validate release notes và Angular production build.
 - [ ] Production audit: chưa chạy trên dữ liệu production vì chưa có phiên đăng nhập/quyền được phê duyệt; không suy đoán số lượng mã hiện có từ fixture hoặc cache.
+
+## Sự cố modal đồng bộ (2026-08-11)
+
+- [x] Xác định nguyên nhân: `effect()` theo dõi gián tiếp các signal bận vì gọi `scan()` trực tiếp trong reactive context; khi scan kết thúc, effect tự khởi động lại.
+- [x] Dùng `untracked()` cho lời gọi tự quét; effect chỉ còn phụ thuộc vào trạng thái mở modal.
+- [x] Thêm regression test kiểm tra lời gọi scan nằm ngoài dependency tracking của effect.
+- [ ] Xác minh trực tiếp trên dữ liệu production sau khi có phiên đăng nhập/quyền `standard_edit` được phê duyệt.

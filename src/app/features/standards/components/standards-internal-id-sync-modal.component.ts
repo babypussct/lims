@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   StandardInternalIdSyncChange,
@@ -176,8 +176,14 @@ export class StandardsInternalIdSyncModalComponent {
 
   constructor() {
     effect(() => {
-      if (this.isOpen()) {
-        void this.scan();
+      const open = this.isOpen();
+      if (open) {
+        // scan() reads the busy signals before it changes them. Keep those
+        // signals out of this effect so finishing one scan cannot start a new
+        // scan indefinitely.
+        untracked(() => {
+          void this.scan();
+        });
       } else {
         this.report.set(null);
         this.corrections.set({});
