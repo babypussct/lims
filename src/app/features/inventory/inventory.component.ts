@@ -137,7 +137,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     reason: ['', Validators.required],
     gtin: [''],
     lotNumber: [''],
-    expiryDate: [''],
     casNumber: [''],
     englishName: [''],
     ghsWarnings: [[] as string[]],
@@ -174,7 +173,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
   handleGs1Scan(params: any) {
       const gtin = params['gtin'];
       const lot = params['lot'];
-      const exp = params['exp'];
       
       // Try to find existing item by GTIN
       let existingItem = null;
@@ -196,7 +194,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.form.patchValue({
           gtin: gtin || '',
           lotNumber: lot || '',
-          expiryDate: exp || '',
           reason: 'Nhập kho (Scan QR)'
       });
   }

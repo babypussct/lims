@@ -1,7 +1,6 @@
 export interface Gs1Data {
   gtin?: string;
   lotNumber?: string;
-  expiryDate?: string; // YYYY-MM-DD
   raw?: string;
   isGs1: boolean;
   error?: string;
@@ -34,16 +33,6 @@ export function parseGs1Data(code: string): Gs1Data {
         }
         
         if (url.searchParams.has('10')) result.lotNumber = url.searchParams.get('10') || undefined;
-        if (url.searchParams.has('17')) {
-          const dateStr = url.searchParams.get('17');
-          if (dateStr && dateStr.length === 6) {
-            const year = parseInt(dateStr.substring(0, 2), 10) + 2000;
-            const month = dateStr.substring(2, 4);
-            const day = dateStr.substring(4, 6) === '00' ? '01' : dateStr.substring(4, 6);
-            result.expiryDate = `${year}-${month}-${day}`;
-          }
-        }
-        
         return result;
       }
     } catch (e) {
@@ -82,15 +71,7 @@ export function parseGs1Data(code: string): Gs1Data {
         result.gtin = cleanCode.substring(i, i + 14);
         i += 14;
       } else if (ai === '17') {
-        i += 2;
-        const dateStr = cleanCode.substring(i, i + 6);
-        if (dateStr.length === 6) {
-          const year = parseInt(dateStr.substring(0, 2), 10) + 2000;
-          const month = dateStr.substring(2, 4);
-          const day = dateStr.substring(4, 6) === '00' ? '01' : dateStr.substring(4, 6); // Handle 00 day (last day of month, but we just use 01 for simplicity or exact date)
-          result.expiryDate = `${year}-${month}-${day}`;
-        }
-        i += 6;
+        i += 8;
       } else if (ai === '11') {
         i += 2;
         i += 6; // Skip production date
@@ -130,7 +111,7 @@ export function parseGs1Data(code: string): Gs1Data {
 
 /**
  * Generates a GS1 Digital Link (URL) from LIMS inventory item data.
- * Includes AI 01 (GTIN), AI 10 (Lot) in path, and AI 17 (Expiry), AI 240 (LIMS ID) in query.
+ * Includes AI 01 (GTIN), AI 10 (Lot) in path, and AI 240 (LIMS ID) in query.
  */
 export function generateHybridGs1Code(item: any): string {
   const domain = 'https://nafiqpm6.vercel.app';
@@ -143,16 +124,6 @@ export function generateHybridGs1Code(item: any): string {
   }
   
   const params = new URLSearchParams();
-  
-  if (item.expiryDate) {
-    const d = new Date(item.expiryDate);
-    if (!isNaN(d.getTime())) {
-      const yy = String(d.getFullYear()).slice(-2);
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      params.append('17', `${yy}${mm}${dd}`);
-    }
-  }
   
   if (item.id) {
     params.append('240', String(item.id).substring(0, 30));

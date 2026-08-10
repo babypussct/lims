@@ -66,24 +66,30 @@ export function parseQuantityInput(inputStr: string, baseUnit: string): number |
 }
 
 export function normalizeInventoryItem(item: any): any {
-    const unitKey = Object.keys(UNIT_DATA).find(k => k.toLowerCase() === (item.unit || '').toLowerCase().trim());
-    if (!unitKey) return item; 
+    const normalizedItem = { ...item };
+    // Chemical Inventory no longer has an expiry business. Strip the legacy
+    // field at the service normalization boundary so normal edits do not
+    // reintroduce it from stale callers or cached form payloads.
+    delete normalizedItem.expiryDate;
+
+    const unitKey = Object.keys(UNIT_DATA).find(k => k.toLowerCase() === (normalizedItem.unit || '').toLowerCase().trim());
+    if (!unitKey) return normalizedItem;
     const type = UNIT_DATA[unitKey].type;
-    let targetUnit = item.unit;
+    let targetUnit = normalizedItem.unit;
     if (type === 'mass') targetUnit = 'g';
     else if (type === 'vol') targetUnit = 'ml';
-    else return item; 
-    if (targetUnit !== item.unit) {
-        const newStock = getStandardizedAmount(item.stock || 0, item.unit, targetUnit);
-        const newThreshold = getStandardizedAmount(item.threshold || 0, item.unit, targetUnit);
+    else return normalizedItem;
+    if (targetUnit !== normalizedItem.unit) {
+        const newStock = getStandardizedAmount(normalizedItem.stock || 0, normalizedItem.unit, targetUnit);
+        const newThreshold = getStandardizedAmount(normalizedItem.threshold || 0, normalizedItem.unit, targetUnit);
         return {
-            ...item,
+            ...normalizedItem,
             unit: targetUnit,
-            stock: newStock !== null ? newStock : item.stock,
-            threshold: newThreshold !== null ? newThreshold : item.threshold
+            stock: newStock !== null ? newStock : normalizedItem.stock,
+            threshold: newThreshold !== null ? newThreshold : normalizedItem.threshold
         };
     }
-    return item;
+    return normalizedItem;
 }
 
 export function formatSmartUnit(amount: number, unit: string): string {
