@@ -54,14 +54,16 @@
 
 ## 5. Triển khai production theo `DEPLOYMENT.md`
 
-- [ ] Firebase CLI đã đăng nhập project `lims-cloud-by-otada` — đang mở: `projects:list` báo chưa đăng nhập; không có `FIREBASE_SERVICE_ACCOUNT`, ADC hoặc `LIMS_APP_ID` trong môi trường. Lệnh `firebase login --no-localhost` đã tạo phiên tạm, nhưng trình duyệt bị chặn tại trang xác thực.
-- [ ] Deploy Firestore Rules trước frontend — chưa chạy vì gate Firebase authentication chưa đạt:
+- [x] Firestore Rules production đã được người dùng xác nhận public ngày 2026-08-11.
+- [ ] Firebase CLI read-back vẫn mở: máy này báo `No authorized accounts`, không có `FIREBASE_SERVICE_ACCOUNT`, ADC hoặc `LIMS_APP_ID`, nên chưa thể xác minh live Rules bằng CLI.
+- [x] Gate deploy Firestore Rules được đóng theo xác nhận public của người dùng; không deploy lại để tránh ghi đè không cần thiết:
       `npx.cmd firebase-tools deploy --only firestore:rules --project lims-cloud-by-otada`
 - [x] Vercel CLI đã đăng nhập với tài khoản `babypussct`.
-- [x] Vercel production đã tự triển khai qua Git integration sau push: deployment cuối `dpl_i4xTSNFNDf51WE53NpsyWBdKytUx` ở trạng thái `READY`, alias `nafiqpm6.vercel.app`, version `v26.08.11-b01`.
-- [ ] Lưu ý rollout: frontend đã lên trước Firestore Rules do push kích hoạt Git integration trong lúc Firebase authentication chưa hoàn tất; chưa coi đây là release đầy đủ cho các luồng cần Rules mới.
+- [x] Vercel production đã tự triển khai qua Git integration ở trạng thái `READY`, alias `nafiqpm6.vercel.app`, version `v26.08.11-b01`.
+- [x] Lưu ý rollout đã được xử lý: frontend lên trước do Git integration, sau đó Rules production được người dùng xác nhận public; cần vẫn hoàn tất smoke test nghiệp vụ trước khi đóng release.
 - [x] Basic HTTP smoke: `/` và `/ngsw.json` trên `https://nafiqpm6.vercel.app` trả `200`; `ngsw.json` mang đúng `v26.08.11-b01`.
 - [ ] Authenticated/business smoke test Daily Checklist, fallback request, quyền `batch_run` và các luồng Chất chuẩn/Trạm Pha Chế.
+- [ ] Dry-run backfill đã thử nhưng dừng an toàn với lỗi `Unable to detect a Project Id in the current environment` vì chưa có ADC/service account.
 - [ ] Chỉ chạy backfill khi có credential hợp lệ và đã đạt smoke test hotfix:
       `npm.cmd run backfill:daily-checklists -- --app-id=lims-cloud-fixed`
 - [ ] Xác minh độc lập sau backfill:
@@ -72,9 +74,9 @@
 
 - [x] Review `git diff` và `git status` lần cuối; không có secret hoặc artifact ngoài phạm vi.
 - [x] Stage toàn bộ thay đổi đã xác nhận.
-- [x] Commit release trên `main`: `8792dc7` (source) và `5a184de` (deployment evidence).
+- [x] Các commit release/source và deployment evidence đã được ghi trên `main` (xem `git log`).
 - [x] Push `main` lên `origin`.
-- [x] Xác nhận `HEAD=origin/main=5a184de`, worktree sạch và ghi lại mã commit/deployment.
+- [x] Xác nhận `HEAD` và `origin/main` đồng bộ, worktree sạch sau lần push cuối.
 
 ## 7. Bằng chứng và giới hạn kết luận
 
