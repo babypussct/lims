@@ -58,7 +58,7 @@
 - [ ] Deploy Firestore Rules trước frontend — chưa chạy vì gate Firebase authentication chưa đạt:
       `npx.cmd firebase-tools deploy --only firestore:rules --project lims-cloud-by-otada`
 - [x] Vercel CLI đã đăng nhập với tài khoản `babypussct`.
-- [x] Vercel production đã tự triển khai qua Git integration sau push: deployment `dpl_HDpU3zUrwhNcQG5vqhm6ZhHZQoRm` ở trạng thái `READY`, alias `nafiqpm6.vercel.app`, version `v26.08.11-b01`.
+- [x] Vercel production đã tự triển khai qua Git integration sau push: deployment cuối `dpl_i4xTSNFNDf51WE53NpsyWBdKytUx` ở trạng thái `READY`, alias `nafiqpm6.vercel.app`, version `v26.08.11-b01`.
 - [ ] Lưu ý rollout: frontend đã lên trước Firestore Rules do push kích hoạt Git integration trong lúc Firebase authentication chưa hoàn tất; chưa coi đây là release đầy đủ cho các luồng cần Rules mới.
 - [x] Basic HTTP smoke: `/` và `/ngsw.json` trên `https://nafiqpm6.vercel.app` trả `200`; `ngsw.json` mang đúng `v26.08.11-b01`.
 - [ ] Authenticated/business smoke test Daily Checklist, fallback request, quyền `batch_run` và các luồng Chất chuẩn/Trạm Pha Chế.
@@ -72,9 +72,9 @@
 
 - [x] Review `git diff` và `git status` lần cuối; không có secret hoặc artifact ngoài phạm vi.
 - [x] Stage toàn bộ thay đổi đã xác nhận.
-- [x] Commit release trên `main`: `8792dc7`.
+- [x] Commit release trên `main`: `8792dc7` (source) và `5a184de` (deployment evidence).
 - [x] Push `main` lên `origin`.
-- [x] Xác nhận `HEAD=origin/main=8792dc7`, worktree sạch và ghi lại mã commit/deployment.
+- [x] Xác nhận `HEAD=origin/main=5a184de`, worktree sạch và ghi lại mã commit/deployment.
 
 ## 7. Bằng chứng và giới hạn kết luận
 
