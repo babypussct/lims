@@ -58,9 +58,10 @@
 - [ ] Deploy Firestore Rules trước frontend — chưa chạy vì gate Firebase authentication chưa đạt:
       `npx.cmd firebase-tools deploy --only firestore:rules --project lims-cloud-by-otada`
 - [x] Vercel CLI đã đăng nhập với tài khoản `babypussct`.
-- [ ] Deploy Vercel production sau khi Rules thành công — đang giữ theo đúng thứ tự rollout:
-      `npx.cmd vercel --prod`
-- [ ] Smoke test Daily Checklist, fallback request, quyền `batch_run` và các luồng Chất chuẩn/Trạm Pha Chế.
+- [x] Vercel production đã tự triển khai qua Git integration sau push: deployment `dpl_HDpU3zUrwhNcQG5vqhm6ZhHZQoRm` ở trạng thái `READY`, alias `nafiqpm6.vercel.app`, version `v26.08.11-b01`.
+- [ ] Lưu ý rollout: frontend đã lên trước Firestore Rules do push kích hoạt Git integration trong lúc Firebase authentication chưa hoàn tất; chưa coi đây là release đầy đủ cho các luồng cần Rules mới.
+- [x] Basic HTTP smoke: `/` và `/ngsw.json` trên `https://nafiqpm6.vercel.app` trả `200`; `ngsw.json` mang đúng `v26.08.11-b01`.
+- [ ] Authenticated/business smoke test Daily Checklist, fallback request, quyền `batch_run` và các luồng Chất chuẩn/Trạm Pha Chế.
 - [ ] Chỉ chạy backfill khi có credential hợp lệ và đã đạt smoke test hotfix:
       `npm.cmd run backfill:daily-checklists -- --app-id=lims-cloud-fixed`
 - [ ] Xác minh độc lập sau backfill:
@@ -69,11 +70,11 @@
 
 ## 6. Tích hợp Git
 
-- [ ] Review `git diff` và `git status` lần cuối; không có secret hoặc artifact ngoài phạm vi.
-- [ ] Stage toàn bộ thay đổi đã xác nhận.
-- [ ] Commit release trên `main`.
-- [ ] Push `main` lên `origin`.
-- [ ] Xác nhận `HEAD`, `origin/main`, worktree sạch và ghi lại mã commit/deployment.
+- [x] Review `git diff` và `git status` lần cuối; không có secret hoặc artifact ngoài phạm vi.
+- [x] Stage toàn bộ thay đổi đã xác nhận.
+- [x] Commit release trên `main`: `8792dc7`.
+- [x] Push `main` lên `origin`.
+- [x] Xác nhận `HEAD=origin/main=8792dc7`, worktree sạch và ghi lại mã commit/deployment.
 
 ## 7. Bằng chứng và giới hạn kết luận
 
