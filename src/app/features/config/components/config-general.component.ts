@@ -378,7 +378,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   async loadUsage() {
       try {
-          const estimate = await this.fb.getStorageEstimate();
+          const estimate = await this.fb.getFirestoreDataEstimate();
           this.storageEstimate.set(estimate);
       } catch (e) { this.toast.show('Lỗi tính dung lượng.', 'error'); }
   }

@@ -55,6 +55,9 @@ import { StateService } from '../../../core/services/state.service';
                         <i class="fa-solid fa-plus text-indigo-500 w-4"></i> Thêm Mới
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
+                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openInternalIdSync)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate text-amber-500 w-4"></i> Đồng bộ Mã nội bộ
+                    </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(fileInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Import Chuẩn
                     </button>
@@ -108,6 +111,7 @@ export class StandardsToolbarComponent {
   bulkCoaSelect = output<any>();
   openExportModal = output<void>();
   openCleanupModal = output<void>();
+  openInternalIdSync = output<void>();
   openBulkTagModal = output<void>();
   openTagManager = output<void>();
 

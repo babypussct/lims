@@ -1,16 +1,23 @@
 {
-  "title": "Triển Khai Đồng Bộ Và An Toàn Báo Cáo GAS",
+  "title": "Trạm Pha Chế mô phỏng và quản lý Chất chuẩn an toàn hơn",
   "highlights": [
-    "Luồng báo cáo GAS được chuẩn hóa theo requestId, kiểm soát quyền truy cập, chống lặp và xác thực upload trước khi xử lý.",
-    "Đồng bộ 51 chỉ tiêu nhóm I giữa GAS và Angular, bao gồm silafluofen, với regression kiểm tra parity canonical cho các SOP Type 3B."
+    "Trạm Pha Chế nay là trợ lý mô phỏng độc lập, giúp KNV tính nhanh các công thức pha mà không liên kết hoặc làm thay đổi Kho và Chất chuẩn.",
+    "Chất chuẩn có Mã quản lý nội bộ thống nhất, giúp nhận đúng từng lọ vật lý và giữ nguyên lịch sử khi mã được trả và cấp lại.",
+    "Các màn hình Lịch sử, Kết quả và Thống kê tải theo khoảng ngày đang xem, giúp mở trang nhanh hơn và dễ theo dõi dữ liệu liên quan."
   ],
-  "features": [],
+  "features": [
+    "Trong Trạm Pha Chế, chọn Pha dung dịch, Pha loãng, Thêm chuẩn, Dãy chuẩn, Pha hỗn hợp hoặc Xử lý mẫu để nhận công thức, kết quả trung gian, cảnh báo và phiếu mô phỏng có thể sao chép, in hoặc tải xuống.",
+    "Trong Chất chuẩn, nhập Mã quản lý nội bộ 4 ký tự, trả mã về ngân hàng kèm lý do, và dùng Đồng bộ Mã quản lý nội bộ để xem trước các chỉnh sửa an toàn trước khi áp dụng.",
+    "Phiếu mượn, nhật ký sử dụng và nhãn hiển thị Mã quản lý nội bộ gắn với đúng hồ sơ vật lý."
+  ],
   "improvements": [
-    "Giữ nguyên các trạng thái dữ liệu phân biệt như 0, ND, N/A, chuỗi rỗng và missing trong payload báo cáo.",
-    "Bổ sung kiểm tra route, template, cột kết quả và mapping analyte giữa caller Angular với cấu hình GAS."
+    "Form nhập và nhập Excel chuẩn hóa khoảng trắng/chữ hoa và kiểm tra trùng mã trước khi ghi, tránh làm thay đổi nhầm hồ sơ đang dùng.",
+    "Trạm Pha Chế hiển thị rõ đơn vị chuẩn hóa, công thức, kết quả trung gian và cảnh báo khi thiếu hoặc sai dữ liệu; không tự đoán quy đổi giữa khối lượng và thể tích.",
+    "Khi chưa chọn khoảng ngày, các màn hình lịch sử nêu rõ đang hiển thị 300 mẻ gần nhất; chọn khoảng ngày để tải đúng dữ liệu cần tra cứu."
   ],
   "fixes": [
-    "Khắc phục các đường gọi báo cáo GAS chưa có xác thực/ủy quyền, xử lý lặp và kiểm soát archive/template/upload đầy đủ.",
-    "Đồng bộ cấu hình nhom-i sau xác nhận nghiệp vụ; giữ silafluofen trong GAS và bổ sung vào contract Angular."
+    "Ngăn việc sửa hoặc cấp trùng Mã quản lý nội bộ đang thuộc một chuẩn vật lý khác.",
+    "Giữ độc lập hồ sơ, tồn kho, yêu cầu mượn và nhật ký của chuẩn cũ khi mã được cấp lại cho chuẩn mới.",
+    "Loại bỏ các nút và luồng khiến Trạm Pha Chế bị hiểu là thao tác trừ Kho; các phép tính mô phỏng không tạo giao dịch nghiệp vụ."
   ]
 }

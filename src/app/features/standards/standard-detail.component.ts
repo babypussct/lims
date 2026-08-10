@@ -363,8 +363,9 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         this.isProcessing.set(true);
         try {
             const request: StandardRequest = {
-                standardId: std.id,
-                standardName: std.name,
+              standardId: std.id,
+              internalId: std.internal_id,
+              standardName: std.name,
                 lotNumber: std.lot_number,
                 requestedBy: data.userId,
                 requestedByName: data.userName,
@@ -409,6 +410,40 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     openEditModal() {
         if (this.auth.hasPermission('standard_edit') && this.standard()) {
             this.showEditModal.set(true);
+        }
+    }
+
+    async releaseInternalId() {
+        const std = this.standard();
+        if (!std || !std.internal_id || this.isProcessing() || !this.auth.canEditStandards()) return;
+        if (std.lifecycle_status === 'RELEASED' || std.lifecycle_status === 'CLOSED') {
+            this.toast.show('Mã này đã được trả về ngân hàng.', 'info');
+            return;
+        }
+        const reason = window.prompt('Ghi rõ lý do trả Mã quản lý nội bộ về ngân hàng:')?.trim();
+        if (!reason) return;
+        const confirmed = await this.confirmation.confirm({
+            message: `Trả mã ${std.internal_id} về ngân hàng? Hồ sơ vật lý cũ vẫn giữ nguyên để tra cứu lịch sử; mã chỉ được cấp lại sau thao tác này.`,
+            confirmText: 'Trả mã về ngân hàng',
+            cancelText: 'Hủy',
+            isDangerous: true,
+        });
+        if (!confirmed) return;
+
+        this.isProcessing.set(true);
+        try {
+            await this.stdService.releaseInternalId(std.id!, reason);
+            this.standard.update(current => current ? {
+                ...current,
+                lifecycle_status: 'RELEASED',
+                internal_id_release_reason: reason,
+            } : current);
+            this.toast.show(`Đã trả mã ${std.internal_id} về ngân hàng.`, 'success');
+            await this.loadStandardData(this.standardId());
+        } catch (error: any) {
+            this.toast.show(error?.message || 'Không thể trả Mã quản lý nội bộ.', 'error');
+        } finally {
+            this.isProcessing.set(false);
         }
     }
 

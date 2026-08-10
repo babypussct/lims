@@ -111,6 +111,7 @@ async function seedBaseData(): Promise<void> {
       setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-requester`), {
         id: 'std-requester',
         name: 'Requester Standard',
+        internal_id: 'AA01',
         lot_number: 'LOT-SECURE-1',
         initial_amount: 100,
         current_amount: 100,
@@ -126,6 +127,7 @@ async function seedBaseData(): Promise<void> {
       setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-create`), {
         id: 'std-create',
         name: 'Create Standard',
+        internal_id: 'AA02',
         lot_number: 'LOT-CREATE-1',
         initial_amount: 50,
         current_amount: 50,
@@ -592,6 +594,56 @@ test('approver may write admin-only return fields that requester cannot', async 
     receivedByName: users.approver.displayName,
     lastUpdated: serverTimestamp()
   }));
+});
+
+test('internal-id ownership cannot be rewritten without the lifecycle transaction', async () => {
+  const managerDb = dbFor(users.manager);
+  const oldStandardPath = `artifacts/${APP_ID}/reference_standards/registry-old`;
+  const newStandardPath = `artifacts/${APP_ID}/reference_standards/registry-new`;
+  const registryPath = `artifacts/${APP_ID}/standard_code_registry/AC01`;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, oldStandardPath), {
+      id: 'registry-old', name: 'Registry old', internal_id: 'AC01',
+      initial_amount: 10, current_amount: 10, unit: 'mg', status: 'AVAILABLE',
+      lifecycle_status: 'ACTIVE', lastUpdated: Timestamp.now()
+    });
+    await setDoc(doc(db, newStandardPath), {
+      id: 'registry-new', name: 'Registry new', internal_id: 'AC01',
+      initial_amount: 10, current_amount: 10, unit: 'mg', status: 'AVAILABLE',
+      lifecycle_status: 'ACTIVE', lastUpdated: Timestamp.now()
+    });
+    await setDoc(doc(db, registryPath), {
+      id: 'AC01', internal_id: 'AC01', status: 'ASSIGNED',
+      currentStandardId: 'registry-old', assignmentCount: 1,
+      lastUpdated: Timestamp.now()
+    });
+  });
+
+  await assertFails(updateDoc(doc(managerDb, oldStandardPath), {
+    internal_id: 'AB01',
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(managerDb, registryPath), {
+    currentStandardId: 'registry-new',
+    lastUpdated: serverTimestamp()
+  }));
+
+  const batch = writeBatch(managerDb);
+  batch.update(doc(managerDb, oldStandardPath), {
+    lifecycle_status: 'RELEASED',
+    internal_id_released_at: serverTimestamp(),
+    internal_id_release_reason: 'expired',
+    lastUpdated: serverTimestamp()
+  });
+  batch.set(doc(managerDb, registryPath), {
+    id: 'AC01', internal_id: 'AC01', status: 'ASSIGNED',
+    currentStandardId: 'registry-new', assignmentCount: 2,
+    lastReleasedAt: serverTimestamp(), lastReleasedStandardId: 'registry-old',
+    lastUpdated: serverTimestamp()
+  }, { merge: true });
+  await assertSucceeds(batch.commit());
 });
 
 test('print job creation binds ownership to the authenticated creator', async () => {

@@ -8,10 +8,12 @@ import {
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../../core/models/standard.model';
 import { generateSlug } from '../../../shared/utils/utils';
 import { parseStandardQuantity } from '../../../shared/utils/standard-amount';
-import { parseStandardDate } from '../../../shared/utils/standard-fefo';
+import { canAutoReleaseExpiredStandard, parseStandardDate } from '../../../shared/utils/standard-fefo';
 import { ProgressService } from '../../../core/services/progress.service';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
+import { StandardCodeRegistryService } from './standard-code-registry.service';
+import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import {
   STANDARD_IMPORT_MAX_ATOMIC_WRITES,
   buildSafeImportMetadata,
@@ -49,6 +51,7 @@ export class StandardImportService {
   private auth = inject(AuthService);
   private cache = inject(StandardCacheService);
   private crud = inject(StandardCrudService);
+  private codeRegistry = inject(StandardCodeRegistryService);
   private progressService = inject(ProgressService);
 
   // ─── Excel Date Parser ────────────────────────────────────────────────────────
@@ -151,7 +154,9 @@ export class StandardImportService {
 
     const standardsCollection = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
     const internalIds = [...new Set(
-      validItems.map(item => item.parsed.internal_id?.trim()).filter((value): value is string => Boolean(value))
+      validItems
+        .map(item => normalizeInternalId(item.parsed.internal_id))
+        .filter((value): value is string => Boolean(value))
     )];
     const activeByInternalId = new Map<string, ReferenceStandard[]>();
     for (let offset = 0; offset < internalIds.length; offset += 10) {
@@ -162,14 +167,29 @@ export class StandardImportService {
       snapshot.docs.forEach(document => {
         const standard = { id: document.id, ...document.data() } as ReferenceStandard;
         if (!isActiveStandardIdentity(standard)) return;
-        const key = (standard.internal_id || '').trim().toLowerCase();
+        const key = normalizeInternalId(standard.internal_id);
         activeByInternalId.set(key, [...(activeByInternalId.get(key) || []), standard]);
       });
     }
 
+    // Firestore cannot query legacy whitespace/lower-case variants by the
+    // canonical code. Merge the materialized catalogue into the preflight so
+    // an old malformed value cannot create a second active owner.
+    const knownStandards = this.cache._memStandards?.length
+      ? this.cache._memStandards
+      : await this.cache.fetchAllAndCache();
+    knownStandards.forEach(standard => {
+      if (!isActiveStandardIdentity(standard) || !standard.internal_id) return;
+      const key = normalizeInternalId(standard.internal_id);
+      const bucket = activeByInternalId.get(key) || [];
+      if (!bucket.some(candidate => candidate.id === standard.id)) {
+        activeByInternalId.set(key, [...bucket, standard]);
+      }
+    });
+
     const identityConflicts: ImportPreviewItem[] = [];
     validItems.forEach(item => {
-      const internalKey = (item.parsed.internal_id || '').trim().toLowerCase();
+      const internalKey = normalizeInternalId(item.parsed.internal_id);
       const matches = internalKey ? activeByInternalId.get(internalKey) || [] : [];
       if (matches.length > 1) {
         item.mode = 'CONFLICT';
@@ -190,6 +210,23 @@ export class StandardImportService {
       throw new Error(`Có ${identityConflicts.length} dòng dùng slot đang bị nhiều chuẩn hoạt động cùng chiếm. Không có dữ liệu nào được ghi.`);
     }
 
+    // Import is not a code-reassignment tool. A valid existing physical
+    // record keeps its current internal_id; missing/invalid legacy records
+    // must be repaired through the audited sync tool first.
+    const codeChanges = validItems.filter(item => {
+      const current = existing.get(item.parsed.id);
+      if (!current) return false;
+      return normalizeInternalId(current.internal_id) !== normalizeInternalId(item.parsed.internal_id);
+    });
+    if (codeChanges.length) {
+      codeChanges.forEach(item => {
+        item.mode = 'CONFLICT';
+        item.isValid = false;
+        item.errorMessage = 'Mã trong hồ sơ đã tồn tại khác với tệp nhập. Hãy dùng công cụ Đồng bộ mã nội bộ để đối chiếu/sửa có audit trước khi import.';
+      });
+      throw new Error(`Có ${codeChanges.length} dòng đang cố đổi Mã quản lý nội bộ của hồ sơ vật lý đã tồn tại. Không có dữ liệu nào được ghi.`);
+    }
+
     const conflicts = validItems.filter(item => {
       const current = existing.get(item.parsed.id);
       if (!current) return false;
@@ -207,7 +244,50 @@ export class StandardImportService {
       throw new Error(`Có ${conflicts.length} lô đang được mượn hoặc chờ duyệt. Không có dữ liệu nào được ghi.`);
     }
 
-    const plannedWrites = countAtomicStandardImportWrites(validItems, new Set(existing.keys()));
+    const registrySnapshots = new Map<string, any>();
+    const autoReleaseOwners = new Map<string, ReferenceStandard>();
+    const registryCodes = [...new Set(
+      validItems
+        .filter(item => item.mode === 'CREATE')
+        .map(item => normalizeInternalId(item.parsed.internal_id))
+        .filter(code => isValidInternalId(code))
+    )];
+    for (const code of registryCodes) {
+      const registrySnapshot = await getDoc(this.codeRegistry.getRegistryRef(code));
+      registrySnapshots.set(code, registrySnapshot.exists() ? registrySnapshot.data() : null);
+      const registry = registrySnapshot.exists() ? registrySnapshot.data() : null;
+      if (registry?.['status'] === 'CONFLICT') {
+        throw new Error(`Mã ${code} đang ở trạng thái xung đột trong ngân hàng mã. Hãy xử lý trước khi import.`);
+      }
+      if (registry?.['status'] === 'ASSIGNED') {
+        const ownerId = String(registry['currentStandardId'] || '').trim();
+        if (!ownerId) {
+          throw new Error(`Mã ${code} đang ở trạng thái cấp không hợp lệ. Hãy chạy công cụ Đồng bộ trước khi import.`);
+        }
+        const ownerSnapshot = await getDoc(doc(
+          this.fb.db,
+          `artifacts/${this.fb.APP_ID}/reference_standards/${ownerId}`
+        ));
+        if (!ownerSnapshot.exists()) {
+          throw new Error(`Mã ${code} đang trỏ tới hồ sơ ${ownerId} không còn tồn tại. Hãy chạy công cụ Đồng bộ trước khi import.`);
+        }
+        const owner = { id: ownerSnapshot.id, ...ownerSnapshot.data() } as ReferenceStandard;
+        if (normalizeInternalId(owner.internal_id) !== code) {
+          throw new Error(`Registry của mã ${code} không khớp hồ sơ ${ownerId}. Hãy chạy công cụ Đồng bộ trước khi import.`);
+        }
+        if (!canAutoReleaseExpiredStandard(owner)) {
+          throw new Error(
+            `Mã ${code} đang được cấp cho chuẩn khác chưa đủ điều kiện tái cấp tự động ` +
+            '(chưa hết HSD hoặc còn quy trình mở). Hãy đóng vòng đời cũ hoặc đồng bộ dữ liệu trước khi import.'
+          );
+        }
+        autoReleaseOwners.set(code, owner);
+      }
+    }
+
+    const newItemsCount = validItems.filter(item => item.mode === 'CREATE').length;
+    const plannedWrites = countAtomicStandardImportWrites(validItems, new Set(existing.keys())) +
+      newItemsCount + autoReleaseOwners.size;
     if (plannedWrites > STANDARD_IMPORT_MAX_ATOMIC_WRITES) {
       throw new Error(
         `Import cần ${plannedWrites} thao tác, vượt giới hạn an toàn ${STANDARD_IMPORT_MAX_ATOMIC_WRITES}. ` +
@@ -252,8 +332,47 @@ export class StandardImportService {
         }
 
         item.mode = 'CREATE';
-        batch.set(stdRef, { ...item.parsed, _isDeleted: false, lastUpdated: serverTimestamp() });
-        optimisticChanges.push({ ...item.parsed, _isDeleted: false });
+        const code = normalizeInternalId(item.parsed.internal_id);
+        const registry = registrySnapshots.get(code);
+        const expiredOwner = autoReleaseOwners.get(code);
+        const assignmentSequence = Math.max(0, Number(registry?.assignmentCount || 0)) + 1;
+        const lifecycleFields = {
+          internal_id: code,
+          lifecycle_status: 'ACTIVE' as const,
+          internal_id_assigned_at: serverTimestamp(),
+          internal_id_assignment_sequence: assignmentSequence,
+        };
+        if (expiredOwner) {
+          batch.update(
+            doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${expiredOwner.id}`),
+            {
+              lifecycle_status: 'RELEASED',
+              internal_id_released_at: serverTimestamp(),
+              internal_id_release_reason: 'AUTO_EXPIRED_REUSE',
+              lastUpdated: serverTimestamp(),
+            }
+          );
+          optimisticChanges.push({
+            ...expiredOwner,
+            lifecycle_status: 'RELEASED',
+            internal_id_release_reason: 'AUTO_EXPIRED_REUSE',
+          });
+        }
+        batch.set(stdRef, { ...item.parsed, ...lifecycleFields, _isDeleted: false, lastUpdated: serverTimestamp() });
+        batch.set(this.codeRegistry.getRegistryRef(code), {
+          id: code,
+          internal_id: code,
+          status: 'ASSIGNED',
+          currentStandardId: item.parsed.id,
+          assignmentCount: assignmentSequence,
+          lastAssignedAt: serverTimestamp(),
+          ...(expiredOwner ? {
+            lastReleasedAt: serverTimestamp(),
+            lastReleasedStandardId: expiredOwner.id,
+          } : {}),
+          lastUpdated: serverTimestamp(),
+        }, { merge: true });
+        optimisticChanges.push({ ...item.parsed, ...lifecycleFields, _isDeleted: false });
         created++;
         for (const [logIndex, rawLog] of (item.logs || []).entries()) {
           const amountToken = String(rawLog.normalized_amount ?? rawLog.amount_used)

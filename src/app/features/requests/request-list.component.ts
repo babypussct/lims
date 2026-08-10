@@ -352,6 +352,9 @@ export class RequestListComponent implements OnInit {
   onDateRangeChange(range: { start: string, end: string, label: string }) {
       this.startDate.set(range.start);
       this.endDate.set(range.end);
+      if (this.currentTab() === 'approved') {
+          void this.state.loadApprovedRequestsForDateRange(range.start, range.end);
+      }
   }
 
   filteredHistory = computed(() => {
@@ -422,6 +425,7 @@ export class RequestListComponent implements OnInit {
   private ensureDataForCurrentTab() {
       if (this.currentTab() === 'approved') {
           this.state.ensureApprovedRequestsListener();
+          void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
       } else if (this.currentTab() === 'printing') {
           this.state.ensureLogsListener();
       }

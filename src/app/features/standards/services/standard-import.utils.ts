@@ -7,6 +7,11 @@ import {
 import { parseStandardQuantity } from '../../../shared/utils/standard-amount';
 import { parseStandardDate } from '../../../shared/utils/standard-fefo';
 import { generateSlug } from '../../../shared/utils/utils';
+import {
+  assessInternalId,
+  isCurrentStandardLifecycle,
+  normalizeInternalId,
+} from '../../../shared/utils/standard-internal-id';
 
 export const STANDARD_IMPORT_MAX_FILE_SIZE = 10 * 1024 * 1024;
 export const STANDARD_IMPORT_ALLOWED_EXTENSIONS = ['xlsx', 'xlsm', 'csv'] as const;
@@ -170,7 +175,7 @@ function normalizeIdentity(value: string | undefined): string {
 }
 
 export function isActiveStandardIdentity(standard: ReferenceStandard): boolean {
-  return standard._isDeleted !== true && standard.status !== 'DELETED';
+  return standard._isDeleted !== true && standard.status !== 'DELETED' && isCurrentStandardLifecycle(standard);
 }
 
 function createStandardDocumentId(
@@ -364,10 +369,17 @@ export function parseStandardImportRows(
 
     const chemicalName = nameParts.slice(1).join(' ') ||
       String(fieldValue(rawRow, mapping, 'chemical_name') ?? '').trim();
-    const internalId = String(fieldValue(rawRow, mapping, 'internal_id') ?? '').trim();
+    const rawInternalId = String(fieldValue(rawRow, mapping, 'internal_id') ?? '');
+    const internalIdAssessment = assessInternalId(rawInternalId);
+    const internalId = normalizeInternalId(rawInternalId);
     const lot = String(fieldValue(rawRow, mapping, 'lot_number') ?? '').trim();
-    if (!internalId && !lot) errors.push('Cần có Số nhận diện hoặc Số lô để chống tạo trùng khi import lại.');
-    else if (!internalId) warnings.push('Không có Số nhận diện; hệ thống dùng Tên + Số lô làm khóa đối chiếu.');
+    if (internalIdAssessment.kind === 'MISSING') {
+      errors.push('Thiếu Mã quản lý nội bộ; đây là mã duy nhất bắt buộc của phòng.');
+    } else if (internalIdAssessment.kind === 'INVALID_FORMAT') {
+      errors.push(internalIdAssessment.reason);
+    } else if (internalIdAssessment.kind === 'NORMALIZABLE') {
+      warnings.push(`Mã ${internalIdAssessment.raw} sẽ được chuẩn hóa thành ${internalId}.`);
+    }
 
     const rawPackText = String(fieldValue(rawRow, mapping, 'pack_size') ?? '').trim();
     const packUnit = inferPackUnit(rawPackText);

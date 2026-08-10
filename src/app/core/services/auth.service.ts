@@ -50,7 +50,7 @@ export const PERMISSIONS = {
   SOP_VIEW: 'sop_view',
   SOP_EDIT: 'sop_edit',
   SOP_APPROVE: 'sop_approve',
-  BATCH_RUN: 'batch_run',  // Chạy Smart Batch & Trạm pha chế (thao tác tiêu hao kho)
+  BATCH_RUN: 'batch_run',  // Chạy Smart Batch (thao tác tiêu hao kho)
   REPORT_VIEW: 'report_view',
   USER_MANAGE: 'user_manage',
   STANDARD_REQUEST: 'standard_request', // Đăng ký mượn chuẩn
@@ -1080,6 +1080,6 @@ export class AuthService {
   canViewStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_VIEW); }
   canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
   canManageSystem(): boolean { return this.hasPermission(PERMISSIONS.USER_MANAGE); }
-  /** Chạy Smart Batch hoặc Trạm pha chế (thao tác tiêu hao kho thực tế) */
+  /** Chạy Smart Batch (lập và vận hành mẻ tiêu hao kho thực tế) */
   canRunBatch(): boolean { return this.hasPermission(PERMISSIONS.BATCH_RUN); }
 }

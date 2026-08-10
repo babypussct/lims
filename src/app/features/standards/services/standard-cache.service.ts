@@ -1,9 +1,11 @@
 import { Injectable, inject, effect } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import {
   collection, getDocs, getDoc, doc,
-  Unsubscribe
+  Unsubscribe, limit, orderBy, query, startAfter, where,
+  Query, QueryDocumentSnapshot, QuerySnapshot
 } from 'firebase/firestore';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
@@ -21,8 +23,19 @@ import { timestampToMillis } from '../../../shared/utils/timestamp';
  */
 @Injectable({ providedIn: 'root' })
 export class StandardCacheService {
+  /**
+   * Dashboard FEFO lookup must never fall back to a collection-wide read.
+   * The query is ordered by the normalized YYYY-MM-DD expiry value, so the
+   * first eligible document is the nearest usable lot. A small bounded scan
+   * is retained for legacy rows whose workflow flags make the first rows
+   * unavailable.
+   */
+  private readonly FEFO_PAGE_SIZE = 50;
+  private readonly FEFO_MAX_PAGES = 10;
+
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
+  private readMonitor = inject(FirestoreReadMonitor);
   deltaSync = inject(DeltaSyncService);
 
   /** @deprecated Không dùng trực tiếp, chỉ để tương thích ngược */
@@ -160,19 +173,67 @@ export class StandardCacheService {
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
     if (!this.auth.canViewStandards()) return null;
 
-    let stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
-    if (!stds || stds.length === 0) stds = await this.fetchAllAndCache();
-    const active = stds.filter(standard =>
-      isFefoCandidate(standard) &&
-      parseStandardDate(standard.expiry_date) !== null
-    );
-    if (active.length > 0) {
-      return [...active].sort((a, b) =>
+    // A warm DeltaSync cache is useful as a zero-read fast path only when it
+    // already contains an eligible lot. It is not treated as complete: the
+    // cache is ordered by lastUpdated and may not contain the oldest expiry.
+    const cached = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? [];
+    const cachedCandidate = cached
+      .filter(standard => isFefoCandidate(standard) && parseStandardDate(standard.expiry_date) !== null)
+      .sort((a, b) =>
         (parseStandardDate(a.expiry_date) || Number.MAX_SAFE_INTEGER) -
         (parseStandardDate(b.expiry_date) || Number.MAX_SAFE_INTEGER)
       )[0];
+
+    const todayKey = this.toLocalDateKey(new Date());
+    let cursor: QueryDocumentSnapshot | null = null;
+    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+
+    try {
+      for (let page = 0; page < this.FEFO_MAX_PAGES; page++) {
+        const constraints = [
+          where('expiry_date', '>=', todayKey),
+          orderBy('expiry_date', 'asc'),
+          limit(this.FEFO_PAGE_SIZE)
+        ] as const;
+        const expiryQuery: Query = cursor
+          ? query(colRef, ...constraints.slice(0, 2), startAfter(cursor), constraints[2])
+          : query(colRef, ...constraints);
+        const snap: QuerySnapshot = await getDocs(expiryQuery);
+        this.readMonitor.record(
+          'getDocs',
+          `artifacts/${this.fb.APP_ID}/reference_standards`,
+          snap.size,
+          { phase: 'earliest', fromCache: snap.metadata.fromCache }
+        );
+
+        const candidates = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+          .filter(standard =>
+            !standard._isDeleted &&
+            standard.status !== 'DELETED' &&
+            isFefoCandidate(standard) &&
+            parseStandardDate(standard.expiry_date) !== null
+          );
+
+        if (candidates.length > 0) {
+          return candidates[0];
+        }
+        if (snap.size < this.FEFO_PAGE_SIZE) break;
+        cursor = snap.docs[snap.docs.length - 1];
+      }
+
+      // If the bounded server scan found nothing, a stale cache candidate is
+      // safer than returning a false "no standard" result during a transient
+      // Firestore failure or a legacy-data boundary.
+      return cachedCandidate ?? null;
+    } catch (error) {
+      console.warn('[StandardCacheService] bounded FEFO lookup failed:', error);
+      return cachedCandidate ?? null;
     }
-    return null;
+  }
+
+  private toLocalDateKey(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
 
   // ─── Optimistic Cache Update ────────────────────────────────────────────────

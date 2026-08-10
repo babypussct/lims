@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { StandardService } from '../standard.service';
-import { FirebaseService } from '../../../core/services/firebase.service';
 import { GoogleDriveService } from '../../../core/services/google-drive.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,6 +11,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
 import { sanitizeLegacyTagKeys } from '../services/standard-tag.utils';
 import { StandardTagPickerComponent } from './standard-tag-picker.component';
+import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_PATTERN } from '../../../shared/utils/standard-internal-id';
 
 @Component({
   selector: 'app-standards-form-modal',
@@ -87,7 +87,11 @@ import { StandardTagPickerComponent } from './standard-tag-picker.component';
                             
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã quản lý nội bộ</label>
-                                <input formControlName="internal_id" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
+                                <input formControlName="internal_id" maxlength="4" autocomplete="off" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
+                                <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">4 kÃ½ tá»±, báº¯t Ä‘áº§u báº±ng A, B hoáº·c C. ÄÃ¢y lÃ  mÃ£ duy nháº¥t vÃ  cÃ³ thá»ƒ táº­i cáº¥p sau khi Ä‘Ã³ng vÃ²ng Ä‘á»i.</p>
+                                @if (form.get('internal_id')?.invalid && form.get('internal_id')?.touched) {
+                                  <p class="mt-1 text-[10px] font-bold text-red-600 dark:text-red-400">MÃ£ pháº£i cÃ³ Ä‘Ãºng 4 kÃ½ tá»± vÃ  báº¯t Ä‘áº§u báº±ng A, B hoáº·c C.</p>
+                                }
                             </div>
                             
                             <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50 grid grid-cols-3 gap-4">
@@ -127,11 +131,7 @@ import { StandardTagPickerComponent } from './standard-tag-picker.component';
                                 <div class="flex gap-2">
                                     <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
                                     @if(auth.currentUser()?.role === 'manager') {
-                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading() || isDriveUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50" title="Upload lên Firebase Storage">
-                                            @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
-                                        </button>
-                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
-                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
+                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
                                             @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
                                         </button>
                                         <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
@@ -173,14 +173,12 @@ export class StandardsFormModalComponent {
   private fb = inject(FormBuilder);
   stdService = inject(StandardService);
   toast = inject(ToastService);
-  firebaseService = inject(FirebaseService);
   googleDriveService = inject(GoogleDriveService);
   auth = inject(AuthService);
   notificationCenter = inject(NotificationCenterService);
   tagCatalog = inject(StandardTagCatalogService);
 
   isProcessing = signal(false);
-  isUploading = signal(false);
   isDriveUploading = signal(false);
   standardSopTags = signal<string[]>([]);
   private originalStandardSopTags: string[] = [];
@@ -189,7 +187,7 @@ export class StandardsFormModalComponent {
   form: FormGroup = this.fb.group({
       id: [''], name: ['', Validators.required], chemical_name: [''],
       product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], pack_size: [''], lot_number: [''], 
-      internal_id: [''], location: [''], storage_condition: [''],
+      internal_id: ['', [Validators.required, Validators.pattern(STANDARD_INTERNAL_ID_PATTERN)]], location: [''], storage_condition: [''],
       initial_amount: [0, [Validators.required, Validators.min(0)]],
       current_amount: [0, [Validators.required, Validators.min(0)]],
       unit: ['mg', Validators.required],
@@ -250,23 +248,6 @@ export class StandardsFormModalComponent {
     }
   }
 
-  async uploadCoaFile(event: any) {
-    if (this.isUploading()) return;
-    const file = event.target.files[0];
-    if (!file) return;
-    this.isUploading.set(true);
-    try {
-        const url = await this.firebaseService.uploadFile('coa', file);
-        this.form.patchValue({ certificate_ref: url });
-        this.toast.show('Tải CoA lên thành công!');
-    } catch (e: any) { 
-        this.toast.show('Không thể tải CoA lên: ' + (e.message || 'Không xác định'), 'error');
-    } finally { 
-        this.isUploading.set(false);
-        event.target.value = ''; 
-    }
-  }
-
   async uploadCoaToDrive(event: any) {
     if (this.isDriveUploading()) return;
     const file = event.target.files[0];
@@ -306,13 +287,21 @@ export class StandardsFormModalComponent {
     
     const val = this.form.value;
 
-    if (val.internal_id && val.internal_id !== 'SDHET') {
+    val.internal_id = normalizeInternalId(val.internal_id);
+    if (!STANDARD_INTERNAL_ID_PATTERN.test(val.internal_id)) {
+        this.form.get('internal_id')?.markAsTouched();
+        this.toast.show('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.', 'error');
+        return;
+    }
+
+    if (val.internal_id) {
         const existing = this.allStandards().find(s => 
-            s.internal_id?.toLowerCase() === val.internal_id?.toLowerCase() && 
+            normalizeInternalId(s.internal_id) === val.internal_id &&
+            isCurrentStandardLifecycle(s) &&
             s.id !== this.form.get('id')?.value
         );
         if (existing) {
-            this.toast.show(`Cảnh báo: Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}".`, 'info');
+            this.toast.show(`Mã quản lý ${val.internal_id} đang được dùng ở chuẩn "${existing.name}". Hệ thống sẽ kiểm tra lại trong giao dịch.`, 'error');
         }
     }
 
@@ -326,7 +315,7 @@ export class StandardsFormModalComponent {
         const standardData: ReferenceStandard = {
             ...val as any,
             name: val.name?.trim(),
-            internal_id: val.internal_id?.toUpperCase().trim(),
+            internal_id: val.internal_id,
             location: val.location?.trim(),
             sop_tags: [...this.standardSopTags()],
         };

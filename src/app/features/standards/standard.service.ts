@@ -20,7 +20,8 @@ import { QueryDocumentSnapshot, QueryConstraint, Unsubscribe } from 'firebase/fi
 import {
   ReferenceStandard, StandardCleanupBatch, StandardNameUpdate, UsageLog, StandardsPage,
   ImportPreviewItem, ImportUsageLogPreviewItem,
-  StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus, BulkTagUpdateResult, ReturnStandardResult
+  StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus, BulkTagUpdateResult, ReturnStandardResult,
+  StandardInternalIdSyncBatch, StandardInternalIdSyncReport
 } from '../../core/models/standard.model';
 
 import { StandardCacheService }   from './services/standard-cache.service';
@@ -33,6 +34,7 @@ import {
   StandardImportService,
   StandardImportWorkbookPreview
 } from './services/standard-import.service';
+import { StandardInternalIdSyncService } from './services/standard-internal-id-sync.service';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -45,6 +47,7 @@ export class StandardService {
   private usage    = inject(StandardUsageService);
   private request  = inject(StandardRequestService);
   private importer = inject(StandardImportService);
+  private internalIdSync = inject(StandardInternalIdSyncService);
 
   // ─── Expose deltaSync cho component dùng stdService.deltaSync ────────────────
   get deltaSync() { return this.cache.deltaSync; }
@@ -98,6 +101,21 @@ export class StandardService {
   }
   async updateStandard(std: ReferenceStandard, tagDelta?: { originalTags: readonly string[] }): Promise<void> {
     return this.crud.updateStandard(std, tagDelta);
+  }
+  async releaseInternalId(standardId: string, reason: string): Promise<void> {
+    return this.crud.releaseInternalId(standardId, reason);
+  }
+  async scanInternalIdSync(): Promise<StandardInternalIdSyncReport> {
+    return this.internalIdSync.scan();
+  }
+  async applyInternalIdSync(
+    report: StandardInternalIdSyncReport,
+    corrections: Record<string, string> = {}
+  ): Promise<string> {
+    return this.internalIdSync.apply(report, corrections);
+  }
+  async getRecentInternalIdSyncBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
+    return this.internalIdSync.getRecentBatches(limitCount);
   }
   async updateStandardNames(updates: StandardNameUpdate[]): Promise<string> {
     return this.crud.updateStandardNames(updates);

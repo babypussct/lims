@@ -678,8 +678,22 @@ export class StatisticsComponent {
     this.state.ensureApprovedRequestsListener();
     this.state.ensureActivityFeedListeners();
     // Load on-demand (listeners removed for Spark Free optimization)
-    this.state.loadAllStandardRequests();
-    this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
+    void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
+
+    // Reference standards are only needed by the health/consumption views or
+    // an explicit standards export. Do not pay the cold-start bulk read while
+    // the statistics page is opened on the activity tab.
+    effect(() => {
+      const needsStandards = this.activeTab() === 'standards'
+        || this.activeTab() === 'consumption'
+        || this.exportStandards();
+      if (needsStandards) void this.state.loadReferenceStandards();
+
+      const needsStandardRequests = this.activeTab() === 'nxt'
+        || this.activeTab() === 'standards'
+        || this.exportStandards();
+      if (needsStandardRequests) void this.state.loadAllStandardRequests();
+    });
 
     effect(() => {
         const active = this.activeTab();
@@ -718,6 +732,7 @@ export class StatisticsComponent {
       this.startDate.set(range.start);
       this.endDate.set(range.end);
       this.hasGenerated.set(false); // Force recalculation if date changes
+      void this.state.loadApprovedRequestsForDateRange(range.start, range.end);
   }
 
   private toLocalDateStr(d: Date): string {
@@ -760,6 +775,7 @@ export class StatisticsComponent {
   async generateNxtReport() {
       this.isLoading.set(true);
       this.nxtData.set([]);
+      await this.state.loadAllStandardRequests();
       
       // Snapshot all filter values at the start to avoid race conditions
       // if the user changes a filter while the async operation is running.

@@ -7,8 +7,12 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ResultService } from './services/result.service';
 import { FirebaseService } from '../../core/services/firebase.service';
+import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor.service';
 import { ToastService } from '../../core/services/toast.service';
-import { doc, setDoc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import {
+  collection, doc, documentId, getDocs, query, serverTimestamp,
+  setDoc, where, writeBatch
+} from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 
@@ -276,6 +280,11 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                   </app-date-range-filter>
                 } @placeholder {
                   <div class="h-9 rounded-xl bg-slate-100/70 dark:bg-slate-900/60"></div>
+                }
+                @if (!startDate() && !endDate()) {
+                  <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                    Đang hiển thị 300 mẻ gần nhất; chọn khoảng ngày để nạp đầy đủ lịch sử.
+                  </span>
                 }
               </div>
             </div>
@@ -634,6 +643,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private resultService = inject(ResultService);
   private fb = inject(FirebaseService);
+  private readMonitor = inject(FirestoreReadMonitor);
   private toast = inject(ToastService);
   private printService = inject(PrintService);
 
@@ -1061,6 +1071,9 @@ export class ResultListComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.state.ensureApprovedRequestsListener();
     this.restoreState();
+    if (this.startDate() && this.endDate()) {
+      void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
+    }
     this.isLoading.set(false);
 
     setTimeout(() => {
@@ -1351,6 +1364,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   onDateRangeChange(range: { start: string, end: string, label: string }) {
     this.startDate.set(range.start);
     this.endDate.set(range.end);
+    void this.state.loadApprovedRequestsForDateRange(range.start, range.end);
     this.resetPaging();
   }
 
@@ -1498,15 +1512,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
     try {
       this.isLoading.set(true);
 
-      // 1. Fetch details of all child runs to merge their data
-      const detailPromises = sops.map(r => getDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', r.id)));
-      const detailSnaps = await Promise.all(detailPromises);
-      const detailMap = new Map<string, any>();
-      sops.forEach((r, i) => {
-        if (detailSnaps[i].exists()) {
-          detailMap.set(r.id, detailSnaps[i].data());
-        }
-      });
+      // 1. Fetch details of all child runs to merge their data. Firestore's
+      // documentId IN query caps each batch at 30 ids; batching avoids one
+      // billed point-read per selected run while preserving the same map.
+      const detailMap = await this.getResultDetailsByIds(sops.map(run => run.id));
 
       // 2. Prepare grid data for the Virtual Master
       const resultData: Record<string, any> = {};
@@ -1627,6 +1636,24 @@ export class ResultListComponent implements OnInit, OnDestroy {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async getResultDetailsByIds(ids: string[]): Promise<Map<string, any>> {
+    const detailMap = new Map<string, any>();
+    const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+    const detailsPath = `artifacts/${this.fb.APP_ID}/results_details`;
+    const colRef = collection(this.fb.db, detailsPath);
+
+    for (let index = 0; index < uniqueIds.length; index += 30) {
+      const idChunk = uniqueIds.slice(index, index + 30);
+      const snap = await getDocs(query(colRef, where(documentId(), 'in', idChunk)));
+      this.readMonitor.record('getDocs', detailsPath, snap.size, {
+        phase: 'batch',
+      });
+      snap.forEach(document => detailMap.set(document.id, document.data()));
+    }
+
+    return detailMap;
   }
 
   enterResults(requestId: string, prefix?: string, forceEdit = false) {

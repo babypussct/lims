@@ -446,10 +446,11 @@ export class LabelPrintComponent implements AfterViewInit {
       }
   }
 
-  fetchFromRequests() {
+  async fetchFromRequests() {
       const targetDate = this.fetchDate();
       if (!targetDate) return;
 
+      await this.state.loadApprovedRequestsForDateRange(targetDate, targetDate);
       const approvedReqs = this.state.approvedRequests();
       const samples = new Set<string>();
 

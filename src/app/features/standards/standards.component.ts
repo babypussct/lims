@@ -26,6 +26,7 @@ import { StandardsHistoryModalComponent } from './components/standards-history-m
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
 import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-modal.component';
 import { StandardsToolbarComponent } from './components/standards-toolbar.component';
+import { StandardsInternalIdSyncModalComponent } from './components/standards-internal-id-sync-modal.component';
 import { StandardsFilterComponent } from './components/standards-filter.component';
 import { StandardsListViewComponent } from './components/standards-list-view.component';
 import { StandardsGridViewComponent } from './components/standards-grid-view.component';
@@ -40,7 +41,7 @@ import { StandardBulkTagMode, formatMethodOptionLabel, summarizeStockByUnit, Sto
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -336,6 +337,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   bulkUploadComplete = signal(false);
 
   showDataCleanupModal = signal(false);
+  showInternalIdSyncModal = signal(false);
 
   // --- Backfill Usage Log State (Manager) ---
   showBackfillModal = signal(false);
@@ -865,6 +867,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       try {
           const request: StandardRequest = {
               standardId: std.id!,
+              internalId: std.internal_id,
               standardName: std.name,
               lotNumber: std.lot_number,
               requestedBy: data.userId,

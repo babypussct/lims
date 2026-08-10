@@ -102,6 +102,83 @@ export interface BulkTagUpdateResult {
   skippedIds: string[];
 }
 
+/**
+ * Technical state for one physical standard record. This is not a second
+ * business identifier: the only user-facing identifier remains internal_id.
+ */
+export type StandardLifecycleStatus = 'ACTIVE' | 'RELEASED' | 'CLOSED';
+export type StandardCodeRegistryStatus = 'ASSIGNED' | 'AVAILABLE' | 'CONFLICT';
+
+export interface StandardCodeRegistry {
+  id: string;
+  internal_id: string;
+  status: StandardCodeRegistryStatus;
+  currentStandardId?: string;
+  assignmentCount: number;
+  lastAssignedAt?: any;
+  lastReleasedAt?: any;
+  lastReleasedStandardId?: string;
+  lastUpdated?: any;
+}
+
+export type StandardInternalIdIssueKind =
+  | 'MISSING'
+  | 'INVALID_FORMAT'
+  | 'NORMALIZABLE'
+  | 'DUPLICATE_ACTIVE'
+  | 'REGISTRY_MISMATCH'
+  | 'REQUEST_REFERENCE'
+  | 'USAGE_REFERENCE';
+
+export interface StandardInternalIdSyncIssue {
+  id: string;
+  kind: StandardInternalIdIssueKind;
+  severity: 'ERROR' | 'WARNING' | 'INFO';
+  collection: string;
+  documentId: string;
+  standardId?: string;
+  internalId?: string;
+  suggestedInternalId?: string;
+  message: string;
+  autoFixable: boolean;
+}
+
+export interface StandardInternalIdSyncChange {
+  collection: string;
+  documentId: string;
+  field: string;
+  before: unknown;
+  after: unknown;
+  reason: string;
+}
+
+export interface StandardInternalIdSyncReport {
+  generatedAt: number;
+  standardsCount: number;
+  requestsCount: number;
+  purchaseRequestsCount?: number;
+  usageCount: number;
+  nestedUsageCount?: number;
+  registryCount: number;
+  issues: StandardInternalIdSyncIssue[];
+  safeChanges: StandardInternalIdSyncChange[];
+  conflicts: StandardInternalIdSyncIssue[];
+}
+
+export interface StandardInternalIdSyncBatch {
+  id: string;
+  status: 'APPLIED' | 'UNDONE';
+  generatedAt: number;
+  createdAt?: any;
+  createdBy?: string;
+  createdByName?: string;
+  recordCount: number;
+  changes: StandardInternalIdSyncChange[];
+  undoneAt?: any;
+  undoneBy?: string;
+  undoneByName?: string;
+}
+
 export interface UsageLog {
   id?: string;
   date: string;
@@ -180,6 +257,13 @@ export interface ReferenceStandard {
   // Search Optimization
   search_key?: string; 
 
+  // Technical lifecycle state. `internal_id` remains the sole business code.
+  lifecycle_status?: StandardLifecycleStatus;
+  internal_id_assigned_at?: any;
+  internal_id_released_at?: any;
+  internal_id_release_reason?: string;
+  internal_id_assignment_sequence?: number;
+
   // Workflow Status
   status?: 'AVAILABLE' | 'IN_USE' | 'DEPLETED' | 'ACTIVE' | 'DELETED';
   current_holder?: string; // User ID or Name holding the standard
@@ -205,6 +289,7 @@ export type PurchaseRequestStatus = 'PENDING' | 'ORDERED' | 'COMPLETED' | 'REJEC
 export interface PurchaseRequest {
   id?: string;
   standardId: string;    // ID chuẩn gốc đã hết
+  internalId?: string;   // Snapshot of the sole business code at request time
   standardName: string;
   manufacturer?: string; // Hãng hiện tại
   product_code?: string;
@@ -236,6 +321,7 @@ export type StandardRequestStatus = 'PENDING_APPROVAL' | 'IN_PROGRESS' | 'PENDIN
 export interface StandardRequest {
   id?: string;
   standardId: string;
+  internalId?: string;   // Snapshot of the sole business code at request time
   standardName: string;
   lotNumber?: string;
   

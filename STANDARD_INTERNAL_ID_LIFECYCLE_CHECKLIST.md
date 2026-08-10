@@ -1,0 +1,65 @@
+# Checklist triển khai mã quản lý nội bộ tái cấp
+
+## Phạm vi nghiệp vụ
+
+- [x] `internal_id` là mã nghiệp vụ duy nhất của phòng.
+- [x] Mã hợp lệ có đúng 4 ký tự, bắt đầu bằng `A`, `B` hoặc `C`.
+- [x] Không tạo thêm mã nghiệp vụ thứ hai cho người dùng.
+- [x] Một mã chỉ có một chuẩn vật lý đang sở hữu tại một thời điểm.
+- [x] Sau khi chuẩn vật lý cũ được đóng vòng đời, mã được trả về ngân hàng và có thể cấp lại.
+- [x] Khi thêm chuẩn mới dùng mã thuộc hồ sơ đã hết HSD và không còn mượn/giữ mở, transaction tự đóng hồ sơ cũ và cấp mã cho hồ sơ mới.
+- [x] Chuẩn vật lý cũ và mới giữ hồ sơ, tồn kho, request, nhật ký và QR độc lập.
+
+## Luồng ghi mới
+
+- [x] Form thêm/cập nhật kiểm tra chặt định dạng `internal_id`.
+- [x] Thêm chuẩn mới khóa việc chiếm mã đang được cấp.
+- [x] Cập nhật chuẩn hiện hữu không được âm thầm đổi mã đang hoạt động.
+- [x] Import chuẩn áp dụng cùng quy tắc mã và tái cấp.
+- [x] Request mượn lưu snapshot `internal_id` tại thời điểm tạo.
+- [x] Usage log và QR tiếp tục trỏ đúng bản ghi vật lý, không trỏ theo mã tái cấp.
+
+## Trả mã và tái cấp
+
+- [x] Có thao tác đóng vòng đời và trả `internal_id` về ngân hàng.
+- [x] Không trả mã khi chuẩn còn request, người giữ hoặc thao tác đang mở.
+- [x] Registry kỹ thuật chỉ bảo vệ quyền sở hữu hiện tại của mã; không phải mã nghiệp vụ thứ hai.
+- [x] Chuẩn mới nhận cùng mã nhưng nhận bản ghi vật lý mới.
+- [x] Mã đã trả không còn là lựa chọn mượn/cấp hiện tại.
+
+## Công cụ đồng bộ dữ liệu cũ
+
+- [x] Quét toàn bộ `reference_standards` và phân loại thiếu/sai/chuẩn hóa được/trùng mã.
+- [x] Đối chiếu `standard_requests`, `purchase_requests` và `standard_usages` với chuẩn vật lý được tham chiếu.
+- [x] Chỉ tự sửa thay đổi an toàn: trim/uppercase hợp lệ, snapshot còn thiếu, `search_key`.
+- [x] Không tự đoán mã đúng cho dữ liệu thiếu hoặc sai định dạng.
+- [x] Cho phép người quản lý nhập mã sửa thủ công sau khi xem tên/lot/hạn dùng.
+- [x] Dùng dry-run trước khi ghi.
+- [x] Ghi batch thay đổi trước/sau và audit log.
+- [x] Có báo cáo xung đột để xử lý thủ công trước khi tái cấp.
+
+## Kiểm soát dữ liệu và kiểm thử
+
+- [x] Firestore Rules kiểm soát định dạng mã, registry, request snapshot và log snapshot.
+- [x] Regression test cho mã hợp lệ/không hợp lệ/chuẩn hóa/trùng vòng đời.
+- [ ] Regression test cho add/release/reuse và lịch sử không bị trộn.
+- [ ] Regression test cho đồng bộ dry-run/apply/idempotency/conflict.
+- [ ] Chạy typecheck, test standards, rules emulator và build.
+- [ ] Xác minh production audit sau khi có phiên đăng nhập/quyền được phê duyệt.
+
+## Ghi chú vận hành
+
+- `ReferenceStandard.id` tiếp tục là khóa kỹ thuật của bản ghi vật lý hiện tại.
+- `internal_id` là mã duy nhất người dùng nhìn thấy và có thể được cấp lại theo thời gian.
+- Không được ghi đè bản ghi chuẩn cũ để tạo chuẩn vật lý mới.
+
+## Trạng thái kiểm chứng (2026-08-10)
+
+- [x] Đã triển khai quy tắc duy nhất `internal_id`: chuẩn hóa trim/uppercase, đúng 4 ký tự, bắt đầu bằng `A`, `B` hoặc `C`.
+- [x] Đã triển khai registry nội bộ để khóa quyền sở hữu hiện tại; registry không phải mã thứ hai cho người dùng.
+- [x] Đã triển khai trả mã thủ công và tái cấp an toàn; tự tái cấp chỉ khi hồ sơ cũ hết HSD và không còn holder/request/workflow mở.
+- [x] Đã triển khai công cụ dry-run/apply đồng bộ dữ liệu cũ cho `reference_standards`, `standard_requests`, `purchase_requests`, `standard_usages` và log lồng.
+- [x] Đã thêm batch audit trước/sau, xử lý xung đột, nhập sửa thủ công có kiểm tra và không đoán mã cho bản ghi thiếu/sai.
+- [x] `npm run test:standards`: **100/100**; `npm run test:firestore-rules`: **18/18**; `git diff --check`: không có whitespace error.
+- [ ] Typecheck/build production: còn chưa đạt do `src/app/app.routes.ts` đang import `./features/preparation/smart-prep.component`, nhưng file `.ts` này đang bị xoá trong worktree ngoài phạm vi mã chuẩn.
+- [ ] Production audit: chưa chạy trên dữ liệu production vì chưa có phiên đăng nhập/quyền được phê duyệt; không suy đoán số lượng mã hiện có từ fixture hoặc cache.

@@ -10,6 +10,7 @@ import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, Pu
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
 import { canAssign } from '../../../shared/utils/standard-fefo';
+import { isValidInternalId } from '../../../shared/utils/standard-internal-id';
 import {
   normalizeNonNegativeStandardAmount,
   reconcileStandardReturn
@@ -201,6 +202,9 @@ export class StandardRequestService {
       if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
 
       const standard = { ...stdDoc.data(), id: stdDoc.id } as ReferenceStandard;
+      if (!isValidInternalId(standard.internal_id)) {
+        throw new Error('Hồ sơ chuẩn chưa có Mã quản lý nội bộ hợp lệ. Hãy chạy công cụ Đồng bộ trước khi mượn/cấp.');
+      }
       if (!canAssign(standard)) {
         throw new Error('Lô chuẩn không còn sẵn sàng để cấp (đang dùng, đã hết hoặc hết hạn).');
       }
@@ -219,6 +223,7 @@ export class StandardRequestService {
       const trustedRequest: StandardRequest = {
         ...requestWithoutAdminDecision,
         standardId: standard.id,
+        internalId: standard.internal_id,
         standardName: standard.name,
         lotNumber: standard.lot_number,
         requestedBy: isAssign ? request.requestedBy : currentUser.uid,
@@ -755,11 +760,15 @@ export class StandardRequestService {
       const stdDoc = await transaction.get(stdRef);
       if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại.');
       const standard = { ...stdDoc.data(), id: stdDoc.id } as ReferenceStandard;
+      if (!isValidInternalId(standard.internal_id)) {
+        throw new Error('Hồ sơ chuẩn chưa có Mã quản lý nội bộ hợp lệ. Hãy chạy công cụ Đồng bộ trước khi tạo yêu cầu mua.');
+      }
       if (standard.restock_requested) throw new Error('Chuẩn này đã có yêu cầu mua đang xử lý.');
       const newReq: PurchaseRequest = {
         ...req,
         id,
         standardId: standard.id,
+        internalId: standard.internal_id,
         standardName: standard.name,
         manufacturer: standard.manufacturer,
         product_code: standard.product_code,

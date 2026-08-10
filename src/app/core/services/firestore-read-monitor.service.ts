@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core';
 
 export type FirestoreReadOperation = 'getDoc' | 'getDocs' | 'onSnapshot' | 'aggregate';
-export type FirestoreReadPhase = 'single' | 'initial' | 'delta' | 'cache' | 'page' | 'earliest';
+export type FirestoreReadPhase =
+  | 'single'
+  | 'initial'
+  | 'delta'
+  | 'cache'
+  | 'page'
+  | 'earliest'
+  | 'history'
+  | 'batch';
 
 export interface FirestoreReadMetric {
   operation: FirestoreReadOperation;

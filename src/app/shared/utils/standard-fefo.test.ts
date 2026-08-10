@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ReferenceStandard } from '../../core/models/standard.model';
 import {
+  canAutoReleaseExpiredStandard,
   canAssign,
   getFefoPredecessor,
   getFefoPriorityStandard,
@@ -40,6 +41,12 @@ describe('standard FEFO helpers', () => {
     assert.equal(isStandardExpired('2026-07-18', today), false);
     assert.equal(isStandardExpired('2026-07-17', today), true);
     assert.equal(canAssign(standard({ expiry_date: '2026-07-18' }), today), true);
+  });
+
+  it('allows automatic code reuse only for an expired physical record with no open workflow', () => {
+    assert.equal(canAutoReleaseExpiredStandard(standard({ expiry_date: '2026-07-17' }), today), true);
+    assert.equal(canAutoReleaseExpiredStandard(standard({ expiry_date: '2026-07-17', current_holder: 'Analyst' }), today), false);
+    assert.equal(canAutoReleaseExpiredStandard(standard({ expiry_date: '2027-01-01' }), today), false);
   });
 
   it('excludes used, depleted, expired and reserved lots from FEFO candidates', () => {

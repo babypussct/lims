@@ -5,7 +5,8 @@ import {
   collection, onSnapshot, doc, getDoc, runTransaction,
   addDoc, updateDoc, query, orderBy, limit, where,
   serverTimestamp, increment, setDoc, getDocs, deleteDoc, deleteField,
-  Unsubscribe, DocumentReference, writeBatch, QueryDocumentSnapshot
+  Unsubscribe, DocumentReference, writeBatch, QueryDocumentSnapshot,
+  Query, QueryConstraint, QuerySnapshot, startAfter
 } from 'firebase/firestore';
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
@@ -42,6 +43,12 @@ export interface DirectBatchPlanResult {
   logId: string;
 }
 
+export interface ApprovedRequestsHistoryLoadResult {
+  complete: boolean;
+  loaded: number;
+  reads: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StateService implements OnDestroy {
   private fb = inject(FirebaseService);
@@ -72,6 +79,12 @@ export class StateService implements OnDestroy {
   private allStandardRequestsLoadedAt = 0;
   private referenceStandardsLoad?: Promise<void>;
   private referenceStandardsLoadedAt = 0;
+  private readonly APPROVED_REQUEST_RECENT_LIMIT = 300;
+  private readonly APPROVED_REQUEST_HISTORY_PAGE_SIZE = 100;
+  private readonly APPROVED_REQUEST_HISTORY_MAX_PAGES = 1000;
+  private approvedRecentRequests = new Map<string, Request>();
+  private approvedHistoryRequests = new Map<string, Request>();
+  private approvedHistoryLoads = new Map<string, Promise<ApprovedRequestsHistoryLoadResult>>();
 
   // --- DATA SIGNALS ---
   inventory = signal<InventoryItem[]>([]);
@@ -123,7 +136,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.10-b01');
+  systemVersion = signal<string>('v26.08.11-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -268,6 +281,9 @@ export class StateService implements OnDestroy {
     this.allStandardRequestsLoadedAt = 0;
     this.referenceStandardsLoad = undefined;
     this.referenceStandardsLoadedAt = 0;
+    this.approvedRecentRequests.clear();
+    this.approvedHistoryRequests.clear();
+    this.approvedHistoryLoads.clear();
     if (this.sysConfigSub) {
       this.sysConfigSub();
       this.sysConfigSub = undefined;
@@ -648,14 +664,12 @@ export class StateService implements OnDestroy {
     const isCurrentInit = () => initGeneration === this.initGeneration;
 
     const approvedRunsConfig: DeltaSyncConfig = {
-      // Use a new cache namespace so legacy 100-item caches are never treated as complete history.
-      cacheKey: buildScopedDeltaKey(`lims_approved_requests_all_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
-      cursorKey: buildScopedDeltaKey(`lims_approved_requests_all_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      // The listener is intentionally a recent feed. Older history is loaded
+      // explicitly by date below, so a cold start cannot scan requests forever.
+      cacheKey: buildScopedDeltaKey(`lims_approved_requests_recent_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      cursorKey: buildScopedDeltaKey(`lims_approved_requests_recent_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
       collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
-      // Historical consumers must not silently turn "all time" into the latest N requests.
-      // DeltaSync treats Infinity as an unbounded in-memory initial scan and simply skips
-      // persistent cache writes if browser storage cannot hold the full history.
-      maxCacheSize: Number.POSITIVE_INFINITY,
+      maxCacheSize: this.APPROVED_REQUEST_RECENT_LIMIT,
       orderByField: 'approvedAt',
       orderDirection: 'desc'
     };
@@ -665,7 +679,17 @@ export class StateService implements OnDestroy {
       // Lọc client-side để truy vấn cursor chỉ cần single-field index lastUpdated.
       // Bộ lọc status trước đây bao phủ gần như mọi trạng thái và buộc Firestore
       // yêu cầu một composite index không cần thiết.
-      this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
+      this.approvedRecentRequests.clear();
+      runs.forEach(run => {
+        if (this.isApprovedRequest(run)) {
+          this.approvedRecentRequests.set(run.id, run);
+        } else if (run.id) {
+          // A status transition can arrive through the recent delta feed. Remove
+          // its older range-loaded copy so stale approved rows are not displayed.
+          this.approvedHistoryRequests.delete(run.id);
+        }
+      });
+      this.publishApprovedRequests();
     });
 
     this.approvedRunsSub = () => {
@@ -673,6 +697,153 @@ export class StateService implements OnDestroy {
       this.approvedRunsSub = undefined;
     };
     this.listeners.push(this.approvedRunsSub);
+  }
+
+  /**
+   * Load exactly the requested date window in bounded Firestore pages.
+   *
+   * The UI date semantics are analysisDate -> approvedAt -> timestamp. Three
+   * single-field range queries cover all persisted shapes; the result is
+   * merged by id and still filtered by the caller's existing date logic.
+   * This replaces the old all-time listener without silently treating the
+   * latest N requests as complete history.
+   */
+  async loadApprovedRequestsForDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<ApprovedRequestsHistoryLoadResult> {
+    if (!this.auth.currentUser() || !(
+      this.auth.hasPermission('sop_view') ||
+      this.auth.hasPermission('batch_run') ||
+      this.auth.canViewReports()
+    )) {
+      return { complete: true, loaded: 0, reads: 0 };
+    }
+
+    const range = this.normalizeDateRange(startDate, endDate);
+    if (!range) return { complete: true, loaded: 0, reads: 0 };
+
+    const key = `${range.start}:${range.end}`;
+    const existing = this.approvedHistoryLoads.get(key);
+    if (existing) return existing;
+
+    const initGeneration = this.initGeneration;
+    const load = (async (): Promise<ApprovedRequestsHistoryLoadResult> => {
+      try {
+        const [analysisDateResult, approvedAtResult, timestampResult] = await Promise.all([
+          this.fetchApprovedRequestsByRange('analysisDate', range.start, range.end, initGeneration),
+          this.fetchApprovedRequestsByRange('approvedAt', range.start, range.end, initGeneration),
+          this.fetchApprovedRequestsByRange('timestamp', range.start, range.end, initGeneration)
+        ]);
+
+        if (initGeneration !== this.initGeneration) {
+          return {
+            complete: false,
+            loaded: 0,
+            reads: analysisDateResult.reads + approvedAtResult.reads + timestampResult.reads
+          };
+        }
+
+        const merged = new Map<string, Request>();
+        [...analysisDateResult.items, ...approvedAtResult.items, ...timestampResult.items].forEach(request => {
+          if (this.isApprovedRequest(request)) merged.set(request.id, request);
+        });
+        merged.forEach((request, id) => this.approvedHistoryRequests.set(id, request));
+        this.publishApprovedRequests();
+
+        return {
+          complete: analysisDateResult.complete && approvedAtResult.complete && timestampResult.complete,
+          loaded: merged.size,
+          reads: analysisDateResult.reads + approvedAtResult.reads + timestampResult.reads
+        };
+      } catch (error) {
+        console.warn('[StateService] approved history range load failed:', error);
+        return { complete: false, loaded: 0, reads: 0 };
+      }
+    })();
+
+    this.approvedHistoryLoads.set(key, load);
+    try {
+      return await load;
+    } finally {
+      if (this.approvedHistoryLoads.get(key) === load) this.approvedHistoryLoads.delete(key);
+    }
+  }
+
+  private isApprovedRequest(request: Request): boolean {
+    return ['approved', 'draft', 'completed'].includes(request.status);
+  }
+
+  private publishApprovedRequests(): void {
+    const merged = new Map<string, Request>();
+    this.approvedHistoryRequests.forEach((request, id) => merged.set(id, request));
+    // The realtime recent feed is authoritative when the same document exists
+    // in both maps because it reflects status/summary changes immediately.
+    this.approvedRecentRequests.forEach((request, id) => merged.set(id, request));
+    this.approvedRequests.set(
+      Array.from(merged.values()).sort((a, b) =>
+        (timestampToMillis(b.approvedAt ?? b.timestamp ?? b.lastUpdated) ?? 0) -
+        (timestampToMillis(a.approvedAt ?? a.timestamp ?? a.lastUpdated) ?? 0)
+      )
+    );
+  }
+
+  private normalizeDateRange(startDate: string, endDate: string): { start: string; end: string } | null {
+    const start = startDate?.trim();
+    const end = endDate?.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) {
+      return null;
+    }
+    return { start, end };
+  }
+
+  private async fetchApprovedRequestsByRange(
+    field: 'analysisDate' | 'approvedAt' | 'timestamp',
+    startDate: string,
+    endDate: string,
+    initGeneration: number
+  ): Promise<{ items: Request[]; complete: boolean; reads: number }> {
+    const requestsPath = `artifacts/${this.fb.APP_ID}/requests`;
+    const colRef = collection(this.fb.db, requestsPath);
+    const lowerBound = field === 'analysisDate'
+      ? startDate
+      : new Date(`${startDate}T00:00:00`);
+    const upperBound = field === 'analysisDate'
+      ? endDate
+      : new Date(`${endDate}T23:59:59.999`);
+    const items: Request[] = [];
+    let cursor: QueryDocumentSnapshot | null = null;
+    let reads = 0;
+
+    for (let page = 0; page < this.APPROVED_REQUEST_HISTORY_MAX_PAGES; page++) {
+      if (initGeneration !== this.initGeneration) {
+        return { items, complete: false, reads };
+      }
+
+      const constraints: QueryConstraint[] = [
+        where(field, '>=', lowerBound),
+        where(field, '<=', upperBound),
+        orderBy(field, 'desc'),
+        limit(this.APPROVED_REQUEST_HISTORY_PAGE_SIZE)
+      ];
+      const pageQuery: Query = cursor
+        ? query(colRef, ...constraints.slice(0, 3), startAfter(cursor), constraints[3])
+        : query(colRef, ...constraints);
+      const snap: QuerySnapshot = await getDocs(pageQuery);
+      reads += snap.size;
+      this.readMonitor.record('getDocs', requestsPath, snap.size, {
+        phase: 'history',
+        fromCache: snap.metadata.fromCache
+      });
+      snap.forEach(document => items.push({ id: document.id, ...document.data() } as Request));
+
+      if (snap.size < this.APPROVED_REQUEST_HISTORY_PAGE_SIZE) {
+        return { items, complete: true, reads };
+      }
+      cursor = snap.docs[snap.docs.length - 1];
+    }
+
+    return { items, complete: false, reads };
   }
 
   ensureUserInfoCacheListener(): void {

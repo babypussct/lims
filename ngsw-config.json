@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.10-b01",
-    "title": "Triển Khai Đồng Bộ Và An Toàn Báo Cáo GAS",
+    "version": "v26.08.11-b01",
+    "title": "Trạm Pha Chế mô phỏng và quản lý Chất chuẩn an toàn hơn",
     "features": [
-      "Luồng báo cáo GAS được chuẩn hóa theo requestId, kiểm soát quyền truy cập, chống lặp và xác thực upload trước khi xử lý.",
-      "Đồng bộ 51 chỉ tiêu nhóm I giữa GAS và Angular, bao gồm silafluofen, với regression kiểm tra parity canonical cho các SOP Type 3B.",
-      "Giữ nguyên các trạng thái dữ liệu phân biệt như 0, ND, N/A, chuỗi rỗng và missing trong payload báo cáo.",
-      "Bổ sung kiểm tra route, template, cột kết quả và mapping analyte giữa caller Angular với cấu hình GAS.",
-      "Khắc phục các đường gọi báo cáo GAS chưa có xác thực/ủy quyền, xử lý lặp và kiểm soát archive/template/upload đầy đủ."
+      "Trạm Pha Chế nay là trợ lý mô phỏng độc lập, giúp KNV tính nhanh các công thức pha mà không liên kết hoặc làm thay đổi Kho và Chất chuẩn.",
+      "Chất chuẩn có Mã quản lý nội bộ thống nhất, giúp nhận đúng từng lọ vật lý và giữ nguyên lịch sử khi mã được trả và cấp lại.",
+      "Các màn hình Lịch sử, Kết quả và Thống kê tải theo khoảng ngày đang xem, giúp mở trang nhanh hơn và dễ theo dõi dữ liệu liên quan.",
+      "Trong Trạm Pha Chế, chọn Pha dung dịch, Pha loãng, Thêm chuẩn, Dãy chuẩn, Pha hỗn hợp hoặc Xử lý mẫu để nhận công thức, kết quả trung gian, cảnh báo và phiếu mô phỏng có thể sao chép, in hoặc tải xuống.",
+      "Trong Chất chuẩn, nhập Mã quản lý nội bộ 4 ký tự, trả mã về ngân hàng kèm lý do, và dùng Đồng bộ Mã quản lý nội bộ để xem trước các chỉnh sửa an toàn trước khi áp dụng."
     ]
   },
   "assetGroups": [

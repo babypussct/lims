@@ -14,7 +14,8 @@
           (openBulkTagModal)="showBulkTagModal.set(true)"
           (openTagManager)="showTagManagerModal.set(true)"
           (openExportModal)="openExportModal()"
-          (openCleanupModal)="showDataCleanupModal.set(true)">
+          (openCleanupModal)="showDataCleanupModal.set(true)"
+          (openInternalIdSync)="showInternalIdSyncModal.set(true)">
       </app-standards-toolbar>
 
       <!-- Main Content -->
@@ -170,6 +171,13 @@
         @defer {
           <app-standards-data-cleanup-modal [isOpen]="showDataCleanupModal()" [allStandards]="allStandards()" (closeModal)="showDataCleanupModal.set(false)"></app-standards-data-cleanup-modal>
         }
+      }
+
+      @if (showInternalIdSyncModal()) {
+        <app-standards-internal-id-sync-modal
+          [isOpen]="showInternalIdSyncModal()"
+          (close)="showInternalIdSyncModal.set(false)">
+        </app-standards-internal-id-sync-modal>
       }
 
       @if (showAssignModal()) {

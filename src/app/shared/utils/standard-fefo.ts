@@ -1,4 +1,8 @@
 import { ReferenceStandard } from '../../core/models/standard.model';
+import {
+  isCurrentStandardLifecycle,
+  isReleasedStandardLifecycle,
+} from './standard-internal-id';
 
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -44,6 +48,26 @@ export function isStandardExpired(
   return expiry !== null && expiry < startOfLocalDay(now);
 }
 
+/**
+ * An expired physical record may release its reusable business code only when
+ * no borrow/holder workflow is still open. The caller performs the actual
+ * close + reassign atomically in the registry transaction.
+ */
+export function canAutoReleaseExpiredStandard(
+  standard: ReferenceStandard | null | undefined,
+  now: Date = new Date()
+): boolean {
+  return Boolean(
+    standard &&
+    isCurrentStandardLifecycle(standard) &&
+    isStandardExpired(standard.expiry_date, now) &&
+    !standard.current_holder &&
+    !standard.current_holder_uid &&
+    !standard.current_request_id &&
+    !standard.has_pending_request
+  );
+}
+
 /** Normalize user-entered names so FEFO groups are stable across case/spacing/accents. */
 export function normalizeStandardName(name: string | null | undefined): string {
   return (name || '')
@@ -62,7 +86,7 @@ export function normalizeStandardName(name: string | null | undefined): string {
  * the "Chờ duyệt" action state.
  */
 export function canAssign(std: ReferenceStandard, now: Date = new Date()): boolean {
-  if (!std || std._isDeleted) return false;
+  if (!std || !isCurrentStandardLifecycle(std)) return false;
   if (std.status === 'IN_USE' || std.status === 'DEPLETED' || std.status === 'DELETED') return false;
   if (std.current_holder || std.current_request_id) return false;
 
@@ -87,6 +111,7 @@ export function getFefoUnavailableReason(
   now: Date = new Date()
 ): string | null {
   if (std._isDeleted) return 'Đã xóa';
+  if (isReleasedStandardLifecycle(std)) return 'Đã trả Mã quản lý nội bộ về ngân hàng';
   if (std.status === 'IN_USE' || std.current_holder || std.current_request_id) return 'Đang sử dụng';
   if (std.status === 'DEPLETED' || !Number.isFinite(Number(std.current_amount)) || Number(std.current_amount) <= 0) {
     return 'Đã hết';
@@ -156,7 +181,7 @@ export function getSameStandardLots(
   if (!groupName) return [];
 
   return standards.filter(std =>
-    !std._isDeleted &&
+    isCurrentStandardLifecycle(std) &&
     (includeCurrent || std.id !== current.id) &&
     normalizeStandardName(std.name) === groupName
   );

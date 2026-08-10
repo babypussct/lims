@@ -55,7 +55,7 @@ test('derives current stock from unit-aware usage logs when current stock is bla
   const [item] = parse([{
     'Tên chuẩn': 'Test standard',
     'Khối lượng chai': '1000 mg',
-    'Số nhận diện': 'TEST-01',
+    'Số nhận diện': 'AA01',
     'LẦN CÂN 1': 'Người: An; Ngày: 29/07/2026; Lượng dùng: 0.1 g'
   }]);
 
@@ -76,15 +76,15 @@ test('rejects invalid dates, missing identity, and stock greater than initial', 
   }]);
 
   assert.equal(item.isValid, false);
-  assert.match(item.errorMessage || '', /Số nhận diện hoặc Số lô/);
+  assert.match(item.errorMessage || '', /Mã quản lý nội bộ/);
   assert.match(item.errorMessage || '', /Ngày/);
   assert.match(item.errorMessage || '', /lớn hơn lượng ban đầu/);
 });
 
 test('marks duplicate identities in one workbook as blocking conflicts', () => {
   const items = parse([
-    { 'Tên chuẩn': 'A', 'Khối lượng chai': '1 mg', 'Số nhận diện': 'DUP-01' },
-    { 'Tên chuẩn': 'A corrected', 'Khối lượng chai': '1 mg', 'Số nhận diện': 'DUP-01' }
+    { 'Tên chuẩn': 'A', 'Khối lượng chai': '1 mg', 'Số nhận diện': 'AB01' },
+    { 'Tên chuẩn': 'A corrected', 'Khối lượng chai': '1 mg', 'Số nhận diện': 'AB01' }
   ]);
 
   assert.equal(items.every(item => !item.isValid && item.mode === 'CONFLICT'), true);
@@ -117,7 +117,7 @@ test('treats a soft-deleted identity as released and creates a new immutable doc
   const existing: ReferenceStandard = {
     id: 'deleted-id',
     name: 'Deleted standard',
-    internal_id: 'DEL-01',
+    internal_id: 'AB02',
     initial_amount: 1,
     current_amount: 1,
     unit: 'mg',
@@ -127,11 +127,11 @@ test('treats a soft-deleted identity as released and creates a new immutable doc
   const [item] = parse([{
     'Tên chuẩn': 'New standard using released slot',
     'Khối lượng chai': '1 mg',
-    'Số nhận diện': 'DEL-01'
+    'Số nhận diện': 'AB02'
   }], [existing]);
   assert.equal(item.mode, 'CREATE');
   assert.notEqual(item.parsed.id, existing.id);
-  assert.match(item.parsed.id, /^std_del_01_/);
+  assert.match(item.parsed.id, /^std_ab02_/);
   assert.equal(item.isValid, true);
 });
 
@@ -182,13 +182,13 @@ test('counts all writes before committing so oversized imports can be rejected a
     {
       'Tên chuẩn': 'New',
       'Khối lượng chai': '10 mg',
-      'Số nhận diện': 'NEW-01',
+      'Số nhận diện': 'AB03',
       'LẦN CÂN 1': '1 mg'
     },
     {
       'Tên chuẩn': 'Existing',
       'Khối lượng chai': '10 mg',
-      'Số nhận diện': 'EXIST-01',
+      'Số nhận diện': 'AB04',
       'LẦN CÂN 1': '1 mg'
     }
   ]);

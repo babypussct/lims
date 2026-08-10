@@ -20,6 +20,8 @@ import { generateSlug, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { StandardTagCatalogService } from './standard-tag-catalog.service';
+import { StandardCodeRegistryService } from './standard-code-registry.service';
+import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import {
   applyTagMode,
   assertTagLimit,
@@ -45,6 +47,7 @@ export class StandardCrudService {
   private cache = inject(StandardCacheService);
   private notificationCenter = inject(NotificationCenterService);
   private tagCatalog = inject(StandardTagCatalogService);
+  private codeRegistry = inject(StandardCodeRegistryService);
 
   // ─── Search Key ──────────────────────────────────────────────────────────────
   generateSearchKey(std: ReferenceStandard): string {
@@ -102,6 +105,10 @@ export class StandardCrudService {
   // ─── Write Operations ────────────────────────────────────────────────────────
   async addStandard(std: ReferenceStandard): Promise<void> {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền thêm chuẩn.');
+    std.internal_id = normalizeInternalId(std.internal_id);
+    if (!isValidInternalId(std.internal_id)) {
+      throw new Error('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.');
+    }
     this.validateStandardAmounts(std);
     if (std.sop_tags !== undefined) {
       std.sop_tags = normalizeTagKeysStrict(std.sop_tags, 'Nhãn chất chuẩn');
@@ -112,11 +119,32 @@ export class StandardCrudService {
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
     const { derivedDeviceCodes: _derivedDeviceCodes, derivedMethodLabels: _derivedMethodLabels, ...persistedStandard } = std;
+    const registrySnapshot = await getDoc(this.codeRegistry.getRegistryRef(std.internal_id));
+    let legacyOwnerIds: string[] = [];
+    if (!registrySnapshot.exists() || registrySnapshot.data()?.['status'] === 'AVAILABLE') {
+      // A missing/AVAILABLE registry is precisely the legacy-repair boundary:
+      // an old row may contain lower-case or surrounding whitespace, which an
+      // equality query on the canonical code would not find. This fallback is
+      // intentionally rare and favors ownership safety over one extra admin
+      // read before assigning a reusable code.
+      const legacyMatches = await getDocs(collection(
+        this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`
+      ));
+      legacyOwnerIds = legacyMatches.docs
+        .filter(snapshot => snapshot.id !== std.id)
+        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
+        .filter(candidate => normalizeInternalId(candidate.internal_id) === std.internal_id)
+        .filter(candidate => !candidate._isDeleted && candidate.status !== 'DELETED')
+        .filter(candidate => candidate.lifecycle_status !== 'RELEASED' && candidate.lifecycle_status !== 'CLOSED')
+        .map(candidate => candidate.id);
+    }
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (snapshot.exists()) throw new Error('Mã chuẩn đã tồn tại; không thể ghi đè bằng thao tác thêm mới.');
+      const lifecycleFields = await this.codeRegistry.reserveForNewStandard(transaction, ref, std, legacyOwnerIds);
       transaction.set(ref, sanitizeForFirebase({
         ...persistedStandard,
+        ...lifecycleFields,
         status: std.current_amount <= 0 ? 'DEPLETED' : 'AVAILABLE',
         _isDeleted: false,
         lastUpdated: serverTimestamp()
@@ -131,6 +159,10 @@ export class StandardCrudService {
     tagDelta?: { originalTags: readonly string[] }
   ): Promise<void> {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật chuẩn.');
+    std.internal_id = normalizeInternalId(std.internal_id);
+    if (!isValidInternalId(std.internal_id)) {
+      throw new Error('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.');
+    }
     this.validateStandardAmounts(std);
     if (std.sop_tags !== undefined) {
       std.sop_tags = normalizeTagKeysStrict(std.sop_tags, 'Nhãn chất chuẩn');
@@ -143,6 +175,13 @@ export class StandardCrudService {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
       const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+      const freshInternalId = normalizeInternalId(fresh.internal_id);
+      if (freshInternalId !== std.internal_id) {
+        throw new Error('Không được đổi Mã quản lý nội bộ trực tiếp trên hồ sơ đang tồn tại. Hãy dùng công cụ Đồng bộ mã nội bộ hoặc trả mã trước khi tái cấp.');
+      }
+      if (String(fresh.internal_id || '') !== freshInternalId) {
+        throw new Error('Hồ sơ đang có Mã quản lý nội bộ chưa chuẩn hóa. Hãy chạy công cụ Đồng bộ mã nội bộ trước khi cập nhật.');
+      }
       let tagsToPersist: string[] | undefined;
       if (std.sop_tags !== undefined) {
         const requestedTags = this.tagCatalog.assertKnownOrExistingKeys(std.sop_tags, fresh.sop_tags || [], 'Nhãn chất chuẩn');
@@ -176,6 +215,11 @@ export class StandardCrudService {
         coa_requested_by: _coaRequester,
         lastUpdated: _lastUpdated,
         _isDeleted: _deleted,
+        lifecycle_status: _lifecycleStatus,
+        internal_id_assigned_at: _internalIdAssignedAt,
+        internal_id_released_at: _internalIdReleasedAt,
+        internal_id_release_reason: _internalIdReleaseReason,
+        internal_id_assignment_sequence: _internalIdAssignmentSequence,
         derivedDeviceCodes: _derivedDeviceCodes,
         derivedMethodLabels: _derivedMethodLabels,
         sop_tags: _sopTags,
@@ -198,6 +242,17 @@ export class StandardCrudService {
     });
     await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
+  }
+
+  async releaseInternalId(standardId: string, reason: string): Promise<void> {
+    await this.codeRegistry.releaseStandardCode(standardId, reason);
+    await this.logGlobalActivity(
+      'RELEASE_STANDARD_INTERNAL_ID',
+      `Trả Mã quản lý nội bộ về ngân hàng: ${standardId} — ${reason.trim()}`,
+      standardId
+    );
+    await this.fb.updateMetadata('standards');
+    this.cache.invalidateLocalStandardsCache();
   }
 
   /**

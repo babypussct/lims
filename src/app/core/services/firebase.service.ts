@@ -7,7 +7,6 @@ import {
   getCountFromServer, where, orderBy, writeBatch as batchWrite,
   Timestamp, serverTimestamp, clearIndexedDbPersistence, terminate
 } from 'firebase/firestore';
-import type { FirebaseStorage } from 'firebase/storage';
 import type { Messaging } from 'firebase/messaging';
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -31,7 +30,6 @@ export class FirebaseService {
   public db: Firestore;
   public messaging: Messaging | null = null;
   public APP_ID: string;
-  private storage: FirebaseStorage | null = null;
   private readMonitor = inject(FirestoreReadMonitor);
 
   private readonly APP_ID_KEY = 'lims_app_id';
@@ -106,23 +104,6 @@ export class FirebaseService {
   setAppId(id: string) {
     localStorage.setItem(this.APP_ID_KEY, id);
     window.location.reload(); 
-  }
-
-  // --- Storage ---
-  async uploadFile(folder: string, file: File): Promise<string> {
-    const { getStorage, ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-    const timestamp = Date.now();
-    // Sanitize filename
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const path = `artifacts/${this.APP_ID}/${folder}/${timestamp}_${safeName}`;
-    
-    if (!this.storage) {
-        this.storage = getStorage(this.app);
-    }
-
-    const storageRef = ref(this.storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
   }
 
   // --- System Health ---
@@ -249,8 +230,9 @@ export class FirebaseService {
       await deleteDoc(ref);
   }
 
-  // --- Storage Estimation --- OPTIMIZED: uses getCountFromServer (1 read/collection)
-  async getStorageEstimate(): Promise<{ totalDocs: number, estimatedSizeKB: number, details: any }> {
+  // --- Firestore data estimation --- uses getCountFromServer (1 read/collection)
+  // This is document-count telemetry, not Firebase Cloud Storage access.
+  async getFirestoreDataEstimate(): Promise<{ totalDocs: number, estimatedSizeKB: number, details: any }> {
     const collections = [
         'inventory', 
         'sops', 

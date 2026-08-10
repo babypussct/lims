@@ -11,6 +11,7 @@ import { ReferenceStandard, UsageLog, StandardRequest } from '../../../core/mode
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { getStandardizedAmount, formatNum, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-amount';
+import { isValidInternalId } from '../../../shared/utils/standard-internal-id';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { StandardCrudService } from './standard-crud.service';
@@ -157,6 +158,9 @@ export class StandardUsageService {
       const stdDoc = await transaction.get(stdRef);
       if (!stdDoc.exists()) throw new Error('Standard does not exist!');
       const stdData = stdDoc.data() as ReferenceStandard;
+      if (!isValidInternalId(stdData.internal_id)) {
+        throw new Error('Hồ sơ chuẩn chưa có Mã quản lý nội bộ hợp lệ. Hãy chạy công cụ Đồng bộ trước khi ghi nhật ký.');
+      }
 
       if (stdData.status === 'IN_USE') {
         throw new Error(
@@ -225,6 +229,9 @@ export class StandardUsageService {
       const stdDoc = await transaction.get(stdRef);
       if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
       const stdData = { ...stdDoc.data(), id: stdDoc.id } as ReferenceStandard;
+      if (!isValidInternalId(stdData.internal_id)) {
+        throw new Error('Hồ sơ chuẩn chưa có Mã quản lý nội bộ hợp lệ. Hãy chạy công cụ Đồng bộ trước khi nhập bù nhật ký.');
+      }
 
       // Không chặn IN_USE — đây là nhập bù hồi ký
       const currentAmount = stdData.current_amount ?? 0;
@@ -307,6 +314,9 @@ export class StandardUsageService {
 
       const stdData = stdDoc.data() as ReferenceStandard;
       const reqData = reqDoc.data() as StandardRequest;
+      if (!isValidInternalId(stdData.internal_id)) {
+        throw new Error('Hồ sơ chuẩn chưa có Mã quản lý nội bộ hợp lệ. Hãy chạy công cụ Đồng bộ trước khi ghi nhật ký.');
+      }
 
       if (reqData.status !== 'IN_PROGRESS') {
         throw new Error(`Không thể ghi nhận: yêu cầu đang ở trạng thái "${reqData.status}". Chỉ được ghi khi đang sử dụng.`);

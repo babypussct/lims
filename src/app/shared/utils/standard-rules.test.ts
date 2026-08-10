@@ -40,7 +40,21 @@ test('reference standard update branches are named helpers instead of one compou
   assert.match(standardsBlock, /function canApproveReferenceStandardUpdate\(appId\)/);
   assert.match(standardsBlock, /function canRequesterUpdateReferenceStandard\(appId\)/);
   assert.match(standardsBlock, /function canRollbackReferenceStandardUpdate\(appId\)/);
+  assert.match(standardsBlock, /function canEditReferenceStandardMetadata\(appId\)/);
+  assert.match(standardsBlock, /function canRepairReferenceStandardInternalId\(appId\)/);
+  assert.match(standardsBlock, /function canReleaseReferenceStandardInternalId\(appId\)/);
   assert.match(standardsBlock, /function canUpdateReferenceStandard\(appId\)/);
+});
+
+test('internal-id lifecycle writes are bound to the canonical code and audited sync paths', () => {
+  assert.match(rules, /function validInternalId\(value\)/);
+  assert.match(rules, /match \/artifacts\/\{appId\}\/standard_code_registry\/\{code\}/);
+  assert.match(rules, /validRegistryHolder\(appId\)/);
+  assert.match(rules, /canReuseAssignedRegistrySlot\(appId\)/);
+  assert.match(rules, /match \/artifacts\/\{appId\}\/standard_code_sync_batches\/\{batchId\}/);
+  assert.match(rules, /canRepairStandardRequestSnapshot\(appId\)/);
+  assert.match(rules, /canRepairStandardUsageSnapshot\(appId\)/);
+  assert.match(rules, /canRepairNestedStandardUsageSnapshot\(appId, stdId\)/);
 });
 
 test('stats writes require an operational stats permission rather than any signed-in user', () => {
@@ -122,7 +136,8 @@ test('usage logs use tombstones instead of client-side physical deletes', () => 
     rules.indexOf('match /artifacts/{appId}/standard_usages/{useId}'),
     rules.indexOf('// MODULE QUY TRÌNH SOP')
   );
-  assert.match(usageBlock, /allow update: if canRollbackStandardLogs/);
+  assert.match(usageBlock, /canRepairStandardUsageSnapshot/);
+  assert.match(usageBlock, /canRollbackStandardLogs/);
   assert.match(usageBlock, /allow delete: if false/);
 });
 

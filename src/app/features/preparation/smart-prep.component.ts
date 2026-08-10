@@ -1,700 +1,577 @@
-
-import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, WritableSignal, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { InventoryService } from '../inventory/inventory.service';
-import { AuthService } from '../../core/services/auth.service';
-import { InventoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmationService } from '../../core/services/confirmation.service';
-import { formatNum } from '../../shared/utils/utils';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
+import { calculatePrep } from './prep-calculation.engine';
+import {
+  ConcentrationBasis,
+  ConcentrationDraft,
+  CalculationIssue,
+  MixDraftRow,
+  PrepCalculationResult,
+  PrepDraft,
+  PrepMode,
+  PrepOutput
+} from './prep-domain.types';
 
-type CalcMode = 'molar' | 'dilution' | 'spiking' | 'serial' | 'mix' | 'sample_prep';
-type SystemMode = 'sandbox' | 'real';
+type NumericSignal = WritableSignal<number | null>;
 
-// Unit Constants
-const CONC_UNITS = [
-    { val: 'M', factor: 1, label: 'M (Molar)' },
-    { val: 'mM', factor: 0.001, label: 'mM' },
-    { val: 'uM', factor: 0.000001, label: 'µM' },
-    { val: '%', factor: 10, label: '%' },
-    { val: 'mg/ml', factor: 1, label: 'mg/mL' },
-    { val: 'ppm', factor: 0.001, label: 'ppm (mg/L)' },
-    { val: 'ppb', factor: 0.000001, label: 'ppb (µg/L)' }
-];
-
-const VOL_UNITS = [
-    { val: 'l', factor: 1, label: 'L' },
-    { val: 'ml', factor: 0.001, label: 'mL' },
-    { val: 'ul', factor: 0.000001, label: 'µL' }
-];
-
-const MASS_UNITS = [
-    { val: 'g', factor: 1, label: 'g' },
-    { val: 'mg', factor: 0.001, label: 'mg' },
-    { val: 'kg', factor: 1000, label: 'kg' },
-    { val: 'ug', factor: 0.000001, label: 'µg' }
-];
-
-interface SerialPoint {
-    conc: number;
-    vStock: number; // calculated
-    vSolvent: number; // calculated
+interface ModeDefinition {
+  id: PrepMode;
+  label: string;
+  shortLabel: string;
+  description: string;
+  icon: string;
+  activeClass: string;
 }
 
-interface MixRow {
-    id: string;
-    name: string;
-    stockConc: number;
-    targetConc: number;
-    unit: string; // Target unit
-    invItem: InventoryItem | null;
+interface ModeGroup {
+  id: string;
+  label: string;
+  modeIds: PrepMode[];
 }
+
+interface MixUiRow {
+  id: string;
+  name: string;
+  stockConc: number | null;
+  stockUnit: string;
+  targetConc: number | null;
+  targetUnit: string;
+}
+
+const CONCENTRATION_OPTIONS = [
+  { unit: 'ppm', label: 'ppm (mg/L)' },
+  { unit: 'ppb', label: 'ppb (µg/L)' },
+  { unit: 'mg/ml', label: 'mg/ml' },
+  { unit: 'mg/l', label: 'mg/l' },
+  { unit: 'mg/kg', label: 'mg/kg (w/w)' },
+  { unit: 'g/l', label: 'g/l' },
+  { unit: 'M', label: 'M' },
+  { unit: 'mM', label: 'mM' },
+  { unit: 'uM', label: 'µM' },
+  { unit: '%', label: '% (w/w)' }
+];
+
+const VOLUME_OPTIONS = [
+  { unit: 'ml', label: 'mL' },
+  { unit: 'l', label: 'L' },
+  { unit: 'ul', label: 'µL' }
+];
+
+const MASS_OPTIONS = [
+  { unit: 'g', label: 'g' },
+  { unit: 'mg', label: 'mg' },
+  { unit: 'kg', label: 'kg' }
+];
 
 @Component({
   selector: 'app-smart-prep',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './smart-prep.component.html',
-  styles: [`
-    .card-input { @apply bg-white dark:bg-slate-800 rounded-2xl border dark:border-slate-700 shadow-sm overflow-hidden; }
-    .card-header { @apply px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2; }
-    .label { @apply text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1 tracking-wide; }
-    .input-wrapper { @apply flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50 focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition overflow-hidden; }
-    .input-field { @apply w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition placeholder-slate-300 dark:placeholder-slate-600; }
-    .unit-badge { @apply pr-3 text-xs font-bold text-slate-400 select-none bg-transparent; }
-    .select-unit { @apply bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-blue-400 dark:focus:border-blue-500 cursor-pointer px-2; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    @keyframes scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-  `]
+  styles: [
+    ".field-label{display:block;margin-bottom:.5rem;font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#64748b}.field-input{width:100%;border:1px solid #cbd5e1;border-radius:.75rem;background:#fff;padding:.65rem .75rem;font-size:.875rem;outline:0;transition:border-color .15s,box-shadow .15s}.field-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}.result-grid>div{border-radius:.75rem;background:#f8fafc;padding:.75rem}.result-grid span{display:block;font-size:.625rem;font-weight:700;color:#94a3b8}.result-grid strong{display:block;margin-top:.25rem;font-size:.8rem;line-height:1.35}@media (prefers-color-scheme:dark){.field-label{color:#94a3b8}.field-input{border-color:#334155;background:#0f172a;color:#e2e8f0}.result-grid>div{background:rgba(30,41,59,.7)}}"
+  ]
 })
 export class SmartPrepComponent {
-  invService = inject(InventoryService);
-  toast = inject(ToastService);
-  confirmation = inject(ConfirmationService);
-  auth = inject(AuthService);
-  router = inject(Router);
-  formatNum = formatNum;
+  private readonly toast = inject(ToastService);
 
-  // --- CONFIG DATA ---
-  concUnits = CONC_UNITS;
-  volUnits = VOL_UNITS;
-  massUnits = MASS_UNITS;
-  modes: {id: CalcMode, label: string, icon: string, color: string, activeClass: string}[] = [
-      { id: 'molar', label: 'Dung dịch mol từ chất rắn', icon: 'fa-weight-hanging', color: 'blue', activeClass: 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/20 dark:bg-blue-900/20' },
-      { id: 'dilution', label: 'Pha loãng', icon: 'fa-droplet', color: 'orange', activeClass: 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50/20 dark:bg-orange-900/20' },
-      { id: 'spiking', label: 'Thêm chuẩn', icon: 'fa-syringe', color: 'emerald', activeClass: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/20' },
-      { id: 'serial', label: 'Dãy chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia', activeClass: 'border-fuchsia-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50/20 dark:bg-fuchsia-900/20' },
-      { id: 'mix', label: 'Pha hỗn hợp', icon: 'fa-blender', color: 'indigo', activeClass: 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50/20 dark:bg-indigo-900/20' },
-      { id: 'sample_prep', label: 'Xử lý mẫu', icon: 'fa-vials', color: 'teal', activeClass: 'border-teal-500 text-teal-600 dark:text-teal-400 bg-teal-50/20 dark:bg-teal-900/20' }
+  readonly concentrationOptions = CONCENTRATION_OPTIONS;
+  readonly volumeOptions = VOLUME_OPTIONS;
+  readonly massOptions = MASS_OPTIONS;
+
+  readonly modes: ModeDefinition[] = [
+    {
+      id: 'molar',
+      label: 'Pha dung dịch mol',
+      shortLabel: 'Molar',
+      description: 'Từ khối lượng, độ tinh khiết và khối lượng phân tử.',
+      icon: 'fa-flask',
+      activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none'
+    },
+    {
+      id: 'dilution',
+      label: 'Pha loãng',
+      shortLabel: 'Pha loãng',
+      description: 'Tính thể tích dung dịch gốc và dung môi.',
+      icon: 'fa-droplet',
+      activeClass: 'bg-cyan-600 text-white shadow-lg shadow-cyan-200 dark:shadow-none'
+    },
+    {
+      id: 'spiking',
+      label: 'Bổ sung chuẩn',
+      shortLabel: 'Spiking',
+      description: 'Tính thể tích chuẩn thêm vào mẫu.',
+      icon: 'fa-vial',
+      activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200 dark:shadow-none'
+    },
+    {
+      id: 'serial',
+      label: 'Dãy chuẩn',
+      shortLabel: 'Dãy chuẩn',
+      description: 'Tính nhanh nhiều điểm từ một dung dịch gốc.',
+      icon: 'fa-list-ol',
+      activeClass: 'bg-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-none'
+    },
+    {
+      id: 'mix',
+      label: 'Pha hỗn hợp',
+      shortLabel: 'Hỗn hợp',
+      description: 'Tính thể tích từng thành phần trong một mẻ.',
+      icon: 'fa-layer-group',
+      activeClass: 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-none'
+    },
+    {
+      id: 'sample_prep',
+      label: 'Xử lý mẫu',
+      shortLabel: 'Xử lý mẫu',
+      description: 'Quy đổi kết quả thiết bị về mẫu ban đầu.',
+      icon: 'fa-filter',
+      activeClass: 'bg-rose-600 text-white shadow-lg shadow-rose-200 dark:shadow-none'
+    }
   ];
 
-  // --- STATE ---
-  systemMode = signal<SystemMode>('sandbox');
-  calcMode = signal<CalcMode>('molar');
-  
-  // Inputs
-  mw = signal<number>(0);
-  purity = signal<number>(100);
-  actualMass = signal<number>(10);
-  actualMassUnit = signal<string>('mg');
-  stockConc = signal<number>(1000);
-  concUnit = signal<string>('ppm'); 
-  targetConc = signal<number>(10);
-  targetConcUnit = signal<string>('ppm');
-  targetVol = signal<number>(10);
-  targetVolUnit = signal<string>('ml');
+  readonly modeGroups: ModeGroup[] = [
+    { id: 'solution', label: 'Dung dịch', modeIds: ['molar', 'dilution', 'spiking'] },
+    { id: 'series', label: 'Chuỗi pha', modeIds: ['serial', 'mix'] },
+    { id: 'sample', label: 'Mẫu thử', modeIds: ['sample_prep'] }
+  ];
 
-  // Sample Prep Inputs (New)
-  sampleMass = signal<number>(10);
-  extractVol = signal<number>(10);
-  cleanupAliquot = signal<number>(6); // V2
-  concAliquot = signal<number>(5);    // V3
-  finalVol = signal<number>(1);       // V4
-  recovery = signal<number>(100);     // %
-  instConc = signal<number>(0);       // Input for reverse calc
+  readonly calcMode = signal<PrepMode>('molar');
+  readonly showTrace = signal(false);
 
-  // Serial List
-  serialPoints = signal<number[]>([0,0,0,0,0]); // Default 5 points
+  readonly substanceName = signal('NaCl');
+  readonly massValue = signal<number | null>(5);
+  readonly massUnit = signal('g');
+  readonly purity = signal<number | null>(99);
+  readonly molarFinalVolume = signal<number | null>(1000);
+  readonly molarFinalVolumeUnit = signal('ml');
+  readonly molecularWeight = signal<number | null>(58.44);
 
-  // Mix List
-  mixItems = signal<MixRow[]>([{ id: '1', name: '', stockConc: 0, targetConc: 0, unit: 'M', invItem: null }]);
-  activeMixSearchIndex = signal<number | null>(null);
+  readonly concentrationMw = signal<number | null>(58.44);
+  readonly densityGPerMl = signal<number | null>(1);
 
-  // Real Mode State
-  searchTerm = signal('');
-  isSearching = signal(false);
-  searchResults = signal<InventoryItem[]>([]);
-  selectedItem = signal<InventoryItem | null>(null);
-  isProcessing = signal(false);
+  readonly dilutionStockName = signal('Dung dịch gốc');
+  readonly dilutionStockConc = signal<number | null>(1000);
+  readonly dilutionStockUnit = signal('ppm');
+  readonly dilutionTargetConc = signal<number | null>(10);
+  readonly dilutionTargetUnit = signal('ppm');
+  readonly dilutionFinalVolume = signal<number | null>(10);
+  readonly dilutionFinalVolumeUnit = signal('ml');
 
-  searchSubject = new Subject<{term: string, index?: number}>();
+  readonly spikingStockName = signal('Dung dịch chuẩn');
+  readonly spikingSampleName = signal('Mẫu thử');
+  readonly spikingStockConc = signal<number | null>(1000);
+  readonly spikingStockUnit = signal('ppm');
+  readonly spikingAddedConc = signal<number | null>(10);
+  readonly spikingAddedUnit = signal('ppm');
+  readonly spikingSampleVolume = signal<number | null>(10);
+  readonly spikingSampleVolumeUnit = signal('ml');
 
-  constructor() {
-      this.searchSubject.pipe(
-          debounceTime(300),
-          distinctUntilChanged((p, c) => p.term === c.term),
-          switchMap(data => {
-              if (!data.term.trim()) return of([]);
-              this.isSearching.set(true);
-              return this.invService.getInventoryPage(10, null, 'all', data.term).then(res => {
-                  this.isSearching.set(false);
-                  return res.items;
-              });
-          })
-      ).subscribe(items => this.searchResults.set(items));
+  readonly serialStockName = signal('Dung dịch gốc');
+  readonly serialStockConc = signal<number | null>(1000);
+  readonly serialStockUnit = signal('ppm');
+  readonly serialTargetUnit = signal('ppm');
+  readonly serialPointVolume = signal<number | null>(10);
+  readonly serialPointVolumeUnit = signal('ml');
+  readonly serialTargets = signal<(number | null)[]>([100, 50, 10, 1]);
 
-      effect(() => { if (this.systemMode() === 'sandbox') this.clearSelection(); });
+  readonly mixFinalVolume = signal<number | null>(100);
+  readonly mixFinalVolumeUnit = signal('ml');
+  readonly mixItems = signal<MixUiRow[]>([
+    { id: 'mix-1', name: 'Thành phần A', stockConc: 1000, stockUnit: 'ppm', targetConc: 10, targetUnit: 'ppm' },
+    { id: 'mix-2', name: 'Thành phần B', stockConc: 500, stockUnit: 'ppm', targetConc: 5, targetUnit: 'ppm' }
+  ]);
+
+  readonly sampleName = signal('Mẫu thử');
+  readonly sampleMass = signal<number | null>(10);
+  readonly sampleMassUnit = signal('g');
+  readonly extractVolume = signal<number | null>(50);
+  readonly extractVolumeUnit = signal('ml');
+  readonly cleanupAliquot = signal<number | null>(5);
+  readonly cleanupAliquotUnit = signal('ml');
+  readonly concentrationAliquot = signal<number | null>(1);
+  readonly concentrationAliquotUnit = signal('ml');
+  readonly sampleFinalVolume = signal<number | null>(1);
+  readonly sampleFinalVolumeUnit = signal('ml');
+  readonly recovery = signal<number | null>(80);
+  readonly instrumentConc = signal<number | null>(1);
+  readonly instrumentConcUnit = signal('ppm');
+
+  readonly calculation = computed<PrepCalculationResult<PrepOutput>>(() => calculatePrep(this.buildDraft()));
+
+  getMode(id: PrepMode): ModeDefinition {
+    return this.modes.find(mode => mode.id === id) ?? this.modes[0];
   }
 
-  setSystemMode(mode: SystemMode) { 
-      if (mode === 'real' && !this.auth.canEditInventory()) {
-          this.toast.show('Cần quyền "Sửa Kho" · Liên hệ quản trị viên để được cấp', 'error');
-          return;
-      }
-      this.systemMode.set(mode); 
-  }
-  setCalcMode(mode: CalcMode) { this.calcMode.set(mode); }
-
-  // --- ACTIONS ---
-  onSearch(term: string) { this.searchTerm.set(term); this.searchSubject.next({term}); }
-  selectGlobalItem(item: InventoryItem) { this.selectedItem.set(item); this.searchResults.set([]); this.searchTerm.set(''); }
-  clearSelection() { this.selectedItem.set(null); this.searchResults.set([]); this.searchTerm.set(''); }
-
-  // Mix
-  onSearchMix(index: number, event: any) { this.activeMixSearchIndex.set(index); this.searchSubject.next({ term: event.target.value, index }); }
-  selectMixItem(index: number, item: InventoryItem) {
-      this.mixItems.update(items => { const n = [...items]; n[index] = { ...n[index], name: item.name, invItem: item }; return n; });
-      this.activeMixSearchIndex.set(null); this.searchResults.set([]);
-  }
-  addMixRow() { this.mixItems.update(i => [...i, { id: Date.now().toString(), name: '', stockConc: 0, targetConc: 0, unit: 'M', invItem: null }]); }
-  removeMixRow(i: number) { this.mixItems.update(items => items.filter((_, idx) => idx !== i)); }
-  clearMixItem(i: number) { this.mixItems.update(items => { const n = [...items]; n[i] = { ...n[i], name: '', invItem: null }; return n; }); }
-
-  // Serial
-  addSerialPoint() { this.serialPoints.update(p => [...p, 0]); }
-  removeSerialPoint(i: number) { this.serialPoints.update(p => p.filter((_, idx) => idx !== i)); }
-
-  async pasteFromExcel() {
-      try {
-          const text = await navigator.clipboard.readText();
-          if (!text) return;
-          
-          const rows = text.split('\n').filter(r => r.trim() !== '');
-          const newItems: MixRow[] = [];
-          
-          rows.forEach((row, idx) => {
-              const cols = row.split('\t');
-              if (cols.length >= 2) {
-                  newItems.push({
-                      id: Date.now().toString() + idx,
-                      name: cols[0].trim(),
-                      stockConc: parseFloat(cols[1]) || 0,
-                      targetConc: cols.length >= 3 ? (parseFloat(cols[2]) || 0) : 0,
-                      unit: 'ppm', // Default
-                      invItem: null
-                  });
-              }
-          });
-
-          if (newItems.length > 0) {
-              this.mixItems.set(newItems);
-              this.toast.show(`Đã import ${newItems.length} chất từ Clipboard`, 'success');
-          } else {
-              this.toast.show('Không tìm thấy dữ liệu hợp lệ. Hãy sao chép 3 cột: Tên | Nồng độ gốc | Nồng độ đích', 'error');
-          }
-      } catch (err) {
-          this.toast.show('Lỗi đọc Clipboard. Hãy cấp quyền cho trình duyệt.', 'error');
-      }
+  setCalcMode(mode: PrepMode): void {
+    this.calcMode.set(mode);
+    this.showTrace.set(false);
   }
 
-  // --- HELPER FOR IMMUTABLE UPDATES ---
-  updateSerialPoint(index: number, value: number) {
-    this.serialPoints.update(points => {
-        const newArr = [...points];
-        newArr[index] = value;
-        return newArr;
-    });
+  concentrationBasisForUnit(unit: string): ConcentrationBasis {
+    const clean = (unit || '').trim().toLowerCase().replace('µ', 'u');
+    if (['m', 'mm', 'um'].includes(clean)) return 'molar';
+    if (['%', 'percent'].includes(clean)) return 'mass_fraction';
+    if (['g/g', 'mg/mg'].includes(clean)) return 'mass_fraction';
+    if (clean === 'mg/kg') return 'mass_per_mass';
+    return 'mass_per_volume';
   }
 
-  updateMixItem(index: number, field: keyof MixRow, value: any) {
-    this.mixItems.update(rows => {
-        const newArr = [...rows];
-        newArr[index] = { ...newArr[index], [field]: value };
-        return newArr;
-    });
+  makeConcentration(value: number | null, unit: string): ConcentrationDraft {
+    return {
+      value,
+      unit,
+      basis: this.concentrationBasisForUnit(unit),
+      molecularWeight: this.concentrationMw(),
+      densityGPerMl: this.densityGPerMl()
+    };
   }
 
-  // --- UNIT CONVERSION LOGIC ---
-  private getFactor(unit: string, type: 'conc' | 'vol' | 'mass'): number {
-      let list: any[] = [];
-      if (type === 'conc') list = CONC_UNITS;
-      else if (type === 'vol') list = VOL_UNITS;
-      else list = MASS_UNITS;
-      const found = list.find(u => u.val === unit);
-      return found ? found.factor : 1;
+  setNumeric(target: NumericSignal, raw: unknown): void {
+    target.set(this.parseNumber(raw));
   }
 
-  // Helper to convert calculated amount to stock unit for accurate comparison/deduction
-  private normalizeToStockUnit(amount: number, fromUnit: string, toUnit: string): number {
-      if (!fromUnit || !toUnit || fromUnit === toUnit) return amount;
-      
-      const fromUnitLower = fromUnit.toLowerCase();
-      const toUnitLower = toUnit.toLowerCase();
-
-      // Mass conversion
-      if (['g', 'mg', 'kg', 'ug'].includes(fromUnitLower) && ['g', 'mg', 'kg', 'ug'].includes(toUnitLower)) {
-          const fromFactor = this.getFactor(fromUnitLower, 'mass');
-          const toFactor = this.getFactor(toUnitLower, 'mass');
-          return amount * (fromFactor / toFactor);
-      }
-      
-      // Volume conversion
-      if (['l', 'ml', 'ul'].includes(fromUnitLower) && ['l', 'ml', 'ul'].includes(toUnitLower)) {
-          const fromFactor = this.getFactor(fromUnitLower, 'vol');
-          const toFactor = this.getFactor(toUnitLower, 'vol');
-          return amount * (fromFactor / toFactor);
-      }
-
-      // If units are incompatible (e.g. g to ml), return amount as is (assume user knows what they are doing or it's a 1:1 density assumption)
-      return amount;
+  updateSerialPoint(index: number, raw: unknown): void {
+    const value = this.parseNumber(raw);
+    this.serialTargets.update(points => points.map((point, currentIndex) => currentIndex === index ? value : point));
   }
 
-  // --- CALCULATIONS ---
-  molarResult = computed(() => {
-      if (this.calcMode() !== 'molar') return { val: 0, unit: 'M', alternatives: [] };
-      
-      const m = this.actualMass();
-      const mUnit = this.actualMassUnit();
-      const v = this.targetVol();
-      const vUnit = this.targetVolUnit();
-      const MW = this.mw();
-      const P = this.purity() || 100;
-
-      if (m <= 0 || v <= 0) return { val: 0, unit: 'M', alternatives: [] };
-
-      // Convert mass to grams
-      const massG = m * this.getFactor(mUnit, 'mass') * (P / 100);
-      // Convert vol to Liters
-      const volL = v * this.getFactor(vUnit, 'vol');
-
-      // Base conc: g/L (which is also mg/mL)
-      const concGL = massG / volL;
-      
-      const alts = [
-          { val: concGL * 1000, unit: 'ppm' },
-          { val: concGL, unit: 'mg/mL' },
-          { val: concGL / 10, unit: '%' }
-      ];
-
-      if (MW > 0) {
-          const molar = concGL / MW; // mol/L = M
-          return {
-              val: molar, unit: 'M',
-              alternatives: [
-                  { val: molar * 1000, unit: 'mM' },
-                  { val: molar * 1000000, unit: 'µM' },
-                  ...alts
-              ]
-          };
-      }
-
-      return {
-          val: concGL * 1000, unit: 'ppm',
-          alternatives: alts.filter(a => a.unit !== 'ppm')
-      };
-  });
-
-  resultValue = computed(() => {
-      const mode = this.calcMode();
-      
-      if (mode === 'molar') return this.actualMass(); // Just return input for stock deduction
-      
-      if (mode === 'dilution') {
-          const c1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
-          const c2 = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
-          if (c1 === 0) return 0;
-          
-          // V1 = C2 * V2 / C1 (V1 will be in same unit as V2)
-          const v1 = (c2 * this.targetVol()) / c1; 
-          
-          // Auto convert to uL if < 1mL and unit is mL
-          if (v1 < 1 && this.targetVolUnit() === 'ml') {
-              return v1 * 1000;
-          }
-          return v1; 
-      }
-
-      if (mode === 'spiking') {
-          const cStock = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
-          const cAdd = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
-          if (cStock === 0) return 0;
-          
-          // V_spike = V_sample * (C_add / C_stock)
-          // Note: V_sample might be mass (g). We assume 1g ~ 1mL for simple spiking logic if density not provided.
-          // Or we just treat the 'targetVol' input as the base unit for the calculation.
-          const v1 = this.targetVol() * (cAdd / cStock);
-          
-          // Auto convert to uL if < 1mL
-          const vUnit = this.targetVolUnit();
-          if (v1 < 1 && (vUnit === 'ml' || vUnit === 'g')) {
-              return v1 * 1000;
-          }
-          return v1;
-      }
-
-      return 0;
-  });
-
-  resultUnit = computed(() => {
-      const mode = this.calcMode();
-      if (mode === 'molar') return this.actualMassUnit();
-      
-      if (mode === 'dilution') {
-          const c1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
-          const c2 = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
-          if (c1 === 0) return this.targetVolUnit();
-          const v1 = (c2 * this.targetVol()) / c1; 
-          if (v1 < 1 && this.targetVolUnit() === 'ml') return 'ul';
-          return this.targetVolUnit();
-      }
-
-      if (mode === 'spiking') {
-          const cStock = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
-          const cAdd = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
-          if (cStock === 0) return this.targetVolUnit();
-          const v1 = this.targetVol() * (cAdd / cStock);
-          const vUnit = this.targetVolUnit();
-          if (v1 < 1 && (vUnit === 'ml' || vUnit === 'g')) return 'ul';
-          return vUnit;
-      }
-      return '';
-  });
-
-  // --- SAMPLE PREP CALCULATIONS ---
-  samplePrepFactor = computed(() => {
-      const m = this.sampleMass();
-      const V1 = this.extractVol();
-      const V3 = this.concAliquot(); // Volume taken to concentrate
-      const V4 = this.finalVol();
-      
-      if (m <= 0 || V3 <= 0) return 0;
-      
-      // Factor f = (V1 * V4) / (m * V3)
-      // Logic verified: C_sample = C_inst * f
-      return (V1 * V4) / (m * V3);
-  });
-
-  sampleResult = computed(() => {
-      const inst = this.instConc();
-      const f = this.samplePrepFactor();
-      const R = this.recovery() || 100;
-      
-      // C_sample = C_inst * f * (100 / Recovery)
-      if (R <= 0) return 0;
-      return inst * f * (100 / R);
-  });
-
-  serialResult = computed<any[]>(() => {
-      if (this.calcMode() !== 'serial') return [];
-      const C1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc');
-      const V2 = this.targetVol(); // Vol per point
-      if (C1 <= 0 || V2 <= 0) return [];
-
-      return this.serialPoints().map(C2_input => {
-          if (!C2_input) return { conc: 0, unit: 'ul', vStock: 0, vSolvent: 0 };
-          
-          const C2 = C2_input * this.getFactor(this.targetConcUnit(), 'conc');
-          let v1 = (C2 * V2) / C1;
-          
-          let vUnit = this.targetVolUnit();
-          if (v1 < 1 && this.targetVolUnit() === 'ml') {
-              v1 = v1 * 1000;
-              vUnit = 'ul';
-          }
-          
-          // Calculate solvent in original target unit
-          const v1_in_target_unit = (C2 * V2) / C1;
-          const vSolvent = V2 - v1_in_target_unit;
-          
-          return { conc: C2_input, unit: vUnit, vStock: v1, vSolvent: vSolvent };
-      });
-  });
-
-  serialTotalStock = computed(() => {
-      // Return total in the unit of the first point for simplicity, or standardize to uL
-      const res = this.serialResult();
-      if (res.length === 0) return 0;
-      return res.reduce((sum, p) => sum + p.vStock, 0);
-  });
-
-  mixResult = computed(() => {
-      if (this.calcMode() !== 'mix') return { details: [], solventVol: 0 };
-      const V_total = this.targetVol();
-      if (V_total <= 0) return { details: [], solventVol: 0 };
-
-      let totalStockVol = 0;
-      const details = this.mixItems().map(item => {
-          if (item.stockConc <= 0) return { name: item.name || 'Unknown', vStock: 0, unit: this.targetVolUnit() };
-          
-          const c1 = item.stockConc * this.getFactor('ppm', 'conc'); // Assume mix stock is ppm for now, or add unit selector
-          const c2 = item.targetConc * this.getFactor(item.unit, 'conc');
-          
-          let v1 = (c2 * V_total) / c1;
-          totalStockVol += v1; // Keep track in targetVolUnit
-          
-          let vUnit = this.targetVolUnit();
-          if (v1 < 1 && this.targetVolUnit() === 'ml') {
-              v1 = v1 * 1000;
-              vUnit = 'ul';
-          }
-          
-          return { name: item.name || 'Unknown', vStock: v1, unit: vUnit };
-      });
-
-      return { details, solventVol: Math.max(0, V_total - totalStockVol) };
-  });
-
-  resultDescription = computed(() => {
-      const val = this.resultValue();
-      const unit = this.resultUnit();
-      const mode = this.calcMode();
-      
-      if (mode === 'dilution') {
-          const vTotal = this.targetVol();
-          // If val is in uL but vTotal is in mL, need to convert for display
-          const vTotalDisplay = vTotal;
-          const vTotalUnit = this.targetVolUnit();
-          
-          return `Hút ${this.formatNum(val)} ${unit} dung dịch gốc. Định mức tới ${vTotalDisplay} ${vTotalUnit} bằng dung môi.`;
-      }
-      if (mode === 'spiking') {
-          return `Hút ${this.formatNum(val)} ${unit} dung dịch chuẩn thêm vào mẫu.`;
-      }
-      return '';
-  });
-
-  // --- VALIDATION & CONFIRMATION ---
-  
-  stockPercentage = computed(() => {
-      const item = this.selectedItem();
-      if (!item || item.stock <= 0) return 0;
-      
-      let req = 0;
-      if (this.calcMode() === 'serial') {
-          // Serial uses uL internally for display, need to convert to targetVolUnit first, then to stock unit
-          const totalStock_uL = this.serialTotalStock();
-          const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
-          req = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
-      } else {
-          req = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
-      }
-      
-      return Math.min((req / item.stock) * 100, 100);
-  });
-
-  mixStockStatus = computed(() => {
-      if (this.calcMode() !== 'mix') return [];
-      const res = this.mixResult();
-      return this.mixItems().map((item, idx) => {
-          const required = res.details[idx]?.vStock || 0;
-          if (!item.invItem) return { name: item.name || `Chất ${idx+1}`, ok: true };
-          
-          const normalizedReq = this.normalizeToStockUnit(required, this.targetVolUnit(), item.invItem.unit);
-          return { name: item.name || `Chất ${idx+1}`, ok: item.invItem.stock >= normalizedReq };
-      });
-  });
-
-  canFulfill = computed(() => {
-      if (this.systemMode() === 'sandbox') return true;
-      if (this.calcMode() === 'mix') return this.mixStockStatus().every(s => s.ok);
-      if (this.calcMode() === 'sample_prep') return true; // Sample prep doesn't deduct stock directly
-      
-      const item = this.selectedItem();
-      if (!item) return false;
-
-      let req = 0;
-      if (this.calcMode() === 'serial') {
-          const totalStock_uL = this.serialTotalStock();
-          const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
-          req = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
-      } else {
-          req = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
-      }
-
-      return item.stock >= req;
-  });
-
-  async confirmTransaction() {
-      if (!this.auth.canEditInventory()) {
-           this.toast.show('Truy cập bị từ chối.', 'error');
-           return;
-      }
-      if (!this.canFulfill()) {
-          this.toast.show('Kho không đủ hàng!', 'error');
-          return;
-      }
-
-      if (await this.confirmation.confirm({ message: 'Xác nhận trừ kho theo tính toán?', confirmText: 'Xác nhận & Trừ kho' })) {
-          this.isProcessing.set(true);
-          try {
-              if (this.calcMode() === 'mix') {
-                  const details = this.mixResult().details;
-                  for(let i=0; i<this.mixItems().length; i++) {
-                      const mItem = this.mixItems()[i];
-                      const amount = details[i].vStock;
-                      if (mItem.invItem && amount > 0) {
-                          const normalizedAmount = this.normalizeToStockUnit(amount, this.targetVolUnit(), mItem.invItem.unit);
-                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -normalizedAmount, 'Pha hỗn hợp tại trạm pha chế');
-                      }
-                  }
-              } else if (this.calcMode() === 'serial') {
-                  const item = this.selectedItem()!;
-                  const totalStock_uL = this.serialTotalStock();
-                  const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
-                  const normalizedAmount = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
-                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Trạm pha chế: Dãy chuẩn`);
-              } else if (this.calcMode() !== 'sample_prep') {
-                  const item = this.selectedItem()!;
-                  const normalizedAmount = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
-                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Trạm pha chế: ${this.calcMode()}`);
-              }
-              
-              this.toast.show('Giao dịch thành công!', 'success');
-              this.setSystemMode('sandbox');
-          } catch (e: any) {
-              this.toast.show('Lỗi: ' + e.message, 'error');
-          } finally {
-              this.isProcessing.set(false);
-          }
-      }
+  addSerialPoint(): void {
+    this.serialTargets.update(points => [...points, null]);
   }
 
-  // --- LABEL PRINT MODAL STATE ---
-  showLabelModal = signal(false);
-  labelData = signal('');
-  quickPrintWidth = signal(62);
-  quickPrintHeight = signal(25);
-  quickPrintFontSize = signal(12);
+  removeSerialPoint(index: number): void {
+    this.serialTargets.update(points => points.length <= 1 ? points : points.filter((_, currentIndex) => currentIndex !== index));
+  }
 
-  openLabelModal() {
-      const mode = this.calcMode();
-      let labelText = '';
-      const dateStr = new Date().toISOString().split('T')[0];
-      const user = this.auth.currentUser()?.displayName || 'User';
-
-      if (mode === 'molar') {
-          const item = this.selectedItem();
-          const name = item ? item.name : 'Hóa chất';
-          const conc = `${this.formatNum(this.molarResult().val)} ${this.molarResult().unit}`;
-          labelText = `${name}\n${conc}\n${dateStr} - ${user}`;
-      } else if (mode === 'dilution') {
-          const item = this.selectedItem();
-          const name = item ? item.name : 'Dung dịch';
-          const conc = `${this.formatNum(this.targetConc())} ${this.targetConcUnit()}`;
-          labelText = `${name}\n${conc}\n${dateStr} - ${user}`;
-      } else if (mode === 'spiking') {
-          labelText = `Mẫu thêm chuẩn\n+${this.formatNum(this.targetConc())} ${this.targetConcUnit()}\n${dateStr} - ${user}`;
-      } else if (mode === 'serial') {
-          const item = this.selectedItem();
-          const name = item ? item.name : 'Chuẩn';
-          const points = this.serialResult();
-          labelText = points.map((p, i) => `STD ${i+1}: ${name}\n${p.conc} ${this.targetConcUnit()}\n${dateStr} - ${user}`).join('\n\n');
-      } else if (mode === 'mix') {
-          labelText = `Hỗn hợp chuẩn\n${this.mixItems().length} thành phần\n${dateStr} - ${user}`;
-      } else if (mode === 'sample_prep') {
-          labelText = `Mẫu xử lý\nf = ${this.formatNum(this.samplePrepFactor())}\n${dateStr} - ${user}`;
+  addMixRow(): void {
+    const nextNumber = this.mixItems().length + 1;
+    this.mixItems.update(rows => [
+      ...rows,
+      {
+        id: 'mix-' + Date.now(),
+        name: 'Thành phần ' + String.fromCharCode(64 + nextNumber),
+        stockConc: null,
+        stockUnit: 'ppm',
+        targetConc: null,
+        targetUnit: 'ppm'
       }
-
-      this.labelData.set(labelText);
-      this.showLabelModal.set(true);
+    ]);
   }
 
-  closeLabelModal() {
-      this.showLabelModal.set(false);
+  removeMixRow(id: string): void {
+    this.mixItems.update(rows => rows.length <= 1 ? rows : rows.filter(row => row.id !== id));
   }
 
-  printQuickLabel() {
-      const labels = this.labelData().split('\n\n').filter(l => l.trim() !== '');
-      if (labels.length === 0) return;
-
-      const w = this.quickPrintWidth();
-      const h = this.quickPrintHeight();
-      const fs = this.quickPrintFontSize();
-
-      const css = `
-        @page { size: ${w}mm ${h * labels.length}mm; margin: 0; }
-        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        * { box-sizing: border-box; }
-        .label-container {
-            width: ${w}mm;
-            height: ${h}mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 1px dashed #ccc;
-            page-break-after: avoid;
-            page-break-inside: avoid;
-            overflow: hidden;
-            position: relative;
-        }
-        .label-text {
-            font-size: ${fs}pt;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1.2;
-            word-break: break-all;
-            padding: 1mm;
-            width: 100%;
-            white-space: pre-wrap;
-        }
-        @media print {
-            @page { margin: 0; }
-            .label-container { border-bottom: none; }
-            body { margin: 0; }
-        }
-      `;
-
-      let htmlContent = `<!DOCTYPE html><html><head><title>Quick Print</title><style>${css}</style></head><body>`;
-      
-      labels.forEach(label => {
-          const safeLabel = document.createElement('div');
-          safeLabel.textContent = label;
-          htmlContent += `<div class="label-container"><div class="label-text">${safeLabel.innerHTML}</div></div>`;
-      });
-
-      htmlContent += `</body></html>`;
-
-      // Print through a temporary same-page iframe. This avoids window.open,
-      // so popup policies cannot block label printing.
-      const printFrame = document.createElement('iframe');
-      printFrame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
-      printFrame.srcdoc = htmlContent;
-      document.body.appendChild(printFrame);
-
-      const cleanup = () => {
-          if (document.body.contains(printFrame)) document.body.removeChild(printFrame);
-      };
-
-      printFrame.onload = () => {
-          const frameWindow = printFrame.contentWindow;
-          if (!frameWindow) {
-              cleanup();
-              this.toast.show('Không thể khởi tạo nội dung in.', 'error');
-              return;
-          }
-          frameWindow.onafterprint = cleanup;
-          frameWindow.focus();
-          frameWindow.print();
-          setTimeout(cleanup, 60000);
-      };
+  updateMixText(id: string, field: 'name' | 'stockUnit' | 'targetUnit', raw: unknown): void {
+    const value = String(raw ?? '');
+    this.mixItems.update(rows => rows.map(row => row.id === id ? { ...row, [field]: value } : row));
   }
 
-  goToLabels() {
-      this.openLabelModal();
+  updateMixNumber(id: string, field: 'stockConc' | 'targetConc', raw: unknown): void {
+    const value = this.parseNumber(raw);
+    this.mixItems.update(rows => rows.map(row => row.id === id ? { ...row, [field]: value } : row));
+  }
+
+  async pasteFromExcel(): Promise<void> {
+    if (!navigator.clipboard?.readText) {
+      this.toast.show('Trình duyệt không cho phép đọc clipboard.', 'warning');
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      const rows = text.split(/\r?\n/).map(line => line.split('\t')).filter(row => row.some(cell => cell.trim()));
+      if (!rows.length) {
+        this.toast.show('Clipboard đang trống.', 'warning');
+        return;
+      }
+      const imported = rows.map((row, index): MixUiRow => ({
+        id: 'mix-paste-' + Date.now() + '-' + index,
+        name: row[0]?.trim() || 'Thành phần ' + (index + 1),
+        stockConc: this.parseClipboardNumber(row[1]),
+        stockUnit: row[2]?.trim() || 'ppm',
+        targetConc: this.parseClipboardNumber(row[3]),
+        targetUnit: row[4]?.trim() || row[2]?.trim() || 'ppm'
+      }));
+      this.mixItems.set(imported);
+      this.toast.show('Đã nạp ' + imported.length + ' dòng mô phỏng từ clipboard.', 'success');
+    } catch {
+      this.toast.show('Không đọc được clipboard.', 'error');
+    }
+  }
+
+  formatNum(value: number | null | undefined, decimals = 4): string {
+    if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: decimals }).format(value);
+  }
+
+  displayVolume(valueMl: number): string {
+    if (!Number.isFinite(valueMl)) return '—';
+    if (Math.abs(valueMl) >= 1000) return this.formatNum(valueMl / 1000) + ' L';
+    if (Math.abs(valueMl) < 0.01 && valueMl !== 0) return this.formatNum(valueMl * 1000, 3) + ' µL';
+    return this.formatNum(valueMl, 4) + ' mL';
+  }
+
+  displayConcentration(valueGPerL: number, unit: string): string {
+    const clean = (unit || '').trim().toLowerCase().replace('µ', 'u');
+    if (clean === 'ppm') return this.formatNum(valueGPerL * 1000, 6) + ' ppm';
+    if (clean === 'ppb') return this.formatNum(valueGPerL * 1000000, 6) + ' ppb';
+    if (clean === 'mg/ml') return this.formatNum(valueGPerL, 6) + ' mg/mL';
+    if (clean === 'mg/l') return this.formatNum(valueGPerL * 1000, 6) + ' mg/L';
+    if (clean === 'g/ml') return this.formatNum(valueGPerL / 1000, 6) + ' g/mL';
+    if (clean === 'mg/kg') {
+      const density = this.densityGPerMl();
+      return density ? this.formatNum(valueGPerL * 1000 / density, 6) + ' mg/kg' : this.formatNum(valueGPerL, 6) + ' g/L';
+    }
+    if (clean === '%') {
+      const density = this.densityGPerMl();
+      return density ? this.formatNum(valueGPerL / (density * 10), 6) + ' %' : this.formatNum(valueGPerL, 6) + ' g/L';
+    }
+    return this.formatNum(valueGPerL, 6) + ' g/L';
+  }
+
+  statusLabel(): string {
+    const status = this.calculation().status;
+    if (status === 'valid') return 'Kết quả hợp lệ';
+    if (status === 'invalid') return 'Cần kiểm tra đầu vào';
+    return 'Đang chờ dữ liệu';
+  }
+
+  statusClass(): string {
+    const status = this.calculation().status;
+    if (status === 'valid') return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200';
+    if (status === 'invalid') return 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200';
+    return 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200';
+  }
+
+  issueClass(issue: CalculationIssue): string {
+    return issue.severity === 'warning'
+      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200'
+      : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200';
+  }
+
+  resetDraft(): void {
+    this.calcMode.set('molar');
+    this.showTrace.set(false);
+    this.substanceName.set('NaCl');
+    this.massValue.set(5);
+    this.massUnit.set('g');
+    this.purity.set(99);
+    this.molarFinalVolume.set(1000);
+    this.molarFinalVolumeUnit.set('ml');
+    this.molecularWeight.set(58.44);
+    this.concentrationMw.set(58.44);
+    this.densityGPerMl.set(1);
+    this.dilutionStockConc.set(1000);
+    this.dilutionTargetConc.set(10);
+    this.dilutionFinalVolume.set(10);
+    this.spikingStockConc.set(1000);
+    this.spikingAddedConc.set(10);
+    this.spikingSampleVolume.set(10);
+    this.serialTargets.set([100, 50, 10, 1]);
+    this.mixFinalVolume.set(100);
+    this.mixItems.set([
+      { id: 'mix-1', name: 'Thành phần A', stockConc: 1000, stockUnit: 'ppm', targetConc: 10, targetUnit: 'ppm' },
+      { id: 'mix-2', name: 'Thành phần B', stockConc: 500, stockUnit: 'ppm', targetConc: 5, targetUnit: 'ppm' }
+    ]);
+    this.sampleMass.set(10);
+    this.extractVolume.set(50);
+    this.cleanupAliquot.set(5);
+    this.concentrationAliquot.set(1);
+    this.sampleFinalVolume.set(1);
+    this.recovery.set(80);
+    this.instrumentConc.set(1);
+    this.toast.show('Đã đặt lại bộ mô phỏng.', 'success');
+  }
+
+  resultText(): string {
+    const result = this.calculation();
+    if (!result.output) {
+      return result.issues.map(issue => issue.message).join('\n') || 'Chưa có kết quả.';
+    }
+    return this.outputText(result.output);
+  }
+
+  async copyResult(): Promise<void> {
+    const text = this.resultText();
+    try {
+      await navigator.clipboard.writeText(text);
+      this.toast.show('Đã sao chép kết quả mô phỏng.', 'success');
+    } catch {
+      this.toast.show('Không thể sao chép kết quả.', 'error');
+    }
+  }
+
+  exportSimulation(): void {
+    const blob = new Blob([this.resultText()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'prep-simulation.txt';
+    link.click();
+    URL.revokeObjectURL(url);
+    this.toast.show('Đã xuất snapshot mô phỏng dạng TXT.', 'success');
+  }
+
+  printSimulation(): void {
+    const frame = document.createElement('iframe');
+    frame.style.position = 'fixed';
+    frame.style.width = '0';
+    frame.style.height = '0';
+    frame.style.border = '0';
+    document.body.appendChild(frame);
+    const printDocument = frame.contentDocument;
+    if (!printDocument) {
+      frame.remove();
+      this.toast.show('Không mở được bản in.', 'error');
+      return;
+    }
+    const mode = this.getMode(this.calcMode());
+    printDocument.open();
+    printDocument.write(
+      '<!doctype html><html><head><title>Trạm Pha Chế - mô phỏng</title>' +
+      '<style>body{font-family:Arial,sans-serif;padding:32px;color:#172033}h1{margin:0 0 4px}p{color:#64748b}.result{white-space:pre-wrap;border:1px solid #cbd5e1;border-radius:12px;padding:20px;line-height:1.6}small{color:#94a3b8}</style>' +
+      '</head><body><h1>Trạm Pha Chế</h1><p>Helper mô phỏng · ' +
+      this.escapeHtml(mode.label) +
+      '</p><div class="result">' +
+      this.escapeHtml(this.resultText()) +
+      '</div><small>Không tạo giao dịch, không cập nhật kho, không ghi chất chuẩn.</small></body></html>'
+    );
+    printDocument.close();
+    window.setTimeout(() => {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      frame.remove();
+    }, 100);
+  }
+
+  private parseNumber(raw: unknown): number | null {
+    if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+    const number = Number(String(raw).replace(',', '.'));
+    return Number.isFinite(number) ? number : null;
+  }
+
+  private parseClipboardNumber(value: string | undefined): number | null {
+    if (!value) return null;
+    const number = Number(value.trim().replace(',', '.'));
+    return Number.isFinite(number) ? number : null;
+  }
+
+  private buildDraft(): PrepDraft {
+    switch (this.calcMode()) {
+      case 'molar':
+        return {
+          mode: 'molar',
+          name: this.substanceName(),
+          mass: { value: this.massValue(), unit: this.massUnit(), dimension: 'mass' },
+          purity: this.purity(),
+          finalVolume: { value: this.molarFinalVolume(), unit: this.molarFinalVolumeUnit(), dimension: 'volume' },
+          molecularWeight: this.molecularWeight()
+        };
+      case 'dilution':
+        return {
+          mode: 'dilution',
+          stockName: this.dilutionStockName(),
+          stock: this.makeConcentration(this.dilutionStockConc(), this.dilutionStockUnit()),
+          target: this.makeConcentration(this.dilutionTargetConc(), this.dilutionTargetUnit()),
+          finalVolume: { value: this.dilutionFinalVolume(), unit: this.dilutionFinalVolumeUnit(), dimension: 'volume' }
+        };
+      case 'spiking':
+        return {
+          mode: 'spiking',
+          stockName: this.spikingStockName(),
+          sampleName: this.spikingSampleName(),
+          stock: this.makeConcentration(this.spikingStockConc(), this.spikingStockUnit()),
+          added: this.makeConcentration(this.spikingAddedConc(), this.spikingAddedUnit()),
+          sampleVolume: { value: this.spikingSampleVolume(), unit: this.spikingSampleVolumeUnit(), dimension: 'volume' }
+        };
+      case 'serial':
+        return {
+          mode: 'serial',
+          stockName: this.serialStockName(),
+          stock: this.makeConcentration(this.serialStockConc(), this.serialStockUnit()),
+          pointVolume: { value: this.serialPointVolume(), unit: this.serialPointVolumeUnit(), dimension: 'volume' },
+          targets: this.serialTargets().map(value => this.makeConcentration(value, this.serialTargetUnit()))
+        };
+      case 'mix':
+        return {
+          mode: 'mix',
+          finalVolume: { value: this.mixFinalVolume(), unit: this.mixFinalVolumeUnit(), dimension: 'volume' },
+          rows: this.mixItems().map((row): MixDraftRow => ({
+            id: row.id,
+            name: row.name,
+            stock: this.makeConcentration(row.stockConc, row.stockUnit),
+            target: this.makeConcentration(row.targetConc, row.targetUnit)
+          }))
+        };
+      case 'sample_prep':
+        return {
+          mode: 'sample_prep',
+          sampleName: this.sampleName(),
+          sampleMass: { value: this.sampleMass(), unit: this.sampleMassUnit(), dimension: 'mass' },
+          extractVolume: { value: this.extractVolume(), unit: this.extractVolumeUnit(), dimension: 'volume' },
+          cleanupAliquot: { value: this.cleanupAliquot(), unit: this.cleanupAliquotUnit(), dimension: 'volume' },
+          concentrationAliquot: { value: this.concentrationAliquot(), unit: this.concentrationAliquotUnit(), dimension: 'volume' },
+          finalVolume: { value: this.sampleFinalVolume(), unit: this.sampleFinalVolumeUnit(), dimension: 'volume' },
+          recovery: this.recovery(),
+          instrument: this.makeConcentration(this.instrumentConc(), this.instrumentConcUnit())
+        };
+    }
+  }
+
+  private outputText(output: PrepOutput): string {
+    switch (output.kind) {
+      case 'molar':
+        return [
+          'Chất: ' + output.name,
+          'Khối lượng hoạt chất: ' + this.formatNum(output.activeMassG, 6) + ' g',
+          'Nồng độ khối lượng: ' + this.formatNum(output.massConcentrationGPerL, 6) + ' g/L',
+          'Nồng độ mol: ' + (output.molarConcentrationM === null ? '—' : this.formatNum(output.molarConcentrationM, 8) + ' M')
+        ].join('\n');
+      case 'dilution':
+        return [
+          'Dung dịch gốc: ' + output.stockName,
+          'Thể tích dung dịch gốc: ' + this.displayVolume(output.stockVolumeMl),
+          'Thể tích dung môi: ' + this.displayVolume(output.solventVolumeMl),
+          'Thể tích cuối: ' + this.displayVolume(output.finalVolumeMl)
+        ].join('\n');
+      case 'spiking':
+        return [
+          'Mẫu: ' + output.sampleName,
+          'Thể tích chuẩn thêm: ' + this.displayVolume(output.spikeVolumeMl),
+          'Thể tích mẫu tham chiếu: ' + this.displayVolume(output.sampleVolumeMl)
+        ].join('\n');
+      case 'serial':
+        return [
+          'Dung dịch gốc: ' + output.stockName,
+          ...output.rows.map(row => 'Điểm ' + row.index + ': ' + row.targetDisplayValue + ' ' + row.targetDisplayUnit + ' → chuẩn ' + this.displayVolume(row.stockVolumeMl) + ', dung môi ' + this.displayVolume(row.solventVolumeMl)),
+          'Tổng dung dịch gốc: ' + this.displayVolume(output.totalStockVolumeMl),
+          'Tổng dung môi: ' + this.displayVolume(output.totalSolventVolumeMl)
+        ].join('\n');
+      case 'mix':
+        return [
+          'Thể tích cuối: ' + this.displayVolume(output.finalVolumeMl),
+          ...output.rows.map(row => row.name + ': ' + this.displayVolume(row.stockVolumeMl)),
+          'Tổng thành phần: ' + this.displayVolume(output.componentVolumeMl),
+          'Dung môi bù: ' + this.displayVolume(output.solventVolumeMl)
+        ].join('\n');
+      case 'sample_prep':
+        return [
+          'Mẫu: ' + this.sampleName(),
+          'Hệ số quy đổi: ' + this.formatNum(output.factor, 8),
+          'Nồng độ mẫu ban đầu: ' + this.displayConcentration(output.sampleConcentrationGPerL, this.instrumentConcUnit())
+        ].join('\n');
+    }
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 }
