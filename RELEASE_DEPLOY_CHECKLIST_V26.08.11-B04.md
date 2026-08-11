@@ -44,18 +44,19 @@ Mục tiêu: đưa toàn bộ thay đổi đang có trong checkout lên release 
 
 - [ ] Deploy Firestore Rules lên `lims-cloud-by-otada`; kiểm tra `npx.cmd firebase-tools login:list` cho thấy **No authorized accounts**, nên chưa thể ghi nhận deploy thành công.
 - [ ] Chạy migration production `npm.cmd run migrate:releases -- --source=scripts/legacy-releases.json`; chưa chạy vì chưa có credential/service account hợp lệ trong runtime.
-- [ ] Push sẽ kích hoạt Vercel Git integration; chưa đánh dấu trước khi push và kiểm tra deployment mới.
-- [ ] HTTP smoke sau deploy: `/`, `/ngsw.json`, `/release-history.json` trả `200`; manifest và file lịch sử phải chứa `v26.08.11-b04`.
-- [ ] Public smoke sau deploy: `/#/changelog` hiển thị release mới nhất và các bản lịch sử.
+- [x] Deploy frontend production bằng `npx.cmd vercel --prod --yes`; READY deployment `dpl_Cm1L1cpTV8QWg3eK5aBaQoKkoXEu`, alias `https://nafiqpm6.vercel.app`.
+- [x] HTTP smoke sau deploy: `/ngsw.json` và `/release-history.json` trả `200`; manifest là `v26.08.11-b04`, file lịch sử có 41 release và đứng đầu `v26.08.11-b04`.
+- [x] Public smoke sau deploy: `/#/changelog` render release mới nhất, nội dung theo bốn nhóm và các bản lịch sử.
+- [x] Modal smoke sau deploy trên màn hình đăng nhập: nút `Nhật ký cập nhật` mở modal Top 3, hiển thị `v26.08.11-b04` và nội dung chi tiết.
 - [ ] Authenticated smoke Dashboard → nút Nhật ký cập nhật → modal Top 3; cần session tài khoản kiểm thử được cung cấp qua cơ chế secure local, không ghi credential vào repo/log.
 
 ## 6. Git integration
 
-- [ ] Review toàn bộ diff và secret pattern lần cuối.
-- [ ] Stage tất cả thay đổi thuộc release b04.
-- [ ] Commit toàn bộ thay đổi trên `main`.
-- [ ] Push `main` lên `origin`.
-- [ ] Xác nhận `HEAD` và `origin/main` cùng SHA, worktree sạch.
+- [x] Review toàn bộ diff và secret pattern lần cuối.
+- [x] Stage tất cả thay đổi thuộc release b04; `git diff --cached --check` pass.
+- [x] Commit toàn bộ thay đổi trên `main`: `94c5b18 release: v26.08.11-b04 changelog and prep improvements`.
+- [x] Push `main` lên `origin`: `0aad35f..94c5b18`.
+- [ ] Xác nhận `HEAD` và `origin/main` cùng SHA, worktree sạch sau commit tài liệu bằng chứng này.
 
 ## 7. Giới hạn bằng chứng
 
