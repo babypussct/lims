@@ -62,11 +62,11 @@
 
 ## 6. Tích hợp Git
 
-- [ ] Review toàn bộ `git diff`/`git status` trước commit; không có secret pattern hoặc artifact ngoài phạm vi.
-- [ ] Stage toàn bộ thay đổi đã xác nhận.
-- [ ] Commit release trên `main` với version v26.08.11-b03.
-- [ ] Push `main` lên `origin` thành công.
-- [ ] Sau push, xác nhận `HEAD`/`origin/main` đồng bộ và worktree sạch.
+- [x] Review toàn bộ `git diff`/`git status` trước commit; không có secret pattern hoặc artifact ngoài phạm vi.
+- [x] Stage toàn bộ 27 file thay đổi đã xác nhận; staged `git diff --check` pass.
+- [x] Commit release trên `main` với version v26.08.11-b03: `6f86c5b`.
+- [x] Push release `main` lên `origin` thành công: `40b21e2..6f86c5b`.
+- [x] Sau push release, xác nhận `HEAD`/`origin/main` cùng trỏ `6f86c5b` và worktree sạch.
 
 ## 7. Bằng chứng và giới hạn kết luận
 
