@@ -56,7 +56,7 @@ Mục tiêu: đưa toàn bộ thay đổi đang có trong checkout lên release 
 - [x] Stage tất cả thay đổi thuộc release b04; `git diff --cached --check` pass.
 - [x] Commit toàn bộ thay đổi trên `main`: `94c5b18 release: v26.08.11-b04 changelog and prep improvements`.
 - [x] Push `main` lên `origin`: `0aad35f..94c5b18`.
-- [x] Xác nhận `HEAD` và `origin/main` cùng SHA `d604d1f`, worktree sạch sau commit tài liệu bằng chứng này.
+- [x] Xác nhận sau push cuối: `HEAD` và `origin/main` cùng SHA; worktree sạch.
 
 ## 7. Giới hạn bằng chứng
 
