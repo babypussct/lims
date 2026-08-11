@@ -107,7 +107,7 @@ export class StandardCrudService {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền thêm chuẩn.');
     std.internal_id = normalizeInternalId(std.internal_id);
     if (!isValidInternalId(std.internal_id)) {
-      throw new Error('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.');
+      throw new Error('Mã quản lý nội bộ phải có 4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.');
     }
     this.validateStandardAmounts(std);
     if (std.sop_tags !== undefined) {
@@ -161,7 +161,7 @@ export class StandardCrudService {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật chuẩn.');
     std.internal_id = normalizeInternalId(std.internal_id);
     if (!isValidInternalId(std.internal_id)) {
-      throw new Error('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.');
+      throw new Error('Mã quản lý nội bộ phải có 4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.');
     }
     this.validateStandardAmounts(std);
     if (std.sop_tags !== undefined) {

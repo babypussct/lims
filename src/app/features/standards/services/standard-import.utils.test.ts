@@ -51,6 +51,18 @@ test('parses the Book2 header shape and /Chai quantities without ambiguous amoun
   assert.equal(item.parsed.product_code, 'CRM-dcGTX2&3-d');
 });
 
+test('accepts the SDHET business code without an invalid-format error during import preview', () => {
+  const [item] = parse([{
+    'Tên chuẩn': 'SDHET business standard',
+    'Khối lượng chai': '1 mg',
+    'Số nhận diện': 'SDHET'
+  }]);
+
+  assert.equal(item.isValid, true);
+  assert.equal(item.parsed.internal_id, 'SDHET');
+  assert.doesNotMatch(item.errorMessage || '', /đúng 4 ký tự/);
+});
+
 test('derives current stock from unit-aware usage logs when current stock is blank', () => {
   const [item] = parse([{
     'Tên chuẩn': 'Test standard',

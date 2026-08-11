@@ -9,9 +9,10 @@ service cloud.firestore {
 
     // The laboratory's only business identifier for a standard. The
     // technical Firestore document id is deliberately not used as a visible
-    // replacement for this code.
+    // replacement for this code. SDHET is a separate business operation and
+    // is intentionally outside the reusable four-character sequence.
     function validInternalId(value) {
-      return value is string && value.matches('^[ABC][A-Z0-9]{3}$');
+      return value is string && (value == 'SDHET' || value.matches('^[ABC][A-Z0-9]{3}$'));
     }
 
     function canRepairStandardRequestSnapshot(appId) {
@@ -651,8 +652,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Technical ownership ledger for the reusable four-character internal
-    // code. It is never exposed as a second business identifier.
+    // Technical ownership ledger for the reusable A/B/C code sequence (and
+    // the explicitly supported SDHET business code). It is never exposed as
+    // a second business identifier.
     match /artifacts/{appId}/standard_code_registry/{code} {
       function validRegistryHolder(appId) {
         let holderId = request.resource.data.get('currentStandardId', '');

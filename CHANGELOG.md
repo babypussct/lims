@@ -2,7 +2,34 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.11-b02
+## Phiên bản hiện tại: v26.08.11-b03
+
+### v26.08.11-b03
+
+#### 🚀 Tính năng nổi bật
+
+- KNV có thể tính pha theo các tác vụ quen thuộc, với đơn vị thao tác ưu tiên µL (uL), mL, mg và g.
+- Các trường ppm, ppb và ppt tự chọn cơ sở phù hợp cho dung dịch hoặc mẫu rắn, giảm thao tác đổi đơn vị.
+- Màn hình rà soát Mã quản lý nội bộ dễ xử lý hơn nhờ bộ lọc, tìm kiếm và hướng dẫn rõ cho từng cảnh báo.
+
+#### ✨ Tính năng mới
+
+- Trạm Pha Chế hỗ trợ nhanh ppm (mg/L hoặc mg/kg), ppb (µg/L hoặc µg/kg) và ppt (ng/L hoặc ng/kg) theo bối cảnh mẫu.
+- Khi đổi nền mẫu hoặc loại nguồn, các lựa chọn lượng cân/hút và thể tích tự chuyển về đơn vị thao tác phù hợp.
+- Màn hình đồng bộ Mã quản lý nội bộ có thể lọc theo nhóm cảnh báo, tìm theo hồ sơ hoặc nội dung xử lý và nhập mã SDHET cho nghiệp vụ riêng.
+- Các cảnh báo về mã chuẩn hiển thị thêm chi tiết vấn đề và gợi ý bước xử lý để người quản lý đối chiếu hồ sơ vật lý.
+
+#### ⚡ Tối ưu & cải tiến
+
+- Phiếu tính hiển thị lượng thao tác theo µL, mL, mg hoặc g thay vì tự đổi sang L hoặc kg.
+- Giao diện Trạm Pha Chế tập trung vào công việc cần làm, không hiển thị các mô tả kỹ thuật về phạm vi hoặc giao dịch.
+- Các quy tắc mã chuẩn và mã SDHET được kiểm tra đồng nhất giữa biểu mẫu, import và luồng rà soát, giúp hạn chế nhầm hồ sơ.
+
+#### 🐛 Sửa lỗi
+
+- Không còn báo mã SDHET là sai định dạng trong biểu mẫu, import hoặc kiểm tra vòng đời.
+- Không còn để bộ chọn đơn vị bị rỗng khi KNV chuyển giữa thao tác theo khối lượng và theo thể tích.
+- Bổ sung kiểm tra hồi quy cho đơn vị ppm/ppb/ppt, đơn vị thao tác và các nhóm cảnh báo mã chuẩn.
 
 ### v26.08.11-b02
 

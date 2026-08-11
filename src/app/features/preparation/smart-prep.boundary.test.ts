@@ -24,3 +24,33 @@ test('prep helper exposes simulation-only actions', () => {
   assert.doesNotMatch(componentSource, /stockAfter|transactionId|auditLog|writeBatch|setDoc|updateDoc/i);
   assert.doesNotMatch(templateSource, /Dùng tồn kho|Trừ kho|tồn kho|Đủ hàng|Thiếu hàng/i);
 });
+
+test('prep UI does not expose technical boundary copy to KNV', () => {
+  const technicalBoundaryCopy = /Tính toán cục bộ|Ranh giới cục bộ|Phạm vi dữ liệu|Tác động dữ liệu|Không đọc\/ghi Kho|không tạo giao dịch|Chỉ nhập tay/i;
+  assert.doesNotMatch(templateSource, technicalBoundaryCopy);
+  assert.doesNotMatch(componentSource, technicalBoundaryCopy);
+});
+
+test('prep UI declares automatic concentration basis pairs for ppm, ppb and ppt', () => {
+  assert.match(componentSource, /ppt_ng_l/);
+  assert.match(componentSource, /ppt_ng_kg/);
+  assert.match(templateSource, /concentrationOptionsFor\('solution'\)/);
+  assert.match(templateSource, /sampleConcentrationOptions/);
+  assert.match(templateSource, /setSpikeMatrix/);
+  assert.match(componentSource, /concentrationOptionsFor\(context/);
+  assert.match(componentSource, /sampleConcentrationOptions/);
+  assert.match(componentSource, /setSpikeMatrix/);
+});
+
+test('prep UI prioritizes KNV operation units and fixes units when dimension changes', () => {
+  assert.match(componentSource, /\{ unit: 'µL', label: 'µL' \}/);
+  assert.match(componentSource, /\{ unit: 'mL', label: 'mL' \}/);
+  assert.match(componentSource, /\{ unit: 'mg', label: 'mg' \}/);
+  assert.match(componentSource, /\{ unit: 'g', label: 'g' \}/);
+  assert.doesNotMatch(componentSource, /\{ unit: 'L', label: 'L' \}/);
+  assert.doesNotMatch(componentSource, /\{ unit: 'kg', label: 'kg' \}/);
+  assert.match(templateSource, /setConcentrationSourceType/);
+  assert.match(templateSource, /setTargetSourceType/);
+  assert.match(templateSource, /setResultSampleBase/);
+  assert.match(componentSource, /keepDimensionUnit/);
+});

@@ -44,3 +44,16 @@ test('untracked prevents a busy-signal change from scheduling another scan', () 
   open.set(true);
   assert.equal(autoScan(), 2);
 });
+
+test('sync modal exposes selectable groups and searchable warning details', () => {
+  assert.match(source, /type SyncFilter = 'all' \| 'manual' \| 'safe' \| 'duplicate' \| 'registry' \| 'reference'/);
+  assert.match(source, /readonly filterOptions/);
+  assert.match(source, /setFilter\(filter: SyncFilter\)/);
+  assert.match(source, /setSearchQuery\(value: string\)/);
+  assert.match(source, /filteredManualIssues/);
+  assert.match(source, /filteredSafeChanges/);
+  assert.match(source, /filteredConflicts/);
+  assert.match(source, /issue\.detail/);
+  assert.match(source, /issue\.suggestion/);
+  assert.match(source, /nonManualConflicts = computed/);
+});

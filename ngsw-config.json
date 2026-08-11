@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.11-b02",
-    "title": "Trạm Pha Chế theo tác vụ và vòng đời Chất chuẩn ổn định hơn",
+    "version": "v26.08.11-b03",
+    "title": "Trạm Pha Chế thao tác gọn hơn và quản lý mã Chất chuẩn rõ hơn",
     "features": [
-      "Trạm Pha Chế được tổ chức theo năm câu hỏi công việc của kiểm nghiệm viên: tính nồng độ, tính lượng cần lấy, thêm chuẩn, lập dãy chuẩn/QC và quy đổi kết quả xử lý mẫu.",
-      "Các phép tính hỗ trợ mẫu rắn, mẫu lỏng, nhiều chuẩn trung gian, nội chuẩn/surrogate và chuỗi xử lý mẫu; mọi thông tin nguồn đều do kiểm nghiệm viên nhập trong bản nháp cục bộ.",
-      "Luồng Chất chuẩn tiếp tục giữ mã quản lý nội bộ theo đúng hồ sơ vật lý và không lặp lại quét đồng bộ khi danh sách đã được xử lý.",
-      "Trạm Pha Chế hiển thị công thức, phép thế số, kết quả trung gian, hướng dẫn thao tác và cảnh báo cho năm nhóm tác vụ; có thể thêm/xóa dòng, dán bảng điểm, sao chép, in và xuất phiếu tính cục bộ.",
-      "Calculation engine phân biệt rõ planned/actual quantity, cơ sở nồng độ, cây dung dịch nguồn, nguồn riêng từng điểm, nội chuẩn/surrogate theo phạm vi và các stage extract, aliquot, cô, hoàn nguyên, pha loãng hoặc chuyển toàn lượng."
+      "KNV có thể tính pha theo các tác vụ quen thuộc, với đơn vị thao tác ưu tiên µL (uL), mL, mg và g.",
+      "Các trường ppm, ppb và ppt tự chọn cơ sở phù hợp cho dung dịch hoặc mẫu rắn, giảm thao tác đổi đơn vị.",
+      "Màn hình rà soát Mã quản lý nội bộ dễ xử lý hơn nhờ bộ lọc, tìm kiếm và hướng dẫn rõ cho từng cảnh báo.",
+      "Trạm Pha Chế hỗ trợ nhanh ppm (mg/L hoặc mg/kg), ppb (µg/L hoặc µg/kg) và ppt (ng/L hoặc ng/kg) theo bối cảnh mẫu.",
+      "Khi đổi nền mẫu hoặc loại nguồn, các lựa chọn lượng cân/hút và thể tích tự chuyển về đơn vị thao tác phù hợp."
     ]
   },
   "assetGroups": [

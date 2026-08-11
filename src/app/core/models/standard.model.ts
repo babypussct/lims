@@ -140,6 +140,10 @@ export interface StandardInternalIdSyncIssue {
   internalId?: string;
   suggestedInternalId?: string;
   message: string;
+  /** Plain-language explanation of what made this record unsafe or inconsistent. */
+  detail?: string;
+  /** Human-readable next step; may include suggestedInternalId when one is deterministic. */
+  suggestion?: string;
   autoFixable: boolean;
 }
 

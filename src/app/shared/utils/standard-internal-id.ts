@@ -4,8 +4,12 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 // The form accepts lower-case input and normalizes it before persistence.
 // Validation therefore remains case-insensitive while the stored code is
 // always canonical upper-case.
-export const STANDARD_INTERNAL_ID_PATTERN = /^[ABC][A-Z0-9]{3}$/iu;
+export const STANDARD_INTERNAL_ID_PATTERN = /^(?:[ABC][A-Z0-9]{3}|SDHET)$/iu;
 export const STANDARD_INTERNAL_ID_LENGTH = 4;
+/** A legacy business operation uses this code outside the reusable A/B/C sequence. */
+export const SPECIAL_INTERNAL_ID = 'SDHET';
+export const STANDARD_INTERNAL_ID_RULE_DESCRIPTION =
+  '4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.';
 
 export type StandardInternalIdAssessmentKind = 'VALID' | 'NORMALIZABLE' | 'MISSING' | 'INVALID_FORMAT';
 
@@ -24,7 +28,8 @@ export function normalizeInternalId(value: unknown): string {
 }
 
 export function isValidInternalId(value: unknown): value is string {
-  return STANDARD_INTERNAL_ID_PATTERN.test(normalizeInternalId(value));
+  const normalized = normalizeInternalId(value);
+  return normalized === SPECIAL_INTERNAL_ID || STANDARD_INTERNAL_ID_PATTERN.test(normalized);
 }
 
 export function assessInternalId(value: unknown): StandardInternalIdAssessment {
@@ -32,6 +37,14 @@ export function assessInternalId(value: unknown): StandardInternalIdAssessment {
   const normalized = normalizeInternalId(value);
   if (!normalized) {
     return { raw, normalized, kind: 'MISSING', reason: 'Chưa có Mã quản lý nội bộ.' };
+  }
+  if (normalized === SPECIAL_INTERNAL_ID) {
+    return {
+      raw,
+      normalized,
+      kind: raw === normalized ? 'VALID' : 'NORMALIZABLE',
+      reason: 'Mã nghiệp vụ riêng SDHET; không áp dụng quy tắc chuỗi mã 4 ký tự.'
+    };
   }
   if (STANDARD_INTERNAL_ID_PATTERN.test(normalized)) {
     return {
@@ -48,7 +61,7 @@ export function assessInternalId(value: unknown): StandardInternalIdAssessment {
     raw,
     normalized,
     kind: 'INVALID_FORMAT',
-    reason: `Mã phải có đúng ${STANDARD_INTERNAL_ID_LENGTH} ký tự, bắt đầu bằng A, B hoặc C.`
+    reason: `Mã phải có đúng ${STANDARD_INTERNAL_ID_LENGTH} ký tự, bắt đầu bằng A, B hoặc C; hoặc là mã nghiệp vụ riêng SDHET.`
   };
 }
 

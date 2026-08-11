@@ -71,3 +71,12 @@
 - [x] Dùng `untracked()` cho lời gọi tự quét; effect chỉ còn phụ thuộc vào trạng thái mở modal.
 - [x] Thêm regression test kiểm tra lời gọi scan nằm ngoài dependency tracking của effect.
 - [ ] Xác minh trực tiếp trên dữ liệu production sau khi có phiên đăng nhập/quyền `standard_edit` được phê duyệt.
+
+## Cập nhật modal lọc cảnh báo và ngoại lệ SDHET (2026-08-11)
+
+- [x] Modal có bộ lọc chọn được theo nhóm: cần nhập mã, thay đổi an toàn, trùng mã, registry và tham chiếu; có tìm kiếm để xử lý từng nhóm.
+- [x] Cảnh báo có trường chi tiết vấn đề và gợi ý xử lý; các thay đổi an toàn hiển thị lý do before/after.
+- [x] `SDHET` được coi là mã nghiệp vụ riêng hợp lệ, không phát cảnh báo sai định dạng; các kiểm tra trùng chủ sở hữu/registry/snapshot vẫn được giữ.
+- [x] Regression bao phủ mã `SDHET`, filter modal, nội dung cảnh báo chi tiết và Rules.
+- [x] Chạy test/build cục bộ: `test:standards` 104/104, Rules emulator 19/19 và production build pass.
+- [ ] Xác minh UI có xác thực trên dữ liệu thật; để mở nếu chưa có phiên/quyền được phê duyệt.

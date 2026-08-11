@@ -87,10 +87,10 @@ import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_P
                             
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã quản lý nội bộ</label>
-                                <input formControlName="internal_id" maxlength="4" autocomplete="off" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
-                                <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">4 kÃ½ tá»±, báº¯t Ä‘áº§u báº±ng A, B hoáº·c C. ÄÃ¢y lÃ  mÃ£ duy nháº¥t vÃ  cÃ³ thá»ƒ táº­i cáº¥p sau khi Ä‘Ã³ng vÃ²ng Ä‘á»i.</p>
+                                <input formControlName="internal_id" maxlength="5" autocomplete="off" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01 hoặc SDHET">
+                                <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">Mã chuẩn có 4 ký tự, bắt đầu bằng A, B hoặc C; riêng nghiệp vụ SDHET là ngoại lệ được chấp nhận.</p>
                                 @if (form.get('internal_id')?.invalid && form.get('internal_id')?.touched) {
-                                  <p class="mt-1 text-[10px] font-bold text-red-600 dark:text-red-400">MÃ£ pháº£i cÃ³ Ä‘Ãºng 4 kÃ½ tá»± vÃ  báº¯t Ä‘áº§u báº±ng A, B hoáº·c C.</p>
+                                  <p class="mt-1 text-[10px] font-bold text-red-600 dark:text-red-400">Mã phải có 4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.</p>
                                 }
                             </div>
                             
@@ -290,7 +290,7 @@ export class StandardsFormModalComponent {
     val.internal_id = normalizeInternalId(val.internal_id);
     if (!STANDARD_INTERNAL_ID_PATTERN.test(val.internal_id)) {
         this.form.get('internal_id')?.markAsTouched();
-        this.toast.show('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.', 'error');
+        this.toast.show('Mã quản lý nội bộ phải có 4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.', 'error');
         return;
     }
 

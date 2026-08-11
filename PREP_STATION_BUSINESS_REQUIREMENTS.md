@@ -41,6 +41,7 @@ Kết quả không chỉ là một con số. Trạm phải cung cấp:
 - [x] Danh mục pipet hiện có: 2–20, 10–100, 20–200, 100–1.000, 500–5.000 và 1.000–10.000 µL.
 - [x] Danh mục bình định mức hiện có: 2, 5, 10, 20, 50, 100 và 1.000 mL.
 - [x] Cân có độ đọc 0,01 mg (`0.00 mg`). Độ đọc này chưa được xem là khối lượng cân tối thiểu cho đến khi có tiêu chí SOP/độ không đảm bảo tương ứng.
+- [x] Đơn vị thao tác ưu tiên của KNV là µL (`uL`), mL, mg và g.
 
 ## 3. Ranh giới hệ thống bắt buộc
 
@@ -460,23 +461,49 @@ Nghiệp vụ E chỉ được triển khai sau khi đã có mô hình chuỗi b
 - Thể tích: L, mL, µL.
 - Số mol: mol, mmol, µmol.
 
+### 10.1.1. Đơn vị thao tác ưu tiên
+
+Trong các form thao tác và hướng dẫn thực hiện, KNV thường nhập và đọc:
+
+- Thể tích: µL (`uL`) và mL.
+- Khối lượng: mg và g.
+
+UI ưu tiên bốn đơn vị này để giảm thao tác đổi đơn vị. Engine vẫn giữ giá trị canonical theo g và mL, đồng thời vẫn nhận các alias kỹ thuật cần thiết khi dữ liệu được nhập hoặc dán từ nguồn khác.
+
 ### 10.2. Concentration basis
 
 - Molar: mol/L, mmol/L, µmol/L.
-- Khối lượng/thể tích: g/L, mg/mL, mg/L, µg/mL, µg/L.
-- Khối lượng/khối lượng: g/kg, mg/kg, µg/kg.
+- Khối lượng/thể tích: g/L, mg/mL, mg/L, µg/mL, µg/L, ng/mL, ng/L.
+- Khối lượng/khối lượng: g/kg, mg/kg, µg/kg, ng/kg.
 - Thể tích/thể tích: mL/L, µL/mL và `% v/v`.
 - Phần khối lượng: `% w/w`.
 - Khối lượng/thể tích theo phần trăm: `% w/v`.
 
-### 10.3. Quy tắc cho ppm và ppb
+### 10.3. Quy tắc cho ppm, ppb và ppt
 
-Không dùng `ppm` hoặc `ppb` đơn lẻ trong calculation engine. UI phải lưu cả giá trị hiển thị và cơ sở:
+Trong nghiệp vụ, KNV được phép chọn nhanh họ đơn vị `ppm`, `ppb` hoặc `ppt`. Hệ thống tự gắn cơ sở theo bối cảnh đầu vào và vẫn lưu basis đầy đủ trong calculation engine:
 
-- `ppm (mg/L)`.
-- `ppm (mg/kg)`.
-- `ppb (µg/L)`.
-- `ppb (µg/kg)`.
+| Họ đơn vị | Cơ sở khối lượng/thể tích | Cơ sở khối lượng/khối lượng |
+|---|---|---|
+| ppm | ppm (mg/L) | ppm (mg/kg) |
+| ppb | ppb (µg/L) | ppb (µg/kg) |
+| ppt | ppt (ng/L) | ppt (ng/kg) |
+
+Quy ước canonical:
+
+```text
+ppm = 10^-3 g/L hoặc 10^-3 g/kg
+ppb = 10^-6 g/L hoặc 10^-6 g/kg
+ppt = 10^-9 g/L hoặc 10^-9 g/kg
+```
+
+Không hiển thị một lựa chọn `ppm`, `ppb` hoặc `ppt` không có cơ sở trong output. Cơ sở được chọn tự động theo cấu hình bối cảnh:
+
+- Dung dịch nguồn, dung dịch đích, dãy chuẩn, QC, nội chuẩn và surrogate → cơ sở `/L`.
+- Mẫu rắn hoặc mức spike trên khối lượng mẫu → cơ sở `/kg`.
+- Mẫu lỏng, dịch chiết và vial/dung dịch cuối → cơ sở `/L`.
+
+Khi KNV đổi nền từ mẫu rắn sang mẫu lỏng hoặc ngược lại, hệ thống tự đổi cặp tương ứng nhưng giữ họ và giá trị đã nhập, ví dụ `ppm (mg/kg)` ↔ `ppm (mg/L)`, `ppb (µg/kg)` ↔ `ppb (µg/L)`, `ppt (ng/kg)` ↔ `ppt (ng/L)`. KNV không phải chọn lại basis trong thao tác thông thường.
 
 ### 10.4. Điều kiện chuyển đổi
 
@@ -485,6 +512,7 @@ Không dùng `ppm` hoặc `ppb` đơn lẻ trong calculation engine. UI phải l
 - Mass/mass ↔ mass/volume bắt buộc có cơ sở mẫu hoặc khối lượng riêng phù hợp.
 - Không mặc định 1 g = 1 mL.
 - Không mặc định ppm luôn bằng mg/L.
+- Không mặc định ppt luôn là ng/L nếu bối cảnh đang là mẫu rắn; mẫu rắn dùng ng/kg.
 - Không mặc định `%` là `% w/w` hay `% w/v`.
 - Chỉ làm tròn ở lớp hiển thị; engine giữ giá trị canonical chưa làm tròn.
 
@@ -681,6 +709,8 @@ Mọi object chỉ tồn tại trong bản nháp cục bộ hoặc output local 
 - [ ] Thiếu MW → không xuất kết quả molar.
 - [ ] `% w/w` thiếu density khi đổi sang g/L → yêu cầu bổ sung, không suy đoán.
 - [ ] Nhập khối lượng thực tế khác kế hoạch → tính nồng độ thực tế và sai lệch.
+- [ ] 1 ppm, 1 ppb và 1 ppt được chuẩn hóa lần lượt thành 1 mg/L, 1 µg/L và 1 ng/L.
+- [ ] 1 ppm, 1 ppb và 1 ppt trên mẫu rắn được chuẩn hóa lần lượt thành 1 mg/kg, 1 µg/kg và 1 ng/kg.
 
 ### Pha dung dịch đích
 
@@ -753,6 +783,7 @@ Mọi object chỉ tồn tại trong bản nháp cục bộ hoặc output local 
 - [x] Chốt sáu dải pipet từ 2 đến 10.000 µL.
 - [x] Chốt các bình định mức 2, 5, 10, 20, 50, 100 và 1.000 mL.
 - [x] Chốt độ đọc của cân là 0,01 mg.
+- [x] Chốt cách tự chọn cơ sở `/kg` cho mẫu rắn và `/L` cho dung dịch/mẫu lỏng trong thao tác thông thường.
 - [ ] KNV review ví dụ, thuật ngữ và thứ tự ưu tiên trên tài liệu này.
 - [ ] Chốt minimum weight của cân theo SOP/đánh giá độ không đảm bảo; không suy ra từ độ đọc 0,01 mg.
 - [ ] Chốt danh mục và dung tích vial thường dùng.
@@ -760,7 +791,9 @@ Mọi object chỉ tồn tại trong bản nháp cục bộ hoặc output local 
 
 ### Phase 1 — Thiết kế domain và calculation engine
 
-- [ ] Tách concentration basis khỏi tên đơn vị hiển thị.
+- [x] Tách concentration basis khỏi tên đơn vị hiển thị.
+- [x] Bổ sung ppm, ppb và ppt cho cả cơ sở `/L` và `/kg` trong engine.
+- [x] Tự chuyển cặp `/L` ↔ `/kg` khi KNV đổi bối cảnh mẫu, giữ nguyên họ và giá trị đơn vị.
 - [ ] Thiết kế manual substance/manual solution không chứa ID Kho hoặc Chất chuẩn.
 - [ ] Hỗ trợ solve-for-variable cho các quan hệ pha cơ bản.
 - [ ] Hỗ trợ planned quantity và actual quantity.
@@ -779,6 +812,9 @@ Mọi object chỉ tồn tại trong bản nháp cục bộ hoặc output local 
 - [ ] Kiểm thử rounding chỉ xảy ra ở presenter.
 - [ ] Kiểm thử trace và phép thế số khớp output.
 - [ ] Kiểm thử không có dependency Angular, Firebase, Kho hoặc Chất chuẩn trong engine.
+- [x] Kiểm thử ppm/ppb/ppt theo cả mass/volume và mass/mass.
+- [x] Kiểm thử đổi nền mẫu rắn ↔ mẫu lỏng tự chuyển basis mà không làm mất giá trị nhập.
+- [x] Kiểm thử output thao tác ưu tiên µL, mL, mg và g; không tự đổi sang L hoặc kg.
 
 ### Phase 3 — Thiết kế giao diện theo tác vụ
 
@@ -788,6 +824,9 @@ Mọi object chỉ tồn tại trong bản nháp cục bộ hoặc output local 
 - [ ] Thiết kế bảng nội chuẩn/surrogate.
 - [ ] Hiển thị kế hoạch so với thực tế.
 - [ ] Hiển thị công thức, thế số, cảnh báo và hướng dẫn thao tác.
+- [x] Không hiển thị nhãn kỹ thuật về phạm vi dữ liệu, giao dịch, Kho hoặc tính cục bộ cho KNV.
+- [x] Các trường ppm/ppb/ppt hiển thị basis phù hợp theo bối cảnh, không bắt KNV chọn lại trong thao tác thông thường.
+- [x] Các trường lượng cân/hút và thể tích hiển thị trước hết theo µL, mL, mg hoặc g.
 - [ ] Kiểm tra desktop, tablet và mobile.
 - [ ] Kiểm tra keyboard, focus-visible, dark mode và reduced motion.
 
@@ -828,6 +867,9 @@ Mọi object chỉ tồn tại trong bản nháp cục bộ hoặc output local 
 - [ ] Gợi ý pipet chỉ chọn trong sáu dải đã xác nhận và xử lý đúng các điểm chồng dải.
 - [ ] Gợi ý bình định mức chỉ chọn trong danh mục 2, 5, 10, 20, 50, 100 và 1.000 mL.
 - [ ] Khối lượng thao tác hiển thị phù hợp độ đọc 0,01 mg mà không làm tròn sớm giá trị engine.
+- [ ] ppm, ppb và ppt tự dùng `/kg` cho mẫu rắn và `/L` cho dung dịch/mẫu lỏng.
+- [ ] Đổi nền mẫu tự đổi cặp `/kg` ↔ `/L` tương ứng.
+- [ ] UI không hiển thị mô tả ranh giới kỹ thuật hoặc trạng thái cục bộ.
 - [ ] Trạm không đọc/ghi dữ liệu Kho hoặc Chất chuẩn.
 - [ ] Không có nút hoặc code path tạo giao dịch nghiệp vụ.
 

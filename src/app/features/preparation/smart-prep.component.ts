@@ -26,6 +26,7 @@ import {
 } from './prep-domain.types';
 
 type NumericSignal = WritableSignal<number | null>;
+type ConcentrationContext = 'solution' | 'sample_mass' | 'sample_volume' | 'all';
 
 interface TaskDefinition {
   id: PrepMode;
@@ -109,13 +110,19 @@ interface UiStep {
 const CONCENTRATION_OPTIONS: readonly ConcentrationOption[] = [
   { key: 'ppm_mg_l', unit: 'ppm', basis: 'mass_per_volume', label: 'ppm (mg/L)' },
   { key: 'ppb_ug_l', unit: 'ppb', basis: 'mass_per_volume', label: 'ppb (µg/L)' },
+  { key: 'ppt_ng_l', unit: 'ppt', basis: 'mass_per_volume', label: 'ppt (ng/L)' },
   { key: 'mg_ml', unit: 'mg/mL', basis: 'mass_per_volume', label: 'mg/mL' },
   { key: 'mg_l', unit: 'mg/L', basis: 'mass_per_volume', label: 'mg/L' },
   { key: 'ug_ml', unit: 'µg/mL', basis: 'mass_per_volume', label: 'µg/mL' },
   { key: 'ug_l', unit: 'µg/L', basis: 'mass_per_volume', label: 'µg/L' },
+  { key: 'ng_ml', unit: 'ng/mL', basis: 'mass_per_volume', label: 'ng/mL' },
+  { key: 'ng_l', unit: 'ng/L', basis: 'mass_per_volume', label: 'ng/L' },
   { key: 'ppm_mg_kg', unit: 'ppm', basis: 'mass_per_mass', label: 'ppm (mg/kg)' },
+  { key: 'ppb_ug_kg', unit: 'ppb', basis: 'mass_per_mass', label: 'ppb (µg/kg)' },
+  { key: 'ppt_ng_kg', unit: 'ppt', basis: 'mass_per_mass', label: 'ppt (ng/kg)' },
   { key: 'mg_kg', unit: 'mg/kg', basis: 'mass_per_mass', label: 'mg/kg' },
   { key: 'ug_kg', unit: 'µg/kg', basis: 'mass_per_mass', label: 'µg/kg' },
+  { key: 'ng_kg', unit: 'ng/kg', basis: 'mass_per_mass', label: 'ng/kg' },
   { key: 'g_l', unit: 'g/L', basis: 'mass_per_volume', label: 'g/L' },
   { key: 'molar_m', unit: 'M', basis: 'molar', label: 'M (mol/L)' },
   { key: 'molar_mm', unit: 'mM', basis: 'molar', label: 'mM (mmol/L)' },
@@ -127,15 +134,12 @@ const CONCENTRATION_OPTIONS: readonly ConcentrationOption[] = [
 
 const VOLUME_OPTIONS = [
   { unit: 'µL', label: 'µL' },
-  { unit: 'mL', label: 'mL' },
-  { unit: 'L', label: 'L' }
+  { unit: 'mL', label: 'mL' }
 ];
 
 const MASS_OPTIONS = [
-  { unit: 'µg', label: 'µg' },
   { unit: 'mg', label: 'mg' },
-  { unit: 'g', label: 'g' },
-  { unit: 'kg', label: 'kg' }
+  { unit: 'g', label: 'g' }
 ];
 
 const TASKS: readonly TaskDefinition[] = [
@@ -194,7 +198,8 @@ export class SmartPrepComponent {
   private readonly toast = inject(ToastService);
 
   readonly tasks = TASKS;
-  readonly concentrationOptions = CONCENTRATION_OPTIONS;
+  private readonly allConcentrationOptions = CONCENTRATION_OPTIONS;
+  readonly concentrationOptions = CONCENTRATION_OPTIONS.filter(option => option.basis !== 'mass_per_mass');
   readonly volumeOptions = VOLUME_OPTIONS;
   readonly massOptions = MASS_OPTIONS;
   readonly seriesObjectTypes: readonly SeriesObjectType[] = ['standard', 'blank', 'qc', 'sample'];
@@ -303,8 +308,90 @@ export class SmartPrepComponent {
     this.showTrace.set(false);
   }
 
+  setConcentrationSourceType(raw: unknown): void {
+    const sourceType = this.validSourceType(raw);
+    this.concentrationSourceType.set(sourceType);
+    this.keepDimensionUnit(this.concentrationQuantityUnit, sourceType === 'solid' ? 'mass' : 'volume', sourceType === 'solid' ? 'mg' : 'µL');
+  }
+
+  setTargetSourceType(raw: unknown): void {
+    const sourceType = this.validSourceType(raw);
+    this.targetSourceType.set(sourceType);
+    this.keepDimensionUnit(this.targetQuantityUnit, sourceType === 'solid' ? 'mass' : 'volume', sourceType === 'solid' ? 'mg' : 'µL');
+  }
+
+  setResultSampleBase(raw: unknown): void {
+    const sampleBase: SampleBase = raw === 'volume' ? 'volume' : 'mass';
+    this.resultSampleBase.set(sampleBase);
+    this.keepDimensionUnit(this.resultSampleUnit, sampleBase === 'mass' ? 'mass' : 'volume', sampleBase === 'mass' ? 'g' : 'mL');
+  }
+
   concentrationOption(key: string): ConcentrationOption {
-    return this.concentrationOptions.find(option => option.key === key) ?? this.concentrationOptions[0];
+    return this.allConcentrationOptions.find(option => option.key === key) ?? this.allConcentrationOptions[0];
+  }
+
+  concentrationOptionsFor(context: ConcentrationContext): readonly ConcentrationOption[] {
+    if (context === 'all') return this.allConcentrationOptions;
+    const options = this.allConcentrationOptions;
+    if (context === 'sample_mass') {
+      return options.filter(option => option.basis === 'mass_per_mass');
+    }
+    if (context === 'sample_volume') {
+      return options.filter(option => option.basis === 'mass_per_volume' || option.basis === 'molar' || option.basis === 'volume_per_volume');
+    }
+    return options.filter(option => option.basis !== 'mass_per_mass');
+  }
+
+  sampleConcentrationOptions(): readonly ConcentrationOption[] {
+    return this.spikeMatrix() === 'solid'
+      ? this.concentrationOptionsFor('sample_mass')
+      : this.concentrationOptionsFor('sample_volume');
+  }
+
+  setSpikeMatrix(raw: unknown): void {
+    const matrix = (['solid', 'liquid', 'extract', 'vial'] as SpikeMatrix[]).includes(raw as SpikeMatrix)
+      ? raw as SpikeMatrix
+      : 'solid';
+    this.spikeMatrix.set(matrix);
+    this.keepDimensionUnit(this.spikeSampleUnit, matrix === 'solid' ? 'mass' : 'volume', matrix === 'solid' ? 'g' : 'mL');
+    const context: ConcentrationContext = matrix === 'solid' ? 'sample_mass' : 'sample_volume';
+    this.spikeTargetChoice.set(this.compatibleChoice(this.spikeTargetChoice(), context));
+    this.spikeInitialChoice.set(this.compatibleChoice(this.spikeInitialChoice(), context));
+  }
+
+  private compatibleChoice(choice: string, context: ConcentrationContext): string {
+    const options = this.concentrationOptionsFor(context);
+    if (options.some(option => option.key === choice)) return choice;
+    const pairedChoices: Record<string, string> = {
+      ppm_mg_l: 'ppm_mg_kg',
+      ppb_ug_l: 'ppb_ug_kg',
+      ppt_ng_l: 'ppt_ng_kg',
+      mg_l: 'mg_kg',
+      ug_l: 'ug_kg',
+      ng_l: 'ng_kg',
+      ppm_mg_kg: 'ppm_mg_l',
+      ppb_ug_kg: 'ppb_ug_l',
+      ppt_ng_kg: 'ppt_ng_l',
+      mg_kg: 'mg_l',
+      ug_kg: 'ug_l',
+      ng_kg: 'ng_l'
+    };
+    const paired = pairedChoices[choice];
+    if (paired && options.some(option => option.key === paired)) return paired;
+    return options.find(option => option.key === (context === 'sample_mass' ? 'ppm_mg_kg' : 'ppm_mg_l'))?.key
+      ?? options[0]?.key
+      ?? 'ppm_mg_l';
+  }
+
+  private validSourceType(raw: unknown): PrepSourceType {
+    return (['solid', 'solution', 'concentrate'] as PrepSourceType[]).includes(raw as PrepSourceType)
+      ? raw as PrepSourceType
+      : 'solid';
+  }
+
+  private keepDimensionUnit(target: WritableSignal<string>, dimension: 'mass' | 'volume', preferredUnit: string): void {
+    const options = dimension === 'mass' ? this.massOptions : this.volumeOptions;
+    if (!options.some(option => option.unit === target())) target.set(preferredUnit);
   }
 
   makeConcentration(value: number | null, choiceKey: string, molecularWeight: number | null = null, densityGPerMl: number | null = null): ConcentrationDraft {
@@ -490,6 +577,7 @@ export class SmartPrepComponent {
     const lower = unit.toLowerCase();
     if (lower.includes('ppm')) return this.formatNum(valueGPerL * 1000, 6) + ' ppm';
     if (lower.includes('ppb')) return this.formatNum(valueGPerL * 1000000, 6) + ' ppb';
+    if (lower.includes('ppt')) return this.formatNum(valueGPerL * 1000000000, 6) + ' ppt';
     if (lower === 'mg/ml' || lower === 'mg/mL'.toLowerCase()) return this.formatNum(valueGPerL, 6) + ' mg/mL';
     if (lower === 'mg/l') return this.formatNum(valueGPerL * 1000, 6) + ' mg/L';
     return this.formatNum(valueGPerL, 6) + ' g/L';
@@ -535,6 +623,7 @@ export class SmartPrepComponent {
     this.concentrationMolecularWeight.set(null);
     this.concentrationDensity.set(null);
     this.targetSourceType.set('solution');
+    this.targetQuantityUnit.set('µL');
     this.targetValue.set(10);
     this.targetChoice.set('ppm_mg_l');
     this.targetFinalVolume.set(10);
@@ -553,9 +642,10 @@ export class SmartPrepComponent {
     this.seriesResidualPercent.set(10);
     this.resultSampleBase.set('mass');
     this.resultSampleValue.set(10);
+    this.resultSampleUnit.set('g');
     this.resultInstrumentValue.set(1);
     this.resultUnit.set('mg/kg');
-    this.toast.show('Đã đặt lại bản nháp cục bộ.', 'success');
+    this.toast.show('Đã đặt lại thông tin.', 'success');
   }
 
   resultText(): string {
@@ -566,14 +656,13 @@ export class SmartPrepComponent {
       lines.push('', 'CẢNH BÁO');
       lines.push(...result.issues.map(issue => '- ' + issue.message + (issue.suggestedAction ? ' ' + issue.suggestedAction : '')));
     }
-    lines.push('', 'Bản nháp cục bộ; không đọc/ghi Kho hoặc Chất chuẩn; không tạo giao dịch.');
     return lines.filter(Boolean).join('\n');
   }
 
   async copyResult(): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.resultText());
-      this.toast.show('Đã sao chép phiếu tính cục bộ.', 'success');
+      this.toast.show('Đã sao chép phiếu tính.', 'success');
     } catch {
       this.toast.show('Không thể sao chép kết quả.', 'error');
     }
@@ -587,7 +676,7 @@ export class SmartPrepComponent {
     link.download = 'prep-calculation.txt';
     link.click();
     URL.revokeObjectURL(url);
-    this.toast.show('Đã xuất snapshot phiếu tính dạng TXT.', 'success');
+    this.toast.show('Đã xuất phiếu tính dạng TXT.', 'success');
   }
 
   printSimulation(): void {
@@ -604,7 +693,7 @@ export class SmartPrepComponent {
       return;
     }
     printDocument.open();
-    printDocument.write('<!doctype html><html><head><title>Trạm Pha Chế</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033}h1{margin:0 0 4px}.result{white-space:pre-wrap;border:1px solid #cbd5e1;border-radius:12px;padding:20px;line-height:1.6}small{color:#64748b}</style></head><body><h1>Trạm Pha Chế</h1><div class="result">' + this.escapeHtml(this.resultText()) + '</div><small>Bản nháp cục bộ - không tạo giao dịch.</small></body></html>');
+    printDocument.write('<!doctype html><html><head><title>Trạm Pha Chế</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033}h1{margin:0 0 4px}.result{white-space:pre-wrap;border:1px solid #cbd5e1;border-radius:12px;padding:20px;line-height:1.6}</style></head><body><h1>Trạm Pha Chế</h1><div class="result">' + this.escapeHtml(this.resultText()) + '</div></body></html>');
     printDocument.close();
     window.setTimeout(() => {
       frame.contentWindow?.focus();

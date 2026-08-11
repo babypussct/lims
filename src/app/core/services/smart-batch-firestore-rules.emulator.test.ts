@@ -646,6 +646,30 @@ test('internal-id ownership cannot be rewritten without the lifecycle transactio
   await assertSucceeds(batch.commit());
 });
 
+test('the SDHET business code is accepted while unrelated malformed codes remain denied', async () => {
+  const managerDb = dbFor(users.manager);
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), {
+    id: 'std-sdhet',
+    name: 'SDHET business standard',
+    internal_id: 'SDHET',
+    initial_amount: 10,
+    current_amount: 10,
+    unit: 'mg',
+    status: 'AVAILABLE',
+    lastUpdated: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-malformed-special`), {
+    id: 'std-malformed-special',
+    name: 'Malformed special code',
+    internal_id: 'SDHET1',
+    initial_amount: 10,
+    current_amount: 10,
+    unit: 'mg',
+    status: 'AVAILABLE',
+    lastUpdated: serverTimestamp(),
+  }));
+});
+
 test('print job creation binds ownership to the authenticated creator', async () => {
   const batchDb = dbFor(users.batchA);
   await assertSucceeds(setDoc(doc(batchDb, `artifacts/${APP_ID}/print_jobs/new-owned`), {

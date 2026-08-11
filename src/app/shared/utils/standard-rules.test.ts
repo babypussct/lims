@@ -48,6 +48,7 @@ test('reference standard update branches are named helpers instead of one compou
 
 test('internal-id lifecycle writes are bound to the canonical code and audited sync paths', () => {
   assert.match(rules, /function validInternalId\(value\)/);
+  assert.match(rules, /value == 'SDHET'/);
   assert.match(rules, /match \/artifacts\/\{appId\}\/standard_code_registry\/\{code\}/);
   assert.match(rules, /validRegistryHolder\(appId\)/);
   assert.match(rules, /canReuseAssignedRegistrySlot\(appId\)/);

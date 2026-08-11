@@ -89,6 +89,7 @@ const MASS_VOLUME_TO_G_PER_L: Record<string, number> = {
   'ng/l': 0.000000001,
   ppm: 0.001,
   ppb: 0.000001,
+  ppt: 0.000000001,
   '% w/v': 10
 };
 
@@ -99,7 +100,8 @@ const MASS_MASS_TO_G_PER_KG: Record<string, number> = {
   'µg/kg': 0.000001,
   'ng/kg': 0.000000001,
   ppm: 0.001,
-  ppb: 0.000001
+  ppb: 0.000001,
+  ppt: 0.000000001
 };
 
 const VOLUME_VOLUME_TO_RATIO: Record<string, number> = {
@@ -346,6 +348,9 @@ function snapshot(gPerL: number, molecularWeight: number | null | undefined): Co
     { value: gPerL, unit: 'g/L', basis: 'mass_per_volume' },
     { value: gPerL, unit: 'mg/mL', basis: 'mass_per_volume' },
     { value: gPerL * 1000, unit: 'mg/L', basis: 'mass_per_volume' },
+    { value: gPerL * 1000, unit: 'ppm (mg/L)', basis: 'mass_per_volume' },
+    { value: gPerL * 1000000, unit: 'ppb (µg/L)', basis: 'mass_per_volume' },
+    { value: gPerL * 1000000000, unit: 'ppt (ng/L)', basis: 'mass_per_volume' },
     { value: gPerL / 10, unit: '% w/v', basis: 'mass_per_volume' }
   ];
   const molarM = molecularWeight && molecularWeight > 0 ? gPerL / molecularWeight : null;
@@ -362,11 +367,9 @@ function snapshot(gPerL: number, molecularWeight: number | null | undefined): Co
 function quantityResult(value: number, dimension: 'mass' | 'volume'): QuantityResult {
   if (dimension === 'mass') {
     if (Math.abs(value) < 1) return { canonicalValue: value, canonicalUnit: 'g', displayValue: value * 1000, displayUnit: 'mg' };
-    if (Math.abs(value) >= 1000) return { canonicalValue: value, canonicalUnit: 'g', displayValue: value / 1000, displayUnit: 'kg' };
     return { canonicalValue: value, canonicalUnit: 'g', displayValue: value, displayUnit: 'g' };
   }
   if (Math.abs(value) < 1) return { canonicalValue: value, canonicalUnit: 'mL', displayValue: value * 1000, displayUnit: 'µL' };
-  if (Math.abs(value) >= 1000) return { canonicalValue: value, canonicalUnit: 'mL', displayValue: value / 1000, displayUnit: 'L' };
   return { canonicalValue: value, canonicalUnit: 'mL', displayValue: value, displayUnit: 'mL' };
 }
 

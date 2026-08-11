@@ -20,7 +20,11 @@ const mass = (value: number | null, unit = 'g'): QuantityDraft => ({ value, unit
 const volume = (value: number | null, unit = 'mL'): QuantityDraft => ({ value, unit, dimension: 'volume' });
 const c = (value: number | null, unit: string, basis: ConcentrationDraft['basis'], extras: Partial<ConcentrationDraft> = {}): ConcentrationDraft => ({ value, unit, basis, ...extras });
 const ppm = (value: number | null): ConcentrationDraft => c(value, 'ppm', 'mass_per_volume');
+const ppb = (value: number | null): ConcentrationDraft => c(value, 'ppb', 'mass_per_volume');
+const ppt = (value: number | null): ConcentrationDraft => c(value, 'ppt', 'mass_per_volume');
 const ppmKg = (value: number | null): ConcentrationDraft => c(value, 'ppm', 'mass_per_mass');
+const ppbKg = (value: number | null): ConcentrationDraft => c(value, 'ppb', 'mass_per_mass');
+const pptKg = (value: number | null): ConcentrationDraft => c(value, 'ppt', 'mass_per_mass');
 
 function solidSubstance(overrides: Partial<TargetTaskDraft['substance']> = {}) {
   return { name: 'Chất thủ công', potencyPercent: 100, conversionFactor: 1, molecularWeight: null, densityGPerMl: null, ...overrides };
@@ -65,6 +69,69 @@ test('A: molar output is conditional on molecular weight', () => {
   });
   assert.ok(withMw.output?.kind === 'concentration');
   if (withMw.output?.kind === 'concentration') assert.ok(Math.abs((withMw.output.actualConcentration.molarM ?? 0) - 0.01) < 1e-12);
+});
+
+test('units: ppm, ppb and ppt normalize correctly for volume basis', () => {
+  const ppmIssues: CalculationIssue[] = [];
+  const ppbIssues: CalculationIssue[] = [];
+  const pptIssues: CalculationIssue[] = [];
+  assert.equal(concentrationToGPerL(ppm(1), 'ppm', 'ppm', ppmIssues), 0.001);
+  assert.equal(concentrationToGPerL(ppb(1), 'ppb', 'ppb', ppbIssues), 0.000001);
+  assert.equal(concentrationToGPerL(ppt(1), 'ppt', 'ppt', pptIssues), 0.000000001);
+  assert.deepEqual(ppmIssues, []);
+  assert.deepEqual(ppbIssues, []);
+  assert.deepEqual(pptIssues, []);
+});
+
+test('units: ppm, ppb and ppt normalize correctly for mass basis with density', () => {
+  const ppmIssues: CalculationIssue[] = [];
+  const ppbIssues: CalculationIssue[] = [];
+  const pptIssues: CalculationIssue[] = [];
+  assert.equal(concentrationToGPerL({ ...ppmKg(1), densityGPerMl: 1 }, 'ppm', 'ppm', ppmIssues), 0.001);
+  assert.equal(concentrationToGPerL({ ...ppbKg(1), densityGPerMl: 1 }, 'ppb', 'ppb', ppbIssues), 0.000001);
+  assert.equal(concentrationToGPerL({ ...pptKg(1), densityGPerMl: 1 }, 'ppt', 'ppt', pptIssues), 0.000000001);
+  assert.deepEqual(ppmIssues, []);
+  assert.deepEqual(ppbIssues, []);
+  assert.deepEqual(pptIssues, []);
+});
+
+test('operation quantities stay in the KNV working units', () => {
+  const liquid = calculatePrep({
+    mode: 'target',
+    sourceType: 'solution',
+    substance: solidSubstance({ name: 'Dung dịch nguồn' }),
+    targetConcentration: ppm(1000),
+    sourceConcentration: ppm(1000),
+    finalVolume: volume(1000)
+  });
+  assert.equal(liquid.status, 'valid');
+  assert.ok(liquid.output?.kind === 'target');
+  if (liquid.output?.kind === 'target') {
+    assert.equal(liquid.output.plannedQuantity.displayValue, 1000);
+    assert.equal(liquid.output.plannedQuantity.displayUnit, 'mL');
+  }
+
+  const milligrams = calculatePrep({
+    mode: 'target',
+    sourceType: 'solid',
+    substance: solidSubstance({ name: 'Chất rắn' }),
+    targetConcentration: c(1, 'g/L', 'mass_per_volume'),
+    finalVolume: volume(10)
+  });
+  assert.equal(milligrams.status, 'valid');
+  assert.ok(milligrams.output?.kind === 'target');
+  if (milligrams.output?.kind === 'target') assert.equal(milligrams.output.plannedQuantity.displayUnit, 'mg');
+
+  const grams = calculatePrep({
+    mode: 'target',
+    sourceType: 'solid',
+    substance: solidSubstance({ name: 'Chất rắn nhiều' }),
+    targetConcentration: c(100, 'g/L', 'mass_per_volume'),
+    finalVolume: volume(10)
+  });
+  assert.equal(grams.status, 'valid');
+  assert.ok(grams.output?.kind === 'target');
+  if (grams.output?.kind === 'target') assert.equal(grams.output.plannedQuantity.displayUnit, 'g');
 });
 
 test('A: planned and actual quantities produce an actual concentration and deviation', () => {

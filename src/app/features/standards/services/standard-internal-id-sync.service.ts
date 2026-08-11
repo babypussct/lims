@@ -101,14 +101,22 @@ export class StandardInternalIdSyncService {
       if (assessment.kind === 'MISSING') {
         addIssue({
           kind: 'MISSING', severity: 'ERROR', collection: 'reference_standards', documentId: standard.id,
-          internalId: '', message: `${standard.name} chưa có Mã quản lý nội bộ.`, autoFixable: false,
+          internalId: '',
+          message: `${standard.name} chưa có Mã quản lý nội bộ.`,
+          detail: 'Trường internal_id đang trống nên hồ sơ vật lý chưa thể được đối chiếu với mã duy nhất của phòng.',
+          suggestion: 'Đối chiếu nhãn, hồ sơ hoặc vị trí kho rồi nhập mã 4 ký tự bắt đầu A/B/C; riêng nghiệp vụ SDHET nhập đúng SDHET. Không đoán theo tên hoặc số lô.',
+          autoFixable: false,
         });
         continue;
       }
       if (assessment.kind === 'INVALID_FORMAT') {
         addIssue({
           kind: 'INVALID_FORMAT', severity: 'ERROR', collection: 'reference_standards', documentId: standard.id,
-          internalId: assessment.raw, message: `${standard.name}: ${assessment.reason}`, autoFixable: false,
+          internalId: assessment.raw,
+          message: `${standard.name}: ${assessment.reason}`,
+          detail: `Giá trị đang lưu là “${assessment.raw}”, không khớp quy tắc mã chuẩn sau khi chuẩn hóa thành “${assessment.normalized}”.`,
+          suggestion: 'Sửa về mã 4 ký tự bắt đầu A/B/C; nếu đây là nghiệp vụ riêng thì dùng chính xác SDHET. Cần đối chiếu hồ sơ vật lý trước khi nhập.',
+          autoFixable: false,
         });
         continue;
       }
@@ -135,6 +143,8 @@ export class StandardInternalIdSyncService {
           kind: 'DUPLICATE_ACTIVE', severity: 'ERROR', collection: 'reference_standards', documentId: record.id,
           standardId: record.id, internalId: code,
           message: `Mã ${code} đang được dùng đồng thời cho nhiều chuẩn vật lý; không tự động chọn bản ghi nào là hiện tại.`,
+          detail: `Có ${currentRecords.length} hồ sơ còn trong vòng đời hiện tại cùng mang mã ${code}; registry không thể xác định một chủ sở hữu duy nhất.`,
+          suggestion: 'Đối chiếu từng hồ sơ/lô, đóng vòng đời bản ghi cũ nếu phù hợp hoặc sửa mã của bản ghi nhập nhầm; sau đó quét lại trước khi đồng bộ.',
           autoFixable: false,
         }));
         continue;
@@ -146,7 +156,10 @@ export class StandardInternalIdSyncService {
           addIssue({
             kind: 'REGISTRY_MISMATCH', severity: 'ERROR', collection: 'standard_code_registry', documentId: code,
             standardId: current.id, internalId: code,
-            message: `Ngân hàng mã ${code} đang ở trạng thái xung đột.`, autoFixable: false,
+            message: `Ngân hàng mã ${code} đang ở trạng thái xung đột.`,
+            detail: 'Bản ghi registry không ở trạng thái có thể xác định chủ sở hữu hiện tại một cách an toàn.',
+            suggestion: 'Mở nhóm Registry, đối chiếu lịch sử cấp/trả mã và xử lý xung đột nghiệp vụ trước; không tự ghi đè registry.',
+            autoFixable: false,
           });
         } else if (registry?.status === 'ASSIGNED' && registry.currentStandardId && registry.currentStandardId !== current.id) {
           const registryOwner = byId.get(registry.currentStandardId);
@@ -156,6 +169,10 @@ export class StandardInternalIdSyncService {
             message: registryOwner && isCurrentStandardLifecycle(registryOwner)
               ? `Ngân hàng mã ${code} đang trỏ tới chuẩn hiện tại khác (${registryOwner.id}); không tự động ghi đè quyền sở hữu.`
               : `Ngân hàng mã ${code} đang trỏ tới hồ sơ ${registry.currentStandardId} chưa được đối chiếu; không tự động ghi đè quyền sở hữu.`,
+            detail: registryOwner && isCurrentStandardLifecycle(registryOwner)
+              ? `Hồ sơ đang quét là ${current.id}, nhưng registry ghi chủ sở hữu hiện tại là ${registryOwner.id}.`
+              : `Registry ghi chủ sở hữu ${registry.currentStandardId}, nhưng hồ sơ đó chưa được xác nhận là vòng đời hiện tại của mã ${code}.`,
+            suggestion: 'Đối chiếu hồ sơ vật lý và trạng thái vòng đời của cả hai bản ghi; chỉ để một chủ sở hữu hiện tại rồi quét lại.',
             autoFixable: false,
           });
         } else if (!registry || registry.status !== 'ASSIGNED' || registry.currentStandardId !== current.id) {
@@ -181,7 +198,11 @@ export class StandardInternalIdSyncService {
         if (registry?.status === 'CONFLICT') {
           addIssue({
             kind: 'REGISTRY_MISMATCH', severity: 'ERROR', collection: 'standard_code_registry', documentId: code,
-            internalId: code, message: `Ngân hàng mã ${code} đang ở trạng thái xung đột.`, autoFixable: false,
+            internalId: code,
+            message: `Ngân hàng mã ${code} đang ở trạng thái xung đột.`,
+            detail: 'Mã có hồ sơ lịch sử nhưng registry không thể chuyển về trạng thái AVAILABLE một cách an toàn.',
+            suggestion: 'Kiểm tra các vòng đời đã đóng và lịch sử cấp mã; chỉ xử lý registry sau khi xác nhận không còn chủ sở hữu hiện tại.',
+            autoFixable: false,
           });
         } else if (allReleased &&
           (!registryOwner || !isCurrentStandardLifecycle(registryOwner))) {
@@ -203,6 +224,10 @@ export class StandardInternalIdSyncService {
             internalId: code, message: registryOwner && isCurrentStandardLifecycle(registryOwner)
               ? `Ngân hàng mã ${code} đang trỏ tới một chuẩn hiện tại khác với dữ liệu mã; cần xử lý xung đột.`
               : `Ngân hàng mã ${code} vẫn đang ghi nhận chuẩn hiện tại nhưng không tìm thấy vòng đời đang mở.`,
+            detail: registryOwner && isCurrentStandardLifecycle(registryOwner)
+              ? `Các hồ sơ vật lý cùng mã ${code} không khớp với chủ sở hữu mà registry đang ghi nhận.`
+              : `Registry đang khóa mã ${code} ở trạng thái ASSIGNED nhưng không có hồ sơ hiện tại tương ứng.`,
+            suggestion: 'Đối chiếu registry với từng hồ sơ vật lý; không gán lại mã cho hồ sơ mới cho đến khi xung đột được xử lý.',
             autoFixable: false,
           });
         }
@@ -221,6 +246,10 @@ export class StandardInternalIdSyncService {
         message: owner
           ? `Ngân hàng mã ${code} trỏ tới hồ sơ ${owner.id} nhưng hồ sơ này không có mã hợp lệ tương ứng.`
           : `Ngân hàng mã ${code} trỏ tới hồ sơ không tồn tại trong danh mục chuẩn.`,
+        detail: owner
+          ? `Registry đang giữ khóa ${code}, nhưng mã trên hồ sơ ${owner.id} không hợp lệ hoặc không khớp.`
+          : `currentStandardId của registry là ${registry.currentStandardId || '(trống/không tồn tại)'}, không tìm thấy hồ sơ vật lý tương ứng.`,
+        suggestion: 'Đối chiếu hồ sơ được registry trỏ tới và lịch sử cấp mã; sửa/đóng registry bằng quy trình nghiệp vụ phù hợp, không xóa lịch sử.',
         autoFixable: false,
       });
     }
@@ -436,6 +465,10 @@ export class StandardInternalIdSyncService {
           message: nonDeleted.length > 1
             ? `Tham chiếu ${rawReference} trùng nhiều vòng đời; không được tự đoán.`
             : `Không tìm thấy chuẩn vật lý cho tham chiếu ${rawReference}.`,
+          detail: nonDeleted.length > 1
+            ? `Mã/tham chiếu ${rawReference} khớp ${nonDeleted.length} hồ sơ không thể phân biệt bằng khóa hiện tại.`
+            : `Giá trị standardId/tham chiếu ${rawReference} không khớp id kỹ thuật hoặc mã nội bộ nào trong danh mục.`,
+          suggestion: 'Đối chiếu request với hồ sơ vật lý bằng id kỹ thuật, mã, tên và lô; chỉ sửa khi xác định được đúng một hồ sơ.',
           autoFixable: false,
         });
       }
@@ -447,7 +480,10 @@ export class StandardInternalIdSyncService {
       addIssue({
         kind: collectionName === 'standard_usages' || collectionName === 'reference_standard_logs' ? 'USAGE_REFERENCE' : 'REQUEST_REFERENCE',
         severity: 'ERROR', collection: collectionName, documentId, standardId: standard.id,
-        message: `Chuẩn được tham chiếu chưa có Mã quản lý nội bộ hợp lệ.`, autoFixable: false,
+        message: `Chuẩn được tham chiếu chưa có Mã quản lý nội bộ hợp lệ.`,
+        detail: `Hồ sơ vật lý ${standard.id} đang có giá trị “${standard.internal_id || '(trống)'}”, nên snapshot không thể được đồng bộ an toàn.`,
+        suggestion: 'Sửa mã trên hồ sơ vật lý trước theo quy tắc 4 ký tự A/B/C hoặc ngoại lệ SDHET, sau đó quét lại các request và nhật ký.',
+        autoFixable: false,
       });
       return;
     }
@@ -466,6 +502,8 @@ export class StandardInternalIdSyncService {
         severity: 'WARNING', collection: collectionName, documentId, standardId: standard.id,
         internalId: String(currentValue || ''), suggestedInternalId: expectedCode,
         message: `Snapshot mã ${String(currentValue || '(trống)')} khác mã của chuẩn vật lý tại thời điểm dữ liệu đang trỏ tới; cần đối chiếu thủ công.`,
+        detail: `Snapshot hiện tại là “${String(currentValue || '(trống)')}”, còn mã canonical của hồ sơ ${standard.id} là “${expectedCode}”.`,
+        suggestion: `Nếu snapshot bị ghi sai, sửa về ${expectedCode}; nếu đó là mã lịch sử đúng tại thời điểm phát sinh, giữ nguyên và ghi chú nghiệp vụ thay vì tự đổi.`,
         autoFixable: false,
       });
     }
@@ -499,6 +537,8 @@ export class StandardInternalIdSyncService {
           kind: 'USAGE_REFERENCE', severity: 'WARNING', collection: 'standard_requests', documentId: request.id || '',
           standardId: standard.id, internalId: assessment.normalized, suggestedInternalId: expectedCode,
           message: `Snapshot mã trong nhật ký gắn trong yêu cầu khác mã của chuẩn vật lý; cần đối chiếu thủ công.`,
+          detail: `Snapshot trong phần usageLogs là “${assessment.normalized}”, nhưng hồ sơ vật lý ${standard.id} đang có mã “${expectedCode}”.`,
+          suggestion: `Nếu log bị ghi sai, sửa về ${expectedCode}; nếu đây là snapshot lịch sử có chủ đích, giữ nguyên và xác nhận với nghiệp vụ trước khi thay đổi.`,
           autoFixable: false,
         });
       }

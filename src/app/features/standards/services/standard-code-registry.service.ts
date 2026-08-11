@@ -51,7 +51,7 @@ export class StandardCodeRegistryService {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cấp Mã quản lý nội bộ.');
     const code = normalizeInternalId(standard.internal_id);
     if (!isValidInternalId(code)) {
-      throw new Error('Mã quản lý nội bộ phải có đúng 4 ký tự và bắt đầu bằng A, B hoặc C.');
+      throw new Error('Mã quản lý nội bộ phải có 4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.');
     }
 
     const registryRef = this.getRegistryRef(code);
