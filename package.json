@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.11-b01",
+  "version": "26.08.11-b02",
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
     "release:patch": "npm version patch --no-git-tag-version && npm run sync-version",
@@ -10,7 +10,7 @@
     "start": "ng serve",
     "build": "npm run validate:release-notes && ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "npm run test:standards && npm run test:inventory && npm run test:notifications && npm run test:documents && npm run test:excel-import && npm run test:smart-batch && npm run test:daily-checklists && npm run test:gas",
+    "test": "npm run test:standards && npm run test:inventory && npm run test:notifications && npm run test:documents && npm run test:excel-import && npm run test:smart-batch && npm run test:daily-checklists && npm run test:gas && npm run test:prep",
     "test:fefo": "tsx --test src/app/shared/utils/standard-fefo.test.ts",
     "test:inventory": "tsx --test src/app/shared/utils/gs1-parser.test.ts",
     "test:standards": "tsx --test src/app/shared/utils/standard-fefo.test.ts src/app/shared/utils/standard-amount.test.ts src/app/shared/utils/standard-workflow.test.ts src/app/shared/utils/standard-backfill.test.ts src/app/shared/utils/standard-internal-id.test.ts src/app/shared/utils/dashboard-activity.test.ts src/app/shared/utils/date-range.test.ts src/app/shared/utils/standard-rules.test.ts src/app/shared/utils/chemical-name.test.ts src/app/core/services/pubchem.service.test.ts src/app/features/standards/services/standard-import.utils.test.ts src/app/features/standards/services/standard-tag.utils.test.ts src/app/features/standards/services/standard-tag-catalog.service.spec.ts src/app/core/services/delta-sync.test.ts src/app/core/services/firestore-activity-log-rules.test.ts src/app/core/services/firestore-read-monitor.service.test.ts src/app/features/standards/components/standards-internal-id-sync-modal.component.test.ts",
@@ -22,6 +22,7 @@
     "test:firestore-rules": "node scripts/run-firestore-rules-tests.js",
     "test:daily-checklists": "tsx --test src/app/core/utils/daily-checklist-projection.test.ts src/app/core/utils/daily-checklist-hotfix.test.ts",
     "test:gas": "tsx --test scripts/gas-report-regression.test.ts",
+    "test:prep": "tsx --test src/app/features/preparation/prep-calculation.engine.test.ts src/app/features/preparation/smart-prep.boundary.test.ts",
     "validate:release-notes": "node scripts/validate-release-notes.js",
     "migrate:releases": "node scripts/migrate-releases.js",
     "backfill:daily-checklists": "tsx scripts/backfill-daily-checklists.ts",

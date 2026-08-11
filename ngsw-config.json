@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.11-b01",
-    "title": "Trạm Pha Chế mô phỏng và quản lý Chất chuẩn an toàn hơn",
+    "version": "v26.08.11-b02",
+    "title": "Trạm Pha Chế theo tác vụ và vòng đời Chất chuẩn ổn định hơn",
     "features": [
-      "Trạm Pha Chế nay là trợ lý mô phỏng độc lập, giúp KNV tính nhanh các công thức pha mà không liên kết hoặc làm thay đổi Kho và Chất chuẩn.",
-      "Chất chuẩn có Mã quản lý nội bộ thống nhất, giúp nhận đúng từng lọ vật lý và giữ nguyên lịch sử khi mã được trả và cấp lại.",
-      "Các màn hình Lịch sử, Kết quả và Thống kê tải theo khoảng ngày đang xem, giúp mở trang nhanh hơn và dễ theo dõi dữ liệu liên quan.",
-      "Trong Trạm Pha Chế, chọn Pha dung dịch, Pha loãng, Thêm chuẩn, Dãy chuẩn, Pha hỗn hợp hoặc Xử lý mẫu để nhận công thức, kết quả trung gian, cảnh báo và phiếu mô phỏng có thể sao chép, in hoặc tải xuống.",
-      "Trong Chất chuẩn, nhập Mã quản lý nội bộ 4 ký tự, trả mã về ngân hàng kèm lý do, và dùng Đồng bộ Mã quản lý nội bộ để xem trước các chỉnh sửa an toàn trước khi áp dụng."
+      "Trạm Pha Chế được tổ chức theo năm câu hỏi công việc của kiểm nghiệm viên: tính nồng độ, tính lượng cần lấy, thêm chuẩn, lập dãy chuẩn/QC và quy đổi kết quả xử lý mẫu.",
+      "Các phép tính hỗ trợ mẫu rắn, mẫu lỏng, nhiều chuẩn trung gian, nội chuẩn/surrogate và chuỗi xử lý mẫu; mọi thông tin nguồn đều do kiểm nghiệm viên nhập trong bản nháp cục bộ.",
+      "Luồng Chất chuẩn tiếp tục giữ mã quản lý nội bộ theo đúng hồ sơ vật lý và không lặp lại quét đồng bộ khi danh sách đã được xử lý.",
+      "Trạm Pha Chế hiển thị công thức, phép thế số, kết quả trung gian, hướng dẫn thao tác và cảnh báo cho năm nhóm tác vụ; có thể thêm/xóa dòng, dán bảng điểm, sao chép, in và xuất phiếu tính cục bộ.",
+      "Calculation engine phân biệt rõ planned/actual quantity, cơ sở nồng độ, cây dung dịch nguồn, nguồn riêng từng điểm, nội chuẩn/surrogate theo phạm vi và các stage extract, aliquot, cô, hoàn nguyên, pha loãng hoặc chuyển toàn lượng."
     ]
   },
   "assetGroups": [

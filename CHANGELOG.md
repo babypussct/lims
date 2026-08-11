@@ -2,7 +2,50 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.07-b02
+## Phiên bản hiện tại: v26.08.11-b02
+
+### v26.08.11-b02
+
+#### 🚀 Tính năng nổi bật
+
+- Trạm Pha Chế được tổ chức theo năm câu hỏi công việc: tính nồng độ, tính lượng cần lấy, thêm chuẩn, lập dãy chuẩn/QC và quy đổi kết quả xử lý mẫu.
+- Các phép tính hỗ trợ mẫu rắn, mẫu lỏng, nhiều chuẩn trung gian, nội chuẩn/surrogate và chuỗi xử lý mẫu trong bản nháp cục bộ.
+
+#### ✨ Tính năng mới
+
+- Hiển thị công thức, phép thế số, kết quả trung gian, hướng dẫn thao tác và cảnh báo; hỗ trợ dán bảng điểm, sao chép, in và xuất phiếu tính cục bộ.
+- Phân biệt planned/actual quantity, cơ sở nồng độ, nguồn riêng từng điểm, stage xử lý mẫu và các danh mục pipet/bình định mức đã xác nhận.
+
+#### ⚡ Tối ưu & cải tiến
+
+- Chuyển Trạm Pha Chế từ sáu mode kỹ thuật sang tác vụ nghiệp vụ; draft chỉ nằm trong trình duyệt và không liên kết Kho hoặc Chất chuẩn.
+- Giữ giá trị canonical trong calculation engine, chỉ làm tròn ở lớp trình bày; thiếu MW hoặc density thì yêu cầu bổ sung.
+- Tích hợp bộ kiểm thử prep vào `npm test` và bổ sung boundary regression cho ranh giới không đọc/ghi dữ liệu nghiệp vụ.
+
+#### 🐛 Sửa lỗi
+
+- Loại bỏ workflow hạn dùng hóa chất không còn sử dụng.
+- Ngăn vòng quét lại trong Đồng bộ Mã quản lý nội bộ.
+- Giữ Trạm Pha Chế không tạo giao dịch, audit log hoặc thay đổi tồn kho.
+
+### v26.08.11-b01
+
+#### 🚀 Tính năng nổi bật
+
+- Trạm Pha Chế mô phỏng độc lập, Mã quản lý nội bộ cho hồ sơ Chất chuẩn và tải lịch sử theo khoảng ngày.
+
+#### ✨ Tính năng mới
+
+- Trạm Pha Chế hỗ trợ các thao tác pha, dãy chuẩn và xử lý mẫu với phiếu mô phỏng có thể sao chép, in hoặc tải xuống.
+- Chất chuẩn có luồng nhập, trả và đồng bộ Mã quản lý nội bộ kèm kiểm tra an toàn trước khi áp dụng.
+
+#### ⚡ Tối ưu & cải tiến
+
+- Chuẩn hóa dữ liệu nhập, kiểm tra trùng mã và giới hạn tải dữ liệu lịch sử theo nhu cầu tra cứu.
+
+#### 🐛 Sửa lỗi
+
+- Ngăn sửa/cấp trùng mã đang thuộc hồ sơ vật lý khác và loại bỏ các luồng khiến Trạm Pha Chế bị hiểu là thao tác trừ Kho.
 
 ### v26.08.07-b02
 
