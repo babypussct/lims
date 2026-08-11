@@ -78,6 +78,8 @@ Evidence:
 - [x] Có bảng source tree, bảng điểm, bảng component, bảng nội chuẩn/surrogate và bảng stage.
 - [x] Có dán bảng điểm từ clipboard, thêm/xóa dòng, reset draft, copy, print và export TXT.
 - [x] Hiển thị kế hoạch/thực tế, kết quả trung gian, công thức, phép thế số, cảnh báo và hướng dẫn.
+- [x] Các nhóm đơn vị tương đương về giá trị số giữ nhãn SOP và chỉ nhắc qua tooltip: g/L–mg/mL, mg/L–µg/mL–ppm, µg/L–ng/mL–ppb, ng/L–ppt và các nhóm tương ứng theo /kg.
+- [x] Tên nguồn do KNV nhập là nhãn hiển thị dùng chung cho dropdown, hướng dẫn, kết quả và phiếu sao chép; mã kỹ thuật chỉ còn ở tooltip hoặc fallback khi chưa có tên.
 - [x] Có dark mode theo component styles, focus-visible từ utility classes và layout responsive cho mobile/tablet/desktop.
 - [x] Static boundary không import service Kho/Chất chuẩn và không có code path persistence/transaction.
 - [x] Static boundary test không thấy token đọc/ghi nghiệp vụ ngoài phạm vi.
@@ -96,6 +98,13 @@ Evidence:
 - [x] `npm.cmd run test:prep` — **23/23 pass**.
 - [x] `npm.cmd test` — full repository suite pass; các nhóm hiện hữu gồm standards 102, inventory 3, notifications 13, documents 4, excel-import 13, smart-batch 33 + Firestore emulator 18, daily-checklists 11, GAS 65 và prep 23.
 - [x] `npm.cmd run build` — `validate:release-notes` pass và **Application bundle generation complete**.
+- [x] 2026-08-11: `npm.cmd run test:prep` — **31/31 pass**, bao gồm hồi quy tooltip cho toàn bộ nhóm đơn vị tương đương.
+- [x] 2026-08-11: `npm.cmd run build` — `validate:release-notes` pass và **Application bundle generation complete** sau thay đổi tooltip.
+- [x] 2026-08-11: `npm.cmd run test:prep` — **32/32 pass**, bao gồm hồi quy nhãn nguồn động và tooltip mã kỹ thuật.
+- [x] 2026-08-11: `npm.cmd run test:prep` — **33/33 pass**, bao gồm hồi quy cân đối chiều cao hai panel Bước 2 và Bước 3–4.
+- [x] 2026-08-11: `npm.cmd test` — full repository suite pass; **297 tests pass** gồm standards 104, inventory 3, notifications 13, documents 4, excel-import 13, smart-batch 33 + Firestore emulator 19, daily-checklists 11, GAS 65 và prep 32.
+- [x] 2026-08-11: `npm.cmd run build` — `validate:release-notes` pass và **Application bundle generation complete** sau khi đồng bộ nhãn nguồn động.
+- [x] 2026-08-11: `npm.cmd run build` — `validate:release-notes` pass và **Application bundle generation complete** sau sửa layout hai panel.
 
 ## 7. Release boundary còn mở
 

@@ -2,77 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.11-b03
+## Phiên bản hiện tại: v26.08.11-b04
 
-### v26.08.11-b03
-
-#### 🚀 Tính năng nổi bật
-
-- KNV có thể tính pha theo các tác vụ quen thuộc, với đơn vị thao tác ưu tiên µL (uL), mL, mg và g.
-- Các trường ppm, ppb và ppt tự chọn cơ sở phù hợp cho dung dịch hoặc mẫu rắn, giảm thao tác đổi đơn vị.
-- Màn hình rà soát Mã quản lý nội bộ dễ xử lý hơn nhờ bộ lọc, tìm kiếm và hướng dẫn rõ cho từng cảnh báo.
-
-#### ✨ Tính năng mới
-
-- Trạm Pha Chế hỗ trợ nhanh ppm (mg/L hoặc mg/kg), ppb (µg/L hoặc µg/kg) và ppt (ng/L hoặc ng/kg) theo bối cảnh mẫu.
-- Khi đổi nền mẫu hoặc loại nguồn, các lựa chọn lượng cân/hút và thể tích tự chuyển về đơn vị thao tác phù hợp.
-- Màn hình đồng bộ Mã quản lý nội bộ có thể lọc theo nhóm cảnh báo, tìm theo hồ sơ hoặc nội dung xử lý và nhập mã SDHET cho nghiệp vụ riêng.
-- Các cảnh báo về mã chuẩn hiển thị thêm chi tiết vấn đề và gợi ý bước xử lý để người quản lý đối chiếu hồ sơ vật lý.
-
-#### ⚡ Tối ưu & cải tiến
-
-- Phiếu tính hiển thị lượng thao tác theo µL, mL, mg hoặc g thay vì tự đổi sang L hoặc kg.
-- Giao diện Trạm Pha Chế tập trung vào công việc cần làm, không hiển thị các mô tả kỹ thuật về phạm vi hoặc giao dịch.
-- Các quy tắc mã chuẩn và mã SDHET được kiểm tra đồng nhất giữa biểu mẫu, import và luồng rà soát, giúp hạn chế nhầm hồ sơ.
-
-#### 🐛 Sửa lỗi
-
-- Không còn báo mã SDHET là sai định dạng trong biểu mẫu, import hoặc kiểm tra vòng đời.
-- Không còn để bộ chọn đơn vị bị rỗng khi KNV chuyển giữa thao tác theo khối lượng và theo thể tích.
-- Bổ sung kiểm tra hồi quy cho đơn vị ppm/ppb/ppt, đơn vị thao tác và các nhóm cảnh báo mã chuẩn.
-
-### v26.08.11-b02
+### v26.08.11-b04
 
 #### 🚀 Tính năng nổi bật
 
-- Trạm Pha Chế được tổ chức theo năm câu hỏi công việc: tính nồng độ, tính lượng cần lấy, thêm chuẩn, lập dãy chuẩn/QC và quy đổi kết quả xử lý mẫu.
-- Các phép tính hỗ trợ mẫu rắn, mẫu lỏng, nhiều chuẩn trung gian, nội chuẩn/surrogate và chuỗi xử lý mẫu trong bản nháp cục bộ.
+- Màn hình Chuẩn bị dung dịch dùng tên gọi gần với thao tác kiểm nghiệm và hướng dẫn rõ hơn ở từng bước.
+- Nhật ký cập nhật có dữ liệu hiển thị ngay trên Dashboard, hộp thoại và cổng thông tin kể cả khi lịch sử trực tuyến chưa sẵn sàng.
+- Tên nguồn, đơn vị và kết quả được trình bày nhất quán hơn để giảm nhầm lẫn khi lập dãy chuẩn hoặc pha dung dịch.
 
 #### ✨ Tính năng mới
 
-- Hiển thị công thức, phép thế số, kết quả trung gian, hướng dẫn thao tác và cảnh báo; hỗ trợ dán bảng điểm, sao chép, in và xuất phiếu tính cục bộ.
-- Phân biệt planned/actual quantity, cơ sở nồng độ, nguồn riêng từng điểm, stage xử lý mẫu và các danh mục pipet/bình định mức đã xác nhận.
+- Các nhóm đơn vị tương đương như g/L–mg/mL, mg/L–µg/mL và ng/L được nhắc ngay tại lựa chọn để người thực hiện giữ đúng cơ sở của SOP.
+- Tên nguồn do người thực hiện nhập được dùng xuyên suốt trong danh sách, hướng dẫn, kết quả và phiếu sao chép; mã kỹ thuật chỉ hiện khi cần đối chiếu.
+- Nhật ký cập nhật có sẵn lịch sử phát hành để xem từ màn hình đăng nhập, Dashboard, hộp thoại và trang toàn bộ lịch sử.
 
 #### ⚡ Tối ưu & cải tiến
 
-- Chuyển Trạm Pha Chế từ sáu mode kỹ thuật sang tác vụ nghiệp vụ; draft chỉ nằm trong trình duyệt và không liên kết Kho hoặc Chất chuẩn.
-- Giữ giá trị canonical trong calculation engine, chỉ làm tròn ở lớp trình bày; thiếu MW hoặc density thì yêu cầu bổ sung.
-- Tích hợp bộ kiểm thử prep vào `npm test` và bổ sung boundary regression cho ranh giới không đọc/ghi dữ liệu nghiệp vụ.
+- Các panel nhập liệu và kết quả trong Chuẩn bị dung dịch được cân đối chiều cao, giúp theo dõi Bước 2 và Bước 3–4 liền mạch hơn.
+- Nội dung hướng dẫn, kết quả sao chép và tiêu đề in dùng cùng tên tác vụ, giúp giảm khoảng cách giữa màn hình và phiếu thao tác.
+- Hộp thoại Nhật ký cập nhật vẫn ưu tiên dữ liệu mới nhất và tự sắp xếp lịch sử theo phiên bản.
 
 #### 🐛 Sửa lỗi
 
-- Loại bỏ workflow hạn dùng hóa chất không còn sử dụng.
-- Ngăn vòng quét lại trong Đồng bộ Mã quản lý nội bộ.
-- Giữ Trạm Pha Chế không tạo giao dịch, audit log hoặc thay đổi tồn kho.
-
-### v26.08.11-b01
-
-#### 🚀 Tính năng nổi bật
-
-- Trạm Pha Chế mô phỏng độc lập, Mã quản lý nội bộ cho hồ sơ Chất chuẩn và tải lịch sử theo khoảng ngày.
-
-#### ✨ Tính năng mới
-
-- Trạm Pha Chế hỗ trợ các thao tác pha, dãy chuẩn và xử lý mẫu với phiếu mô phỏng có thể sao chép, in hoặc tải xuống.
-- Chất chuẩn có luồng nhập, trả và đồng bộ Mã quản lý nội bộ kèm kiểm tra an toàn trước khi áp dụng.
-
-#### ⚡ Tối ưu & cải tiến
-
-- Chuẩn hóa dữ liệu nhập, kiểm tra trùng mã và giới hạn tải dữ liệu lịch sử theo nhu cầu tra cứu.
-
-#### 🐛 Sửa lỗi
-
-- Ngăn sửa/cấp trùng mã đang thuộc hồ sơ vật lý khác và loại bỏ các luồng khiến Trạm Pha Chế bị hiểu là thao tác trừ Kho.
+- Khắc phục trường hợp Dashboard và hộp thoại Nhật ký cập nhật hiển thị trống khi dữ liệu phát hành trực tuyến chưa có bản ghi.
+- Khắc phục trang Nhật ký cập nhật công khai không hiển thị nội dung trước khi người dùng đăng nhập.
+- Khắc phục nhãn nguồn hiển thị mã kỹ thuật thay vì tên nguồn do người thực hiện khai báo trong một số kết quả pha dãy chuẩn.
 
 ### v26.08.07-b02
 
@@ -234,7 +190,7 @@ Lịch sử phiên bản đầy đủ được hiển thị tại mục [/change
 #### 🐛 Sửa lỗi
 
 - Sửa lỗi hệ thống local bộ nhớ tạm bản sao dữ liệu ghi đè trạng thái localPasswordConfigured vừa xác nhận, khiến modal hiện lại.
-- Khắc phục sự cố thông tin tài khoản chưa cập nhật kịp sau khi tải lại, khiến hệ thống vẫn yêu cầu thiết lập mật khẩu dù đã hoàn tất.
+- Sửa lỗi dùng stale firebaseUser object sau reload() khiến thông tin xác thực thiếu password phương thức đăng nhập và needsPasswordSetup() vẫn true.
 
 ### v26.08.02-b01
 
@@ -704,6 +660,27 @@ Lịch sử phiên bản đầy đủ được hiển thị tại mục [/change
 
 - Xử lý tương thích định dạng kiểu dữ liệu trong khung nhập số lượng tối đa.
 
+### v26.07.24-b25
+
+#### 🚀 Tính năng nổi bật
+
+- Sắp xếp mã mẫu thực hiện logic hơn (tiền tố hiển thị trước).
+- Tải nhật ký hoạt động trên Dashboard đúng phân quyền của người dùng.
+
+#### ✨ Tính năng mới
+
+- Bổ sung bảng Nhật ký hoạt động gần đây phù hợp với từng vai trò.
+- Tối ưu giao diện Daily Checklist gọn nhẹ trên thiết bị di động.
+
+#### ⚡ Tối ưu & cải tiến
+
+- Loại bỏ mã QR không cần thiết trong bản in Daily Checklist để tăng tốc độ in.
+- Sắp xếp danh sách mẫu có tiền tố rõ ràng.
+
+#### 🐛 Sửa lỗi
+
+- Sửa lỗi trắng dữ liệu nhật ký khi mở Dashboard lần đầu.
+
 ### v26.07.24-b02
 
 #### 🚀 Tính năng nổi bật
@@ -726,27 +703,6 @@ Lịch sử phiên bản đầy đủ được hiển thị tại mục [/change
 
 - Khắc phục hiển thị sai tên quyền nội bộ trong thông báo toast.
 - Tối ưu Service Worker caching cho tệp xác minh Google.
-
-### v26.07.24-b25
-
-#### 🚀 Tính năng nổi bật
-
-- Sắp xếp mã mẫu thực hiện logic hơn (tiền tố hiển thị trước).
-- Tải nhật ký hoạt động trên Dashboard đúng phân quyền của người dùng.
-
-#### ✨ Tính năng mới
-
-- Bổ sung bảng Nhật ký hoạt động gần đây phù hợp với từng vai trò.
-- Tối ưu giao diện Daily Checklist gọn nhẹ trên thiết bị di động.
-
-#### ⚡ Tối ưu & cải tiến
-
-- Loại bỏ mã QR không cần thiết trong bản in Daily Checklist để tăng tốc độ in.
-- Sắp xếp danh sách mẫu có tiền tố rõ ràng.
-
-#### 🐛 Sửa lỗi
-
-- Sửa lỗi trắng dữ liệu nhật ký khi mở Dashboard lần đầu.
 
 ### v26.07.23-b24
 

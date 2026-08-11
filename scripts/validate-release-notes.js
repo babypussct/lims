@@ -7,6 +7,8 @@ const ngsw = JSON.parse(fs.readFileSync(path.join(root, 'ngsw-config.json'), 'ut
 const releaseNotesPath = path.join(root, 'release-notes.json');
 const statePath = path.join(root, 'src/app/core/services/state.service.ts');
 const metadataPath = path.join(root, 'metadata.json');
+const releaseHistoryPath = path.join(root, 'public/release-history.json');
+const changelogPath = path.join(root, 'CHANGELOG.md');
 const expectedVersion = `v${pkg.version}`;
 const appData = ngsw.appData || {};
 const errors = [];
@@ -40,6 +42,21 @@ try {
 }
 if (metadata?.name !== `LIMS Cloud ${expectedVersion}`) {
   errors.push(`metadata.json name phải là "LIMS Cloud ${expectedVersion}", hiện là ${metadata?.name || 'trống'}.`);
+}
+
+let releaseHistory;
+try {
+  releaseHistory = JSON.parse(fs.readFileSync(releaseHistoryPath, 'utf8'));
+} catch (error) {
+  errors.push(`public/release-history.json không tồn tại hoặc không phải JSON hợp lệ: ${error.message}`);
+}
+if (!Array.isArray(releaseHistory) || !releaseHistory.some(item => item?.version === expectedVersion)) {
+  errors.push(`public/release-history.json phải có release ${expectedVersion}.`);
+}
+
+const changelogContent = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, 'utf8') : '';
+if (!changelogContent.includes(`## Phiên bản hiện tại: ${expectedVersion}`)) {
+  errors.push(`CHANGELOG.md phải có tiêu đề phiên bản hiện tại ${expectedVersion}.`);
 }
 
 if (errors.length > 0) {

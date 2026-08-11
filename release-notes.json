@@ -1,24 +1,23 @@
 {
-  "title": "Trạm Pha Chế thao tác gọn hơn và quản lý mã Chất chuẩn rõ hơn",
+  "title": "Chuẩn bị dung dịch rõ ràng hơn và Nhật ký cập nhật luôn sẵn sàng",
   "highlights": [
-    "KNV có thể tính pha theo các tác vụ quen thuộc, với đơn vị thao tác ưu tiên µL (uL), mL, mg và g.",
-    "Các trường ppm, ppb và ppt tự chọn cơ sở phù hợp cho dung dịch hoặc mẫu rắn, giảm thao tác đổi đơn vị.",
-    "Màn hình rà soát Mã quản lý nội bộ dễ xử lý hơn nhờ bộ lọc, tìm kiếm và hướng dẫn rõ cho từng cảnh báo."
+    "Màn hình Chuẩn bị dung dịch dùng tên gọi gần với thao tác kiểm nghiệm và hướng dẫn rõ hơn ở từng bước.",
+    "Nhật ký cập nhật có dữ liệu hiển thị ngay trên Dashboard, hộp thoại và cổng thông tin kể cả khi lịch sử trực tuyến chưa sẵn sàng.",
+    "Tên nguồn, đơn vị và kết quả được trình bày nhất quán hơn để giảm nhầm lẫn khi lập dãy chuẩn hoặc pha dung dịch."
   ],
   "features": [
-    "Trạm Pha Chế hỗ trợ nhanh ppm (mg/L hoặc mg/kg), ppb (µg/L hoặc µg/kg) và ppt (ng/L hoặc ng/kg) theo bối cảnh mẫu.",
-    "Khi đổi nền mẫu hoặc loại nguồn, các lựa chọn lượng cân/hút và thể tích tự chuyển về đơn vị thao tác phù hợp.",
-    "Màn hình đồng bộ Mã quản lý nội bộ có thể lọc theo nhóm cảnh báo, tìm theo hồ sơ hoặc nội dung xử lý và nhập mã SDHET cho nghiệp vụ riêng.",
-    "Các cảnh báo về mã chuẩn hiển thị thêm chi tiết vấn đề và gợi ý bước xử lý để người quản lý đối chiếu hồ sơ vật lý."
+    "Các nhóm đơn vị tương đương như g/L–mg/mL, mg/L–µg/mL và ng/L được nhắc ngay tại lựa chọn để người thực hiện giữ đúng cơ sở của SOP.",
+    "Tên nguồn do người thực hiện nhập được dùng xuyên suốt trong danh sách, hướng dẫn, kết quả và phiếu sao chép; mã kỹ thuật chỉ hiện khi cần đối chiếu.",
+    "Nhật ký cập nhật có sẵn lịch sử phát hành để xem từ màn hình đăng nhập, Dashboard, hộp thoại và trang toàn bộ lịch sử."
   ],
   "improvements": [
-    "Phiếu tính hiển thị lượng thao tác theo µL, mL, mg hoặc g thay vì tự đổi sang L hoặc kg.",
-    "Giao diện Trạm Pha Chế tập trung vào công việc cần làm, không hiển thị các mô tả kỹ thuật về phạm vi hoặc giao dịch.",
-    "Các quy tắc mã chuẩn và mã SDHET được kiểm tra đồng nhất giữa biểu mẫu, import và luồng rà soát, giúp hạn chế nhầm hồ sơ."
+    "Các panel nhập liệu và kết quả trong Chuẩn bị dung dịch được cân đối chiều cao, giúp theo dõi Bước 2 và Bước 3–4 liền mạch hơn.",
+    "Nội dung hướng dẫn, kết quả sao chép và tiêu đề in dùng cùng tên tác vụ, giúp giảm khoảng cách giữa màn hình và phiếu thao tác.",
+    "Hộp thoại Nhật ký cập nhật vẫn ưu tiên dữ liệu mới nhất và tự sắp xếp lịch sử theo phiên bản."
   ],
   "fixes": [
-    "Không còn báo mã SDHET là sai định dạng trong biểu mẫu, import hoặc kiểm tra vòng đời.",
-    "Không còn để bộ chọn đơn vị bị rỗng khi KNV chuyển giữa thao tác theo khối lượng và theo thể tích.",
-    "Bổ sung kiểm tra hồi quy cho đơn vị ppm/ppb/ppt, đơn vị thao tác và các nhóm cảnh báo mã chuẩn."
+    "Khắc phục trường hợp Dashboard và hộp thoại Nhật ký cập nhật hiển thị trống khi dữ liệu phát hành trực tuyến chưa có bản ghi.",
+    "Khắc phục trang Nhật ký cập nhật công khai không hiển thị nội dung trước khi người dùng đăng nhập.",
+    "Khắc phục nhãn nguồn hiển thị mã kỹ thuật thay vì tên nguồn do người thực hiện khai báo trong một số kết quả pha dãy chuẩn."
   ]
 }

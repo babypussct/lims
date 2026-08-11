@@ -356,6 +356,8 @@ test('D: points can choose different intermediate sources and source demand rema
   assert.ok(result.output?.kind === 'series');
   if (result.output?.kind === 'series') {
     assert.deepEqual(result.output.pointRows.map(row => row.sourceId), ['low', 'low', 'high']);
+    assert.match(result.output.pointRows[0].operation, /từ nguồn Low/);
+    assert.doesNotMatch(result.output.pointRows[0].operation, /từ nguồn low/);
     assert.ok(Math.abs(result.output.pointRows[0].sourceVolumeMl - 1) < 1e-12);
     assert.ok(Math.abs(result.output.sourceDemand.find(row => row.sourceId === 'root')!.requiredVolumeMl - 1.1) < 1e-12);
     assert.ok(Math.abs(result.output.sourceDemand.find(row => row.sourceId === 'low')!.requiredVolumeMl - 6) < 1e-12);
@@ -375,6 +377,7 @@ test('D: serial dilution records the previous point as the direct source', () =>
   assert.ok(result.output?.kind === 'series');
   if (result.output?.kind === 'series') {
     assert.equal(result.output.pointRows[1].sourceId, 'p1');
+    assert.match(result.output.pointRows[1].operation, /từ nguồn P1/);
     assert.equal(result.output.pointRows[1].sourceConcentrationGPerL, 0.1);
   }
 });

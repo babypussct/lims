@@ -110,20 +110,21 @@ function readReleases() {
       throw new Error('Không tìm thấy dữ liệu CHANGELOG_DATA cũ. Dùng --source=<file.json|file.ts> để chỉ rõ nguồn.');
     }
 
-    const notesPath = path.join(root, 'release-notes.json');
-    const packagePath = path.join(root, 'package.json');
-    const notes = JSON.parse(fs.readFileSync(notesPath, 'utf8'));
-    const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-    releases = [{
-      version: `v${pkg.version}`,
-      date: new Intl.DateTimeFormat('vi-VN').format(new Date()),
-      title: notes.title,
-      highlights: notes.highlights || [],
-      features: notes.features || [],
-      improvements: notes.improvements || [],
-      fixes: notes.fixes || []
-    }, ...releases];
   }
+
+  const notesPath = path.join(root, 'release-notes.json');
+  const packagePath = path.join(root, 'package.json');
+  const notes = JSON.parse(fs.readFileSync(notesPath, 'utf8'));
+  const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+  releases = [{
+    version: `v${pkg.version}`,
+    date: new Intl.DateTimeFormat('vi-VN').format(new Date()),
+    title: notes.title,
+    highlights: notes.highlights || [],
+    features: notes.features || [],
+    improvements: notes.improvements || [],
+    fixes: notes.fixes || []
+  }, ...releases];
 
   const normalized = releases.map(item => {
     const version = normalizeVersion(item.version);
@@ -139,7 +140,10 @@ function readReleases() {
     };
   });
 
-  const unique = new Map(normalized.map(release => [release.version, release]));
+  const unique = new Map();
+  for (const release of normalized) {
+    if (!unique.has(release.version)) unique.set(release.version, release);
+  }
   return { sourceLabel, releases: [...unique.values()] };
 }
 

@@ -30,7 +30,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   'config': 'Cấu Hình',
   'standards': 'Chất Chuẩn Đối Chiếu',
   'recipes': 'Thư Viện Công Thức',
-  'prep': 'Trạm Pha Chế',
+  'prep': 'Chuẩn bị dung dịch',
   'daily-checklist': 'Theo Dõi Mẫu Ngày',
   'smart-batch': 'Lập Mẻ Phân Tích',
   'traceability': 'Truy Xuất Nguồn Gốc',
@@ -118,7 +118,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     items: [
       { id: 'calculator', name: 'Vận Hành SOP', icon: 'fa-calculator', path: 'calculator', activeMatch: ['/calculator'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW },
       { id: 'smart-batch', name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], access: PERMISSIONS.BATCH_RUN, lockPermission: PERMISSIONS.BATCH_RUN },
-      { id: 'prep', name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'] },
+      { id: 'prep', name: 'Chuẩn bị dung dịch', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'] },
       { id: 'daily-checklist', name: 'Theo Dõi Mẫu Ngày', icon: 'fa-calendar-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW },
       { id: 'traceability', name: 'Truy Xuất Nguồn Gốc', icon: 'fa-route', path: 'traceability', activeMatch: ['/traceability'] },
       { id: 'requests', name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, badgeKey: 'requests' },

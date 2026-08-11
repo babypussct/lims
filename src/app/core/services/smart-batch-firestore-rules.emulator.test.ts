@@ -153,6 +153,12 @@ async function seedBaseData(): Promise<void> {
         updatedAt: 1_700_000_000_000,
         _isDeleted: false,
         lastUpdated: seedTime
+      }),
+      setDoc(doc(db, 'releases/v26.08.11-b03'), {
+        version: 'v26.08.11-b03',
+        date: '11/08/2026',
+        title: 'Release test',
+        releaseOrder: 26081100003
       })
     ]);
   });
@@ -254,6 +260,13 @@ test('viewer and pending profiles cannot use SmartBatch operational collections'
       lastUpdated: serverTimestamp()
     }));
   }
+});
+
+test('release history is readable before authentication for the public changelog route', async () => {
+  const publicDb = env.unauthenticatedContext().firestore();
+  const snapshot = await assertSucceeds(getDocs(collection(publicDb, 'releases')));
+  assert.equal(snapshot.size, 1);
+  assert.equal(snapshot.docs[0].data()['version'], 'v26.08.11-b03');
 });
 
 test('batch_run can query only its personal log feed while manager can query the global feed', async () => {

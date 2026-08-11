@@ -791,6 +791,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
     const sourceVolumeMl = target.gPerL * finalVolumeMl / sourceGPerL;
     const actualSourceVolumeMl = optionalQuantity(point.actualSourceQuantity, 'points[' + index + '].actualSourceQuantity', 'thể tích nguồn thực tế', 'volume', VOLUME_TO_ML, issues);
     const actualConcentrationGPerL = actualSourceVolumeMl === null ? null : sourceGPerL * actualSourceVolumeMl / finalVolumeMl;
+    const sourceLabel = sourceById.get(point.sourceId)?.name.trim() || pointDraftById.get(point.sourceId)?.label.trim() || point.sourceId;
     const row: SeriesPointOutput = {
       id: point.id,
       label: point.label.trim() || 'Điểm ' + (index + 1),
@@ -804,7 +805,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
       actualConcentrationGPerL,
       solventVolumeMl: finalVolumeMl - sourceVolumeMl,
       additionsVolumeMl: 0,
-      operation: 'Hút ' + quantityResult(sourceVolumeMl, 'volume').displayValue + ' ' + quantityResult(sourceVolumeMl, 'volume').displayUnit + ' từ nguồn ' + point.sourceId + '; định mức đến ' + finalVolumeMl + ' mL.',
+      operation: 'Hút ' + quantityResult(sourceVolumeMl, 'volume').displayValue + ' ' + quantityResult(sourceVolumeMl, 'volume').displayUnit + ' từ nguồn ' + sourceLabel + '; định mức đến ' + finalVolumeMl + ' mL.',
       pipette: suggestPipette(sourceVolumeMl, 'points[' + index + '].sourceVolume', issues),
       flask: suggestVolumetricFlask(finalVolumeMl, 'points[' + index + '].finalVolume', issues)
     };
@@ -905,7 +906,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
         sourceVolumeMl,
         actualSourceVolumeMl,
         actualConcentrationGPerL: parent === null || actualSourceVolumeMl === null ? null : parent * actualSourceVolumeMl / preparedVolumeMl,
-        operation: sourceVolumeMl === null ? 'Dùng ' + source.name.trim() + ' làm nguồn gốc do KNV nhập tay.' : 'Hút ' + quantityResult(sourceVolumeMl, 'volume').displayValue + ' ' + quantityResult(sourceVolumeMl, 'volume').displayUnit + ' từ nguồn trực tiếp; định mức đến ' + preparedVolumeMl + ' mL.',
+        operation: sourceVolumeMl === null ? 'Sử dụng ' + source.name.trim() + ' làm nguồn do người thực hiện khai báo trực tiếp.' : 'Hút ' + quantityResult(sourceVolumeMl, 'volume').displayValue + ' ' + quantityResult(sourceVolumeMl, 'volume').displayUnit + ' từ nguồn trực tiếp; định mức đến ' + preparedVolumeMl + ' mL.',
         pipette: sourceVolumeMl === null ? null : suggestPipette(sourceVolumeMl, 'sources[' + source.id + '].sourceVolume', issues),
         flask: suggestVolumetricFlask(preparedVolumeMl, 'sources[' + source.id + '].preparedVolume', issues)
       };

@@ -532,7 +532,7 @@ export class AppComponent implements OnDestroy {
         'config': 'Cấu Hình',
         'standards': 'Chất Chuẩn Đối Chiếu',
         'recipes': 'Thư Viện Công Thức',
-        'prep': 'Trạm Pha Chế',
+        'prep': 'Chuẩn bị dung dịch',
         'smart-batch': 'Lập Mẻ Phân Tích',
         'traceability': 'Truy xuất nguồn gốc'
     };

@@ -44,6 +44,11 @@ interface ConcentrationOption {
   label: string;
 }
 
+interface ConcentrationEquivalenceGroup {
+  tokens: readonly string[];
+  message: string;
+}
+
 interface UiSeriesSource {
   id: string;
   name: string;
@@ -132,6 +137,37 @@ const CONCENTRATION_OPTIONS: readonly ConcentrationOption[] = [
   { key: 'percent_vv', unit: '% v/v', basis: 'volume_per_volume', label: '% v/v' }
 ];
 
+const CONCENTRATION_EQUIVALENCE_GROUPS: readonly ConcentrationEquivalenceGroup[] = [
+  {
+    tokens: ['g_l', 'g/L', 'mg_ml', 'mg/mL'],
+    message: 'Nhắc: g/L và mg/mL là hai cách ghi có cùng giá trị số trong cơ sở khối lượng/thể tích; chọn theo cách ghi của SOP.'
+  },
+  {
+    tokens: ['ppm_mg_l', 'ppm (mg/L)', 'mg_l', 'mg/L', 'ug_ml', 'µg/mL'],
+    message: 'Nhắc: ppm (mg/L), mg/L và µg/mL là các cách ghi có cùng giá trị số trong cơ sở khối lượng/thể tích; ppm không mặc định bằng mg/L ở mọi cơ sở.'
+  },
+  {
+    tokens: ['ppb_ug_l', 'ppb (µg/L)', 'ug_l', 'µg/L', 'ng_ml', 'ng/mL'],
+    message: 'Nhắc: ppb (µg/L), µg/L và ng/mL là các cách ghi có cùng giá trị số trong cơ sở khối lượng/thể tích; ppb cần giữ đúng cơ sở /L.'
+  },
+  {
+    tokens: ['ppt_ng_l', 'ppt (ng/L)', 'ng_l', 'ng/L'],
+    message: 'Nhắc: ppt (ng/L) và ng/L là hai cách ghi có cùng giá trị số trong cơ sở khối lượng/thể tích; cơ sở vẫn là /L.'
+  },
+  {
+    tokens: ['ppm_mg_kg', 'ppm (mg/kg)', 'mg_kg', 'mg/kg'],
+    message: 'Nhắc: ppm (mg/kg) và mg/kg là hai cách ghi có cùng giá trị số trong cơ sở khối lượng/khối lượng; không tự đổi sang mg/L.'
+  },
+  {
+    tokens: ['ppb_ug_kg', 'ppb (µg/kg)', 'ug_kg', 'µg/kg'],
+    message: 'Nhắc: ppb (µg/kg) và µg/kg là hai cách ghi có cùng giá trị số trong cơ sở khối lượng/khối lượng; giữ đúng cơ sở /kg.'
+  },
+  {
+    tokens: ['ppt_ng_kg', 'ppt (ng/kg)', 'ng_kg', 'ng/kg'],
+    message: 'Nhắc: ppt (ng/kg) và ng/kg là hai cách ghi có cùng giá trị số trong cơ sở khối lượng/khối lượng; giữ đúng cơ sở /kg.'
+  }
+];
+
 const VOLUME_OPTIONS = [
   { unit: 'µL', label: 'µL' },
   { unit: 'mL', label: 'mL' }
@@ -145,41 +181,41 @@ const MASS_OPTIONS = [
 const TASKS: readonly TaskDefinition[] = [
   {
     id: 'concentration',
-    label: 'Tính nồng độ đã pha',
-    question: 'Dung dịch vừa pha đạt nồng độ bao nhiêu?',
-    description: 'Từ lượng cân/hút kế hoạch và thực tế, potency, nguồn và thể tích định mức.',
+    label: 'Tính nồng độ dung dịch',
+    question: 'Dung dịch cần xác định có nồng độ bao nhiêu?',
+    description: 'Từ lượng chất hoặc dung dịch đã sử dụng, độ tinh khiết/hàm lượng công bố và thể tích định mức.',
     icon: 'fa-flask-vial',
     activeClass: 'border-indigo-500 bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none'
   },
   {
     id: 'target',
-    label: 'Tính lượng cần lấy',
-    question: 'Cần cân hoặc hút bao nhiêu để pha dung dịch đích?',
-    description: 'Giải biến cần tìm từ chất rắn, dung dịch nguồn hoặc hóa chất đậm đặc.',
+    label: 'Xác định lượng cần lấy',
+    question: 'Cần cân hoặc hút lượng bao nhiêu để chuẩn bị dung dịch?',
+    description: 'Xác định lượng chất rắn, dung dịch nguồn hoặc hóa chất đậm đặc cần sử dụng.',
     icon: 'fa-bullseye',
     activeClass: 'border-cyan-500 bg-cyan-600 text-white shadow-lg shadow-cyan-200 dark:shadow-none'
   },
   {
     id: 'spike',
-    label: 'Tính chuẩn thêm vào mẫu',
-    question: 'Cần hút bao nhiêu chuẩn cho mẫu rắn/lỏng?',
-    description: 'Công bố rõ vị trí thêm và semantic trên mẫu ban đầu hay thể tích cuối.',
+    label: 'Tính lượng dung dịch thêm chuẩn',
+    question: 'Cần thêm bao nhiêu dung dịch chuẩn vào mẫu?',
+    description: 'Xác định lượng dung dịch chuẩn và vị trí áp dụng trên mẫu ban đầu hoặc thể tích cuối.',
     icon: 'fa-vial',
     activeClass: 'border-amber-500 bg-amber-500 text-white shadow-lg shadow-amber-200 dark:shadow-none'
   },
   {
     id: 'series',
-    label: 'Lập dãy chuẩn/QC',
-    question: 'Cần pha nguồn, điểm chuẩn, QC và nội chuẩn theo thứ tự nào?',
-    description: 'Hỗ trợ nhiều chuẩn trung gian, pha nối tiếp, hỗn hợp và scope nội chuẩn.',
+    label: 'Chuẩn bị dãy chuẩn và QC',
+    question: 'Cần chuẩn bị dung dịch nguồn, điểm chuẩn, QC và nội chuẩn theo trình tự nào?',
+    description: 'Khai báo chuẩn trung gian, pha nối tiếp, hỗn hợp và phạm vi áp dụng của nội chuẩn.',
     icon: 'fa-diagram-project',
     activeClass: 'border-violet-500 bg-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-none'
   },
   {
     id: 'result_conversion',
-    label: 'Quy đổi kết quả xử lý mẫu',
-    question: 'Kết quả máy quy về mẫu ban đầu như thế nào?',
-    description: 'Mô hình hóa chuỗi chiết, aliquot, cô, hoàn nguyên, pha loãng và recovery.',
+    label: 'Quy đổi kết quả theo xử lý mẫu',
+    question: 'Kết quả đo được quy đổi về mẫu ban đầu như thế nào?',
+    description: 'Mô hình hóa các bước chiết, chia mẫu, cô đặc, hoàn nguyên, pha loãng và hiệu suất thu hồi.',
     icon: 'fa-route',
     activeClass: 'border-rose-500 bg-rose-600 text-white shadow-lg shadow-rose-200 dark:shadow-none'
   }
@@ -215,7 +251,7 @@ export class SmartPrepComponent {
   readonly showTrace = signal(false);
 
   readonly concentrationSourceType = signal<PrepSourceType>('solid');
-  readonly concentrationName = signal('Chất chuẩn thủ công');
+  readonly concentrationName = signal('Chất chuẩn');
   readonly concentrationPlannedValue = signal<number | null>(10.2);
   readonly concentrationActualValue = signal<number | null>(null);
   readonly concentrationQuantityUnit = signal('mg');
@@ -231,7 +267,7 @@ export class SmartPrepComponent {
   readonly concentrationDensity = signal<number | null>(null);
 
   readonly targetSourceType = signal<PrepSourceType>('solution');
-  readonly targetName = signal('Dung dịch nguồn thủ công');
+  readonly targetName = signal('Dung dịch nguồn');
   readonly targetValue = signal<number | null>(10);
   readonly targetChoice = signal('ppm_mg_l');
   readonly targetFinalVolume = signal<number | null>(10);
@@ -248,7 +284,7 @@ export class SmartPrepComponent {
   readonly spikeMatrix = signal<SpikeMatrix>('solid');
   readonly spikeLocation = signal<SpikeLocation>('sample_initial');
   readonly spikeSemantic = signal<SpikeSemantic>('added_on_initial');
-  readonly spikeStandardName = signal('Dung dịch chuẩn spike');
+  readonly spikeStandardName = signal('Dung dịch chuẩn thêm vào mẫu');
   readonly spikeSampleName = signal('Mẫu thử');
   readonly spikeSampleValue = signal<number | null>(5);
   readonly spikeSampleUnit = signal('g');
@@ -328,6 +364,26 @@ export class SmartPrepComponent {
 
   concentrationOption(key: string): ConcentrationOption {
     return this.allConcentrationOptions.find(option => option.key === key) ?? this.allConcentrationOptions[0];
+  }
+
+  concentrationTooltip(token: string): string | null {
+    return CONCENTRATION_EQUIVALENCE_GROUPS.find(group => group.tokens.includes(token))?.message ?? null;
+  }
+
+  sourceDisplayName(id: string | null | undefined): string {
+    const token = String(id ?? '').trim();
+    if (!token) return 'Nguồn do người thực hiện khai báo';
+    const source = this.seriesSources().find(row => row.id === token);
+    if (source) return source.name.trim() || source.id;
+    const point = this.seriesPoints().find(row => row.id === token);
+    return point ? point.label.trim() || point.id : token;
+  }
+
+  sourceTooltip(id: string | null | undefined): string {
+    const token = String(id ?? '').trim();
+    if (!token) return 'Nguồn khai báo trực tiếp; chưa gắn mã nguồn.';
+    const label = this.sourceDisplayName(token);
+    return label === token ? 'Mã nguồn: ' + token : 'Tên nguồn: ' + label + ' (mã kỹ thuật: ' + token + ')';
   }
 
   concentrationOptionsFor(context: ConcentrationContext): readonly ConcentrationOption[] {
@@ -454,9 +510,9 @@ export class SmartPrepComponent {
   }
 
   sourceOptions(includePoints = true): Array<{ id: string; label: string }> {
-    const sources = this.seriesSources().map(source => ({ id: source.id, label: source.name || source.id }));
+    const sources = this.seriesSources().map(source => ({ id: source.id, label: this.sourceDisplayName(source.id) }));
     if (!includePoints) return sources;
-    return [...sources, ...this.seriesPoints().map(point => ({ id: point.id, label: point.label || point.id }))];
+    return [...sources, ...this.seriesPoints().map(point => ({ id: point.id, label: this.sourceDisplayName(point.id) }))];
   }
 
   updateSeriesSource(id: string, field: keyof UiSeriesSource, raw: unknown): void {
@@ -609,7 +665,7 @@ export class SmartPrepComponent {
     this.calcMode.set('concentration');
     this.showTrace.set(false);
     this.concentrationSourceType.set('solid');
-    this.concentrationName.set('Chất chuẩn thủ công');
+    this.concentrationName.set('Chất chuẩn');
     this.concentrationPlannedValue.set(10.2);
     this.concentrationActualValue.set(null);
     this.concentrationQuantityUnit.set('mg');
@@ -693,7 +749,7 @@ export class SmartPrepComponent {
       return;
     }
     printDocument.open();
-    printDocument.write('<!doctype html><html><head><title>Trạm Pha Chế</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033}h1{margin:0 0 4px}.result{white-space:pre-wrap;border:1px solid #cbd5e1;border-radius:12px;padding:20px;line-height:1.6}</style></head><body><h1>Trạm Pha Chế</h1><div class="result">' + this.escapeHtml(this.resultText()) + '</div></body></html>');
+    printDocument.write('<!doctype html><html><head><title>Chuẩn bị dung dịch</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033}h1{margin:0 0 4px}.result{white-space:pre-wrap;border:1px solid #cbd5e1;border-radius:12px;padding:20px;line-height:1.6}</style></head><body><h1>Chuẩn bị dung dịch</h1><div class="result">' + this.escapeHtml(this.resultText()) + '</div></body></html>');
     printDocument.close();
     window.setTimeout(() => {
       frame.contentWindow?.focus();
@@ -803,15 +859,15 @@ export class SmartPrepComponent {
     if (!output) return 'Chưa có kết quả. Vui lòng kiểm tra đầu vào và cảnh báo.';
     switch (output.kind) {
       case 'concentration':
-        return ['Tác vụ: Tính nồng độ đã pha', 'Nguồn: ' + output.name, 'Nồng độ thực tế: ' + this.displayConcentration(output.actualConcentration.massPerVolumeGPerL), ...output.actualConcentration.alternatives.map(item => this.formatNum(item.value, 8) + ' ' + item.unit), 'Hướng dẫn: ' + output.operation].join('\n');
+        return ['Nội dung: Tính nồng độ dung dịch', 'Tên chất/dung dịch: ' + output.name, 'Nồng độ xác định: ' + this.displayConcentration(output.actualConcentration.massPerVolumeGPerL), ...output.actualConcentration.alternatives.map(item => this.formatNum(item.value, 8) + ' ' + item.unit), 'Hướng dẫn thao tác: ' + output.operation].join('\n');
       case 'target':
-        return ['Tác vụ: Tính lượng cần lấy', 'Nguồn: ' + output.name, 'Lượng kế hoạch: ' + this.displayQuantity(output.plannedQuantity), 'Hướng dẫn: ' + output.operation, output.actualConcentration ? 'Nồng độ thực tế: ' + this.displayConcentration(output.actualConcentration.massPerVolumeGPerL) : ''].filter(Boolean).join('\n');
+        return ['Nội dung: Xác định lượng cần lấy', 'Tên chất/dung dịch: ' + output.name, 'Lượng dự kiến: ' + this.displayQuantity(output.plannedQuantity), 'Hướng dẫn thao tác: ' + output.operation, output.actualConcentration ? 'Nồng độ xác định theo lượng thực tế: ' + this.displayConcentration(output.actualConcentration.massPerVolumeGPerL) : ''].filter(Boolean).join('\n');
       case 'spike':
-        return ['Tác vụ: Tính chuẩn thêm vào mẫu', 'Mẫu: ' + output.sampleName, 'Thể tích chuẩn: ' + this.displayVolume(output.spikeVolumeMl), 'Hướng dẫn: ' + output.operation].join('\n');
+        return ['Nội dung: Tính lượng dung dịch thêm chuẩn', 'Tên mẫu: ' + output.sampleName, 'Thể tích dung dịch chuẩn: ' + this.displayVolume(output.spikeVolumeMl), 'Hướng dẫn thao tác: ' + output.operation].join('\n');
       case 'series':
-        return ['Tác vụ: Lập dãy chuẩn/QC', ...output.intermediateRows.map(row => row.name + ': ' + this.displayConcentration(row.concentrationGPerL) + ' · pha ' + this.displayVolume(row.preparedVolumeMl)), ...output.pointRows.map(row => row.label + ': từ ' + row.sourceId + ' · ' + this.displayVolume(row.sourceVolumeMl)), ...output.additionRows.map(row => row.pointLabel + ': thêm ' + this.displayVolume(row.volumeMl) + ' ' + row.name), ...output.sourceDemand.map(row => 'Nhu cầu ' + row.name + ': ' + this.displayVolume(row.requiredWithResidualMl))].join('\n');
+        return ['Nội dung: Chuẩn bị dãy chuẩn và QC', ...output.intermediateRows.map(row => row.name + ': ' + this.displayConcentration(row.concentrationGPerL) + ' · thể tích pha ' + this.displayVolume(row.preparedVolumeMl)), ...output.pointRows.map(row => row.label + ': từ ' + this.sourceDisplayName(row.sourceId) + ' · ' + this.displayVolume(row.sourceVolumeMl)), ...output.additionRows.map(row => row.pointLabel + ': thêm ' + this.displayVolume(row.volumeMl) + ' ' + row.name), ...output.sourceDemand.map(row => 'Nhu cầu chuẩn bị ' + row.name + ': ' + this.displayVolume(row.requiredWithResidualMl))].join('\n');
       case 'result_conversion':
-        return ['Tác vụ: Quy đổi kết quả xử lý mẫu', 'Mẫu: ' + output.sampleName, 'Hệ số giữ lại tích lũy: ' + this.formatNum(output.overallRetentionFraction, 8), 'Kết quả mẫu ban đầu: ' + this.formatNum(output.resultValue, 8) + ' ' + output.resultUnit, 'Hướng dẫn: ' + output.operation].join('\n');
+        return ['Nội dung: Quy đổi kết quả theo xử lý mẫu', 'Tên mẫu: ' + output.sampleName, 'Hệ số giữ lại tích lũy: ' + this.formatNum(output.overallRetentionFraction, 8), 'Kết quả quy đổi về mẫu ban đầu: ' + this.formatNum(output.resultValue, 8) + ' ' + output.resultUnit, 'Hướng dẫn thao tác: ' + output.operation].join('\n');
     }
   }
 

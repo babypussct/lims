@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.11-b03",
-    "title": "Trạm Pha Chế thao tác gọn hơn và quản lý mã Chất chuẩn rõ hơn",
+    "version": "v26.08.11-b04",
+    "title": "Chuẩn bị dung dịch rõ ràng hơn và Nhật ký cập nhật luôn sẵn sàng",
     "features": [
-      "KNV có thể tính pha theo các tác vụ quen thuộc, với đơn vị thao tác ưu tiên µL (uL), mL, mg và g.",
-      "Các trường ppm, ppb và ppt tự chọn cơ sở phù hợp cho dung dịch hoặc mẫu rắn, giảm thao tác đổi đơn vị.",
-      "Màn hình rà soát Mã quản lý nội bộ dễ xử lý hơn nhờ bộ lọc, tìm kiếm và hướng dẫn rõ cho từng cảnh báo.",
-      "Trạm Pha Chế hỗ trợ nhanh ppm (mg/L hoặc mg/kg), ppb (µg/L hoặc µg/kg) và ppt (ng/L hoặc ng/kg) theo bối cảnh mẫu.",
-      "Khi đổi nền mẫu hoặc loại nguồn, các lựa chọn lượng cân/hút và thể tích tự chuyển về đơn vị thao tác phù hợp."
+      "Màn hình Chuẩn bị dung dịch dùng tên gọi gần với thao tác kiểm nghiệm và hướng dẫn rõ hơn ở từng bước.",
+      "Nhật ký cập nhật có dữ liệu hiển thị ngay trên Dashboard, hộp thoại và cổng thông tin kể cả khi lịch sử trực tuyến chưa sẵn sàng.",
+      "Tên nguồn, đơn vị và kết quả được trình bày nhất quán hơn để giảm nhầm lẫn khi lập dãy chuẩn hoặc pha dung dịch.",
+      "Các nhóm đơn vị tương đương như g/L–mg/mL, mg/L–µg/mL và ng/L được nhắc ngay tại lựa chọn để người thực hiện giữ đúng cơ sở của SOP.",
+      "Tên nguồn do người thực hiện nhập được dùng xuyên suốt trong danh sách, hướng dẫn, kết quả và phiếu sao chép; mã kỹ thuật chỉ hiện khi cần đối chiếu."
     ]
   },
   "assetGroups": [
