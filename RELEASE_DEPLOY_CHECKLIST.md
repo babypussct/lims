@@ -60,7 +60,7 @@
 - [x] Stage toàn bộ thay đổi đã xác nhận.
 - [x] Commit release trên `main`: `d6597d3 release: v26.08.11-b02 prep station and lifecycle fixes`.
 - [x] Push `main` lên `origin` thành công.
-- [ ] Ghi nhận commit tài liệu post-deploy và xác nhận lại `HEAD`/`origin/main` đồng bộ, worktree sạch.
+- [x] Ghi nhận commit tài liệu post-deploy `0344b91`; sau lần push đó `HEAD`/`origin/main` đồng bộ và worktree sạch.
 
 ## 7. Bằng chứng và giới hạn kết luận
 
