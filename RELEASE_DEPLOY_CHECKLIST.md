@@ -48,19 +48,19 @@
 
 - [x] Kiểm tra `firestore.rules`: không có diff trong release này nên không deploy lại Rules.
 - [x] Firebase CLI read-back hiện không có authorized account; không ghi nhận giả đã deploy/backfill Firebase.
-- [ ] Vercel production deploy sau push qua Git Integration hoặc `npx vercel --prod` nếu CLI được xác thực.
-- [ ] Basic HTTP smoke trên alias production: `/` và `/ngsw.json` trả `200`, `ngsw.json.appData.version = v26.08.11-b02`.
+- [x] Vercel production deploy qua Git Integration sau push commit `d6597d3`; GitHub status `Vercel: success — Deployment has completed`.
+- [x] Basic HTTP smoke trên cả ba alias (`nafiqpm6.vercel.app`, Git-main alias và project alias): `/` và `/ngsw.json` đều trả `200`, `ngsw.json.appData.version = v26.08.11-b02`, title đúng release và manifest có `Cache-Control: no-cache`.
 - [ ] Authenticated/business smoke cho route `/prep`, copy/print/export và các ca nghiệp vụ đại diện.
 - [ ] KNV review/acceptance các ví dụ, thuật ngữ, minimum weight, vial, rounding, blank/QC và stage semantics.
 - [x] Không chạy backfill Daily Checklist trong release này khi chưa có credential/ADC và chưa có yêu cầu data migration tương ứng.
 
 ## 6. Tích hợp Git
 
-- [ ] Review `git diff`/`git status` lần cuối; không có secret hoặc artifact ngoài phạm vi.
-- [ ] Stage toàn bộ thay đổi đã xác nhận.
-- [ ] Commit release trên `main`.
-- [ ] Push `main` lên `origin`.
-- [ ] Xác nhận `HEAD` và `origin/main` đồng bộ, worktree sạch.
+- [x] Review `git diff`/`git status` trước commit; không có secret pattern hoặc artifact ngoài phạm vi.
+- [x] Stage toàn bộ thay đổi đã xác nhận.
+- [x] Commit release trên `main`: `d6597d3 release: v26.08.11-b02 prep station and lifecycle fixes`.
+- [x] Push `main` lên `origin` thành công.
+- [ ] Ghi nhận commit tài liệu post-deploy và xác nhận lại `HEAD`/`origin/main` đồng bộ, worktree sạch.
 
 ## 7. Bằng chứng và giới hạn kết luận
 
