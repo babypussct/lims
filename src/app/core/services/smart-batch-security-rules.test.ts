@@ -8,6 +8,14 @@ const smartBatchSource = readFileSync(
   resolve(process.cwd(), 'src/app/features/batch/smart-batch.component.ts'),
   'utf8'
 );
+const sampleGroupWizardSource = readFileSync(
+  resolve(process.cwd(), 'src/app/features/batch/components/sample-group-step2-wizard.component.ts'),
+  'utf8'
+);
+const smartBatchTemplate = readFileSync(
+  resolve(process.cwd(), 'src/app/features/batch/smart-batch.component.html'),
+  'utf8'
+);
 const printQueueSource = readFileSync(
   resolve(process.cwd(), 'src/app/features/requests/print-queue.component.ts'),
   'utf8'
@@ -105,4 +113,57 @@ test('SmartBatch canonicalizes imported target groups and Auto Fix target member
   assert.match(smartBatchSource, /getCanonicalId\(target\.name \|\| target\.id\)/);
   assert.match(smartBatchSource, /selectedTargetSetHas\(b\.selectedTargets, task\.targetId\)/);
   assert.match(smartBatchSource, /selectedTargetSetWithout\(block\.selectedTargets, targetId\)/);
+});
+
+test('SmartBatch Step 2 uses a bounded two-step group wizard without adding a discussion field', () => {
+  assert.match(smartBatchSource, /SampleGroupStep2WizardComponent/);
+  assert.match(smartBatchSource, /completeSampleGroupWizard/);
+  assert.match(smartBatchSource, /createSampleGroupWizardGroup/);
+  assert.match(sampleGroupWizardSource, /stepLabels = \['Thông tin mẫu', 'Chỉ tiêu & SOP'\]/);
+  assert.match(sampleGroupWizardSource, /sampleGroupCompletionIssues/);
+  assert.match(sampleGroupWizardSource, /forcedSopIssue/);
+  assert.match(sampleGroupWizardSource, /smartbatch-group-wizard/);
+  assert.match(sampleGroupWizardSource, /runOptimizer\(\)/);
+  assert.match(sampleGroupWizardSource, /overflow-y-auto custom-scrollbar/);
+  assert.match(sampleGroupWizardSource, /Chọn Nhóm Chỉ Tiêu/);
+  assert.match(sampleGroupWizardSource, /Gợi ý Quy trình \(SOP\)/);
+  assert.match(sampleGroupWizardSource, /SOP hiện tại/);
+  assert.match(sampleGroupWizardSource, /sop\.isManualOnly \? 'Thủ công: '/);
+  assert.doesNotMatch(sampleGroupWizardSource, /eligibleManualSops|manualSelectionValue|CHỈ ĐỊNH THỦ CÔNG/);
+  assert.match(sampleGroupWizardSource, /slice\(0, 5\)/);
+  assert.match(sampleGroupWizardSource, /showSampleDescriptions/);
+  assert.match(sampleGroupWizardSource, /copyDescriptionToAll/);
+  assert.match(sampleGroupWizardSource, /matrixConfirmed: true/);
+  assert.doesNotMatch(sampleGroupWizardSource, /Khai báo nhiều nhóm mẻ trên cùng một trang|Mỗi nhóm có wizard 2 bước/);
+  assert.doesNotMatch(sampleGroupWizardSource, /Mở wizard nhóm/);
+  assert.match(sampleGroupWizardSource, /Thêm nhóm mới/);
+  assert.match(smartBatchTemplate, /batch\.isExpanded && getBatchDescriptionText\(batch\)/);
+  assert.match(smartBatchTemplate, /Duyệt & Xếp Hàng In/);
+  assert.match(smartBatchTemplate, /step\(\) === 1 && showSampleGroupWizard/);
+  assert.match(sampleGroupWizardSource, /groupStates/);
+  assert.match(sampleGroupWizardSource, /addGroup\(\)/);
+  assert.match(sampleGroupWizardSource, /allGroupsCompleted/);
+  assert.match(sampleGroupWizardSource, /selectSuggestedSop\(suggestion\.sop\.id, suggestion\.isPartial\)/);
+  assert.match(sampleGroupWizardSource, /hover:bg-indigo-50/);
+  assert.match(sampleGroupWizardSource, /border-indigo-600/);
+  assert.match(sampleGroupWizardSource, /ring-indigo-500/);
+  assert.match(sampleGroupWizardSource, /aria-pressed/);
+  assert.match(sampleGroupWizardSource, /group\.forcedSopId !== suggestion\.sop\.id/);
+  assert.match(sampleGroupWizardSource, /Đang chọn/);
+  assert.match(sampleGroupWizardSource, /completionIssuesForGroup/);
+  assert.match(sampleGroupWizardSource, /activeGroupIsCompleted/);
+  assert.match(sampleGroupWizardSource, /Nhấn thẻ SOP để chỉ định/);
+  assert.doesNotMatch(sampleGroupWizardSource, /<button[^>]*>\s*Chỉ định\s*<\/button>/);
+  assert.doesNotMatch(sampleGroupWizardSource, /Đang áp dụng/);
+  assert.doesNotMatch(sampleGroupWizardSource, /Hoàn tất nhóm mẻ/);
+  assert.doesNotMatch(sampleGroupWizardSource, /finishGroup\(/);
+  assert.match(smartBatchTemplate, /Chạy SmartBatch optimizer/);
+  assert.match(smartBatchTemplate, /class="smartbatch-primary-action"/);
+  assert.match(smartBatchTemplate, /smartbatch-primary-action__icon/);
+  assert.match(smartBatchTemplate, /smartbatch-action-dock/);
+  assert.match(smartBatchTemplate, /sampleGroupWizard\.runOptimizer\(\)/);
+  assert.match(smartBatchTemplate, /class="smartbatch-primary-action"/);
+  assert.match(smartBatchTemplate, /smartbatch-primary-action__icon/);
+  assert.match(smartBatchTemplate, /aria-busy/);
+  assert.doesNotMatch(sampleGroupWizardSource, /Thảo luận chi tiết|updateDiscussion|discussion/);
 });

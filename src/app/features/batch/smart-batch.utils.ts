@@ -7,6 +7,38 @@ export interface BatchPlanValidationIssue {
   itemName?: string;
 }
 
+export interface SampleTargetPair {
+  sample: string;
+  targetId: string;
+}
+
+export function buildSampleTargetMap(
+  tasks: Iterable<Pick<SampleTargetPair, 'sample' | 'targetId'>>,
+  fallbackSamples: Iterable<string> = [],
+  fallbackTargetIds: Iterable<string> = []
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  let hasTask = false;
+  for (const task of tasks) {
+    const sample = String(task.sample || '').trim();
+    const targetId = getCanonicalId(String(task.targetId || ''));
+    if (!sample || !targetId) continue;
+    hasTask = true;
+    const targets = result[sample] || (result[sample] = []);
+    if (!targets.includes(targetId)) targets.push(targetId);
+  }
+
+  if (hasTask) return result;
+  const targetIds = Array.from(new Set(Array.from(fallbackTargetIds)
+    .map(targetId => getCanonicalId(String(targetId || '')))
+    .filter(Boolean)));
+  for (const rawSample of fallbackSamples) {
+    const sample = String(rawSample || '').trim();
+    if (sample) result[sample] = [...targetIds];
+  }
+  return result;
+}
+
 export function parseUniqueSampleCodes(rawSamples: string): string[] {
   const unique = new Map<string, string>();
   String(rawSamples || '')
@@ -24,6 +56,34 @@ export function buildAnalysisTaskKey(sample: string, targetId: string): string {
   return `${normalizeSampleCode(sample)}|${getCanonicalId(targetId)}`;
 }
 
+/**
+ * Builds the group-level requirement matrix. A group owns one target set;
+ * every distinct sample receives every target in that set.
+ */
+export function buildSampleTargetPairs(
+  samples: Iterable<string>,
+  targetIds: Iterable<string>
+): SampleTargetPair[] {
+  const uniqueSamples = new Map<string, string>();
+  for (const rawSample of samples) {
+    const sample = String(rawSample || '').trim();
+    const key = normalizeSampleCode(sample);
+    if (key && !uniqueSamples.has(key)) uniqueSamples.set(key, sample);
+  }
+
+  const uniqueTargets = new Map<string, string>();
+  for (const rawTargetId of targetIds) {
+    const targetId = getCanonicalId(String(rawTargetId || ''));
+    if (targetId && !uniqueTargets.has(targetId)) uniqueTargets.set(targetId, targetId);
+  }
+
+  const pairs: SampleTargetPair[] = [];
+  uniqueSamples.forEach(sample => {
+    uniqueTargets.forEach(targetId => pairs.push({ sample, targetId }));
+  });
+  return pairs;
+}
+
 export function getSopTargetKey(target: SopTarget): string {
   return getCanonicalId(target.name || target.id);
 }
@@ -36,6 +96,32 @@ export function sopCoversTarget(sop: Sop, targetId: string): boolean {
 export function isSopMatrixCompatible(sop: Sop, matrixType?: string): boolean {
   const matrixTags = sop.matrixTags || [];
   return matrixTags.length === 0 || !matrixType || matrixTags.includes(matrixType);
+}
+
+/**
+ * Step 1 is the authoritative place for SOP distribution. A forced SOP is
+ * valid only when it is active, matrix-compatible and covers the complete
+ * target set selected for the group/sample.
+ */
+export function getForcedSopAssignmentIssue(
+  sop: Sop | undefined,
+  targetIds: Iterable<string>,
+  matrixType?: string
+): string | null {
+  if (!sop) return 'SOP chỉ định không còn hoạt động hoặc không tồn tại.';
+  if (!isSopMatrixCompatible(sop, matrixType)) {
+    return `SOP “${sop.name}” không tương thích với nền mẫu đã chọn.`;
+  }
+
+  const missingTargets = Array.from(new Set(Array.from(targetIds)
+    .map(targetId => getCanonicalId(String(targetId || '')))
+    .filter(Boolean)))
+    .filter(targetId => !sopCoversTarget(sop, targetId));
+
+  if (missingTargets.length > 0) {
+    return `SOP “${sop.name}” chưa phủ đủ ${missingTargets.length} chỉ tiêu của nhóm.`;
+  }
+  return null;
 }
 
 export function validateCalculatedItems(

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.11-b04",
-    "title": "Chuẩn bị dung dịch rõ ràng hơn và Nhật ký cập nhật luôn sẵn sàng",
+    "version": "v26.08.13-b01",
+    "title": "SmartBatch Step 2: Wizard nhóm mẫu và tối ưu SOP",
     "features": [
-      "Màn hình Chuẩn bị dung dịch dùng tên gọi gần với thao tác kiểm nghiệm và hướng dẫn rõ hơn ở từng bước.",
-      "Nhật ký cập nhật có dữ liệu hiển thị ngay trên Dashboard, hộp thoại và cổng thông tin kể cả khi lịch sử trực tuyến chưa sẵn sàng.",
-      "Tên nguồn, đơn vị và kết quả được trình bày nhất quán hơn để giảm nhầm lẫn khi lập dãy chuẩn hoặc pha dung dịch.",
-      "Các nhóm đơn vị tương đương như g/L–mg/mL, mg/L–µg/mL và ng/L được nhắc ngay tại lựa chọn để người thực hiện giữ đúng cơ sở của SOP.",
-      "Tên nguồn do người thực hiện nhập được dùng xuyên suốt trong danh sách, hướng dẫn, kết quả và phiếu sao chép; mã kỹ thuật chỉ hiện khi cần đối chiếu."
+      "Step 2 được tổ chức thành một workspace duy nhất, cho phép khai báo nhiều nhóm mẻ trên cùng một trang.",
+      "Mỗi nhóm mẻ có wizard hai bước để lần lượt hoàn thiện mã mẫu, nền mẫu, mô tả, chỉ tiêu và SOP.",
+      "SmartBatch tiếp tục tự quyết định gom hoặc tách batch vật lý sau khi các nhóm đã đủ thông tin.",
+      "Hỗ trợ nhập mã mẫu theo dạng mã[TAB]mô tả và hiển thị ngay mô tả của từng mã để kiểm tra.",
+      "Một bộ chỉ tiêu được áp dụng thống nhất cho toàn bộ mẫu trong cùng nhóm mẻ."
     ]
   },
   "assetGroups": [

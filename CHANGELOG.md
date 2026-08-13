@@ -2,33 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.11-b04
+## Phiên bản hiện tại: v26.08.13-b01
 
-### v26.08.11-b04
+### v26.08.13-b01
 
 #### 🚀 Tính năng nổi bật
 
-- Màn hình Chuẩn bị dung dịch dùng tên gọi gần với thao tác kiểm nghiệm và hướng dẫn rõ hơn ở từng bước.
-- Nhật ký cập nhật có dữ liệu hiển thị ngay trên Dashboard, hộp thoại và cổng thông tin kể cả khi lịch sử trực tuyến chưa sẵn sàng.
-- Tên nguồn, đơn vị và kết quả được trình bày nhất quán hơn để giảm nhầm lẫn khi lập dãy chuẩn hoặc pha dung dịch.
+- Step 2 được tổ chức thành một workspace duy nhất, cho phép khai báo nhiều nhóm mẻ trên cùng một trang.
+- Mỗi nhóm mẻ có wizard hai bước để lần lượt hoàn thiện mã mẫu, nền mẫu, mô tả, chỉ tiêu và SOP.
+- SmartBatch tiếp tục tự quyết định gom hoặc tách batch vật lý sau khi các nhóm đã đủ thông tin.
 
 #### ✨ Tính năng mới
 
-- Các nhóm đơn vị tương đương như g/L–mg/mL, mg/L–µg/mL và ng/L được nhắc ngay tại lựa chọn để người thực hiện giữ đúng cơ sở của SOP.
-- Tên nguồn do người thực hiện nhập được dùng xuyên suốt trong danh sách, hướng dẫn, kết quả và phiếu sao chép; mã kỹ thuật chỉ hiện khi cần đối chiếu.
-- Nhật ký cập nhật có sẵn lịch sử phát hành để xem từ màn hình đăng nhập, Dashboard, hộp thoại và trang toàn bộ lịch sử.
+- Hỗ trợ nhập mã mẫu theo dạng mã[TAB]mô tả và hiển thị ngay mô tả của từng mã để kiểm tra.
+- Một bộ chỉ tiêu được áp dụng thống nhất cho toàn bộ mẫu trong cùng nhóm mẻ.
+- Có tối đa năm SOP gợi ý; người dùng chỉ cần click trực tiếp vào thẻ SOP đủ điều kiện để chỉ định.
 
 #### ⚡ Tối ưu & cải tiến
 
-- Các panel nhập liệu và kết quả trong Chuẩn bị dung dịch được cân đối chiều cao, giúp theo dõi Bước 2 và Bước 3–4 liền mạch hơn.
-- Nội dung hướng dẫn, kết quả sao chép và tiêu đề in dùng cùng tên tác vụ, giúp giảm khoảng cách giữa màn hình và phiếu thao tác.
-- Hộp thoại Nhật ký cập nhật vẫn ưu tiên dữ liệu mới nhất và tự sắp xếp lịch sử theo phiên bản.
+- Gộp vùng SOP hiện tại thành một select duy nhất, đồng thời giữ lựa chọn tự phân phối và SOP thủ công.
+- Tách rõ trạng thái hover và trạng thái SOP đã chọn bằng viền, ring, shadow và nhãn Đang chọn.
+- Nút Chạy SmartBatch optimizer tự động được bật khi toàn bộ nhóm hoàn tất, không cần bước Hoàn tất nhóm mẻ trung gian.
 
 #### 🐛 Sửa lỗi
 
-- Khắc phục trường hợp Dashboard và hộp thoại Nhật ký cập nhật hiển thị trống khi dữ liệu phát hành trực tuyến chưa có bản ghi.
-- Khắc phục trang Nhật ký cập nhật công khai không hiển thị nội dung trước khi người dùng đăng nhập.
-- Khắc phục nhãn nguồn hiển thị mã kỹ thuật thay vì tên nguồn do người thực hiện khai báo trong một số kết quả pha dãy chuẩn.
+- Bổ sung kiểm tra SOP chỉ định phải phủ đủ toàn bộ chỉ tiêu và tương thích với nền mẫu của nhóm.
+- Giữ nguyên semantics hiện tại: nhóm chỉ đại diện cho cùng bộ chỉ tiêu; optimizer mới quyết định batch vật lý.
+- Bổ sung regression test cho parser mã mẫu, ma trận mẫu–chỉ tiêu, handoff JobBlock và giao diện wizard Step 2.
 
 ### v26.08.07-b02
 

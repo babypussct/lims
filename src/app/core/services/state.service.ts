@@ -82,6 +82,7 @@ export class StateService implements OnDestroy {
   private readonly APPROVED_REQUEST_RECENT_LIMIT = 300;
   private readonly APPROVED_REQUEST_HISTORY_PAGE_SIZE = 100;
   private readonly APPROVED_REQUEST_HISTORY_MAX_PAGES = 1000;
+  private readonly MAX_DIRECT_REQUEST_PAYLOAD_BYTES = 900_000;
   private approvedRecentRequests = new Map<string, Request>();
   private approvedHistoryRequests = new Map<string, Request>();
   private approvedHistoryLoads = new Map<string, Promise<ApprovedRequestsHistoryLoadResult>>();
@@ -136,7 +137,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.11-b04');
+  systemVersion = signal<string>('v26.08.13-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -1304,13 +1305,21 @@ export class StateService implements OnDestroy {
     };
   }
 
-  private async buildTargetScopeTraceability(sop: Sop, formInputs: any) {
-    let availableGroups: TargetGroup[] = [];
+  private async getAvailableTargetGroupsForTraceability(): Promise<TargetGroup[]> {
     try {
-      availableGroups = await this.targetService.getAllGroups();
+      return await this.targetService.getAllGroups();
     } catch {
       // Scope classification can still safely snapshot SOP-all/manual without current groups.
+      return [];
     }
+  }
+
+  private async buildTargetScopeTraceability(
+    sop: Sop,
+    formInputs: any,
+    cachedAvailableGroups?: TargetGroup[]
+  ) {
+    const availableGroups = cachedAvailableGroups ?? await this.getAvailableTargetGroupsForTraceability();
     return sanitizeForFirebase(buildTargetScopeSnapshots({
       sampleTargetMap: formInputs.sampleTargetMap,
       fallbackTargetIds: formInputs.targetIds,
@@ -1324,12 +1333,7 @@ export class StateService implements OnDestroy {
 
   private async buildLegacyTargetScopeTraceability(req: Request, currentSop?: Sop) {
     if (req.targetScopeSnapshots?.length) return req.targetScopeSnapshots;
-    let availableGroups: TargetGroup[] = [];
-    try {
-      availableGroups = await this.targetService.getAllGroups();
-    } catch {
-      // Historical SOP snapshot remains authoritative when group metadata is unavailable.
-    }
+    const availableGroups = await this.getAvailableTargetGroupsForTraceability();
     return sanitizeForFirebase(buildTargetScopeSnapshots({
       sampleTargetMap: req.sampleTargetMap,
       fallbackTargetIds: req.targetIds,
@@ -1340,6 +1344,13 @@ export class StateService implements OnDestroy {
         : undefined),
       availableGroups
     }));
+  }
+
+  private estimateUtf8Bytes(value: unknown): number {
+    const json = JSON.stringify(value) || '';
+    return typeof TextEncoder === 'undefined'
+      ? json.length
+      : new TextEncoder().encode(json).byteLength;
   }
 
   private hasValidAnalysisDate(value: unknown): value is string {
@@ -1572,20 +1583,62 @@ export class StateService implements OnDestroy {
 
     const planTimestamp = Date.now();
     try {
-      const prepared = await Promise.all(planItems.map(async (item, index) => ({
-        ...item,
-        requestItems: requestItemsByBatch[index],
-        targetScopeSnapshots: await this.buildTargetScopeTraceability(item.sop, item.formInputs),
-        requestRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests')),
-        printJobRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs')),
-        logRef: doc(
+      // Target groups are immutable for this approval attempt; load them once
+      // instead of once per physical batch created by SmartBatch.
+      const availableTargetGroups = await this.getAvailableTargetGroupsForTraceability();
+      const prepared = await Promise.all(planItems.map(async (item, index) => {
+        const requestItems = requestItemsByBatch[index];
+        const targetScopeSnapshots = await this.buildTargetScopeTraceability(
+          item.sop,
+          item.formInputs,
+          availableTargetGroups
+        );
+        const requestRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
+        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
+        const logRef = doc(
           this.fb.db,
           'artifacts',
           this.fb.APP_ID,
           'logs',
           `TRC-${planTimestamp}-${index}-${Math.floor(Math.random() * 1000)}`
-        )
-      })));
+        );
+        const reqData: any = {
+          sopId: item.sop.id,
+          sopName: item.sop.name,
+          items: requestItems,
+          status: 'approved',
+          timestamp: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+          approvedAt: serverTimestamp(),
+          user: this.getCurrentUserName(),
+          inputs: item.formInputs,
+          margin: item.formInputs.safetyMargin || 0,
+          analysisDate: item.formInputs.analysisDate,
+          targetScopeSnapshots,
+          ...this.buildSopTraceability(item.sop)
+        };
+        if (item.formInputs.sampleList) reqData.sampleList = item.formInputs.sampleList;
+        if (item.formInputs.targetIds) reqData.targetIds = item.formInputs.targetIds;
+        if (item.formInputs.sampleTargetMap) reqData.sampleTargetMap = item.formInputs.sampleTargetMap;
+        if (item.formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
+
+        const payloadBytes = this.estimateUtf8Bytes(sanitizeForFirebase(reqData));
+        if (payloadBytes > this.MAX_DIRECT_REQUEST_PAYLOAD_BYTES) {
+          throw new Error(
+            `Request của SOP “${item.sop.name}” quá lớn (${Math.round(payloadBytes / 1024).toLocaleString('vi-VN')} KB). Hãy chia nhỏ nhóm mẫu trước khi duyệt.`
+          );
+        }
+
+        return {
+          ...item,
+          requestItems,
+          targetScopeSnapshots,
+          reqData,
+          requestRef,
+          printJobRef,
+          logRef
+        };
+      }));
 
       let dailyProjections: Request[] = [];
       await runTransaction(this.fb.db, async transaction => {
@@ -1613,25 +1666,7 @@ export class StateService implements OnDestroy {
         });
 
         prepared.forEach(item => {
-          const reqData: any = {
-            sopId: item.sop.id,
-            sopName: item.sop.name,
-            items: item.requestItems,
-            status: 'approved',
-            timestamp: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-            approvedAt: serverTimestamp(),
-            user: this.getCurrentUserName(),
-            inputs: item.formInputs,
-            margin: item.formInputs.safetyMargin || 0,
-            analysisDate: item.formInputs.analysisDate,
-            targetScopeSnapshots: item.targetScopeSnapshots,
-            ...this.buildSopTraceability(item.sop)
-          };
-          if (item.formInputs.sampleList) reqData.sampleList = item.formInputs.sampleList;
-          if (item.formInputs.targetIds) reqData.targetIds = item.formInputs.targetIds;
-          if (item.formInputs.sampleTargetMap) reqData.sampleTargetMap = item.formInputs.sampleTargetMap;
-          if (item.formInputs.sampleDescriptionMap) reqData.sampleDescriptionMap = item.formInputs.sampleDescriptionMap;
+          const reqData = item.reqData;
           transaction.set(item.requestRef, sanitizeForFirebase(reqData));
           dailyProjections.push({ id: item.requestRef.id, ...reqData } as Request);
 

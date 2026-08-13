@@ -2,6 +2,147 @@
 @tailwind components;
 @tailwind utilities;
 
+/* SmartBatch primary actions share one visual and interaction contract so
+   the next-step optimizer and the final approve/print action feel like the
+   same workflow. */
+.smartbatch-primary-action {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 0;
+  min-height: 46px;
+  width: 100%;
+  flex: 0 0 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 0.75rem;
+  background: #4338ca;
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 10px 18px -8px rgba(67, 56, 202, 0.72), 0 4px 8px -5px rgba(99, 102, 241, 0.5);
+  touch-action: manipulation;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, opacity 150ms ease;
+}
+
+.smartbatch-primary-action:hover:not(:disabled) {
+  border-color: #4f46e5;
+  background: #3730a3;
+  box-shadow: 0 14px 22px -9px rgba(67, 56, 202, 0.8), 0 6px 10px -6px rgba(99, 102, 241, 0.6);
+  transform: translateY(-1px);
+}
+
+.smartbatch-primary-action:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.smartbatch-primary-action:focus-visible {
+  outline: 3px solid rgba(129, 140, 248, 0.8);
+  outline-offset: 3px;
+}
+
+.smartbatch-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+  transform: none;
+}
+
+.smartbatch-primary-action__icon {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.7rem;
+}
+
+/* SmartBatch keeps the step-transition and final approval actions in the
+   same viewport-pinned dock. The content above may scroll, but the primary
+   action remains available without a second nested scroll. */
+.smartbatch-action-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  width: 100%;
+  flex: 0 0 auto;
+  padding: 0.625rem 1rem;
+  border-top: 1px solid #c7d2fe;
+  background: rgba(238, 242, 255, 0.96);
+  box-shadow: 0 -6px 22px rgba(79, 70, 229, 0.14);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.smartbatch-action-dock__inner {
+  display: flex;
+  width: 100%;
+  max-width: 1536px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.smartbatch-action-dock__actions {
+  display: flex;
+  width: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 767px) {
+  .smartbatch-action-dock {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .smartbatch-action-dock__inner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .smartbatch-action-dock__actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+}
+
+.dark .smartbatch-action-dock {
+  border-top-color: #312e81;
+  background: rgba(30, 27, 75, 0.94);
+  box-shadow: 0 -6px 22px rgba(30, 27, 75, 0.45);
+}
+
+@media (min-width: 768px) {
+  .smartbatch-primary-action {
+    width: 280px;
+    min-width: 280px;
+    flex: 0 0 280px;
+  }
+}
+
+.dark .smartbatch-primary-action {
+  border-color: rgba(129, 140, 248, 0.5);
+  background: #4f46e5;
+  box-shadow: 0 10px 18px -8px rgba(30, 27, 75, 0.95), 0 4px 8px -5px rgba(79, 70, 229, 0.5);
+}
+
+.dark .smartbatch-primary-action:hover:not(:disabled) {
+  border-color: #818cf8;
+  background: #4338ca;
+  box-shadow: 0 14px 22px -9px rgba(30, 27, 75, 1), 0 6px 10px -6px rgba(99, 102, 241, 0.55);
+}
+
 /* Shared keyboard focus contract. Feature-local outline utilities should not
    erase this stronger focus state because these selectors include the element
    type and are declared after Tailwind utilities. */

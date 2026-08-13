@@ -26,6 +26,7 @@ import {
   SampleDescriptionSnapshot
 } from '../../core/models/sample-description.model';
 import { SampleDescriptionMasterService } from '../config/sample-description-master.service';
+import { SampleGroupWizardGroup } from '../../core/models/sample-group.model';
 import {
   formatSampleDescriptions,
   getSampleDescriptionSnapshot,
@@ -36,9 +37,12 @@ import {
   applyNeedsToStockLedger,
   BatchPlanValidationIssue,
   buildAnalysisTaskKey,
+  buildSampleTargetMap,
   countUnavailableStockItems,
   getSopTargetKey,
+  getForcedSopAssignmentIssue,
   isSopMatrixCompatible,
+  buildSampleTargetPairs,
   parseUniqueSampleCodes,
   validateCalculatedItems
 } from './smart-batch.utils';
@@ -151,12 +155,27 @@ interface FixCoverageState {
 
 import { QuickGenerateSampleModalComponent } from '../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 import { BatchSplitWizardComponent } from './components/batch-split-wizard.component';
+import { SampleGroupStep2WizardComponent } from './components/sample-group-step2-wizard.component';
+import {
+  cloneSampleGroupWizardGroups,
+  createSampleGroupWizardGroup,
+  normalizeWizardSampleCodes,
+  parseWizardSampleEntries
+} from './sample-group.utils';
 
 @Component({
   selector: 'app-smart-batch',
   standalone: true,
-  imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent, BatchSplitWizardComponent],
+  imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent, BatchSplitWizardComponent, SampleGroupStep2WizardComponent],
   templateUrl: './smart-batch.component.html',
+  styles: [`
+    :host {
+      display: block;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SmartBatchComponent {
@@ -188,7 +207,10 @@ export class SmartBatchComponent {
   singleForcedSopId = signal<string | undefined>(undefined);
   singleSampleDescription = signal<SampleDescriptionSnapshot | undefined>(undefined);
 
+  private uniqueIdSequence = Date.now();
   blocks = signal<JobBlock[]>([this.createEmptyBlock()]);
+  sampleGroupWizardGroups = signal<SampleGroupWizardGroup[]>([]);
+  showSampleGroupWizard = signal(false);
   batches = signal<ProposedBatch[]>([]);
   unmappedTasks = signal<AnalysisTask[]>([]);
   excludedTaskKeys = signal<Set<string>>(new Set());
@@ -235,6 +257,7 @@ export class SmartBatchComponent {
   private inventoryCache: Record<string, InventoryItem> = {};
   private recipeCache: Record<string, Recipe> = {};
   private setupDataLoadPromise?: Promise<void>;
+  private readonly MAX_PLANNING_TASKS = 5000;
   
   sampleSearchTerm = signal('');
   
@@ -448,7 +471,7 @@ export class SmartBatchComponent {
           const sug = this.buildSopSuggestion(sop, reqTargetIds, allTargets, inventory, block.matrixType);
           if (sug) eligibles.push(sug);
       }
-      map.set(block.id, eligibles);
+      map.set(block.id, eligibles.filter(suggestion => !suggestion.isPartial));
     }
     return map;
   });
@@ -514,7 +537,7 @@ export class SmartBatchComponent {
         const sug = this.buildSopSuggestion(sop, reqTargetIds, allTargets, inventory, matrixType);
         if (sug) eligibles.push(sug);
     }
-    return eligibles;
+    return eligibles.filter(suggestion => !suggestion.isPartial);
   });
 
   totalUniqueSamples = computed(() => {
@@ -682,7 +705,7 @@ export class SmartBatchComponent {
       const cached = this.blockSamplesCache.get(block.id);
       if (cached && cached.rawSamples === block.rawSamples) return cached.samples;
 
-      const samples = parseUniqueSampleCodes(block.rawSamples);
+      const samples = normalizeWizardSampleCodes(block.rawSamples);
       this.blockSamplesCache.set(block.id, { rawSamples: block.rawSamples, samples });
       return samples;
   }
@@ -756,7 +779,7 @@ export class SmartBatchComponent {
 
   private createEmptyBlock(name = 'Nhóm mẫu 1', matrixType?: string): JobBlock {
       return {
-          id: Date.now(),
+          id: this.nextUniqueNumber(),
           name,
           rawSamples: '',
           selectedTargets: new Set<string>(),
@@ -781,17 +804,28 @@ export class SmartBatchComponent {
           : { nameSnapshot: name };
   }
 
-  private buildDescriptionMapForSamples(samples: Iterable<string>): SampleDescriptionMap {
-      const result: SampleDescriptionMap = {};
-      Array.from(samples).forEach(sample => {
-          for (const block of this.blocks()) {
+  private buildDescriptionIndex(): Map<string, SampleDescriptionSnapshot> {
+      const result = new Map<string, SampleDescriptionSnapshot>();
+      for (const block of this.blocks()) {
+          for (const sample of this.getBlockSamples(block)) {
+              const key = normalizeSampleCode(sample);
+              if (!key || result.has(key)) continue;
               const snapshot = getSampleDescriptionSnapshot(block.sampleDescriptionMap, sample);
-              if (snapshot) {
-                  result[sample] = snapshot;
-                  break;
-              }
+              if (snapshot) result.set(key, snapshot);
           }
-      });
+      }
+      return result;
+  }
+
+  private buildDescriptionMapForSamplesFromIndex(
+      samples: Iterable<string>,
+      descriptionIndex: ReadonlyMap<string, SampleDescriptionSnapshot>
+  ): SampleDescriptionMap {
+      const result: SampleDescriptionMap = {};
+      for (const sample of samples) {
+          const snapshot = descriptionIndex.get(normalizeSampleCode(sample));
+          if (snapshot) result[sample] = { ...snapshot };
+      }
       return result;
   }
 
@@ -809,16 +843,27 @@ export class SmartBatchComponent {
       return conflict?.sample || null;
   }
 
+  private nextUniqueNumber(): number {
+      this.uniqueIdSequence = Math.max(this.uniqueIdSequence + 1, Date.now());
+      return this.uniqueIdSequence;
+  }
+
+  private nextUniqueId(prefix: string): string {
+      return `${prefix}_${this.nextUniqueNumber()}`;
+  }
+
   // ... Block management helpers ...
   addBlock() {
       this.blocks.update(b => [...b, this.createEmptyBlock(`Nhóm mẫu #${b.length + 1}`)]);
   }
-  removeBlock(index: number) { this.blocks.update(b => b.filter((_, i) => i !== index)); }
+  removeBlock(index: number) {
+      this.blocks.update(b => b.length <= 1 ? b : b.filter((_, i) => i !== index));
+  }
   duplicateBlock(index: number) {
       const src = this.blocks()[index];
       const newBlock = {
           ...src,
-          id: Date.now(),
+          id: this.nextUniqueNumber(),
           name: src.name + ' (bản sao)',
           selectedTargets: new Set(src.selectedTargets),
           sampleDescriptionMap: { ...src.sampleDescriptionMap }
@@ -832,26 +877,70 @@ export class SmartBatchComponent {
   updateBlockSamples(index: number, val: string) {
       this.blocks.update(blocks => {
           const next = [...blocks];
+          const entries = parseWizardSampleEntries(val);
+          const sampleDescriptionMap: SampleDescriptionMap = {};
+          entries.forEach(entry => {
+              const snapshot = entry.description
+                  ? this.resolveDescriptionSnapshot(entry.description)
+                  : getSampleDescriptionSnapshot(next[index].sampleDescriptionMap, entry.code);
+              if (snapshot) sampleDescriptionMap[entry.code] = snapshot;
+          });
           next[index] = {
               ...next[index],
               rawSamples: val,
-              sampleDescriptionMap: subsetSampleDescriptionMap(next[index].sampleDescriptionMap, val.split('\n').map(sample => sample.trim()).filter(Boolean))
+              sampleDescriptionMap
           };
           return next;
       });
   }
   updateBlockSearch(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], targetSearch: val }; return n; }); }
   updateBlockForcedSop(index: number, sopId: string | undefined) {
+      const block = this.blocks()[index];
+      if (!block) return;
+      if (sopId) {
+          const sop = this.activeSops().find(item => item.id === sopId);
+          const issue = getForcedSopAssignmentIssue(sop, block.selectedTargets, block.matrixType);
+          if (issue) {
+              this.toast.show(issue, 'error');
+              return;
+          }
+      }
       this.blocks.update(b => {
           const n = [...b]; 
           n[index] = { ...n[index], forcedSopId: sopId };
           return n;
       });
   }
+
+  updateSingleForcedSop(sopId: string | undefined): void {
+      if (sopId) {
+          const sop = this.activeSops().find(item => item.id === sopId);
+          const issue = getForcedSopAssignmentIssue(sop, this.singleSelectedTargets(), this.singleMatrixType());
+          if (issue) {
+              this.toast.show(issue, 'error');
+              return;
+          }
+      }
+      this.singleForcedSopId.set(sopId);
+  }
   updateBlockMatrix(index: number, val: string | undefined) {
       this.blocks.update(b => {
           const n = [...b];
-          n[index] = { ...n[index], matrixType: val || undefined };
+          const nextMatrix = val || undefined;
+          const forcedSop = n[index].forcedSopId
+              ? this.activeSops().find(item => item.id === n[index].forcedSopId)
+              : undefined;
+          const forcedIssue = n[index].forcedSopId
+              ? getForcedSopAssignmentIssue(forcedSop, n[index].selectedTargets, nextMatrix)
+              : null;
+          n[index] = {
+              ...n[index],
+              matrixType: nextMatrix,
+              forcedSopId: forcedIssue ? undefined : n[index].forcedSopId
+          };
+          if (forcedIssue) {
+              this.toast.show(`${forcedIssue} Đã chuyển nhóm về tự phân phối SOP.`, 'warning');
+          }
           return n;
       });
   }
@@ -879,7 +968,7 @@ export class SmartBatchComponent {
        const data = this.previewSop();
        if (data) {
            if (data.blockIndex === -1) {
-               this.singleForcedSopId.set(data.suggestion.sop.id);
+               this.updateSingleForcedSop(data.suggestion.sop.id);
            } else {
                this.updateBlockForcedSop(data.blockIndex, data.suggestion.sop.id);
            }
@@ -887,7 +976,7 @@ export class SmartBatchComponent {
        }
    }
   
-  countSamples(raw: string): number { return parseUniqueSampleCodes(raw).length; }
+  countSamples(raw: string): number { return normalizeWizardSampleCodes(raw).length; }
   
   // getFilteredTargets method removed as it's replaced by filteredTargetsMap
 
@@ -946,8 +1035,104 @@ export class SmartBatchComponent {
       this.showGroupModal.set(true);
   }
 
+  private buildSampleGroupWizardGroups(): SampleGroupWizardGroup[] {
+      if (this.smartBatchMode() === 'single') {
+          const sample = this.singleSampleCode().trim();
+          const id = `single-${normalizeSampleCode(sample) || 'sample'}`;
+          return [createSampleGroupWizardGroup(
+              {
+                  id,
+                  name: sample ? `Mẫu ${sample}` : 'Mẫu duy nhất',
+                  rawSamples: sample,
+                  matrixType: this.singleMatrixType(),
+                   sampleDescriptionMap: sample && this.singleSampleDescription()
+                       ? { [sample]: this.singleSampleDescription()! }
+                       : {},
+                   selectedTargets: this.singleSelectedTargets(),
+                   forcedSopId: this.singleForcedSopId(),
+                   sourceGroupId: this.singleSourceGroupId() || undefined
+              }
+          )];
+      }
+
+      return this.blocks().map(block => createSampleGroupWizardGroup(
+          {
+              id: String(block.id),
+              name: block.name,
+              rawSamples: block.rawSamples,
+              matrixType: block.matrixType,
+               sampleDescriptionMap: block.sampleDescriptionMap,
+               selectedTargets: block.selectedTargets,
+               forcedSopId: block.forcedSopId,
+               sourceGroupId: block.sourceGroupId,
+               sourceGroupModified: block.sourceGroupModified
+          }
+      ));
+  }
+
+  async startSampleGroupWizard(): Promise<void> {
+      if (this.isProcessing()) return;
+      await this.ensureSetupDataLoaded();
+      this.sampleGroupWizardGroups.set(cloneSampleGroupWizardGroups(this.buildSampleGroupWizardGroups()));
+      this.showSampleGroupWizard.set(true);
+      this.step.set(1);
+  }
+
+  completeSampleGroupWizard(details: SampleGroupWizardGroup[]): void {
+      if (this.smartBatchMode() === 'single') {
+          const detail = details[0];
+          if (detail) {
+              const sample = parseWizardSampleEntries(detail.rawSamples)[0]?.code || '';
+              this.singleSampleCode.set(sample);
+              this.singleMatrixType.set(detail.matrixType);
+               this.singleSelectedTargets.set(new Set(detail.selectedTargets));
+               this.singleForcedSopId.set(detail.forcedSopId);
+               this.singleSourceGroupId.set(detail.sourceGroupId || null);
+              this.singleSampleDescription.set(sample
+                  ? getSampleDescriptionSnapshot(detail.sampleDescriptionMap, sample)
+                  : undefined);
+              const source = this.blocks()[0] || this.createEmptyBlock(`Mẫu ${sample}`);
+              this.blocks.set([{
+                  ...source,
+                  rawSamples: detail.rawSamples,
+                  matrixType: detail.matrixType,
+                   selectedTargets: new Set(detail.selectedTargets),
+                   sampleDescriptionMap: { ...detail.sampleDescriptionMap },
+                   forcedSopId: detail.forcedSopId,
+                   sourceGroupId: detail.sourceGroupId,
+                   sourceGroupModified: detail.sourceGroupModified
+              }]);
+          }
+      } else {
+          const existingBlocks = new Map(this.blocks().map(block => [String(block.id), block]));
+          const nextBlocks = details.map((detail, index) => {
+              const source = existingBlocks.get(detail.id);
+              const base = source || this.createEmptyBlock(detail.name || `Nhóm mẫu ${index + 1}`);
+              return {
+                  ...base,
+                  name: detail.name || `Nhóm mẫu ${index + 1}`,
+                  rawSamples: detail.rawSamples,
+                  matrixType: detail.matrixType,
+                  selectedTargets: new Set(detail.selectedTargets),
+                   sampleDescriptionMap: { ...detail.sampleDescriptionMap },
+                   forcedSopId: detail.forcedSopId,
+                   sourceGroupId: detail.sourceGroupId,
+                   sourceGroupModified: detail.sourceGroupModified,
+                   targetSearch: '',
+                  isCollapsed: false
+              };
+          });
+          this.blocks.set(nextBlocks);
+      }
+
+      this.showSampleGroupWizard.set(false);
+      void this.analyzePlan();
+  }
+
   selectMode(mode: 'multiple' | 'single') {
       this.smartBatchMode.set(mode);
+      this.sampleGroupWizardGroups.set(cloneSampleGroupWizardGroups(this.buildSampleGroupWizardGroups()));
+      this.showSampleGroupWizard.set(true);
       this.step.set(1);
       void this.ensureSetupDataLoaded();
   }
@@ -957,6 +1142,8 @@ export class SmartBatchComponent {
   }
 
   goBackToStep0() {
+      this.showSampleGroupWizard.set(false);
+      this.sampleGroupWizardGroups.set([]);
       this.step.set(0);
   }
 
@@ -968,9 +1155,12 @@ export class SmartBatchComponent {
               this.availableMatrices.set(m);
           }),
           this.masterDeviceService.getAll().then(d => this.availableDevices.set(d)),
-          this.sampleDescriptionMasterService.getActive()
-            .then(items => this.availableSampleDescriptions.set(items))
-            .catch(() => this.toast.show('Không thể tải gợi ý mô tả mẫu; vẫn có thể nhập tự do.', 'info'))
+           this.sampleDescriptionMasterService.getActive()
+             .then(items => this.availableSampleDescriptions.set(items))
+             .catch(() => this.toast.show('Không thể tải gợi ý mô tả mẫu; vẫn có thể nhập tự do.', 'info')),
+           this.targetService.getAllGroups()
+             .then(groups => this.availableGroups.set(groups))
+             .catch(() => this.toast.show('Không thể tải Nhóm Chỉ Tiêu; vẫn có thể chọn từng chỉ tiêu.', 'info'))
       ]).then(() => undefined);
 
       return this.setupDataLoadPromise;
@@ -1037,7 +1227,7 @@ export class SmartBatchComponent {
           }
           // Construct single mock block
           const mockBlock: JobBlock = {
-              id: Date.now(),
+              id: this.nextUniqueNumber(),
               name: `Mẫu ${sample}`,
               rawSamples: sample,
               selectedTargets: new Set(this.singleSelectedTargets()),
@@ -1051,6 +1241,20 @@ export class SmartBatchComponent {
                   : {}
           };
           this.blocks.set([mockBlock]);
+      }
+
+      const requestedTaskKeys = new Set<string>();
+      for (const block of this.blocks()) {
+          for (const pair of buildSampleTargetPairs(this.getBlockSamples(block), block.selectedTargets)) {
+              requestedTaskKeys.add(buildAnalysisTaskKey(pair.sample, pair.targetId));
+          }
+      }
+      if (requestedTaskKeys.size > this.MAX_PLANNING_TASKS) {
+          this.toast.show(
+              `Kế hoạch có ${requestedTaskKeys.size.toLocaleString('vi-VN')} cặp mẫu–chỉ tiêu, vượt giới hạn lập kế hoạch ${this.MAX_PLANNING_TASKS.toLocaleString('vi-VN')}. Hãy chia nhỏ nhóm hoặc kế hoạch.`,
+              'error'
+          );
+          return;
       }
 
       const descriptionConflict = this.findDescriptionConflict();
@@ -1072,12 +1276,14 @@ export class SmartBatchComponent {
 
           const batches: ProposedBatch[] = [];
           const sops = this.state.sops().filter(s => !s.isArchived);
+          const descriptionIndex = this.buildDescriptionIndex();
 
           // 2. Flatten and de-duplicate the request before planning.
           const pendingTasks = new Map<string, AnalysisTask>();
           const forcedAssignments = new Map<string, string>();
           const taskMatrices = new Map<string, string>();
           const planningLedger: Record<string, number> = {};
+          const availableTargets = this.allAvailableTargets();
           inv.forEach(item => planningLedger[item.id] = item.stock);
 
           const registerMatrix = (key: string, matrixType?: string) => {
@@ -1096,19 +1302,18 @@ export class SmartBatchComponent {
               const forcedSop = block.forcedSopId
                   ? sops.find(sop => sop.id === block.forcedSopId)
                   : undefined;
-              if (forcedSop && !isSopMatrixCompatible(forcedSop, block.matrixType)) {
-                  throw new Error(`SOP “${forcedSop.name}” không tương thích với nền mẫu “${this.getMatrixLabel(block.matrixType)}”.`);
+              if (block.forcedSopId) {
+                  const forcedIssue = getForcedSopAssignmentIssue(forcedSop, block.selectedTargets, block.matrixType);
+                  if (forcedIssue) throw new Error(forcedIssue);
               }
 
               const supportedForcedTasks: AnalysisTask[] = [];
-              for (const sample of samples) {
-                  for (const rawTargetId of block.selectedTargets) {
-                      const targetId = getCanonicalId(rawTargetId);
-                      const foundTarget = resolveTargetMasterInfo(targetId, this.allAvailableTargets());
+              for (const { sample, targetId } of buildSampleTargetPairs(samples, block.selectedTargets)) {
+                      const foundTarget = resolveTargetMasterInfo(targetId, availableTargets);
                       const task: AnalysisTask = {
                           sample,
                           targetId,
-                          targetName: foundTarget?.name || rawTargetId,
+                          targetName: foundTarget?.name || targetId,
                           covered: false,
                           matrixType: block.matrixType,
                           sourceGroupId: block.sourceGroupId
@@ -1134,7 +1339,6 @@ export class SmartBatchComponent {
                               pendingTasks.set(key, { ...existingTask, matrixType: task.matrixType });
                           }
                       }
-                  }
               }
 
               if (forcedSop && supportedForcedTasks.length > 0) {
@@ -1150,7 +1354,7 @@ export class SmartBatchComponent {
                   const tags = ['Forced-SOP'];
                   if (block.matrixType) tags.push(this.getMatrixLabel(block.matrixType));
                   batches.push({
-                      id: `batch_${Date.now()}_${batches.length}`,
+                      id: this.nextUniqueId('batch'),
                       name: forcedSop.name + ' (Chỉ định)',
                       sop: forcedSop,
                       targets: batchTargets,
@@ -1163,44 +1367,78 @@ export class SmartBatchComponent {
                       status: 'ready',
                       tags,
                       isExpanded: false,
-                      sampleDescriptionMap: this.buildDescriptionMapForSamples(blockSamples)
+                      sampleDescriptionMap: this.buildDescriptionMapForSamplesFromIndex(blockSamples, descriptionIndex)
                   });
               }
           }
 
           // 3. Greedy loop with deterministic scoring and quantity-aware stock penalty.
-          let remainingTasks = Array.from(pendingTasks.values());
+          // Eligibility is indexed once; each iteration only checks whether an indexed
+          // task is still pending instead of rescanning every task for every SOP.
+          const taskByKey = new Map(pendingTasks);
+          const remainingTaskKeys = new Set(taskByKey.keys());
+          const remainingTasksBySample = new Map<string, number>();
+          taskByKey.forEach(task => {
+              const sampleKey = normalizeSampleCode(task.sample);
+              remainingTasksBySample.set(sampleKey, (remainingTasksBySample.get(sampleKey) || 0) + 1);
+          });
+
           let iterationCount = 0;
           const sopsForAuto = sops.filter(sop => !sop.isManualOnly);
-          const maxIterations = Math.max(1, Math.min(remainingTasks.length, sopsForAuto.length + 1));
+          const eligibleTaskKeysBySop = new Map<string, string[]>();
+          for (const sop of sopsForAuto) {
+              const sopTargetIds = new Set((sop.targets || []).map(getSopTargetKey));
+              const eligibleKeys: string[] = [];
+              taskByKey.forEach((task, key) => {
+                  if (sopTargetIds.has(task.targetId) && isSopMatrixCompatible(sop, task.matrixType)) {
+                      eligibleKeys.push(key);
+                  }
+              });
+              eligibleTaskKeysBySop.set(sop.id, eligibleKeys);
+          }
 
-          while (remainingTasks.length > 0 && iterationCount < maxIterations) {
+          const needsCache = new Map<string, { inputs: Record<string, any>; needs: CalculatedItem[] }>();
+          const getCachedNeeds = (sop: Sop, sampleCount: number) => {
+              const inputs = this.buildDefaultBatchInputs(sop, sampleCount);
+              const cacheKey = `${sop.id}|${sampleCount}|${JSON.stringify(inputs)}`;
+              const cached = needsCache.get(cacheKey);
+              if (cached) return cached;
+              const needs = this.calculator.calculateSopNeeds(
+                  sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+              );
+              const result = { inputs, needs };
+              needsCache.set(cacheKey, result);
+              return result;
+          };
+
+          const maxIterations = Math.max(1, Math.min(remainingTaskKeys.size, sopsForAuto.length + 1));
+          while (remainingTaskKeys.size > 0 && iterationCount < maxIterations) {
               iterationCount++;
               const candidates = sopsForAuto.map(sop => {
                   if (!sop.targets || sop.targets.length === 0) return null;
-                  const sopTargetIds = new Set(sop.targets.map(getSopTargetKey));
-                  const coverableTasks = remainingTasks.filter(task =>
-                      sopTargetIds.has(task.targetId) && isSopMatrixCompatible(sop, task.matrixType)
-                  );
+                  const coverableTasks = (eligibleTaskKeysBySop.get(sop.id) || [])
+                      .filter(key => remainingTaskKeys.has(key))
+                      .map(key => taskByKey.get(key)!)
+                      .filter(Boolean);
                   if (coverableTasks.length === 0) return null;
 
                   let score = coverableTasks.length * 10;
-                  const involvedSamples = new Set(coverableTasks.map(task => normalizeSampleCode(task.sample)));
-                  involvedSamples.forEach(sampleKey => {
-                      const tasksForSample = remainingTasks.filter(task => normalizeSampleCode(task.sample) === sampleKey);
-                      const coveredForSample = coverableTasks.filter(task => normalizeSampleCode(task.sample) === sampleKey);
-                      if (tasksForSample.length === coveredForSample.length) score += 5;
+                  const coveredBySample = new Map<string, number>();
+                  const coveredTargetIds = new Set<string>();
+                  coverableTasks.forEach(task => {
+                      const sampleKey = normalizeSampleCode(task.sample);
+                      coveredBySample.set(sampleKey, (coveredBySample.get(sampleKey) || 0) + 1);
+                      coveredTargetIds.add(task.targetId);
+                  });
+                  coveredBySample.forEach((coveredCount, sampleKey) => {
+                      if (remainingTasksBySample.get(sampleKey) === coveredCount) score += 5;
                   });
 
-                  const uniqueCovered = new Set(coverableTasks.map(task => task.targetId)).size;
-                  score += (uniqueCovered / sop.targets.length) * 30;
-                  score -= (sop.targets.length - uniqueCovered);
+                  score += (coveredTargetIds.size / sop.targets.length) * 30;
+                  score -= (sop.targets.length - coveredTargetIds.size);
 
-                  const sampleCount = new Set(coverableTasks.map(task => normalizeSampleCode(task.sample))).size;
-                  const inputs = this.buildDefaultBatchInputs(sop, sampleCount);
-                  const needs = this.calculator.calculateSopNeeds(
-                      sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-                  );
+                  const sampleCount = coveredBySample.size;
+                  const { inputs, needs } = getCachedNeeds(sop, sampleCount);
                   const unavailableCount = countUnavailableStockItems(needs, planningLedger);
                   const validationCount = validateCalculatedItems(needs, -1).length;
                   score -= unavailableCount * 100;
@@ -1227,7 +1465,7 @@ export class SmartBatchComponent {
               matrixTypes.forEach(matrix => tags.push(this.getMatrixLabel(matrix)));
 
               batches.push({
-                  id: `batch_${Date.now()}_${batches.length}`,
+                  id: this.nextUniqueId('batch'),
                   name: bestFit.sop.name,
                   sop: bestFit.sop,
                   targets: batchTargets,
@@ -1240,12 +1478,22 @@ export class SmartBatchComponent {
                   status: 'ready',
                   tags,
                   isExpanded: false,
-                  sampleDescriptionMap: this.buildDescriptionMapForSamples(batchSamples)
+                  sampleDescriptionMap: this.buildDescriptionMapForSamplesFromIndex(batchSamples, descriptionIndex)
               });
 
-              const coveredKeys = new Set(coveredTasks.map(task => buildAnalysisTaskKey(task.sample, task.targetId)));
-              remainingTasks = remainingTasks.filter(task => !coveredKeys.has(buildAnalysisTaskKey(task.sample, task.targetId)));
+              coveredTasks.forEach(task => {
+                  const key = buildAnalysisTaskKey(task.sample, task.targetId);
+                  if (!remainingTaskKeys.delete(key)) return;
+                  const sampleKey = normalizeSampleCode(task.sample);
+                  const count = remainingTasksBySample.get(sampleKey) || 0;
+                  if (count <= 1) remainingTasksBySample.delete(sampleKey);
+                  else remainingTasksBySample.set(sampleKey, count - 1);
+              });
           }
+
+          const remainingTasks = Array.from(remainingTaskKeys)
+              .map(key => taskByKey.get(key))
+              .filter((task): task is AnalysisTask => Boolean(task));
 
           this.batches.set(batches);
           this.unmappedTasks.set(remainingTasks);
@@ -1527,7 +1775,7 @@ export class SmartBatchComponent {
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
 
       const newBatch: ProposedBatch = {
-          id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+          id: this.nextUniqueId('batch_split'),
           name: targetSop.name + ' (Tách)',
           sop: targetSop,
           targets: newBatchTargets,
@@ -1877,7 +2125,7 @@ export class SmartBatchComponent {
           const dedicatedSamples = parseUniqueSampleCodes(affectedSamples.join('\n'));
           const dedicated: JobBlock = {
               ...this.createEmptyBlock(`${source.name} — ${targetName}`, options.clearMatrix ? undefined : source.matrixType),
-              id: Date.now() + blocks.length + Math.floor(Math.random() * 1000),
+              id: this.nextUniqueNumber(),
               rawSamples: dedicatedSamples.join('\n'),
               selectedTargets: new Set([canonicalTargetId]),
               forcedSopId: options.forcedSopId,
@@ -1961,6 +2209,8 @@ export class SmartBatchComponent {
       this.unmappedTasks.set([]);
       this.excludedTaskKeys.set(new Set());
       this.blocks.set([this.createEmptyBlock()]);
+      this.sampleGroupWizardGroups.set([]);
+      this.showSampleGroupWizard.set(false);
       this.singleSampleCode.set('');
       this.singleSampleDescription.set(undefined);
       this.singleSelectedTargets.set(new Set());
@@ -1971,18 +2221,11 @@ export class SmartBatchComponent {
   }
 
   goBackFromStep2() {
-      if (this.smartBatchMode() === 'single' && this.blocks().length > 0) {
-          const mockBlock = this.blocks()[0];
-          this.singleSampleCode.set(mockBlock.rawSamples.trim());
-          this.singleSampleDescription.set(getSampleDescriptionSnapshot(mockBlock.sampleDescriptionMap, mockBlock.rawSamples.trim()));
-          this.singleSelectedTargets.set(new Set(mockBlock.selectedTargets));
-          this.singleSourceGroupId.set(mockBlock.sourceGroupId || null);
-          this.singleMatrixType.set(mockBlock.matrixType);
-          this.singleForcedSopId.set(mockBlock.forcedSopId);
-      }
       this.batches.set([]);
       this.unmappedTasks.set([]);
       this.excludedTaskKeys.set(new Set());
+      this.sampleGroupWizardGroups.set(cloneSampleGroupWizardGroups(this.buildSampleGroupWizardGroups()));
+      this.showSampleGroupWizard.set(true);
       this.step.set(1);
   }
 
@@ -2021,22 +2264,11 @@ export class SmartBatchComponent {
           
           try {
               const planItems = this.batches().map(batch => {
-                   const sampleTargetMap: Record<string, string[]> = {};
-                   if (batch.tasks && batch.tasks.length > 0) {
-                       batch.tasks.forEach(t => {
-                          if (!sampleTargetMap[t.sample]) {
-                              sampleTargetMap[t.sample] = [];
-                          }
-                          if (!sampleTargetMap[t.sample].includes(t.targetId)) {
-                              sampleTargetMap[t.sample].push(t.targetId);
-                          }
-                      });
-                  } else {
-                      const allTargetIds = batch.targets.map(t => t.id);
-                      Array.from(batch.samples).forEach(s => {
-                          sampleTargetMap[s] = allTargetIds;
-                      });
-                  }
+                   const sampleTargetMap = buildSampleTargetMap(
+                       batch.tasks || [],
+                       batch.samples,
+                       batch.targets.map(t => t.id)
+                   );
 
                   const finalInputs = { 
                       ...batch.inputValues, 
