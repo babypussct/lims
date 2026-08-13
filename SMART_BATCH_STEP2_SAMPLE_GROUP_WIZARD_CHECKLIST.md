@@ -111,13 +111,15 @@ Mục tiêu: Step 2 là một workspace duy nhất để khai báo nhiều nhóm
 - [x] Khi tất cả nhóm tự hoàn tất, optimizer sticky tự bật ngay; khi còn nhóm dở dang, optimizer bị khóa. Runtime sau optimizer hiển thị `Đã phủ kín toàn bộ yêu cầu` / `Thiếu 0 chỉ tiêu/mẫu` và chuyển sang `Duyệt & Xếp Hàng In`.
 - [x] Nút optimizer và nút duyệt/xếp hàng in dùng chung UI/UX primary action; browser đo cả hai ở desktop là `280x46px`, cùng màu indigo, bo góc 12px và không xuống dòng.
 - [ ] Xác nhận bằng authenticated UI smoke với dữ liệu thật, planner thật, direct approve và các consumer checklist/kết quả.
-- [ ] Xác nhận production Firestore/deployment; build local không thay thế bằng chứng production.
+- [x] Xác nhận production frontend Vercel: alias `nafiqpm6.vercel.app` trả `200`; `/ngsw.json` trả `200`, `appData.version = v26.08.13-b01`, title đúng và manifest có 175 hash entries.
+- [x] Kiểm tra phạm vi production Firestore: release này không thay đổi `firestore.rules`, vì vậy không cần deploy Rules riêng.
 
 ## Ranh giới bằng chứng
 
 - **Source/local:** đã kiểm tra model `JobBlock`, wizard, optimizer và handoff về block; wizard không tạo persistence field mới.
 - **Build/test:** chỉ đánh dấu hoàn tất sau khi chạy lại trên checkout hiện tại; số test lịch sử không thay thế cho lần chạy hiện tại.
 - **Runtime local:** đã xác nhận wizard `Bước 1/2`, dữ liệu TAB 2/2 mô tả, default Any, copy/collapse, một nút `Thêm nhóm mới`, click trực tiếp thẻ nhóm, bộ 2 target Fipronil/Chlorpyrifos, click trực tiếp thẻ SOP để chỉ định (button `Chỉ định`: 0), chỉ một vùng SOP hiện tại và không còn `Đang áp dụng`. Nhóm tự hiển thị `2 mã · 2 chỉ tiêu Đã hoàn tất` và optimizer tự enabled trước khi bấm optimizer. Ở viewport `1256x912`, wizard cao `616px`, dock optimizer cao `67px`, action dock nằm trong vùng ứng dụng và không cần cuộn trang để thao tác. Sau optimizer đã thấy `Đã phủ kín toàn bộ yêu cầu`, `Thiếu 0 chỉ tiêu/mẫu`, `Duyệt & Xếp Hàng In`. Cả hai primary action đã được đo cùng `280x46px`, cùng `border-radius: 12px`, `white-space: nowrap`, cùng action dock sticky và cùng responsive contract.
+- **Production frontend:** deployment `v26.08.13-b01` đã READY trên Vercel; alias chính trả `200`, `/ngsw.json` trả `200`, payload xác nhận đúng version/title và 175 hash entries.
 - **Authenticated/production:** chưa suy ra từ smoke local, build hoặc unit test; cần phiên đăng nhập hợp lệ và kiểm tra trực tiếp các đường Request/Firestore/consumer.
 
 ## File/điểm kiểm tra chính
