@@ -5,17 +5,24 @@ import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
 import { getExpiryClass, formatNum } from '../../../shared/utils/utils';
 import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-standards-assign-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen() && std()) {
-       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-          <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+       <app-modal-shell
+         [title]="isAssignMode() ? 'Gán cho nhân viên' : 'Mượn chuẩn sử dụng'"
+         [description]="std()?.name || ''"
+         size="lg"
+         [closeOnBackdrop]="false"
+         (closed)="closeModal.emit()"
+       >
+          <div modalBody class="-mx-6 -my-5 grid min-h-0 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
               <!-- Left: Standard Info Summary -->
-              <div class="hidden md:flex w-2/5 bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
+              <div class="hidden md:flex bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
                   <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
                       <i class="fa-solid fa-vial"></i>
                   </div>
@@ -69,15 +76,8 @@ import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
               </div>
 
               <!-- Right: Borrow Form -->
-              <div class="flex-1 p-8 flex flex-col bg-white dark:bg-slate-900">
-                  <div class="flex justify-between items-center mb-6">
-                      <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
-                          {{ isAssignMode() ? 'Gán cho nhân viên' : 'Mượn chuẩn sử dụng' }}
-                      </h3>
-                      <button (click)="closeModal.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-xmark"></i></button>
-                  </div>
-
-                  <div class="flex-1 space-y-5 overflow-y-auto pr-2 custom-scrollbar">
+              <div class="min-w-0 p-8 bg-white dark:bg-slate-900">
+                  <div class="space-y-5">
                       @if(isAssignMode()) {
                           <div>
                               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nhân viên tiếp nhận <span class="text-red-500">*</span></label>
@@ -110,16 +110,16 @@ import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
                           </div>
                       </div>
                   </div>
-
-                  <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy Bỏ</button>
-                      <button (click)="onConfirm()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                          @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-paper-plane text-xs"></i> Xác nhận mượn }
-                      </button>
-                  </div>
               </div>
           </div>
-       </div>
+
+          <div modalFooter class="flex flex-wrap justify-end gap-3">
+              <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy Bỏ</button>
+              <button (click)="onConfirm()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
+                  @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-paper-plane text-xs"></i> Xác nhận mượn }
+              </button>
+          </div>
+       </app-modal-shell>
     }
   `
 })

@@ -1,27 +1,23 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-standards-import-data-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppModalShellComponent],
   template: `
       <!-- IMPORT PREVIEW MODAL -->
       @if (data().length > 0) {
-         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-file-import text-emerald-600 dark:text-emerald-500"></i> Xác Nhận Import
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra kỹ ngày tháng trước khi lưu.</p>
-                    </div>
-                    <button (click)="onCancel()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-xmark"></i></button>
-                </div>
+         <app-modal-shell
+            title="Xác nhận import"
+            description="Vui lòng kiểm tra kỹ ngày tháng trước khi lưu."
+            size="2xl"
+            [closeOnBackdrop]="false"
+            (closed)="onCancel()"
+         >
 
-                <div class="flex-1 overflow-auto custom-scrollbar p-6">
+                <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto custom-scrollbar p-6">
                     <div class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/50 rounded-lg p-3 flex gap-3 text-sm text-yellow-800 dark:text-yellow-500">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
                         <div>
@@ -79,15 +75,14 @@ import { CommonModule } from '@angular/common';
                     }
                 </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
+                <div modalFooter class="flex w-full justify-end gap-3">
+                    <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
                     <button (click)="onConfirm()" [disabled]="isImporting() || validCount() === 0" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                         @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
-                        @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
+                        @else { <i class="fa-solid fa-check"></i> Xác nhận import }
                     </button>
                 </div>
-            </div>
-         </div>
+         </app-modal-shell>
       }
   `
 })
@@ -112,24 +107,19 @@ export class StandardsImportDataModalComponent {
 @Component({
   selector: 'app-standards-import-usage-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppModalShellComponent],
   template: `
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
       @if (data().length > 0) {
-         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-book-open text-teal-600 dark:text-teal-500"></i> Xác Nhận Import Nhật Ký
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua.</p>
-                    </div>
-                    <button (click)="onCancel()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-xmark"></i></button>
-                </div>
+         <app-modal-shell
+            title="Xác nhận import nhật ký"
+            description="Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua."
+            size="2xl"
+            [closeOnBackdrop]="false"
+            (closed)="onCancel()"
+         >
 
-                <div class="flex-1 overflow-auto p-6 bg-white dark:bg-slate-900">
+                <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto p-6 bg-white dark:bg-slate-900">
                     <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-500 p-4 rounded-xl text-sm flex items-start gap-3">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500 dark:text-amber-400"></i>
                         <div>
@@ -189,7 +179,7 @@ export class StandardsImportDataModalComponent {
                     }
                 </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
+                <div modalFooter class="flex w-full flex-wrap justify-between items-center gap-3">
                     <div class="text-sm font-bold text-slate-600 dark:text-slate-400">
                         Tổng: {{data().length}} | 
                         <span class="text-emerald-600 dark:text-emerald-400">Hợp lệ: {{validCount()}}</span> | 
@@ -197,15 +187,14 @@ export class StandardsImportDataModalComponent {
                         <span class="text-red-500 dark:text-red-400">Lỗi: {{errorCount()}}</span>
                     </div>
                     <div class="flex gap-3">
-                        <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
+                        <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
                         <button (click)="onConfirm()" [disabled]="isImporting() || validCount() === 0" class="px-6 py-2.5 bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                             @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
-                            @else { <i class="fa-solid fa-check"></i> Import Hợp lệ }
+                            @else { <i class="fa-solid fa-check"></i> Import hợp lệ }
                         </button>
                     </div>
                 </div>
-            </div>
-         </div>
+         </app-modal-shell>
       }
   `
 })

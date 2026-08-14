@@ -1,18 +1,19 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 
 @Component({
   selector: 'app-forbidden',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AppButtonComponent],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
       <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center border border-slate-100 dark:border-slate-700 animate-fade-in">
         <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-amber-200 dark:border-amber-800/50 shadow-inner">
           <i class="fa-solid fa-lock text-3xl"></i>
         </div>
-        <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 mb-1">Chưa Có Quyền Truy Cập</h1>
+        <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 mb-1">Chưa có quyền truy cập</h1>
 
         @if (fromUrl()) {
           <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">
@@ -37,9 +38,9 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
         </p>
 
         <div class="flex flex-col gap-2.5">
-          <button (click)="goBack()" class="w-full py-3 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2">
-            <i class="fa-solid fa-arrow-left"></i> Quay Lại Trang Trước
-          </button>
+          <app-button [fullWidth]="true" variant="secondary" (click)="goBack()">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại trang trước
+          </app-button>
           <a routerLink="/dashboard" class="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
             <i class="fa-solid fa-house"></i> Về Trang chủ
           </a>

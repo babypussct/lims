@@ -34,8 +34,13 @@ describe('shared UI primitive contracts', () => {
 
     assert.match(source, /appModalA11y/);
     assert.match(source, /\[modalLabelledBy\]="titleId"/);
-    assert.match(source, /\(modalEscape\)="closed\.emit\(\)"/);
+    assert.match(source, /\(modalEscape\)="requestClose\(\)"/);
     assert.match(source, /aria-label="Đóng"/);
+    assert.match(source, /\[disabled\]="closeDisabled\(\)"/);
+    assert.match(source, /closeDisabled = input\(false\)/);
+    assert.match(source, /if \(!this\.closeDisabled\(\)\)/);
+    assert.match(source, /export type AppModalSize = 'sm' \| 'md' \| 'lg' \| 'xl' \| '2xl'/);
+    assert.match(source, /'2xl': 'max-w-\[96rem\]'/);
     assert.match(source, /fa-xmark/);
     assert.match(source, /select="\[modalBody\]"/);
     assert.match(source, /select="\[modalFooter\]"/);

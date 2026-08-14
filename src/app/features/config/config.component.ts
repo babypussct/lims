@@ -8,6 +8,8 @@ import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 import { ConfigGeneralComponent } from './components/config-general.component';
 import { ConfigSafetyComponent } from './components/config-safety.component';
@@ -17,29 +19,24 @@ import { ConfigRolesComponent } from './components/config-roles.component';
 @Component({
   selector: 'app-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent, AppButtonComponent, AppPageHeaderComponent],
   template: `
     <div class="w-full max-w-7xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
       @if (state.isAdmin()) {
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl p-4 rounded-2xl shadow-sm border border-white/70 dark:border-slate-700 shrink-0">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 shadow-sm shrink-0">
-              <i class="fa-solid fa-gears text-base"></i>
-            </div>
-            <div>
-              <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">Cấu Hình Hệ Thống</h2>
-              <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản trị viên: {{auth.currentUser()?.displayName}}.</p>
-            </div>
+        <app-page-header
+          title="Cấu hình hệ thống"
+          [subtitle]="'Quản trị viên: ' + (auth.currentUser()?.displayName || '') + '.'"
+          icon="fa-gears">
+          <div pageHeaderActions class="flex items-center gap-2">
+            <app-button variant="secondary" size="sm" (click)="enableNotifications()">
+              <i class="fa-regular fa-bell text-sm" aria-hidden="true"></i>
+              Bật thông báo
+            </app-button>
+            <span class="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+              Version: <span class="ml-1 font-mono text-indigo-600 dark:text-indigo-400">{{state.systemVersion()}}</span>
+            </span>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" (click)="enableNotifications()" class="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 transition active:scale-95">
-              <i class="fa-regular fa-bell text-sm"></i> Bật Thông Báo
-            </button>
-            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
-              Version: <span class="text-blue-600 dark:text-blue-400 font-mono">{{state.systemVersion()}}</span>
-            </div>
-          </div>
-        </div>
+        </app-page-header>
 
         <div class="flex gap-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar whitespace-nowrap">
           <button type="button" (click)="activeTab.set('profile')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'profile' ? 'border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">

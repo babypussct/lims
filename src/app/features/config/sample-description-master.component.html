@@ -1,39 +1,49 @@
 <div class="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
-  <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-black text-slate-850 dark:text-white flex items-center gap-3">
-        <span class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center"><i class="fa-solid fa-tags"></i></span>
-        Danh Mục Mô Tả Mẫu
-      </h1>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Danh mục gợi ý được KNV sử dụng để gắn mô tả cho từng mã mẫu khi tạo mẻ.</p>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <a routerLink="/config" class="h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800"><i class="fa-solid fa-arrow-left"></i>Cấu hình</a>
-      <label class="h-10 px-4 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+  <app-page-header
+    title="Danh mục mô tả mẫu"
+    subtitle="Danh mục gợi ý được KNV sử dụng để gắn mô tả cho từng mã mẫu khi tạo mẻ."
+    icon="fa-tags"
+  >
+    <div pageHeaderActions class="contents">
+      <app-button variant="ghost" size="sm" routerLink="/config">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        Cấu hình
+      </app-button>
+      <label class="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
         <i class="fa-solid fa-file-import"></i>Nhập từ Excel
         <input type="file" accept=".xlsx,.xls,.csv" class="hidden" (change)="onFileSelected($event)">
       </label>
-      <button type="button" (click)="exportToExcel()" class="h-10 px-4 rounded-xl border border-blue-200 dark:border-blue-800 text-sm font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"><i class="fa-solid fa-file-export mr-1.5"></i>Xuất Excel</button>
-      <button type="button" (click)="openAddModal()" class="h-10 px-4 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-sm font-bold shadow-sm"><i class="fa-solid fa-plus mr-1.5"></i>Thêm Mô Tả</button>
+      <app-button variant="secondary" size="sm" (click)="exportToExcel()">
+        <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+        Xuất Excel
+      </app-button>
+      <app-button size="sm" (click)="openAddModal()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        Thêm mô tả
+      </app-button>
     </div>
-  </header>
+  </app-page-header>
 
-  <section class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col md:flex-row gap-3">
-    <div class="relative flex-1">
+  <app-toolbar>
+    <div toolbarSearch class="relative">
       <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-      <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" class="w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-400" placeholder="Tìm theo tên, mã hoặc bí danh...">
+      <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" class="w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="Tìm theo tên, mã hoặc bí danh...">
     </div>
-    <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-600 dark:text-slate-300">
-      <option value="active">Đang sử dụng</option>
-      <option value="inactive">Ngừng sử dụng</option>
-      <option value="all">Tất cả</option>
-    </select>
-  </section>
+    <div toolbarFilters>
+      <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-600 dark:text-slate-300">
+        <option value="active">Đang sử dụng</option>
+        <option value="inactive">Ngừng sử dụng</option>
+        <option value="all">Tất cả</option>
+      </select>
+    </div>
+  </app-toolbar>
 
   @if (loading()) {
     <div class="py-20 text-center text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-2xl"></i></div>
   } @else if (filteredItems().length === 0) {
-    <div class="py-16 text-center bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl text-slate-500">Chưa có mô tả mẫu phù hợp.</div>
+    <div class="bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+      <app-empty-state icon="fa-tags" title="Chưa có mô tả mẫu phù hợp" />
+    </div>
   } @else {
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       @for (item of filteredItems(); track item.id) {
@@ -62,13 +72,13 @@
 </div>
 
 @if (showModal()) {
-  <div class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden">
-      <header class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-        <h2 class="font-black text-lg text-slate-850 dark:text-white">{{editingId() ? 'Chỉnh sửa mô tả mẫu' : 'Thêm mô tả mẫu'}}</h2>
-        <button type="button" (click)="closeModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
-      </header>
-      <div class="p-5 space-y-4">
+  <app-modal-shell
+    [title]="editingId() ? 'Chỉnh sửa mô tả mẫu' : 'Thêm mô tả mẫu'"
+    size="sm"
+    [closeOnBackdrop]="false"
+    (closed)="closeModal()"
+  >
+      <div modalBody class="space-y-4">
         <div><label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Tên mô tả mẫu *</label><input [(ngModel)]="formData.name" (ngModelChange)="onNameChange()" class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-400" placeholder="Ví dụ: Cá tra, Hành tím..."></div>
         <div>
           <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Mã định danh *</label>
@@ -79,22 +89,28 @@
         <div><label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Ghi chú quản trị</label><textarea [(ngModel)]="formData.description" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-400 resize-none"></textarea></div>
         <label class="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer"><input type="checkbox" [(ngModel)]="formData.isActive" class="w-4 h-4 accent-fuchsia-600">Đang sử dụng</label>
       </div>
-      <footer class="px-5 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 flex justify-end gap-2">
-        <button type="button" (click)="closeModal()" class="h-10 px-4 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">Hủy</button>
-        <button type="button" (click)="save()" [disabled]="saving()" class="h-10 px-5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-sm font-bold disabled:opacity-50">@if (saving()) { <i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i> }Lưu</button>
-      </footer>
-    </div>
-  </div>
+
+      <div modalFooter class="contents">
+        <app-button variant="secondary" (click)="closeModal()">Hủy</app-button>
+        <app-button (click)="save()" [loading]="saving()">Lưu</app-button>
+      </div>
+  </app-modal-shell>
 }
 
 @if (importPreview().length > 0) {
-  <div class="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl max-h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-      <header class="p-5 border-b border-slate-100 dark:border-slate-700"><h2 class="font-black text-lg text-slate-850 dark:text-white">Xác nhận nhập dữ liệu {{importPreview().length}} mô tả mẫu</h2></header>
-      <div class="overflow-auto flex-1">
+  <app-modal-shell
+    [title]="'Xác nhận nhập dữ liệu ' + importPreview().length + ' mô tả mẫu'"
+    size="lg"
+    [closeOnBackdrop]="false"
+    (closed)="importPreview.set([])"
+  >
+      <div modalBody class="-mx-6 -my-5 overflow-auto">
         <table class="w-full text-sm"><thead class="sticky top-0 bg-slate-50 dark:bg-slate-900 text-left text-xs text-slate-500"><tr><th class="p-3">Tên</th><th class="p-3">Mã</th><th class="p-3">Bí danh</th><th class="p-3">Trạng thái</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-700">@for (item of importPreview(); track $index) { <tr><td class="p-3 font-bold text-slate-800 dark:text-slate-200">{{item.name}}</td><td class="p-3 font-mono text-slate-500">{{item.id}}</td><td class="p-3 text-slate-500">{{item.aliases?.join(', ') || '—'}}</td><td class="p-3">{{item.isActive ? 'Đang dùng' : 'Đã ngừng'}}</td></tr> }</tbody></table>
       </div>
-      <footer class="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2"><button type="button" (click)="importPreview.set([])" class="h-10 px-4 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300">Hủy</button><button type="button" (click)="confirmImport()" [disabled]="saving()" class="h-10 px-5 rounded-xl bg-emerald-600 text-white text-sm font-bold disabled:opacity-50">Xác Nhận Nhập Dữ Liệu</button></footer>
-    </div>
-  </div>
+
+      <div modalFooter class="contents">
+        <app-button variant="secondary" (click)="importPreview.set([])">Hủy</app-button>
+        <app-button (click)="confirmImport()" [loading]="saving()">Xác nhận nhập dữ liệu</app-button>
+      </div>
+  </app-modal-shell>
 }

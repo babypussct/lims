@@ -7,11 +7,23 @@ import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { generateSlug } from '../../shared/utils/utils';
 import { RouterLink } from '@angular/router';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-master-device-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppModalShellComponent,
+    AppPageHeaderComponent,
+  ],
   templateUrl: './master-device-manager.component.html'
 })
 export class MasterDeviceManagerComponent implements OnInit {

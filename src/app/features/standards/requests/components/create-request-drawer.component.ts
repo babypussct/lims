@@ -13,6 +13,7 @@ import {
     sortStandardsByFefo
 } from '../../../../shared/utils/standard-fefo';
 import { formatNum } from '../../../../shared/utils/utils';
+import { AppModalShellComponent } from '../../../../shared/components/ui/modal-shell/modal-shell.component';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -22,22 +23,25 @@ function removeAccents(str: string): string {
 @Component({
   selector: 'app-create-request-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AppModalShellComponent],
   template: `
     <!-- REQUEST MODAL (Tạo yêu cầu mới - Drawer) -->
     @if (isOpen) {
-        <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" role="dialog" aria-modal="true" aria-labelledby="create-standard-request-title">
-        <!-- Overlay click to close -->
-        <div class="absolute inset-0" (click)="onClose()"></div>
-        
-        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-y-auto md:overflow-hidden animate-slide-up max-h-[95vh] md:h-[85vh] border border-slate-100 dark:border-slate-800">
+        <app-modal-shell
+          title="Tạo yêu cầu chất chuẩn"
+          description="Chọn chất chuẩn đối chiếu và hoàn tất mục đích sử dụng."
+          size="xl"
+          [closeOnBackdrop]="true"
+          (closed)="onClose()"
+        >
+        <div modalBody class="-mx-6 -my-5 flex min-h-[70vh] flex-col overflow-y-auto md:h-[calc(85vh-4rem)] md:min-h-0 md:flex-row md:overflow-hidden">
             
             <!-- Left Column: Standards Selection -->
             <div class="w-full md:w-1/2 h-[55vh] md:h-auto md:flex-1 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 shrink-0 md:min-h-0">
                 <div class="p-6 border-b border-slate-100 dark:border-slate-800">
-                        <h3 id="create-standard-request-title" class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-flask-vial text-indigo-600"></i>
-                        Chọn Chuẩn Đối Chiếu
+                        Chọn chuẩn đối chiếu
                     </h3>
                     
                     <!-- Search Input -->
@@ -119,7 +123,7 @@ function removeAccents(str: string): string {
                                                          </div>
                                                          @if(isDepleted(std)) {
                                                              <button (click)="$event.stopPropagation(); requestPurchase.emit(std)" class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[11px] font-black rounded flex items-center gap-1 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
-                                                                 <i class="fa-solid fa-cart-plus"></i> Đề Nghị Mua
+                                                                 <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
                                                              </button>
                                                          }
                                                      } @else {
@@ -174,7 +178,7 @@ function removeAccents(str: string): string {
                             <div class="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-[2.5rem] flex items-center justify-center mb-6 text-indigo-300 dark:text-indigo-700 animate-pulse">
                                 <i class="fa-solid fa-search text-4xl"></i>
                             </div>
-                            <h4 class="text-slate-800 dark:text-slate-100 font-black text-lg mb-2">Tìm Kiếm Chất Chuẩn</h4>
+                            <h4 class="text-slate-800 dark:text-slate-100 font-black text-lg mb-2">Tìm kiếm chất chuẩn</h4>
                             <p class="text-slate-500 dark:text-slate-400 text-base max-w-[250px] mx-auto font-medium">Nhập tên, số lô hoặc mã CAS để bắt đầu chọn chuẩn mượn.</p>
                         </div>
                     }
@@ -185,10 +189,9 @@ function removeAccents(str: string): string {
             <div class="w-full md:w-1/2 md:flex-1 flex flex-col bg-white dark:bg-slate-900 shrink-0 md:min-h-0">
                 <div class="p-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 shrink-0">
                     <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn Tất Yêu Cầu</h3>
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn tất yêu cầu</h3>
                         <p class="text-sm text-slate-500 font-medium">Vui lòng cung cấp mục đích và thời gian dự kiến</p>
                     </div>
-                    <button (click)="onClose()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-xmark"></i></button>
                 </div>
 
                 <div class="flex-1 md:overflow-y-auto p-6 md:p-8">
@@ -206,7 +209,7 @@ function removeAccents(str: string): string {
                                     </div>
                                 </div>
                                 <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[11px] font-bold text-red-500 hover:text-red-600 uppercase transition disabled:opacity-30 flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded">
-                                    <i class="fa-solid fa-trash-can"></i> Xóa Hết
+                                    <i class="fa-solid fa-trash-can"></i> Xóa hết
                                 </button>
                             </div>
                             <!-- Chip List -->
@@ -263,11 +266,11 @@ function removeAccents(str: string): string {
                                             class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" 
                                             placeholder="VD: Pha chuẩn cho máy HPLC-MS/MS..."></textarea>
                                     <div class="flex flex-wrap gap-2 mt-2">
-                                        <button type="button" (click)="form.patchValue({purpose: 'Pha chuẩn mới'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha Chuẩn Mới</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm tra định kỳ'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm Tra Định Kỳ</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Ngoại kiểm'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Ngoại Kiểm</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Nghiên cứu phát triển'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Nghiên Cứu Phát Triển</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm nghiệm mẫu'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm Nghiệm Mẫu</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Pha chuẩn mới'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha chuẩn mới</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm tra định kỳ'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm tra định kỳ</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Ngoại kiểm'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Ngoại kiểm</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Nghiên cứu phát triển'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Nghiên cứu phát triển</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm nghiệm mẫu'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm nghiệm mẫu</button>
                                     </div>
                                 </div>
 
@@ -275,20 +278,18 @@ function removeAccents(str: string): string {
                     </form>
                 </div>
 
-                <!-- Actions attached to bottom -->
-                <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
-                    <div class="flex justify-end gap-3">
-                        <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition">Hủy Bỏ</button>
-                        <button (click)="onSubmit()" [disabled]="selectedStandardIds().size === 0 || isProcessing" 
-                                class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
-                            @if(isProcessing) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                            @else { <i class="fa-solid fa-paper-plane text-sm"></i> Gửi yêu cầu }
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
+
+        <div modalFooter class="flex flex-wrap justify-end gap-3">
+            <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition">Hủy bỏ</button>
+            <button (click)="onSubmit()" [disabled]="selectedStandardIds().size === 0 || isProcessing"
+                    class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
+                @if(isProcessing) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... }
+                @else { <i class="fa-solid fa-paper-plane text-sm"></i> Gửi yêu cầu }
+            </button>
         </div>
+        </app-modal-shell>
     }
   `
 })

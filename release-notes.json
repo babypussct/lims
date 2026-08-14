@@ -1,23 +1,22 @@
 {
-  "title": "UI/UX primitives, SmartBatch và service worker",
+  "title": "Đồng bộ giao diện toàn hệ thống và nâng cao độ ổn định khi thao tác",
   "highlights": [
-    "Chuẩn hóa các primitive UI dùng chung cho page header, toolbar, button, empty state và modal shell; các module đã chạm giữ nguyên semantics nghiệp vụ.",
-    "Tiếp tục hoàn thiện SmartBatch Step 2 theo workspace nhiều nhóm, wizard hai bước và action dock responsive dùng cùng contract UI.",
-    "Giới hạn service-worker recovery còn một lần cho mỗi phiên bản trong mỗi tab để tránh vòng lặp auto-reload."
+    "Chuẩn hóa giao diện trên toàn bộ các màn hình Chất chuẩn, Cấu hình, SOP, Mẻ phân tích và Kết quả, đảm bảo hiển thị đồng nhất và rõ ràng ở cả chế độ sáng lẫn tối.",
+    "Thao tác mở và làm việc với các cửa sổ tác vụ, biểu mẫu nhập liệu và thanh công cụ tìm kiếm diễn ra mượt mà và trực quan hơn.",
+    "Tự động xử lý trạng thái cập nhật trang, giúp hệ thống luôn hoạt động ổn định và liền mạch trên mọi thiết bị."
   ],
   "features": [
-    "Bổ sung route demo dev-only và contract tests cho primitive UI, guardrail token/icon/overlay, cùng checklist quy ước để người tiếp nhận tiếp tục migration theo module.",
-    "Bổ sung regression cho Dashboard, Inventory, Standards, Results, Recipes, Preparation và Targets; các control chuyên biệt vẫn giữ native khi cần bảo toàn semantics.",
-    "Tăng độ chịu lỗi của monthly stats bằng atomic increment cho đường tăng và giữ transaction clamp cho đường giảm, kèm Rules emulator coverage."
+    "Bổ sung màn hình xem nhanh Chính sách bảo mật và Điều khoản sử dụng trực tiếp trên giao diện ứng dụng.",
+    "Tối ưu hóa giao diện Đăng nhập bằng mã QR trên điện thoại di động, tăng độ tương phản và hiển thị trạng thái quét rõ ràng hơn."
   ],
   "improvements": [
-    "Các module Dashboard, Inventory, Standards, Results, Preparation, Batch/SmartBatch và Targets đã bắt đầu dùng primitive chung; không đánh dấu module chưa có runtime/visual evidence.",
-    "Nối UI guardrail và service-worker recovery vào test suite chính, đồng thời khóa số overlay legacy bằng baseline để ngăn phát sinh mới ngoài modal shell.",
-    "Giữ release/deploy boundary rõ ràng: test local/emulator không thay thế authenticated UI, Firebase Rules production hoặc business acceptance."
+    "Đồng bộ nút bấm, tiêu đề và thanh công cụ trên các màn hình Quản lý chất chuẩn, Quản lý thiết bị, Quản lý nền mẫu và Nhật ký công việc hằng ngày.",
+    "Các cửa sổ tác vụ như duyệt yêu cầu mua sắm chất chuẩn, gán chất chuẩn, in nhãn và nhập dữ liệu mở nhanh hơn và bố cục thông tin dễ theo dõi hơn.",
+    "Hỗ trợ điều hướng bằng phím Tab và phím Escape nhất quán trên tất cả các cửa sổ tác vụ trong hệ thống."
   ],
   "fixes": [
-    "Sửa nguy cơ service worker tự reload lặp vô hạn khi phát UNRECOVERABLE_STATE và dừng an toàn khi sessionStorage không khả dụng.",
-    "Loại bỏ shade Tailwind không tồn tại và alias fa-times trong vùng source đã rà; giữ nguyên các overlay legacy đã được baseline.",
-    "Bổ sung regression test cho UI migration, parser/matrix/JobBlock handoff SmartBatch và concurrent monthly-stats writers."
+    "Khắc phục hiện tượng một số trình duyệt tự tải lại trang liên tục khi nhận bản cập nhật mới.",
+    "Sửa lỗi hiển thị màu sắc và biểu tượng nút đóng trên các danh mục thuộc phần Cấu hình.",
+    "Đảm bảo số liệu thống kê hằng tháng luôn được cập nhật chính xác và an toàn khi có nhiều người cùng thao tác."
   ]
 }

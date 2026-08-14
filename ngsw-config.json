@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.14-b01",
-    "title": "UI/UX primitives, SmartBatch và service worker",
+    "version": "v26.08.14-b02",
+    "title": "Đồng bộ giao diện toàn hệ thống và nâng cao độ ổn định khi thao tác",
     "features": [
-      "Chuẩn hóa các primitive UI dùng chung cho page header, toolbar, button, empty state và modal shell; các module đã chạm giữ nguyên semantics nghiệp vụ.",
-      "Tiếp tục hoàn thiện SmartBatch Step 2 theo workspace nhiều nhóm, wizard hai bước và action dock responsive dùng cùng contract UI.",
-      "Giới hạn service-worker recovery còn một lần cho mỗi phiên bản trong mỗi tab để tránh vòng lặp auto-reload.",
-      "Bổ sung route demo dev-only và contract tests cho primitive UI, guardrail token/icon/overlay, cùng checklist quy ước để người tiếp nhận tiếp tục migration theo module.",
-      "Bổ sung regression cho Dashboard, Inventory, Standards, Results, Recipes, Preparation và Targets; các control chuyên biệt vẫn giữ native khi cần bảo toàn semantics."
+      "Chuẩn hóa giao diện trên toàn bộ các màn hình Chất chuẩn, Cấu hình, SOP, Mẻ phân tích và Kết quả, đảm bảo hiển thị đồng nhất và rõ ràng ở cả chế độ sáng lẫn tối.",
+      "Thao tác mở và làm việc với các cửa sổ tác vụ, biểu mẫu nhập liệu và thanh công cụ tìm kiếm diễn ra mượt mà và trực quan hơn.",
+      "Tự động xử lý trạng thái cập nhật trang, giúp hệ thống luôn hoạt động ổn định và liền mạch trên mọi thiết bị.",
+      "Bổ sung màn hình xem nhanh Chính sách bảo mật và Điều khoản sử dụng trực tiếp trên giao diện ứng dụng.",
+      "Tối ưu hóa giao diện Đăng nhập bằng mã QR trên điện thoại di động, tăng độ tương phản và hiển thị trạng thái quét rõ ràng hơn."
     ]
   },
   "assetGroups": [

@@ -6,11 +6,14 @@ import { AuthService, PERMISSIONS, UserProfile } from '../../../core/services/au
 import { StateService } from '../../../core/services/state.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { getAvatarUrl } from '../../../shared/utils/utils';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-config-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent],
   template: `
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-6 fade-in">
         
@@ -341,16 +344,15 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                         
                     </div>
                 } @empty {
-                    <div class="p-12 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800/60 flex flex-col items-center justify-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-slate-400 text-xl">
-                            <i class="fa-solid fa-users-slash"></i>
-                        </div>
-                        <div class="font-bold text-slate-600 dark:text-slate-400 text-sm">Không tìm thấy người dùng phù hợp với bộ lọc.</div>
-                        <p class="text-xs text-slate-400 dark:text-slate-500">Thử thay đổi từ khóa tìm kiếm hoặc bấm nút bên dưới để đặt lại bộ lọc.</p>
-                        <button (click)="resetFilters()" class="mt-1 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
-                            <i class="fa-solid fa-rotate-left"></i> Đặt Lại Tất Cả Bộ Lọc
-                        </button>
-                    </div>
+                    <app-empty-state
+                        icon="fa-users-slash"
+                        title="Không tìm thấy người dùng"
+                        message="Thử thay đổi từ khóa hoặc bộ lọc để xem thêm tài khoản.">
+                        <app-button emptyStateActions variant="secondary" size="sm" (click)="resetFilters()">
+                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                            Đặt lại bộ lọc
+                        </app-button>
+                    </app-empty-state>
                 }
             </div>
         </div>
@@ -358,24 +360,14 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
 
     <!-- USER PERMISSIONS MODAL -->
     @if (selectedUserForPerms(); as user) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-                <!-- Modal Header -->
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-                    <div class="flex items-center gap-4">
-                        <img [src]="getAvatarUrl(user.displayName, state.avatarStyle(), user.photoURL)" class="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm object-cover">
-                        <div>
-                            <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">{{user.displayName}}</h3>
-                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1"><i class="fa-solid fa-shield-halved"></i> Phân quyền Người dùng</p>
-                        </div>
-                    </div>
-                    <button (click)="closePermModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-                
-                <!-- Modal Body -->
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+        <app-modal-shell
+            [title]="user.displayName"
+            description="Phân quyền người dùng"
+            size="lg"
+            [closeOnBackdrop]="false"
+            (closed)="closePermModal()"
+        >
+                <div modalBody class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @for (group of permissionGroups; track group.name) {
                             <div class="rounded-2xl border p-4 relative pt-5" [ngClass]="[group.bg, group.border]">
@@ -410,15 +402,13 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                     </div>
                 </div>
 
-                <!-- Modal Footer -->
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3">
-                    <button (click)="closePermModal()" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Đóng</button>
-                    <button (click)="saveUser(user); closePermModal()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
-                    </button>
+                <div modalFooter class="contents">
+                    <app-button variant="secondary" (click)="closePermModal()">Đóng</app-button>
+                    <app-button (click)="saveUser(user); closePermModal()">
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                    </app-button>
                 </div>
-            </div>
-        </div>
+        </app-modal-shell>
     }
   `
 })

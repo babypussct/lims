@@ -18,25 +18,22 @@ import { TargetGroup } from '../../core/models/sop.model';
 import { classifyTargetScope, buildTargetScopePresentation, TargetScopePresentation } from '../targets/target-scope-classifier';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { QrGlobalService } from '../../core/services/qr-global.service';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-traceability',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent],
   template: `
     <div class="w-full h-screen overflow-y-auto max-w-7xl mx-auto pb-20 fade-in px-4 md:px-0">
-        <!-- HEADER -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-350 flex items-center justify-center border border-slate-200 dark:border-slate-600 shadow-sm shrink-0">
-                    <i class="fa-solid fa-qrcode text-base"></i>
-                </div>
-                <div>
-                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Truy Xuất Nguồn Gốc</h2>
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Chi tiết nhật ký hoạt động và thông tin minh bạch.</p>
-                </div>
-            </div>
-        </div>
+        <app-page-header
+          title="Truy xuất nguồn gốc"
+          subtitle="Chi tiết nhật ký hoạt động và thông tin minh bạch."
+          icon="fa-qrcode"
+          class="mb-6 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700">
+        </app-page-header>
 
         <!-- SMART LOOKUP -->
         <section
@@ -95,33 +92,23 @@ import { QrGlobalService } from '../../core/services/qr-global.service';
               </label>
 
               <div class="flex gap-2">
-                <button
+                <app-button
+                  variant="secondary"
                   type="button"
                   (click)="startQrScan()"
                   [disabled]="isLoading() || isVerifying()"
-                  class="h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700
-                         bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300
-                         hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95
-                         disabled:opacity-50 flex items-center justify-center gap-2"
                   title="Quét mã QR">
                   <i class="fa-solid fa-qrcode text-sm"></i>
                   <span class="sm:hidden text-xs font-bold">Quét QR</span>
-                </button>
-                <button
+                </app-button>
+                <app-button
+                  [loading]="isLoading() || isVerifying()"
                   type="submit"
                   [disabled]="isLoading() || isVerifying()"
-                  class="flex-1 sm:flex-none h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700
-                         text-white text-xs font-bold shadow-sm shadow-blue-600/20
-                         transition active:scale-95 disabled:opacity-50
-                         flex items-center justify-center gap-2">
-                  @if (isLoading() || isVerifying()) {
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                    <span>Đang truy xuất</span>
-                  } @else {
-                    <i class="fa-solid fa-arrow-right"></i>
-                    <span>Truy xuất</span>
-                  }
-                </button>
+                  class="flex-1 sm:flex-none">
+                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                  <span>{{ isLoading() || isVerifying() ? 'Đang truy xuất' : 'Truy xuất' }}</span>
+                </app-button>
               </div>
             </form>
 
@@ -261,35 +248,18 @@ import { QrGlobalService } from '../../core/services/qr-global.service';
             </div>
         } @else if(errorMsg()) {
             <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-2xl shadow-sm text-center">
-                <div class="mx-auto w-11 h-11 rounded-full bg-red-50 dark:bg-red-950/30 text-red-500 flex items-center justify-center">
-                    <i class="fa-solid fa-magnifying-glass-minus text-base"></i>
-                </div>
-                <h3 class="mt-3 text-base font-extrabold text-slate-800 dark:text-slate-100">Không tìm thấy hồ sơ</h3>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{errorMsg()}}</p>
-                <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    (click)="focusLookupInput()"
-                    class="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition active:scale-95">
-                    Sửa mã
-                  </button>
-                  <button
-                    type="button"
-                    (click)="startQrScan()"
-                    class="h-9 px-4 rounded-lg border border-slate-200 dark:border-slate-700
-                           text-slate-600 dark:text-slate-300 text-xs font-bold
-                           hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95">
-                    <i class="fa-solid fa-qrcode mr-1.5"></i>Quét QR
-                  </button>
-                  <button
-                    type="button"
-                    (click)="submitLookup()"
-                    class="h-9 px-4 rounded-lg border border-slate-200 dark:border-slate-700
-                           text-slate-600 dark:text-slate-300 text-xs font-bold
-                           hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95">
-                    <i class="fa-solid fa-rotate-right mr-1.5"></i>Tìm lại
-                  </button>
-                </div>
+                <app-empty-state
+                  icon="fa-magnifying-glass-minus"
+                  title="Không tìm thấy hồ sơ"
+                  [message]="errorMsg()">
+                  <app-button emptyStateActions size="sm" (click)="focusLookupInput()">Sửa mã</app-button>
+                  <app-button emptyStateActions variant="secondary" size="sm" (click)="startQrScan()">
+                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Quét QR
+                  </app-button>
+                  <app-button emptyStateActions variant="secondary" size="sm" (click)="submitLookup()">
+                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Tìm lại
+                  </app-button>
+                </app-empty-state>
             </div>
         } @else if(logData()) {
             <!-- DATA CARD -->
@@ -318,11 +288,10 @@ import { QrGlobalService } from '../../core/services/qr-global.service';
                             @if (getAssociatedRequestId(); as reqId) {
                                 <div class="mt-4">
                                     @if (auth.currentUser() && auth.canViewSop()) {
-                                        <button (click)="viewBatchResults(reqId)" 
-                                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
+                                        <app-button size="sm" (click)="viewBatchResults(reqId)">
                                             <i class="fa-solid fa-square-poll-vertical"></i>
-                                            <span>Xem Kết Quả Mẻ Phân Tích</span>
-                                        </button>
+                                            <span>Xem kết quả mẻ phân tích</span>
+                                        </app-button>
                                     } @else {
                                         <div class="inline-flex items-start gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
                                             <div class="mt-0.5 w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">

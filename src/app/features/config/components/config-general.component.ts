@@ -12,11 +12,13 @@ import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-config-general',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, AppButtonComponent, AppModalShellComponent],
   templateUrl: './config-general.component.html'
 })
 export class ConfigGeneralComponent implements OnInit, OnDestroy {
@@ -607,4 +609,3 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     }
   }
 }
-

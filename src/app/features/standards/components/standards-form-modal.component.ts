@@ -12,28 +12,23 @@ import { StandardTagCatalogService } from '../services/standard-tag-catalog.serv
 import { sanitizeLegacyTagKeys } from '../services/standard-tag.utils';
 import { StandardTagPickerComponent } from './standard-tag-picker.component';
 import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_PATTERN } from '../../../shared/utils/standard-internal-id';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-standards-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, StandardTagPickerComponent],
+  imports: [CommonModule, ReactiveFormsModule, StandardTagPickerComponent, AppModalShellComponent],
   template: `
       <!-- ADD/EDIT MODAL (3 TABS) -->
       @if (isOpen()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <!-- Modal Header -->
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-flask-vial text-indigo-600 dark:text-indigo-400"></i>
-                        {{ std() ? 'Cập nhật chất chuẩn' : 'Thêm chất chuẩn mới' }}
-                    </h3>
-                    <button (click)="onClose()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <form [formGroup]="form" class="space-y-8">
+         <app-modal-shell
+           [title]="std() ? 'Cập nhật chất chuẩn' : 'Thêm chất chuẩn mới'"
+           description="Cập nhật thông tin nhận diện, tồn kho, bảo quản và hồ sơ chất chuẩn."
+           size="md"
+           [closeOnBackdrop]="false"
+           (closed)="onClose()"
+         >
+                    <form modalBody [formGroup]="form" class="space-y-8">
                         
                         <!-- SECTION 1: GENERAL INFO -->
                         <div class="space-y-4 fade-in">
@@ -142,10 +137,9 @@ import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_P
                         </div>
 
                     </form>
-                </div>
 
                 <!-- Footer Actions -->
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
+                <div modalFooter class="flex flex-wrap justify-end gap-3">
                     <button (click)="onClose()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
                     @if(!std()) {
                         <button (click)="saveStandard(true)" [disabled]="form.invalid || isProcessing()" class="px-5 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
@@ -158,8 +152,7 @@ import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_P
                         @else { {{ std() ? 'Lưu thay đổi' : 'Tạo mới' }} }
                     </button>
                 </div>
-            </div>
-         </div>
+         </app-modal-shell>
       }
   `
 })

@@ -7,6 +7,8 @@ import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { timestampToLocalDateKey } from '../../shared/utils/timestamp';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
@@ -45,19 +47,27 @@ interface LabelPage {
 @Component({
   selector: 'app-label-print',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent],
   templateUrl: './label-print.component.html',
   styles: [`
     .label-std { display: block; font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
     .label-mini { display: block; font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
-    .input-std { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; transition: all; }
-    .input-std:focus { border-color: #3b82f6; ring: 2px; ring-color: #bfdbfe; }
-    .input-mini { width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; font-size: 11px; font-weight: 700; text-align: center; outline: none; }
+    .input-std { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font-size: 13px; font-weight: 600; color: #1e293b; background: #fff; transition: border-color 150ms ease, background-color 150ms ease; }
+    .input-std:focus { border-color: #6366f1; }
+    .input-mini { width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; font-size: 11px; font-weight: 700; text-align: center; color: #334155; }
     .input-mini:focus { background-color: white; border-color: #3b82f6; }
+
+    :host-context(.dark) .label-std { color: #cbd5e1; }
+    :host-context(.dark) .label-mini { color: #94a3b8; }
+    :host-context(.dark) .input-std { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+    :host-context(.dark) .input-std:disabled { background: #0f172a; color: #94a3b8; }
+    :host-context(.dark) .input-mini { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+    :host-context(.dark) .input-mini:focus { background: #334155; border-color: #818cf8; }
     
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+    :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
   `]
 })
 export class LabelPrintComponent implements AfterViewInit {

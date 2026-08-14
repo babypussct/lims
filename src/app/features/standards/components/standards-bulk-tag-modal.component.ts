@@ -3,20 +3,21 @@ import { Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StandardBulkTagMode, formatMethodOptionLabel } from '../services/standard-tag.utils';
 import { StandardTagOption } from '../../../core/models/standard.model';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-standards-bulk-tag-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen()) {
-      <div class="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="w-full max-w-lg rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
-          <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <div><h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Gán nhãn hàng loạt</h3><p class="text-xs text-slate-500 mt-1">{{selectedCount()}} lọ được chọn · ADD là mặc định an toàn</p></div>
-            <button (click)="cancel.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="p-6 space-y-5">
+      <app-modal-shell
+        title="Gán nhãn hàng loạt"
+        [description]="selectedCount() + ' lọ được chọn · ADD là mặc định an toàn'"
+        size="sm"
+        (closed)="cancel.emit()"
+      >
+          <div modalBody class="space-y-5">
             <div>
               <label class="block text-xs font-black text-slate-500 uppercase mb-2">Chế độ</label>
               <select [ngModel]="mode()" (ngModelChange)="mode.set($event)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-bold">
@@ -43,12 +44,11 @@ import { StandardTagOption } from '../../../core/models/standard.model';
               @if (tags().length === 0) { <span class="text-xs text-slate-400 italic">Chưa chọn nhãn (REPLACE rỗng = xóa toàn bộ).</span> }
             </div>
           </div>
-          <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+          <div modalFooter class="flex gap-2">
             <button (click)="cancel.emit()" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Hủy</button>
             <button (click)="confirmSelection()" [disabled]="isProcessing()" class="px-5 py-2 rounded-xl bg-fuchsia-600 text-white text-sm font-black disabled:opacity-50">{{isProcessing() ? 'Đang lưu...' : 'Xác nhận'}}</button>
           </div>
-        </div>
-      </div>
+      </app-modal-shell>
     }
   `,
 })

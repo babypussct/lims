@@ -1,7 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { ModalA11yDirective } from '../../../directives/modal-a11y.directive';
 
-export type AppModalSize = 'sm' | 'md' | 'lg' | 'xl';
+export type AppModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
 let nextModalShellId = 0;
 
@@ -18,7 +18,7 @@ let nextModalShellId = 0;
         appModalA11y
         [modalLabelledBy]="titleId"
         [modalDescribedBy]="description() ? descriptionId : undefined"
-        (modalEscape)="closed.emit()"
+        (modalEscape)="requestClose()"
         class="ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         [class]="panelClasses()"
       >
@@ -36,9 +36,10 @@ let nextModalShellId = 0;
           </div>
           <button
             type="button"
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
             aria-label="Đóng"
-            (click)="closed.emit()"
+            [disabled]="closeDisabled()"
+            (click)="requestClose()"
           >
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
@@ -85,6 +86,7 @@ export class AppModalShellComponent {
   size = input<AppModalSize>('md');
   showFooter = input(true);
   closeOnBackdrop = input(true);
+  closeDisabled = input(false);
   closed = output<void>();
 
   readonly titleId = `app-modal-shell-title-${++nextModalShellId}`;
@@ -96,12 +98,19 @@ export class AppModalShellComponent {
       md: 'max-w-2xl',
       lg: 'max-w-4xl',
       xl: 'max-w-6xl',
+      '2xl': 'max-w-[96rem]',
     };
     return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 ${sizeClasses[this.size()]}`;
   });
 
   protected onBackdropClick(event: MouseEvent): void {
     if (this.closeOnBackdrop() && event.target === event.currentTarget) {
+      this.requestClose();
+    }
+  }
+
+  protected requestClose(): void {
+    if (!this.closeDisabled()) {
       this.closed.emit();
     }
   }

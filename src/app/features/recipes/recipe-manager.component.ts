@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { RecipeService } from './recipe.service';
@@ -14,36 +14,57 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs
 
 import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
 import { StateService } from '../../core/services/state.service';
-import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent } from '../../shared/components/ui';
+import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 
 @Component({
   selector: 'app-recipe-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
     <div class="flex flex-col flex-1 min-h-0 fade-in relative pb-10 bg-transparent dark:text-slate-100">
-        
-        <!-- Header Actions (No title, title is in tabs) -->
-        <div class="flex justify-end mb-4 shrink-0">
+
+        <app-page-header
+            title="Thư viện công thức"
+            subtitle="Quản lý các công thức dùng chung cho tính toán và chuẩn bị mẫu."
+            icon="fa-book-bookmark">
             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
-                <app-button [appLockPermission]="'recipe_edit'" (click)="openModal()">
-                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo công thức
-                </app-button>
+                <div pageHeaderActions class="contents">
+                    <app-button [appLockPermission]="'recipe_edit'" (click)="openModal()">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo công thức
+                    </app-button>
+                </div>
             }
-        </div>
+        </app-page-header>
 
         @if(accessDenied()) {
             <div class="flex items-center justify-center h-64 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-100 dark:border-red-900/50">
                 <div class="text-center">
                     <i class="fa-solid fa-lock text-red-300 text-4xl mb-3"></i>
-                    <h3 class="text-red-800 dark:text-red-200 font-bold text-lg">Không Có Quyền Truy Cập</h3>
+                    <h3 class="text-red-800 dark:text-red-200 font-bold text-lg">Không có quyền truy cập</h3>
                     <p class="text-red-600 dark:text-red-300 text-sm mt-1">Bạn không có quyền xem thư viện công thức.</p>
                 </div>
             </div>
         } @else {
+            <app-toolbar>
+                <div toolbarSearch class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm" aria-hidden="true"></i>
+                    <input
+                        [ngModel]="recipeSearchTerm()"
+                        (ngModelChange)="recipeSearchTerm.set($event)"
+                        class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 shadow-sm transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                        placeholder="Tìm công thức theo tên, ID hoặc thành phần..."
+                        aria-label="Tìm công thức">
+                </div>
+                @if (recipeSearchTerm()) {
+                    <div toolbarActions class="contents">
+                        <app-button variant="ghost" size="sm" (click)="recipeSearchTerm.set('')">Xóa tìm kiếm</app-button>
+                    </div>
+                }
+            </app-toolbar>
+
             <!-- List -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto custom-scrollbar p-1">
-                @for (recipe of recipes(); track recipe.id) {
+                @for (recipe of filteredRecipes(); track recipe.id) {
                     <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 group relative hover:border-indigo-300 dark:hover:border-indigo-700 flex flex-col">
                         <div class="flex justify-between items-start mb-3">
                             <span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-indigo-100 dark:border-indigo-900/50">
@@ -51,11 +72,11 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent } fr
                             </span>
                             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
                                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition duration-200">
-                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 transition shadow-sm">
-                                        <i class="fa-solid fa-pen text-[10px]"></i>
+                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" aria-label="Sửa công thức" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 transition shadow-sm">
+                                        <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
                                     </button>
-                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-700 transition shadow-sm">
-                                        <i class="fa-solid fa-trash text-[10px]"></i>
+                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" aria-label="Xóa công thức" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-700 transition shadow-sm">
+                                        <i class="fa-solid fa-trash text-[10px]" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             }
@@ -79,11 +100,20 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent } fr
                     </div>
                 } @empty {
                     <div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
-                        <app-empty-state
-                            icon="fa-flask"
-                            title="Chưa có công thức"
-                            message="Nhấn “Tạo công thức” để thêm mới."
-                        />
+                        @if (recipes().length === 0) {
+                            <app-empty-state
+                                icon="fa-flask"
+                                title="Chưa có công thức"
+                                message="Nhấn “Tạo công thức” để thêm mới."
+                            />
+                        } @else {
+                            <app-empty-state
+                                icon="fa-magnifying-glass"
+                                title="Không tìm thấy công thức"
+                                message="Thử thay đổi từ khóa tìm kiếm.">
+                                <app-button emptyStateActions variant="secondary" size="sm" (click)="recipeSearchTerm.set('')">Xóa tìm kiếm</app-button>
+                            </app-empty-state>
+                        }
                     </div>
                 }
             </div>
@@ -189,6 +219,21 @@ export class RecipeManagerComponent implements OnInit, OnDestroy {
   unitOptions = UNIT_OPTIONS;
 
   recipes = signal<Recipe[]>([]);
+  recipeSearchTerm = signal('');
+  filteredRecipes = computed(() => {
+      const term = this.recipeSearchTerm().trim().toLocaleLowerCase('vi');
+      if (!term) return this.recipes();
+
+      return this.recipes().filter(recipe => {
+          const searchable = [
+              recipe.id,
+              recipe.name,
+              recipe.baseUnit,
+              ...recipe.ingredients.flatMap(ingredient => [ingredient.name, ingredient.displayName ?? '', ingredient.unit])
+          ].join(' ').toLocaleLowerCase('vi');
+          return searchable.includes(term);
+      });
+  });
   showModal = signal(false);
   isEditing = signal(false);
   accessDenied = signal(false);

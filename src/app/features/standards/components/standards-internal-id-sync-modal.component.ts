@@ -8,6 +8,7 @@ import {
 } from '../../../core/models/standard.model';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import { StandardService } from '../standard.service';
 
@@ -21,27 +22,18 @@ type SyncFilter = 'all' | 'manual' | 'safe' | 'duplicate' | 'registry' | 'refere
 @Component({
   selector: 'app-standards-internal-id-sync-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen()) {
-      <div class="fixed inset-0 z-[620] flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="relative w-full max-w-6xl max-h-[94vh] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col">
-          <header class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex items-start justify-between gap-4 shrink-0">
-            <div class="flex items-start gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-arrows-rotate"></i>
-              </div>
-              <div class="min-w-0">
-                <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Đồng bộ Mã quản lý nội bộ</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
-                  Quét cả hồ sơ vật lý, yêu cầu mượn và nhật ký. Chỉ thay đổi lỗi xác định được duy nhất; mã thiếu/sai cần người quản lý đối chiếu thủ công.
-                </p>
-              </div>
-            </div>
-            <button type="button" (click)="close.emit()" [disabled]="isBusy()" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 disabled:opacity-40" aria-label="Đóng">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </header>
+      <app-modal-shell
+        title="Đồng bộ Mã quản lý nội bộ"
+        description="Quét cả hồ sơ vật lý, yêu cầu mượn và nhật ký. Chỉ thay đổi lỗi xác định được duy nhất; mã thiếu/sai cần người quản lý đối chiếu thủ công."
+        size="xl"
+        [closeOnBackdrop]="false"
+        [closeDisabled]="isBusy()"
+        (closed)="close.emit()"
+      >
+        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col">
 
           <div class="px-5 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div class="flex flex-wrap gap-2 text-[11px] font-bold">
@@ -177,7 +169,9 @@ type SyncFilter = 'all' | 'manual' | 'safe' | 'duplicate' | 'registry' | 'refere
             }
           </main>
 
-          <footer class="px-5 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        </div>
+
+        <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
             <p class="text-[10px] text-slate-400 max-w-2xl"><i class="fa-solid fa-lock mr-1"></i>Batch được ghi kèm người thực hiện, thời điểm và before/after. Không xóa hồ sơ cũ và không đổi mã hợp lệ đang tồn tại.</p>
             <div class="flex gap-2">
               <button type="button" (click)="close.emit()" [disabled]="isBusy()" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black disabled:opacity-40">Đóng</button>
@@ -185,9 +179,8 @@ type SyncFilter = 'all' | 'manual' | 'safe' | 'duplicate' | 'registry' | 'refere
                 @if (isApplying()) { <i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang đồng bộ } @else { <i class="fa-solid fa-check mr-1"></i>Áp dụng đồng bộ }
               </button>
             </div>
-          </footer>
         </div>
-      </div>
+      </app-modal-shell>
     }
   `,
 })

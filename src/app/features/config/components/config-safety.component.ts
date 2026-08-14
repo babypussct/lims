@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 
 @Component({
   selector: 'app-config-safety',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent],
   template: `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in items-start">
         
@@ -21,9 +22,9 @@ import { ToastService } from '../../../core/services/toast.service';
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cấu hình tỷ lệ hao hụt tự động dựa trên phân loại hóa chất.</p>
                 </div>
-                <button (click)="saveSafety()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition shadow-sm dark:shadow-none flex items-center gap-2">
+                <app-button size="sm" (click)="saveSafety()">
                     <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
-                </button>
+                </app-button>
             </div>
 
             <!-- Default Margin -->

@@ -4,6 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 
 // Format mã QR mới (secure): "LIMS_QR|{sessionId}|{nonce}"
 // Mobile gửi Firebase ID Token lên /api/qr/approve — KHÔNG truyền password.
@@ -15,7 +16,7 @@ interface QrPayload {
 @Component({
   selector: 'app-mobile-qr-login',
   standalone: true,
-  imports: [CommonModule, QrScannerComponent],
+  imports: [CommonModule, QrScannerComponent, AppButtonComponent],
   template: `
     <div class="h-full flex flex-col bg-black relative">
         <!-- Header -->
@@ -34,54 +35,53 @@ interface QrPayload {
             </div>
         } @else if (isProcessing()) {
             <!-- PROCESSING STATE -->
-            <div class="flex-1 bg-slate-50 flex flex-col items-center justify-center p-6">
-                <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-blue-200">
+            <div class="flex-1 bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6">
+                <div class="w-24 h-24 bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-blue-200/50 dark:shadow-blue-950/40">
                     <i class="fa-solid fa-spinner fa-spin"></i>
                 </div>
-                <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đang xác thực...</h2>
-                <p class="text-sm text-slate-500 text-center px-4">Đang gửi xác nhận an toàn đến máy tính.</p>
+                <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 text-center mb-2">Đang xác thực...</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 text-center px-4">Đang gửi xác nhận an toàn đến máy tính.</p>
             </div>
         } @else {
             <!-- CONFIRM FORM -->
-            <div class="flex-1 bg-slate-50 flex flex-col items-center justify-center p-6 animate-slide-up">
+            <div class="flex-1 bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 animate-slide-up">
 
                 <!-- Success Icon -->
-                <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-green-200 animate-bounce-in">
+                <div class="w-24 h-24 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-950/40 animate-bounce-in">
                     <i class="fa-solid fa-desktop"></i>
                 </div>
 
-                <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đăng Nhập Máy Tính?</h2>
-                <p class="text-sm text-slate-500 text-center mb-8 px-4">Xác nhận để cấp quyền truy cập an toàn cho thiết bị này.</p>
+                <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 text-center mb-2">Đăng nhập máy tính?</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 text-center mb-8 px-4">Xác nhận để cấp quyền truy cập an toàn cho thiết bị này.</p>
 
                 <!-- User Info Card -->
-                <div class="w-full max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                <div class="w-full max-w-sm bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-6 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold">
                         {{ auth.currentUser()?.displayName?.charAt(0) }}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-bold text-slate-800 truncate">{{ auth.currentUser()?.displayName }}</div>
-                        <div class="text-xs text-slate-400 truncate">{{ auth.currentUser()?.email }}</div>
+                        <div class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{{ auth.currentUser()?.displayName }}</div>
+                        <div class="text-xs text-slate-400 dark:text-slate-500 truncate">{{ auth.currentUser()?.email }}</div>
                     </div>
-                    <div class="text-green-500 text-xl"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="text-emerald-500 text-xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
 
                 <!-- Security Notice -->
-                <div class="w-full max-w-sm bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-                    <i class="fa-solid fa-shield-halved text-emerald-600 mt-0.5"></i>
-                    <p class="text-xs text-emerald-700">
+                <div class="w-full max-w-sm bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 rounded-2xl p-4 mb-6 flex items-start gap-3">
+                    <i class="fa-solid fa-shield-halved text-emerald-600 dark:text-emerald-400 mt-0.5"></i>
+                    <p class="text-xs text-emerald-700 dark:text-emerald-300">
                         Xác thực bằng tài khoản của bạn — không cần nhập mật khẩu.
                         Phiên đăng nhập sẽ hết hạn sau 5 phút nếu không xác nhận.
                     </p>
                 </div>
 
                 <div class="w-full max-w-sm flex gap-3 mt-auto mb-6">
-                    <button (click)="cancel()" class="flex-1 py-4 rounded-xl border border-slate-200 font-bold text-slate-600 bg-white hover:bg-slate-50 transition">Hủy</button>
+                    <app-button class="flex-1" variant="secondary" [fullWidth]="true" (click)="cancel()">Hủy</app-button>
 
-                    <button (click)="approve()" [disabled]="isProcessing()"
-                            class="flex-[2] py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-base">
+                    <app-button class="flex-[2]" [fullWidth]="true" (click)="approve()" [disabled]="isProcessing()" [loading]="isProcessing()">
                         <i class="fa-solid fa-fingerprint"></i>
-                        Đồng ý & Đăng nhập
-                    </button>
+                        Đồng ý và đăng nhập
+                    </app-button>
                 </div>
             </div>
         }

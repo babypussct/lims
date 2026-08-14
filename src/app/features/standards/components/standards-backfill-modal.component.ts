@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
 import { getExpiryClass, formatNum } from '../../../shared/utils/utils';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 export interface BackfillData {
   date: string;          // YYYY-MM-DD
@@ -18,14 +19,20 @@ export interface BackfillData {
 @Component({
   selector: 'app-standards-backfill-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen() && std()) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+      <app-modal-shell
+        title="Nhập bù nhật ký"
+        [description]="std()?.name || ''"
+        size="lg"
+        [closeOnBackdrop]="false"
+        (closed)="closeModal.emit()"
+      >
+        <div modalBody class="-mx-6 -my-5 grid min-h-0 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
 
           <!-- Left: Standard Info Summary -->
-          <div class="hidden md:flex w-2/5 bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
+          <div class="hidden md:flex bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
             <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
               <i class="fa-solid fa-pen-to-square"></i>
             </div>
@@ -76,17 +83,8 @@ export interface BackfillData {
           </div>
 
           <!-- Right: Backfill Form -->
-          <div class="flex-1 p-8 flex flex-col bg-white dark:bg-slate-900">
-            <div class="flex justify-between items-center mb-6">
-              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
-                Nhập bù nhật ký
-              </h3>
-              <button (click)="closeModal.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            <div class="flex-1 space-y-5 overflow-y-auto pr-2 custom-scrollbar">
+          <div class="min-w-0 p-8 bg-white dark:bg-slate-900">
+            <div class="space-y-5">
 
               <!-- Người sử dụng -->
               <div>
@@ -172,23 +170,22 @@ export interface BackfillData {
               </div>
 
             </div>
-
-            <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy Bỏ</button>
-              <button (click)="onConfirm()"
-                [disabled]="!canConfirm() || isProcessing()"
-                class="px-8 py-3 bg-purple-600 dark:bg-purple-500 text-white font-bold text-sm rounded-2xl hover:bg-purple-700 dark:hover:bg-purple-600 shadow-xl shadow-purple-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                @if(isProcessing()) {
-                  <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...
-                } @else {
-                  <i class="fa-solid fa-pen-to-square text-xs"></i> Ghi nhật ký
-                }
-              </button>
-            </div>
           </div>
-
         </div>
-      </div>
+
+        <div modalFooter class="flex flex-wrap justify-end gap-3">
+          <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy Bỏ</button>
+          <button (click)="onConfirm()"
+            [disabled]="!canConfirm() || isProcessing()"
+            class="px-8 py-3 bg-purple-600 dark:bg-purple-500 text-white font-bold text-sm rounded-2xl hover:bg-purple-700 dark:hover:bg-purple-600 shadow-xl shadow-purple-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
+            @if(isProcessing()) {
+              <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...
+            } @else {
+              <i class="fa-solid fa-pen-to-square text-xs"></i> Ghi nhật ký
+            }
+          </button>
+        </div>
+      </app-modal-shell>
     }
   `
 })

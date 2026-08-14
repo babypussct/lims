@@ -41,7 +41,7 @@ import { ResultActiveReportsPanelComponent } from './components/result-active-re
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
 import { SopEntryOutletComponent } from './components/sop-entry-outlet.component';
 import { ExcelResultImportModalComponent } from './components/excel-result-import-modal.component';
-import { ModalA11yDirective } from '../../shared/directives/modal-a11y.directive';
+import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent } from '../../shared/components/ui';
 
 type AutoSaveStatus = 'synced' | 'modified' | 'saving' | 'error';
 
@@ -66,7 +66,9 @@ interface AutoSaveEnvelope {
     ResultEntryHeaderComponent,
     SopEntryOutletComponent,
     ExcelResultImportModalComponent,
-    ModalA11yDirective
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppModalShellComponent
   ],
   templateUrl: './result-entry.component.html'
 })
@@ -1277,4 +1279,3 @@ function getGoogleDrivePreviewUrl(url: string | null | undefined): string {
   }
   return url;
 }
-

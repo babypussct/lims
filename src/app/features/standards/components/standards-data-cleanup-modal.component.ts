@@ -22,6 +22,7 @@ import {
 } from '../../../shared/utils/standard-cleanup';
 import { StandardService } from '../standard.service';
 import { timestampToDate } from '../../../shared/utils/timestamp';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 type CleanupStatus = 'pending' | 'loading' | 'ready' | 'review' | 'success' | 'error';
 type CleanupFilter = 'all' | 'safe' | 'review' | 'blocked' | 'success';
@@ -62,25 +63,18 @@ interface CasIssueRecord {
 @Component({
   selector: 'app-standards-data-cleanup-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen()) {
-      <div class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-        <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[94vh] border border-slate-200/80 dark:border-slate-800 animate-slide-up">
-          <header class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex justify-between items-start gap-4 shrink-0">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-shield-halved"></i>
-              </div>
-              <div class="min-w-0">
-                <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Chuẩn Hóa Danh Pháp & CAS Chất Chuẩn</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mỗi trang chỉ hiển thị một nhóm CAS hoặc một hồ sơ lỗi để giảm nguy cơ điều chỉnh nhầm.</p>
-              </div>
-            </div>
-            <button (click)="onClose()" [disabled]="isProcessing()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 transition disabled:opacity-50 shrink-0" aria-label="Đóng">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </header>
+      <app-modal-shell
+        title="Chuẩn hóa danh pháp & CAS chất chuẩn"
+        description="Mỗi trang chỉ hiển thị một nhóm CAS hoặc một hồ sơ lỗi để giảm nguy cơ điều chỉnh nhầm."
+        size="xl"
+        [closeOnBackdrop]="false"
+        [closeDisabled]="isProcessing() || undoingBatchId() !== null"
+        (closed)="onClose()"
+      >
+        <div modalBody class="-mx-6 -my-5 relative flex min-h-[65vh] flex-col overflow-hidden md:h-[calc(100vh-12rem)] md:min-h-0">
 
           <section class="px-5 sm:px-6 py-2.5 bg-indigo-50/60 dark:bg-indigo-950/30 border-b border-indigo-100/60 dark:border-indigo-900/30 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold shrink-0">
             <span class="text-slate-700 dark:text-slate-200"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-1"></i>{{totalStandardsCount()}} hồ sơ</span>
@@ -138,7 +132,7 @@ interface CasIssueRecord {
             <section class="absolute inset-0 z-30 bg-white dark:bg-slate-900 flex flex-col">
               <header class="px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/20 flex items-start justify-between gap-4 shrink-0">
                 <div>
-                  <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg"><i class="fa-solid fa-clock-rotate-left text-amber-500 mr-2"></i>Lịch Sử Chuẩn Hóa & Hoàn Tác</h3>
+                  <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg"><i class="fa-solid fa-clock-rotate-left text-amber-500 mr-2"></i>Lịch sử chuẩn hóa & hoàn tác</h3>
                   <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Mỗi lần lưu là một phiên độc lập. Hoàn tác bị chặn nếu hồ sơ đã được sửa sau phiên đó.</p>
                 </div>
                 <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 disabled:opacity-50" aria-label="Đóng lịch sử"><i class="fa-solid fa-xmark"></i></button>
@@ -190,9 +184,6 @@ interface CasIssueRecord {
                   </div>
                 }
               </div>
-              <footer class="px-5 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end">
-                <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold disabled:opacity-50">Quay lại chuẩn hóa</button>
-              </footer>
             </section>
           }
 
@@ -405,8 +396,15 @@ interface CasIssueRecord {
             }
           </main>
 
-          <footer class="px-4 sm:px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap justify-between gap-3 items-center shrink-0">
-            @if (workspace() === 'valid') {
+        </div>
+
+        <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
+          @if (showHistory()) {
+            <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <i class="fa-solid fa-clock-rotate-left text-amber-500 mr-1"></i>Lịch sử các phiên chuẩn hóa và hoàn tác
+            </div>
+            <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold disabled:opacity-50">Quay lại chuẩn hóa</button>
+          } @else if (workspace() === 'valid') {
               <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                 <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu nhóm CAS đang hiển thị · Đã chọn <strong class="text-indigo-600 dark:text-indigo-400">{{currentSelectedCount()}}</strong> hồ sơ
               </div>
@@ -420,7 +418,7 @@ interface CasIssueRecord {
                   Lưu & nhóm sau<i class="fa-solid fa-chevron-right"></i>
                 </button>
               </div>
-            } @else {
+          } @else {
               <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                 <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu một hồ sơ · CAS phải đúng cấu trúc và checksum
               </div>
@@ -434,10 +432,9 @@ interface CasIssueRecord {
                   Lưu & hồ sơ sau<i class="fa-solid fa-chevron-right"></i>
                 </button>
               </div>
-            }
-          </footer>
+          }
         </div>
-      </div>
+      </app-modal-shell>
     }
   `,
 })
@@ -1024,7 +1021,7 @@ export class StandardsDataCleanupModalComponent {
   }
 
   onClose(): void {
-    if (this.isProcessing()) return;
+    if (this.isProcessing() || this.undoingBatchId() !== null) return;
     this.closeModal.emit();
     this.groups.set([]);
     this.casIssues.set([]);

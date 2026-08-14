@@ -1,53 +1,29 @@
 import {
-  AfterViewInit,
   Component,
-  ElementRef,
-  HostListener,
-  ViewChild,
   input,
   output,
   signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ImportPreviewItem } from '../../../core/models/standard.model';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-standards-import-data-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppModalShellComponent],
   template: `
     @if (data().length > 0) {
-      <div class="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm fade-in">
-        <div
-          #dialogPanel
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="standard-import-title"
-          aria-describedby="standard-import-description"
-          tabindex="-1"
-          class="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-[96rem] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[90vh] animate-slide-up outline-none">
+      <app-modal-shell
+        title="Xác nhận import chuẩn"
+        description="Kiểm tra khóa nhận diện, số lượng, đơn vị, ngày và các thay đổi metadata trước khi commit."
+        size="2xl"
+        [closeOnBackdrop]="false"
+        [closeDisabled]="isImporting() || isParsing()"
+        (closed)="onCancel()"
+      >
 
-          <header class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-start gap-3 shrink-0">
-            <div class="min-w-0">
-              <h3 id="standard-import-title" class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                <i class="fa-solid fa-file-import text-emerald-600 dark:text-emerald-500"></i>
-                Xác nhận Import chuẩn
-              </h3>
-              <p id="standard-import-description" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Kiểm tra khóa nhận diện, số lượng, đơn vị, ngày và các thay đổi metadata trước khi commit.
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label="Đóng cửa sổ import"
-              [disabled]="isImporting() || isParsing()"
-              (click)="onCancel()"
-              class="w-9 h-9 shrink-0 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-red-500 transition disabled:opacity-50">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </header>
-
-          <div class="flex-1 overflow-auto custom-scrollbar p-3 sm:p-6">
+          <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto custom-scrollbar p-3 sm:p-6">
             <section class="grid grid-cols-1 lg:grid-cols-[minmax(220px,320px)_1fr] gap-3 mb-4">
               <label class="text-xs font-bold text-slate-600 dark:text-slate-300">
                 Worksheet
@@ -190,7 +166,7 @@ import { ImportPreviewItem } from '../../../core/models/standard.model';
             }
           </div>
 
-          <footer class="px-4 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 shrink-0">
+          <div modalFooter class="flex w-full flex-col-reverse sm:flex-row sm:justify-end gap-3">
             <button type="button" (click)="onCancel()" [disabled]="isImporting() || isParsing()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition disabled:opacity-50">Hủy bỏ</button>
             <button
               type="button"
@@ -202,18 +178,15 @@ import { ImportPreviewItem } from '../../../core/models/standard.model';
               } @else if (isImporting()) {
                 <i class="fa-solid fa-spinner fa-spin"></i> Đang commit...
               } @else {
-                <i class="fa-solid fa-check"></i> Xác nhận Import {{validCount()}} dòng
+                <i class="fa-solid fa-check"></i> Xác nhận import {{validCount()}} dòng
               }
             </button>
-          </footer>
-        </div>
-      </div>
+          </div>
+      </app-modal-shell>
     }
   `
 })
-export class StandardsImportDataModalComponent implements AfterViewInit {
-  @ViewChild('dialogPanel') dialogPanel?: ElementRef<HTMLElement>;
-
+export class StandardsImportDataModalComponent {
   data = input<ImportPreviewItem[]>([]);
   isImporting = input(false);
   isParsing = input(false);
@@ -225,10 +198,6 @@ export class StandardsImportDataModalComponent implements AfterViewInit {
 
   acknowledgeSkippedRows = signal(false);
   rowLimit = signal(50);
-
-  ngAfterViewInit() {
-    queueMicrotask(() => this.dialogPanel?.nativeElement.focus());
-  }
 
   validCount() {
     return this.data().filter(item => item.isValid && item.mode !== 'CONFLICT').length;
@@ -318,29 +287,4 @@ export class StandardsImportDataModalComponent implements AfterViewInit {
     URL.revokeObjectURL(url);
   }
 
-  @HostListener('document:keydown', ['$event'])
-  handleKeyboard(event: KeyboardEvent) {
-    if (!this.data().length) return;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.onCancel();
-      return;
-    }
-    if (event.key !== 'Tab' || !this.dialogPanel) return;
-    const focusable = Array.from(
-      this.dialogPanel.nativeElement.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )
-    );
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
 }

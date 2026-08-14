@@ -2,6 +2,7 @@ import { Component, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 interface GridPreset {
   id: string;
@@ -28,38 +29,20 @@ interface RollPreset {
 @Component({
   selector: 'app-standards-print-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
       @if (isOpen()) {
-          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-             <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl flex overflow-hidden animate-bounce-in max-h-[95vh] border border-slate-100 dark:border-slate-800">
+          <app-modal-shell
+              [title]="printModalTitle()"
+              [description]="printModalDescription()"
+              size="xl"
+              [closeOnBackdrop]="false"
+              (closed)="onClose()"
+          >
+             <div modalBody class="-mx-6 -my-5 flex min-h-[500px] flex-col lg:h-[calc(100vh-12rem)] lg:flex-row">
                  <!-- Left: Settings -->
-                 <div class="w-1/2 p-8 border-r border-slate-100 dark:border-slate-800 overflow-y-auto custom-scrollbar flex flex-col justify-between">
+                 <div class="custom-scrollbar flex w-full flex-col justify-between overflow-y-auto border-b border-slate-100 p-6 dark:border-slate-800 lg:w-1/2 lg:border-b-0 lg:border-r lg:p-8">
                      <div>
-                         <div class="flex items-center gap-3 mb-6">
-                             <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner">
-                                 <i class="fa-solid fa-print text-lg animate-pulse"></i>
-                             </div>
-                             <div>
-                                 <h3 class="font-black text-xl text-slate-800 dark:text-slate-100 leading-tight">
-                                     @if (standardsToPrint().length > 1) {
-                                         In Hàng Loạt Nhãn
-                                     } @else {
-                                         Cài Đặt In Nhãn
-                                     }
-                                 </h3>
-                                 @if (standardsToPrint().length > 1) {
-                                     <p class="text-xs text-indigo-600 dark:text-indigo-400 font-extrabold mt-0.5 animate-pulse">
-                                         Đã chọn {{ standardsToPrint().length }} chất chuẩn để in
-                                     </p>
-                                 } @else {
-                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words max-w-[340px]" [title]="standardsToPrint()[0] ? standardsToPrint()[0].name : ''">
-                                         {{ standardsToPrint()[0] ? standardsToPrint()[0].name : 'Chưa chọn chất chuẩn' }}
-                                     </p>
-                                 }
-                             </div>
-                         </div>
-
                          <!-- Segmented Control for Layout Mode -->
                          <div class="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 border border-slate-200/40 dark:border-slate-700/30">
                              <button (click)="printLayoutMode.set('roll')" 
@@ -280,17 +263,10 @@ interface RollPreset {
                              </div>
                          </div>
                      </div>
-                     
-                     <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                         <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy Bỏ</button>
-                         <button (click)="printLabel()" class="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-violet-500 text-white font-extrabold text-xs rounded-xl hover:shadow-lg hover:opacity-95 shadow-md shadow-indigo-150 dark:shadow-none transition flex items-center gap-2">
-                             <i class="fa-solid fa-print"></i> Tiến Hành In Nhãn ({{ standardsToPrint().length * printCopies() }})
-                         </button>
-                     </div>
                  </div>
 
                  <!-- Right: Preview -->
-                 <div class="w-1/2 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col items-center justify-center relative min-h-[500px]" id="print-preview-container">
+                 <div class="relative flex min-h-[500px] w-full flex-col items-center justify-center bg-slate-50 p-6 dark:bg-slate-900/50 lg:w-1/2 lg:p-8" id="print-preview-container">
                      <div class="absolute top-4 left-4 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
                          <i class="fa-solid fa-eye animate-pulse text-indigo-500"></i> Bản Xem Trước Trực Quan
                      </div>
@@ -389,7 +365,13 @@ interface RollPreset {
                      </div>
                  </div>
              </div>
-          </div>
+             <div modalFooter class="flex w-full items-center justify-between gap-3">
+                 <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+                 <button (click)="printLabel()" class="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-violet-500 text-white font-extrabold text-xs rounded-xl hover:shadow-lg hover:opacity-95 shadow-md shadow-indigo-150 dark:shadow-none transition flex items-center gap-2">
+                     <i class="fa-solid fa-print"></i> Tiến hành in nhãn ({{ standardsToPrint().length * printCopies() }})
+                 </button>
+             </div>
+          </app-modal-shell>
       }
 
       <!-- Reusable HTML Label Template -->
@@ -535,6 +517,18 @@ export class StandardsPrintModalComponent {
     if (list && list.length > 0) return list;
     const single = this.std();
     return single ? [single] : [];
+  });
+
+  printModalTitle = computed(() =>
+    this.standardsToPrint().length > 1 ? 'In hàng loạt nhãn' : 'Cài đặt in nhãn'
+  );
+
+  printModalDescription = computed(() => {
+    const standards = this.standardsToPrint();
+    if (standards.length > 1) {
+      return `Đã chọn ${standards.length} chất chuẩn để in`;
+    }
+    return standards[0]?.name || 'Chưa chọn chất chuẩn';
   });
 
   // Pre-cut Presets mapping (Tomy)

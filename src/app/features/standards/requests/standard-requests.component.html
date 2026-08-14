@@ -166,18 +166,13 @@
 
       <!-- ADMIN PURCHASE REQUESTS MODAL -->
       @if (showPurchaseRequestsAdminModal()) {
-         <div class="requests-modal-layer fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in" role="dialog" aria-modal="true" aria-labelledby="admin-purchase-requests-title">
-             <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center shrink-0">
-                     <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
-                         <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                             <i class="fa-solid fa-cart-shopping"></i>
-                         </div>
-                          <span id="admin-purchase-requests-title">Duyệt Yêu Cầu Mua Bổ Sung Chất Chuẩn</span>
-                     </h3>
-                     <button (click)="closeAdminPurchaseRequests()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-xmark"></i></button>
-                 </div>
-                 <div class="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-slate-900">
+         <app-modal-shell
+             title="Duyệt yêu cầu mua bổ sung chất chuẩn"
+             description="Theo dõi yêu cầu mua, xác nhận đặt hàng hoặc hoàn tất khi đã nhận chuẩn."
+             size="xl"
+             [showFooter]="false"
+             (closed)="closeAdminPurchaseRequests()">
+             <div modalBody class="bg-slate-50 dark:bg-slate-900">
                      @if(loadingAdminRequests()) {
                          <div class="py-12 flex justify-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500"></i></div>
                      } @else {
@@ -254,18 +249,18 @@
                                                   <td class="px-4 py-3 text-center align-top">
                                                       @if(r.status === 'PENDING') {
                                                       <div class="flex items-center justify-center gap-2">
-                                                      <button (click)="markPurchaseRequestOrdered(r)" [disabled]="isProcessing()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition disabled:opacity-50">
+                                                      <app-button size="sm" (click)="markPurchaseRequestOrdered(r)" [disabled]="isProcessing()">
                                                           <i class="fa-solid fa-cart-flatbed"></i> Đã Đặt Hàng
-                                                      </button>
-                                                      <button (click)="rejectPurchaseRequest(r)" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-lg text-sm font-bold transition disabled:opacity-50" title="Từ chối">
+                                                      </app-button>
+                                                      <app-button size="sm" variant="danger" (click)="rejectPurchaseRequest(r)" [disabled]="isProcessing()" title="Từ chối">
                                                           <i class="fa-solid fa-ban"></i>
-                                                      </button>
+                                                      </app-button>
                                                       </div>
                                                       } @else {
                                                       <div class="text-xs font-black text-amber-600 mb-2 uppercase tracking-wider"><i class="fa-solid fa-truck-fast mr-1"></i> Đang chờ nhận hàng</div>
-                                                      <button (click)="markPurchaseRequestCompleted(r)" [disabled]="isProcessing()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold shadow-sm shadow-emerald-200 dark:shadow-none transition disabled:opacity-50 active:scale-95 flex items-center gap-1.5 mx-auto">
+                                                      <app-button size="sm" (click)="markPurchaseRequestCompleted(r)" [disabled]="isProcessing()">
                                                           <i class="fa-solid fa-check"></i> Đã Nhận Hàng
-                                                      </button>
+                                                      </app-button>
                                                       }
                                                   </td>
                                              </tr>
@@ -275,9 +270,8 @@
                              </div>
                          }
                      }
-                 </div>
              </div>
-         </div>
+         </app-modal-shell>
       }
 
       <!-- EXPORT MODAL -->

@@ -101,7 +101,13 @@ function auditFullscreenOverlays(sources) {
     if (count > allowed) violations.push({ file, count, allowed });
   }
 
-  return { counts, violations };
+  const staleBaseline = [];
+  for (const [file, allowed] of Object.entries(overlayBaseline)) {
+    const count = counts.get(file) || 0;
+    if (count < allowed) staleBaseline.push({ file, count, allowed });
+  }
+
+  return { counts, violations, staleBaseline };
 }
 
 function formatFailure(title, rows) {
@@ -135,6 +141,13 @@ function main() {
     failures.push(formatFailure(
       'New ad-hoc fullscreen overlay detected outside app-modal-shell',
       overlayAudit.violations.map((item) => `${item.file} has ${item.count}; legacy baseline allows ${item.allowed}`)
+    ));
+  }
+
+  if (overlayAudit.staleBaseline.length > 0) {
+    failures.push(formatFailure(
+      'Legacy fullscreen overlay baseline is stale',
+      overlayAudit.staleBaseline.map((item) => `${item.file} has ${item.count}; baseline still allows ${item.allowed}`)
     ));
   }
 

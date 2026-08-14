@@ -1,35 +1,30 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-terms-of-service',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppButtonComponent, AppPageHeaderComponent],
   template: `
     <div class="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div class="max-w-4xl mx-auto">
-        <!-- Back Button & Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <i class="fa-solid fa-file-contract text-2xl"></i>
-            </div>
-            <div>
-              <h1 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">LIMS Cloud</h1>
-              <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Cổng Thông Tin Công Khai</p>
-            </div>
-          </div>
-          <button (click)="goBack()" 
-                  class="self-start sm:self-auto px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm active:scale-95">
-            <i class="fa-solid fa-arrow-left"></i> Quay Lại
-          </button>
-        </div>
+        <app-page-header
+          class="mb-8 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700"
+          title="Điều khoản dịch vụ"
+          subtitle="LIMS Cloud · Cổng thông tin công khai"
+          icon="fa-file-contract">
+          <app-button pageHeaderActions variant="secondary" size="sm" (click)="goBack()">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Quay lại
+          </app-button>
+        </app-page-header>
 
         <!-- Terms Card -->
         <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-3xl p-6 sm:p-10 transition-all duration-300">
           <div class="border-b border-slate-100 dark:border-slate-700/80 pb-6 mb-8">
-            <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Điều Khoản Dịch Vụ Sử Dụng</h2>
+            <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Điều khoản dịch vụ</h2>
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-semibold">
               <i class="fa-regular fa-clock"></i>
               <span>Cập nhật lần cuối: 13/07/2026</span>

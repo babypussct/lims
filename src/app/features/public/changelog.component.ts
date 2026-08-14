@@ -4,70 +4,71 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ChangelogService } from '../../core/services/changelog.service';
 import { StateService } from '../../core/services/state.service';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.component';
 
 @Component({
   selector: 'app-changelog',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, SkeletonComponent, AppToolbarComponent],
   template: `
     <div class="min-h-full w-full bg-slate-50 dark:bg-slate-900 py-4 sm:py-8 px-2 sm:px-4 lg:px-6 transition-colors duration-300">
       <div class="w-full max-w-5xl mx-auto">
         
-        <!-- Header & Back Button -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 sm:mb-8">
-          <div class="flex items-start sm:items-center gap-3 min-w-0">
-            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <i class="fa-solid fa-scroll text-2xl"></i>
-            </div>
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-tight">Nhật Ký Cập Nhật</h1>
-                <span class="text-xs font-black px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                  {{ state.systemVersion() }}
-                </span>
-              </div>
-              <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Cổng Thông Tin Công Khai &bull; LIMS Cloud</p>
-            </div>
+        <app-page-header
+          class="mb-5 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700 sm:mb-8"
+          title="Nhật ký cập nhật"
+          [subtitle]="'Cổng thông tin công khai · LIMS Cloud · ' + state.systemVersion()"
+          icon="fa-scroll">
+          <div pageHeaderActions class="flex items-center gap-2">
+            <span class="hidden rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300 sm:inline-flex">
+              {{ state.systemVersion() }}
+            </span>
+            <app-button variant="secondary" size="sm" (click)="goBack()">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Quay lại
+            </app-button>
           </div>
-          <button (click)="goBack()" 
-                  class="self-start sm:self-auto px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm active:scale-95">
-            <i class="fa-solid fa-arrow-left"></i> Quay Lại
-          </button>
-        </div>
+        </app-page-header>
 
         <!-- Main Card -->
         <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-10 transition-all duration-300 overflow-hidden">
           
-          <div class="border-b border-slate-100 dark:border-slate-700/80 pb-5 sm:pb-6 mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="min-w-0">
-              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight">Lịch Sử Nâng Cấp Hệ Thống</h2>
-              <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Toàn bộ tính năng mới, cải tiến hiệu năng và bản sửa lỗi của LIMS Cloud.</p>
-            </div>
-            
-            <!-- Search Bar -->
-            <div class="relative w-full md:w-72 shrink-0">
-              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-              <input type="text" [(ngModel)]="searchQuery" 
-                     placeholder="Tìm phiên bản, tính năng..." 
-                     class="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 transition">
-              @if (searchQuery()) {
-                <button (click)="searchQuery.set('')" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600">
-                  <i class="fa-solid fa-xmark"></i>
-                </button>
-              }
+          <div class="border-b border-slate-100 dark:border-slate-700/80 pb-5 sm:pb-6 mb-6 sm:mb-8">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight">Lịch sử nâng cấp hệ thống</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Toàn bộ tính năng mới, cải tiến hiệu năng và bản sửa lỗi của LIMS Cloud.</p>
+            <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+              <app-toolbar>
+                <label toolbarSearch class="relative block w-full md:max-w-sm">
+                  <span class="sr-only">Tìm phiên bản hoặc tính năng</span>
+                  <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
+                  <input type="search" [(ngModel)]="searchQuery"
+                         placeholder="Tìm phiên bản, tính năng..."
+                         class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-semibold text-slate-700 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                </label>
+                @if (searchQuery()) {
+                  <div toolbarActions>
+                    <app-button variant="ghost" size="sm" (click)="searchQuery.set('')">
+                      <i class="fa-solid fa-xmark" aria-hidden="true"></i> Xóa tìm kiếm
+                    </app-button>
+                  </div>
+                }
+              </app-toolbar>
             </div>
           </div>
 
           <!-- Timeline -->
           <div>
             @if (changelogService.loading()) {
-              <div class="relative ml-2 sm:ml-3 border-l-2 border-blue-200 dark:border-blue-900/60 pl-5 sm:pl-8 space-y-8 animate-pulse" aria-live="polite" aria-busy="true">
+              <div class="relative ml-2 sm:ml-3 border-l-2 border-blue-200 dark:border-blue-900/60 pl-5 sm:pl-8 space-y-8" aria-live="polite" aria-busy="true">
                 @for (placeholder of [1, 2, 3]; track placeholder) {
                   <div class="relative space-y-3 min-w-0">
-                    <div class="absolute -left-[31px] sm:-left-[43px] top-1 w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-900"></div>
-                    <div class="h-6 w-32 rounded-xl bg-slate-200 dark:bg-slate-700"></div>
-                    <div class="h-7 w-2/3 rounded bg-slate-200 dark:bg-slate-700"></div>
-                    <div class="h-24 w-full rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
+                    <app-skeleton class="absolute -left-[31px] sm:-left-[43px] top-1" shape="circle" width="20px" height="20px"></app-skeleton>
+                    <app-skeleton width="128px" height="24px"></app-skeleton>
+                    <app-skeleton width="66%" height="28px"></app-skeleton>
+                    <app-skeleton width="100%" height="96px"></app-skeleton>
                   </div>
                 }
               </div>
@@ -146,10 +147,14 @@ import { StateService } from '../../core/services/state.service';
               </div>
 
               @if (filteredList().length === 0) {
-                <div class="text-center py-12 text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-scroll text-4xl mb-3 block opacity-40"></i>
-                  <p class="text-sm font-semibold">Không tìm thấy bản ghi phù hợp từ khóa "{{ searchQuery() }}"</p>
-                </div>
+                <app-empty-state
+                  icon="fa-scroll"
+                  title="Không tìm thấy bản ghi"
+                  [message]="'Không có phiên bản hoặc tính năng phù hợp với từ khóa ' + searchQuery() + '.'">
+                  <app-button emptyStateActions variant="secondary" size="sm" (click)="searchQuery.set('')">
+                    Xóa tìm kiếm
+                  </app-button>
+                </app-empty-state>
               }
             }
           </div>

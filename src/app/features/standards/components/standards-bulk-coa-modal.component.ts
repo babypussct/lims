@@ -1,42 +1,32 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.model';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-standards-bulk-coa-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-         <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 max-h-[90vh]">
-            
-            <!-- Header -->
-            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
-               <div>
-                  <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3 tracking-tight">
-                      <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50">
-                          <i class="fa-solid fa-file-contract"></i>
-                      </div>
-                      Trình Ghép Nối CoA Hàng Loạt
-                  </h3>
-                  <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Kiểm tra kết quả nhận diện tự động và tải tài liệu lên Google Drive.</p>
-               </div>
-               @if(!isUploading) {
-                 <button (click)="cancel.emit()" class="w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                 </button>
-               }
-            </div>
+      <app-modal-shell
+        title="Ghép nối CoA hàng loạt"
+        description="Kiểm tra kết quả nhận diện tự động và tải tài liệu lên Google Drive."
+        size="xl"
+        [closeOnBackdrop]="false"
+        [closeDisabled]="isUploading"
+        (closed)="cancel.emit()"
+      >
+        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col bg-slate-50/30 dark:bg-slate-900/50">
 
             <!-- Body -->
-            <div class="flex-1 overflow-hidden flex flex-col p-6 bg-slate-50/30 dark:bg-slate-900/50 relative">
+            <div class="flex-1 overflow-hidden flex flex-col p-6 relative">
                
                <!-- Summary Stats -->
                <div class="flex gap-4 mb-4">
                   <div class="bg-white dark:bg-slate-800 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 shadow-sm flex items-center justify-between">
-                     <span class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Tổng số Files</span>
+                     <span class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Tổng số file</span>
                      <span class="text-xl font-black text-slate-800 dark:text-slate-100">{{items.length}}</span>
                   </div>
                   <div class="bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/30 flex-1 shadow-sm flex items-center justify-between">
@@ -76,7 +66,7 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                            <tr>
                                <th class="px-4 py-3 w-12 text-center">STT</th>
                                <th class="px-4 py-3 w-[40%]">Tên tệp CoA</th>
-                               <th class="px-4 py-3 w-[40%]">Chất chuẩn đối chiếu Tự động Nhận diện</th>
+                               <th class="px-4 py-3 w-[40%]">Chất chuẩn đối chiếu tự động nhận diện</th>
                                <th class="px-4 py-3 w-[15%] text-center">Trạng thái tải lên</th>
                            </tr>
                        </thead>
@@ -171,9 +161,10 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                    </table>
                </div>
             </div>
+        </div>
 
             <!-- Footer -->
-            <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
+        <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
                <div class="text-xs text-slate-500 font-medium">
                   Tính năng sử dụng Upload Queue của Google Drive API. Các file không được ghép chuẩn sẽ bị bỏ qua.
                </div>
@@ -185,16 +176,15 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                        </button>
                    } @else {
                        <button (click)="cancel.emit()" [disabled]="isUploading" class="px-6 py-2.5 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition disabled:opacity-50">
-                           Hủy Bỏ Thao Tác
+                           Hủy bỏ thao tác
                        </button>
                        <button (click)="onConfirm()" [disabled]="isUploading || itemsToUpload() === 0" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50">
-                           <i class="fa-solid fa-cloud-arrow-up"></i> Bắt đầu Tải lên ({{itemsToUpload()}})
+                           <i class="fa-solid fa-cloud-arrow-up"></i> Bắt đầu tải lên ({{itemsToUpload()}})
                        </button>
                    }
                </div>
-            </div>
-         </div>
-      </div>
+        </div>
+      </app-modal-shell>
     }
   `
 })

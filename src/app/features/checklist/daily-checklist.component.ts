@@ -6,6 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
 import { TargetGroup } from '../../core/models/sop.model';
+import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
@@ -32,7 +33,7 @@ import { computeTargetSignature } from '../targets/target-scope-classifier';
 @Component({
   selector: 'app-daily-checklist',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent],
   templateUrl: './daily-checklist.component.html',
   encapsulation: ViewEncapsulation.None,
   styles: [`

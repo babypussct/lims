@@ -7,12 +7,18 @@ function read(relativePath: string): string {
 }
 
 describe('recipe shared UI primitive integration', () => {
-  it('uses shared buttons, empty state and modal shell without changing specialized icon controls', () => {
+  it('uses shared page header, toolbar, buttons, empty state and modal shell without changing specialized icon controls', () => {
     const component = read('./recipe-manager.component.ts');
 
+    assert.match(component, /AppPageHeaderComponent/);
+    assert.match(component, /AppToolbarComponent/);
     assert.match(component, /AppButtonComponent/);
     assert.match(component, /AppEmptyStateComponent/);
     assert.match(component, /AppModalShellComponent/);
+    assert.match(component, /<app-page-header\b/);
+    assert.match(component, /pageHeaderActions/);
+    assert.match(component, /<app-toolbar\b/);
+    assert.match(component, /toolbarSearch/);
     assert.match(component, /<app-button\b/);
     assert.match(component, /<app-empty-state\b/);
     assert.match(component, /<app-modal-shell\b/);
@@ -22,5 +28,11 @@ describe('recipe shared UI primitive integration', () => {
     assert.doesNotMatch(component, /fixed inset-0 z-\[60\]/);
     assert.doesNotMatch(component, /Tạo Công Thức/);
     assert.doesNotMatch(component, /Thêm Dòng/);
+    assert.doesNotMatch(component, /Không Có Quyền Truy Cập/);
+    assert.match(component, /aria-label="Sửa công thức"/);
+    assert.match(component, /aria-label="Xóa công thức"/);
+    assert.match(component, /filteredRecipes = computed/);
+    assert.match(component, /Không tìm thấy công thức/);
+    assert.match(component, /emptyStateActions/);
   });
 });

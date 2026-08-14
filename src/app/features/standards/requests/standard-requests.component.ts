@@ -19,6 +19,7 @@ import { RequestsActionModalsComponent } from './components/requests-action-moda
 import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
 import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
 import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolbar.component';
 
@@ -32,7 +33,7 @@ type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminRece
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective, AppButtonComponent, AppPageHeaderComponent, AppToolbarComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective, AppButtonComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   providers: [DatePipe],
   templateUrl: './standard-requests.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush

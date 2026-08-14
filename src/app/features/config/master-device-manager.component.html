@@ -1,22 +1,20 @@
 <div class="p-6 max-w-6xl mx-auto">
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-        <span class="text-3xl">💻</span> Quản Lý Thiết Bị Phân Tích
-      </h1>
-      <p class="text-slate-500 dark:text-slate-400 mt-1">Quản lý danh sách các thiết bị áp dụng cho SOP và khai báo mẻ.</p>
-    </div>
-    
-    <div class="flex items-center gap-3">
-      <a routerLink="/config" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors">
+  <app-page-header
+    title="Quản lý thiết bị phân tích"
+    subtitle="Quản lý danh sách các thiết bị áp dụng cho SOP và khai báo mẻ."
+    icon="fa-microchip"
+  >
+    <div pageHeaderActions class="contents">
+      <app-button variant="ghost" size="sm" routerLink="/config">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
         Quay lại cấu hình
-      </a>
-      <button (click)="openAddModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Thêm Thiết Bị
-      </button>
+      </app-button>
+      <app-button size="sm" (click)="openAddModal()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        Thêm thiết bị
+      </app-button>
     </div>
-  </div>
+  </app-page-header>
 
   @if (isLoading()) {
     <div class="flex justify-center p-12">
@@ -61,28 +59,25 @@
       }
       
       @if (devices().length === 0) {
-        <div class="col-span-full py-12 text-center text-slate-500">
-          Chưa có thiết bị nào. Nhấn "Thêm thiết bị" để tạo.
-        </div>
+        <app-empty-state
+          class="col-span-full"
+          icon="fa-microchip"
+          title="Chưa có thiết bị"
+          message="Nhấn “Thêm thiết bị” để tạo thiết bị đầu tiên."
+        />
       }
     </div>
   }
 </div>
 
-<!-- Modal -->
 @if (showModal()) {
-  <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-      <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-        <h3 class="font-bold text-lg text-slate-800 dark:text-white">
-          {{ isEditMode ? 'Sửa thiết bị' : 'Thêm thiết bị mới' }}
-        </h3>
-        <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      
-      <div class="p-4 space-y-4">
+  <app-modal-shell
+    [title]="isEditMode ? 'Sửa thiết bị' : 'Thêm thiết bị mới'"
+    size="sm"
+    [closeOnBackdrop]="false"
+    (closed)="closeModal()"
+  >
+      <div modalBody class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên thiết bị *</label>
           <input type="text" [(ngModel)]="formData.name" (ngModelChange)="onNameChange()" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: GC-MS/MS, LC-MS/MS...">
@@ -101,18 +96,10 @@
           <textarea [(ngModel)]="formData.description" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ghi chú thêm..."></textarea>
         </div>
       </div>
-      
-      <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 flex justify-end gap-2">
-        <button (click)="closeModal()" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
-          Hủy
-        </button>
-        <button (click)="save()" [disabled]="isSaving()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
-          @if (isSaving()) {
-            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          }
-          Lưu thiết bị
-        </button>
+
+      <div modalFooter class="contents">
+        <app-button variant="secondary" (click)="closeModal()">Hủy</app-button>
+        <app-button (click)="save()" [loading]="isSaving()">Lưu thiết bị</app-button>
       </div>
-    </div>
-  </div>
+  </app-modal-shell>
 }

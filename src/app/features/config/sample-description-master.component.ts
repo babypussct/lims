@@ -7,12 +7,26 @@ import { AuthService } from '../../core/services/auth.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { ToastService } from '../../core/services/toast.service';
 import { generateSlug } from '../../shared/utils/utils';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.component';
 import { SampleDescriptionMasterService } from './sample-description-master.service';
 
 @Component({
   selector: 'app-sample-description-master',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppModalShellComponent,
+    AppPageHeaderComponent,
+    AppToolbarComponent,
+  ],
   templateUrl: './sample-description-master.component.html'
 })
 export class SampleDescriptionMasterComponent implements OnInit {

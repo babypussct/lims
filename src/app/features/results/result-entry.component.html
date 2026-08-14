@@ -119,16 +119,15 @@
       </div>
       }
     } @else {
-      <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
-        <div class="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-500">
-          <i class="fa-solid fa-triangle-exclamation text-3xl text-red-500"></i>
-        </div>
-        <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">
-          Không thể tìm thấy mẻ chạy hoặc cấu hình tương ứng của chỉ tiêu này!
-        </p>
-        <button (click)="goBack()" class="mt-4 px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-xl text-xs font-bold">
-          Quay Lại Danh Sách
-        </button>
+      <div class="rounded-2xl border border-dashed border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <app-empty-state
+          icon="fa-triangle-exclamation"
+          title="Không tìm thấy mẻ chạy"
+          message="Không thể tìm thấy mẻ chạy hoặc cấu hình tương ứng của chỉ tiêu này.">
+          <app-button emptyStateActions variant="secondary" size="sm" (click)="goBack()">
+            Quay lại danh sách
+          </app-button>
+        </app-empty-state>
       </div>
     }
   </div>
@@ -149,26 +148,13 @@
 
   <!-- Publish Preflight Modal -->
   @if (showPreflightModal() && preflightSummary()) {
-    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-       <div appModalA11y aria-label="Kiểm tra trước khi tạo báo cáo" (modalEscape)="closePreflightModal()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-2xl w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <div class="flex items-start justify-between gap-4 mb-5">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <i class="fa-solid fa-clipboard-check"></i>
-            </div>
-            <div>
-              <h3 class="text-base font-black text-slate-800 dark:text-slate-100">Kiểm tra trước khi tạo báo cáo</h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {{ preflightSummary()!.includedSamples.length }} mẫu, {{ preflightSummary()!.chunks.length }} phiếu dự kiến
-              </p>
-            </div>
-          </div>
-           <button type="button" aria-label="Đóng kiểm tra trước khi tạo báo cáo" (click)="closePreflightModal()" class="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <div class="space-y-4 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
+    <app-modal-shell
+      title="Kiểm tra trước khi tạo báo cáo"
+      [description]="preflightSummary()!.includedSamples.length + ' mẫu, ' + preflightSummary()!.chunks.length + ' phiếu dự kiến'"
+      size="md"
+      [closeOnBackdrop]="false"
+      (closed)="closePreflightModal()">
+      <div modalBody class="space-y-4">
           @if (preflightSummary()!.blockers.length > 0) {
             <div class="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/70 dark:bg-red-950/20 p-4">
               <div class="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-wider mb-2">Cần xử lý trước khi in</div>
@@ -213,32 +199,35 @@
               }
             </div>
           </div>
-        </div>
-
-        <div class="flex gap-3 mt-6">
-           <button type="button" (click)="closePreflightModal()"
-                  class="flex-1 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl transition">
-            Quay lại kiểm tra
-          </button>
-           <button type="button" (click)="confirmPublishAfterPreflight()"
-                  [disabled]="preflightSummary()!.blockers.length > 0 || isProcessing()"
-                  class="flex-1 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition disabled:opacity-40">
-            Tiếp tục tạo PDF
-          </button>
-        </div>
       </div>
-    </div>
+      <div modalFooter class="flex flex-wrap justify-end gap-3">
+        <app-button variant="secondary" (click)="closePreflightModal()">
+          Quay lại kiểm tra
+        </app-button>
+        <app-button
+          variant="primary"
+          [disabled]="preflightSummary()!.blockers.length > 0"
+          [loading]="isProcessing()"
+          (click)="confirmPublishAfterPreflight()">
+          Tiếp tục tạo PDF
+        </app-button>
+      </div>
+    </app-modal-shell>
   }
 
   <!-- Reset Confirmation Modal -->
   @if (showResetModal()) {
-    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-       <div appModalA11y aria-label="Đưa mẻ về trạng thái ban đầu" (modalEscape)="closeResetModal()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <div class="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
+    <app-modal-shell
+      title="Đưa mẻ về trạng thái ban đầu"
+      size="sm"
+      [closeOnBackdrop]="false"
+      (closed)="closeResetModal()">
+      <div modalBody>
+        <div class="mb-4 flex items-center gap-3 text-red-600 dark:text-red-400">
           <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-lg">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-          <h3 class="text-base font-bold">Đưa Mẻ về Trạng Thái Ban Đầu</h3>
+          <p class="text-sm font-bold">Thao tác này không thể hoàn tác.</p>
         </div>
         
         <p class="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
@@ -255,19 +244,19 @@
                  placeholder="Nhập XÓA để xác nhận"
                  class="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-red-500 text-center font-bold uppercase tracking-wider" />
         </div>
-        
-        <div class="flex gap-3">
-           <button type="button" (click)="closeResetModal()"
-                  class="flex-1 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl transition">
-            Hủy Bỏ
-          </button>
-           <button type="button" (click)="triggerResetResults()"
-                  [disabled]="resetConfirmText() !== 'XÓA' || isProcessing()"
-                  class="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-40">
-            Xóa và Khởi Tạo Lại
-          </button>
-        </div>
       </div>
-    </div>
+      <div modalFooter class="flex flex-wrap justify-end gap-3">
+        <app-button variant="secondary" (click)="closeResetModal()">
+          Hủy
+        </app-button>
+        <app-button
+          variant="danger"
+          [disabled]="resetConfirmText() !== 'XÓA'"
+          [loading]="isProcessing()"
+          (click)="triggerResetResults()">
+          Xóa và khởi tạo lại
+        </app-button>
+      </div>
+    </app-modal-shell>
   }
 </div>

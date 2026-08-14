@@ -40,3 +40,31 @@ describe('results list shared UI primitive integration', () => {
     assert.doesNotMatch(component, /<app-modal-shell\b/);
   });
 });
+
+describe('results entry shared UI primitive integration', () => {
+  it('uses shared modal, button and empty-state primitives for generic entry chrome', () => {
+    const component = read('./result-entry.component.ts');
+    const template = read('./result-entry.component.html');
+
+    assert.match(component, /AppButtonComponent/);
+    assert.match(component, /AppEmptyStateComponent/);
+    assert.match(component, /AppModalShellComponent/);
+    assert.doesNotMatch(component, /ModalA11yDirective/);
+    assert.match(template, /<app-empty-state\b/);
+    assert.match(template, /<app-button\b/);
+    assert.equal((template.match(/<app-modal-shell\b/g) ?? []).length, 2);
+    assert.doesNotMatch(template, /fixed inset-0/);
+    assert.match(template, />\s*Quay lại danh sách\s*</);
+    assert.match(template, />\s*Hủy\s*</);
+    assert.match(template, />\s*Xóa và khởi tạo lại\s*</);
+  });
+
+  it('keeps SOP-specific entry controls behind their existing specialized components', () => {
+    const template = read('./result-entry.component.html');
+
+    assert.match(template, /<app-result-entry-header\b/);
+    assert.match(template, /<app-result-prefix-tabs\b/);
+    assert.match(template, /<app-sop-entry-outlet\b/);
+    assert.match(template, /<app-excel-result-import-modal\b/);
+  });
+});

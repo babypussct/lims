@@ -5,6 +5,7 @@ import { StandardTagOption } from '../../../core/models/standard.model';
 import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
 import { compareChemicalMethodCodes, parseTagKeyStrict } from '../services/standard-tag.utils';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccreditationMethodImport']>>;
 
@@ -12,20 +13,17 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
 @Component({
   selector: 'app-standards-tag-manager-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent],
   template: `
     @if (isOpen()) {
-      <div class="fixed inset-0 z-[610] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="w-full max-w-4xl max-h-[90vh] rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col">
-          <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
-            <div>
-              <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Danh mục nhãn trung tâm</h3>
-              <p class="text-xs text-slate-500 mt-1">Nhãn phương pháp hóa học được nạp theo seed có truy vết; nhãn thủ công dùng soft-delete.</p>
-            </div>
-            <button type="button" (click)="close.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <app-modal-shell
+        title="Danh mục nhãn trung tâm"
+        description="Nhãn phương pháp hóa học được nạp theo seed có truy vết; nhãn thủ công dùng soft-delete."
+        size="lg"
+        [showFooter]="false"
+        (closed)="close.emit()"
+      >
+          <div modalBody class="space-y-6 custom-scrollbar">
             <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-6">
               <section class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
                 <div class="flex items-center justify-between">
@@ -106,8 +104,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
               </div>
             </section>
           </div>
-        </div>
-      </div>
+      </app-modal-shell>
     }
   `,
 })

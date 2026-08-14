@@ -7,11 +7,22 @@ import { ToastService } from '../../../core/services/toast.service';
 import { generateSlug } from '../../../shared/utils/utils';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { FormLabelA11yDirective } from '../../../shared/directives/form-label-a11y.directive';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-config-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, FormLabelA11yDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    FormLabelA11yDirective,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppModalShellComponent,
+  ],
   template: `
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-6 fade-in">
         <!-- Header -->
@@ -26,12 +37,12 @@ import { FormLabelA11yDirective } from '../../../shared/directives/form-label-a1
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cấu hình các nhóm vai trò nghiệp vụ động để gán hàng loạt cho nhân viên.</p>
             </div>
             <div class="flex gap-2">
-                <button (click)="loadRoles()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition flex items-center gap-2">
+                <app-button variant="secondary" size="sm" (click)="loadRoles()">
                     <i class="fa-solid fa-rotate"></i> Tải Lại
-                </button>
-                <button (click)="openAddModal()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95">
+                </app-button>
+                <app-button size="sm" (click)="openAddModal()">
                     <i class="fa-solid fa-plus"></i> Thêm Vai Trò
-                </button>
+                </app-button>
             </div>
         </div>
 
@@ -86,40 +97,25 @@ import { FormLabelA11yDirective } from '../../../shared/directives/form-label-a1
                     </div>
                 </div>
             } @empty {
-                <div class="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 italic">
-                    <i class="fa-solid fa-folder-open text-3xl mb-2 opacity-50"></i>
-                    <div>Không tìm thấy vai trò nào. Click "Thêm vai trò" để bắt đầu.</div>
-                </div>
+                <app-empty-state
+                    class="col-span-full"
+                    icon="fa-user-shield"
+                    title="Chưa có nhóm vai trò"
+                    message="Nhấn “Thêm vai trò” để tạo nhóm quyền đầu tiên." />
             }
         </div>
     </div>
 
     <!-- ADD/EDIT ROLE MODAL -->
     @if (modalOpen()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-                <!-- Header -->
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-sm">
-                            <i class="fa-solid fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-base font-black text-slate-800 dark:text-slate-100">
-                                {{ editingRole() ? 'Chỉnh sửa' : 'Thêm mới' }} Nhóm Vai Trò
-                            </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                Thiết lập tên, mã nhận dạng và tổ hợp quyền hạn của vai trò.
-                            </p>
-                        </div>
-                    </div>
-                    <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-
-                <!-- Form Body -->
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+        <app-modal-shell
+            [title]="(editingRole() ? 'Chỉnh sửa' : 'Thêm mới') + ' nhóm vai trò'"
+            description="Thiết lập tên, mã nhận dạng và tổ hợp quyền hạn của vai trò."
+            size="lg"
+            [closeOnBackdrop]="false"
+            (closed)="closeModal()"
+        >
+                <div modalBody class="space-y-6">
                     <form id="role-config-form" appFormLabelA11y [formGroup]="roleForm" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Role Name -->
@@ -177,15 +173,13 @@ import { FormLabelA11yDirective } from '../../../shared/directives/form-label-a1
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeModal()" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Đóng</button>
-                    <button (click)="saveRole()" [disabled]="roleForm.invalid" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
-                    </button>
+                <div modalFooter class="contents">
+                    <app-button variant="secondary" (click)="closeModal()">Đóng</app-button>
+                    <app-button (click)="saveRole()" [disabled]="roleForm.invalid">
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                    </app-button>
                 </div>
-            </div>
-        </div>
+        </app-modal-shell>
     }
   `
 })
