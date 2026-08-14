@@ -30,7 +30,7 @@ import { CommonModule } from '@angular/common';
                     }
                 </div>
                 <button (click)="onClose()" [disabled]="isExporting" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition disabled:opacity-50">
-                    <i class="fa-solid fa-times"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             

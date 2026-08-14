@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -23,6 +24,7 @@ import {
   writeBatch,
   where
 } from 'firebase/firestore';
+import { StatsService } from './stats.service';
 
 const PROJECT_ID = 'demo-lims-smart-batch-rules';
 const APP_ID = 'lims-rules-test-app';
@@ -313,6 +315,40 @@ test('stats writes require batch_run, sop_approve or manager privileges', async 
   }
 });
 
+test('monthly stats atomic increments tolerate concurrent writers on the same month document', async () => {
+  const db = dbFor(users.batchA);
+  const statsRef = doc(db, `artifacts/${APP_ID}/monthly_stats/2026-08`);
+  const statsService = Object.create(StatsService.prototype) as StatsService;
+  (statsService as any).fb = { db, APP_ID };
+  const writerCount = 24;
+  const sopKey = 'SOP.01 GC-MS/MS';
+  const statsDate = new Date(2026, 7, 13, 12, 0, 0);
+
+  await Promise.all(Array.from(
+    { length: writerCount },
+    () => statsService.incrementStats(statsDate, 'sop-01', sopKey, 1, 1, 2)
+  ));
+
+  const snapshot = await assertSucceeds(getDoc(statsRef));
+  const day = snapshot.data()?.['2026-08-13'];
+  assert.equal(day?.totalSamples, writerCount);
+  assert.equal(day?.totalBatches, writerCount);
+  assert.equal(day?.totalQcs, writerCount * 2);
+  assert.equal(day?.sops?.[sopKey]?.samples, writerCount);
+  assert.equal(day?.sops?.[sopKey]?.batches, writerCount);
+  assert.equal(day?.sops?.[sopKey]?.qcs, writerCount * 2);
+});
+
+test('monthly stats increment surfaces Firestore write failures to the caller', async () => {
+  const db = dbFor(users.viewer);
+  const statsService = Object.create(StatsService.prototype) as StatsService;
+  (statsService as any).fb = { db, APP_ID };
+
+  await assert.rejects(
+    statsService.incrementStats(new Date(2026, 7, 13, 12, 0, 0), 'sop-01', 'SOP 01', 1)
+  );
+});
+
 test('requester usage succeeds only as one correlated atomic accounting transaction', async () => {
   const batchDb = dbFor(users.batchA);
   const standardRef = doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-requester`);
@@ -515,7 +551,7 @@ test('requester create enforces the trusted request schema and canonical identit
     requesterCreatePayload(goodId)
   ));
 
-  const invalidCases: Array<[string, Record<string, unknown>]> = [
+  const invalidCases: [string, Record<string, unknown>][] = [
     ['spoof-user', { requestedBy: users.batchB.uid }],
     ['spoof-user-name', { requestedByName: users.batchB.displayName }],
     ['spoof-standard-name', { standardName: 'Forged Standard' }],

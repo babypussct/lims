@@ -3,6 +3,14 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from './core/guards/permission.guard';
 import { canDeactivateResultEntry } from './core/guards/pending-changes.guard';
 import { PERMISSIONS } from './core/services/auth.service';
+import { environment } from '../environments/environment';
+
+const developmentOnlyRoutes: Routes = environment.production ? [] : [
+  {
+    path: '__ui-primitives',
+    loadComponent: () => import('./shared/components/ui/ui-primitives-demo.component').then(m => m.UiPrimitivesDemoComponent)
+  }
+];
 
 export const routes: Routes = [
   { 
@@ -194,6 +202,7 @@ export const routes: Routes = [
     path: 'changelog',
     loadComponent: () => import('./features/public/changelog.component').then(m => m.ChangelogComponent)
   },
+  ...developmentOnlyRoutes,
   {
     path: '**',
     redirectTo: 'dashboard'

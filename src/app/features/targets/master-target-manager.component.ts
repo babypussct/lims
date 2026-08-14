@@ -10,82 +10,77 @@ import { MasterAnalyte } from '../../core/models/sop.model';
 import { generateSlug, formatDate } from '../../shared/utils/utils';
 import { Router } from '@angular/router';
 import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.directive';
+import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 
 @Component({
   selector: 'app-master-target-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
-    <div class="h-full flex flex-col fade-in bg-slate-50 relative pb-10">
+    <div class="h-full flex flex-col fade-in bg-slate-50 dark:bg-slate-900 relative pb-10">
         
         <!-- Header -->
-        <div class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
-            <div class="flex items-center gap-4">
-                <button (click)="goBack()" class="text-slate-500 hover:text-slate-800 text-sm font-bold flex items-center gap-2 transition">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Cấu Hình</span>
-                </button>
-                <div class="h-6 w-px bg-slate-200"></div>
-                <div>
-                    <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-book-medical text-indigo-600"></i> Thư Viện Chỉ Tiêu Gốc
-                    </h2>
-                    <p class="text-[10px] text-slate-500 mt-0.5 font-medium">Danh mục chỉ tiêu gốc</p>
-                </div>
-            </div>
-            
-            <div class="flex gap-2">
+        <app-page-header
+            title="Thư viện chỉ tiêu gốc"
+            subtitle="Danh mục chỉ tiêu gốc dùng để đồng bộ tên, mã và đơn vị chuẩn."
+            icon="fa-book-medical">
+            <div pageHeaderActions class="contents">
+                <app-button variant="ghost" size="sm" (click)="goBack()">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span class="hidden md:inline">Cấu hình</span>
+                </app-button>
                 <!-- Migrate Button -->
-                <button (click)="migrateHyphenToUnderscore()" [disabled]="isProcessing()" class="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95 disabled:opacity-50">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Migrate Data (- To _)
-                </button>
+                <app-button variant="danger" size="sm" (click)="migrateHyphenToUnderscore()" [disabled]="isProcessing()">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Migrate data (- to _)
+                </app-button>
 
                 <!-- Export Button -->
-                <button (click)="exportToExcel()" [disabled]="isProcessing() || isLoading() || items().length === 0" class="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95 disabled:opacity-50">
-                    <i class="fa-solid fa-file-export"></i> Export Excel
-                </button>
+                <app-button variant="secondary" size="sm" (click)="exportToExcel()" [disabled]="isProcessing() || isLoading() || items().length === 0">
+                    <i class="fa-solid fa-file-export" aria-hidden="true"></i> Export Excel
+                </app-button>
 
                 <!-- Import Button -->
-                <button (click)="fileInput.click()" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-file-excel"></i> Import Excel
-                </button>
+                <app-button variant="secondary" size="sm" (click)="fileInput.click()">
+                    <i class="fa-solid fa-file-excel" aria-hidden="true"></i> Import Excel
+                </app-button>
                 <input #fileInput type="file" class="hidden" accept=".xlsx, .csv" (change)="onFileSelected($event)">
 
-                <button (click)="openModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-md transition flex items-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-plus"></i> Thêm Chỉ Tiêu
-                </button>
+                <app-button size="sm" (click)="openModal()">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm chỉ tiêu
+                </app-button>
             </div>
-        </div>
+        </app-page-header>
 
-        <div class="flex-1 p-6 overflow-hidden flex flex-col">
-            <!-- Search Bar -->
-            <div class="mb-4 relative">
+        <app-toolbar>
+            <div toolbarSearch class="relative">
                 <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm"></i>
-                <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
-                       class="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
+                <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+                       class="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
                        placeholder="Tìm kiếm tên chất, CAS number, công thức hóa học...">
             </div>
+        </app-toolbar>
 
+        <div class="flex-1 p-6 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900">
             <!-- List -->
-            <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
                 <div class="overflow-y-auto custom-scrollbar flex-1 p-2">
                     @if (isLoading()) {
                         <div class="p-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
                     } @else {
                         <table class="w-full text-sm text-left border-collapse">
-                            <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 font-bold">
+                            <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/70 sticky top-0 z-10 font-bold">
                                 <tr>
-                                    <th class="px-4 py-3 border-b border-slate-100">Tên chỉ tiêu / ID</th>
-                                    <th class="px-4 py-3 border-b border-slate-100">Thông tin hóa học</th>
-                                    <th class="px-4 py-3 border-b border-slate-100 text-center">Đơn vị Chuẩn</th>
-                                    <th class="px-4 py-3 border-b border-slate-100 text-right">Tác vụ</th>
+                                    <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">Tên chỉ tiêu / ID</th>
+                                    <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">Thông tin hóa học</th>
+                                    <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 text-center">Đơn vị Chuẩn</th>
+                                    <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 text-right">Tác vụ</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                 @for (item of filteredItems(); track item.id) {
-                                    <tr class="hover:bg-indigo-50/30 transition group">
+                                    <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition group">
                                         <td class="px-4 py-3">
-                                            <div class="font-bold text-slate-800 text-sm">{{item.name}}</div>
-                                            <div class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit mt-1 border border-slate-200">{{item.id}}</div>
+                                            <div class="font-bold text-slate-800 dark:text-slate-100 text-sm">{{item.name}}</div>
+                                            <div class="text-[10px] font-mono text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded w-fit mt-1 border border-slate-200 dark:border-slate-600">{{item.id}}</div>
                                             @if (item.aliases?.length) {
                                                 <div class="text-[10px] text-indigo-500 mt-1.5 line-clamp-2" [title]="item.aliases!.join(', ')">
                                                     Alias: {{item.aliases!.join(', ')}}
@@ -94,32 +89,32 @@ import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.
                                         </td>
                                         <td class="px-4 py-3">
                                             <div class="flex flex-col gap-1 text-xs">
-                                                @if(item.cas_number) { <span class="text-slate-600"><span class="font-bold text-slate-400 w-8 inline-block">CAS:</span> {{item.cas_number}}</span> }
-                                                @if(item.chemical_formula) { <span class="text-slate-600"><span class="font-bold text-slate-400 w-8 inline-block">CT:</span> <span class="font-serif">{{item.chemical_formula}}</span></span> }
+                                                @if(item.cas_number) { <span class="text-slate-600 dark:text-slate-300"><span class="font-bold text-slate-400 w-8 inline-block">CAS:</span> {{item.cas_number}}</span> }
+                                                @if(item.chemical_formula) { <span class="text-slate-600 dark:text-slate-300"><span class="font-bold text-slate-400 w-8 inline-block">CT:</span> <span class="font-serif">{{item.chemical_formula}}</span></span> }
                                             </div>
                                         </td>
                                         <td class="px-4 py-3 text-center">
-                                            <span class="inline-block px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold">{{item.default_unit || '-'}}</span>
+                                            <span class="inline-block px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded text-xs font-bold">{{item.default_unit || '-'}}</span>
                                         </td>
                                         <td class="px-4 py-3 text-right">
                                             <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button (click)="openModal(item)" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition shadow-sm flex items-center justify-center">
+                                                <button (click)="openModal(item)" aria-label="Sửa chỉ tiêu" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition shadow-sm flex items-center justify-center">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
-                                                <button (click)="deleteItem(item)" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-red-500 hover:bg-red-50 transition shadow-sm flex items-center justify-center">
+                                                <button (click)="deleteItem(item)" aria-label="Xóa chỉ tiêu" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition shadow-sm flex items-center justify-center">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
                                 } @empty {
-                                    <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Không tìm thấy dữ liệu phù hợp.</td></tr>
+                                    <tr><td colspan="4"><app-empty-state icon="fa-magnifying-glass" title="Không tìm thấy dữ liệu" message="Thử thay đổi từ khóa tìm kiếm." /></td></tr>
                                 }
                             </tbody>
                         </table>
                     }
                 </div>
-                <div class="p-3 bg-slate-50 border-t border-slate-200 text-xs font-bold text-slate-500 text-right">
+                <div class="p-3 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 text-right">
                     Tổng số: {{filteredItems().length}} chỉ tiêu
                 </div>
             </div>
@@ -127,122 +122,107 @@ import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.
 
         <!-- ADD/EDIT MODAL -->
         @if (showModal()) {
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-slide-up">
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <h3 class="font-black text-slate-800 text-lg">
-                            {{ isEditing() ? 'Cập nhật chỉ tiêu' : 'Thêm chỉ tiêu mới' }}
-                        </h3>
-                        <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
-                    </div>
-                    
-                    <div class="p-6 overflow-y-auto">
-                        <form id="master-target-form" appFormLabelA11y [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+            <app-modal-shell
+                [title]="isEditing() ? 'Cập nhật chỉ tiêu' : 'Thêm chỉ tiêu mới'"
+                size="sm"
+                (closed)="closeModal()"
+            >
+                    <form modalBody id="master-target-form" appFormLabelA11y [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên chỉ tiêu <span class="text-red-500">*</span></label>
-                                <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-indigo-500 transition" placeholder="VD: Chloramphenicol">
+                                <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-indigo-500 transition" placeholder="VD: Chloramphenicol">
                             </div>
                             
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã định danh (tự tạo)</label>
-                                <input formControlName="id" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-indigo-500 transition bg-white" placeholder="Auto-generated hoặc tự điền...">
+                                <input formControlName="id" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-indigo-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Auto-generated hoặc tự điền...">
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Số CAS</label>
-                                    <input formControlName="cas_number" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition" placeholder="56-75-7">
+                                <input formControlName="cas_number" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition" placeholder="56-75-7">
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Đơn vị mặc định</label>
-                                    <input formControlName="default_unit" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition" placeholder="ppb, µg/kg">
+                                <input formControlName="default_unit" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition" placeholder="ppb, µg/kg">
                                 </div>
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Công thức hóa học</label>
-                                <input formControlName="chemical_formula" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-serif outline-none focus:border-indigo-500 transition" placeholder="C11H12Cl2N2O5">
+                                <input formControlName="chemical_formula" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs font-serif outline-none focus:border-indigo-500 transition" placeholder="C11H12Cl2N2O5">
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên khác / Alias khi import</label>
                                 <textarea formControlName="aliasesText" rows="3"
-                                          class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"
+                                          class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"
                                           placeholder="Mỗi alias một dòng hoặc phân cách bằng dấu chấm phẩy"></textarea>
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mô tả / Ghi chú</label>
-                                <textarea formControlName="description" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"></textarea>
+                                <textarea formControlName="description" rows="2" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"></textarea>
                             </div>
+                    </form>
 
-                            <div class="pt-4 flex justify-end gap-3">
-                                <button type="button" (click)="closeModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold text-xs transition">Hủy</button>
-                                <button type="submit" [disabled]="form.invalid || isProcessing()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50">
-                                    {{ isEditing() ? 'Lưu thay đổi' : 'Tạo mới' }}
-                                </button>
-                            </div>
-                        </form>
+                    <div modalFooter class="contents">
+                        <app-button variant="secondary" (click)="closeModal()">Hủy</app-button>
+                        <app-button type="submit" (click)="save()" [loading]="isProcessing()" [disabled]="form.invalid">
+                            {{ isEditing() ? 'Lưu thay đổi' : 'Tạo mới' }}
+                        </app-button>
                     </div>
-                </div>
-            </div>
+            </app-modal-shell>
         }
 
         <!-- IMPORT PREVIEW MODAL -->
         @if (importPreview().length > 0) {
-            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-file-import text-emerald-600"></i> Xem Trước Import
-                        </h3>
-                        <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
-                    </div>
-
-                    <div class="p-4 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800 flex items-start gap-2">
-                        <i class="fa-solid fa-circle-info mt-0.5"></i>
+            <app-modal-shell title="Xem trước import" size="lg" (closed)="cancelImport()">
+                <div modalBody class="space-y-4">
+                    <div class="rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-xs text-yellow-800 dark:border-yellow-900/60 dark:bg-yellow-950/30 dark:text-yellow-200 flex items-start gap-2">
+                        <i class="fa-solid fa-circle-info mt-0.5" aria-hidden="true"></i>
                         <div>
                             Kiểm tra dữ liệu bên dưới. Các dòng có <b>ID</b> trùng sẽ bị ghi đè.
                             <br>Tổng cộng: <b>{{importPreview().length}}</b> chỉ tiêu hợp lệ.
                         </div>
                     </div>
 
-                    <div class="flex-1 overflow-auto custom-scrollbar">
+                    <div class="max-h-[58vh] overflow-auto custom-scrollbar rounded-xl border border-slate-200 dark:border-slate-700">
                         <table class="w-full text-xs text-left">
-                            <thead class="bg-slate-100 text-slate-500 font-bold uppercase sticky top-0">
+                            <thead class="bg-slate-100 dark:bg-slate-900/70 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
                                 <tr>
-                                    <th class="p-3 border-b border-slate-200">Tên chỉ tiêu</th>
-                                    <th class="p-3 border-b border-slate-200">Mã định danh (tự động)</th>
-                                    <th class="p-3 border-b border-slate-200">CAS</th>
-                                    <th class="p-3 border-b border-slate-200">Formula</th>
-                                    <th class="p-3 border-b border-slate-200">Alias</th>
-                                    <th class="p-3 border-b border-slate-200 text-center">Unit</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">Tên chỉ tiêu</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">Mã định danh (tự động)</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">CAS</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">Formula</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">Alias</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700 text-center">Unit</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                 @for (item of importPreview(); track $index) {
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3 font-bold text-slate-700">{{item.name}}</td>
-                                        <td class="p-3 font-mono text-slate-500">{{item.id}}</td>
-                                        <td class="p-3 text-slate-600">{{item.cas_number || '-'}}</td>
-                                        <td class="p-3 font-serif text-slate-600">{{item.chemical_formula || '-'}}</td>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                                        <td class="p-3 font-bold text-slate-700 dark:text-slate-200">{{item.name}}</td>
+                                        <td class="p-3 font-mono text-slate-500 dark:text-slate-400">{{item.id}}</td>
+                                        <td class="p-3 text-slate-600 dark:text-slate-300">{{item.cas_number || '-'}}</td>
+                                        <td class="p-3 font-serif text-slate-600 dark:text-slate-300">{{item.chemical_formula || '-'}}</td>
                                         <td class="p-3 text-indigo-500">{{item.aliases?.join(', ') || '-'}}</td>
-                                        <td class="p-3 text-center bg-slate-50/50">{{item.default_unit || '-'}}</td>
+                                        <td class="p-3 text-center bg-slate-50/50 dark:bg-slate-900/40 text-slate-700 dark:text-slate-200">{{item.default_unit || '-'}}</td>
                                     </tr>
                                 }
                             </tbody>
                         </table>
                     </div>
-
-                    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
-                        <button (click)="confirmImport()" [disabled]="isProcessing()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2">
-                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
-                            @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
-                        </button>
-                    </div>
                 </div>
-            </div>
+
+                <div modalFooter class="contents">
+                    <app-button variant="secondary" (click)="cancelImport()">Hủy</app-button>
+                    <app-button (click)="confirmImport()" [loading]="isProcessing()">
+                        @if(!isProcessing()) { <i class="fa-solid fa-check" aria-hidden="true"></i> } Xác nhận import
+                    </app-button>
+                </div>
+            </app-modal-shell>
         }
     </div>
   `

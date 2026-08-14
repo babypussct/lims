@@ -5,51 +5,47 @@
             }
         </datalist>
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-100 dark:border-teal-800/30 shadow-sm shrink-0">
-                    <i class="fa-solid fa-layer-group text-base"></i>
-                </div>
-                <div>
-                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight flex items-center gap-2">
-                        Lập mẻ phân tích tự động
-                        @if (step() >= 1) {
-                            @if (smartBatchMode() === 'multiple') {
-                                <span class="text-[10px] bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full font-bold border border-teal-200 dark:border-teal-800 shrink-0">
-                                    <i class="fa-solid fa-layer-group text-[9px] mr-1"></i>Ghép Nhiều Mẫu
-                                </span>
-                            } @else {
-                                <span class="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold border border-indigo-200 dark:border-indigo-800 shrink-0">
-                                    <i class="fa-solid fa-vial text-[9px] mr-1"></i>Một Mẫu Duy Nhất
-                                </span>
-                            }
-                        }
-                    </h2>
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tự động ghép SOP theo chỉ tiêu và tối ưu lượng hóa chất sử dụng.</p>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap justify-end gap-2">
+        <app-page-header
+            class="mb-4 block shrink-0 overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700"
+            title="Lập mẻ phân tích tự động"
+            subtitle="Tự động ghép SOP theo chỉ tiêu và tối ưu lượng hóa chất sử dụng."
+            icon="fa-layer-group">
+            <div pageHeaderActions class="flex flex-wrap items-center justify-end gap-2">
+                @if (step() >= 1) {
+                    @if (smartBatchMode() === 'multiple') {
+                        <span class="rounded-full border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-400">
+                            <i class="fa-solid fa-layer-group mr-1 text-[9px]"></i>Ghép nhiều mẫu
+                        </span>
+                    } @else {
+                        <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+                            <i class="fa-solid fa-vial mr-1 text-[9px]"></i>Một mẫu duy nhất
+                        </span>
+                    }
+                }
                 @if(auth.canViewSop()) {
-                    <button type="button"
-                            (click)="openSopCalculator()"
-                            class="px-4 py-2 border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-xl font-bold text-xs hover:bg-blue-100 dark:hover:bg-blue-900/35 transition active:scale-95"
-                            title="Mở SOP Calculator khi cần tính nhanh hoặc kiểm tra chi tiết">
-                        <i class="fa-solid fa-calculator mr-1"></i> Tính nhanh SOP
-                    </button>
+                    <app-button
+                        variant="secondary"
+                        size="sm"
+                        (click)="openSopCalculator()"
+                        title="Mở SOP Calculator khi cần tính nhanh hoặc kiểm tra chi tiết">
+                        <i class="fa-solid fa-calculator" aria-hidden="true"></i>
+                        Tính nhanh SOP
+                    </app-button>
                 }
                 @if(step() === 1) {
-                    <button (click)="goBackToStep0()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                        <i class="fa-solid fa-chevron-left mr-1"></i> Đổi Chế Độ
-                    </button>
+                    <app-button variant="secondary" size="sm" (click)="goBackToStep0()">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        Đổi chế độ
+                    </app-button>
                 }
                 @if(step() === 2) {
-                    <button (click)="goBackFromStep2()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                        <i class="fa-solid fa-rotate-left mr-1"></i> Quay Lại
-                    </button>
+                    <app-button variant="secondary" size="sm" (click)="goBackFromStep2()">
+                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                        Quay lại
+                    </app-button>
                 }
             </div>
-        </div>
+        </app-page-header>
 
         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar relative p-2 lg:p-1 flex flex-col">
             @if(step() === 0) {
@@ -125,14 +121,15 @@
                             }
                         </div>
                         <div class="smartbatch-action-dock__actions">
-                            <button type="button"
-                                    (click)="sampleGroupWizard.runOptimizer()"
-                                    [disabled]="!sampleGroupWizard.allGroupsCompleted()"
-                                    class="smartbatch-primary-action"
-                                    aria-label="Chạy SmartBatch optimizer">
-                                <span class="smartbatch-primary-action__icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-                                <span>Chạy SmartBatch optimizer</span>
-                            </button>
+                            <app-button
+                                class="w-full md:w-[280px]"
+                                variant="primary"
+                                [fullWidth]="true"
+                                (click)="sampleGroupWizard.runOptimizer()"
+                                [disabled]="!sampleGroupWizard.allGroupsCompleted()">
+                                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                                Chạy SmartBatch optimizer
+                            </app-button>
                         </div>
                     </div>
                 </div>
@@ -148,12 +145,16 @@
                 <!-- Left: Batches -->
                 <div class="flex-1 lg:w-2/3 flex flex-col gap-4 animate-fade-in">
 
-                    <div class="relative w-full shadow-sm shrink-0 sticky top-0 z-10">
-                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
-                        <input [ngModel]="sampleSearchTerm()" (ngModelChange)="sampleSearchTerm.set($event)"
-                               class="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition bg-white dark:bg-slate-800"
-                               placeholder="Tìm vị trí mẫu (VD: A05)...">
-                    </div>
+                    <app-toolbar class="block shrink-0 shadow-sm" [sticky]="true">
+                        <div toolbarSearch class="relative w-full">
+                            <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400 dark:text-slate-500" aria-hidden="true"></i>
+                            <input
+                                [ngModel]="sampleSearchTerm()"
+                                (ngModelChange)="sampleSearchTerm.set($event)"
+                                class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs font-bold text-slate-700 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/30"
+                                placeholder="Tìm vị trí mẫu (VD: A05)...">
+                        </div>
+                    </app-toolbar>
 
                     <div class="pb-10 flex flex-col gap-4">
                         @if (planValidationIssues().length > 0) {
@@ -634,24 +635,28 @@
                     <!-- Actions -->
                     <div class="smartbatch-action-dock__actions">
                         @if(!coverageMetrics().isFullyCovered) {
-                            <button (click)="fixCoverage()" class="flex-1 md:flex-none px-4 py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-1">
-                                <i class="fa-solid fa-layer-group"></i> Tự Sửa
-                            </button>
+                            <app-button
+                                class="w-full md:w-auto"
+                                variant="secondary"
+                                [fullWidth]="true"
+                                (click)="fixCoverage()">
+                                <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                                Tự sửa
+                            </app-button>
                         }
 
-                        <button (click)="executeAll()"
-                                [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || hasInvalidAnalysisDates() || hasInvalidPlanResources() || !coverageMetrics().isFullyCovered || coverageMetrics().duplicateCount > 0"
-                                class="smartbatch-primary-action"
-                                aria-label="Duyệt & Xếp Hàng In"
-                                [attr.aria-busy]="isProcessing()">
-                            @if(isProcessing()) {
-                                <span class="smartbatch-primary-action__icon"><i class="fa-solid fa-spinner fa-spin"></i></span>
-                                <span>Xử lý...</span>
-                            } @else {
-                                <span class="smartbatch-primary-action__icon"><i class="fa-solid fa-paper-plane"></i></span>
-                                <span>Duyệt & Xếp Hàng In</span>
+                        <app-button
+                            class="w-full md:w-[280px]"
+                            variant="primary"
+                            [fullWidth]="true"
+                            (click)="executeAll()"
+                            [loading]="isProcessing()"
+                            [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || hasInvalidAnalysisDates() || hasInvalidPlanResources() || !coverageMetrics().isFullyCovered || coverageMetrics().duplicateCount > 0">
+                            @if(!isProcessing()) {
+                                <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                             }
-                        </button>
+                            {{ isProcessing() ? 'Xử lý...' : 'Duyệt & xếp hàng in' }}
+                        </app-button>
                     </div>
                 </div>
             </div>
@@ -659,22 +664,12 @@
 
         <!-- Fix Coverage Modal -->
         @if (fixCoverageState().isOpen) {
-            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                                <i class="fa-solid fa-layer-group"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg">Kiểm Tra và Xử Lý Chỉ Tiêu Chưa Được Phân Bổ</h3>
-                                <p class="text-[11px] text-slate-500 font-medium">Tìm thấy {{fixCoverageState().group1.length + fixCoverageState().group2.length + fixCoverageState().group3.length}} chỉ tiêu không thể tự ghép mẻ.</p>
-                            </div>
-                        </div>
-                        <button (click)="closeFixCoverageModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times text-lg"></i></button>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+            <app-modal-shell
+                title="Kiểm tra và xử lý chỉ tiêu chưa được phân bổ"
+                [description]="'Tìm thấy ' + (fixCoverageState().group1.length + fixCoverageState().group2.length + fixCoverageState().group3.length) + ' chỉ tiêu không thể tự ghép mẻ.'"
+                size="md"
+                (closed)="closeFixCoverageModal()">
+                <div modalBody class="space-y-6">
                         <!-- Nhóm 1 -->
                         @if (fixCoverageState().group1.length > 0) {
                             <div class="border border-amber-200 dark:border-amber-900/50 rounded-xl overflow-hidden">
@@ -773,43 +768,51 @@
                                 </div>
                             </div>
                         }
-                    </div>
-
-                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-2 shrink-0">
-                        <button (click)="closeFixCoverageModal()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-                            Hủy
-                        </button>
-                        <button (click)="applyFixCoverage()" [disabled]="fixCoverageState().isProcessing" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2">
-                            @if(fixCoverageState().isProcessing) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
-                            @else { <i class="fa-solid fa-check"></i> Áp dụng & Chạy lại }
-                        </button>
-                    </div>
                 </div>
-            </div>
+
+                <div modalFooter class="flex flex-wrap justify-end gap-2">
+                    <app-button variant="secondary" (click)="closeFixCoverageModal()">Hủy</app-button>
+                    <app-button
+                        variant="primary"
+                        (click)="applyFixCoverage()"
+                        [loading]="fixCoverageState().isProcessing"
+                        [disabled]="fixCoverageState().isProcessing">
+                        @if(!fixCoverageState().isProcessing) {
+                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        }
+                        Áp dụng & chạy lại
+                    </app-button>
+                </div>
+            </app-modal-shell>
         }
 
-        <!-- Group Modal (Unchanged) -->
+        <!-- Group Modal -->
         @if (showGroupModal()) {
-            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
-                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg">Chọn Nhóm Chỉ Tiêu</h3>
-                        <button (click)="showGroupModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times text-lg"></i></button>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                        @if (availableGroups().length === 0) {
-                            <div class="p-8 text-center text-slate-400 dark:text-slate-500 italic text-sm"><i class="fa-solid fa-spinner fa-spin mb-2 text-xl"></i><br>Đang tải hoặc chưa có bộ chỉ tiêu nào.</div>
-                        } @else {
-                            @for(g of availableGroups(); track g.id) {
-                                <div (click)="importGroup(g)" class="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer transition group">
-                                    <div class="font-bold text-slate-700 dark:text-slate-300 text-sm group-hover:text-indigo-700 dark:group-hover:text-indigo-400">{{g.name}}</div>
-                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex justify-between"><span>{{g.targets.length}} chỉ tiêu</span></div>
-                                </div>
-                            }
+            <app-modal-shell
+                title="Chọn nhóm chỉ tiêu"
+                size="sm"
+                [showFooter]="false"
+                (closed)="showGroupModal.set(false)">
+                <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5">
+                    @if (availableGroups().length === 0) {
+                        <app-empty-state
+                            icon="fa-layer-group"
+                            title="Chưa có bộ chỉ tiêu"
+                            message="Đang tải dữ liệu hoặc chưa có bộ chỉ tiêu nào để chọn.">
+                        </app-empty-state>
+                    } @else {
+                        @for(g of availableGroups(); track g.id) {
+                            <button
+                                type="button"
+                                (click)="importGroup(g)"
+                                class="group block w-full border-b border-slate-100 p-4 text-left transition hover:bg-indigo-50 last:border-b-0 dark:border-slate-800 dark:hover:bg-indigo-900/20">
+                                <span class="block text-sm font-bold text-slate-700 group-hover:text-indigo-700 dark:text-slate-300 dark:group-hover:text-indigo-400">{{g.name}}</span>
+                                <span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">{{g.targets.length}} chỉ tiêu</span>
+                            </button>
                         }
-                    </div>
+                    }
                 </div>
-            </div>
+            </app-modal-shell>
         }
 
         <!-- REVERSE LOGIC SPLIT MODAL (3-STEP WIZARD) -->
@@ -826,19 +829,12 @@
 
         <!-- QUICK IMPORT MODAL -->
         @if (showQuickImport()) {
-            <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-bounce-in">
-                    <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-start">
-                        <div>
-                            <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-bolt text-yellow-500"></i> Nhập Kho Nhanh
-                            </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Bù hàng cho mẻ phân tích</p>
-                        </div>
-                        <button (click)="showQuickImport.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times"></i></button>
-                    </div>
-
-                    <div class="p-5 space-y-4">
+            <app-modal-shell
+                title="Nhập kho nhanh"
+                description="Bù hàng cho mẻ phân tích"
+                size="sm"
+                (closed)="showQuickImport.set(false)">
+                <div modalBody class="space-y-4">
                         <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                             <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hóa chất</div>
                             <div class="font-bold text-slate-800 dark:text-slate-200 text-sm break-words whitespace-normal">{{quickImportState().name}}</div>
@@ -851,21 +847,28 @@
                         <div>
                             <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Số lượng thực nhập</label>
                             <div class="relative">
-                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-lg font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition bg-white dark:bg-slate-900" placeholder="0">
+                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-lg font-bold text-emerald-600 dark:text-emerald-400 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition bg-white dark:bg-slate-900" placeholder="0">
                                 <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400 dark:text-slate-500">{{quickImportState().unit}}</span>
                             </div>
                             <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">* Nhập trực tiếp theo đơn vị gốc ({{quickImportState().unit}})</p>
                         </div>
-                    </div>
-
-                    <div class="p-5 border-t border-slate-100 dark:border-slate-700 flex gap-3">
-                        <button (click)="showQuickImport.set(false)" class="flex-1 py-3 text-slate-500 dark:text-slate-400 font-bold text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">Hủy</button>
-                        <button (click)="submitQuickImport()" [disabled]="quickImportInput <= 0 || isProcessing()" class="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
-                            Xác Nhận Nhập
-                        </button>
-                    </div>
                 </div>
-            </div>
+
+                <div modalFooter class="flex w-full gap-3">
+                    <app-button class="flex-1" variant="secondary" [fullWidth]="true" (click)="showQuickImport.set(false)">
+                        Hủy
+                    </app-button>
+                    <app-button
+                        class="flex-[2]"
+                        variant="primary"
+                        [fullWidth]="true"
+                        (click)="submitQuickImport()"
+                        [loading]="isProcessing()"
+                        [disabled]="quickImportInput <= 0 || isProcessing()">
+                        Xác nhận nhập
+                    </app-button>
+                </div>
+            </app-modal-shell>
         }
 
         <!-- QUICK GENERATE MODAL -->

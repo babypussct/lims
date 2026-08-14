@@ -2,37 +2,32 @@ import { Component, ElementRef, HostListener, inject, input, output, signal } fr
 import { CommonModule } from '@angular/common';
 import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 import { StateService } from '../../../core/services/state.service';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-standards-toolbar',
   standalone: true,
-  imports: [CommonModule, LockPermissionDirective],
+  imports: [CommonModule, LockPermissionDirective, AppButtonComponent, AppPageHeaderComponent],
   template: `
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none mb-4">
-      <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
-              <i class="fa-solid fa-vial-circle-check text-base"></i>
-          </div>
-          <div>
-              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản Lý Chất Chuẩn Đối Chiếu</h2>
-              <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản lý danh sách chất chuẩn, in tem và cập nhật thông tin lô sản xuất.</p>
-          </div>
-      </div>
-      
-      <div class="flex flex-wrap gap-2 items-center justify-end">
+    <app-page-header
+      title="Quản lý chất chuẩn đối chiếu"
+      subtitle="Quản lý danh sách chất chuẩn, in tem và cập nhật thông tin lô sản xuất."
+      icon="fa-vial-circle-check">
+      <div pageHeaderActions class="contents">
          @if(selectedCount() > 0) {
-              <button (click)="printSelected.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
+              <app-button class="animate-bounce-in" size="sm" (click)="printSelected.emit()" [disabled]="isProcessing()">
                   <i class="fa-solid fa-print"></i> In {{selectedCount()}} nhãn
-              </button>
+              </app-button>
               @if (canEditStandards() || state.showLockedFeatures()) {
-                  <button [appLockPermission]="'standard_edit'" (click)="openBulkTagModal.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 rounded-lg shadow-sm shadow-fuchsia-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
-                      <i class="fa-solid fa-tags"></i> Gán nhãn
-                  </button>
+                  <app-button class="animate-bounce-in" variant="secondary" size="sm" [appLockPermission]="'standard_edit'" (click)="openBulkTagModal.emit()" [disabled]="isProcessing()">
+                      <i class="fa-solid fa-tags text-fuchsia-500"></i> Gán nhãn
+                  </app-button>
               }
               @if (canEditStandards() || state.showLockedFeatures()) {
-                  <button [appLockPermission]="'standard_edit'" (click)="deleteSelected.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg shadow-sm shadow-red-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
-                      @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-eye-slash"></i> } Ẩn {{selectedCount()}} mục
-                  </button>
+                  <app-button class="animate-bounce-in" variant="danger" size="sm" [appLockPermission]="'standard_edit'" (click)="deleteSelected.emit()" [loading]="isProcessing()">
+                      <i class="fa-solid fa-eye-slash"></i> Ẩn {{selectedCount()}} mục
+                  </app-button>
               }
               <div class="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
          }
@@ -46,26 +41,26 @@ import { StateService } from '../../../core/services/state.service';
                     aria-controls="standards-function-menu"
                     [attr.aria-expanded]="functionMenuOpen()"
                     (click)="toggleFunctionMenu($event)"
-                    class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
-                    <i class="fa-solid fa-bars"></i> Chức Năng <i class="fa-solid fa-caret-down"></i>
+                    class="h-9 px-3 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-xl shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-bars"></i> Chức năng <i class="fa-solid fa-caret-down"></i>
                 </button>
                 @if (functionMenuOpen()) {
                   <div id="standards-function-menu" role="menu" class="absolute right-0 top-full mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 z-30 overflow-hidden flex flex-col p-1 animate-slide-up">
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openAddModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-plus text-indigo-500 w-4"></i> Thêm Mới
+                        <i class="fa-solid fa-plus text-indigo-500 w-4"></i> Thêm mới
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openInternalIdSync)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-arrows-rotate text-amber-500 w-4"></i> Đồng bộ Mã nội bộ
+                        <i class="fa-solid fa-arrows-rotate text-amber-500 w-4"></i> Đồng bộ mã nội bộ
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(fileInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Import Chuẩn
+                        <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Import chuẩn
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(usageLogFileInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import Nhật Ký
+                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import nhật ký
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openCleanupModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn Hóa Tên Chất Chuẩn
+                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn hóa tên chất chuẩn
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openTagManager)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-tags text-fuchsia-500 w-4"></i> Quản lý danh mục nhãn
@@ -73,10 +68,10 @@ import { StateService } from '../../../core/services/state.service';
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tải nhiều CoA lên</div>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(bulkCoaFolderInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-folder-open text-amber-500 w-4 ml-2"></i> Từ Thư Mục
+                        <i class="fa-solid fa-folder-open text-amber-500 w-4 ml-2"></i> Từ thư mục
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(bulkCoaFilesInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-regular fa-images text-blue-500 w-4 ml-2"></i> Chọn Tệp
+                        <i class="fa-regular fa-images text-blue-500 w-4 ml-2"></i> Chọn tệp
                     </button>
                   </div>
                 }
@@ -87,12 +82,11 @@ import { StateService } from '../../../core/services/state.service';
             </div>
          }
          <!-- Xuất Excel — hiển thị cho tất cả user, không cần phân quyền -->
-         <button (click)="openExportModal.emit()" title="Xuất danh sách đang lọc ra tệp Excel"
-             class="px-3 py-1.5 bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg shadow-sm shadow-emerald-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
-             <i class="fa-solid fa-file-excel"></i> Xuất Excel
-         </button>
+         <app-button variant="secondary" size="sm" (click)="openExportModal.emit()" title="Xuất danh sách đang lọc ra tệp Excel">
+             <i class="fa-solid fa-file-excel text-emerald-500"></i> Xuất Excel
+         </app-button>
       </div>
-    </div>
+    </app-page-header>
   `
 })
 export class StandardsToolbarComponent {

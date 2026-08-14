@@ -39,6 +39,8 @@ import { ChangelogService } from './core/services/changelog.service';
 import { ReleaseService } from './core/services/release.service';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
+import { environment } from '../environments/environment';
+import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-recovery';
 
 @Component({
   selector: 'app-root',
@@ -346,7 +348,10 @@ export class AppComponent implements OnDestroy {
   showNavigationSkeleton = signal(false);
   isPublicRoute = computed(() => {
     const url = this.currentUrl();
-    return url.startsWith('/privacy-policy') || url.startsWith('/terms-of-service') || url.startsWith('/changelog');
+    return url.startsWith('/privacy-policy')
+      || url.startsWith('/terms-of-service')
+      || url.startsWith('/changelog')
+      || (!environment.production && url.startsWith('/__ui-primitives'));
   });
   year = new Date().getFullYear();
   private _navigationFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
@@ -460,7 +465,33 @@ export class AppComponent implements OnDestroy {
       // Xử lý trạng thái không thể phục hồi (cache corrupt, hash mismatch nghiêm trọng)
       this.swUpdate.unrecoverable.subscribe(event => {
         console.error('[LIMS SW] 💀 UNRECOVERABLE STATE:', event.reason);
-        this.toast.show('⚠️ Ứng dụng gặp lỗi nghiêm trọng. Đang tải lại...', 'error');
+
+        try {
+          const canAutoReload = claimServiceWorkerRecoveryReload(
+            sessionStorage,
+            this.state.systemVersion()
+          );
+
+          if (!canAutoReload) {
+            console.error('[LIMS SW] 🛑 Đã chặn auto-reload lặp lại cho phiên bản hiện tại.');
+            this.toast.show(
+              '⚠️ Ứng dụng vẫn gặp lỗi bộ nhớ đệm sau lần tải lại tự động. Đã dừng tự tải lại để tránh vòng lặp; hãy đóng tab và mở lại ứng dụng.',
+              'error'
+            );
+            return;
+          }
+        } catch (storageError) {
+          // Nếu không ghi được sessionStorage thì không có cách chứng minh reload kế tiếp
+          // sẽ được chặn. Ưu tiên dừng auto-reload để tránh mắc kẹt trong vòng lặp.
+          console.warn('[LIMS SW] Không thể lưu recovery guard; chặn auto-reload:', storageError);
+          this.toast.show(
+            '⚠️ Ứng dụng gặp lỗi bộ nhớ đệm. Đã dừng tự tải lại để tránh vòng lặp; hãy đóng tab và mở lại ứng dụng.',
+            'error'
+          );
+          return;
+        }
+
+        this.toast.show('⚠️ Ứng dụng gặp lỗi bộ nhớ đệm. Đang tải lại một lần để phục hồi...', 'error');
         setTimeout(() => window.location.reload(), 2000);
       });
 

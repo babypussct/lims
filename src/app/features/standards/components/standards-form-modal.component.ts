@@ -29,7 +29,7 @@ import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_P
                         <i class="fa-solid fa-flask-vial text-indigo-600 dark:text-indigo-400"></i>
                         {{ std() ? 'Cập nhật chất chuẩn' : 'Thêm chất chuẩn mới' }}
                     </h3>
-                    <button (click)="onClose()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="onClose()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-xmark"></i></button>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">

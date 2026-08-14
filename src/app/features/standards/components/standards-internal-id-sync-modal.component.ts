@@ -39,7 +39,7 @@ type SyncFilter = 'all' | 'manual' | 'safe' | 'duplicate' | 'registry' | 'refere
               </div>
             </div>
             <button type="button" (click)="close.emit()" [disabled]="isBusy()" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 disabled:opacity-40" aria-label="Đóng">
-              <i class="fa-solid fa-times"></i>
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </header>
 
@@ -208,12 +208,12 @@ export class StandardsInternalIdSyncModalComponent {
   activeFilter = signal<SyncFilter>('all');
   searchQuery = signal('');
 
-  readonly filterOptions: ReadonlyArray<{
+  readonly filterOptions: readonly {
     key: SyncFilter;
     label: string;
     icon: string;
     description: string;
-  }> = [
+  }[] = [
     { key: 'all', label: 'Tất cả', icon: 'fa-solid fa-layer-group', description: 'Hiển thị mọi nhóm cần xem xét.' },
     { key: 'manual', label: 'Cần nhập mã', icon: 'fa-solid fa-pen-to-square', description: 'Hồ sơ vật lý thiếu hoặc sai định dạng mã.' },
     { key: 'safe', label: 'Thay đổi an toàn', icon: 'fa-solid fa-circle-check', description: 'Các thay đổi deterministic có thể ghi trong batch.' },

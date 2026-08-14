@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import {
   doc,
   getDoc,
+  increment,
   runTransaction,
   collection,
   query,
@@ -12,6 +13,7 @@ import {
   orderBy,
   limit,
   startAfter,
+  setDoc,
   writeBatch
 } from 'firebase/firestore';
 import { timestampToDate } from '../../shared/utils/timestamp';
@@ -45,7 +47,8 @@ export class StatsService {
 
   /**
    * Cập nhật (tăng/giảm) chỉ số vào document thống kê của tháng.
-   * Sử dụng runTransaction để đảm bảo tính nhất quán (Atomicity) khi có nhiều người duyệt cùng lúc.
+   * Đường tăng dùng server-side increment để các writer cùng tháng không tranh chấp
+   * version precondition. Đường giảm vẫn dùng transaction vì cần clamp về 0.
    */
   async incrementStats(
     date: Date,
@@ -64,6 +67,25 @@ export class StatsService {
     const sDelta = samples * multiplier;
     const bDelta = batches * multiplier;
     const qDelta = qcs * multiplier;
+
+    if (!isDecrement) {
+      const sopKey = sopName || sopId || 'Unknown';
+      await setDoc(docRef, {
+        [dayKey]: {
+          totalSamples: increment(sDelta),
+          totalBatches: increment(bDelta),
+          totalQcs: increment(qDelta),
+          sops: {
+            [sopKey]: {
+              samples: increment(sDelta),
+              batches: increment(bDelta),
+              qcs: increment(qDelta)
+            }
+          }
+        }
+      }, { merge: true });
+      return;
+    }
 
     try {
       await runTransaction(this.fb.db, async (transaction) => {
@@ -102,6 +124,7 @@ export class StatsService {
       });
     } catch (e) {
       console.error('Failed to update stats: ', e);
+      throw e;
     }
   }
 

@@ -17,7 +17,7 @@ import { AuthService } from '../../../core/services/auth.service';
             <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up border border-amber-100 dark:border-amber-900/40">
                <div class="px-6 py-4 border-b border-amber-100 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 flex justify-between items-center">
                    <h3 class="font-black text-amber-800 dark:text-amber-500 text-lg flex items-center gap-2"><i class="fa-solid fa-cart-plus"></i> Đề Nghị Mua Sắm</h3>
-                   <button (click)="onClose()" class="text-slate-400 hover:text-red-500 rounded-full w-8 h-8 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition"><i class="fa-solid fa-times"></i></button>
+                   <button (click)="onClose()" class="text-slate-400 hover:text-red-500 rounded-full w-8 h-8 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition"><i class="fa-solid fa-xmark"></i></button>
                </div>
                <form [formGroup]="purchaseForm" (ngSubmit)="submitPurchaseRequest()" class="p-6 flex flex-col gap-4">
                    <div class="text-sm border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-r text-amber-800 dark:text-amber-200">

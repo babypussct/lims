@@ -12,7 +12,7 @@ Mục tiêu: Step 2 là một workspace duy nhất để khai báo nhiều nhóm
   1. **Thông tin mẫu:** mã số mẫu, nền mẫu mặc định `Bất kỳ (không lọc SOP)` và bảng mô tả từng mẫu hiển thị đồng thời.
   2. **Chỉ tiêu & SOP:** chọn từng chỉ tiêu hoặc Nhóm Chỉ Tiêu, xem tối đa 5 SOP gợi ý; click trực tiếp vào thẻ SOP đủ điều kiện để chỉ định và dùng một vùng `SOP hiện tại` duy nhất cho lựa chọn tự phân phối/SOP thủ công.
 - Khung Step 2 dùng toàn bộ vùng làm việc còn lại theo viewport; danh sách nhóm và nội dung wizard dùng vùng cuộn nội bộ. `Chạy SmartBatch optimizer` và `Duyệt & Xếp Hàng In` cùng nằm trong action dock sticky của SmartBatch, không phụ thuộc footer nội bộ của wizard.
-- `Chạy SmartBatch optimizer` và `Duyệt & Xếp Hàng In` dùng chung style `smartbatch-primary-action`: cùng kích thước, màu, icon container, shadow, hover/active/focus, disabled và hành vi full-width trên mobile.
+- `Chạy SmartBatch optimizer` và `Duyệt & xếp hàng in` dùng chung `app-button` variant `primary`; host giữ cùng chiều rộng responsive trong action dock, còn primitive dùng chung sở hữu hover/focus/disabled/loading và spinner.
 - Một nhóm đại diện cho **cùng một bộ chỉ tiêu**. Người dùng không chọn chỉ tiêu khác nhau cho từng mẫu trong cùng nhóm.
 - SmartBatch vẫn được tự do gom hoặc tách thành các batch vật lý theo SOP, nền mẫu, tồn kho và các ràng buộc của optimizer.
 - SOP chỉ định phải tương thích nền mẫu và phủ đủ toàn bộ chỉ tiêu của nhóm; SOP chỉ phủ một phần bị chặn.

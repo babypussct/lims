@@ -12,6 +12,7 @@ import { QrGlobalService } from '../../core/services/qr-global.service'; // Impo
 import { formatNum, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
+import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent } from '../../shared/components/ui';
 import {
   filterDashboardActivityLogs,
   isSopActivityAction,
@@ -40,7 +41,16 @@ import { ChangelogService } from '../../core/services/changelog.service';
   selector: 'app-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, SkeletonComponent, FormsModule, DateRangeFilterComponent, DailyChecklistComponent], 
+  imports: [
+    CommonModule,
+    SkeletonComponent,
+    FormsModule,
+    DateRangeFilterComponent,
+    DailyChecklistComponent,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppPageHeaderComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styles: []
 })

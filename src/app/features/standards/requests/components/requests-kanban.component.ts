@@ -242,7 +242,7 @@ import { formatNum } from '../../../../shared/utils/utils';
         <div class="flex items-center justify-end gap-1 mt-1 pt-2 border-t border-slate-100 dark:border-slate-800/50">
           @if(req.status === 'PENDING_APPROVAL' && canApproveRequest(req)) {
               <button (click)="actionApprove.emit(req)" class="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition shadow-sm active:scale-95" title="Duyệt & Giao"><i class="fa-solid fa-check text-xs"></i></button>
-              <button (click)="actionReject.emit(req)" class="p-1.5 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200 transition active:scale-95" title="Từ chối"><i class="fa-solid fa-times text-xs"></i></button>
+              <button (click)="actionReject.emit(req)" class="p-1.5 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200 transition active:scale-95" title="Từ chối"><i class="fa-solid fa-xmark text-xs"></i></button>
           }
           @if(req.status === 'IN_PROGRESS') {
               @if(isCurrentUser(req.requestedBy)) {

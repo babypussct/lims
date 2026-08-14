@@ -28,7 +28,7 @@ import { timestampToDate } from '../../utils/timestamp';
                             <span class="text-xs font-bold w-10 text-center">{{zoomLevel()}}%</span>
                             <button (click)="zoomIn()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-white transition text-slate-600"><i class="fa-solid fa-plus"></i></button>
                         </div>
-                        <button (click)="close()" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times text-xl"></i></button>
+                        <button (click)="close()" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                     </div>
                 </div>
 

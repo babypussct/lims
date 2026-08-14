@@ -14,7 +14,7 @@ import { StandardTagOption } from '../../../core/models/standard.model';
         <div class="w-full max-w-lg rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
           <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div><h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Gán nhãn hàng loạt</h3><p class="text-xs text-slate-500 mt-1">{{selectedCount()}} lọ được chọn · ADD là mặc định an toàn</p></div>
-            <button (click)="cancel.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><i class="fa-solid fa-times"></i></button>
+            <button (click)="cancel.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="p-6 space-y-5">
             <div>

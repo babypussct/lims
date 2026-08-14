@@ -25,7 +25,7 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                </div>
                @if(!isUploading) {
                  <button (click)="cancel.emit()" class="w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 transition">
-                    <i class="fa-solid fa-times text-lg"></i>
+                    <i class="fa-solid fa-xmark text-lg"></i>
                  </button>
                }
             </div>

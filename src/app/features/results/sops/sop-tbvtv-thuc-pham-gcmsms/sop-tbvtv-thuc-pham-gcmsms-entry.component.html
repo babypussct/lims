@@ -13,7 +13,7 @@
         (click)="setPrintFormMode('formDayDu')"
               [class]="draft.page1Data['printFormType'] !== 'formRutGon'
                 ? 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95'
-                : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
+                : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
         BIỂU MẪU ĐẦY ĐỦ
         <span class="hidden sm:inline font-extrabold opacity-80">(KIỂM TRA TẤT CẢ CHỈ TIÊU)</span>
       </button>
@@ -21,7 +21,7 @@
         (click)="setPrintFormMode('formRutGon')"
               [class]="draft.page1Data['printFormType'] === 'formRutGon'
                 ? 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95'
-                : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
+                : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
         BIỂU MẪU RÚT GỌN
         <span class="hidden sm:inline font-extrabold opacity-80">(DẠNG BẢNG)</span>
       </button>
@@ -210,7 +210,7 @@
                       class="ml-1.5 w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 cursor-pointer">
                     <button (click)="selectSample(sampleCode)"
                     [class]="activeSampleCode() === sampleCode 
-                      ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-655 transition shrink-0 active:scale-95' 
+                      ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-650 transition shrink-0 active:scale-95'
                       : 'bg-transparent text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border-0 transition shrink-0 active:scale-95'"
                       class="px-3 py-2 rounded-lg text-xs flex items-center gap-2"
                       [class.opacity-50]="draft.resultData[sampleCode]['selected'] === false">
@@ -236,7 +236,7 @@
                     disabled
                     class="w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 disabled:opacity-70 disabled:cursor-not-allowed">
                   <div class="flex flex-col">
-                    <span class="text-xs font-black text-violet-750 dark:text-violet-400 tracking-wide">Gộp in chung các mẫu</span>
+                    <span class="text-xs font-black text-violet-700 dark:text-violet-400 tracking-wide">Gộp in chung các mẫu</span>
                     <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Tự động ({{ (getSelectedSampleCount() > 1) ? 'Bật vì chọn > 1 mẫu' : 'Tắt vì chọn 1 mẫu' }})</span>
                   </div>
                 </label>
@@ -458,7 +458,7 @@
                                         (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
                                         (focus)="$any($event.target).select()"
                                         placeholder="..."
-                                        class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner disabled:bg-slate-105 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed">
+                                        class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed">
                                       </td>
                                     }
                                     <!-- Quick Row actions / Badges -->
@@ -469,7 +469,7 @@
                                         </span>
                                       } @else {
                                         <button (click)="copyRowToAll(row.key)"
-                                          class="p-1.5 bg-slate-50 hover:bg-fuchsia-600 dark:bg-slate-855 dark:hover:bg-fuchsia-600 text-slate-500 hover:text-white dark:text-slate-400 rounded-lg text-[10px] font-bold transition border border-slate-200 dark:border-slate-800 active:scale-90"
+                                          class="p-1.5 bg-slate-50 hover:bg-fuchsia-600 dark:bg-slate-850 dark:hover:bg-fuchsia-600 text-slate-500 hover:text-white dark:text-slate-400 rounded-lg text-[10px] font-bold transition border border-slate-200 dark:border-slate-800 active:scale-90"
                                           title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
                                         <i class="fa-solid fa-copy"></i>
                                       </button>

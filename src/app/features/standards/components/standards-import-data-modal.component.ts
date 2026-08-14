@@ -43,7 +43,7 @@ import { ImportPreviewItem } from '../../../core/models/standard.model';
               [disabled]="isImporting() || isParsing()"
               (click)="onCancel()"
               class="w-9 h-9 shrink-0 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-red-500 transition disabled:opacity-50">
-              <i class="fa-solid fa-times"></i>
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </header>
 

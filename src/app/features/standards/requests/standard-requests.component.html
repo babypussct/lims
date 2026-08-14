@@ -1,70 +1,62 @@
 <div class="requests-page flex flex-col space-y-4 h-full relative p-1 pb-6 overflow-visible">
       <!-- Header Area -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
-                <i class="fa-solid fa-clipboard-list text-base"></i>
-            </div>
-            <div>
-                <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản Lý Yêu Cầu Chất Chuẩn</h2>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Theo dõi, cấp phát và thu hồi chuẩn đối chiếu.</p>
-            </div>
-        </div>
-        
-        <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
-             <button (click)="openExportModal()" class="group px-4 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
-                <i class="fa-solid fa-file-excel text-sm group-hover:scale-110 transition-transform"></i> Xuất Excel
-             </button>
+      <app-page-header
+        title="Quản lý yêu cầu chất chuẩn"
+        subtitle="Theo dõi, cấp phát và thu hồi chuẩn đối chiếu."
+        icon="fa-clipboard-list">
+        <div pageHeaderActions class="contents">
+             <app-button variant="secondary" size="sm" (click)="openExportModal()">
+                <i class="fa-solid fa-file-excel text-emerald-500"></i> Xuất Excel
+             </app-button>
              @if(canOperateStandards()) {
-                 <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
-                     <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu Mua sắm
-                     @if (pendingPurchaseRequestsCount() > 0) {
-                        <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
-                     }
-                 </button>
+                  <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
+                      <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu mua sắm
+                      @if (pendingPurchaseRequestsCount() > 0) {
+                         <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
+                      }
+                  </button>
              }
-             <button [appLockPermission]="'standard_request'" (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
-                <i class="fa-solid fa-plus-circle text-base group-hover:rotate-90 transition-transform"></i> Tạo Yêu Cầu Mới
-             </button>
-        </div>
-      </div>
+             <app-button size="sm" [appLockPermission]="'standard_request'" (click)="openRequestModal()">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo yêu cầu mới
+             </app-button>
+         </div>
+      </app-page-header>
 
       <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-0">
           
           <!-- Modern Tab Filters & Search -->
-          <div class="p-4 border-b border-slate-50 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md sticky top-0 z-40">
-              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <app-toolbar [sticky]="true">
                   <!-- Segmented Tabs -->
-                  <div class="flex items-center gap-1 p-1 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
+                  <div toolbarSearch class="flex items-center gap-1 p-1 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
                       <button (click)="statusFilter.set('ALL')" 
                               [class]="statusFilter() === 'ALL' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
-                          Tất Cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().ALL}}</span>
+                          Tất cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().ALL}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_APPROVAL')" 
                               [class]="statusFilter() === 'PENDING_APPROVAL' ? 'bg-white dark:bg-slate-800 shadow-sm text-amber-600 dark:text-amber-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
-                          Chờ Duyệt <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-xs opacity-70 text-amber-600">{{statusCounts().PENDING_APPROVAL}}</span>
+                          Chờ duyệt <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-xs opacity-70 text-amber-600">{{statusCounts().PENDING_APPROVAL}}</span>
                       </button>
                       <button (click)="statusFilter.set('IN_PROGRESS')" 
                               [class]="statusFilter() === 'IN_PROGRESS' ? 'bg-white dark:bg-slate-800 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
-                          Đang Dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-xs opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
+                          Đang dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-xs opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_RETURN')" 
                               [class]="statusFilter() === 'PENDING_RETURN' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
-                          Chờ Trả <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-xs opacity-70 text-indigo-600">{{statusCounts().PENDING_RETURN}}</span>
+                          Chờ trả <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-xs opacity-70 text-indigo-600">{{statusCounts().PENDING_RETURN}}</span>
                       </button>
                       <button (click)="statusFilter.set('COMPLETED')" 
                               [class]="statusFilter() === 'COMPLETED' ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
-                          Hoàn Thành <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().COMPLETED}}</span>
+                          Hoàn thành <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().COMPLETED}}</span>
                       </button>
                   </div>
 
                    <!-- Search & View Toggle -->
-                   <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
+                   <div toolbarActions class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
                         <div class="flex items-center justify-between gap-2 min-w-0">
                             <div class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/40 text-xs font-black text-indigo-700 dark:text-indigo-300 whitespace-nowrap" data-testid="request-count" aria-live="polite">
                                 <i class="fa-solid fa-list-check text-[10px]"></i>
@@ -78,10 +70,10 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <div class="flex items-center bg-slate-100/50 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-100 dark:border-slate-800">
-                            <button (click)="viewMode.set('kanban')" [class]="viewMode() === 'kanban' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện Thẻ (Kanban)" aria-label="Giao diện Thẻ (Kanban)">
+                            <button (click)="viewMode.set('kanban')" [class]="viewMode() === 'kanban' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện thẻ (Kanban)" aria-label="Giao diện thẻ (Kanban)">
                                 <i class="fa-solid fa-columns"></i>
                             </button>
-                            <button (click)="viewMode.set('table')" [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện Bảng (Table)" aria-label="Giao diện Bảng (Table)">
+                            <button (click)="viewMode.set('table')" [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện bảng (Table)" aria-label="Giao diện bảng (Table)">
                                 <i class="fa-solid fa-list"></i>
                             </button>
                             </div>
@@ -93,8 +85,7 @@
                             </div>
                         </div>
                    </div>
-              </div>
-          </div>
+          </app-toolbar>
 
           <!-- Content Area based on View Mode -->
           @if(viewMode() === 'kanban') {
@@ -184,7 +175,7 @@
                          </div>
                           <span id="admin-purchase-requests-title">Duyệt Yêu Cầu Mua Bổ Sung Chất Chuẩn</span>
                      </h3>
-                     <button (click)="closeAdminPurchaseRequests()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                     <button (click)="closeAdminPurchaseRequests()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-xmark"></i></button>
                  </div>
                  <div class="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-slate-900">
                      @if(loadingAdminRequests()) {

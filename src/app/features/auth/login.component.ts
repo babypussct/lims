@@ -130,7 +130,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                         <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
                                     }
                                 </div>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
+                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
                             </label>
 
                             <!-- Checkbox 2: Shared Device -->
@@ -144,7 +144,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                         <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
                                     }
                                 </div>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
+                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
                             </label>
 
                             <!-- Tooltip Help Info -->
@@ -247,7 +247,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                         <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
                                         <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
                                     </span>
-                                    <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
+                                    <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
                                 </label>
 
                                 <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
@@ -258,7 +258,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                         <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
                                         <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
                                     </span>
-                                    <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
+                                    <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
                                 </label>
 
                                 <!-- Tooltip Help Info -->
@@ -320,7 +320,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                 <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in z-30">
                                     <div class="w-16 h-16 bg-green-50 dark:bg-green-950/50 text-green-500 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner"><i class="fa-solid fa-check"></i></div>
                                     <span class="font-bold text-green-700 dark:text-green-400 text-lg">Thành công!</span>
-                                    <span class="text-[13px] text-green-600/80 dark:text-green-550/80 font-medium mt-1">Đang chuyển hướng...</span>
+                                    <span class="text-[13px] text-green-600/80 dark:text-green-400/80 font-medium mt-1">Đang chuyển hướng...</span>
                                 </div>
                             }
                             @if (qrStatus() === 'expired') {
@@ -350,7 +350,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                     <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
                                     <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
                                 </span>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
+                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
                             </label>
 
                             <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
@@ -361,7 +361,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                     <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
                                     <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
                                 </span>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
+                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
                             </label>
 
                             <!-- Tooltip Help Info -->

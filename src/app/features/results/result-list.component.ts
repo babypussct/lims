@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
+import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 
 import { ReportHubModalComponent } from './components/report-hub-modal.component';
 import { MergeRunsModalComponent } from './components/merge-runs-modal.component';
@@ -22,7 +23,18 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 @Component({
   selector: 'app-result-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, SkeletonComponent, DateRangeFilterComponent, ReportHubModalComponent, MergeRunsModalComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SkeletonComponent,
+    DateRangeFilterComponent,
+    ReportHubModalComponent,
+    MergeRunsModalComponent,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppPageHeaderComponent,
+    AppToolbarComponent,
+  ],
   template: `
     <div class="h-full flex flex-col fade-in relative bg-slate-50/30 dark:bg-slate-950/10 p-2 md:p-4">
 
@@ -30,20 +42,13 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
            HEADER: Title + Status Tabs
       ══════════════════════════════════════════════════════ -->
       <div class="shrink-0 pb-0">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
-          <!-- Page Title -->
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-800/30 shadow-sm shrink-0">
-              <i class="fa-solid fa-square-poll-vertical text-base"></i>
-            </div>
-            <div>
-              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Tra Cứu và Quản Lý Kết Quả Mẻ Chạy</h2>
-              <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.</p>
-            </div>
-          </div>
-
+        <app-page-header
+          class="mb-4 block overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm dark:border-slate-800"
+          title="Tra cứu và quản lý kết quả mẻ chạy"
+          subtitle="Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động."
+          icon="fa-square-poll-vertical">
           <!-- Status Filter Tabs -->
-          <div class="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-2xl shadow-inner shrink-0 overflow-x-auto max-w-full scrollbar-none self-stretch sm:self-start lg:self-auto">
+          <div pageHeaderActions class="flex max-w-full shrink-0 items-center self-stretch overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-inner scrollbar-none dark:border-slate-800 dark:bg-slate-950 sm:self-start">
             <button (click)="setStatusFilter('all')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'all'
@@ -85,7 +90,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               }
             </button>
           </div>
-        </div>
+        </app-page-header>
 
         <!-- ══════════════════════════════════════════════════════
              KPI STRIP: 3 số liệu gọn + SOP distribution
@@ -102,7 +107,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ allApprovedRuns().length }}</div>
-              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ Hoạt Động</div>
+              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ hoạt động</div>
             </div>
           </button>
 
@@ -117,7 +122,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black leading-none tabular-nums" [class.text-amber-500]="pendingCount() > 0" [class.text-slate-800]="pendingCount() === 0" [class.dark:text-slate-100]="pendingCount() === 0">{{ pendingCount() }}</div>
-              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ Nhập</div>
+              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập</div>
             </div>
           </button>
 
@@ -133,7 +138,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <div class="text-left flex-1">
               <div class="flex items-baseline gap-1.5">
                 <span class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ averageCompletion() }}%</span>
-                <span class="text-[9px] font-bold text-emerald-500">Hoàn Thành</span>
+                <span class="text-[9px] font-bold text-emerald-500">Hoàn thành</span>
               </div>
               <div class="w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden">
                 <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
@@ -143,7 +148,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
           <!-- SOP Distribution chips -->
           <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm min-w-[200px]">
-            <div class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Phân bổ Phương Pháp SOP</div>
+            <div class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Phân bổ phương pháp SOP</div>
             <div class="flex items-center gap-1.5 flex-wrap">
               @for (item of sopDistribution(); track item.id) {
                 <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-150 hover:scale-105 active:scale-95 {{ item.textClass }} {{ item.bgClass }}"
@@ -164,9 +169,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
         ══════════════════════════════════════════════════════ -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm mb-5 overflow-hidden">
           <!-- Row 1: Search + Actions -->
-          <div class="flex items-center gap-2 p-3 border-b border-slate-100 dark:border-slate-800/80">
+          <app-toolbar class="block">
             <!-- Search -->
-            <div class="relative flex-1">
+            <div toolbarSearch class="relative">
               <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
                 <i class="fa-solid fa-magnifying-glass text-xs"></i>
               </span>
@@ -182,52 +187,52 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               }
             </div>
 
-            <!-- Divider -->
-            <div class="w-px h-6 bg-slate-200 dark:bg-slate-800 shrink-0"></div>
+            <div toolbarFilters class="flex flex-wrap items-center gap-2">
+              <!-- View Mode Toggle -->
+              <div class="flex bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl shrink-0">
+                <button (click)="viewMode.set('grid')"
+                        [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
+                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
+                  <i class="fa-solid fa-table-cells"></i> Lưới
+                </button>
+                <button (click)="viewMode.set('table')"
+                        [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
+                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
+                  <i class="fa-solid fa-list"></i> Bảng
+                </button>
+              </div>
 
-            <!-- View Mode Toggle -->
-            <div class="flex bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl shrink-0">
-              <button (click)="viewMode.set('grid')"
-                      [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
-                      class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
-                <i class="fa-solid fa-table-cells"></i> Lưới
+              <!-- Merge Mode Toggle -->
+              <button (click)="toggleMergeMode()"
+                      [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                      class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900">
+                <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()"></i>
+                Gộp mẻ
+                @if (isMergeModeActive() && selectedRunsCount() > 0) {
+                  <span class="w-4 h-4 bg-fuchsia-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">{{ selectedRunsCount() }}</span>
+                }
               </button>
-              <button (click)="viewMode.set('table')"
-                      [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
-                      class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
-                <i class="fa-solid fa-list"></i> Bảng
+
+              <!-- Advanced Filters toggle -->
+              <button (click)="showAdvancedFilters.set(!showAdvancedFilters())"
+                      [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                      class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900">
+                <i class="fa-solid fa-sliders text-[10px]"></i> Lọc nâng cao
+                @if (activeFiltersCount() > 0) {
+                  <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-sm">{{ activeFiltersCount() }}</span>
+                }
+                <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" [class.rotate-180]="showAdvancedFilters()"></i>
               </button>
             </div>
 
-            <!-- Merge Mode Toggle -->
-            <button (click)="toggleMergeMode()"
-                    [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-                    class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900">
-              <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()"></i>
-              Gộp mẻ
-              @if (isMergeModeActive() && selectedRunsCount() > 0) {
-                <span class="w-4 h-4 bg-fuchsia-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">{{ selectedRunsCount() }}</span>
+            <div toolbarActions class="contents">
+              @if (hasActiveFilters()) {
+                <app-button variant="ghost" size="sm" (click)="resetAllFilters()">
+                  <i class="fa-solid fa-rotate-left text-[10px]"></i> Xóa lọc
+                </app-button>
               }
-            </button>
-
-            <!-- Advanced Filters toggle -->
-            <button (click)="showAdvancedFilters.set(!showAdvancedFilters())"
-                    [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-                    class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900">
-              <i class="fa-solid fa-sliders text-[10px]"></i> Lọc nâng cao
-              @if (activeFiltersCount() > 0) {
-                <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-sm">{{ activeFiltersCount() }}</span>
-              }
-              <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" [class.rotate-180]="showAdvancedFilters()"></i>
-            </button>
-
-            @if (hasActiveFilters()) {
-              <button (click)="resetAllFilters()"
-                      class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1 active:scale-95 shrink-0">
-                <i class="fa-solid fa-rotate-left text-[10px]"></i> Xóa Lọc
-              </button>
-            }
-          </div>
+            </div>
+          </app-toolbar>
 
           <!-- Row 2: Advanced Filter Panel (collapsible) -->
           @if (showAdvancedFilters()) {
@@ -397,29 +402,28 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                   <!-- Card Footer: Action Buttons -->
                   <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
                     @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
-                      <button (click)="openReportHub(run); $event.stopPropagation()"
-                              class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
+                      <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                         <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                        <span>Báo Cáo PDF</span>
-                      </button>
+                        <span>Báo cáo PDF</span>
+                      </app-button>
                     }
-                    <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
-                            class="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40 rounded-xl text-xs font-black transition active:scale-95 duration-150 shadow-sm">
+                    <app-button class="min-w-0 flex-1" variant="secondary" size="sm" [fullWidth]="true" (click)="enterResults(run.id, undefined, false); $event.stopPropagation()">
                       <i class="fa-solid text-[11px] fa-eye"></i>
-                      Chi Tiết Mẻ Chạy
-                    </button>
+                      Chi tiết mẻ chạy
+                    </app-button>
                   </div>
                 </div>
               } @empty {
-                <div class="col-span-full text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                  <div class="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300 dark:text-slate-600">
-                    <i class="fa-solid fa-square-poll-vertical text-2xl"></i>
-                  </div>
-                  <p class="text-slate-400 dark:text-slate-500 font-semibold text-sm">Không tìm thấy mẻ nào phù hợp.</p>
+                <app-empty-state
+                  class="col-span-full block rounded-2xl border border-dashed border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                  icon="fa-square-poll-vertical"
+                  title="Không tìm thấy mẻ nào phù hợp.">
                   @if (hasActiveFilters()) {
-                    <button (click)="resetAllFilters()" class="mt-3 text-xs text-fuchsia-600 dark:text-fuchsia-400 font-black hover:underline">Xóa Bộ Lọc</button>
+                    <div emptyStateActions>
+                      <app-button variant="ghost" size="sm" (click)="resetAllFilters()">Xóa bộ lọc</app-button>
+                    </div>
                   }
-                </div>
+                </app-empty-state>
               }
             </div>
 
@@ -516,25 +520,26 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                         <td class="p-4">
                           <div class="flex items-center justify-end gap-2">
                             @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
-                              <button (click)="openReportHub(run); $event.stopPropagation()"
-                                      class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 rounded-xl text-xs font-black transition active:scale-95">
+                              <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                                 <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                                <span>Báo Cáo PDF</span>
-                              </button>
+                                <span>Báo cáo PDF</span>
+                              </app-button>
                             }
-                            <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
-                                    class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm whitespace-nowrap">
+                            <app-button variant="secondary" size="sm" (click)="enterResults(run.id, undefined, false); $event.stopPropagation()">
                               <i class="fa-solid fa-eye text-[10px]"></i>
-                              Chi Tiết
-                            </button>
+                              Chi tiết
+                            </app-button>
                           </div>
                         </td>
                       </tr>
                     } @empty {
                       <tr>
-                        <td [attr.colspan]="isMergeModeActive() ? 7 : 6" class="text-center py-16 text-slate-400 dark:text-slate-500 font-semibold text-sm">
-                          <i class="fa-solid fa-inbox text-2xl mb-2 block opacity-40"></i>
-                          Không tìm thấy mẻ nào phù hợp.
+                        <td [attr.colspan]="isMergeModeActive() ? 7 : 6">
+                          <app-empty-state
+                            class="block"
+                            icon="fa-inbox"
+                            title="Không tìm thấy mẻ nào phù hợp.">
+                          </app-empty-state>
                         </td>
                       </tr>
                     }
@@ -589,10 +594,10 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <span class="text-[9px] font-bold text-slate-400 mt-0.5">{{ getSelectedSopName() }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <button (click)="cancelSelection()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-black transition active:scale-95">Hủy</button>
-            <button (click)="openMergeModal()" class="px-4 py-1.5 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-md shadow-fuchsia-500/20 flex items-center gap-1.5">
-              <i class="fa-solid fa-code-merge rotate-90 text-[10px]"></i> Gộp Mẻ Chạy
-            </button>
+            <app-button variant="ghost" size="sm" (click)="cancelSelection()">Hủy</app-button>
+            <app-button size="sm" (click)="openMergeModal()">
+              <i class="fa-solid fa-code-merge rotate-90 text-[10px]"></i> Gộp mẻ chạy
+            </app-button>
           </div>
         </div>
       }
@@ -861,7 +866,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const colorPalette = [
       { bg: 'bg-violet-50/70 dark:bg-violet-950/20', text: 'text-violet-650 dark:text-violet-400 border-violet-200/40 dark:border-violet-900/30', bar: 'bg-violet-500' },
       { bg: 'bg-indigo-50/70 dark:bg-indigo-950/20', text: 'text-indigo-650 dark:text-indigo-400 border-indigo-200/40 dark:border-indigo-900/30', bar: 'bg-indigo-500' },
-      { bg: 'bg-pink-50/70 dark:bg-pink-950/20', text: 'text-pink-650 dark:text-pink-400 border-pink-200/40 dark:border-pink-900/30', bar: 'bg-pink-500' },
+      { bg: 'bg-pink-50/70 dark:bg-pink-950/20', text: 'text-pink-600 dark:text-pink-400 border-pink-200/40 dark:border-pink-900/30', bar: 'bg-pink-500' },
       { bg: 'bg-cyan-50/70 dark:bg-cyan-950/20', text: 'text-cyan-650 dark:text-cyan-400 border-cyan-200/40 dark:border-cyan-900/30', bar: 'bg-cyan-500' },
       { bg: 'bg-amber-50/70 dark:bg-amber-950/20', text: 'text-amber-650 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30', bar: 'bg-amber-500' },
       { bg: 'bg-emerald-50/70 dark:bg-emerald-950/20', text: 'text-emerald-650 dark:text-emerald-450 border-emerald-200/40 dark:border-emerald-900/30', bar: 'bg-emerald-500' },

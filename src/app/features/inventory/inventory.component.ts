@@ -23,11 +23,15 @@ import { HasPermissionDirective } from '../../shared/directives/has-permission.d
 import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
 import { ModalA11yDirective } from '../../shared/directives/modal-a11y.directive';
 import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.directive';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.component';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent, HasPermissionDirective, LockPermissionDirective, ModalA11yDirective, FormLabelA11yDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent, HasPermissionDirective, LockPermissionDirective, ModalA11yDirective, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent],
   templateUrl: './inventory.component.html',
   styles: [`
     @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }

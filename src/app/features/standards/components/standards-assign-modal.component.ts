@@ -74,7 +74,7 @@ import { getFefoPredecessor } from '../../../shared/utils/standard-fefo';
                       <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
                           {{ isAssignMode() ? 'Gán cho nhân viên' : 'Mượn chuẩn sử dụng' }}
                       </h3>
-                      <button (click)="closeModal.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
+                      <button (click)="closeModal.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-xmark"></i></button>
                   </div>
 
                   <div class="flex-1 space-y-5 overflow-y-auto pr-2 custom-scrollbar">

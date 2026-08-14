@@ -341,8 +341,8 @@ service cloud.firestore {
         validRequesterUsageJournalData(appId, stdId, reqId, logId, stockDelta, data);
     }
 
-    // Các thao tác duyệt/vận hành cập nhật monthly_stats bằng transaction,
-    // vì vậy cần đọc document thống kê trước khi ghi delta.
+    // Đường tăng monthly_stats dùng atomic field transforms; đường giảm vẫn dùng
+    // transaction để clamp counter về 0. Cả hai đều cần quyền vận hành tương ứng.
     function canUpdateStats(appId) {
       return hasPermission(appId, 'sop_approve') || hasPermission(appId, 'batch_run');
     }

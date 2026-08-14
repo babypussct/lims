@@ -64,7 +64,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                <div class="flex-1 p-6 md:p-8 flex flex-col bg-white dark:bg-slate-900 overflow-y-auto">
                    <div class="flex justify-between items-center mb-6">
                        <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Duyệt & Giao Chuẩn</h3>
-                       <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
+                       <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-xmark"></i></button>
                    </div>
 
                    <div class="flex-1 space-y-5">
@@ -104,7 +104,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <h3 class="font-black text-red-600 dark:text-red-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-ban"></i> Từ Chối Yêu Cầu
                   </h3>
-                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-red-400 transition"><i class="fa-solid fa-times"></i></button>
+                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-red-400 transition"><i class="fa-solid fa-xmark"></i></button>
               </div>
 
               <div class="p-8 bg-white dark:bg-slate-900">
@@ -138,7 +138,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <i class="fa-solid fa-rotate-left"></i>
                       {{ isForceReturn ? 'Thu hồi chuẩn' : 'Hoàn trả chuẩn' }}
                   </h3>
-                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
+                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-xmark"></i></button>
               </div>
 
               <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
@@ -232,7 +232,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <h3 class="font-black text-teal-600 dark:text-teal-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-vial-circle-check"></i> Ghi Nhận Đợt Dùng
                   </h3>
-                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-teal-400 transition"><i class="fa-solid fa-times"></i></button>
+                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-teal-400 transition"><i class="fa-solid fa-xmark"></i></button>
               </div>
 
               <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
@@ -271,7 +271,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-xl flex items-center gap-2">
                       <i class="fa-solid fa-clipboard-check"></i> Xác Nhận Nhập Kho Trả
                   </h3>
-                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
+                  <button (click)="onClose()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-xmark"></i></button>
               </div>
 
               <div class="p-6 md:p-8 space-y-6 bg-white dark:bg-slate-900 overflow-y-auto">

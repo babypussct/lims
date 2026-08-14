@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, WritableSignal, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { calculatePrep } from './prep-calculation.engine';
 import {
   AdditionDraft,
@@ -224,7 +226,7 @@ const TASKS: readonly TaskDefinition[] = [
 @Component({
   selector: 'app-smart-prep',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent],
   templateUrl: './smart-prep.component.html',
   styles: [
     ".field-label{display:block;margin-bottom:.45rem;font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#64748b}.field-input{width:100%;border:1px solid #cbd5e1;border-radius:.75rem;background:#fff;padding:.62rem .72rem;font-size:.875rem;outline:0;transition:border-color .15s,box-shadow .15s}.field-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}.field-help{margin-top:.35rem;font-size:.68rem;line-height:1.45;color:#64748b}.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}.result-grid>div{border-radius:.75rem;background:#f8fafc;padding:.75rem}.result-grid span{display:block;font-size:.625rem;font-weight:700;color:#94a3b8}.result-grid strong{display:block;margin-top:.25rem;font-size:.8rem;line-height:1.35}@media (prefers-color-scheme:dark){.field-label{color:#94a3b8}.field-input{border-color:#334155;background:#0f172a;color:#e2e8f0}.field-help{color:#94a3b8}.result-grid>div{background:rgba(30,41,59,.7)}}"
@@ -509,7 +511,7 @@ export class SmartPrepComponent {
     return type === 'internal_standard' ? 'Nội chuẩn' : type === 'surrogate' ? 'Surrogate' : 'Chất phân tích';
   }
 
-  sourceOptions(includePoints = true): Array<{ id: string; label: string }> {
+  sourceOptions(includePoints = true): { id: string; label: string }[] {
     const sources = this.seriesSources().map(source => ({ id: source.id, label: this.sourceDisplayName(source.id) }));
     if (!includePoints) return sources;
     return [...sources, ...this.seriesPoints().map(point => ({ id: point.id, label: this.sourceDisplayName(point.id) }))];

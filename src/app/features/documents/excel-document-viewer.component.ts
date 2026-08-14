@@ -131,7 +131,7 @@ interface ExcelColumnOption {
               </button>
               <button type="button" (click)="onSearch('')" class="excel-search-button"
                       aria-label="Xóa tìm kiếm" title="Xóa tìm kiếm">
-                <i class="fa-solid fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
           }
@@ -152,7 +152,7 @@ interface ExcelColumnOption {
             </div>
             <button type="button" (click)="filterPanelOpen.set(false)"
                     class="w-7 h-7 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    aria-label="Đóng"><i class="fa-solid fa-times"></i></button>
+                    aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
           </div>
 
           <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">

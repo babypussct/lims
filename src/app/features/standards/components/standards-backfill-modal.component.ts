@@ -82,7 +82,7 @@ export interface BackfillData {
                 Nhập bù nhật ký
               </h3>
               <button (click)="closeModal.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition">
-                <i class="fa-solid fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
 

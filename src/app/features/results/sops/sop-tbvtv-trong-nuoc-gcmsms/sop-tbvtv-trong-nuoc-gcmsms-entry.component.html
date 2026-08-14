@@ -9,14 +9,14 @@
           (click)="setPrintFormType('formCheck')"
                 [class]="draft.page1Data['printFormType'] === 'formCheck'
                   ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                  : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
+                  : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
           FORM CHECK
         </button>
         <button type="button"
           (click)="setPrintFormType('formDon')"
                 [class]="draft.page1Data['printFormType'] === 'formDon'
                   ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                  : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
+                  : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
           FORM ĐƠN
         </button>
       </div>
@@ -138,7 +138,7 @@
                         class="ml-1.5 w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 cursor-pointer">
                         <button (click)="selectSample(sampleCode)"
                     [class]="activeSampleCode() === sampleCode 
-                      ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-655 transition shrink-0 active:scale-95' 
+                      ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-650 transition shrink-0 active:scale-95'
                       : 'bg-transparent text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border-0 transition shrink-0 active:scale-95'"
                           class="px-3 py-2 rounded-lg text-xs flex items-center gap-2"
                           [class.opacity-50]="draft.resultData[sampleCode]['selected'] === false">
@@ -164,7 +164,7 @@
                         disabled
                         class="w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 disabled:opacity-70 disabled:cursor-not-allowed">
                         <div class="flex flex-col">
-                          <span class="text-xs font-black text-violet-750 dark:text-violet-400 tracking-wide">Gộp in chung các mẫu</span>
+                          <span class="text-xs font-black text-violet-700 dark:text-violet-400 tracking-wide">Gộp in chung các mẫu</span>
                           <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Tự động ({{ (getSelectedSampleCount() > 1) ? 'Bật vì chọn > 1 mẫu' : 'Tắt vì chọn 1 mẫu' }})</span>
                         </div>
                       </label>
@@ -214,7 +214,7 @@
                               <button
                                 (click)="bulkRandomizeMasses()"
                                 type="button"
-                                class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-sky-50 dark:hover:bg-sky-955/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 border border-slate-200 dark:border-slate-800 hover:border-sky-200 dark:hover:border-sky-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+                                class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-sky-50 dark:hover:bg-sky-950/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 border border-slate-200 dark:border-slate-800 hover:border-sky-200 dark:hover:border-sky-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
                                 <i class="fa-solid fa-dice text-sky-500"></i>
                                 <span>Sinh TT Ngẫu Nhiên (Tất Cả)</span>
                               </button>
@@ -311,7 +311,7 @@
                                     placeholder="Kết thúc"
                                     class="w-14 bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/40 rounded px-1.5 py-0.5 text-center text-slate-455 dark:text-slate-500 font-bold outline-none cursor-not-allowed">
                                     <button (click)="applyCalibVials()"
-                                      class="px-2.5 py-1 bg-violet-650 hover:bg-violet-750 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                                      class="px-2.5 py-1 bg-violet-650 hover:bg-violet-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
                                       <i class="fa-solid fa-check"></i>
                                       <span>Áp Dụng</span>
                                     </button>
@@ -349,7 +349,7 @@
                                           </div>
                                           <div>
                                             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Mẫu QC cuối mẻ</label>
-                                            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-855">
+                                            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850">
                                               <input type="checkbox"
                                                 [(ngModel)]="draft.page1Data['hasFinal']"
                                                 (ngModelChange)="onFinalToggled()"
@@ -402,7 +402,7 @@
                                                   placeholder="Kết thúc"
                                                   class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
                                                   <button (click)="applyBulkVials()"
-                                                    class="px-2.5 py-1 bg-violet-650 hover:bg-violet-750 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                                                    class="px-2.5 py-1 bg-violet-650 hover:bg-violet-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
                                                     <i class="fa-solid fa-check"></i>
                                                     <span>Áp Dụng</span>
                                                   </button>

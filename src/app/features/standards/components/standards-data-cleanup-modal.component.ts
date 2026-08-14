@@ -78,7 +78,7 @@ interface CasIssueRecord {
               </div>
             </div>
             <button (click)="onClose()" [disabled]="isProcessing()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 transition disabled:opacity-50 shrink-0" aria-label="Đóng">
-              <i class="fa-solid fa-times"></i>
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </header>
 
@@ -141,7 +141,7 @@ interface CasIssueRecord {
                   <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg"><i class="fa-solid fa-clock-rotate-left text-amber-500 mr-2"></i>Lịch Sử Chuẩn Hóa & Hoàn Tác</h3>
                   <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Mỗi lần lưu là một phiên độc lập. Hoàn tác bị chặn nếu hồ sơ đã được sửa sau phiên đó.</p>
                 </div>
-                <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 disabled:opacity-50" aria-label="Đóng lịch sử"><i class="fa-solid fa-times"></i></button>
+                <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 disabled:opacity-50" aria-label="Đóng lịch sử"><i class="fa-solid fa-xmark"></i></button>
               </header>
               <div class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-slate-50/60 dark:bg-slate-950/30">
                 @if (isLoadingHistory()) {

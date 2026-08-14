@@ -16,7 +16,7 @@
       </h4>
       <!-- Quick Vial input for Calibration -->
       <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
-        <span class="font-bold text-slate-555 dark:text-slate-400">Vial chuẩn:</span>
+        <span class="font-bold text-slate-500 dark:text-slate-400">Vial chuẩn:</span>
         <input type="number" 
                [(ngModel)]="bulkCalibVialStart" 
                (ngModelChange)="onBulkCalibVialStartChange()"
@@ -241,7 +241,7 @@
                 </td>
               </tr>
             } @else if (row.type === 'QC_SPIKE_N' || row.type === 'QC_FINAL') {
-              <tr class="bg-violet-50/10 dark:bg-violet-955/5 hover:bg-violet-50/20 dark:hover:bg-violet-955/10 transition-colors focus-within:bg-violet-50/25 dark:focus-within:bg-violet-955/15 border-l-4 border-l-violet-500/60 transition-all duration-150">
+              <tr class="bg-violet-50/10 dark:bg-violet-950/5 hover:bg-violet-50/20 dark:hover:bg-violet-950/10 transition-colors focus-within:bg-violet-50/25 dark:focus-within:bg-violet-950/15 border-l-4 border-l-violet-500/60 transition-all duration-150">
                 <td class="py-2.5 px-3 text-center">
                   <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-355 text-violet-650 focus:ring-violet-500">
                 </td>
@@ -251,7 +251,7 @@
                          disabled
                          class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-455 font-bold outline-none text-center">
                 </td>
-                <td class="py-2.5 px-4 font-mono font-bold text-xs text-violet-655 dark:text-violet-405 select-all">
+                <td class="py-2.5 px-4 font-mono font-bold text-xs text-violet-650 dark:text-violet-405 select-all">
                   {{ row.label }}
                 </td>
                 <td class="py-1.5 px-2">

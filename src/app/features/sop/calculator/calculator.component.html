@@ -355,7 +355,7 @@
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-save"></i> } Lưu thay đổi
                       </button>
                       <button (click)="cancelEdit()" [disabled]="isProcessing()" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 disabled:opacity-50">
-                        <i class="fa-solid fa-times"></i> Hủy Chỉnh Sửa
+                        <i class="fa-solid fa-xmark"></i> Hủy Chỉnh Sửa
                       </button>
                     } @else {
                       <button (click)="onPrintDraft(currentSop)" [disabled]="isProcessing() || form().invalid" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 disabled:opacity-50">
@@ -543,7 +543,7 @@
                     <i class="fa-solid fa-book text-base"></i>
                   </div>
                   <div>
-                    <h2 class="text-xl font-black text-slate-855 dark:text-slate-100 tracking-tight leading-tight">Thư Viện Quy Trình và Công Thức</h2>
+                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Thư Viện Quy Trình và Công Thức</h2>
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Danh sách quy trình chuẩn hóa SOP và công thức pha chế có sẵn trong hệ thống.</p>
                   </div>
                 </div>

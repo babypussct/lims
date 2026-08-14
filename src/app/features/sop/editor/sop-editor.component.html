@@ -381,7 +381,7 @@
                                                         </div>
                                                         <input formControlName="amount" type="number" placeholder="Lượng" class="w-16 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-1 py-1.5 text-xs text-center outline-none font-bold">
                                                         <select formControlName="unit" class="w-16 border border-slate-300 dark:border-slate-600 rounded px-1 py-1.5 text-xs text-center outline-none bg-white dark:bg-slate-800">@for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }</select>
-                                                        <button type="button" (click)="getIngredients(i).removeAt(j)" class="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-times"></i></button>
+                                                        <button type="button" (click)="getIngredients(i).removeAt(j)" class="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
                                                      </div>
                                                   }
                                                </div>
@@ -512,7 +512,7 @@
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
                     <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                         <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg">Chọn Nhóm Chỉ Tiêu</h3>
-                        <button (click)="showGroupModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times text-lg"></i></button>
+                        <button (click)="showGroupModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-xmark text-lg"></i></button>
                     </div>
                     <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
                         @if(availableGroups().length === 0) {
@@ -547,7 +547,7 @@
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Chọn các chỉ tiêu phân tích để thêm vào SOP hiện tại.</p>
                         </div>
-                        <button (click)="showTargetModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-full transition-colors"><i class="fa-solid fa-times text-sm"></i></button>
+                        <button (click)="showTargetModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-full transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
                     </div>
                     
                     <div class="p-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">

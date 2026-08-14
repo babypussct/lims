@@ -188,7 +188,7 @@ function removeAccents(str: string): string {
                         <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn Tất Yêu Cầu</h3>
                         <p class="text-sm text-slate-500 font-medium">Vui lòng cung cấp mục đích và thời gian dự kiến</p>
                     </div>
-                    <button (click)="onClose()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="onClose()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-xmark"></i></button>
                 </div>
 
                 <div class="flex-1 md:overflow-y-auto p-6 md:p-8">
@@ -230,7 +230,7 @@ function removeAccents(str: string): string {
                                                 </div>
                                                 <button type="button" (click)="toggleStandardSelection(std.id)"
                                                         class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition ml-0.5">
-                                                    <i class="fa-solid fa-times text-[10px]"></i>
+                                                    <i class="fa-solid fa-xmark text-[10px]"></i>
                                                 </button>
                                             </div>
                                         }

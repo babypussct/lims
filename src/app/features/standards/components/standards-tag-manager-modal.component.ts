@@ -22,7 +22,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
               <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Danh mục nhãn trung tâm</h3>
               <p class="text-xs text-slate-500 mt-1">Nhãn phương pháp hóa học được nạp theo seed có truy vết; nhãn thủ công dùng soft-delete.</p>
             </div>
-            <button type="button" (click)="close.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><i class="fa-solid fa-times"></i></button>
+            <button type="button" (click)="close.emit()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><i class="fa-solid fa-xmark"></i></button>
           </div>
 
           <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">

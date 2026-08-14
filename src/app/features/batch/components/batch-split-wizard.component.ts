@@ -2,6 +2,9 @@ import { Component, Input, Output, EventEmitter, signal, computed, OnInit } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sop, SopTarget } from '../../../core/models/sop.model';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { getSopTargetKey, isSopMatrixCompatible } from '../smart-batch.utils';
 
 interface ProposedBatch {
@@ -26,22 +29,14 @@ export interface SplitWizardState {
 @Component({
   selector: 'app-batch-split-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent],
   template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[85vh] animate-slide-up">
-            
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                <div>
-                    <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-shuffle text-blue-600 dark:text-blue-400"></i> Phân Tách và Chuyển Mẻ
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Nguồn: <b>{{state().sourceBatchName}}</b></p>
-                </div>
-                <button (click)="close.emit()" class="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition"><i class="fa-solid fa-times text-xl"></i></button>
-            </div>
-
+    <app-modal-shell
+        title="Phân tách và chuyển mẻ"
+        [description]="'Nguồn: ' + state().sourceBatchName"
+        size="lg"
+        (closed)="close.emit()">
+        <div modalBody class="flex min-h-[60vh] flex-col">
             <!-- Steps Indicator -->
             <div class="flex border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
                 <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 1 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">1. Chọn mẫu</div>
@@ -129,10 +124,16 @@ export interface SplitWizardState {
                                 </div>
                             }
                             @if(filteredSops().length === 0) {
-                                <div class="p-8 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                                    <i class="fa-solid fa-filter-circle-xmark text-3xl mb-3"></i>
-                                    <p class="text-sm font-medium">Không tìm thấy SOP nào phủ hết các chỉ tiêu đã chọn.</p>
-                                    <button (click)="prevStep()" class="text-blue-600 dark:text-blue-400 font-bold hover:underline mt-4 text-sm bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg">Quay Lại Chọn Ít Chỉ Tiêu Hơn</button>
+                                <div class="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+                                    <app-empty-state
+                                        icon="fa-filter-circle-xmark"
+                                        title="Không tìm thấy SOP phù hợp"
+                                        message="Không có SOP nào phủ hết các chỉ tiêu đã chọn.">
+                                        <app-button emptyStateActions variant="secondary" size="sm" (click)="prevStep()">
+                                            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                                            Chọn ít chỉ tiêu hơn
+                                        </app-button>
+                                    </app-empty-state>
                                 </div>
                             }
                         </div>
@@ -140,33 +141,34 @@ export interface SplitWizardState {
                 }
 
             </div>
-
-            <!-- Footer Buttons -->
-            <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
-                @if (state().step > 1) {
-                    <button (click)="prevStep()" class="px-5 py-3 md:py-2.5 text-slate-600 dark:text-slate-300 bg-slate-100 md:bg-transparent hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">
-                        <i class="fa-solid fa-arrow-left mr-1"></i> Quay Lại
-                    </button>
-                } @else {
-                    <div></div>
-                }
-
-                @if (state().step < 3) {
-                    <button (click)="nextStep()" 
-                            [disabled]="(state().step === 1 && state().selectedSamples.size === 0) || (state().step === 2 && state().selectedTargets.size === 0)"
-                            class="px-8 py-3 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        Tiếp Tục <i class="fa-solid fa-arrow-right ml-1"></i>
-                    </button>
-                } @else {
-                    <button (click)="confirm()" 
-                            [disabled]="!state().selectedSopId"
-                            class="px-8 py-3 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fa-solid fa-check mr-1"></i> Hoàn Tất
-                    </button>
-                }
-            </div>
         </div>
-    </div>
+
+        <div modalFooter class="flex w-full items-center justify-between gap-3">
+            @if (state().step > 1) {
+                <app-button variant="secondary" (click)="prevStep()">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                    Quay lại
+                </app-button>
+            } @else {
+                <span></span>
+            }
+
+            @if (state().step < 3) {
+                <app-button
+                    variant="primary"
+                    (click)="nextStep()"
+                    [disabled]="(state().step === 1 && state().selectedSamples.size === 0) || (state().step === 2 && state().selectedTargets.size === 0)">
+                    Tiếp tục
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </app-button>
+            } @else {
+                <app-button variant="primary" (click)="confirm()" [disabled]="!state().selectedSopId">
+                    <i class="fa-solid fa-check" aria-hidden="true"></i>
+                    Hoàn tất
+                </app-button>
+            }
+        </div>
+    </app-modal-shell>
   `
 })
 export class BatchSplitWizardComponent implements OnInit {

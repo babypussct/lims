@@ -138,7 +138,7 @@ import { formatNum } from '../../../../shared/utils/utils';
                                                 title="Duyệt & Giao"><i class="fa-solid fa-check"></i></button>
                                         <button (click)="actionReject.emit(req)" 
                                                 class="p-2 bg-rose-100 text-rose-600 rounded-xl hover:bg-rose-200 transition active:scale-90" 
-                                                title="Từ chối"><i class="fa-solid fa-times"></i></button>
+                                                title="Từ chối"><i class="fa-solid fa-xmark"></i></button>
                                     }
                                     @if(req.status === 'IN_PROGRESS') {
                                         @if(isCurrentUser(req.requestedBy)) {

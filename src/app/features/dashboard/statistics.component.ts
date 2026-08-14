@@ -9,6 +9,7 @@ import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/uti
 import { Log } from '../../core/models/log.model';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
+import { AppButtonComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 import { timestampToDate, timestampToMillis } from '../../shared/utils/timestamp';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -27,7 +28,15 @@ interface NxtReportItem {
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule, DateRangeFilterComponent, ExportModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DateRangeFilterComponent,
+    ExportModalComponent,
+    AppButtonComponent,
+    AppPageHeaderComponent,
+    AppToolbarComponent,
+  ],
   templateUrl: './statistics.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

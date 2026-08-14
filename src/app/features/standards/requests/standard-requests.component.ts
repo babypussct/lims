@@ -18,6 +18,9 @@ import { CreateRequestDrawerComponent } from './components/create-request-drawer
 import { RequestsActionModalsComponent } from './components/requests-action-modals.component';
 import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
 import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
+import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolbar.component';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -29,7 +32,7 @@ type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminRece
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective, AppButtonComponent, AppPageHeaderComponent, AppToolbarComponent],
   providers: [DatePipe],
   templateUrl: './standard-requests.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush

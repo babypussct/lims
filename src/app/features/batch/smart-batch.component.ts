@@ -154,6 +154,11 @@ interface FixCoverageState {
 }
 
 import { QuickGenerateSampleModalComponent } from '../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.component';
 import { BatchSplitWizardComponent } from './components/batch-split-wizard.component';
 import { SampleGroupStep2WizardComponent } from './components/sample-group-step2-wizard.component';
 import {
@@ -166,7 +171,18 @@ import {
 @Component({
   selector: 'app-smart-batch',
   standalone: true,
-  imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent, BatchSplitWizardComponent, SampleGroupStep2WizardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    QuickGenerateSampleModalComponent,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppModalShellComponent,
+    AppPageHeaderComponent,
+    AppToolbarComponent,
+    BatchSplitWizardComponent,
+    SampleGroupStep2WizardComponent
+  ],
   templateUrl: './smart-batch.component.html',
   styles: [`
     :host {

@@ -319,7 +319,7 @@ import { QrGlobalService } from '../../core/services/qr-global.service';
                                 <div class="mt-4">
                                     @if (auth.currentUser() && auth.canViewSop()) {
                                         <button (click)="viewBatchResults(reqId)" 
-                                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
+                                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
                                             <i class="fa-solid fa-square-poll-vertical"></i>
                                             <span>Xem Kết Quả Mẻ Phân Tích</span>
                                         </button>

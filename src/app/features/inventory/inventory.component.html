@@ -1,16 +1,11 @@
     <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-2 md:p-4">
       <!-- Header Area -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0 mx-4 md:mx-0">
-          <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
-                  <i class="fa-solid fa-boxes-stacked text-base"></i>
-              </div>
-              <div>
-                  <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản Lý Kho Hóa Chất</h2>
-                  <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Nhật ký tồn kho, thông tin định lượng và an toàn hóa chất.</p>
-              </div>
-          </div>
-      </div>
+      <app-page-header
+          class="mx-4 block overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700 md:mx-0"
+          title="Quản lý kho hóa chất"
+          subtitle="Nhật ký tồn kho, thông tin định lượng và an toàn hóa chất."
+          icon="fa-boxes-stacked">
+      </app-page-header>
 
       <!-- Statistics Card Row (Only show for List/Capacity tabs) -->
       @if (activeTab() !== 'labels') {
@@ -34,18 +29,19 @@
       <!-- Main Content Card -->
       <div class="flex-1 bg-transparent md:bg-white md:dark:bg-slate-800 rounded-none md:rounded-2xl shadow-none md:shadow-sm dark:shadow-none flex flex-col overflow-hidden border-0 md:border md:border-slate-200 md:dark:border-slate-700">
         <!-- Header Actions -->
-        <div class="p-4 border-b border-slate-100 dark:border-slate-700/50 flex flex-col gap-4 shrink-0 bg-white dark:bg-slate-800 sticky top-0 z-20 shadow-sm md:shadow-none dark:shadow-none">
+        <app-toolbar [sticky]="true">
+          <div toolbarSearch class="flex flex-col gap-4">
             <!-- Mobile Tab Switcher -->
             <div class="flex p-1 bg-slate-100 dark:bg-slate-900/50 rounded-xl">
                 <button (click)="switchTab('list')" 
                    class="flex-1 text-xs font-bold uppercase tracking-wider py-2 rounded-lg transition active:scale-95"
                    [class]="activeTab() === 'list' ? 'text-white bg-slate-800 dark:bg-slate-700 shadow-md dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                   Danh Sách
+                   Danh sách
                 </button>
                 <button (click)="switchTab('capacity')" 
                    class="flex-1 text-xs font-bold uppercase tracking-wider py-2 rounded-lg transition active:scale-95"
                    [class]="activeTab() === 'capacity' ? 'text-white bg-slate-800 dark:bg-slate-700 shadow-md dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-                   Năng Lực
+                   Năng lực
                 </button>
                 <button (click)="switchTab('labels')" 
                    class="flex-1 text-xs font-bold uppercase tracking-wider py-2 rounded-lg transition active:scale-95 flex items-center justify-center gap-1"
@@ -72,12 +68,13 @@
                         </select>
                     </div>
                     <!-- Desktop Add Button (Hidden on Mobile) -->
-                    <button [appLockPermission]="'inventory_edit'" (click)="openModal()" class="hidden md:flex bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase shadow-sm dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Thêm
-                    </button>
+                    <app-button class="hidden md:inline-flex" size="sm" [appLockPermission]="'inventory_edit'" (click)="openModal()">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm
+                    </app-button>
                 </div>
             }
-        </div>
+          </div>
+        </app-toolbar>
 
         <!-- LIST CONTENT -->
         @if (activeTab() === 'list') {
@@ -145,11 +142,11 @@
                                 </div>
                             </div>
                         } @empty {
-                            <div class="text-center py-10 text-slate-400 dark:text-slate-500 italic">Không tìm thấy dữ liệu.</div>
+                            <app-empty-state icon="fa-box-open" title="Không tìm thấy dữ liệu"></app-empty-state>
                         }
                         
                         @if (hasMore()) {
-                            <button (click)="loadMore()" class="w-full py-3 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm dark:shadow-none">Xem Thêm...</button>
+                            <app-button variant="secondary" size="sm" [fullWidth]="true" (click)="loadMore()">Xem thêm...</app-button>
                         }
                     }
                 </div>
@@ -160,8 +157,8 @@
                         <tr>
                             <th class="px-4 py-2 pl-6 w-[40%]">Hóa chất và vật tư</th>
                             <th class="px-4 py-2 border-l border-slate-100 dark:border-slate-700/50">Phân loại</th>
-                            <th class="px-4 py-2 text-center border-l border-slate-100 dark:border-slate-700/50 w-20">ĐVT (Gốc)</th>
-                            <th class="px-4 py-2 text-right border-l border-slate-100 dark:border-slate-700/50 w-32">Tồn kho (Gauge)</th>
+                            <th class="px-4 py-2 text-center border-l border-slate-100 dark:border-slate-700/50 w-20">ĐVT (gốc)</th>
+                            <th class="px-4 py-2 text-right border-l border-slate-100 dark:border-slate-700/50 w-32">Tồn kho (gauge)</th>
                             <th *appHasPermission="'inventory_edit'" class="px-4 py-2 text-right border-l border-slate-100 dark:border-slate-700/50 w-32">Nhập nhanh</th>
                             <th class="px-4 py-2 text-center w-12 border-l border-slate-100 dark:border-slate-700/50"></th>
                         </tr>
@@ -220,7 +217,7 @@
         @if (activeTab() === 'capacity') {
             <div class="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
                 <div class="w-full md:w-72 border-r border-slate-100 dark:border-slate-700/50 overflow-y-auto p-3 bg-slate-50/50 dark:bg-slate-900/20 h-1/3 md:h-full shrink-0">
-                    <h6 class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase pl-1 mb-2 sticky top-0 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm py-1 z-10">Chọn Quy Trình</h6>
+                    <h6 class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase pl-1 mb-2 sticky top-0 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm py-1 z-10">Chọn quy trình</h6>
                     @for (sop of state.sops(); track sop.id) {
                         <div role="button" tabindex="0" [attr.aria-label]="'Chọn quy trình ' + sop.name" [attr.aria-pressed]="selectedSopForCap()?.id === sop.id" (click)="selectedSopForCap.set(sop)" (keydown.enter)="selectedSopForCap.set(sop)" (keydown.space)="selectedSopForCap.set(sop); $event.preventDefault()"
                              class="p-2.5 rounded-lg mb-1.5 cursor-pointer transition flex items-center gap-3 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm dark:hover:shadow-none active:scale-95 border"
@@ -245,8 +242,8 @@
                             <div>
                                 <h4 class="font-bold text-slate-800 dark:text-slate-100 text-lg">{{sop.name}}</h4>
                                 <div class="flex gap-2 mt-1">
-                                    <button (click)="capacityMode.set('marginal')" class="px-2 py-1 text-[10px] font-bold rounded border transition active:scale-95" [class]="capacityMode() === 'marginal' ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-800/50' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'">Một Mẫu</button>
-                                    <button (click)="capacityMode.set('standard')" class="px-2 py-1 text-[10px] font-bold rounded border transition active:scale-95" [class]="capacityMode() === 'standard' ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-800/50' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'">Mẻ Tiêu Chuẩn</button>
+                                    <button (click)="capacityMode.set('marginal')" class="px-2 py-1 text-[10px] font-bold rounded border transition active:scale-95" [class]="capacityMode() === 'marginal' ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-800/50' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'">Một mẫu</button>
+                                    <button (click)="capacityMode.set('standard')" class="px-2 py-1 text-[10px] font-bold rounded border transition active:scale-95" [class]="capacityMode() === 'standard' ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-800/50' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'">Mẻ tiêu chuẩn</button>
                                 </div>
                             </div>
                             <div class="text-right bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50 w-full md:w-auto flex justify-between md:block items-center">
@@ -271,7 +268,7 @@
                                  <tr>
                                     <th class="px-4 py-2 border-b border-slate-100 dark:border-slate-700/50">Hóa chất</th>
                                     <th class="px-4 py-2 text-right border-b border-slate-100 dark:border-slate-700/50">Tồn kho</th>
-                                    <th class="px-4 py-2 text-right border-b border-slate-100 dark:border-slate-700/50">Cần / Mẻ</th>
+                                    <th class="px-4 py-2 text-right border-b border-slate-100 dark:border-slate-700/50">Cần / mẻ</th>
                                     <th class="px-4 py-2 text-center border-b border-slate-100 dark:border-slate-700/50">Mẻ</th>
                                  </tr>
                               </thead>
@@ -288,7 +285,7 @@
                            </table>
                         </div>
                     } @else {
-                        <div class="h-full flex items-center justify-center text-slate-300 dark:text-slate-600 flex-col"><i class="fa-solid fa-chart-pie text-4xl mb-2"></i><span class="text-xs font-bold">Chọn quy trình</span></div>
+                        <app-empty-state icon="fa-chart-pie" title="Chọn quy trình"></app-empty-state>
                     }
                 </div>
             </div>
@@ -324,7 +321,7 @@
                           <h5 id="inventory-modal-title" class="font-bold text-slate-800 dark:text-slate-100 text-base">{{ isEditing() ? 'Cập nhật' : 'Thêm mới' }}</h5>
                           <p id="inventory-modal-description" class="text-[10px] text-slate-400 dark:text-slate-500">Thông tin chi tiết hóa chất</p>
                       </div>
-                      <button type="button" aria-label="Đóng biểu mẫu hóa chất" (click)="closeModal()" class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition active:scale-90"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+                      <button type="button" aria-label="Đóng biểu mẫu hóa chất" (click)="closeModal()" class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition active:scale-90"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                    </div>
                    
                    <div class="flex-1 overflow-y-auto p-5 md:p-6 bg-slate-50 dark:bg-slate-900/50 custom-scrollbar">
@@ -368,7 +365,7 @@
                            <div class="bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-xl border border-yellow-200 dark:border-yellow-800/30 space-y-3">
                                <div class="flex justify-between items-center">
                                    <label class="text-[10px] font-bold text-yellow-800 dark:text-yellow-500 uppercase flex items-center gap-2">
-                                       <i class="fa-solid fa-shield-virus"></i> Cảnh báo Hóa học
+                                       <i class="fa-solid fa-shield-virus"></i> Cảnh báo hóa học
                                    </label>
                                    <button type="button" (click)="fetchPubChem()" [disabled]="isFetchingGhs()" class="text-[10px] bg-yellow-400 dark:bg-yellow-600/50 hover:bg-yellow-500 text-yellow-900 dark:text-yellow-100 px-3 py-1.5 rounded-lg border border-yellow-500 dark:border-none font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50">
                                        @if(isFetchingGhs()) { <i class="fa-solid fa-spinner fa-spin"></i> Tra cứu... } 
@@ -391,7 +388,7 @@
                                    <div class="mt-3 space-y-2 max-h-40 overflow-y-auto custom-scrollbar text-[10px] p-2 bg-white dark:bg-slate-800 rounded border border-yellow-200 dark:border-yellow-800/30">
                                        @if(form.get('hazardStatements')?.value?.length) {
                                            <div>
-                                               <strong class="text-red-600 dark:text-red-400">Cảnh báo Nguy hiểm (H):</strong>
+                                               <strong class="text-red-600 dark:text-red-400">Cảnh báo nguy hiểm (H):</strong>
                                                <ul class="list-disc pl-4 text-slate-600 dark:text-slate-400 mt-1">
                                                    @for(h of form.get('hazardStatements')?.value; track h) { <li>{{h}}</li> }
                                                </ul>
@@ -415,7 +412,7 @@
                                    <input type="number" formControlName="stock" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-lg font-bold text-fuchsia-600 dark:text-fuchsia-400 outline-none bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition text-center">
                                </div>
                                <div>
-                                   <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Đơn vị (Gốc)</label>
+                                   <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Đơn vị (gốc)</label>
                                    <select formControlName="unit" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-xs outline-none bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 text-slate-700 dark:text-slate-200 transition h-[48px]">
                                        @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.label}}</option> }
                                    </select>
@@ -440,7 +437,7 @@
                                    <input formControlName="gtin" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm dark:shadow-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" placeholder="VD: 04059081234567">
                                </div>
                                <div>
-                                   <label class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase ml-1 block mb-1">Số Lô (Lot/Batch)</label>
+                                   <label class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase ml-1 block mb-1">Số lô (Lot/Batch)</label>
                                    <input formControlName="lotNumber" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm dark:shadow-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" placeholder="VD: A12345678">
                                </div>
                            </div>
@@ -452,14 +449,13 @@
 
                            <div class="pt-4 flex gap-3 pb-safe">
                                @if(isEditing()) {
-                                   <button type="button" (click)="deleteItem($any(form.getRawValue()))" [disabled]="isProcessing()" class="flex-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 py-3.5 rounded-xl font-bold text-xs shadow-sm dark:shadow-none hover:bg-red-100 dark:hover:bg-red-900/40 transition active:scale-95 disabled:opacity-50">
-                                       @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xóa }
-                                   </button>
+                                   <app-button class="flex-1" variant="danger" [fullWidth]="true" [loading]="isProcessing()" (click)="deleteItem($any(form.getRawValue()))">
+                                       Xóa
+                                   </app-button>
                                }
-                               <button type="submit" [disabled]="isProcessing()" class="flex-[3] bg-slate-800 dark:bg-slate-700 text-white py-3.5 rounded-xl font-bold text-xs shadow-md dark:shadow-none hover:shadow-lg hover:bg-black dark:hover:bg-slate-600 transition transform active:scale-95 disabled:opacity-50">
-                                   @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
-                                   @else { {{ isEditing() ? 'Lưu thay đổi' : 'Tạo mới' }} }
-                               </button>
+                               <app-button class="flex-[3]" type="submit" [fullWidth]="true" [loading]="isProcessing()">
+                                   {{ isProcessing() ? 'Đang lưu...' : (isEditing() ? 'Lưu thay đổi' : 'Tạo mới') }}
+                               </app-button>
                            </div>
                        </form>
                    </div>

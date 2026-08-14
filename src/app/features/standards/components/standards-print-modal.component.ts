@@ -259,7 +259,7 @@ interface RollPreset {
                                  
                                  <!-- Overflow Warning for Small Labels -->
                                  @if (showOverflowWarning()) {
-                                     <div class="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-250 dark:border-amber-900/40 text-[11px] text-amber-700 dark:text-amber-400 mt-2.5 flex gap-2">
+                                     <div class="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-700 dark:text-amber-400 mt-2.5 flex gap-2">
                                          <i class="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0 animate-bounce"></i>
                                          <span><strong>Lưu ý:</strong> Cỡ nhãn nhỏ dán nhiều thông tin có thể bị tràn hoặc đè chữ. Bạn nên tắt bớt trường không quá quan trọng.</span>
                                      </div>
@@ -355,7 +355,7 @@ interface RollPreset {
                                                    <!-- Printed label cell -->
                                                    <div (click)="gridStartIndex.set(slotIndex)"
                                                         title="Đang chọn in ở đây"
-                                                        class="bg-indigo-50 border border-indigo-305 text-indigo-700 font-semibold cursor-pointer hover:bg-indigo-100 transition-all relative flex flex-col justify-between overflow-hidden"
+                                                        class="bg-indigo-50 border border-indigo-300 text-indigo-700 font-semibold cursor-pointer hover:bg-indigo-100 transition-all relative flex flex-col justify-between overflow-hidden"
                                                         style="box-sizing: border-box; padding: 1mm; line-height: 1.15;">
                                                         <div style="font-size: 7.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1e1b4b;">
                                                             {{ getStandardForSlot(slotIndex)?.name }}
@@ -372,7 +372,7 @@ interface RollPreset {
                                                    <!-- Unused label cell -->
                                                    <div (click)="gridStartIndex.set(slotIndex)"
                                                         title="Click để chọn làm ô bắt đầu"
-                                                        class="border border-dashed border-slate-205 bg-white flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                                                        class="border border-dashed border-slate-200 bg-white flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
                                                    </div>

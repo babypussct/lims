@@ -2,33 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.13-b01
+## Phiên bản hiện tại: v26.08.14-b01
 
-### v26.08.13-b01
+### v26.08.14-b01
 
 #### 🚀 Tính năng nổi bật
 
-- Step 2 được tổ chức thành một workspace duy nhất, cho phép khai báo nhiều nhóm mẻ trên cùng một trang.
-- Mỗi nhóm mẻ có wizard hai bước để lần lượt hoàn thiện mã mẫu, nền mẫu, mô tả, chỉ tiêu và SOP.
-- SmartBatch tiếp tục tự quyết định gom hoặc tách batch vật lý sau khi các nhóm đã đủ thông tin.
+- Chuẩn hóa các primitive UI dùng chung cho page header, toolbar, button, empty state và modal shell; các module đã chạm giữ nguyên semantics nghiệp vụ.
+- Tiếp tục hoàn thiện SmartBatch Step 2 theo workspace nhiều nhóm, wizard hai bước và action dock responsive dùng cùng contract UI.
+- Giới hạn service-worker recovery còn một lần cho mỗi phiên bản trong mỗi tab để tránh vòng lặp auto-reload.
 
 #### ✨ Tính năng mới
 
-- Hỗ trợ nhập mã mẫu theo dạng mã[TAB]mô tả và hiển thị ngay mô tả của từng mã để kiểm tra.
-- Một bộ chỉ tiêu được áp dụng thống nhất cho toàn bộ mẫu trong cùng nhóm mẻ.
-- Có tối đa năm SOP gợi ý; người dùng chỉ cần click trực tiếp vào thẻ SOP đủ điều kiện để chỉ định.
+- Bổ sung route demo dev-only và contract tests cho primitive UI, guardrail token/icon/overlay, cùng checklist quy ước để người tiếp nhận tiếp tục migration theo module.
+- Bổ sung regression cho Dashboard, Inventory, Standards, Results, Recipes, Preparation và Targets; các control chuyên biệt vẫn giữ native khi cần bảo toàn semantics.
+- Tăng độ chịu lỗi của monthly stats bằng atomic increment cho đường tăng và giữ transaction clamp cho đường giảm, kèm Rules emulator coverage.
 
 #### ⚡ Tối ưu & cải tiến
 
-- Gộp vùng SOP hiện tại thành một select duy nhất, đồng thời giữ lựa chọn tự phân phối và SOP thủ công.
-- Tách rõ trạng thái hover và trạng thái SOP đã chọn bằng viền, ring, shadow và nhãn Đang chọn.
-- Nút Chạy SmartBatch optimizer tự động được bật khi toàn bộ nhóm hoàn tất, không cần bước Hoàn tất nhóm mẻ trung gian.
+- Các module Dashboard, Inventory, Standards, Results, Preparation, Batch/SmartBatch và Targets đã bắt đầu dùng primitive chung; không đánh dấu module chưa có runtime/visual evidence.
+- Nối UI guardrail và service-worker recovery vào test suite chính, đồng thời khóa số overlay legacy bằng baseline để ngăn phát sinh mới ngoài modal shell.
+- Giữ release/deploy boundary rõ ràng: test local/emulator không thay thế authenticated UI, Firebase Rules production hoặc business acceptance.
 
 #### 🐛 Sửa lỗi
 
-- Bổ sung kiểm tra SOP chỉ định phải phủ đủ toàn bộ chỉ tiêu và tương thích với nền mẫu của nhóm.
-- Giữ nguyên semantics hiện tại: nhóm chỉ đại diện cho cùng bộ chỉ tiêu; optimizer mới quyết định batch vật lý.
-- Bổ sung regression test cho parser mã mẫu, ma trận mẫu–chỉ tiêu, handoff JobBlock và giao diện wizard Step 2.
+- Sửa nguy cơ service worker tự reload lặp vô hạn khi phát UNRECOVERABLE_STATE và dừng an toàn khi sessionStorage không khả dụng.
+- Loại bỏ shade Tailwind không tồn tại và alias fa-times trong vùng source đã rà; giữ nguyên các overlay legacy đã được baseline.
+- Bổ sung regression test cho UI migration, parser/matrix/JobBlock handoff SmartBatch và concurrent monthly-stats writers.
 
 ### v26.08.07-b02
 

@@ -27,6 +27,9 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { QueryDocumentSnapshot, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-standard-detail',
@@ -38,7 +41,10 @@ import { LockPermissionDirective } from '../../shared/directives/lock-permission
       StandardsPrintModalComponent,
       StandardsPurchaseModalComponent,
       StandardsAssignModalComponent,
-      LockPermissionDirective
+      LockPermissionDirective,
+      AppButtonComponent,
+      AppEmptyStateComponent,
+      AppPageHeaderComponent
   ],
   templateUrl: './standard-detail.component.html'
 })

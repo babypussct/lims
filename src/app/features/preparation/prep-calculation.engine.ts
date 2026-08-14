@@ -539,7 +539,7 @@ function calculateTarget(draft: TargetTaskDraft): PrepCalculationResult<PrepOutp
   if (finalVolumeMl === null || target === null || name === '') return calculated(null, issues, {}, trace);
   const flask = suggestVolumetricFlask(finalVolumeMl, 'finalVolume', issues);
   let plannedQuantity: number;
-  let plannedGPerL = target.gPerL;
+  const plannedGPerL = target.gPerL;
   let actualQuantity: QuantityResult | null = null;
   let actualConcentration: ConcentrationSnapshot | null = null;
   let pipette: PipetteSuggestion | null = null;

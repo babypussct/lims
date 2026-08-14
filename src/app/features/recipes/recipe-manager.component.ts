@@ -14,72 +14,76 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs
 
 import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
 import { StateService } from '../../core/services/state.service';
+import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent } from '../../shared/components/ui';
 
 @Component({
   selector: 'app-recipe-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent],
   template: `
-    <div class="flex flex-col flex-1 min-h-0 fade-in relative pb-10">
+    <div class="flex flex-col flex-1 min-h-0 fade-in relative pb-10 bg-transparent dark:text-slate-100">
         
         <!-- Header Actions (No title, title is in tabs) -->
         <div class="flex justify-end mb-4 shrink-0">
             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
-                <button [appLockPermission]="'recipe_edit'" (click)="openModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-plus"></i> Tạo Công Thức
-                </button>
+                <app-button [appLockPermission]="'recipe_edit'" (click)="openModal()">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo công thức
+                </app-button>
             }
         </div>
 
         @if(accessDenied()) {
-            <div class="flex items-center justify-center h-64 bg-red-50 rounded-2xl border border-red-100">
+            <div class="flex items-center justify-center h-64 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-100 dark:border-red-900/50">
                 <div class="text-center">
                     <i class="fa-solid fa-lock text-red-300 text-4xl mb-3"></i>
-                    <h3 class="text-red-800 font-bold text-lg">Không Có Quyền Truy Cập</h3>
-                    <p class="text-red-600 text-sm mt-1">Bạn không có quyền xem thư viện công thức.</p>
+                    <h3 class="text-red-800 dark:text-red-200 font-bold text-lg">Không Có Quyền Truy Cập</h3>
+                    <p class="text-red-600 dark:text-red-300 text-sm mt-1">Bạn không có quyền xem thư viện công thức.</p>
                 </div>
             </div>
         } @else {
             <!-- List -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto custom-scrollbar p-1">
                 @for (recipe of recipes(); track recipe.id) {
-                    <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 group relative hover:border-purple-300 flex flex-col">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 group relative hover:border-indigo-300 dark:hover:border-indigo-700 flex flex-col">
                         <div class="flex justify-between items-start mb-3">
-                            <span class="bg-purple-50 text-purple-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-100">
+                            <span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-indigo-100 dark:border-indigo-900/50">
                                 {{recipe.baseUnit}}
                             </span>
                             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
                                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition duration-200">
-                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition shadow-sm">
+                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 transition shadow-sm">
                                         <i class="fa-solid fa-pen text-[10px]"></i>
                                     </button>
-                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition shadow-sm">
+                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-700 transition shadow-sm">
                                         <i class="fa-solid fa-trash text-[10px]"></i>
                                     </button>
                                 </div>
                             }
                         </div>
                         
-                        <h3 class="font-bold text-slate-800 text-lg mb-4 line-clamp-2 leading-snug" [title]="'ID: ' + recipe.id">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-lg mb-4 line-clamp-2 leading-snug" [title]="'ID: ' + recipe.id">
                             {{recipe.name}}
                         </h3>
                         
-                        <div class="space-y-2 border-t border-slate-50 pt-3 mt-auto">
+                        <div class="space-y-2 border-t border-slate-50 dark:border-slate-700 pt-3 mt-auto">
                             @for (ing of recipe.ingredients; track ing.name) {
                                 <div class="flex justify-between text-xs items-center">
                                     <div class="flex items-center gap-1.5 overflow-hidden">
                                         <div class="w-1.5 h-1.5 rounded-full bg-purple-200 shrink-0"></div>
-                                        <span class="text-slate-600 font-medium truncate" [title]="ing.displayName || ing.name">{{ing.displayName || ing.name}}</span>
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium truncate" [title]="ing.displayName || ing.name">{{ing.displayName || ing.name}}</span>
                                     </div>
-                                    <span class="text-slate-700 font-bold font-mono whitespace-nowrap">{{formatNum(ing.amount)}} <span class="text-[10px] font-normal text-slate-400">{{ing.unit}}</span></span>
+                                    <span class="text-slate-700 dark:text-slate-200 font-bold font-mono whitespace-nowrap">{{formatNum(ing.amount)}} <span class="text-[10px] font-normal text-slate-400">{{ing.unit}}</span></span>
                                 </div>
                             }
                         </div>
                     </div>
                 } @empty {
-                    <div class="col-span-full py-20 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <i class="fa-solid fa-flask text-3xl mb-3 text-slate-300"></i>
-                        <p>Chưa có công thức nào. Nhấn "Tạo công thức" để thêm mới.</p>
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
+                        <app-empty-state
+                            icon="fa-flask"
+                            title="Chưa có công thức"
+                            message="Nhấn “Tạo công thức” để thêm mới."
+                        />
                     </div>
                 }
             </div>
@@ -87,32 +91,26 @@ import { StateService } from '../../core/services/state.service';
 
         <!-- Modal -->
         @if (showModal()) {
-            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-flask text-purple-600"></i>
-                            {{ isEditing() ? 'Cập nhật công thức' : 'Tạo công thức Mới' }}
-                        </h3>
-                        <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
-                    </div>
-                    
-                    <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white">
-                        <form [formGroup]="form" class="space-y-6">
+            <app-modal-shell
+                [title]="isEditing() ? 'Cập nhật công thức' : 'Tạo công thức mới'"
+                size="md"
+                (closed)="closeModal()"
+            >
+                <form modalBody [formGroup]="form" class="space-y-6">
                             <!-- Basic Info -->
-                            <div class="p-4 bg-purple-50 rounded-xl border border-purple-100 space-y-4">
+                            <div class="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50 space-y-4">
                                 <div>
-                                    <label class="text-xs font-bold text-purple-800 uppercase block mb-1.5">Tên hiển thị <span class="text-red-500">*</span></label>
-                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-purple-200 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 bg-white placeholder-purple-300" placeholder="VD: Hỗn hợp Muối A">
+                                    <label class="text-xs font-bold text-indigo-800 dark:text-indigo-200 uppercase block mb-1.5">Tên hiển thị <span class="text-red-500">*</span></label>
+                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 placeholder-indigo-300" placeholder="VD: Hỗn hợp Muối A">
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-xs font-bold text-slate-500 uppercase block mb-1">ID (Slug)</label>
-                                        <input formControlName="id" [readonly]="isEditing()" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs bg-slate-100 outline-none font-mono text-slate-600">
+                                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">ID (Slug)</label>
+                                        <input formControlName="id" [readonly]="isEditing()" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs bg-slate-100 dark:bg-slate-700 outline-none font-mono text-slate-600 dark:text-slate-300">
                                     </div>
                                     <div>
-                                        <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Đơn vị thành phẩm</label>
-                                        <select formControlName="baseUnit" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none bg-white">
+                                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Đơn vị thành phẩm</label>
+                                        <select formControlName="baseUnit" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                             @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
                                         </select>
                                     </div>
@@ -122,59 +120,59 @@ import { StateService } from '../../core/services/state.service';
                             <!-- Ingredients -->
                             <div>
                                 <div class="flex justify-between items-center mb-3">
-                                    <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase flex items-center gap-2">
                                         <i class="fa-solid fa-layer-group text-slate-400"></i> Thành phần (từ kho)
                                     </label>
-                                    <button type="button" (click)="addIngredient()" class="text-xs bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition">+ Thêm Dòng</button>
+                                    <app-button type="button" variant="secondary" size="sm" (click)="addIngredient()">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm dòng
+                                    </app-button>
                                 </div>
                                 
                                 <div formArrayName="ingredients" class="space-y-3">
                                     @for (ing of ingredients.controls; track ing; let i = $index) {
-                                        <div [formGroupName]="i" class="flex gap-2 items-center relative z-0 p-2 bg-slate-50 rounded-xl border border-slate-100 group transition hover:border-purple-200 hover:bg-purple-50/50" [style.zIndex]="100-i">
-                                            <div class="w-6 h-6 rounded bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">{{i+1}}</div>
+                                        <div [formGroupName]="i" class="flex gap-2 items-center relative z-0 p-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-700 group transition hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20" [style.zIndex]="100-i">
+                                            <div class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center text-xs font-bold shrink-0">{{i+1}}</div>
                                             
                                             <!-- Search Component -->
                                             <div class="flex-1 relative">
                                                 <input formControlName="_displayName" 
                                                        (input)="onSearchInput($event, i)"
                                                        (focus)="onSearchFocus(i)"
-                                                       class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-purple-500 bg-white shadow-sm" 
+                                                       class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 bg-white dark:bg-slate-800 shadow-sm"
                                                        placeholder="Nhập tên hóa chất...">
                                                 <input formControlName="name" type="hidden">
                                                 
                                                 @if(activeSearchIndex === i && searchResults().length > 0) {
-                                                    <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 custom-scrollbar">
+                                                    <div class="absolute top-full left-0 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 custom-scrollbar">
                                                         @for (item of searchResults(); track item.id) {
-                                                            <div (click)="selectItem(item, i)" class="px-3 py-2 hover:bg-purple-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center group/item">
+                                                            <div (click)="selectItem(item, i)" class="px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 cursor-pointer border-b border-slate-50 dark:border-slate-700 last:border-0 flex justify-between items-center group/item">
                                                                 <div class="truncate pr-2">
-                                                                    <div class="text-xs font-bold text-slate-700 group-hover/item:text-purple-700 truncate">{{item.name}}</div>
+                                                                    <div class="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover/item:text-indigo-700 dark:group-hover/item:text-indigo-300 truncate">{{item.name}}</div>
                                                                     <div class="text-[10px] text-slate-400 font-mono">{{item.id}}</div>
                                                                 </div>
-                                                                <div class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">{{item.unit}}</div>
+                                                                <div class="text-[9px] font-bold text-slate-500 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded shrink-0">{{item.unit}}</div>
                                                             </div>
                                                         }
                                                     </div>
                                                 }
                                             </div>
 
-                                            <input formControlName="amount" type="number" class="w-20 border border-slate-300 rounded-lg px-2 py-2 text-xs text-center font-bold outline-none focus:border-purple-500" placeholder="Lượng">
-                                            <select formControlName="unit" class="w-20 border border-slate-300 rounded-lg px-2 py-2 text-xs outline-none bg-white">
+                                            <input formControlName="amount" type="number" class="w-20 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-center font-bold outline-none focus:border-indigo-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" placeholder="Lượng">
+                                            <select formControlName="unit" class="w-20 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
                                                 @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
                                             </select>
-                                            <button type="button" (click)="ingredients.removeAt(i)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition"><i class="fa-solid fa-times"></i></button>
+                                            <button type="button" (click)="ingredients.removeAt(i)" aria-label="Xóa dòng thành phần" class="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition"><i class="fa-solid fa-xmark"></i></button>
                                         </div>
                                     }
                                 </div>
                             </div>
-                        </form>
-                    </div>
+                </form>
 
-                    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                        <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
-                        <button (click)="save()" [disabled]="form.invalid" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">Lưu Công Thức</button>
-                    </div>
+                <div modalFooter class="contents">
+                    <app-button variant="secondary" (click)="closeModal()">Hủy</app-button>
+                    <app-button (click)="save()" [disabled]="form.invalid">Lưu</app-button>
                 </div>
-            </div>
+            </app-modal-shell>
         }
     </div>
   `

@@ -6,6 +6,13 @@ import { debounceTime } from 'rxjs/operators';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { StateService } from '../../core/services/state.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
+import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import {
+  AppButtonComponent,
+  AppEmptyStateComponent,
+  AppPageHeaderComponent,
+  AppToolbarComponent,
+} from '../../shared/components/ui';
 import { DocumentPreviewModalComponent } from './document-preview-modal.component';
 import { DriveItem } from './document-viewer.models';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -49,46 +56,49 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
 @Component({
   selector: 'app-documents',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridAngular, DocumentPreviewModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridAngular,
+    SkeletonComponent,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppPageHeaderComponent,
+    AppToolbarComponent,
+    DocumentPreviewModalComponent,
+  ],
   host: {
     '[class.document-preview-active]': 'previewItem() !== null'
   },
   template: `
     <div class="documents-page-enter h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-2 md:p-3 relative overflow-hidden">
       
-      <!-- Compact header and primary actions -->
-      <div class="flex items-center justify-between gap-2 mb-2 bg-white dark:bg-slate-800 px-2.5 py-2 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-9 h-9 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-800/30 shrink-0">
-            <i class="fa-solid fa-folder-open text-sm"></i>
-          </div>
-          <div class="min-w-0">
-            <h2 class="text-base md:text-lg font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Phiếu Giao Nhận Mẫu</h2>
-            <p class="hidden xl:block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản lý tài liệu giao nhận mẫu phòng thí nghiệm.</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-1.5 shrink-0">
+      <app-page-header
+        class="mb-2 block shrink-0 overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700"
+        title="Phiếu giao nhận mẫu"
+        subtitle="Quản lý tài liệu giao nhận mẫu phòng thí nghiệm."
+        icon="fa-folder-open">
+        <div pageHeaderActions class="flex items-center gap-1.5">
           <!-- View Toggle -->
           <div class="hidden sm:flex items-center bg-slate-50 dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700" role="group" aria-label="Chế độ hiển thị">
             <button (click)="setViewMode('list')"
                     class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
                     [class.bg-white]="viewMode() === 'list'" [class.dark:bg-slate-800]="viewMode() === 'list'"
-                    [class.text-fuchsia-600]="viewMode() === 'list'" [class.text-slate-450]="viewMode() !== 'list'"
+                    [class.text-indigo-600]="viewMode() === 'list'" [class.text-slate-400]="viewMode() !== 'list'"
                     title="Chế độ danh sách" aria-label="Chế độ danh sách">
               <i class="fa-solid fa-list"></i>
             </button>
             <button (click)="setViewMode('grid')"
                     class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
                     [class.bg-white]="viewMode() === 'grid'" [class.dark:bg-slate-800]="viewMode() === 'grid'"
-                    [class.text-fuchsia-600]="viewMode() === 'grid'" [class.text-slate-455]="viewMode() !== 'grid'"
+                    [class.text-indigo-600]="viewMode() === 'grid'" [class.text-slate-400]="viewMode() !== 'grid'"
                     title="Chế độ lưới" aria-label="Chế độ lưới">
               <i class="fa-solid fa-border-all"></i>
             </button>
           </div>
 
           <button (click)="toggleDensity()"
-                  class="hidden md:flex w-9 h-9 items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 rounded-lg hover:text-fuchsia-600 transition-colors"
+                  class="hidden md:flex w-9 h-9 items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 rounded-lg hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
                   [title]="density() === 'compact' ? 'Chuyển sang hiển thị thoáng' : 'Chuyển sang hiển thị gọn'"
                   [attr.aria-label]="density() === 'compact' ? 'Chuyển sang hiển thị thoáng' : 'Chuyển sang hiển thị gọn'">
             <i class="fa-solid" [class.fa-compress]="density() === 'compact'" [class.fa-arrows-up-down]="density() !== 'compact'"></i>
@@ -102,7 +112,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
             <i class="fa-solid fa-rotate-right" [class.fa-spin]="loading() && isOnline()"></i>
           </button>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- Breadcrumbs -->
       <nav class="mb-2 min-h-9 flex items-center text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto scrollbar-none shrink-0"
@@ -139,8 +149,8 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
         }
         
         <!-- Toolbar: Search & Filter -->
-        <div class="px-2.5 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
-          <div class="relative flex-1 max-w-md flex items-center gap-2">
+        <app-toolbar>
+          <div toolbarSearch class="relative max-w-md flex-1">
             <div class="relative flex-1">
               <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input #searchInput
@@ -148,43 +158,38 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                      [ngModel]="searchInputValue()" 
                      (ngModelChange)="onSearchChange($event)"
                      [placeholder]="isMobile() ? 'Tìm tài liệu...' : 'Tìm tài liệu trong thư mục hiện tại...'" 
-                     class="w-full h-9 pl-9 pr-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-shadow">
+                     class="w-full h-9 pl-9 pr-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/40 dark:text-white transition-shadow">
               @if (searchInputValue()) {
                 <button type="button"
                         aria-label="Xóa tìm kiếm"
                         (click)="clearSearch()"
                         class="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                  <i class="fa-solid fa-times"></i>
+                  <i class="fa-solid fa-xmark"></i>
                 </button>
               }
             </div>
           </div>
-          <div class="text-xs text-slate-500 dark:text-slate-400 ml-auto shrink-0 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full">
+          <div toolbarActions class="text-xs text-slate-500 dark:text-slate-400 shrink-0 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full">
             {{ displayFiles().length }} mục
           </div>
-        </div>
+        </app-toolbar>
 
         @if (!isOnline()) {
           <!-- Offline State -->
-          <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
-            <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400 flex items-center justify-center text-2xl mb-4">
-              <i class="fa-solid fa-plug-circle-xmark"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Không Có Kết Nối Mạng</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm max-w-sm">Vui lòng kiểm tra lại kết nối Internet để duyệt và tải tài liệu từ Google Drive.</p>
+          <div class="flex flex-1 items-center justify-center animate-fade-in">
+            <app-empty-state
+              icon="fa-plug-circle-xmark"
+              title="Không có kết nối mạng"
+              message="Vui lòng kiểm tra lại kết nối Internet để duyệt và tải tài liệu từ Google Drive.">
+            </app-empty-state>
           </div>
         } @else {
           <!-- Error State -->
           @if (folderError() && files().length === 0) {
-            <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
-              <div class="w-16 h-16 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-2xl mb-4">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </div>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Lỗi Tải Dữ Liệu</h3>
-              <p class="text-slate-500">{{ folderError() }}</p>
-              <button (click)="forceRefresh()" class="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg transition-colors font-semibold">
-                Thử Lại
-              </button>
+            <div class="flex flex-1 items-center justify-center animate-fade-in">
+              <app-empty-state icon="fa-triangle-exclamation" title="Lỗi tải dữ liệu" [message]="folderError() || ''">
+                <app-button emptyStateActions variant="secondary" size="sm" (click)="forceRefresh()">Thử lại</app-button>
+              </app-empty-state>
             </div>
           }
 
@@ -198,19 +203,23 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
 
           <!-- Empty State (No loading, no files) -->
           @if (!loading() && !folderError() && files().length === 0) {
-            <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
-              <i class="fa-regular fa-folder-open text-6xl text-slate-300 dark:text-slate-600 mb-4"></i>
-              <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Thư Mục Trống</h3>
-              <p class="text-sm text-slate-400 mt-1">Không có tài liệu nào trong thư mục này.</p>
+            <div class="flex flex-1 items-center justify-center animate-fade-in">
+              <app-empty-state
+                icon="fa-folder-open"
+                title="Thư mục trống"
+                message="Không có tài liệu nào trong thư mục này.">
+              </app-empty-state>
             </div>
           }
 
           <!-- Search Empty State -->
           @if (!loading() && !folderError() && files().length > 0 && displayFiles().length === 0) {
-            <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
-              <i class="fa-solid fa-search text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
-              <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Không Tìm Thấy Kết Quả</h3>
-              <p class="text-sm text-slate-400 mt-1">Thử tìm với từ khóa khác xem sao.</p>
+            <div class="flex flex-1 items-center justify-center animate-fade-in">
+              <app-empty-state
+                icon="fa-magnifying-glass"
+                title="Không tìm thấy kết quả"
+                message="Thử tìm với từ khóa khác xem sao.">
+              </app-empty-state>
             </div>
           }
 
@@ -222,11 +231,11 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
               <div #fileScroller class="block sm:hidden h-full overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-700/50" (scroll)="onFileScroll($event)">
                 @if (loading() && files().length === 0) {
                   @for (item of [1, 2, 3, 4, 5]; track item) {
-                    <div class="p-4 flex items-center gap-3 animate-pulse">
-                      <div class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+                    <div class="p-4 flex items-center gap-3">
+                      <app-skeleton shape="rect" width="40px" height="40px" class="shrink-0"></app-skeleton>
                       <div class="flex-1 space-y-2">
-                        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
-                        <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                        <app-skeleton width="66%" height="16px"></app-skeleton>
+                        <app-skeleton width="33%" height="12px"></app-skeleton>
                       </div>
                     </div>
                   }
@@ -301,17 +310,17 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
             <div #fileScroller class="overflow-y-auto flex-1 custom-scrollbar" (scroll)="onFileScroll($event)" [class.p-4]="density() === 'comfortable'" [class.p-2]="density() === 'compact'">
               @if (loading() && files().length === 0) {
                 <!-- Skeleton Grid -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-pulse">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track item) {
                     <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
                       <div class="flex-1 flex flex-col items-center justify-center py-4">
-                        <div class="w-16 h-16 rounded bg-slate-200 dark:bg-slate-700"></div>
+                        <app-skeleton shape="rect" width="64px" height="64px"></app-skeleton>
                       </div>
                       <div class="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-3 space-y-2">
-                        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mx-auto"></div>
+                        <app-skeleton width="75%" height="16px" class="mx-auto block"></app-skeleton>
                         <div class="flex justify-between items-center mt-2">
-                          <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-12"></div>
-                          <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-8"></div>
+                          <app-skeleton width="48px" height="12px"></app-skeleton>
+                          <app-skeleton width="32px" height="12px"></app-skeleton>
                         </div>
                       </div>
                     </div>
@@ -328,7 +337,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                         @if (isFolder(item)) {
                           <i class="fa-solid fa-folder text-yellow-400 text-5xl group-hover:scale-110 transition-transform"></i>
                         } @else if (item.thumbnailLink) {
-                          <img [src]="item.thumbnailLink" class="w-16 h-16 rounded shadow-sm border border-slate-150 dark:border-slate-700 object-cover group-hover:scale-110 transition-transform" onerror="this.style.display='none'" alt="thumbnail">
+                          <img [src]="item.thumbnailLink" class="w-16 h-16 rounded shadow-sm border border-slate-200 dark:border-slate-700 object-cover group-hover:scale-110 transition-transform" onerror="this.style.display='none'" alt="thumbnail">
                         } @else {
                           <i class="fa-solid {{ getFileTypeStyle(item).icon }} text-5xl group-hover:scale-110 transition-transform"></i>
                         }

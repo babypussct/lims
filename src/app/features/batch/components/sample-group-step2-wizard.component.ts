@@ -8,6 +8,8 @@ import {
   SampleDescriptionSnapshot
 } from '../../../core/models/sample-description.model';
 import { SampleGroupWizardGroup } from '../../../core/models/sample-group.model';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { getSampleDescriptionSnapshot } from '../../../shared/utils/sample-description.utils';
 import { getCanonicalId } from '../../results/shared/compound-id-resolver';
 import { getForcedSopAssignmentIssue, isSopMatrixCompatible } from '../smart-batch.utils';
@@ -51,7 +53,7 @@ interface WizardSopSuggestion {
 @Component({
   selector: 'app-sample-group-step2-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent],
   template: `
     <section class="smartbatch-group-wizard w-full h-full min-h-0 rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm overflow-hidden flex flex-col">
       <header class="shrink-0 min-h-[40px] px-3 sm:px-5 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between gap-3">
@@ -63,9 +65,10 @@ interface WizardSopSuggestion {
             {{completedGroupCount()}}/{{drafts().length}} hoàn tất
           </span>
         </div>
-        <button type="button" (click)="close.emit()" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[9px] font-black text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition whitespace-nowrap">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Đổi cách lập mẻ
-        </button>
+        <app-button variant="secondary" size="sm" class="whitespace-nowrap" (click)="close.emit()">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          Đổi cách lập mẻ
+        </app-button>
       </header>
 
       <div class="flex-1 min-h-0 p-3 sm:p-4 grid grid-cols-1 grid-rows-[minmax(170px,0.3fr)_minmax(0,1fr)] lg:grid-cols-[minmax(250px,0.32fr)_minmax(0,1fr)] lg:grid-rows-1 gap-4 overflow-hidden">
@@ -116,9 +119,10 @@ interface WizardSopSuggestion {
             </article>
           }
 
-          <button type="button" (click)="addGroup()" [disabled]="singleMode" class="w-full py-3 rounded-xl border border-dashed border-teal-300 dark:border-teal-800 text-teal-700 dark:text-teal-300 bg-teal-50/50 dark:bg-teal-950/10 hover:bg-teal-50 dark:hover:bg-teal-950/25 disabled:opacity-40 disabled:cursor-not-allowed text-[10px] font-black transition">
-            <i class="fa-solid fa-plus mr-1"></i> Thêm nhóm mới
-          </button>
+          <app-button variant="secondary" size="sm" [fullWidth]="true" (click)="addGroup()" [disabled]="singleMode">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            Thêm nhóm mới
+          </app-button>
         </aside>
 
         <main class="min-w-0 min-h-0">
@@ -388,7 +392,10 @@ interface WizardSopSuggestion {
               </div>
 
               <footer class="sticky bottom-0 z-20 shrink-0 px-4 sm:px-6 py-2.5 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur flex flex-wrap items-center justify-between gap-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)]">
-                <button type="button" (click)="previousStep()" [disabled]="activeStep() === 1" class="px-4 py-2.5 rounded-xl text-xs font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-arrow-left mr-1"></i> Quay lại</button>
+                <app-button variant="secondary" (click)="previousStep()" [disabled]="activeStep() === 1">
+                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                  Quay lại
+                </app-button>
                 <div class="text-[10px] text-center hidden sm:block"
                      [class.text-emerald-600]="activeGroupIsCompleted()"
                      [class.text-slate-400]="!activeGroupIsCompleted()">
@@ -399,15 +406,20 @@ interface WizardSopSuggestion {
                   }
                 </div>
                 @if (activeStep() === 1) {
-                  <button type="button" (click)="nextStep()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md">Tiếp tục: Chỉ tiêu &amp; SOP <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                  <app-button variant="primary" (click)="nextStep()">
+                    Tiếp tục: Chỉ tiêu &amp; SOP
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                  </app-button>
                 }
               </footer>
             </div>
           } @else {
-            <div class="h-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/50 flex flex-col items-center justify-center text-center p-8">
-              <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center mb-4"><i class="fa-solid fa-check-double text-2xl"></i></div>
-              <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Các nhóm mẻ đã được lưu trong Step 2</h3>
-              <p class="mt-2 max-w-md text-xs leading-relaxed text-slate-500 dark:text-slate-400">Mở lại một nhóm ở danh sách bên trái để kiểm tra hoặc chỉnh sửa. Dùng một nút <b>Thêm nhóm mới</b> ở cuối danh sách khi cần tạo nhóm tiếp theo.</p>
+            <div class="h-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/50 flex items-center justify-center">
+              <app-empty-state
+                icon="fa-check-double"
+                title="Các nhóm mẻ đã được lưu trong bước 2"
+                message="Mở lại một nhóm ở danh sách bên trái để kiểm tra hoặc chỉnh sửa. Dùng nút Thêm nhóm mới ở cuối danh sách khi cần tạo nhóm tiếp theo.">
+              </app-empty-state>
             </div>
           }
         </main>

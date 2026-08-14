@@ -1,34 +1,27 @@
     <div class="pb-20 fade-in font-sans">
         
         <!-- HEADER: Welcome & Scan -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
-                    <i class="fa-solid fa-house text-base"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">
-                        Xin Chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
-                    </h1>
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng.</p>
-                </div>
-            </div>
-            
-            <div class="flex gap-2 items-center">
-                <!-- Compact Changelog Button -->
-                <button (click)="changelogService.open()" 
-                        title="Xem nhật ký cập nhật phiên bản hệ thống"
-                        class="px-3.5 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-850 dark:to-slate-750 hover:from-blue-100 hover:to-indigo-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-slate-600 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95">
-                    <i class="fa-solid fa-sparkles text-amber-500 animate-pulse text-[13px]"></i>
-                    <span>Nhật Ký {{state.systemVersion()}}</span>
-                </button>
+        <app-page-header
+            class="mb-6 block overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700"
+            [title]="'Xin chào, ' + (auth.currentUser()?.displayName || '') + '!'"
+            subtitle="Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng."
+            icon="fa-house">
+            <div pageHeaderActions class="contents">
+                <app-button
+                    variant="secondary"
+                    size="sm"
+                    title="Xem nhật ký cập nhật phiên bản hệ thống"
+                    (click)="changelogService.open()">
+                    <i class="fa-solid fa-sparkles text-amber-500" aria-hidden="true"></i>
+                    <span>Nhật ký {{state.systemVersion()}}</span>
+                </app-button>
 
-                <!-- Calls Global Service (Hidden on md and larger screens) -->
-                <button (click)="qrService.startScan()" class="md:hidden px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
-                    <i class="fa-solid fa-qrcode"></i> Quét Mã
-                </button>
+                <app-button class="md:hidden" size="sm" (click)="qrService.startScan()">
+                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                    Quét mã
+                </app-button>
             </div>
-        </div>
+        </app-page-header>
 
 
         <!-- SECTION 1: KPI CARDS -->
@@ -356,10 +349,11 @@
                                     </div>
                                 </div>
                             } @empty {
-                                <div class="text-center text-gray-400 dark:text-slate-500 text-sm py-10 flex flex-col items-center justify-center">
-                                    <i class="fa-solid fa-inbox text-3xl mb-2 opacity-50"></i>
-                                    <span>Chưa có dữ liệu.</span>
-                                </div>
+                                <app-empty-state
+                                    icon="fa-inbox"
+                                    title="Chưa có hoạt động"
+                                    message="Không có hoạt động phù hợp với bộ lọc hiện tại.">
+                                </app-empty-state>
                             }
                         </div>
                     </div>

@@ -263,7 +263,7 @@ import { Router } from '@angular/router';
                         <div class="space-y-4">
                             <!-- Option A: Đưa về chờ duyệt -->
                             <button (click)="confirmRevoke('pending')" 
-                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-blue-950/20 dark:hover:to-indigo-950/20 border border-slate-105 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition group flex gap-4">
+                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-blue-950/20 dark:hover:to-indigo-950/20 border border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition group flex gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>
@@ -275,7 +275,7 @@ import { Router } from '@angular/router';
 
                             <!-- Option B: Từ chối hoàn toàn -->
                             <button (click)="confirmRevoke('rejected')" 
-                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-red-50/50 hover:to-rose-50/50 dark:hover:from-red-950/20 dark:hover:to-rose-950/20 border border-slate-105 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50 transition group flex gap-4">
+                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-red-50/50 hover:to-rose-50/50 dark:hover:from-red-950/20 dark:hover:to-rose-950/20 border border-slate-100 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50 transition group flex gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/50 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 group-hover:scale-110 transition-transform">
                                     <i class="fa-solid fa-ban"></i>
                                 </div>
@@ -288,7 +288,7 @@ import { Router } from '@angular/router';
                     </div>
 
                     <!-- Footer actions -->
-                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-105 dark:border-slate-750/80 flex justify-end">
+                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-750/80 flex justify-end">
                         <button (click)="closeRevokeModal()" 
                                 class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition">
                             Hủy Thao Tác

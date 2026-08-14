@@ -11,11 +11,23 @@ import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
+import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
+import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolbar.component';
 
 @Component({
   selector: 'app-standard-usage',
   standalone: true,
-  imports: [CommonModule, FormsModule, ExportModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ExportModalComponent,
+    AppButtonComponent,
+    AppEmptyStateComponent,
+    AppPageHeaderComponent,
+    AppToolbarComponent,
+  ],
   providers: [DatePipe, DecimalPipe],
   templateUrl: './standard-usage.component.html'
 })

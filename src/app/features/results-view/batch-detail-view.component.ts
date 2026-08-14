@@ -41,7 +41,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                 <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-650"></i>
                 <span class="text-indigo-650 dark:text-indigo-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
               </div>
-              <h3 class="text-xl font-black text-slate-855 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
+              <h3 class="text-xl font-black text-slate-850 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
                 Chi Tiết Kết Quả Mẻ Phân Tích
                 @if (run() && draft() && config()) {
                   <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border shadow-xs">
@@ -75,7 +75,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
               <button (click)="goToEditMode()"
                       [class]="lockedByOthers() 
                         ? 'px-4 py-2 text-xs font-black text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'
-                        : 'px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-755 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'"
+                        : 'px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'"
                       [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
                 <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()"></i>
                 <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
@@ -548,7 +548,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
             
             <div class="flex items-center gap-3 w-full justify-center">
               <button (click)="viewTraceability()" 
-                      class="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
+                      class="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 <span>Mở Trang</span>
               </button>

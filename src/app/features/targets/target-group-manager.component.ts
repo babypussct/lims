@@ -11,106 +11,101 @@ import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.
 import { TargetGroup, SopTarget, MasterAnalyte } from '../../core/models/sop.model';
 import { generateSlug } from '../../shared/utils/utils';
 import { Router } from '@angular/router';
+import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent } from '../../shared/components/ui';
 
 @Component({
   selector: 'app-target-group-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent],
   template: `
-    <div class="h-full flex flex-col fade-in bg-slate-50 relative pb-10">
+    <div class="h-full flex flex-col fade-in bg-slate-50 dark:bg-slate-900 relative pb-10">
         
         <!-- Header -->
-        <div class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
-            <div class="flex items-center gap-4">
-                <button (click)="goBack()" class="text-slate-500 hover:text-slate-800 text-sm font-bold flex items-center gap-2 transition">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Cấu Hình</span>
-                </button>
-                <div class="h-6 w-px bg-slate-200"></div>
-                <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-teal-600"></i> Quản Lý Nhóm Chỉ Tiêu
-                </h2>
-            </div>
-            
-            <div class="flex gap-2">
+        <app-page-header
+            title="Quản lý nhóm chỉ tiêu"
+            subtitle="Tạo và duy trì các bộ chỉ tiêu dùng cho cấu hình SOP."
+            icon="fa-layer-group">
+            <div pageHeaderActions class="contents">
+                <app-button variant="ghost" size="sm" (click)="goBack()">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span class="hidden md:inline">Cấu hình</span>
+                </app-button>
                 @if(isEditing()) {
-                    <button (click)="cancelEdit()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold text-xs transition">Hủy</button>
-                    <button (click)="saveGroup()" [disabled]="form.invalid || isProcessing() || targets.length === 0 || !areAllTargetsMatched()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-save"></i> } Lưu
-                    </button>
+                    <app-button variant="ghost" size="sm" (click)="cancelEdit()">Hủy</app-button>
+                    <app-button size="sm" (click)="saveGroup()" [loading]="isProcessing()" [disabled]="form.invalid || targets.length === 0 || !areAllTargetsMatched()">
+                        @if(!isProcessing()) { <i class="fa-solid fa-save" aria-hidden="true"></i> } Lưu
+                    </app-button>
                 } @else {
-                    <button (click)="createNew()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-md transition flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Tạo Mới
-                    </button>
+                    <app-button size="sm" (click)="createNew()"><i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo mới</app-button>
                 }
             </div>
-        </div>
+        </app-page-header>
 
         <div class="flex-1 flex overflow-hidden">
             <!-- LIST SIDEBAR -->
-            <div class="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+            <div class="w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
                 @if (isLoading()) {
                     <div class="p-4 text-center text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
                 } @else {
                     @for (group of groups(); track group.id) {
                         <div (click)="selectGroup(group)" 
-                             class="p-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition group relative"
+                             class="p-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition group relative"
                              [class.bg-teal-50]="selectedGroup()?.id === group.id"
                              [class.border-l-4]="selectedGroup()?.id === group.id"
                              [class.border-l-teal-500]="selectedGroup()?.id === group.id"
                              [class.border-l-transparent]="selectedGroup()?.id !== group.id">
                             
-                            <div class="font-bold text-sm text-slate-700 mb-1">{{group.name}}</div>
-                            <div class="text-[10px] text-slate-500 flex justify-between items-center">
+                            <div class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-1">{{group.name}}</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
                                 <span>{{group.targets.length}} chỉ tiêu</span>
-                                <button (click)="deleteGroup(group, $event)" class="w-6 h-6 rounded-full hover:bg-red-100 text-slate-300 hover:text-red-500 transition flex items-center justify-center">
+                                <button (click)="deleteGroup(group, $event)" class="w-6 h-6 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition flex items-center justify-center">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
                         </div>
                     } @empty {
-                        <div class="p-8 text-center text-slate-400 italic text-xs">Chưa có bộ chỉ tiêu nào.</div>
+                        <app-empty-state icon="fa-layer-group" title="Chưa có bộ chỉ tiêu" message="Tạo một bộ chỉ tiêu mới để bắt đầu." />
                     }
                 }
             </div>
 
             <!-- EDITOR AREA -->
-            <div class="flex-1 bg-slate-50 flex flex-col overflow-hidden relative">
+            <div class="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col overflow-hidden relative">
                 @if (isEditing()) {
                     <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
                         <form id="target-group-form" appFormLabelA11y [formGroup]="form" class="max-w-4xl mx-auto space-y-6">
                             
                             <!-- Header Info -->
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tên nhóm chỉ tiêu <span class="text-red-500">*</span></label>
-                                        <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-teal-500 transition" placeholder="VD: Nhóm Kháng sinh (Sulfonamides)">
+                                        <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-teal-500 transition" placeholder="VD: Nhóm Kháng sinh (Sulfonamides)">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mã định danh (tự tạo)</label>
-                                        <input formControlName="id" class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 text-xs font-mono text-slate-600 outline-none" readonly>
+                                        <input formControlName="id" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-600 dark:text-slate-300 outline-none" readonly>
                                     </div>
                                 </div>
                                 <div class="mt-3">
                                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mô tả / Ghi chú</label>
-                                    <input formControlName="description" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-teal-500 transition" placeholder="Mô tả ngắn về nhóm này...">
+                                    <input formControlName="description" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-teal-500 transition" placeholder="Mô tả ngắn về nhóm này...">
                                 </div>
                             </div>
 
                             <!-- Targets List -->
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                 <div class="flex justify-between items-center mb-4">
-                                    <h3 class="font-bold text-slate-700 text-sm uppercase flex items-center gap-2">
+                                    <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
                                         <i class="fa-solid fa-list-ul text-teal-500"></i> Danh Sách Chỉ Tiêu
                                     </h3>
                                     <div class="flex flex-wrap justify-end gap-2">
-                                        <button type="button" (click)="openLibraryModal()" class="text-xs bg-teal-600 text-white hover:bg-teal-700 border border-teal-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
-                                            <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Danh Mục Gốc
-                                        </button>
+                                        <app-button type="button" size="sm" (click)="openLibraryModal()">
+                                            <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i> Chọn từ danh mục gốc
+                                        </app-button>
                                     </div>
                                 </div>
 
-                                <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                     <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>
                                     Chỉ tiêu phải được chọn từ danh mục chỉ tiêu gốc. Tên, mã ID và đơn vị được khóa theo danh mục gốc để tránh sai lệch dữ liệu hệ thống.
                                 </p>
@@ -118,10 +113,10 @@ import { Router } from '@angular/router';
                                 <div formArrayName="targets" class="space-y-2">
                                     @for (t of targets.controls; track t; let i = $index) {
                                         @let masterItem = validTargetMap().get(t.get('id')?.value || '');
-                                        <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 rounded-xl border group transition-colors"
+                                        <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border group transition-colors"
                                              [class.border-red-200]="!masterItem"
                                              [class.border-slate-100]="masterItem">
-                                            <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center transition-colors"
+                                            <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center transition-colors dark:bg-slate-700 dark:text-slate-300"
                                                  [class.bg-red-100]="!masterItem"
                                                  [class.text-red-600]="!masterItem"
                                                  [class.bg-slate-200]="masterItem"
@@ -145,33 +140,33 @@ import { Router } from '@angular/router';
                                                             </div>
                                                         }
                                                     </label>
-                                                    <input formControlName="name" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs font-bold text-slate-500 outline-none cursor-not-allowed">
+                                                    <input formControlName="name" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-3">
                                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã định danh (đã khóa)</label>
-                                                    <input formControlName="id" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs font-mono text-slate-400 outline-none cursor-not-allowed">
+                                                    <input formControlName="id" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs font-mono text-slate-400 dark:text-slate-400 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-2">
                                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị theo danh mục gốc</label>
-                                                    <input formControlName="unit" readonly class="w-full border border-slate-200 bg-slate-100 rounded px-2 py-1.5 text-xs text-slate-500 outline-none cursor-not-allowed text-center">
+                                                    <input formControlName="unit" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed text-center">
                                                 </div>
                                                 <div class="md:col-span-3 grid grid-cols-2 gap-1">
                                                     <div>
                                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOD</label>
-                                                        <input formControlName="lod" placeholder="LOD" class="w-full border border-slate-300 bg-white rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                        <input formControlName="lod" placeholder="LOD" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
                                                     </div>
                                                     <div>
                                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOQ</label>
-                                                        <input formControlName="loq" placeholder="LOQ" class="w-full border border-slate-300 bg-white rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                        <input formControlName="loq" placeholder="LOQ" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <button type="button" (click)="targets.removeAt(i)" class="mt-6 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 transition rounded-full hover:bg-white"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" (click)="targets.removeAt(i)" class="mt-6 w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     } @empty {
-                                        <div class="text-center py-8 text-slate-400 italic bg-white border border-dashed border-slate-200 rounded-xl">
-                                            Chưa có chỉ tiêu. Hãy chọn từ danh mục gốc.
+                                        <div class="bg-white dark:bg-slate-800 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                                            <app-empty-state icon="fa-list-ul" title="Chưa có chỉ tiêu" message="Hãy chọn chỉ tiêu từ danh mục gốc." />
                                         </div>
                                     }
                                 </div>
@@ -180,9 +175,8 @@ import { Router } from '@angular/router';
                         </form>
                     </div>
                 } @else {
-                    <div class="flex-1 flex flex-col items-center justify-center text-slate-400">
-                        <i class="fa-solid fa-layer-group text-4xl mb-4 text-slate-300"></i>
-                        <p class="text-sm font-medium">Chọn một bộ chỉ tiêu để sửa hoặc tạo mới.</p>
+                    <div class="flex-1 flex items-center justify-center">
+                        <app-empty-state icon="fa-layer-group" title="Chưa chọn bộ chỉ tiêu" message="Chọn một bộ chỉ tiêu để sửa hoặc tạo mới." />
                     </div>
                 }
             </div>
@@ -190,75 +184,67 @@ import { Router } from '@angular/router';
 
         <!-- MASTER LIBRARY SELECTION MODAL -->
         @if (showLibraryModal()) {
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col h-[80vh] animate-slide-up">
-                    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <div>
-                            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-book-medical text-teal-600"></i>
-                                {{replacingTargetIndex() === null ? 'Chọn từ danh mục gốc' : 'Thay thế Chỉ tiêu'}}
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Tên, mã ID và đơn vị sẽ được lấy trực tiếp từ danh mục chỉ tiêu gốc.</p>
-                        </div>
-                        <button (click)="showLibraryModal.set(false)" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
-                    </div>
-                    
-                    <div class="p-4 border-b border-slate-100 flex gap-2">
+            <app-modal-shell
+                [title]="replacingTargetIndex() === null ? 'Chọn từ danh mục gốc' : 'Thay thế chỉ tiêu'"
+                description="Tên, mã ID và đơn vị sẽ được lấy trực tiếp từ danh mục chỉ tiêu gốc."
+                size="md"
+                (closed)="showLibraryModal.set(false)"
+            >
+                <div modalBody class="space-y-4">
+                    <div class="flex gap-2">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                             <input [ngModel]="librarySearchTerm()" (ngModelChange)="librarySearchTerm.set($event)" 
-                                   class="w-full pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition" 
+                                   class="w-full pl-8 pr-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl text-xs font-bold outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition"
                                    placeholder="Tìm kiếm...">
                         </div>
                         @if(replacingTargetIndex() === null) {
-                            <button (click)="selectAllLibraryFiltered()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold whitespace-nowrap transition">Chọn Hết</button>
+                            <app-button variant="secondary" size="sm" (click)="selectAllLibraryFiltered()">Chọn hết</app-button>
                         }
                     </div>
 
-                    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
+                    <div class="max-h-[52vh] overflow-y-auto p-2 custom-scrollbar">
                         @if (isLibraryLoading()) {
                             <div class="py-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...</div>
                         } @else {
                             <div class="grid grid-cols-1 gap-1">
                                 @for (analyte of filteredLibraryTargets(); track analyte.id) {
                                     <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition group"
-                                           [class]="selectedLibraryIds().has(analyte.id) ? 'bg-teal-50 border-teal-200' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-100'">
+                                           [class]="selectedLibraryIds().has(analyte.id) ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800' : 'bg-white dark:bg-slate-800 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-100 dark:hover:border-slate-600'">
                                         <input type="checkbox" [checked]="selectedLibraryIds().has(analyte.id)" (change)="toggleLibrarySelection(analyte.id)" class="w-4 h-4 accent-teal-600 rounded cursor-pointer">
                                         <div class="flex-1 min-w-0">
-                                            <div class="font-bold text-sm text-slate-700 group-hover:text-teal-700 truncate">{{analyte.name}}</div>
+                                            <div class="font-bold text-sm text-slate-700 dark:text-slate-200 group-hover:text-teal-700 dark:group-hover:text-teal-300 truncate">{{analyte.name}}</div>
                                             <div class="flex gap-2 mt-0.5 text-[10px]">
-                                                <span class="font-mono text-slate-400 bg-slate-100 px-1.5 rounded">ID: {{analyte.id}}</span>
-                                                @if(analyte.chemical_formula) { <span class="text-slate-500 font-serif">{{analyte.chemical_formula}}</span> }
+                                                <span class="font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 rounded">ID: {{analyte.id}}</span>
+                                                @if(analyte.chemical_formula) { <span class="text-slate-500 dark:text-slate-400 font-serif">{{analyte.chemical_formula}}</span> }
                                             </div>
                                         </div>
-                                        <div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{{analyte.default_unit || 'N/A'}}</div>
+                                        <div class="text-xs font-bold text-slate-500 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{{analyte.default_unit || 'N/A'}}</div>
                                     </label>
                                 }
                                 @if (filteredLibraryTargets().length === 0) {
-                                    <div class="py-10 text-center text-slate-400 italic text-xs">Không tìm thấy kết quả.</div>
+                                    <app-empty-state icon="fa-magnifying-glass" title="Không tìm thấy kết quả" message="Thử thay đổi từ khóa tìm kiếm." />
                                 }
                             </div>
                         }
                     </div>
+                </div>
 
-                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <div class="text-xs font-bold text-slate-500">
-                            Đã chọn: <span class="text-teal-600 text-sm">{{selectedLibraryIds().size}}</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button (click)="showLibraryModal.set(false)" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg font-bold text-xs transition">Đóng</button>
-                            <button (click)="importSelectedLibraryTargets()" [disabled]="selectedLibraryIds().size === 0" class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center gap-2">
+                <div modalFooter class="contents">
+                    <span class="mr-auto self-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                        Đã chọn: <span class="text-teal-600 text-sm">{{selectedLibraryIds().size}}</span>
+                    </span>
+                    <app-button variant="secondary" (click)="showLibraryModal.set(false)">Đóng</app-button>
+                    <app-button (click)="importSelectedLibraryTargets()" [disabled]="selectedLibraryIds().size === 0">
                                 <i class="fa-solid" [class.fa-rotate]="replacingTargetIndex() !== null" [class.fa-file-import]="replacingTargetIndex() === null"></i>
                                 @if(replacingTargetIndex() !== null) {
                                     Thay thế
                                 } @else {
                                     Thêm ({{selectedLibraryIds().size}})
                                 }
-                            </button>
-                        </div>
-                    </div>
+                    </app-button>
                 </div>
-            </div>
+            </app-modal-shell>
         }
     </div>
   `

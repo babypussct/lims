@@ -113,7 +113,7 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
           <button #closeButton type="button" (click)="requestClose()"
                   class="preview-icon-button hover:!bg-slate-100 dark:hover:!bg-slate-800"
                   title="Đóng (Esc)" aria-label="Đóng xem trước">
-            <i class="fa-solid fa-times text-lg"></i>
+            <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </header>
 
