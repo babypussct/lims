@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Standardized Z-Index Layering Architecture Tokens (Policy A) */
+:root {
+  --z-base: 0;
+  --z-chrome: 45;
+  --z-modal: 50;
+  --z-scanner-preview: 150;
+  --z-toast: 210;
+  --z-confirmation: 1000;
+  --z-system-lock: 9999;
+}
+
+/* Centralized Z-Index Utility Classes */
+.z-layer-base { z-index: var(--z-base); }
+.z-layer-chrome { z-index: var(--z-chrome); }
+.z-layer-modal { z-index: var(--z-modal); }
+.z-layer-scanner-preview { z-index: var(--z-scanner-preview); }
+.z-layer-toast { z-index: var(--z-toast); }
+.z-layer-confirmation { z-index: var(--z-confirmation); }
+.z-layer-system-lock { z-index: var(--z-system-lock); }
+
 /* SmartBatch keeps the step-transition and final approval actions in the
    same viewport-pinned dock. The content above may scroll, but the primary
    action remains available without a second nested scroll. */

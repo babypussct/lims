@@ -695,6 +695,84 @@ test('internal-id ownership cannot be rewritten without the lifecycle transactio
   await assertSucceeds(batch.commit());
 });
 
+test('legacy registry aliases can migrate only to a canonical target without deleting history', async () => {
+  const managerDb = dbFor(users.manager);
+  const legacyAcPath = `artifacts/${APP_ID}/standard_code_registry/ac01`;
+  const legacyAbPath = `artifacts/${APP_ID}/standard_code_registry/ab01`;
+  const legacyAdPath = `artifacts/${APP_ID}/standard_code_registry/ad01`;
+  const canonicalAcPath = `artifacts/${APP_ID}/standard_code_registry/AC01`;
+  const canonicalAdPath = `artifacts/${APP_ID}/standard_code_registry/AD01`;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    const legacyRow = (internalId: string) => ({
+      id: internalId,
+      internal_id: internalId,
+      status: 'AVAILABLE',
+      assignmentCount: 0,
+      lastUpdated: seedTime
+    });
+    await Promise.all([
+      setDoc(doc(db, legacyAcPath), legacyRow('ac01')),
+      setDoc(doc(db, legacyAbPath), legacyRow('ab01')),
+      setDoc(doc(db, legacyAdPath), legacyRow('ad01')),
+      setDoc(doc(db, canonicalAdPath), {
+        id: 'AD01',
+        internal_id: 'AD01',
+        status: 'AVAILABLE',
+        assignmentCount: 0,
+        lastUpdated: seedTime
+      })
+    ]);
+  });
+
+  const migrationBatch = writeBatch(managerDb);
+  migrationBatch.set(doc(managerDb, canonicalAcPath), {
+    id: 'AC01',
+    internal_id: 'AC01',
+    status: 'AVAILABLE',
+    assignmentCount: 0,
+    lastUpdated: serverTimestamp()
+  });
+  migrationBatch.update(doc(managerDb, legacyAcPath), {
+    migrationStatus: 'MIGRATED',
+    migratedTo: 'AC01',
+    migratedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  });
+  await assertSucceeds(migrationBatch.commit());
+
+  const migratedAlias = await assertSucceeds(getDoc(doc(managerDb, legacyAcPath)));
+  assert.equal(migratedAlias.exists(), true);
+  assert.equal(migratedAlias.data()?.['migrationStatus'], 'MIGRATED');
+  assert.equal(migratedAlias.data()?.['migratedTo'], 'AC01');
+
+  await assertFails(updateDoc(doc(managerDb, legacyAbPath), {
+    migrationStatus: 'MIGRATED',
+    migratedTo: 'AB01',
+    migratedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+
+  await assertFails(updateDoc(doc(managerDb, legacyAdPath), {
+    migrationStatus: 'MIGRATED',
+    migratedTo: 'AD01',
+    migratedAt: serverTimestamp(),
+    status: 'CONFLICT',
+    lastUpdated: serverTimestamp()
+  }));
+
+  await assertFails(updateDoc(doc(managerDb, canonicalAdPath), {
+    migrationStatus: 'MIGRATED',
+    migratedTo: 'AC01',
+    migratedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+
+  await assertFails(deleteDoc(doc(managerDb, legacyAdPath)));
+});
+
 test('the SDHET business code is accepted while unrelated malformed codes remain denied', async () => {
   const managerDb = dbFor(users.manager);
   await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), {

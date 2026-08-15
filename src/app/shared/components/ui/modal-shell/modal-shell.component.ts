@@ -11,7 +11,7 @@ let nextModalShellId = 0;
   imports: [ModalA11yDirective],
   template: `
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+      class="fixed inset-0 z-layer-modal flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
       (click)="onBackdropClick($event)"
     >
       <section

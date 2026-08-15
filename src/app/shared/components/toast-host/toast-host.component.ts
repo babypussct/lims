@@ -7,7 +7,7 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="fixed z-[210] flex flex-col-reverse items-stretch gap-2.5 no-print pointer-events-none
+    <div class="fixed z-layer-toast flex flex-col-reverse items-stretch gap-2.5 no-print pointer-events-none
                 left-1/2 -translate-x-1/2 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] w-full max-w-sm px-4
                 md:left-auto md:right-4 md:translate-x-0 md:top-4 md:bottom-auto md:w-[380px] md:px-0"
          aria-live="polite" aria-atomic="false">

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.14-b02",
-    "title": "Đồng bộ giao diện toàn hệ thống và nâng cao độ ổn định khi thao tác",
+    "version": "v26.08.15-b01",
+    "title": "Bổ sung công cụ Đồng bộ Mã quản lý nội bộ chất chuẩn và nâng cao độ an toàn khi thao tác",
     "features": [
-      "Chuẩn hóa giao diện trên toàn bộ các màn hình Chất chuẩn, Cấu hình, SOP, Mẻ phân tích và Kết quả, đảm bảo hiển thị đồng nhất và rõ ràng ở cả chế độ sáng lẫn tối.",
-      "Thao tác mở và làm việc với các cửa sổ tác vụ, biểu mẫu nhập liệu và thanh công cụ tìm kiếm diễn ra mượt mà và trực quan hơn.",
-      "Tự động xử lý trạng thái cập nhật trang, giúp hệ thống luôn hoạt động ổn định và liền mạch trên mọi thiết bị.",
-      "Bổ sung màn hình xem nhanh Chính sách bảo mật và Điều khoản sử dụng trực tiếp trên giao diện ứng dụng.",
-      "Tối ưu hóa giao diện Đăng nhập bằng mã QR trên điện thoại di động, tăng độ tương phản và hiển thị trạng thái quét rõ ràng hơn."
+      "Cung cấp công cụ Quét và Đối chiếu Mã quản lý nội bộ trên toàn bộ hồ sơ chất chuẩn, nhật ký sử dụng và yêu cầu mua sắm.",
+      "Xem trước bảng tổng kết thay đổi chi tiết, phát hiện và ngăn chặn trùng lặp mã trước khi áp dụng.",
+      "Theo dõi lịch sử từng đợt đồng bộ và xuất báo cáo đối chiếu phục vụ lưu trữ, kiểm toán phòng thí nghiệm.",
+      "Thêm công cụ Đồng bộ Mã quản lý nội bộ trong mục Quản lý chất chuẩn, giúp rà soát và chuẩn hóa mã chất chuẩn A, B, C một cách nhanh chóng và an toàn.",
+      "Bổ sung tính năng Xem lịch sử đồng bộ với chi tiết từng đợt thay đổi và hỗ trợ Xuất báo cáo đối chiếu ra tệp CSV, JSON."
     ]
   },
   "assetGroups": [

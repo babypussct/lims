@@ -11,7 +11,7 @@ import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
   imports: [CommonModule, FormsModule, QrScannerComponent],
   template: `
     @if (qrService.isScanning()) {
-      <div class="fixed inset-0 z-[150] bg-black/90 backdrop-blur-sm fade-in flex flex-col h-full animate-fade-in">
+      <div class="fixed inset-0 z-layer-scanner-preview bg-black/90 backdrop-blur-sm fade-in flex flex-col h-full animate-fade-in">
           
           <!-- Header -->
           <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">

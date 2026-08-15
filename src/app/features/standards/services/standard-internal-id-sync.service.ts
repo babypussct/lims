@@ -31,6 +31,17 @@ import { sanitizeForFirebase } from '../../../shared/utils/utils';
 
 type AnyRecord = Record<string, any>;
 
+interface RegistryEntry {
+  rawDocumentId: string;
+  canonicalCode: string;
+  registry: StandardCodeRegistry;
+}
+
+interface RegistryInspectionResult {
+  registries: Map<string, StandardCodeRegistry>;
+  blockedCodes: Set<string>;
+}
+
 /**
  * Read-only first, explicit apply second. This service repairs only
  * deterministic legacy inconsistencies and leaves ambiguous code ownership
@@ -61,9 +72,11 @@ export class StandardInternalIdSyncService {
     const requests = requestSnapshot.docs.map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as StandardRequest));
     const purchaseRequests = purchaseRequestSnapshot.docs.map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as PurchaseRequest));
     const globalUsages = usageSnapshot.docs.map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as UsageLog));
-    const registries = new Map<string, StandardCodeRegistry>(
-      registrySnapshot.docs.map(snapshot => [normalizeInternalId(snapshot.id), ({ id: snapshot.id, ...snapshot.data() } as StandardCodeRegistry)])
-    );
+    const registryEntries: RegistryEntry[] = registrySnapshot.docs.map(snapshot => ({
+      rawDocumentId: snapshot.id,
+      canonicalCode: normalizeInternalId(snapshot.id),
+      registry: { id: snapshot.id, ...snapshot.data() } as StandardCodeRegistry,
+    }));
     const byId = new Map(standards.map(standard => [standard.id, standard]));
     const byCode = new Map<string, ReferenceStandard[]>();
     const issues: StandardInternalIdSyncIssue[] = [];
@@ -106,6 +119,7 @@ export class StandardInternalIdSyncService {
           detail: 'Trường internal_id đang trống nên hồ sơ vật lý chưa thể được đối chiếu với mã duy nhất của phòng.',
           suggestion: 'Đối chiếu nhãn, hồ sơ hoặc vị trí kho rồi nhập mã 4 ký tự bắt đầu A/B/C; riêng nghiệp vụ SDHET nhập đúng SDHET. Không đoán theo tên hoặc số lô.',
           autoFixable: false,
+          isCurrentLifecycle: isCurrentStandardLifecycle(standard),
         });
         continue;
       }
@@ -117,6 +131,7 @@ export class StandardInternalIdSyncService {
           detail: `Giá trị đang lưu là “${assessment.raw}”, không khớp quy tắc mã chuẩn sau khi chuẩn hóa thành “${assessment.normalized}”.`,
           suggestion: 'Sửa về mã 4 ký tự bắt đầu A/B/C; nếu đây là nghiệp vụ riêng thì dùng chính xác SDHET. Cần đối chiếu hồ sơ vật lý trước khi nhập.',
           autoFixable: false,
+          isCurrentLifecycle: isCurrentStandardLifecycle(standard),
         });
         continue;
       }
@@ -135,6 +150,14 @@ export class StandardInternalIdSyncService {
       }
     }
 
+    const { registries, blockedCodes: blockedRegistryCodes } = this.inspectRegistryEntries(
+      registryEntries,
+      byId,
+      byCode,
+      addIssue,
+      addChange,
+    );
+
     for (const [code, records] of byCode.entries()) {
       const currentRecords = records.filter(isCurrentStandardLifecycle);
       const registry = registries.get(code);
@@ -149,6 +172,8 @@ export class StandardInternalIdSyncService {
         }));
         continue;
       }
+
+      if (blockedRegistryCodes.has(code)) continue;
 
       if (currentRecords.length === 1) {
         const current = currentRecords[0];
@@ -234,11 +259,10 @@ export class StandardInternalIdSyncService {
       }
     }
 
-    // Also report registry rows that have no valid physical-code owner in the
-    // catalogue. Without this pass, an orphan lock could remain invisible
-    // because the scan is driven by reference_standards codes.
+    // Also report structurally valid registry rows that have no physical-code
+    // record at all. Invalid/mismatched rows were already classified above.
     for (const [code, registry] of registries.entries()) {
-      if (registry.status !== 'ASSIGNED' || byCode.has(code)) continue;
+      if (blockedRegistryCodes.has(code) || registry.status !== 'ASSIGNED' || byCode.has(code)) continue;
       const owner = registry.currentStandardId ? byId.get(registry.currentStandardId) : undefined;
       addIssue({
         kind: 'REGISTRY_MISMATCH', severity: 'ERROR', collection: 'standard_code_registry', documentId: code,
@@ -280,29 +304,73 @@ export class StandardInternalIdSyncService {
       const logsSnapshot = await getDocs(collection(this.fb.db, `${base}/reference_standards/${standard.id}/logs`));
       nestedUsageCount += logsSnapshot.size;
       for (const logSnapshot of logsSnapshot.docs) {
-        const log = { id: logSnapshot.id, ...logSnapshot.data(), standardId: (logSnapshot.data() as AnyRecord)['standardId'] || standard.id } as AnyRecord;
+        const rawLogData = logSnapshot.data() as AnyRecord;
+        const log = { id: logSnapshot.id, ...rawLogData };
         this.inspectReferenceSnapshot(
           'reference_standard_logs', `${standard.id}::${logSnapshot.id}`, log, byId, byCode, addIssue, addChange, 'internalId', standard.id
         );
       }
     }
 
+    const blockingIssues = issues.filter(issue => issue.blocking || (!issue.autoFixable && issue.severity === 'ERROR'));
+    const byCollection: Record<string, number> = {};
+    const byKind: Record<string, number> = {};
+    for (const issue of issues) {
+      byCollection[issue.collection] = (byCollection[issue.collection] || 0) + 1;
+      byKind[issue.kind] = (byKind[issue.kind] || 0) + 1;
+    }
+    const manualIssuesCount = issues.filter(issue =>
+      issue.collection === 'reference_standards' && (issue.kind === 'MISSING' || issue.kind === 'INVALID_FORMAT')
+    ).length;
+
+    const summary = {
+      totalIssues: issues.length,
+      blockingIssuesCount: blockingIssues.length,
+      safeChangesCount: safeChanges.length,
+      manualIssuesCount,
+      byCollection,
+      byKind,
+    };
+
     return {
+      scanId: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       generatedAt: Date.now(),
       standardsCount: standards.length,
       requestsCount: requests.length,
       purchaseRequestsCount: purchaseRequests.length,
       usageCount: globalUsages.length,
       nestedUsageCount,
-      registryCount: registries.size,
+      registryCount: registryEntries.length,
       issues,
       safeChanges,
       conflicts: issues.filter(issue => !issue.autoFixable || issue.severity === 'ERROR'),
+      blockingIssues,
+      summary,
     };
   }
 
   async apply(report: StandardInternalIdSyncReport, corrections: Record<string, string> = {}): Promise<string> {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền áp dụng đồng bộ Mã quản lý nội bộ.');
+
+    // Preflight check: validate corrections dictionary format and duplicate target codes within this batch
+    const targetToStandards = new Map<string, string[]>();
+    for (const [standardId, rawCode] of Object.entries(corrections)) {
+      const trimmed = String(rawCode || '').trim();
+      if (!trimmed) continue;
+      const targetCode = normalizeInternalId(trimmed);
+      if (!isValidInternalId(targetCode)) {
+        throw new Error(`Mã sửa “${rawCode}” cho hồ sơ ${standardId} không đúng định dạng (4 ký tự bắt đầu A/B/C hoặc SDHET).`);
+      }
+      const list = targetToStandards.get(targetCode) || [];
+      list.push(standardId);
+      targetToStandards.set(targetCode, list);
+    }
+
+    for (const [targetCode, stdIds] of targetToStandards.entries()) {
+      if (stdIds.length > 1) {
+        throw new Error(`Mã ${targetCode} bị nhập trùng cho ${stdIds.length} hồ sơ (${stdIds.join(', ')}); mỗi hồ sơ phải có một mã duy nhất.`);
+      }
+    }
 
     // Re-scan immediately before writing so a stale preview cannot overwrite a
     // newly assigned code or a newly created request.
@@ -379,14 +447,22 @@ export class StandardInternalIdSyncService {
     const currentUser = this.auth.currentUser();
     const batchRef = doc(collection(this.fb.db, `${base}/standard_code_sync_batches`));
     const batch = writeBatch(this.fb.db);
-    const updates = new Map<string, { ref: any; fields: AnyRecord; registryDocument?: AnyRecord }>();
+    const updates = new Map<string, { ref: any; fields: AnyRecord; registryDocument?: AnyRecord; registryMigration?: AnyRecord }>();
 
     for (const change of mergedChanges) {
       const key = `${change.collection}/${change.documentId}`;
       const entry = updates.get(key) || { ref: null, fields: {} };
       if (change.collection === 'standard_code_registry') {
         entry.ref = doc(this.fb.db, `${base}/standard_code_registry/${change.documentId}`);
-        entry.registryDocument = { ...(change.after as AnyRecord), lastUpdated: serverTimestamp() };
+        if (change.field === '__migration__') {
+          entry.registryMigration = {
+            ...(change.after as AnyRecord),
+            migratedAt: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
+          };
+        } else {
+          entry.registryDocument = { ...(change.after as AnyRecord), lastUpdated: serverTimestamp() };
+        }
       } else if (change.collection === 'reference_standard_logs') {
         const [standardId, logId] = change.documentId.split('::');
         entry.ref = doc(this.fb.db, `${base}/reference_standards/${standardId}/logs/${logId}`);
@@ -399,7 +475,9 @@ export class StandardInternalIdSyncService {
     }
 
     updates.forEach(entry => {
-      if (entry.registryDocument) {
+      if (entry.registryMigration) {
+        batch.set(entry.ref, entry.registryMigration, { merge: true });
+      } else if (entry.registryDocument) {
         const registryDocument = { ...entry.registryDocument };
         if (registryDocument['currentStandardId'] === null) registryDocument['currentStandardId'] = deleteField();
         // Do not recursively sanitize this object: deleteField() is a
@@ -445,42 +523,132 @@ export class StandardInternalIdSyncService {
     addIssue: (issue: Omit<StandardInternalIdSyncIssue, 'id'>) => StandardInternalIdSyncIssue,
     addChange: (change: StandardInternalIdSyncChange) => void,
     internalField: 'internalId',
-    fallbackStandardId?: string,
+    parentStandardId?: string,
   ): void {
-    const rawReference = String(data['standardId'] || fallbackStandardId || '').trim();
-    let standard = rawReference ? byId.get(rawReference) : undefined;
-    if (!standard && rawReference) {
-      const codeMatches = byCode.get(normalizeInternalId(rawReference)) || [];
-      const nonDeleted = codeMatches.filter(candidate => !candidate._isDeleted && candidate.status !== 'DELETED');
-      if (nonDeleted.length === 1) {
-        standard = nonDeleted[0];
+    const rawStandardId = data['standardId'] !== undefined && data['standardId'] !== null
+      ? String(data['standardId']).trim()
+      : '';
+
+    let standard: ReferenceStandard | undefined;
+
+    if (parentStandardId) {
+      // Nested log under reference_standards/{parentStandardId}/logs/{logId}
+      const parentStandard = byId.get(parentStandardId);
+      if (!rawStandardId) {
+        // Field is genuinely missing in the nested document data.
+        // Auto-repair is permitted since parent path is the Source of Truth,
+        // but it MUST be explicitly recorded as a safeChange / audit.
         addChange({
-          collection: collectionName, documentId, field: 'standardId', before: rawReference, after: standard.id,
-          reason: 'Sửa tham chiếu cũ dùng Mã quản lý nội bộ thay vì khóa bản ghi vật lý; chỉ áp dụng khi đối chiếu duy nhất.',
+          collection: collectionName,
+          documentId,
+          field: 'standardId',
+          before: null,
+          after: parentStandardId,
+          reason: 'Bổ sung trường standardId còn thiếu cho nhật ký lồng từ thư mục chuẩn cha.',
         });
+        standard = parentStandard;
       } else {
+        // Field is present in nested document data
+        if (rawStandardId === parentStandardId) {
+          standard = parentStandard;
+        } else {
+          // Check if rawStandardId is the legacy internal code of parent standard and resolves uniquely to parentStandardId
+          const codeMatches = byCode.get(normalizeInternalId(rawStandardId)) || [];
+          const nonDeleted = codeMatches.filter(c => !c._isDeleted && c.status !== 'DELETED');
+          if (nonDeleted.length === 1 && nonDeleted[0].id === parentStandardId) {
+            standard = nonDeleted[0];
+            addChange({
+              collection: collectionName,
+              documentId,
+              field: 'standardId',
+              before: rawStandardId,
+              after: parentStandardId,
+              reason: 'Sửa tham chiếu cũ dùng Mã quản lý nội bộ trong nhật ký lồng về khóa bản ghi chuẩn cha duy nhất.',
+            });
+          } else {
+            // StandardId inside nested document differs from parent standard!
+            addIssue({
+              kind: 'PARENT_REFERENCE_MISMATCH',
+              severity: 'ERROR',
+              blocking: true,
+              collection: collectionName,
+              documentId,
+              parentStandardId,
+              referencedStandardId: rawStandardId,
+              message: `Nhật ký nằm trong chuẩn ${parentStandardId} nhưng trường standardId lại ghi nhận ${rawStandardId}.`,
+              detail: `Đường dẫn tài liệu là reference_standards/${parentStandardId}/logs/${documentId.split('::')[1] || documentId}, nhưng dữ liệu bên trong trỏ tới ${rawStandardId}.`,
+              suggestion: 'Đối chiếu nội dung nhật ký để xác định nhật ký thuộc về chuẩn nào; không tự động sửa để tránh gán sai lịch sử sử dụng.',
+              autoFixable: false,
+            });
+            return;
+          }
+        }
+      }
+    } else {
+      // Top-level reference without parent fallback (standard_requests, purchase_requests, standard_usages)
+      if (!rawStandardId) {
         addIssue({
-          kind: 'REQUEST_REFERENCE', severity: 'ERROR', collection: collectionName, documentId,
-          internalId: rawReference,
-          message: nonDeleted.length > 1
-            ? `Tham chiếu ${rawReference} trùng nhiều vòng đời; không được tự đoán.`
-            : `Không tìm thấy chuẩn vật lý cho tham chiếu ${rawReference}.`,
-          detail: nonDeleted.length > 1
-            ? `Mã/tham chiếu ${rawReference} khớp ${nonDeleted.length} hồ sơ không thể phân biệt bằng khóa hiện tại.`
-            : `Giá trị standardId/tham chiếu ${rawReference} không khớp id kỹ thuật hoặc mã nội bộ nào trong danh mục.`,
-          suggestion: 'Đối chiếu request với hồ sơ vật lý bằng id kỹ thuật, mã, tên và lô; chỉ sửa khi xác định được đúng một hồ sơ.',
+          kind: 'MISSING_REFERENCE',
+          severity: 'ERROR',
+          blocking: true,
+          collection: collectionName,
+          documentId,
+          message: `${this.collectionLabel(collectionName)} ${documentId} thiếu trường standardId trỏ tới chuẩn vật lý.`,
+          detail: `Bản ghi ${collectionName}/${documentId} không có trường standardId nên không thể xác định được hồ sơ chuẩn nào đang được sử dụng/yêu cầu.`,
+          suggestion: 'Đối chiếu mã nội bộ, tên chuẩn hoặc số lô trên phiếu nghiệp vụ để bổ sung standardId đúng; hệ thống không tự đoán.',
           autoFixable: false,
         });
+        return;
+      }
+
+      standard = byId.get(rawStandardId);
+      if (!standard) {
+        const codeMatches = byCode.get(normalizeInternalId(rawStandardId)) || [];
+        const nonDeleted = codeMatches.filter(candidate => !candidate._isDeleted && candidate.status !== 'DELETED');
+        if (nonDeleted.length === 1) {
+          standard = nonDeleted[0];
+          addChange({
+            collection: collectionName,
+            documentId,
+            field: 'standardId',
+            before: rawStandardId,
+            after: standard.id,
+            reason: 'Sửa tham chiếu cũ dùng Mã quản lý nội bộ thay vì khóa bản ghi vật lý; chỉ áp dụng khi đối chiếu duy nhất.',
+          });
+        } else {
+          addIssue({
+            kind: 'REQUEST_REFERENCE',
+            severity: 'ERROR',
+            blocking: true,
+            collection: collectionName,
+            documentId,
+            internalId: rawStandardId,
+            message: nonDeleted.length > 1
+              ? `Tham chiếu ${rawStandardId} trùng nhiều vòng đời; không được tự đoán.`
+              : `Không tìm thấy chuẩn vật lý cho tham chiếu ${rawStandardId}.`,
+            detail: nonDeleted.length > 1
+              ? `Mã/tham chiếu ${rawStandardId} khớp ${nonDeleted.length} hồ sơ không thể phân biệt bằng khóa hiện tại.`
+              : `Giá trị standardId/tham chiếu “${rawStandardId}” không khớp id kỹ thuật hoặc mã nội bộ nào trong danh mục.`,
+            suggestion: 'Đối chiếu request/usage với hồ sơ vật lý bằng id kỹ thuật, mã, tên và lô; chỉ sửa khi xác định được đúng một hồ sơ.',
+            autoFixable: false,
+          });
+          return;
+        }
       }
     }
+
     if (!standard) return;
 
     const expectedCode = normalizeInternalId(standard.internal_id);
     if (!isValidInternalId(expectedCode)) {
       addIssue({
         kind: collectionName === 'standard_usages' || collectionName === 'reference_standard_logs' ? 'USAGE_REFERENCE' : 'REQUEST_REFERENCE',
-        severity: 'ERROR', collection: collectionName, documentId, standardId: standard.id,
-        message: `Chuẩn được tham chiếu chưa có Mã quản lý nội bộ hợp lệ.`,
+        severity: 'ERROR',
+        blocking: true,
+        collection: collectionName,
+        documentId,
+        standardId: standard.id,
+        message: `Chuẩn được tham chiếu (${standard.id}) chưa có Mã quản lý nội bộ hợp lệ.`,
         detail: `Hồ sơ vật lý ${standard.id} đang có giá trị “${standard.internal_id || '(trống)'}”, nên snapshot không thể được đồng bộ an toàn.`,
         suggestion: 'Sửa mã trên hồ sơ vật lý trước theo quy tắc 4 ký tự A/B/C hoặc ngoại lệ SDHET, sau đó quét lại các request và nhật ký.',
         autoFixable: false,
@@ -491,17 +659,36 @@ export class StandardInternalIdSyncService {
     const currentValue = data[internalField];
     const assessment = assessInternalId(currentValue);
     if (assessment.kind === 'MISSING') {
-      addChange({ collection: collectionName, documentId, field: internalField, before: null, after: expectedCode, reason: 'Bổ sung snapshot Mã quản lý nội bộ từ chuẩn vật lý được tham chiếu.' });
+      addChange({
+        collection: collectionName,
+        documentId,
+        field: internalField,
+        before: null,
+        after: expectedCode,
+        reason: 'Bổ sung snapshot Mã quản lý nội bộ từ chuẩn vật lý được tham chiếu.',
+      });
     } else if ((assessment.kind === 'VALID' || assessment.kind === 'NORMALIZABLE') && assessment.normalized === expectedCode) {
       if (assessment.kind === 'NORMALIZABLE') {
-        addChange({ collection: collectionName, documentId, field: internalField, before: assessment.raw, after: expectedCode, reason: 'Chuẩn hóa snapshot Mã quản lý nội bộ.' });
+        addChange({
+          collection: collectionName,
+          documentId,
+          field: internalField,
+          before: assessment.raw,
+          after: expectedCode,
+          reason: 'Chuẩn hóa snapshot Mã quản lý nội bộ.',
+        });
       }
     } else {
       addIssue({
         kind: collectionName === 'standard_usages' || collectionName === 'reference_standard_logs' ? 'USAGE_REFERENCE' : 'REQUEST_REFERENCE',
-        severity: 'WARNING', collection: collectionName, documentId, standardId: standard.id,
-        internalId: String(currentValue || ''), suggestedInternalId: expectedCode,
-        message: `Snapshot mã ${String(currentValue || '(trống)')} khác mã của chuẩn vật lý tại thời điểm dữ liệu đang trỏ tới; cần đối chiếu thủ công.`,
+        severity: 'WARNING',
+        blocking: false,
+        collection: collectionName,
+        documentId,
+        standardId: standard.id,
+        internalId: String(currentValue || ''),
+        suggestedInternalId: expectedCode,
+        message: `Snapshot mã “${String(currentValue || '(trống)')}” khác mã của chuẩn vật lý tại thời điểm dữ liệu đang trỏ tới; cần đối chiếu thủ công.`,
         detail: `Snapshot hiện tại là “${String(currentValue || '(trống)')}”, còn mã canonical của hồ sơ ${standard.id} là “${expectedCode}”.`,
         suggestion: `Nếu snapshot bị ghi sai, sửa về ${expectedCode}; nếu đó là mã lịch sử đúng tại thời điểm phát sinh, giữ nguyên và ghi chú nghiệp vụ thay vì tự đổi.`,
         autoFixable: false,
@@ -518,37 +705,391 @@ export class StandardInternalIdSyncService {
   ): void {
     if (!Array.isArray(request.usageLogs) || request.usageLogs.length === 0) return;
     let standard = byId.get(request['standardId']);
-    if (!standard) {
+    if (!standard && request['standardId']) {
       const codeMatches = byCode.get(normalizeInternalId(request['standardId'])) || [];
       if (codeMatches.length === 1) standard = codeMatches[0];
     }
     const expectedCode = standard ? normalizeInternalId(standard.internal_id) : '';
     if (!standard || !isValidInternalId(expectedCode)) return;
+
     let changed = false;
     const before = request.usageLogs;
-    const after = before.map(log => {
+    const after = before.map((log: any, index: number) => {
+      if (log.standardId && log.standardId !== standard!.id) {
+        const embeddedMatch = byId.get(log.standardId);
+        const isMismatch = !embeddedMatch || embeddedMatch.id !== standard!.id;
+        if (isMismatch) {
+          addIssue({
+            kind: 'PARENT_REFERENCE_MISMATCH',
+            severity: 'ERROR',
+            blocking: true,
+            collection: 'standard_requests',
+            documentId: request.id || '',
+            parentStandardId: standard!.id,
+            referencedStandardId: log.standardId,
+            message: `Nhật ký thứ ${index + 1} trong yêu cầu ${request.id} trỏ standardId ${log.standardId} khác với standardId ${standard!.id} của yêu cầu.`,
+            detail: `Phần usageLogs của request ${request.id} có log ghi standardId là ${log.standardId}, không khớp với hồ sơ ${standard!.id}.`,
+            suggestion: 'Đối chiếu nhật ký mượn và sửa lại standardId cho đồng nhất.',
+            autoFixable: false,
+          });
+          return log;
+        }
+      }
+
       const assessment = assessInternalId(log.internalId);
       if (assessment.kind === 'MISSING' || (assessment.kind === 'NORMALIZABLE' && assessment.normalized === expectedCode)) {
         changed = true;
         return { ...log, internalId: expectedCode };
       }
       if (assessment.kind === 'VALID' || assessment.kind === 'NORMALIZABLE') {
-        addIssue({
-          kind: 'USAGE_REFERENCE', severity: 'WARNING', collection: 'standard_requests', documentId: request.id || '',
-          standardId: standard.id, internalId: assessment.normalized, suggestedInternalId: expectedCode,
-          message: `Snapshot mã trong nhật ký gắn trong yêu cầu khác mã của chuẩn vật lý; cần đối chiếu thủ công.`,
-          detail: `Snapshot trong phần usageLogs là “${assessment.normalized}”, nhưng hồ sơ vật lý ${standard.id} đang có mã “${expectedCode}”.`,
-          suggestion: `Nếu log bị ghi sai, sửa về ${expectedCode}; nếu đây là snapshot lịch sử có chủ đích, giữ nguyên và xác nhận với nghiệp vụ trước khi thay đổi.`,
-          autoFixable: false,
-        });
+        if (assessment.normalized !== expectedCode) {
+          addIssue({
+            kind: 'USAGE_REFERENCE',
+            severity: 'WARNING',
+            blocking: false,
+            collection: 'standard_requests',
+            documentId: request.id || '',
+            standardId: standard!.id,
+            internalId: assessment.normalized,
+            suggestedInternalId: expectedCode,
+            message: `Snapshot mã trong nhật ký gắn trong yêu cầu khác mã của chuẩn vật lý; cần đối chiếu thủ công.`,
+            detail: `Snapshot trong phần usageLogs là “${assessment.normalized}”, nhưng hồ sơ vật lý ${standard!.id} đang có mã “${expectedCode}”.`,
+            suggestion: `Nếu log bị ghi sai, sửa về ${expectedCode}; nếu đây là snapshot lịch sử có chủ đích, giữ nguyên và xác nhận với nghiệp vụ trước khi thay đổi.`,
+            autoFixable: false,
+          });
+        }
       }
       return log;
     });
     if (changed) {
       addChange({
-        collection: 'standard_requests', documentId: request.id || '', field: 'usageLogs', before,
-        after, reason: 'Đồng bộ snapshot Mã quản lý nội bộ trong nhật ký gắn trong yêu cầu.',
+        collection: 'standard_requests',
+        documentId: request.id || '',
+        field: 'usageLogs',
+        before,
+        after,
+        reason: 'Đồng bộ snapshot Mã quản lý nội bộ trong nhật ký gắn trong yêu cầu.',
       });
+    }
+  }
+
+  private inspectRegistryEntries(
+    entries: RegistryEntry[],
+    byId: Map<string, ReferenceStandard>,
+    byCode: Map<string, ReferenceStandard[]>,
+    addIssue: (issue: Omit<StandardInternalIdSyncIssue, 'id'>) => StandardInternalIdSyncIssue,
+    addChange: (change: StandardInternalIdSyncChange) => void,
+  ): RegistryInspectionResult {
+    const groups = new Map<string, RegistryEntry[]>();
+    const registries = new Map<string, StandardCodeRegistry>();
+    const blockedCodes = new Set<string>();
+
+    for (const entry of entries) {
+      groups.set(entry.canonicalCode, [...(groups.get(entry.canonicalCode) || []), entry]);
+    }
+
+    for (const [canonicalCode, group] of groups.entries()) {
+      const migratedAliases = group.filter(entry => this.isMigratedRegistryAlias(entry, canonicalCode));
+      const activeEntries = group.filter(entry => !this.isMigratedRegistryAlias(entry, canonicalCode));
+
+      for (const alias of migratedAliases) {
+        const canonicalExists = activeEntries.some(entry => entry.rawDocumentId === canonicalCode);
+        addIssue({
+          kind: 'REGISTRY_KEY_MISMATCH',
+          severity: canonicalExists ? 'INFO' : 'ERROR',
+          blocking: !canonicalExists,
+          collection: 'standard_code_registry',
+          documentId: alias.rawDocumentId,
+          internalId: canonicalCode,
+          rawDocumentId: alias.rawDocumentId,
+          canonicalDocumentId: canonicalCode,
+          message: canonicalExists
+            ? `Registry legacy ${alias.rawDocumentId} đã được giữ lại làm alias cho ${canonicalCode}.`
+            : `Registry legacy ${alias.rawDocumentId} được đánh dấu đã migrate sang ${canonicalCode}, nhưng document canonical không tồn tại.`,
+          detail: canonicalExists
+            ? 'Raw registry document được bảo toàn theo chính sách No Delete và không còn tham gia quyết định quyền sở hữu mã.'
+            : 'Alias migration không có canonical target tương ứng nên trạng thái registry chưa thể được coi là nhất quán.',
+          suggestion: canonicalExists
+            ? 'Không cần thao tác; giữ document alias để phục vụ audit và truy vết.'
+            : `Khôi phục hoặc tạo document canonical ${canonicalCode} sau khi xác minh quyền sở hữu; không xóa raw document.`,
+          autoFixable: false,
+        });
+        if (!canonicalExists) blockedCodes.add(canonicalCode);
+      }
+
+      if (activeEntries.length > 1) {
+        blockedCodes.add(canonicalCode);
+        for (const entry of activeEntries) {
+          addIssue({
+            kind: 'REGISTRY_KEY_MISMATCH',
+            severity: 'ERROR',
+            blocking: true,
+            collection: 'standard_code_registry',
+            documentId: entry.rawDocumentId,
+            internalId: canonicalCode,
+            rawDocumentId: entry.rawDocumentId,
+            canonicalDocumentId: canonicalCode,
+            message: `Có nhiều raw registry documents cùng chuẩn hóa về ${canonicalCode}; không tự chọn record thắng.`,
+            detail: `Các document cùng nhóm: ${activeEntries.map(item => item.rawDocumentId).join(', ')}.`,
+            suggestion: 'Đối chiếu lịch sử registry và chủ sở hữu thực tế; chỉ sau khi xác định record canonical mới được đánh dấu các raw record còn lại là migrated alias.',
+            autoFixable: false,
+          });
+        }
+        continue;
+      }
+
+      if (activeEntries.length === 0) continue;
+      const entry = activeEntries[0];
+      const registry = entry.registry;
+      const normalizedInternalId = normalizeInternalId(registry.internal_id);
+
+      if (!isValidInternalId(canonicalCode)) {
+        blockedCodes.add(canonicalCode);
+        addIssue({
+          kind: 'REGISTRY_KEY_MISMATCH', severity: 'ERROR', blocking: true,
+          collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+          internalId: canonicalCode, rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+          message: `Registry document ${entry.rawDocumentId} không chuẩn hóa được thành Mã quản lý nội bộ hợp lệ.`,
+          detail: `Document ID chuẩn hóa thành “${canonicalCode || '(trống)'}”, không khớp quy tắc mã hiện hành.`,
+          suggestion: 'Đối chiếu lịch sử tạo registry và sửa bằng quy trình dữ liệu chuyên biệt; không tự động đổi khóa.',
+          autoFixable: false,
+        });
+        continue;
+      }
+
+      if (normalizedInternalId !== canonicalCode) {
+        blockedCodes.add(canonicalCode);
+        addIssue({
+          kind: 'REGISTRY_KEY_MISMATCH', severity: 'ERROR', blocking: true,
+          collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+          internalId: String(registry.internal_id || ''), rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+          message: `Khóa registry ${entry.rawDocumentId} và trường internal_id không cùng trỏ tới ${canonicalCode}.`,
+          detail: `Document ID chuẩn hóa thành ${canonicalCode}, nhưng internal_id chuẩn hóa thành ${normalizedInternalId || '(trống)'}.`,
+          suggestion: 'Đối chiếu audit và hồ sơ vật lý để xác định mã đúng; không tự động chọn một trong hai giá trị.',
+          autoFixable: false,
+        });
+        continue;
+      }
+
+      const state = this.validateRegistryState(entry, canonicalCode, byId, byCode, addIssue);
+      if (state.blocked) {
+        blockedCodes.add(canonicalCode);
+        continue;
+      }
+
+      if (entry.rawDocumentId !== canonicalCode) {
+        const canonicalAfter = this.canonicalRegistryAfter(registry, canonicalCode, byId, byCode);
+        if (!canonicalAfter) {
+          blockedCodes.add(canonicalCode);
+          addIssue({
+            kind: 'REGISTRY_KEY_MISMATCH', severity: 'ERROR', blocking: true,
+            collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+            internalId: canonicalCode, rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+            message: `Registry ${entry.rawDocumentId} cần migrate sang ${canonicalCode} nhưng trạng thái hiện tại không thể chuyển an toàn.`,
+            detail: 'Không thể tạo canonical registry record mà vẫn thỏa invariant owner/lifecycle hiện tại.',
+            suggestion: 'Đối chiếu owner và lifecycle trước; giữ nguyên raw document cho đến khi trạng thái có thể được canonicalize an toàn.',
+            autoFixable: false,
+          });
+          continue;
+        }
+
+        addIssue({
+          kind: 'REGISTRY_KEY_MISMATCH', severity: 'WARNING', blocking: false,
+          collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+          internalId: canonicalCode, rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+          message: `Registry legacy ${entry.rawDocumentId} sẽ được canonicalize thành ${canonicalCode} mà không xóa raw document.`,
+          detail: 'Canonical record sẽ được tạo/cập nhật trong cùng batch, sau đó raw record được đánh dấu MIGRATED alias để giữ audit trail.',
+          suggestion: 'Có thể áp dụng safe migration sau khi xem preview; raw document vẫn được bảo toàn.',
+          autoFixable: true,
+        });
+        addChange({
+          collection: 'standard_code_registry', documentId: canonicalCode, field: '__document__',
+          before: null, after: canonicalAfter,
+          reason: `Tạo registry canonical ${canonicalCode} từ raw document ${entry.rawDocumentId}; không xóa dữ liệu nguồn.`,
+        });
+        addChange({
+          collection: 'standard_code_registry', documentId: entry.rawDocumentId, field: '__migration__',
+          before: { migrationStatus: registry.migrationStatus ?? null, migratedTo: registry.migratedTo ?? null },
+          after: { migrationStatus: 'MIGRATED', migratedTo: canonicalCode },
+          reason: `Đánh dấu raw registry ${entry.rawDocumentId} là alias đã migrate sang ${canonicalCode}; No Delete.`,
+        });
+        registries.set(canonicalCode, { ...registry, id: canonicalCode, internal_id: canonicalCode, ...canonicalAfter } as StandardCodeRegistry);
+        continue;
+      }
+
+      if (registry.internal_id !== canonicalCode) {
+        addIssue({
+          kind: 'REGISTRY_KEY_MISMATCH', severity: 'WARNING', blocking: false,
+          collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+          internalId: canonicalCode, rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+          message: `Trường internal_id của registry ${canonicalCode} chỉ khác casing/khoảng trắng và có thể chuẩn hóa an toàn.`,
+          detail: `Giá trị hiện tại “${String(registry.internal_id)}” chuẩn hóa thành ${canonicalCode}.`,
+          suggestion: 'Có thể áp dụng safe change để đồng nhất internal_id với document ID canonical.',
+          autoFixable: true,
+        });
+        addChange({
+          collection: 'standard_code_registry', documentId: canonicalCode, field: '__document__',
+          before: this.registrySnapshot(registry),
+          after: { ...this.registrySnapshot(registry), id: canonicalCode, internal_id: canonicalCode },
+          reason: 'Chuẩn hóa trường internal_id của registry theo document ID canonical.',
+        });
+      }
+
+      if (registry.status === 'AVAILABLE' && registry.currentStandardId) {
+        addChange({
+          collection: 'standard_code_registry', documentId: canonicalCode, field: '__document__',
+          before: this.registrySnapshot(registry),
+          after: { ...this.registrySnapshot(registry), id: canonicalCode, internal_id: canonicalCode, currentStandardId: null },
+          reason: 'Xóa owner dư thừa khỏi registry AVAILABLE; trạng thái AVAILABLE không được giữ currentStandardId.',
+        });
+      }
+
+      registries.set(canonicalCode, { ...registry, id: canonicalCode, internal_id: canonicalCode });
+    }
+
+    return { registries, blockedCodes };
+  }
+
+  private validateRegistryState(
+    entry: RegistryEntry,
+    canonicalCode: string,
+    byId: Map<string, ReferenceStandard>,
+    byCode: Map<string, ReferenceStandard[]>,
+    addIssue: (issue: Omit<StandardInternalIdSyncIssue, 'id'>) => StandardInternalIdSyncIssue,
+  ): { blocked: boolean } {
+    const registry = entry.registry;
+    const status = String(registry.status || '');
+    if (!['ASSIGNED', 'AVAILABLE', 'CONFLICT'].includes(status)) {
+      addIssue({
+        kind: 'REGISTRY_MISMATCH', severity: 'ERROR', blocking: true,
+        collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+        internalId: canonicalCode, rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+        message: `Registry ${entry.rawDocumentId} có status không hợp lệ: ${status || '(trống)'}.`,
+        detail: 'Status registry phải thuộc ASSIGNED, AVAILABLE hoặc CONFLICT.',
+        suggestion: 'Đối chiếu audit để xác định trạng thái đúng trước khi sửa.',
+        autoFixable: false,
+      });
+      return { blocked: true };
+    }
+
+    if (status === 'CONFLICT') {
+      const currentOwners = (byCode.get(canonicalCode) || []).filter(isCurrentStandardLifecycle);
+      addIssue({
+        kind: 'REGISTRY_MISMATCH', severity: 'ERROR', blocking: true,
+        collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+        standardId: registry.currentStandardId, internalId: canonicalCode,
+        rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+        message: currentOwners.length === 0
+          ? `Registry ${canonicalCode} đang CONFLICT nhưng không có physical owner hiện tại.`
+          : `Registry ${canonicalCode} đang ở trạng thái CONFLICT và cần xử lý thủ công.`,
+        detail: currentOwners.length === 0
+          ? 'Không có hồ sơ vòng đời hiện tại nào giải thích trạng thái CONFLICT.'
+          : `Có ${currentOwners.length} hồ sơ hiện tại mang mã ${canonicalCode}; công cụ không tự chọn owner.`,
+        suggestion: 'Đối chiếu lịch sử cấp/trả mã và xử lý xung đột nghiệp vụ trước khi apply các thay đổi khác cho mã này.',
+        autoFixable: false,
+      });
+      return { blocked: true };
+    }
+
+    if (status === 'AVAILABLE') return { blocked: false };
+
+    if (!registry.currentStandardId) {
+      addIssue({
+        kind: 'REGISTRY_MISMATCH', severity: 'ERROR', blocking: true,
+        collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+        internalId: canonicalCode, rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+        message: `Registry ${canonicalCode} ở trạng thái ASSIGNED nhưng thiếu currentStandardId.`,
+        detail: 'Không thể xác định physical owner của mã đang bị khóa.',
+        suggestion: 'Đối chiếu hồ sơ vật lý và audit; không tự gán owner khi chưa xác định duy nhất.',
+        autoFixable: false,
+      });
+      return { blocked: true };
+    }
+
+    const owner = byId.get(registry.currentStandardId);
+    if (!owner) {
+      addIssue({
+        kind: 'REGISTRY_MISMATCH', severity: 'ERROR', blocking: true,
+        collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+        standardId: registry.currentStandardId, internalId: canonicalCode,
+        rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+        message: `Registry ${canonicalCode} trỏ tới owner ${registry.currentStandardId} không tồn tại.`,
+        detail: 'currentStandardId không khớp document nào trong reference_standards.',
+        suggestion: 'Đối chiếu audit và dữ liệu đã lưu trữ; không tự xóa owner hoặc registry record.',
+        autoFixable: false,
+      });
+      return { blocked: true };
+    }
+
+    if (normalizeInternalId(owner.internal_id) !== canonicalCode) {
+      addIssue({
+        kind: 'REGISTRY_MISMATCH', severity: 'ERROR', blocking: true,
+        collection: 'standard_code_registry', documentId: entry.rawDocumentId,
+        standardId: owner.id, internalId: canonicalCode,
+        rawDocumentId: entry.rawDocumentId, canonicalDocumentId: canonicalCode,
+        message: `Registry ${canonicalCode} trỏ tới owner ${owner.id} nhưng owner đang mang mã khác.`,
+        detail: `Mã trên hồ sơ owner chuẩn hóa thành ${normalizeInternalId(owner.internal_id) || '(trống)'}.`,
+        suggestion: 'Đối chiếu physical record và registry audit; không tự đổi owner hoặc mã.',
+        autoFixable: false,
+      });
+      return { blocked: true };
+    }
+
+    return { blocked: false };
+  }
+
+  private canonicalRegistryAfter(
+    registry: StandardCodeRegistry,
+    canonicalCode: string,
+    byId: Map<string, ReferenceStandard>,
+    byCode: Map<string, ReferenceStandard[]>,
+  ): AnyRecord | null {
+    if (registry.status === 'AVAILABLE') {
+      return {
+        id: canonicalCode,
+        internal_id: canonicalCode,
+        status: 'AVAILABLE',
+        currentStandardId: null,
+        assignmentCount: Math.max(0, Number(registry.assignmentCount || 0)),
+      };
+    }
+    if (registry.status !== 'ASSIGNED' || !registry.currentStandardId) return null;
+    const owner = byId.get(registry.currentStandardId);
+    if (!owner || !isCurrentStandardLifecycle(owner) || normalizeInternalId(owner.internal_id) !== canonicalCode) {
+      const currentOwners = (byCode.get(canonicalCode) || []).filter(isCurrentStandardLifecycle);
+      if (currentOwners.length !== 0) return null;
+      return {
+        id: canonicalCode,
+        internal_id: canonicalCode,
+        status: 'AVAILABLE',
+        currentStandardId: null,
+        assignmentCount: Math.max(0, Number(registry.assignmentCount || 0)),
+      };
+    }
+    return {
+      id: canonicalCode,
+      internal_id: canonicalCode,
+      status: 'ASSIGNED',
+      currentStandardId: owner.id,
+      assignmentCount: Math.max(1, Number(registry.assignmentCount || 0)),
+    };
+  }
+
+  private isMigratedRegistryAlias(entry: RegistryEntry, canonicalCode: string): boolean {
+    return entry.rawDocumentId !== canonicalCode &&
+      entry.registry.migrationStatus === 'MIGRATED' &&
+      normalizeInternalId(entry.registry.migratedTo) === canonicalCode;
+  }
+
+  private collectionLabel(collectionName: string): string {
+    switch (collectionName) {
+      case 'standard_requests': return 'Yêu cầu mượn';
+      case 'purchase_requests': return 'Yêu cầu mua';
+      case 'standard_usages': return 'Nhật ký sử dụng';
+      case 'reference_standard_logs': return 'Nhật ký lồng';
+      case 'reference_standards': return 'Hồ sơ chuẩn';
+      case 'standard_code_registry': return 'Ngân hàng mã';
+      default: return collectionName;
     }
   }
 
@@ -560,6 +1101,8 @@ export class StandardInternalIdSyncService {
       ...(registry.currentStandardId ? { currentStandardId: registry.currentStandardId } : {}),
       assignmentCount: Number(registry.assignmentCount || 0),
       ...(registry.lastReleasedStandardId ? { lastReleasedStandardId: registry.lastReleasedStandardId } : {}),
+      ...(registry.migrationStatus ? { migrationStatus: registry.migrationStatus } : {}),
+      ...(registry.migratedTo ? { migratedTo: registry.migratedTo } : {}),
     };
   }
 
@@ -575,7 +1118,26 @@ export class StandardInternalIdSyncService {
     for (const change of changes) {
       const key = `${change.collection}/${change.documentId}/${change.field}`;
       const previous = merged.get(key);
-      merged.set(key, previous ? { ...change, before: previous.before } : change);
+      if (!previous) {
+        merged.set(key, change);
+        continue;
+      }
+
+      const mergeRegistryDocument = change.collection === 'standard_code_registry' &&
+        change.field === '__document__' &&
+        previous.after && typeof previous.after === 'object' &&
+        change.after && typeof change.after === 'object';
+
+      merged.set(key, {
+        ...change,
+        before: previous.before,
+        after: mergeRegistryDocument
+          ? { ...(previous.after as AnyRecord), ...(change.after as AnyRecord) }
+          : change.after,
+        reason: previous.reason === change.reason
+          ? change.reason
+          : `${previous.reason} ${change.reason}`,
+      });
     }
     return [...merged.values()];
   }

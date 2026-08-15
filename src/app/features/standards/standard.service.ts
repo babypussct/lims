@@ -117,6 +117,9 @@ export class StandardService {
   async getRecentInternalIdSyncBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
     return this.internalIdSync.getRecentBatches(limitCount);
   }
+  async getRecentBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
+    return this.internalIdSync.getRecentBatches(limitCount);
+  }
   async updateStandardNames(updates: StandardNameUpdate[]): Promise<string> {
     return this.crud.updateStandardNames(updates);
   }

@@ -2,6 +2,7 @@
 import { Injectable, signal } from '@angular/core';
 
 export interface ConfirmationOptions {
+  title?: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
@@ -15,7 +16,12 @@ interface ConfirmationState extends ConfirmationOptions {
 @Injectable({ providedIn: 'root' })
 export class ConfirmationService {
   private defaultState: ConfirmationState = {
-    isVisible: false, message: '', confirmText: 'Xác nhận', cancelText: 'Hủy', isDangerous: false,
+    isVisible: false,
+    title: 'Xác nhận hành động',
+    message: '',
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy',
+    isDangerous: false,
   };
 
   state = signal<ConfirmationState>(this.defaultState);
@@ -26,8 +32,12 @@ export class ConfirmationService {
     return new Promise<boolean>((resolve) => {
       this.resolver = resolve;
       this.state.set({
-        isVisible: true, message: opts.message, confirmText: opts.confirmText || 'Xác nhận',
-        cancelText: opts.cancelText || 'Hủy', isDangerous: opts.isDangerous || false,
+        isVisible: true,
+        title: opts.title || 'Xác nhận hành động',
+        message: opts.message,
+        confirmText: opts.confirmText || 'Xác nhận',
+        cancelText: opts.cancelText || 'Hủy',
+        isDangerous: opts.isDangerous || false,
       });
     });
   }

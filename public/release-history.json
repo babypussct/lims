@@ -1,28 +1,27 @@
 [
   {
-    "version": "v26.08.14-b02",
-    "date": "14/8/2026",
-    "title": "Đồng bộ giao diện toàn hệ thống và nâng cao độ ổn định khi thao tác",
+    "version": "v26.08.15-b01",
+    "date": "15/8/2026",
+    "title": "Bổ sung công cụ Đồng bộ Mã quản lý nội bộ chất chuẩn và nâng cao độ an toàn khi thao tác",
     "highlights": [
-      "Chuẩn hóa giao diện trên toàn bộ các màn hình Chất chuẩn, Cấu hình, SOP, Mẻ phân tích và Kết quả, đảm bảo hiển thị đồng nhất và rõ ràng ở cả chế độ sáng lẫn tối.",
-      "Thao tác mở và làm việc với các cửa sổ tác vụ, biểu mẫu nhập liệu và thanh công cụ tìm kiếm diễn ra mượt mà và trực quan hơn.",
-      "Tự động xử lý trạng thái cập nhật trang, giúp hệ thống luôn hoạt động ổn định và liền mạch trên mọi thiết bị."
+      "Cung cấp công cụ Quét và Đối chiếu Mã quản lý nội bộ trên toàn bộ hồ sơ chất chuẩn, nhật ký sử dụng và yêu cầu mua sắm.",
+      "Xem trước bảng tổng kết thay đổi chi tiết, phát hiện và ngăn chặn trùng lặp mã trước khi áp dụng.",
+      "Theo dõi lịch sử từng đợt đồng bộ và xuất báo cáo đối chiếu phục vụ lưu trữ, kiểm toán phòng thí nghiệm."
     ],
     "features": [
-      "Bổ sung màn hình xem nhanh Chính sách bảo mật và Điều khoản sử dụng trực tiếp trên giao diện ứng dụng.",
-      "Tối ưu hóa giao diện Đăng nhập bằng mã QR trên điện thoại di động, tăng độ tương phản và hiển thị trạng thái quét rõ ràng hơn."
+      "Thêm công cụ Đồng bộ Mã quản lý nội bộ trong mục Quản lý chất chuẩn, giúp rà soát và chuẩn hóa mã chất chuẩn A, B, C một cách nhanh chóng và an toàn.",
+      "Bổ sung tính năng Xem lịch sử đồng bộ với chi tiết từng đợt thay đổi và hỗ trợ Xuất báo cáo đối chiếu ra tệp CSV, JSON."
     ],
     "improvements": [
-      "Đồng bộ nút bấm, tiêu đề và thanh công cụ trên các màn hình Quản lý chất chuẩn, Quản lý thiết bị, Quản lý nền mẫu và Nhật ký công việc hằng ngày.",
-      "Các cửa sổ tác vụ như duyệt yêu cầu mua sắm chất chuẩn, gán chất chuẩn, in nhãn và nhập dữ liệu mở nhanh hơn và bố cục thông tin dễ theo dõi hơn.",
-      "Hỗ trợ điều hướng bằng phím Tab và phím Escape nhất quán trên tất cả các cửa sổ tác vụ trong hệ thống."
+      "Hộp thoại xác nhận thao tác được bố trí nổi bật, hiển thị đầy đủ tổng quan thay đổi và các lưu ý an toàn trước khi thực hiện.",
+      "Kiểm tra và báo lỗi tức thì khi nhập mã thủ công nếu mã bị trùng lặp, sai quy ước hoặc đang thuộc về chất chuẩn khác.",
+      "Thanh lọc danh mục và nút chuyển góc nhìn làm việc phản hồi nhanh, hỗ trợ đầy đủ thao tác bằng bàn phím."
     ],
     "fixes": [
-      "Khắc phục hiện tượng một số trình duyệt tự tải lại trang liên tục khi nhận bản cập nhật mới.",
-      "Sửa lỗi hiển thị màu sắc và biểu tượng nút đóng trên các danh mục thuộc phần Cấu hình.",
-      "Đảm bảo số liệu thống kê hằng tháng luôn được cập nhật chính xác và an toàn khi có nhiều người cùng thao tác."
+      "Khắc phục hiện tượng hộp thoại xác nhận bị hiển thị phía sau các cửa sổ tác vụ lớn.",
+      "Đảm bảo nhật ký sử dụng và yêu cầu mua sắm luôn được liên kết chính xác với mã quản lý nội bộ sau khi đồng bộ."
     ],
-    "releaseOrder": 26081400002
+    "releaseOrder": 26081500001
   },
   {
     "version": "v26.08.07-b02",

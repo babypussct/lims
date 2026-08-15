@@ -148,7 +148,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
       }
 
       @if (hasNewVersion() && !isUpdateModalDismissed()) {
-        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm no-print p-4 md:p-6">
+        <div class="fixed inset-0 z-layer-system-lock flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm no-print p-4 md:p-6">
            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 md:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 animate-fade-in">
               
               <div class="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8">
@@ -242,7 +242,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
       }
 
       @if (isMaintenanceActive() && auth.currentUser() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
-        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md no-print p-4">
+        <div class="fixed inset-0 z-layer-system-lock flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md no-print p-4">
            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-rose-500/30 animate-bounce-in">
               <div class="w-20 h-20 bg-rose-100 dark:bg-rose-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-500 animate-pulse">
                 <i class="fa-solid fa-person-digging text-4xl"></i>
@@ -259,7 +259,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
       }
 
       @if (isMaintenanceActive() && state.isAdmin()) {
-        <div class="fixed bottom-20 right-4 z-[9999] no-print animate-bounce-in pointer-events-none">
+        <div class="fixed bottom-20 right-4 z-layer-system-lock no-print animate-bounce-in pointer-events-none">
             <div class="pointer-events-auto bg-rose-600 text-white px-4 py-3 rounded-2xl shadow-xl shadow-rose-500/30 flex items-center gap-3 border-2 border-white dark:border-slate-800 max-w-[280px]">
                 <div class="w-10 h-10 shrink-0 bg-white/20 rounded-full flex items-center justify-center animate-pulse"><i class="fa-solid fa-person-digging text-lg"></i></div>
                 <div class="flex-1">

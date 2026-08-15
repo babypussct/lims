@@ -115,6 +115,10 @@ export interface StandardCodeRegistry {
   status: StandardCodeRegistryStatus;
   currentStandardId?: string;
   assignmentCount: number;
+  /** Legacy raw registry rows are preserved and marked as aliases after migration. */
+  migrationStatus?: 'MIGRATED';
+  migratedTo?: string;
+  migratedAt?: any;
   lastAssignedAt?: any;
   lastReleasedAt?: any;
   lastReleasedStandardId?: string;
@@ -128,7 +132,10 @@ export type StandardInternalIdIssueKind =
   | 'DUPLICATE_ACTIVE'
   | 'REGISTRY_MISMATCH'
   | 'REQUEST_REFERENCE'
-  | 'USAGE_REFERENCE';
+  | 'USAGE_REFERENCE'
+  | 'MISSING_REFERENCE'
+  | 'PARENT_REFERENCE_MISMATCH'
+  | 'REGISTRY_KEY_MISMATCH';
 
 export interface StandardInternalIdSyncIssue {
   id: string;
@@ -139,6 +146,12 @@ export interface StandardInternalIdSyncIssue {
   standardId?: string;
   internalId?: string;
   suggestedInternalId?: string;
+  parentStandardId?: string;
+  referencedStandardId?: string;
+  rawDocumentId?: string;
+  canonicalDocumentId?: string;
+  blocking?: boolean;
+  isCurrentLifecycle?: boolean;
   message: string;
   /** Plain-language explanation of what made this record unsafe or inconsistent. */
   detail?: string;
@@ -156,7 +169,40 @@ export interface StandardInternalIdSyncChange {
   reason: string;
 }
 
+export interface StandardInternalIdSyncSummary {
+  totalIssues: number;
+  blockingIssuesCount: number;
+  safeChangesCount: number;
+  manualIssuesCount: number;
+  byCollection: Record<string, number>;
+  byKind: Record<string, number>;
+}
+
+export interface StandardInternalIdApplySummary {
+  totalChanges: number;
+  totalDocuments: number;
+  actualWrites: number;
+  estimatedBatches: number;
+  manualCount: number;
+  safeCount: number;
+  physicalStandardsCount: number;
+  registryCount: number;
+  requestsCount: number;
+  usageCount: number;
+  blockingIssuesCount: number;
+  byCollection: Record<string, number>;
+  byChangeType: {
+    codeNormalization: number;
+    searchKeyUpdate: number;
+    manualCorrection: number;
+    registrySync: number;
+    snapshotUpdate: number;
+    referenceRepair: number;
+  };
+}
+
 export interface StandardInternalIdSyncReport {
+  scanId?: string;
   generatedAt: number;
   standardsCount: number;
   requestsCount: number;
@@ -167,6 +213,8 @@ export interface StandardInternalIdSyncReport {
   issues: StandardInternalIdSyncIssue[];
   safeChanges: StandardInternalIdSyncChange[];
   conflicts: StandardInternalIdSyncIssue[];
+  blockingIssues?: StandardInternalIdSyncIssue[];
+  summary?: StandardInternalIdSyncSummary;
 }
 
 export interface StandardInternalIdSyncBatch {

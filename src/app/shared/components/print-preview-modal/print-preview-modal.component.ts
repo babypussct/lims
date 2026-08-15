@@ -14,7 +14,7 @@ import { timestampToDate } from '../../utils/timestamp';
   template: `
     <!-- Chế Độ 1: Xem trước & In ấn Phiếu chạy A4 Cục bộ -->
     @if (printService.isPreviewOpen()) {
-        <div class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 fade-in print-modal-overlay" (click)="close()">
+        <div class="fixed inset-0 z-layer-scanner-preview flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 fade-in print-modal-overlay" (click)="close()">
             <div class="bg-white w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-bounce-in relative print-modal-content" (click)="$event.stopPropagation()">
                 
                 <!-- HEADER (Hidden when printing) -->
@@ -93,7 +93,7 @@ import { timestampToDate } from '../../utils/timestamp';
 
     <!-- Chế Độ 2: Trình Quản Lý & Xem Báo Cáo PDF Drive (Cloud PDF Viewer) -->
     @if (printService.isPreviewPdfOpen()) {
-        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-[150] p-4 fade-in" (click)="closePdfModal()">
+        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-layer-scanner-preview p-4 fade-in" (click)="closePdfModal()">
             <div class="relative bg-white dark:bg-slate-900 shadow-2xl overflow-hidden flex flex-col border border-slate-200/50 dark:border-slate-800 transition-all duration-300 ease-out"
                 [class.w-full]="isFullscreen()" [class.h-full]="isFullscreen()" [class.max-w-none]="isFullscreen()" [class.rounded-none]="isFullscreen()"
                 [class.max-w-6xl]="!isFullscreen()" [class.w-full]="!isFullscreen()" [class.h-[90vh]]="!isFullscreen()" [class.rounded-2xl]="!isFullscreen()"

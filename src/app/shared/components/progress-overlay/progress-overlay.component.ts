@@ -10,7 +10,7 @@ import { ModalA11yDirective } from '../../directives/modal-a11y.directive';
   template: `
     @if (progressService.isVisible()) {
       <div
-        class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in"
+        class="fixed inset-0 z-layer-system-lock flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in"
         appModalA11y
         modalLabelledBy="progress-overlay-title"
         modalDescribedBy="progress-overlay-message">
