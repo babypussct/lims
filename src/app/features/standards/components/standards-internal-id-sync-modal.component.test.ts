@@ -57,6 +57,11 @@ test('sync modal exposes selectable groups and searchable warning details', () =
   assert.match(source, /issue\.detail/);
   assert.match(source, /issue\.suggestion/);
   assert.match(source, /nonManualConflicts = computed/);
+  assert.match(source, /selectedSafeChangeKeys = signal/);
+  assert.match(source, /toggleSafeDocument\(documentKey: string, selected: boolean\)/);
+  assert.match(source, /toggleAllSafeChanges\(selected: boolean\)/);
+  assert.match(source, /Chọn tất cả/);
+  assert.match(source, /dưới 250 thay đổi/);
 });
 
 test('sync modal includes MISSING_REFERENCE and PARENT_REFERENCE_MISMATCH under reference filter', () => {
@@ -156,6 +161,25 @@ test('behavioral: calculateInternalIdApplySummary accounts for active vs release
   assert.equal(summary.byChangeType.manualCorrection, 2);
   assert.equal(summary.byChangeType.registrySync, 1);
   assert.equal(summary.byChangeType.snapshotUpdate, 1);
+});
+
+test('behavioral: apply summary plans 2053 changes as nine sub-250 batches', () => {
+  const { calculateInternalIdApplySummary } = require('../../../shared/utils/standard-internal-id');
+  const report = {
+    generatedAt: Date.now(),
+    standardsCount: 2053,
+    requestsCount: 0,
+    usageCount: 0,
+    registryCount: 0,
+    issues: [],
+    safeChanges: Array.from({ length: 2053 }, (_, index) => ({
+      collection: 'reference_standards', documentId: `std-${index}`, field: 'search_key',
+      before: 'old', after: 'new', reason: 'test',
+    })),
+    conflicts: [],
+  };
+
+  assert.equal(calculateInternalIdApplySummary(report, {}).estimatedBatches, 9);
 });
 
 test('behavioral: StandardsInternalIdSyncModalComponent integrates validation and summary signals', () => {
@@ -395,4 +419,83 @@ test('behavioral: audit history state transitions, async batch loading and expan
   // Verify formatTimestamp handles numbers and date objects
   const formatted = modal.formatTimestamp(1771100000000);
   assert.match(formatted, /\d{2}\/\d{2}\/\d{4}/);
+});
+
+test('behavioral: modal component handles real-time progress and partial failure recovery', async () => {
+  const { StandardsInternalIdSyncModalComponent } = require('./standards-internal-id-sync-modal.component');
+  const { StandardSyncPartialFailureError } = require('../../../shared/utils/standard-internal-id');
+
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype);
+  modal.report = signal({
+    generatedAt: Date.now(),
+    standardsCount: 1,
+    requestsCount: 0,
+    usageCount: 0,
+    registryCount: 0,
+    issues: [],
+    safeChanges: [
+      { collection: 'reference_standards', documentId: 'std-1', field: 'internal_id', before: 'aa01', after: 'AA01', reason: 'norm' },
+    ],
+    conflicts: [],
+  });
+  modal.corrections = signal({});
+  modal.selectedSafeChangeKeys = signal(null);
+  modal.isBusy = () => false;
+  modal.canApply = () => true;
+  modal.isApplying = signal(false);
+  modal.applyProgress = signal(null);
+  modal.partialFailure = signal(null);
+  modal.applySummary = () => ({
+    estimatedBatches: 2,
+    totalChanges: 2,
+    totalDocuments: 1,
+    actualWrites: 2,
+    physicalStandardsCount: 1,
+    manualCount: 0,
+    registryCount: 0,
+    requestsCount: 0,
+    usageCount: 0,
+    blockingIssuesCount: 0,
+    byChangeType: { codeNormalization: 1, searchKeyUpdate: 0, manualCorrection: 0, registrySync: 0, snapshotUpdate: 0, referenceRepair: 0 },
+  });
+  modal.errorMessage = signal('');
+  modal.confirmation = { confirm: async () => true };
+  modal.toast = { show: () => {} };
+
+  let scanCount = 0;
+  modal.scan = async () => { scanCount += 1; };
+
+  // Simulate apply with partial failure
+  modal.stdService = {
+    applyInternalIdSync: async (_report: any, _corr: any, _keys: any, onProgress: any) => {
+      onProgress({ currentBatch: 1, totalBatches: 2, completedChanges: 1, totalChanges: 2, percent: 50, phase: 'BATCH_COMPLETED' });
+      throw new StandardSyncPartialFailureError(
+        'Đã áp dụng thành công 1/2 batch (1 thay đổi). Batch 2 bị gián đoạn: Lỗi mạng.',
+        ['batch-001'],
+        1,
+        2,
+        2,
+        new Error('Network error'),
+      );
+    },
+    scanInternalIdSync: async () => modal.report(),
+  };
+
+  modal.apply = StandardsInternalIdSyncModalComponent.prototype.apply.bind(modal);
+  modal.retryRemainingAfterPartialFailure = StandardsInternalIdSyncModalComponent.prototype.retryRemainingAfterPartialFailure.bind(modal);
+
+  await modal.apply();
+
+  // Verify partial failure is captured in state
+  assert.ok(modal.partialFailure());
+  assert.equal(modal.partialFailure().completedBatchIds.length, 1);
+  assert.equal(modal.partialFailure().failedBatchIndex, 2);
+  assert.equal(modal.isApplying(), false);
+  assert.match(modal.errorMessage(), /1\/2 batch/);
+
+  // Test 1-click retry action
+  await modal.retryRemainingAfterPartialFailure();
+  assert.equal(modal.partialFailure(), null);
+  assert.equal(modal.errorMessage(), '');
+  assert.equal(scanCount, 1);
 });

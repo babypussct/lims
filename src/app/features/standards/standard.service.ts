@@ -35,6 +35,7 @@ import {
   StandardImportWorkbookPreview
 } from './services/standard-import.service';
 import { StandardInternalIdSyncService } from './services/standard-internal-id-sync.service';
+import { SyncBatchProgress } from '../../shared/utils/standard-internal-id';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -110,9 +111,11 @@ export class StandardService {
   }
   async applyInternalIdSync(
     report: StandardInternalIdSyncReport,
-    corrections: Record<string, string> = {}
-  ): Promise<string> {
-    return this.internalIdSync.apply(report, corrections);
+    corrections: Record<string, string> = {},
+    selectedChangeKeys?: readonly string[],
+    onProgress?: (progress: SyncBatchProgress) => void,
+  ): Promise<string[]> {
+    return this.internalIdSync.apply(report, corrections, selectedChangeKeys, onProgress);
   }
   async getRecentInternalIdSyncBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
     return this.internalIdSync.getRecentBatches(limitCount);

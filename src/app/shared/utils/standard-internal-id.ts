@@ -1,6 +1,7 @@
 import {
   ReferenceStandard,
   StandardInternalIdApplySummary,
+  StandardInternalIdSyncChange,
   StandardInternalIdSyncReport,
 } from '../../core/models/standard.model';
 
@@ -204,6 +205,7 @@ export function calculateInternalIdApplySummary(
   }
 
   let totalManualFieldChanges = 0;
+  const manualChanges: StandardInternalIdSyncChange[] = [];
 
   for (const [id, code] of validCorrections) {
     // 1. reference_standards document: internal_id + search_key
@@ -212,24 +214,58 @@ export function calculateInternalIdApplySummary(
     searchKeyUpdate += 1;
     totalManualFieldChanges += 2;
 
+    const normalized = normalizeInternalId(code);
+    manualChanges.push({
+      collection: 'reference_standards',
+      documentId: id,
+      field: 'internal_id',
+      before: null,
+      after: normalized,
+      reason: 'Mã sửa thủ công sau khi người quản lý đối chiếu hồ sơ.',
+    });
+    manualChanges.push({
+      collection: 'reference_standards',
+      documentId: id,
+      field: 'search_key',
+      before: null,
+      after: normalized,
+      reason: 'Cập nhật khóa tìm kiếm theo mã sửa thủ công.',
+    });
+
     // Check if standard is in current lifecycle
     const issue = manualIssuesMap.get(id);
     const isCurrent = issue?.isCurrentLifecycle !== false;
 
     if (isCurrent) {
-      const normalized = normalizeInternalId(code);
       documentKeys.add(`standard_code_registry/${normalized}`);
       byCollection['standard_code_registry'] = (byCollection['standard_code_registry'] || 0) + 1;
       registrySync += 1;
       totalManualFieldChanges += 1; // __document__ in standard_code_registry
+
+      manualChanges.push({
+        collection: 'standard_code_registry',
+        documentId: normalized,
+        field: '__document__',
+        before: null,
+        after: {
+          id: normalized,
+          internal_id: normalized,
+          status: 'ASSIGNED',
+          currentStandardId: id,
+        },
+        reason: 'Đồng bộ ngân hàng mã sau khi sửa thủ công hồ sơ.',
+      });
     }
   }
 
+  const allPlannedChanges = [...safe, ...manualChanges];
+  const batchPlan = planInternalIdBatches(allPlannedChanges, 249);
+
   const totalChanges = safe.length + totalManualFieldChanges;
   const totalDocuments = documentKeys.size;
-  // Actual Firestore writes: all unique modified business documents + 1 audit batch write
-  const actualWrites = totalDocuments > 0 ? totalDocuments + 1 : 0;
-  const estimatedBatches = actualWrites > 0 ? Math.ceil(actualWrites / 250) : 0;
+  // Actual Firestore writes: all unique modified business documents + 1 audit batch write per batch chunk
+  const actualWrites = totalDocuments > 0 ? totalDocuments + batchPlan.totalBatches : 0;
+  const estimatedBatches = batchPlan.totalBatches;
 
   const physicalStandardsCount = new Set([
     ...safe.filter(c => c.collection === 'reference_standards').map(c => c.documentId),
@@ -276,6 +312,208 @@ export function calculateInternalIdApplySummary(
       snapshotUpdate,
       referenceRepair,
     },
+  };
+}
+
+export interface SyncBatchProgress {
+  readonly currentBatch: number;
+  readonly totalBatches: number;
+  readonly completedChanges: number;
+  readonly totalChanges: number;
+  readonly percent: number;
+  readonly phase:
+    | 'PREPARING'
+    | 'RE_SCANNING'
+    | 'PREFLIGHT_CHECK'
+    | 'COMMITTING_BATCH'
+    | 'AUDITING'
+    | 'BATCH_COMPLETED'
+    | 'ALL_COMPLETED';
+  readonly currentBatchId?: string;
+  readonly currentBatchChangeCount?: number;
+  readonly message?: string;
+}
+
+export class StandardSyncPartialFailureError extends Error {
+  constructor(
+    message: string,
+    public readonly completedBatchIds: readonly string[],
+    public readonly completedChangesCount: number,
+    public readonly failedBatchIndex: number,
+    public readonly totalBatches: number,
+    public readonly underlyingError: unknown,
+  ) {
+    super(message);
+    this.name = 'StandardSyncPartialFailureError';
+  }
+}
+
+export interface InternalIdBatchChunkPlan {
+  readonly batchIndex: number;
+  readonly changes: readonly StandardInternalIdSyncChange[];
+  readonly changeCount: number;
+  readonly documentCount: number;
+  readonly clusterCount: number;
+}
+
+export interface InternalIdBatchPlan {
+  readonly chunks: readonly InternalIdBatchChunkPlan[];
+  readonly totalBatches: number;
+  readonly totalChanges: number;
+  readonly totalDocuments: number;
+  readonly maxChangesPerBatch: number;
+}
+
+/**
+ * Groups interdependent standard and registry changes into atomic clusters
+ * and plans sequential batches without splitting any cluster across batch boundaries.
+ */
+export function planInternalIdBatches(
+  changes: readonly StandardInternalIdSyncChange[],
+  maxChangesPerBatch = 249,
+): InternalIdBatchPlan {
+  if (maxChangesPerBatch < 1) {
+    throw new Error('Giới hạn batch phải lớn hơn 0.');
+  }
+  if (!changes || changes.length === 0) {
+    return {
+      chunks: [],
+      totalBatches: 0,
+      totalChanges: 0,
+      totalDocuments: 0,
+      maxChangesPerBatch,
+    };
+  }
+
+  // 1. Group changes by documentKey
+  const docKeyOf = (c: StandardInternalIdSyncChange) => `${c.collection}/${c.documentId}`;
+  const docMap = new Map<string, StandardInternalIdSyncChange[]>();
+  for (const c of changes) {
+    const key = docKeyOf(c);
+    const list = docMap.get(key) || [];
+    list.push(c);
+    docMap.set(key, list);
+  }
+
+  // 2. Disjoint-set (Union-Find) to connect correlated standard and registry documents
+  const parent = new Map<string, string>();
+  const find = (key: string): string => {
+    const p = parent.get(key) || key;
+    if (p !== key) {
+      const root = find(p);
+      parent.set(key, root);
+      return root;
+    }
+    return key;
+  };
+  const union = (keyA: string, keyB: string) => {
+    const rootA = find(keyA);
+    const rootB = find(keyB);
+    if (rootA !== rootB) {
+      parent.set(rootA, rootB);
+    }
+  };
+
+  for (const docKey of docMap.keys()) {
+    parent.set(docKey, docKey);
+  }
+
+  for (const [docKey, docChanges] of docMap.entries()) {
+    for (const c of docChanges) {
+      if (c.collection === 'reference_standards') {
+        // Link to registry if target code is normalized and valid
+        if (c.field === 'internal_id' && c.after) {
+          const targetCode = normalizeInternalId(c.after);
+          const registryKey = `standard_code_registry/${targetCode}`;
+          if (isValidInternalId(targetCode) && docMap.has(registryKey)) {
+            union(docKey, registryKey);
+          }
+        }
+      } else if (c.collection === 'standard_code_registry') {
+        // Link to standard if after or before references a standard ID
+        const checkOwner = (payload: unknown) => {
+          if (payload && typeof payload === 'object' && 'currentStandardId' in payload) {
+            const stdId = String((payload as any).currentStandardId || '').trim();
+            const stdKey = `reference_standards/${stdId}`;
+            if (stdId && docMap.has(stdKey)) {
+              union(docKey, stdKey);
+            }
+          }
+        };
+        checkOwner(c.after);
+        checkOwner(c.before);
+      }
+    }
+  }
+
+  // 3. Assemble clusters
+  const clusterMap = new Map<string, { changes: StandardInternalIdSyncChange[]; docKeys: Set<string> }>();
+  for (const [docKey, docChanges] of docMap.entries()) {
+    const root = find(docKey);
+    const cluster = clusterMap.get(root) || { changes: [], docKeys: new Set<string>() };
+    cluster.changes.push(...docChanges);
+    cluster.docKeys.add(docKey);
+    clusterMap.set(root, cluster);
+  }
+
+  // Sort clusters deterministically for stable planning
+  const clusters = [...clusterMap.entries()]
+    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+    .map(([, cluster]) => cluster);
+
+  // 4. Pack clusters into batch chunks
+  const rawChunks: { changes: StandardInternalIdSyncChange[]; documentCount: number; clusterCount: number }[] = [];
+  let currentChunk: StandardInternalIdSyncChange[] = [];
+  let currentDocs = new Set<string>();
+  let currentClusterCount = 0;
+
+  for (const cluster of clusters) {
+    if (cluster.changes.length > maxChangesPerBatch) {
+      const firstDoc = cluster.changes[0] ? docKeyOf(cluster.changes[0]) : 'không rõ';
+      throw new Error(
+        `Cụm thay đổi phụ thuộc của tài liệu ${firstDoc} có ${cluster.changes.length} thay đổi, vượt giới hạn an toàn ${maxChangesPerBatch}.`
+      );
+    }
+
+    if (currentChunk.length > 0 && currentChunk.length + cluster.changes.length > maxChangesPerBatch) {
+      rawChunks.push({
+        changes: currentChunk,
+        documentCount: currentDocs.size,
+        clusterCount: currentClusterCount,
+      });
+      currentChunk = [];
+      currentDocs = new Set<string>();
+      currentClusterCount = 0;
+    }
+
+    currentChunk.push(...cluster.changes);
+    for (const dk of cluster.docKeys) currentDocs.add(dk);
+    currentClusterCount += 1;
+  }
+
+  if (currentChunk.length > 0) {
+    rawChunks.push({
+      changes: currentChunk,
+      documentCount: currentDocs.size,
+      clusterCount: currentClusterCount,
+    });
+  }
+
+  const chunks: InternalIdBatchChunkPlan[] = rawChunks.map((chunk, index) => ({
+    batchIndex: index + 1,
+    changes: chunk.changes,
+    changeCount: chunk.changes.length,
+    documentCount: chunk.documentCount,
+    clusterCount: chunk.clusterCount,
+  }));
+
+  const totalDocuments = docMap.size;
+  return {
+    chunks,
+    totalBatches: chunks.length,
+    totalChanges: changes.length,
+    totalDocuments,
+    maxChangesPerBatch,
   };
 }
 

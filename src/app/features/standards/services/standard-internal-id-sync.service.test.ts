@@ -468,6 +468,27 @@ test('merges multiple planned registry document changes without dropping earlier
   assert.match(merged[0].reason, /Xóa owner dư thừa/);
 });
 
+test('chunks 2053 changes into logical batches smaller than 250 without splitting documents', () => {
+  const { service } = createService();
+  const changes: StandardInternalIdSyncChange[] = Array.from({ length: 2053 }, (_, index) => ({
+    collection: 'reference_standards',
+    documentId: `std-${index}`,
+    field: 'internal_id',
+    before: `AA${String(index).padStart(2, '0')}`,
+    after: `BA${String(index).padStart(2, '0')}`,
+    reason: 'test',
+  }));
+
+  const chunks = (service as any).chunkChanges(changes, 249) as StandardInternalIdSyncChange[][];
+
+  assert.equal(chunks.length, 9);
+  assert.equal(chunks.flat().length, 2053);
+  assert.ok(chunks.every(chunk => chunk.length < 250));
+  assert.deepEqual(chunks.slice(0, 8).map(chunk => chunk.length), Array(8).fill(249));
+  assert.equal(chunks[8].length, 61);
+  assert.equal(new Set(chunks.flat().map(change => change.documentId)).size, 2053);
+});
+
 test('blocks assigned registry when owner is missing or carries a different code', () => {
   const { service, issues, safeChanges, addIssue, addChange } = createService();
   const wrongOwner: ReferenceStandard = {
@@ -532,4 +553,92 @@ test('apply() fails closed during preflight if multiple standards are assigned t
     },
     /bị nhập trùng cho 2 hồ sơ/,
   );
+});
+
+test('planInternalIdBatches keeps correlated reference_standards and standard_code_registry in the same batch chunk', () => {
+  const { planInternalIdBatches } = require('../../../shared/utils/standard-internal-id');
+
+  // Create 124 standards (2 changes each = 248 changes)
+  const changes: StandardInternalIdSyncChange[] = [];
+  for (let i = 0; i < 124; i++) {
+    changes.push({
+      collection: 'reference_standards',
+      documentId: `std-filler-${i}`,
+      field: 'internal_id',
+      before: 'AA01',
+      after: 'AA01',
+      reason: 'filler',
+    });
+    changes.push({
+      collection: 'reference_standards',
+      documentId: `std-filler-${i}`,
+      field: 'search_key',
+      before: 'old',
+      after: 'new',
+      reason: 'filler',
+    });
+  }
+
+  // Add 1 standard (2 changes) and its correlated registry document (1 change)
+  // Total 248 + 3 = 251 changes.
+  // Standard and registry MUST be together in Batch 2 (or Batch 1), never split between Batch 1 and Batch 2!
+  changes.push({
+    collection: 'reference_standards',
+    documentId: 'std-linked-999',
+    field: 'internal_id',
+    before: 'ba01',
+    after: 'BA01',
+    reason: 'normalize',
+  });
+  changes.push({
+    collection: 'reference_standards',
+    documentId: 'std-linked-999',
+    field: 'search_key',
+    before: 'old',
+    after: 'new',
+    reason: 'search_key',
+  });
+  changes.push({
+    collection: 'standard_code_registry',
+    documentId: 'BA01',
+    field: '__document__',
+    before: null,
+    after: { currentStandardId: 'std-linked-999' },
+    reason: 'registry sync',
+  });
+
+  const plan = planInternalIdBatches(changes, 249);
+  assert.equal(plan.totalBatches, 2);
+
+  // Find the chunks containing std-linked-999 and registry BA01
+  const stdChunkIndex = plan.chunks.findIndex(chunk =>
+    chunk.changes.some(c => c.collection === 'reference_standards' && c.documentId === 'std-linked-999')
+  );
+  const regChunkIndex = plan.chunks.findIndex(chunk =>
+    chunk.changes.some(c => c.collection === 'standard_code_registry' && c.documentId === 'BA01')
+  );
+
+  assert.ok(stdChunkIndex >= 0);
+  assert.ok(regChunkIndex >= 0);
+  assert.equal(stdChunkIndex, regChunkIndex, 'Standard and Registry must be in the EXACT same batch chunk');
+});
+
+test('StandardSyncPartialFailureError retains completedBatchIds, completedChangesCount and failedBatchIndex', () => {
+  const { StandardSyncPartialFailureError } = require('../../../shared/utils/standard-internal-id');
+
+  const err = new StandardSyncPartialFailureError(
+    'Đã áp dụng thành công 4/9 batch. Batch 5 bị lỗi mạng.',
+    ['batch-1', 'batch-2', 'batch-3', 'batch-4'],
+    996,
+    5,
+    9,
+    new Error('Network timeout'),
+  );
+
+  assert.equal(err.name, 'StandardSyncPartialFailureError');
+  assert.equal(err.completedBatchIds.length, 4);
+  assert.equal(err.completedChangesCount, 996);
+  assert.equal(err.failedBatchIndex, 5);
+  assert.equal(err.totalBatches, 9);
+  assert.match(err.message, /4\/9 batch/);
 });

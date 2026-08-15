@@ -26,6 +26,9 @@ import {
   isCurrentStandardLifecycle,
   isValidInternalId,
   normalizeInternalId,
+  planInternalIdBatches,
+  StandardSyncPartialFailureError,
+  SyncBatchProgress,
 } from '../../../shared/utils/standard-internal-id';
 import { sanitizeForFirebase } from '../../../shared/utils/utils';
 
@@ -52,7 +55,12 @@ export class StandardInternalIdSyncService {
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
 
-  private readonly MAX_APPLY_CHANGES = 250;
+  /**
+   * Keep every logical apply below the requested 250-change safety ceiling.
+   * The value is intentionally 249 rather than 250 because the UI and the
+   * operator-facing error message both promise "smaller than 250".
+   */
+  private readonly MAX_APPLY_CHANGES = 249;
 
   async scan(): Promise<StandardInternalIdSyncReport> {
     if (!this.auth.canEditStandards()) {
@@ -349,8 +357,23 @@ export class StandardInternalIdSyncService {
     };
   }
 
-  async apply(report: StandardInternalIdSyncReport, corrections: Record<string, string> = {}): Promise<string> {
+  async apply(
+    report: StandardInternalIdSyncReport,
+    corrections: Record<string, string> = {},
+    selectedChangeKeys?: readonly string[],
+    onProgress?: (progress: SyncBatchProgress) => void,
+  ): Promise<string[]> {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền áp dụng đồng bộ Mã quản lý nội bộ.');
+
+    onProgress?.({
+      currentBatch: 0,
+      totalBatches: 0,
+      completedChanges: 0,
+      totalChanges: 0,
+      percent: 0,
+      phase: 'PREPARING',
+      message: 'Đang kiểm tra tính hợp lệ của các mã sửa...',
+    });
 
     // Preflight check: validate corrections dictionary format and duplicate target codes within this batch
     const targetToStandards = new Map<string, string[]>();
@@ -372,10 +395,23 @@ export class StandardInternalIdSyncService {
       }
     }
 
+    onProgress?.({
+      currentBatch: 0,
+      totalBatches: 0,
+      completedChanges: 0,
+      totalChanges: 0,
+      percent: 5,
+      phase: 'RE_SCANNING',
+      message: 'Đang quét tươi lại toàn bộ dữ liệu trước khi ghi...',
+    });
+
     // Re-scan immediately before writing so a stale preview cannot overwrite a
     // newly assigned code or a newly created request.
     const freshReport = await this.scan();
-    const changes = [...freshReport.safeChanges];
+    const selectedKeys = selectedChangeKeys ? new Set(selectedChangeKeys) : null;
+    const changes = freshReport.safeChanges.filter(change =>
+      !selectedKeys || selectedKeys.has(this.safeChangeKey(change))
+    );
     const base = `artifacts/${this.fb.APP_ID}`;
     const standardsCollection = collection(this.fb.db, `${base}/reference_standards`);
     for (const [standardId, rawCode] of Object.entries(corrections)) {
@@ -440,69 +476,167 @@ export class StandardInternalIdSyncService {
 
     const mergedChanges = this.mergeChanges(changes);
     if (mergedChanges.length === 0) throw new Error('Không có thay đổi an toàn hoặc mã sửa nào để áp dụng.');
-    if (mergedChanges.length > this.MAX_APPLY_CHANGES) {
-      throw new Error(`Có ${mergedChanges.length} thay đổi; hãy chia thành các lần nhỏ hơn ${this.MAX_APPLY_CHANGES} thay đổi để bảo đảm an toàn.`);
-    }
 
+    // Plan atomic clusters and batch chunks using the shared batch planner
+    const batchPlan = planInternalIdBatches(mergedChanges, this.MAX_APPLY_CHANGES);
     const currentUser = this.auth.currentUser();
-    const batchRef = doc(collection(this.fb.db, `${base}/standard_code_sync_batches`));
-    const batch = writeBatch(this.fb.db);
-    const updates = new Map<string, { ref: any; fields: AnyRecord; registryDocument?: AnyRecord; registryMigration?: AnyRecord }>();
+    const batchIds: string[] = [];
+    const totalBatches = batchPlan.totalBatches;
+    const totalChanges = batchPlan.totalChanges;
+    let completedChanges = 0;
+    let currentBatchIndex = 0;
 
-    for (const change of mergedChanges) {
-      const key = `${change.collection}/${change.documentId}`;
-      const entry = updates.get(key) || { ref: null, fields: {} };
-      if (change.collection === 'standard_code_registry') {
-        entry.ref = doc(this.fb.db, `${base}/standard_code_registry/${change.documentId}`);
-        if (change.field === '__migration__') {
-          entry.registryMigration = {
-            ...(change.after as AnyRecord),
-            migratedAt: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-          };
-        } else {
-          entry.registryDocument = { ...(change.after as AnyRecord), lastUpdated: serverTimestamp() };
+    try {
+      for (let i = 0; i < batchPlan.chunks.length; i++) {
+        currentBatchIndex = i;
+        const chunkPlan = batchPlan.chunks[i];
+        const chunk = chunkPlan.changes;
+
+        // Progress: Preflight validation for this chunk
+        onProgress?.({
+          currentBatch: i + 1,
+          totalBatches,
+          completedChanges,
+          totalChanges,
+          percent: Math.round((completedChanges / totalChanges) * 100),
+          phase: 'PREFLIGHT_CHECK',
+          currentBatchChangeCount: chunkPlan.changeCount,
+          message: `Đang kiểm tra an toàn dữ liệu batch ${i + 1}/${totalBatches}...`,
+        });
+
+        // Preflight Chunk Validation: verify physical standards in this chunk
+        // have not been concurrently edited since the re-scan.
+        const standardChangesInChunk = chunk.filter(c => c.collection === 'reference_standards' && c.field === 'internal_id');
+        if (standardChangesInChunk.length > 0) {
+          const preflightChecks = await Promise.all(
+            standardChangesInChunk.map(async sc => {
+              const snap = await getDoc(doc(this.fb.db, `${base}/reference_standards/${sc.documentId}`));
+              return { sc, snap };
+            })
+          );
+          for (const { sc, snap } of preflightChecks) {
+            if (!snap.exists()) {
+              throw new Error(`Hồ sơ chuẩn ${sc.documentId} không còn tồn tại khi chuẩn bị ghi batch ${i + 1}.`);
+            }
+            const data = snap.data() as ReferenceStandard;
+            const currentInternalId = data.internal_id ?? null;
+            if (currentInternalId !== sc.before && normalizeInternalId(currentInternalId) !== normalizeInternalId(sc.before)) {
+              throw new Error(`Hồ sơ chuẩn ${sc.documentId} đã bị thay đổi đồng thời (mã hiện tại: ${currentInternalId || '(trống)'}, dự kiến: ${sc.before || '(trống)'}).`);
+            }
+          }
         }
-      } else if (change.collection === 'reference_standard_logs') {
-        const [standardId, logId] = change.documentId.split('::');
-        entry.ref = doc(this.fb.db, `${base}/reference_standards/${standardId}/logs/${logId}`);
-        entry.fields[change.field] = change.after;
-      } else {
-        entry.ref = doc(this.fb.db, `${base}/${change.collection}/${change.documentId}`);
-        entry.fields[change.field] = change.after;
+
+        // Progress: Committing batch
+        onProgress?.({
+          currentBatch: i + 1,
+          totalBatches,
+          completedChanges,
+          totalChanges,
+          percent: Math.round((completedChanges / totalChanges) * 100),
+          phase: 'COMMITTING_BATCH',
+          currentBatchChangeCount: chunkPlan.changeCount,
+          message: `Đang ghi batch ${i + 1}/${totalBatches} (${chunkPlan.changeCount} thay đổi)...`,
+        });
+
+        const batchRef = doc(collection(this.fb.db, `${base}/standard_code_sync_batches`));
+        const batch = writeBatch(this.fb.db);
+        const updates = new Map<string, { ref: any; fields: AnyRecord; registryDocument?: AnyRecord; registryMigration?: AnyRecord }>();
+
+        for (const change of chunk) {
+          const key = `${change.collection}/${change.documentId}`;
+          const entry = updates.get(key) || { ref: null, fields: {} };
+          if (change.collection === 'standard_code_registry') {
+            entry.ref = doc(this.fb.db, `${base}/standard_code_registry/${change.documentId}`);
+            if (change.field === '__migration__') {
+              entry.registryMigration = {
+                ...(change.after as AnyRecord),
+                migratedAt: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
+              };
+            } else {
+              entry.registryDocument = { ...(change.after as AnyRecord), lastUpdated: serverTimestamp() };
+            }
+          } else if (change.collection === 'reference_standard_logs') {
+            const [standardId, logId] = change.documentId.split('::');
+            entry.ref = doc(this.fb.db, `${base}/reference_standards/${standardId}/logs/${logId}`);
+            entry.fields[change.field] = change.after;
+          } else {
+            entry.ref = doc(this.fb.db, `${base}/${change.collection}/${change.documentId}`);
+            entry.fields[change.field] = change.after;
+          }
+          updates.set(key, entry);
+        }
+
+        updates.forEach(entry => {
+          if (entry.registryMigration) {
+            batch.set(entry.ref, entry.registryMigration, { merge: true });
+          } else if (entry.registryDocument) {
+            const registryDocument = { ...entry.registryDocument };
+            if (registryDocument['currentStandardId'] === null) registryDocument['currentStandardId'] = deleteField();
+            // Do not recursively sanitize this object: deleteField() is a
+            // Firestore sentinel and must reach the SDK unchanged.
+            batch.set(entry.ref, registryDocument, { merge: true });
+          } else {
+            batch.update(entry.ref, sanitizeForFirebase({ ...entry.fields, lastUpdated: serverTimestamp() }));
+          }
+        });
+
+        const auditBatch: StandardInternalIdSyncBatch = {
+          id: batchRef.id,
+          status: 'APPLIED',
+          generatedAt: freshReport.generatedAt,
+          recordCount: chunk.length,
+          changes: [...chunk],
+        };
+        batch.set(batchRef, sanitizeForFirebase({
+          ...auditBatch,
+          createdAt: serverTimestamp(),
+          createdBy: currentUser?.uid || '',
+          createdByName: currentUser?.displayName || currentUser?.email || 'Người dùng',
+        }));
+
+        await batch.commit();
+        batchIds.push(batchRef.id);
+        completedChanges += chunkPlan.changeCount;
+
+        // Progress: Batch completed
+        onProgress?.({
+          currentBatch: i + 1,
+          totalBatches,
+          completedChanges,
+          totalChanges,
+          percent: Math.round((completedChanges / totalChanges) * 100),
+          phase: 'BATCH_COMPLETED',
+          currentBatchId: batchRef.id,
+          currentBatchChangeCount: chunkPlan.changeCount,
+          message: `Đã hoàn thành batch ${i + 1}/${totalBatches}.`,
+        });
       }
-      updates.set(key, entry);
+    } catch (err: unknown) {
+      if (batchIds.length > 0) {
+        throw new StandardSyncPartialFailureError(
+          `Đã áp dụng thành công ${batchIds.length}/${totalBatches} batch (${completedChanges}/${totalChanges} thay đổi). Batch ${currentBatchIndex + 1} bị gián đoạn: ${(err as any)?.message || 'Lỗi mạng hoặc dữ liệu'}.`,
+          batchIds,
+          completedChanges,
+          currentBatchIndex + 1,
+          totalBatches,
+          err,
+        );
+      }
+      throw err;
     }
 
-    updates.forEach(entry => {
-      if (entry.registryMigration) {
-        batch.set(entry.ref, entry.registryMigration, { merge: true });
-      } else if (entry.registryDocument) {
-        const registryDocument = { ...entry.registryDocument };
-        if (registryDocument['currentStandardId'] === null) registryDocument['currentStandardId'] = deleteField();
-        // Do not recursively sanitize this object: deleteField() is a
-        // Firestore sentinel and must reach the SDK unchanged.
-        batch.set(entry.ref, registryDocument, { merge: true });
-      } else {
-        batch.update(entry.ref, sanitizeForFirebase({ ...entry.fields, lastUpdated: serverTimestamp() }));
-      }
+    onProgress?.({
+      currentBatch: totalBatches,
+      totalBatches,
+      completedChanges: totalChanges,
+      totalChanges,
+      percent: 100,
+      phase: 'ALL_COMPLETED',
+      message: `Đã đồng bộ thành công toàn bộ ${totalBatches} batch (${totalChanges} thay đổi).`,
     });
 
-    const auditBatch: StandardInternalIdSyncBatch = {
-      id: batchRef.id,
-      status: 'APPLIED',
-      generatedAt: freshReport.generatedAt,
-      recordCount: mergedChanges.length,
-      changes: mergedChanges,
-    };
-    batch.set(batchRef, sanitizeForFirebase({
-      ...auditBatch,
-      createdAt: serverTimestamp(),
-      createdBy: currentUser?.uid || '',
-      createdByName: currentUser?.displayName || currentUser?.email || 'Người dùng',
-    }));
-    await batch.commit();
-    return batchRef.id;
+    return batchIds;
   }
 
   async getRecentBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
@@ -1111,6 +1245,23 @@ export class StandardInternalIdSyncService {
       standard.cas_number, standard.product_code, standard.lot_number, standard.manufacturer, standard.id]
       .filter(value => value !== null && value !== undefined && String(value).trim() !== '')
       .join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  /** Stable key shared by the UI selection and the fresh preflight scan. */
+  private safeChangeKey(change: StandardInternalIdSyncChange): string {
+    return `${change.collection}/${change.documentId}`;
+  }
+
+  /**
+   * Split by atomic cluster, never by an individual field change or separating
+   * standard/registry pairs.
+   */
+  private chunkChanges(
+    changes: StandardInternalIdSyncChange[],
+    maxChanges: number,
+  ): StandardInternalIdSyncChange[][] {
+    const plan = planInternalIdBatches(changes, maxChanges);
+    return plan.chunks.map(chunk => [...chunk.changes]);
   }
 
   private mergeChanges(changes: StandardInternalIdSyncChange[]): StandardInternalIdSyncChange[] {

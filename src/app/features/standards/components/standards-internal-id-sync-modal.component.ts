@@ -19,6 +19,8 @@ import {
   exportReportJson,
   isValidInternalId,
   normalizeInternalId,
+  StandardSyncPartialFailureError,
+  SyncBatchProgress,
   validateInternalIdCorrections,
 } from '../../../shared/utils/standard-internal-id';
 import { StandardService } from '../standard.service';
@@ -151,11 +153,92 @@ export type { CorrectionValidationResult };
             }
 
             <main class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/60 dark:bg-slate-950/30 p-4 sm:p-6 space-y-4">
-              @if (errorMessage()) {
+              @if (partialFailure(); as pf) {
+                <div class="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-3">
+                  <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 dark:text-amber-400 text-lg mt-0.5" aria-hidden="true"></i>
+                    <div class="min-w-0 flex-1">
+                      <h4 class="text-sm font-black text-amber-900 dark:text-amber-100">Đồng bộ hoàn thành một phần (Partial Completion)</h4>
+                      <p class="text-xs text-amber-800/90 dark:text-amber-200/90 mt-1">
+                        Đã áp dụng thành công <strong>{{pf.completedBatchIds.length}}/{{pf.totalBatches}} batch</strong> (<strong>{{pf.completedChangesCount}} thay đổi</strong>). Quá trình bị gián đoạn ở batch {{pf.failedBatchIndex}}:
+                      </p>
+                      <p class="text-[11px] font-mono text-red-700 dark:text-red-300 mt-1 bg-white/60 dark:bg-slate-900/60 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50 break-words">
+                        {{errorMessage() || pf.message}}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/70 dark:border-amber-800/40">
+                    <button
+                      type="button"
+                      (click)="retryRemainingAfterPartialFailure()"
+                      [disabled]="isBusy()"
+                      class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm disabled:opacity-50 transition-colors"
+                    >
+                      <i class="fa-solid fa-rotate mr-1.5" aria-hidden="true"></i>Quét lại & tiếp tục phần còn lại
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setView('history')"
+                      class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-black"
+                    >
+                      <i class="fa-solid fa-clock-rotate-left mr-1.5" aria-hidden="true"></i>Xem lịch sử các batch đã ghi
+                    </button>
+                  </div>
+                </div>
+              }
+
+              @if (isApplying() && applyProgress(); as progress) {
+                <div class="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-2.5">
+                  <div class="flex items-center justify-between gap-2 text-xs font-black">
+                    <span class="text-indigo-700 dark:text-indigo-300">
+                      <i class="fa-solid fa-spinner fa-spin mr-1.5" aria-hidden="true"></i>
+                      {{progress.message || 'Đang thực hiện đồng bộ...'}}
+                    </span>
+                    <span class="font-mono text-slate-600 dark:text-slate-300">{{progress.percent}}%</span>
+                  </div>
+                  <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300 rounded-full"
+                      [style.width.%]="progress.percent"
+                    ></div>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>{{progress.completedChanges}} / {{progress.totalChanges}} thay đổi</span>
+                    @if (progress.totalBatches > 0) {
+                      <span>Batch {{progress.currentBatch}} / {{progress.totalBatches}}</span>
+                    }
+                  </div>
+                </div>
+              }
+
+              @if (errorMessage() && !partialFailure()) {
                 <div class="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 px-4 py-3 text-xs font-bold">{{errorMessage()}}</div>
               }
 
               @if (report(); as current) {
+                <section class="rounded-2xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 px-4 py-3 space-y-3">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h4 class="text-sm font-black text-indigo-900 dark:text-indigo-100"><i class="fa-solid fa-list-check mr-2" aria-hidden="true"></i>Phạm vi sẽ đồng bộ</h4>
+                      <p class="text-[11px] text-indigo-800/80 dark:text-indigo-200/80 mt-1">Chọn theo tài liệu nghiệp vụ. Các trường của cùng một tài liệu luôn được giữ cùng batch; bộ lọc phía trên chỉ thay đổi phần hiển thị.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button type="button" (click)="toggleAllSafeChanges(true)" [disabled]="isBusy() || safeChanges().length === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-[11px] font-black text-indigo-700 dark:text-indigo-300 disabled:opacity-40">Chọn tất cả</button>
+                      <button type="button" (click)="toggleAllSafeChanges(false)" [disabled]="isBusy() || selectedSafeChangeCount() === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300 disabled:opacity-40">Bỏ chọn tất cả</button>
+                    </div>
+                  </div>
+                  <div aria-live="polite" class="flex flex-wrap items-center gap-2 text-[11px] font-black">
+                    <span class="rounded-full bg-indigo-100 dark:bg-indigo-900/50 px-2.5 py-1 text-indigo-800 dark:text-indigo-200">Đã chọn {{selectedSafeChangeCount()}}/{{safeChanges().length}} thay đổi</span>
+                    <span class="rounded-full bg-white/80 dark:bg-slate-900/70 px-2.5 py-1 text-slate-600 dark:text-slate-300">{{selectedSafeDocumentCount()}} tài liệu</span>
+                    @if (selectedSafeChangeCount() > 249) {
+                      <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} batch, mỗi batch dưới 250 thay đổi</span>
+                    }
+                    @if (selectedSafeChangeCount() === 0 && validCorrectionCount() === 0) {
+                      <span class="text-red-700 dark:text-red-300">Chưa có mục nào được chọn để đồng bộ.</span>
+                    }
+                  </div>
+                </section>
+
                 @if (showFilter('manual') && filteredManualIssues().length > 0) {
                   <section class="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/20 overflow-hidden">
                     <div class="px-4 py-3 border-b border-amber-200/70 dark:border-amber-900/40">
@@ -223,16 +306,25 @@ export type { CorrectionValidationResult };
                       <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">{{filteredSafeChanges().length}}</span>
                     </div>
                     <div class="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                      @for (change of visibleSafeChanges(); track change.collection + '/' + change.documentId + '/' + change.field) {
-                        <div class="px-4 py-2.5 grid md:grid-cols-[170px_120px_1fr] gap-2 text-[11px]">
-                          <span class="font-mono text-slate-500 dark:text-slate-400 truncate" [title]="change.collection + '/' + change.documentId">{{change.collection}}/{{change.documentId}}</span>
-                          <span class="font-black text-slate-700 dark:text-slate-200">{{change.field}}</span>
-                          <span class="text-slate-500 dark:text-slate-400 break-words"><span class="block">{{formatValue(change.before)}} → <strong class="text-emerald-700 dark:text-emerald-300">{{formatValue(change.after)}}</strong></span><span class="block text-[10px] text-slate-400 mt-0.5">{{change.reason}}</span></span>
+                      @for (group of visibleSafeChangeGroups(); track group.key) {
+                        <div class="px-3 py-2.5 text-[11px]">
+                          <label class="flex items-start gap-2.5 cursor-pointer">
+                            <input type="checkbox" [checked]="isSafeDocumentSelected(group.key)" (change)="toggleSafeDocument(group.key, $any($event.target).checked)" [disabled]="isBusy()" class="mt-0.5 w-4 h-4 accent-indigo-600 shrink-0" [attr.aria-label]="'Chọn thay đổi của ' + group.key">
+                            <span class="min-w-0 flex-1">
+                              <span class="flex flex-wrap items-center gap-2">
+                                <span class="font-mono font-black text-slate-600 dark:text-slate-300 truncate" [title]="group.key">{{group.key}}</span>
+                                <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-black text-slate-500 dark:text-slate-400">{{group.changes.length}} thay đổi</span>
+                              </span>
+                              @for (change of group.changes; track change.field) {
+                                <span class="mt-1 block text-slate-500 dark:text-slate-400 break-words"><strong class="text-slate-700 dark:text-slate-200">{{change.field}}</strong>: {{formatValue(change.before)}} → <strong class="text-emerald-700 dark:text-emerald-300">{{formatValue(change.after)}}</strong><span class="block text-[10px] text-slate-400">{{change.reason}}</span></span>
+                              }
+                            </span>
+                          </label>
                         </div>
                       }
                     </div>
-                    @if (filteredSafeChanges().length > visibleSafeChanges().length) {
-                      <p class="px-4 py-2 text-[10px] text-slate-400 border-t border-slate-100 dark:border-slate-800">Đang hiển thị {{visibleSafeChanges().length}}/{{filteredSafeChanges().length}} mục phù hợp; toàn bộ thay đổi vẫn sẽ được ghi trong batch.</p>
+                    @if (filteredSafeChangeGroups().length > visibleSafeChangeGroups().length) {
+                      <p class="px-4 py-2 text-[10px] text-slate-400 border-t border-slate-100 dark:border-slate-800">Đang hiển thị {{visibleSafeChangeGroups().length}}/{{filteredSafeChangeGroups().length}} tài liệu phù hợp; hãy dùng tìm kiếm để xem phần còn lại.</p>
                     }
                   </section>
                 }
@@ -421,8 +513,12 @@ export class StandardsInternalIdSyncModalComponent {
   activeView = signal<'scan' | 'history'>('scan');
   report = signal<StandardInternalIdSyncReport | null>(null);
   corrections = signal<Record<string, string>>({});
+  /** null means the initial/default scope: all safe changes are selected. */
+  selectedSafeChangeKeys = signal<Set<string> | null>(null);
   isScanning = signal(false);
   isApplying = signal(false);
+  applyProgress = signal<SyncBatchProgress | null>(null);
+  partialFailure = signal<StandardSyncPartialFailureError | null>(null);
   errorMessage = signal('');
   isBusy = computed(() => this.isScanning() || this.isApplying());
   activeFilter = signal<SyncFilter>('all');
@@ -467,6 +563,24 @@ export class StandardsInternalIdSyncModalComponent {
       change.collection, change.documentId, change.field, change.before, change.after, change.reason,
     ])
   ));
+  filteredSafeChangeGroups = computed(() => {
+    const activeFilter = this.activeFilter();
+    if (activeFilter !== 'all' && activeFilter !== 'safe') return [];
+    const queryValues = (change: StandardInternalIdSyncChange): readonly unknown[] => [
+      change.collection, change.documentId, change.field, change.before, change.after, change.reason,
+    ];
+    const groups = new Map<string, StandardInternalIdSyncChange[]>();
+    for (const change of this.safeChanges()) {
+      const key = this.safeDocumentKey(change);
+      groups.set(key, [...(groups.get(key) || []), change]);
+    }
+    return [...groups.entries()]
+      // Keep the full document group visible after a search matches one of
+      // its fields, so the displayed count matches what the checkbox selects.
+      .filter(([, changes]) => changes.some(change => this.matchesSearch(queryValues(change))))
+      .map(([key, changes]) => ({ key, changes }));
+  });
+  visibleSafeChangeGroups = computed(() => this.filteredSafeChangeGroups().slice(0, 80));
   filteredConflicts = computed(() => this.nonManualConflicts().filter(issue =>
     this.conflictMatchesActiveFilter(issue) && this.matchesSearch([
       issue.collection, issue.documentId, issue.standardId, issue.internalId, issue.kind,
@@ -478,6 +592,19 @@ export class StandardsInternalIdSyncModalComponent {
   visibleConflicts = computed(() => this.filteredConflicts().slice(0, 120));
   filteredItemCount = computed(() => this.filteredManualIssues().length + this.filteredSafeChanges().length + this.filteredConflicts().length);
 
+  selectedSafeChanges = computed(() => {
+    const selected = this.selectedSafeChangeKeys();
+    return selected === null
+      ? this.safeChanges()
+      : this.safeChanges().filter(change => selected.has(this.safeDocumentKey(change)));
+  });
+  selectedSafeChangeCount = computed(() => this.selectedSafeChanges().length);
+  selectedSafeDocumentCount = computed(() => new Set(this.selectedSafeChanges().map(change => this.safeDocumentKey(change))).size);
+  selectedReport = computed<StandardInternalIdSyncReport | null>(() => {
+    const current = this.report();
+    return current ? { ...current, safeChanges: this.selectedSafeChanges() } : null;
+  });
+
   targetCodeCounts = computed(() => countTargetCodes(this.corrections()));
   correctionValidations = computed(() => validateInternalIdCorrections(this.corrections(), this.report()));
   hasInvalidCorrections = computed(() => {
@@ -487,7 +614,7 @@ export class StandardsInternalIdSyncModalComponent {
     return false;
   });
   applySummary = computed<StandardInternalIdApplySummary>(() =>
-    calculateInternalIdApplySummary(this.report(), this.corrections())
+    calculateInternalIdApplySummary(this.selectedReport(), this.corrections())
   );
 
   constructor() {
@@ -503,7 +630,10 @@ export class StandardsInternalIdSyncModalComponent {
       } else {
         this.report.set(null);
         this.corrections.set({});
+        this.selectedSafeChangeKeys.set(null);
         this.errorMessage.set('');
+        this.partialFailure.set(null);
+        this.applyProgress.set(null);
         this.activeFilter.set('all');
         this.searchQuery.set('');
         this.activeView.set('scan');
@@ -525,12 +655,23 @@ export class StandardsInternalIdSyncModalComponent {
     this.isScanning.set(true);
     this.errorMessage.set('');
     try {
-      this.report.set(await this.stdService.scanInternalIdSync());
+      this.setReport(await this.stdService.scanInternalIdSync());
     } catch (error: any) {
       this.errorMessage.set(error?.message || 'Không thể quét dữ liệu mã nội bộ.');
     } finally {
       this.isScanning.set(false);
     }
+  }
+
+  private setReport(report: StandardInternalIdSyncReport): void {
+    this.report.set(report);
+    // A fresh scan is a new, explicit preview. Default to all deterministic
+    // changes selected, while keeping the selection visible and editable.
+    this.selectedSafeChangeKeys.set(new Set(report.safeChanges.map(change => this.safeDocumentKey(change))));
+  }
+
+  private safeDocumentKey(change: StandardInternalIdSyncChange): string {
+    return `${change.collection}/${change.documentId}`;
   }
 
   async loadHistory(): Promise<void> {
@@ -613,6 +754,30 @@ export class StandardsInternalIdSyncModalComponent {
 
   setSearchQuery(value: string): void {
     this.searchQuery.set(value);
+  }
+
+  validCorrectionCount(): number {
+    return Object.entries(this.corrections())
+      .filter(([id, raw]) => String(raw || '').trim() && this.getCorrectionValidation(id).valid)
+      .length;
+  }
+
+  toggleAllSafeChanges(selected: boolean): void {
+    this.selectedSafeChangeKeys.set(selected
+      ? new Set(this.safeChanges().map(change => this.safeDocumentKey(change)))
+      : new Set<string>());
+  }
+
+  isSafeDocumentSelected(documentKey: string): boolean {
+    const selected = this.selectedSafeChangeKeys();
+    return selected === null || selected.has(documentKey);
+  }
+
+  toggleSafeDocument(documentKey: string, selected: boolean): void {
+    const next = new Set(this.selectedSafeChangeKeys() ?? this.safeChanges().map(change => this.safeDocumentKey(change)));
+    if (selected) next.add(documentKey);
+    else next.delete(documentKey);
+    this.selectedSafeChangeKeys.set(next);
   }
 
   filterClass(filter: SyncFilter): string {
@@ -721,9 +886,12 @@ export class StandardsInternalIdSyncModalComponent {
   canApply(): boolean {
     const current = this.report();
     if (!current || this.hasInvalidCorrections()) return false;
-    const validCorrectionCount = Object.entries(this.corrections())
-      .filter(([id, raw]) => String(raw || '').trim() && this.getCorrectionValidation(id).valid).length;
-    return current.safeChanges.length > 0 || validCorrectionCount > 0;
+    // The fallback keeps this method usable in lightweight non-DI regression
+    // tests that instantiate the component prototype directly.
+    const selectedCount = typeof (this as any).selectedSafeChangeCount === 'function'
+      ? this.selectedSafeChangeCount()
+      : current.safeChanges.length;
+    return selectedCount > 0 || this.validCorrectionCount() > 0;
   }
 
   async apply(): Promise<void> {
@@ -738,10 +906,10 @@ export class StandardsInternalIdSyncModalComponent {
     const confirmMessage = [
       `TỔNG QUAN THAY ĐỔI ${batchText}:`,
       `• Tổng cộng ${summary.totalChanges} thay đổi trên ${summary.totalDocuments} tài liệu nghiệp vụ`,
-      `• Thao tác ghi thực tế: ${summary.actualWrites} writes (bao gồm 1 bản ghi sổ kiểm toán audit)`,
+      `• Thao tác ghi thực tế: ${summary.actualWrites} writes (bao gồm các bản ghi sổ kiểm toán audit)`,
       ``,
       `PHẠM VI ÁP DỤNG:`,
-      `• ${summary.physicalStandardsCount} chuẩn vật lý (${summary.manualCount} mã đối chiếu thủ công, ${summary.byChangeType.codeNormalization} mã chuẩn hóa)`,
+      `• ${summary.physicalStandardsCount} chuẩn vật lý (${summary.manualCount} mã đối chiếu thủ công, ${summary.byChangeType?.codeNormalization || 0} mã chuẩn hóa)`,
       `• ${summary.registryCount} bản ghi ngân hàng mã (registry) đồng bộ`,
       `• ${summary.requestsCount} yêu cầu mượn & mua cập nhật snapshot`,
       `• ${summary.usageCount} nhật ký sử dụng & nhật ký lồng cập nhật`,
@@ -764,16 +932,38 @@ export class StandardsInternalIdSyncModalComponent {
 
     this.isApplying.set(true);
     this.errorMessage.set('');
+    this.partialFailure.set(null);
+    this.applyProgress.set(null);
     try {
-      const batchId = await this.stdService.applyInternalIdSync(current, this.corrections());
-      this.toast.show(`Đã đồng bộ mã nội bộ. Batch: ${batchId}`, 'success');
+      const batchIds = await this.stdService.applyInternalIdSync(
+        current,
+        this.corrections(),
+        this.selectedSafeChangeKeys() === null ? undefined : [...this.selectedSafeChangeKeys()!],
+        progress => {
+          this.applyProgress.set(progress);
+        },
+      );
+      this.toast.show(`Đã đồng bộ mã nội bộ qua ${batchIds.length} batch.`, 'success');
       this.corrections.set({});
-      this.report.set(await this.stdService.scanInternalIdSync());
+      this.setReport(await this.stdService.scanInternalIdSync());
     } catch (error: any) {
-      this.errorMessage.set(error?.message || 'Không thể áp dụng đồng bộ mã nội bộ.');
+      if (error instanceof StandardSyncPartialFailureError || error?.name === 'StandardSyncPartialFailureError') {
+        this.partialFailure.set(error);
+        this.errorMessage.set(error.message);
+        this.toast.show(`Đồng bộ dở dang: đã ghi ${error.completedBatchIds?.length || 0} batch.`, 'warning');
+      } else {
+        this.errorMessage.set(error?.message || 'Không thể áp dụng đồng bộ mã nội bộ.');
+      }
     } finally {
       this.isApplying.set(false);
+      this.applyProgress.set(null);
     }
+  }
+
+  async retryRemainingAfterPartialFailure(): Promise<void> {
+    this.partialFailure.set(null);
+    this.errorMessage.set('');
+    await this.scan();
   }
 
   formatValue(value: unknown): string {

@@ -2,31 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.15-b01
+## Phiên bản hiện tại: v26.08.15-b02
 
-### v26.08.15-b01
+### v26.08.15-b02
 
 #### 🚀 Tính năng nổi bật
 
-- Cung cấp công cụ Quét và Đối chiếu Mã quản lý nội bộ trên toàn bộ hồ sơ chất chuẩn, nhật ký sử dụng và yêu cầu mua sắm.
-- Xem trước bảng tổng kết thay đổi chi tiết, phát hiện và ngăn chặn trùng lặp mã trước khi áp dụng.
-- Theo dõi lịch sử từng đợt đồng bộ và xuất báo cáo đối chiếu phục vụ lưu trữ, kiểm toán phòng thí nghiệm.
+- Tự động phân chia thông minh các đợt đồng bộ lớn để bảo đảm an toàn tuyệt đối và không gây nghẽn thao tác.
+- Hiển thị thanh tiến độ thời gian thực giúp theo dõi chính xác từng giai đoạn và số lượng hồ sơ được ghi nhận.
+- Bổ sung cơ chế bảo vệ và xử lý gián đoạn rõ ràng, dễ dàng tiếp tục phần còn lại chỉ với một lần bấm.
 
 #### ✨ Tính năng mới
 
-- Thêm công cụ Đồng bộ Mã quản lý nội bộ trong mục Quản lý chất chuẩn, giúp rà soát và chuẩn hóa mã chất chuẩn A, B, C một cách nhanh chóng và an toàn.
-- Bổ sung tính năng Xem lịch sử đồng bộ với chi tiết từng đợt thay đổi và hỗ trợ Xuất báo cáo đối chiếu ra tệp CSV, JSON.
+- Thêm thanh tiến độ trực quan trong hộp thoại Đồng bộ Mã quản lý nội bộ, hiển thị phần trăm và số lượng hồ sơ đang thực hiện.
+- Bổ sung cảnh báo thông minh khi quá trình đồng bộ bị gián đoạn mạng, cho phép kiểm tra ngay các mục đã hoàn tất và quét tiếp phần còn lại.
 
 #### ⚡ Tối ưu & cải tiến
 
-- Hộp thoại xác nhận thao tác được bố trí nổi bật, hiển thị đầy đủ tổng quan thay đổi và các lưu ý an toàn trước khi thực hiện.
-- Kiểm tra và báo lỗi tức thì khi nhập mã thủ công nếu mã bị trùng lặp, sai quy ước hoặc đang thuộc về chất chuẩn khác.
-- Thanh lọc danh mục và nút chuyển góc nhìn làm việc phản hồi nhanh, hỗ trợ đầy đủ thao tác bằng bàn phím.
+- Gom nhóm chặt chẽ hồ sơ chất chuẩn và ngân hàng mã tương ứng để luôn được cập nhật đồng thời, tránh sai lệch trạng thái.
+- Tính toán và hiển thị chính xác số đợt xử lý dự kiến ngay trên màn hình trước khi người dùng bấm xác nhận.
+- Chủ động kiểm tra thay đổi đồng thời trên dữ liệu trước từng đợt ghi để ngăn chặn việc ghi đè ngoài ý muốn.
 
 #### 🐛 Sửa lỗi
 
-- Khắc phục hiện tượng hộp thoại xác nhận bị hiển thị phía sau các cửa sổ tác vụ lớn.
-- Đảm bảo nhật ký sử dụng và yêu cầu mua sắm luôn được liên kết chính xác với mã quản lý nội bộ sau khi đồng bộ.
+- Khắc phục tình trạng không thể thực hiện đồng bộ khi số lượng thay đổi vượt quá giới hạn an toàn.
+- Đảm bảo thông tin tóm tắt và số lượng đợt đồng bộ luôn hiển thị chuẩn xác và khớp với kết quả thực tế.
 
 ### v26.08.07-b02
 
