@@ -60,6 +60,9 @@ test('sync modal exposes selectable groups and searchable warning details', () =
   assert.match(source, /selectedSafeChangeKeys = signal/);
   assert.match(source, /toggleSafeDocument\(documentKey: string, selected: boolean\)/);
   assert.match(source, /toggleAllSafeChanges\(selected: boolean\)/);
+  assert.match(source, /selectQuickBatch\(\)/);
+  assert.match(source, /quickBatchTarget = computed/);
+  assert.match(source, /Chọn nhanh batch/);
   assert.match(source, /Chọn tất cả/);
   assert.match(source, /dưới 250 thay đổi/);
 });
@@ -180,6 +183,42 @@ test('behavioral: apply summary plans 2053 changes as nine sub-250 batches', () 
   };
 
   assert.equal(calculateInternalIdApplySummary(report, {}).estimatedBatches, 9);
+});
+
+test('behavioral: quick batch selection chooses the first valid 249-change planner chunk', () => {
+  const { StandardsInternalIdSyncModalComponent } = require('./standards-internal-id-sync-modal.component');
+  const { planInternalIdBatches } = require('../../../shared/utils/standard-internal-id');
+  const changes = Array.from({ length: 251 }, (_, index) => ({
+    collection: 'reference_standards', documentId: `std-${index}`, field: 'search_key',
+    before: 'old', after: 'new', reason: 'test',
+  }));
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype);
+
+  modal.safeChanges = signal(changes);
+  modal.selectedSafeChangeKeys = signal(new Set(changes.map((change: any) => `${change.collection}/${change.documentId}`)));
+  modal.isBusy = () => false;
+  modal.toast = { show: () => {} };
+  modal.safeDocumentKey = StandardsInternalIdSyncModalComponent.prototype['safeDocumentKey'].bind(modal);
+  modal.selectedSafeChangeCount = computed(() => {
+    const selected = modal.selectedSafeChangeKeys();
+    return modal.safeChanges().filter((change: any) => selected.has(modal.safeDocumentKey(change))).length;
+  });
+  modal.allSafeChangesSelected = computed(() => modal.selectedSafeChangeCount() === modal.safeChanges().length);
+  modal.quickBatchPlan = computed(() => planInternalIdBatches(modal.safeChanges(), 249));
+  modal.quickBatchTarget = computed(() => {
+    const chunks = modal.quickBatchPlan().chunks;
+    if (modal.allSafeChangesSelected()) return chunks[0] || null;
+    const selected = modal.selectedSafeChangeKeys();
+    return chunks.find((chunk: any) => chunk.changes.some((change: any) => !selected.has(modal.safeDocumentKey(change)))) || null;
+  });
+  modal.selectQuickBatch = StandardsInternalIdSyncModalComponent.prototype.selectQuickBatch.bind(modal);
+
+  const firstBatchCount = modal.quickBatchTarget().changeCount;
+  modal.selectQuickBatch();
+
+  assert.equal(firstBatchCount, 249);
+  assert.equal(modal.selectedSafeChangeKeys().size, 249);
+  assert.equal(modal.quickBatchTarget().changeCount, 2);
 });
 
 test('behavioral: StandardsInternalIdSyncModalComponent integrates validation and summary signals', () => {

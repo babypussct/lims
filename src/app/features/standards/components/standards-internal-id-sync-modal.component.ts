@@ -19,6 +19,7 @@ import {
   exportReportJson,
   isValidInternalId,
   normalizeInternalId,
+  planInternalIdBatches,
   StandardSyncPartialFailureError,
   SyncBatchProgress,
   validateInternalIdCorrections,
@@ -223,6 +224,17 @@ export type { CorrectionValidationResult };
                       <p class="text-[11px] text-indigo-800/80 dark:text-indigo-200/80 mt-1">Chọn theo tài liệu nghiệp vụ. Các trường của cùng một tài liệu luôn được giữ cùng batch; bộ lọc phía trên chỉ thay đổi phần hiển thị.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
+                      @if (quickBatchTarget(); as batch) {
+                        <button
+                          type="button"
+                          (click)="selectQuickBatch()"
+                          [disabled]="isBusy()"
+                          class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-sm disabled:opacity-40 transition-colors"
+                          [title]="'Chọn batch ' + batch.batchIndex + ' gồm ' + batch.changeCount + ' thay đổi hợp lệ; không tách cluster Standard–Registry'"
+                        >
+                          <i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Chọn nhanh batch {{batch.batchIndex}} ({{batch.changeCount}})
+                        </button>
+                      }
                       <button type="button" (click)="toggleAllSafeChanges(true)" [disabled]="isBusy() || safeChanges().length === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-[11px] font-black text-indigo-700 dark:text-indigo-300 disabled:opacity-40">Chọn tất cả</button>
                       <button type="button" (click)="toggleAllSafeChanges(false)" [disabled]="isBusy() || selectedSafeChangeCount() === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300 disabled:opacity-40">Bỏ chọn tất cả</button>
                     </div>
@@ -230,6 +242,9 @@ export type { CorrectionValidationResult };
                   <div aria-live="polite" class="flex flex-wrap items-center gap-2 text-[11px] font-black">
                     <span class="rounded-full bg-indigo-100 dark:bg-indigo-900/50 px-2.5 py-1 text-indigo-800 dark:text-indigo-200">Đã chọn {{selectedSafeChangeCount()}}/{{safeChanges().length}} thay đổi</span>
                     <span class="rounded-full bg-white/80 dark:bg-slate-900/70 px-2.5 py-1 text-slate-600 dark:text-slate-300">{{selectedSafeDocumentCount()}} tài liệu</span>
+                    @if (quickBatchTarget(); as batch) {
+                      <span class="text-indigo-700 dark:text-indigo-300">Batch kế tiếp {{batch.batchIndex}}/{{quickBatchPlan().totalBatches}} · {{batch.changeCount}} thay đổi hợp lệ</span>
+                    }
                     @if (selectedSafeChangeCount() > 249) {
                       <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} batch, mỗi batch dưới 250 thay đổi</span>
                     }
@@ -600,6 +615,26 @@ export class StandardsInternalIdSyncModalComponent {
   });
   selectedSafeChangeCount = computed(() => this.selectedSafeChanges().length);
   selectedSafeDocumentCount = computed(() => new Set(this.selectedSafeChanges().map(change => this.safeDocumentKey(change))).size);
+  quickBatchPlan = computed(() => planInternalIdBatches(this.safeChanges(), 249));
+  allSafeChangesSelected = computed(() => {
+    return this.safeChanges().length > 0 && this.selectedSafeChangeCount() === this.safeChanges().length;
+  });
+  /**
+   * Selects the first not-yet-completely-selected atomic batch. When the
+   * default scope is "all", this intentionally points to batch 1 so the
+   * operator can immediately switch from the full preview to a safe pilot.
+   */
+  quickBatchTarget = computed(() => {
+    const chunks = this.quickBatchPlan().chunks;
+    if (chunks.length === 0) return null;
+    if (this.allSafeChangesSelected()) return chunks[0];
+
+    const selected = this.selectedSafeChangeKeys() || new Set<string>();
+    return chunks.find(chunk => {
+      const keys = new Set(chunk.changes.map(change => this.safeDocumentKey(change)));
+      return [...keys].some(key => !selected.has(key));
+    }) || null;
+  });
   selectedReport = computed<StandardInternalIdSyncReport | null>(() => {
     const current = this.report();
     return current ? { ...current, safeChanges: this.selectedSafeChanges() } : null;
@@ -766,6 +801,20 @@ export class StandardsInternalIdSyncModalComponent {
     this.selectedSafeChangeKeys.set(selected
       ? new Set(this.safeChanges().map(change => this.safeDocumentKey(change)))
       : new Set<string>());
+  }
+
+  selectQuickBatch(): void {
+    if (this.isBusy()) return;
+    const batch = this.quickBatchTarget();
+    if (!batch) return;
+
+    this.selectedSafeChangeKeys.set(new Set(
+      batch.changes.map(change => this.safeDocumentKey(change))
+    ));
+    this.toast.show(
+      `Đã chọn batch ${batch.batchIndex}: ${batch.changeCount} thay đổi hợp lệ trên ${batch.documentCount} tài liệu.`,
+      'info',
+    );
   }
 
   isSafeDocumentSelected(documentKey: string): boolean {

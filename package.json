@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.15-b02",
+  "version": "26.08.17-b01",
   "scripts": {
     "sync-version": "node scripts/sync-version.js && node scripts/sync-release-history.js && node scripts/build-changelog-md.js",
     "sync-release-history": "node scripts/sync-release-history.js",

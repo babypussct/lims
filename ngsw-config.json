@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.15-b02",
-    "title": "Nâng cao độ an toàn và hiển thị tiến độ trực quan khi Đồng bộ Mã quản lý nội bộ chất chuẩn",
+    "version": "v26.08.17-b01",
+    "title": "Bổ sung tính năng chọn nhanh từng đợt và tối ưu quy trình thử nghiệm Đồng bộ Mã quản lý nội bộ",
     "features": [
+      "Bổ sung nút chọn nhanh từng đợt giúp người dùng dễ dàng chạy thử nghiệm từng phần nhỏ trước khi đồng bộ toàn bộ.",
       "Tự động phân chia thông minh các đợt đồng bộ lớn để bảo đảm an toàn tuyệt đối và không gây nghẽn thao tác.",
-      "Hiển thị thanh tiến độ thời gian thực giúp theo dõi chính xác từng giai đoạn và số lượng hồ sơ được ghi nhận.",
-      "Bổ sung cơ chế bảo vệ và xử lý gián đoạn rõ ràng, dễ dàng tiếp tục phần còn lại chỉ với một lần bấm.",
-      "Thêm thanh tiến độ trực quan trong hộp thoại Đồng bộ Mã quản lý nội bộ, hiển thị phần trăm và số lượng hồ sơ đang thực hiện.",
-      "Bổ sung cảnh báo thông minh khi quá trình đồng bộ bị gián đoạn mạng, cho phép kiểm tra ngay các mục đã hoàn tất và quét tiếp phần còn lại."
+      "Hiển thị chi tiết đợt xử lý kế tiếp và tiến độ trực quan trong suốt quá trình thực hiện.",
+      "Thêm nút Chọn nhanh đợt tiếp theo trong hộp thoại Đồng bộ Mã quản lý nội bộ, tự động chọn đúng số lượng hồ sơ an toàn cho từng lần chạy mà không cần tích chọn thủ công.",
+      "Hiển thị thông tin trực quan về đợt xử lý kế tiếp và số lượng thay đổi hợp lệ tương ứng."
     ]
   },
   "assetGroups": [
