@@ -37,6 +37,8 @@ export interface DailyBatchAssignmentGroup {
   formattedSamples: string;
   samples: DailySampleView[];
   formattedSampleDetails: string;
+  sampleDisplayRuns: DailySampleDisplayRun[];
+  formattedSampleDisplay: string;
   hasSampleDescriptions: boolean;
   hasDescriptionConflict: boolean;
   targetScope: TargetScopePresentation;
@@ -47,6 +49,14 @@ export interface DailySampleView {
   description?: SampleDescriptionSnapshot;
   descriptionAlternatives?: string[];
   sourceRequestIds: string[];
+}
+
+export interface DailySampleDisplayRun {
+  sampleIds: string[];
+  formattedSamples: string;
+  description?: SampleDescriptionSnapshot;
+  descriptionAlternatives?: string[];
+  hasDescriptionConflict: boolean;
 }
 
 export interface DailyPhysicalBatchRef {

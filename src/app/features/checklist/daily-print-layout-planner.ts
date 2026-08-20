@@ -111,9 +111,7 @@ function evaluateListLayout(
     let batchWasSplit = false;
     batch.groups.forEach(group => {
       const batchText = `${batch.sopName} v${batch.sopVersion || ''}`;
-      const sampleText = group.hasSampleDescriptions
-        ? group.formattedSampleDetails
-        : (groupSamples ? group.formattedSamples : group.sampleIds.join(', '));
+      const sampleText = getPrintSampleText(group, groupSamples);
       const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
         estimateLines(batchText, metrics.batchCharsPerLine),
@@ -258,9 +256,7 @@ function estimateCompactCard(
   let wrappedLineCount = 0;
 
   batch.groups.forEach(group => {
-    const sampleText = group.hasSampleDescriptions
-      ? group.formattedSampleDetails
-      : (groupSamples ? group.formattedSamples : group.sampleIds.join(', '));
+    const sampleText = getPrintSampleText(group, groupSamples);
     const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
     const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
     const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);
@@ -278,6 +274,15 @@ function indexOfSmallest(values: number[]): number {
 function estimateLines(text: string, charsPerLine: number): number {
   const normalizedLength = String(text || '').trim().length;
   return Math.max(1, Math.ceil(normalizedLength / charsPerLine));
+}
+
+function getPrintSampleText(group: DailyBatchView['groups'][number], groupSamples: boolean): string {
+  if (groupSamples) return group.formattedSampleDisplay;
+  return group.sampleDisplayRuns.map(run => {
+    const codes = run.sampleIds.join(', ');
+    const description = run.description?.nameSnapshot?.trim();
+    return description ? `${codes} (${description})` : codes;
+  }).join('; ');
 }
 
 function buildReason(

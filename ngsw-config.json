@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.17-b01",
-    "title": "Bổ sung tính năng chọn nhanh từng đợt và tối ưu quy trình thử nghiệm Đồng bộ Mã quản lý nội bộ",
+    "version": "v26.08.20-b01",
+    "title": "Tối ưu hiển thị và sắp xếp mã số mẫu trong Theo Dõi Mẫu & Kết Quả Ngày",
     "features": [
-      "Bổ sung nút chọn nhanh từng đợt giúp người dùng dễ dàng chạy thử nghiệm từng phần nhỏ trước khi đồng bộ toàn bộ.",
-      "Tự động phân chia thông minh các đợt đồng bộ lớn để bảo đảm an toàn tuyệt đối và không gây nghẽn thao tác.",
-      "Hiển thị chi tiết đợt xử lý kế tiếp và tiến độ trực quan trong suốt quá trình thực hiện.",
-      "Thêm nút Chọn nhanh đợt tiếp theo trong hộp thoại Đồng bộ Mã quản lý nội bộ, tự động chọn đúng số lượng hồ sơ an toàn cho từng lần chạy mà không cần tích chọn thủ công.",
-      "Hiển thị thông tin trực quan về đợt xử lý kế tiếp và số lượng thay đổi hợp lệ tương ứng."
+      "Mã số mẫu trong bảng theo dõi hàng ngày luôn giữ đúng thứ tự tăng dần chuẩn xác, giúp tra cứu nhanh chóng.",
+      "Tự động gom gọn phần mô tả cho các mẫu liền kề cùng loại, tránh lặp lại thông tin và giúp bảng theo dõi trực quan hơn.",
+      "Làm nổi bật rõ ràng phần mã số mẫu trên cả màn hình theo dõi và các bản in.",
+      "Hiển thị danh sách mẫu theo từng đoạn liền kề thông minh trong mục Theo Dõi Mẫu & Kết Quả Ngày, tự động rút gọn dãy mã số liên tiếp cùng mô tả.",
+      "Hỗ trợ định dạng làm đậm riêng cho mã số mẫu để dễ phân biệt với tên mô tả mẫu trong ngoặc đơn trên giao diện và bản in."
     ]
   },
   "assetGroups": [

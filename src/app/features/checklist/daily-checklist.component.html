@@ -258,14 +258,14 @@
                             }
                           </div>
                         } @else {
-                          @if (group.hasSampleDescriptions) {
+                          @if (group.sampleDisplayRuns.length) {
                             <p class="text-sm leading-relaxed text-slate-850 dark:text-slate-100 break-words">
-                              @for (sample of group.samples; track sample.sampleId; let isLast = $last) {
-                                <span class="font-mono font-black">{{sample.sampleId}}</span>@if (sample.description) {<span class="font-sans font-normal text-fuchsia-700 dark:text-fuchsia-400"> ({{sample.description.nameSnapshot}})</span>}@if (!isLast) {<span class="font-sans font-normal">; </span>}
+                              @for (run of group.sampleDisplayRuns; track $index; let isLast = $last) {
+                                <span class="font-mono font-black">{{run.formattedSamples}}</span>@if (run.description) {<span class="font-sans font-normal text-fuchsia-700 dark:text-fuchsia-400"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="font-sans font-normal">; </span>}
                               }
                             </p>
                           } @else {
-                            <p class="text-sm font-mono font-black leading-relaxed text-slate-850 dark:text-slate-100 break-words">{{group.formattedSamples || 'Chưa xác định mã mẫu'}}</p>
+                            <p class="text-sm leading-relaxed text-slate-850 dark:text-slate-100 break-words">Chưa xác định mã mẫu</p>
                           }
                         }
                         @if (group.hasDescriptionConflict) { <p class="mt-1 text-[9px] font-black text-amber-600 dark:text-amber-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Có mã mẫu mang mô tả không thống nhất giữa các mẻ.</p> }
@@ -368,12 +368,12 @@
                       </td>
                       <td>
                         <div class="cl-print-samples">
-                          @if (group.hasSampleDescriptions) {
-                            @for (sample of group.samples; track sample.sampleId; let isLast = $last) {
-                              <span class="cl-print-sample-code">{{sample.sampleId}}</span>@if (sample.description) {<span class="cl-print-sample-description"> ({{sample.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
+                          @if (group.sampleDisplayRuns.length) {
+                            @for (run of group.sampleDisplayRuns; track $index; let isLast = $last) {
+                              <span class="cl-print-sample-code">{{printGroupSamples() ? run.formattedSamples : joinWithCommas(run.sampleIds)}}</span>@if (run.description) {<span class="cl-print-sample-description"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
                             }
                           } @else {
-                            {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                            Chưa xác định mã mẫu
                           }
                         </div>
                         @if (group.hasDescriptionConflict) { <div class="cl-print-missing">Cảnh báo: mô tả mẫu không thống nhất giữa các mẻ</div> }
@@ -427,12 +427,12 @@
                                 <div class="cl-print-compact-label">Nhóm {{groupIndex + 1}}</div>
                               }
                               <div class="cl-print-compact-samples">
-                                @if (group.hasSampleDescriptions) {
-                                  @for (sample of group.samples; track sample.sampleId; let isLast = $last) {
-                                    <span class="cl-print-sample-code">{{sample.sampleId}}</span>@if (sample.description) {<span class="cl-print-sample-description"> ({{sample.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
+                                @if (group.sampleDisplayRuns.length) {
+                                  @for (run of group.sampleDisplayRuns; track $index; let isLast = $last) {
+                                    <span class="cl-print-sample-code">{{printGroupSamples() ? run.formattedSamples : joinWithCommas(run.sampleIds)}}</span>@if (run.description) {<span class="cl-print-sample-description"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
                                   }
                                 } @else {
-                                  {{(printGroupSamples() ? group.formattedSamples : joinWithCommas(group.sampleIds)) || 'Chưa xác định mã mẫu'}}
+                                  Chưa xác định mã mẫu
                                 }
                               </div>
                               @if (group.hasDescriptionConflict) { <div class="cl-print-missing">Mô tả mẫu không thống nhất</div> }

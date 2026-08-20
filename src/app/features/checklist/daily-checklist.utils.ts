@@ -13,6 +13,8 @@ import {
   ApprovedBatchSample,
   ApprovedBatchStatus,
   DailyBatchAssignmentGroup,
+  DailySampleDisplayRun,
+  DailySampleView,
   DailyBatchView
 } from './daily-checklist.model';
 
@@ -160,6 +162,8 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
           formattedSamples: '',
           samples: [],
           formattedSampleDetails: '',
+          sampleDisplayRuns: [],
+          formattedSampleDisplay: '',
           hasSampleDescriptions: false,
           hasDescriptionConflict: false,
           targetScope: buildTargetScopePresentation(targetNames, classification)
@@ -230,12 +234,15 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
         .sort((a, b) => compareDailySampleIds(a.sampleId, b.sampleId));
       const sampleIds = samples.map(sample => sample.sampleId);
       const describedSamples = samples.filter(sample => sample.description);
+      const sampleDisplayRuns = buildSampleDisplayRuns(samples);
       return {
         ...group,
         samples,
         sampleIds,
         formattedSamples: formatSampleList(sampleIds, { prefixFirst: true }),
         formattedSampleDetails: formatDailySampleDetails(samples),
+        sampleDisplayRuns,
+        formattedSampleDisplay: formatSampleDisplayRuns(sampleDisplayRuns),
         hasSampleDescriptions: describedSamples.length > 0,
         hasDescriptionConflict: samples.some(sample => Boolean(sample.descriptionAlternatives?.length))
       };
@@ -315,5 +322,43 @@ function formatDailySampleDetails(samples: DailyBatchAssignmentGroup['samples'])
       ? sample.descriptionAlternatives.join(' / ')
       : sample.description?.nameSnapshot?.trim();
     return description ? `${sample.sampleId} (${description})` : sample.sampleId;
+  }).join('; ');
+}
+
+function buildSampleDisplayRuns(samples: DailySampleView[]): DailySampleDisplayRun[] {
+  const runs: DailySampleDisplayRun[] = [];
+
+  samples.forEach(sample => {
+    const hasDescriptionConflict = Boolean(sample.descriptionAlternatives?.length);
+    const descriptionKey = normalizeDescription(sample.description?.nameSnapshot || '');
+    const previousRun = runs[runs.length - 1];
+    const previousDescriptionKey = normalizeDescription(previousRun?.description?.nameSnapshot || '');
+    const canAppend = Boolean(previousRun)
+      && !hasDescriptionConflict
+      && !previousRun.hasDescriptionConflict
+      && previousDescriptionKey === descriptionKey;
+
+    if (canAppend) {
+      previousRun.sampleIds.push(sample.sampleId);
+      previousRun.formattedSamples = formatSampleList(previousRun.sampleIds, { prefixFirst: true });
+      return;
+    }
+
+    runs.push({
+      sampleIds: [sample.sampleId],
+      formattedSamples: sample.sampleId,
+      description: sample.description,
+      descriptionAlternatives: sample.descriptionAlternatives,
+      hasDescriptionConflict
+    });
+  });
+
+  return runs;
+}
+
+function formatSampleDisplayRuns(runs: DailySampleDisplayRun[]): string {
+  return runs.map(run => {
+    const description = run.description?.nameSnapshot?.trim();
+    return description ? `${run.formattedSamples} (${description})` : run.formattedSamples;
   }).join('; ');
 }

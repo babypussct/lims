@@ -129,27 +129,40 @@ test('sample details keep sample-code order when descriptions repeat out of sequ
     view.groups[0].formattedSampleDetails,
     'L2319 (Lươn sống); L2419 (Ốc hương); L2519 (Lươn sống); L2619 (Tôm hùm)'
   );
+  assert.deepEqual(
+    view.groups[0].sampleDisplayRuns.map(run => run.sampleIds),
+    [['L2319'], ['L2419'], ['L2519'], ['L2619']]
+  );
+  assert.equal(
+    view.groups[0].formattedSampleDisplay,
+    'L2319 (Lươn sống); L2419 (Ốc hương); L2519 (Lươn sống); L2619 (Tôm hùm)'
+  );
   assert.equal(view.groups[0].formattedSampleDetails.includes('L2319; L2519 (Lươn sống)'), false);
 });
 
-test('sample details repeat a shared description per sample instead of grouping sample codes', () => {
+test('sample display groups only adjacent samples with the same description while keeping full details searchable', () => {
   const [overview] = buildApprovedBatchOverviews([
     request({
       id: 'REQ-DESC-SAME',
-      sampleList: ['L2519', 'L2319', 'L2419'],
-      sampleDescriptionMap: {
-        L2319: { nameSnapshot: 'Lươn sống' },
-        L2419: { nameSnapshot: 'Lươn sống' },
-        L2519: { nameSnapshot: 'Lươn sống' }
-      }
+      sampleList: Array.from({ length: 43 }, (_, index) => `U${String(index + 1).padStart(2, '0')}19`),
+      sampleDescriptionMap: Object.fromEntries(
+        Array.from({ length: 43 }, (_, index) => [
+          `U${String(index + 1).padStart(2, '0')}19`,
+          { nameSnapshot: 'Cá tra' }
+        ])
+      )
     })
   ], '2026-07-16', (_item, targetId) => targetId);
 
   const [view] = buildDailyBatchViews([overview]);
-  assert.equal(
-    view.groups[0].formattedSampleDetails,
-    'L2319 (Lươn sống); L2419 (Lươn sống); L2519 (Lươn sống)'
-  );
+  const group = view.groups[0];
+  assert.equal(group.samples.length, 43);
+  assert.equal(group.sampleDisplayRuns.length, 1);
+  assert.deepEqual(group.sampleDisplayRuns[0].sampleIds, group.sampleIds);
+  assert.equal(group.sampleDisplayRuns[0].formattedSamples, 'U0119 -> U4319');
+  assert.equal(group.formattedSampleDisplay, 'U0119 -> U4319 (Cá tra)');
+  assert.match(group.formattedSampleDetails, /U2019 \(Cá tra\)/);
+  assert.equal((group.formattedSampleDisplay.match(/Cá tra/g) || []).length, 1);
 });
 
 test('sample details omit empty description parentheses without changing sample order', () => {
@@ -166,6 +179,20 @@ test('sample details omit empty description parentheses without changing sample 
 
   const [view] = buildDailyBatchViews([overview]);
   assert.equal(view.groups[0].formattedSampleDetails, 'L2319 (Lươn sống); L2419; L2519 (Ốc hương)');
+  assert.equal(view.groups[0].formattedSampleDisplay, 'L2319 (Lươn sống); L2419; L2519 (Ốc hương)');
+});
+
+test('adjacent samples without descriptions still compress into a display range', () => {
+  const sampleList = Array.from({ length: 43 }, (_, index) => `U${String(index + 1).padStart(2, '0')}19`);
+  const [overview] = buildApprovedBatchOverviews([
+    request({ id: 'REQ-NO-DESC-RANGE', sampleList })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews([overview]);
+  assert.equal(view.groups[0].sampleDisplayRuns.length, 1);
+  assert.equal(view.groups[0].sampleDisplayRuns[0].formattedSamples, 'U0119 -> U4319');
+  assert.equal(view.groups[0].formattedSampleDisplay, 'U0119 -> U4319');
+  assert.equal(view.groups[0].formattedSampleDisplay.includes('()'), false);
 });
 
 test('conflicting descriptions for the same sample are visible instead of silently overwritten', () => {
@@ -177,6 +204,56 @@ test('conflicting descriptions for the same sample are visible instead of silent
   const [view] = buildDailyBatchViews(overviews);
   assert.equal(view.groups[0].hasDescriptionConflict, true);
   assert.deepEqual(view.groups[0].samples[0].descriptionAlternatives?.sort(), ['Cá basa', 'Cá tra']);
+  assert.equal(view.groups[0].sampleDisplayRuns.length, 1);
+  assert.equal(view.groups[0].sampleDisplayRuns[0].hasDescriptionConflict, true);
+  assert.deepEqual(view.groups[0].sampleDisplayRuns[0].descriptionAlternatives?.sort(), ['Cá basa', 'Cá tra']);
+});
+
+test('a description conflict never merges into an adjacent normal display run', () => {
+  const overviews = buildApprovedBatchOverviews([
+    request({
+      id: 'REQ-CONFLICT-A',
+      sampleList: ['A001', 'A002'],
+      sampleDescriptionMap: {
+        A001: { nameSnapshot: 'Cá tra' },
+        A002: { nameSnapshot: 'Cá tra' }
+      }
+    }),
+    request({
+      id: 'REQ-CONFLICT-B',
+      sampleList: ['A001'],
+      sampleDescriptionMap: { A001: { nameSnapshot: 'Cá basa' } }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews(overviews);
+  assert.deepEqual(
+    view.groups[0].sampleDisplayRuns.map(run => run.sampleIds),
+    [['A001'], ['A002']]
+  );
+  assert.equal(view.groups[0].sampleDisplayRuns[0].hasDescriptionConflict, true);
+  assert.equal(view.groups[0].sampleDisplayRuns[1].hasDescriptionConflict, false);
+});
+
+test('same description separated by another description stays in separate display runs', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      id: 'REQ-DESC-RUNS',
+      sampleList: ['L2319', 'L2419', 'L2519'],
+      sampleDescriptionMap: {
+        L2319: { nameSnapshot: 'Lươn sống' },
+        L2419: { nameSnapshot: 'Ốc hương' },
+        L2519: { nameSnapshot: 'Lươn sống' }
+      }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews([overview]);
+  assert.deepEqual(
+    view.groups[0].sampleDisplayRuns.map(run => run.sampleIds),
+    [['L2319'], ['L2419'], ['L2519']]
+  );
+  assert.equal(view.groups[0].formattedSampleDisplay, 'L2319 (Lươn sống); L2419 (Ốc hương); L2519 (Lươn sống)');
 });
 
 test('adaptive print planner chooses landscape for wide content and respects manual override', () => {
@@ -275,6 +352,19 @@ test('daily checklist shows prefixed sample codes before non-prefixed sample cod
 
   assert.deepEqual(view.groups[0].sampleIds, ['U0108', 'U0208', '0108', '0208']);
   assert.equal(view.groups[0].formattedSamples, 'U0108; U0208; 0108; 0208');
+});
+
+test('daily checklist keeps natural sample-code ordering before building display runs', () => {
+  const overviews = buildApprovedBatchOverviews([
+    request({
+      sampleList: ['L1019', 'L919', 'L1119', 'L219'],
+      targetIds: ['T1']
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+  const [view] = buildDailyBatchViews(overviews);
+
+  assert.deepEqual(view.groups[0].sampleIds, ['L219', 'L919', 'L1019', 'L1119']);
+  assert.deepEqual(view.groups[0].sampleDisplayRuns[0].sampleIds, view.groups[0].sampleIds);
 });
 
 test('missing analysisDate is not silently replaced by approval date', () => {

@@ -1,25 +1,27 @@
 [
   {
-    "version": "v26.08.17-b01",
-    "date": "17/8/2026",
-    "title": "Bổ sung tính năng chọn nhanh từng đợt và tối ưu quy trình thử nghiệm Đồng bộ Mã quản lý nội bộ",
+    "version": "v26.08.20-b01",
+    "date": "20/8/2026",
+    "title": "Tối ưu hiển thị và sắp xếp mã số mẫu trong Theo Dõi Mẫu & Kết Quả Ngày",
     "highlights": [
-      "Bổ sung nút chọn nhanh từng đợt giúp người dùng dễ dàng chạy thử nghiệm từng phần nhỏ trước khi đồng bộ toàn bộ.",
-      "Tự động phân chia thông minh các đợt đồng bộ lớn để bảo đảm an toàn tuyệt đối và không gây nghẽn thao tác.",
-      "Hiển thị chi tiết đợt xử lý kế tiếp và tiến độ trực quan trong suốt quá trình thực hiện."
+      "Mã số mẫu trong bảng theo dõi hàng ngày luôn giữ đúng thứ tự tăng dần chuẩn xác, giúp tra cứu nhanh chóng.",
+      "Tự động gom gọn phần mô tả cho các mẫu liền kề cùng loại, tránh lặp lại thông tin và giúp bảng theo dõi trực quan hơn.",
+      "Làm nổi bật rõ ràng phần mã số mẫu trên cả màn hình theo dõi và các bản in."
     ],
     "features": [
-      "Thêm nút Chọn nhanh đợt tiếp theo trong hộp thoại Đồng bộ Mã quản lý nội bộ, tự động chọn đúng số lượng hồ sơ an toàn cho từng lần chạy mà không cần tích chọn thủ công.",
-      "Hiển thị thông tin trực quan về đợt xử lý kế tiếp và số lượng thay đổi hợp lệ tương ứng."
+      "Hiển thị danh sách mẫu theo từng đoạn liền kề thông minh trong mục Theo Dõi Mẫu & Kết Quả Ngày, tự động rút gọn dãy mã số liên tiếp cùng mô tả.",
+      "Hỗ trợ định dạng làm đậm riêng cho mã số mẫu để dễ phân biệt với tên mô tả mẫu trong ngoặc đơn trên giao diện và bản in."
     ],
     "improvements": [
-      "Tối ưu thao tác chạy thử nghiệm trên một vài hồ sơ mẫu trước khi áp dụng trên quy mô lớn.",
-      "Duy trì tính nhất quán tuyệt đối giữa hồ sơ chất chuẩn và sổ ngân hàng mã trong từng đợt chạy."
+      "Thứ tự sắp xếp mã số mẫu được duy trì chuẩn xác và đồng nhất giữa thẻ theo dõi thu gọn, thẻ mở rộng và phiếu in.",
+      "Bản in dạng danh sách và bản in thu gọn được căn chỉnh gọn gàng, tiết kiệm không gian khi có nhiều mẫu cùng loại.",
+      "Tra cứu và tìm kiếm mẻ phân tích theo từng mã số mẫu hoặc tên mẫu vẫn hoạt động chính xác ngay cả khi mã đã được gom hiển thị rút gọn."
     ],
     "fixes": [
-      "Đảm bảo phạm vi chọn đợt xử lý luôn khớp chính xác với kế hoạch phân chia hiển thị trên màn hình."
+      "Khắc phục hiện tượng mã số mẫu bị đổi vị trí khi các mẫu có cùng mô tả nằm xen kẽ nhau trong cùng một mẻ phân tích.",
+      "Khắc phục tình trạng lặp lại mô tả mẫu nhiều lần trên các mẻ có số lượng lớn mẫu cùng loại."
     ],
-    "releaseOrder": 26081700001
+    "releaseOrder": 26082000001
   },
   {
     "version": "v26.08.07-b02",
