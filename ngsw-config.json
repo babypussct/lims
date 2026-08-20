@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.20-b01",
-    "title": "Tối ưu hiển thị và sắp xếp mã số mẫu trong Theo Dõi Mẫu & Kết Quả Ngày",
+    "version": "v26.08.20-b03",
+    "title": "Nâng cao độ ổn định và trải nghiệm xem tài liệu Phiếu giao nhận mẫu trên di động",
     "features": [
-      "Mã số mẫu trong bảng theo dõi hàng ngày luôn giữ đúng thứ tự tăng dần chuẩn xác, giúp tra cứu nhanh chóng.",
-      "Tự động gom gọn phần mô tả cho các mẫu liền kề cùng loại, tránh lặp lại thông tin và giúp bảng theo dõi trực quan hơn.",
-      "Làm nổi bật rõ ràng phần mã số mẫu trên cả màn hình theo dõi và các bản in.",
-      "Hiển thị danh sách mẫu theo từng đoạn liền kề thông minh trong mục Theo Dõi Mẫu & Kết Quả Ngày, tự động rút gọn dãy mã số liên tiếp cùng mô tả.",
-      "Hỗ trợ định dạng làm đậm riêng cho mã số mẫu để dễ phân biệt với tên mô tả mẫu trong ngoặc đơn trên giao diện và bản in."
+      "Thao tác in và xem trước tài liệu Phiếu giao nhận mẫu trên điện thoại và máy tính bảng diễn ra an toàn và ổn định hơn.",
+      "Tự động tối ưu giao diện hiển thị cho các bảng tính dữ liệu khi xem trên thiết bị di động.",
+      "Hỗ trợ xem trước mượt mà và đồng bộ các tài liệu giao nhận mẫu từ tệp PDF, bảng tính Excel đến các tệp hình ảnh và văn bản.",
+      "Trải nghiệm xem bảng tính trên màn hình nhỏ được tự động mở rộng tối đa vùng dữ liệu quan sát.",
+      "Tính năng tìm kiếm tài liệu hỗ trợ nhận diện tiếng Việt không dấu chuẩn xác, giúp tra cứu nhanh chóng trong các thư mục."
     ]
   },
   "assetGroups": [

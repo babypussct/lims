@@ -18,6 +18,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import type { PDFDocumentProxy, RenderTask, TextLayer as PdfTextLayer } from 'pdfjs-dist';
+import { removeDiacritics } from './document-viewer.utils';
 
 type PdfFitMode = 'width' | 'page' | 'custom';
 
@@ -871,10 +872,6 @@ export class PdfDocumentViewerComponent implements AfterViewInit, OnChanges, OnD
   }
 
   private normalize(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/gi, 'd')
-      .toLowerCase();
+    return removeDiacritics(value).toLowerCase();
   }
 }

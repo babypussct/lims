@@ -18,6 +18,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { DocumentPreviewKind, DriveItem } from './document-viewer.models';
+import { detectDocumentKind, formatDocumentSize, getExportFileName } from './document-viewer.utils';
 import { ExcelDocumentViewerComponent } from './excel-document-viewer.component';
 import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
 
@@ -94,7 +95,8 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
               @if (mobileMenuOpen()) {
                 <div class="absolute right-0 top-11 z-50 w-48 p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl">
                   @if (kind() === 'pdf') {
-                    <button type="button" (click)="printDocument()" class="preview-menu-item">
+                    <button type="button" (click)="printDocument()" [disabled]="loading() || !!error()"
+                            class="preview-menu-item" title="In PDF">
                       <i class="fa-solid fa-print"></i><span>In PDF</span>
                     </button>
                   }
@@ -263,14 +265,16 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
       text-align: left;
     }
     .preview-menu-item i { width: 1rem; color: #a21caf; }
-    .preview-menu-item:hover { background: #f8fafc; }
+    .preview-menu-item:hover:not(:disabled) { background: #f8fafc; }
+    .preview-menu-item:disabled { opacity: .4; cursor: not-allowed; }
     :host-context(.dark) .preview-action-button { color: #cbd5e1; border-color: #334155; }
     :host-context(.dark) .preview-action-button:hover:not(:disabled) { color: #f0abfc; background: rgba(112,26,117,.3); border-color: #86198f; }
     :host-context(.dark) .preview-action-primary { color: white; background: #a21caf; border-color: #a21caf; }
     :host-context(.dark) .preview-icon-button { color: #cbd5e1; }
     :host-context(.dark) .preview-icon-button:hover { color: #f0abfc; background: rgba(112,26,117,.3); }
     :host-context(.dark) .preview-menu-item { color: #e2e8f0; }
-    :host-context(.dark) .preview-menu-item:hover { background: #334155; }
+    :host-context(.dark) .preview-menu-item:hover:not(:disabled) { background: #334155; }
+    :host-context(.dark) .preview-menu-item:disabled { opacity: .4; }
     @media (max-width: 640px), (max-height: 640px) {
       .document-preview-header {
         min-height: 3rem;
@@ -459,6 +463,7 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
   }
 
   printDocument(): void {
+    if (this.loading() || this.error()) return;
     const url = this.objectUrl();
     if (url) openInNewTab(url);
     else this.openOriginal();
@@ -478,12 +483,7 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
   }
 
   formatSize(bytes?: string): string {
-    if (!bytes) return 'Không rõ dung lượng';
-    const value = Number(bytes);
-    if (!Number.isFinite(value)) return 'Không rõ dung lượng';
-    if (value < 1024) return `${value} B`;
-    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    return formatDocumentSize(bytes);
   }
 
   formatDate(value?: string): string {
@@ -542,28 +542,11 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
   }
 
   private detectKind(item: DriveItem): DocumentPreviewKind {
-    const name = item.name.toLowerCase();
-    const mime = item.mimeType.toLowerCase();
-    if (name.endsWith('.pdf') || mime === 'application/pdf') return 'pdf';
-    if (
-      /\.(xlsx|xls|xlsm|csv)$/.test(name) ||
-      mime === 'application/vnd.google-apps.spreadsheet' ||
-      mime.includes('spreadsheet') ||
-      mime.includes('excel') ||
-      mime === 'text/csv'
-    ) return 'excel';
-    if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(name)) return 'image';
-    if (mime.startsWith('video/')) return 'video';
-    if (mime.startsWith('audio/')) return 'audio';
-    if (mime.startsWith('text/') || /\.(txt|log|md|json|xml|csv)$/.test(name)) return 'text';
-    return 'drive';
+    return detectDocumentKind(item);
   }
 
   private exportFileName(): string {
-    if (this.item.mimeType === 'application/vnd.google-apps.spreadsheet' && !/\.xlsx$/i.test(this.item.name)) {
-      return `${this.item.name}.xlsx`;
-    }
-    return this.item.name || 'tai-lieu';
+    return getExportFileName(this.item);
   }
 
   private releaseObjectUrl(): void {

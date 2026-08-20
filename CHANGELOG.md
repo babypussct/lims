@@ -2,31 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.20-b01
+## Phiên bản hiện tại: v26.08.20-b03
 
-### v26.08.20-b01
+### v26.08.20-b03
 
 #### 🚀 Tính năng nổi bật
 
-- Mã số mẫu trong bảng theo dõi hàng ngày luôn giữ đúng thứ tự tăng dần chuẩn xác, giúp tra cứu nhanh chóng.
-- Tự động gom gọn phần mô tả cho các mẫu liền kề cùng loại, tránh lặp lại thông tin và giúp bảng theo dõi trực quan hơn.
-- Làm nổi bật rõ ràng phần mã số mẫu trên cả màn hình theo dõi và các bản in.
+- Thao tác in và xem trước tài liệu Phiếu giao nhận mẫu trên điện thoại và máy tính bảng diễn ra an toàn và ổn định hơn.
+- Tự động tối ưu giao diện hiển thị cho các bảng tính dữ liệu khi xem trên thiết bị di động.
 
 #### ✨ Tính năng mới
 
-- Hiển thị danh sách mẫu theo từng đoạn liền kề thông minh trong mục Theo Dõi Mẫu & Kết Quả Ngày, tự động rút gọn dãy mã số liên tiếp cùng mô tả.
-- Hỗ trợ định dạng làm đậm riêng cho mã số mẫu để dễ phân biệt với tên mô tả mẫu trong ngoặc đơn trên giao diện và bản in.
+- Hỗ trợ xem trước mượt mà và đồng bộ các tài liệu giao nhận mẫu từ tệp PDF, bảng tính Excel đến các tệp hình ảnh và văn bản.
 
 #### ⚡ Tối ưu & cải tiến
 
-- Thứ tự sắp xếp mã số mẫu được duy trì chuẩn xác và đồng nhất giữa thẻ theo dõi thu gọn, thẻ mở rộng và phiếu in.
-- Bản in dạng danh sách và bản in thu gọn được căn chỉnh gọn gàng, tiết kiệm không gian khi có nhiều mẫu cùng loại.
-- Tra cứu và tìm kiếm mẻ phân tích theo từng mã số mẫu hoặc tên mẫu vẫn hoạt động chính xác ngay cả khi mã đã được gom hiển thị rút gọn.
+- Trải nghiệm xem bảng tính trên màn hình nhỏ được tự động mở rộng tối đa vùng dữ liệu quan sát.
+- Tính năng tìm kiếm tài liệu hỗ trợ nhận diện tiếng Việt không dấu chuẩn xác, giúp tra cứu nhanh chóng trong các thư mục.
+- Sao chép vùng dữ liệu bảng tính đã chọn giữ đúng cấu trúc dòng cột khi dán sang các ứng dụng khác.
 
 #### 🐛 Sửa lỗi
 
-- Khắc phục hiện tượng mã số mẫu bị đổi vị trí khi các mẫu có cùng mô tả nằm xen kẽ nhau trong cùng một mẻ phân tích.
-- Khắc phục tình trạng lặp lại mô tả mẫu nhiều lần trên các mẻ có số lượng lớn mẫu cùng loại.
+- Khắc phục hiện tượng nút In PDF trong menu thao tác trên điện thoại có thể nhấn khi tài liệu chưa tải xong.
 
 ### v26.08.07-b02
 

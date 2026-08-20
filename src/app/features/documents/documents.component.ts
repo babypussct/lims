@@ -15,6 +15,7 @@ import {
 } from '../../shared/components/ui';
 import { DocumentPreviewModalComponent } from './document-preview-modal.component';
 import { DriveItem } from './document-viewer.models';
+import { formatDocumentSize, removeDiacritics } from './document-viewer.utils';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   AllCommunityModule,
@@ -1068,13 +1069,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   }
 
   formatSize(bytes?: string, item?: DriveItem): string {
-    if (item && this.isFolder(item)) return 'Thư mục';
-    if (!bytes) return '--';
-    const b = parseInt(bytes, 10);
-    if (isNaN(b)) return '--';
-    if (b < 1024) return b + ' B';
-    else if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-    else return (b / 1048576).toFixed(1) + ' MB';
+    return formatDocumentSize(bytes, Boolean(item && this.isFolder(item)));
   }
 
   formatDate(dateStr?: string, short = false): string {
@@ -1093,10 +1088,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   }
 
   private removeDiacritics(str: string): string {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/gi, 'd');
+    return removeDiacritics(str);
   }
 
   getFileTypeStyle(item: DriveItem): { icon: string, color: string } {

@@ -34,6 +34,12 @@ import {
 import type { WorkBook, WorkSheet } from 'xlsx';
 import { StateService } from '../../core/services/state.service';
 import { ExcelViewerRow } from './document-viewer.models';
+import {
+  buildExcelSelectionTSV,
+  compareExcelValues,
+  computeExcelLimits,
+  removeDiacritics,
+} from './document-viewer.utils';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -972,18 +978,20 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     for (let column = range.s.c; column <= range.e.c; column++) {
       if (!columnMetadata[column]?.hidden) allVisibleColumns.push(column);
     }
-    const maxColumns = 200;
-    this.visibleSheetColumns = allVisibleColumns.slice(0, maxColumns);
-    if (!this.visibleSheetColumns.length) this.visibleSheetColumns = [range.s.c];
-    const maxCells = 500_000;
-    const rowLimit = Math.min(50_000, Math.max(1, Math.floor(maxCells / this.visibleSheetColumns.length)));
-    const visibleSheetRows: number[] = [];
-    let totalUnhiddenRows = 0;
+    if (!allVisibleColumns.length) allVisibleColumns.push(range.s.c);
+
+    const allVisibleRows: number[] = [];
     for (let row = range.s.r; row <= range.e.r; row++) {
-      if (rowMetadata[row]?.hidden) continue;
-      totalUnhiddenRows++;
-      if (visibleSheetRows.length < rowLimit) visibleSheetRows.push(row);
+      if (!rowMetadata[row]?.hidden) allVisibleRows.push(row);
     }
+
+    const limits = computeExcelLimits(allVisibleColumns, allVisibleRows, {
+      maxColumns: 200,
+      maxCells: 500_000,
+      maxRows: 50_000,
+    });
+    this.visibleSheetColumns = limits.visibleColumns;
+    const visibleSheetRows = limits.visibleRows;
 
     const displayedColumnSet = new Set(this.visibleSheetColumns);
     const displayedRowSet = new Set(visibleSheetRows);
@@ -1081,11 +1089,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       columns[displayColumn + 1].width = width;
     });
 
-    const totalUnhiddenColumns = allVisibleColumns.length;
-    this.truncated.set(
-      this.visibleSheetColumns.length < totalUnhiddenColumns ||
-      visibleSheetRows.length < totalUnhiddenRows
-    );
+    this.truncated.set(limits.isTruncated);
     this.visibleColumns.set(this.visibleSheetColumns.length);
     this.visibleRows.set(rows.length);
     this.columnDefs.set(columns);
@@ -1475,18 +1479,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   }
 
   private selectionText(): string {
-    const rect = this.selectionRect();
-    if (!rect) return '';
-    const rows = this.rowData();
-    const lines: string[] = [];
-    for (let row = rect.top; row <= rect.bottom; row++) {
-      const values: string[] = [];
-      for (let column = rect.left; column <= rect.right; column++) {
-        values.push(String(rows[row]?.[`c${column}`] ?? ''));
-      }
-      lines.push(values.join('\t'));
-    }
-    return lines.join('\r\n');
+    return buildExcelSelectionTSV(this.rowData(), this.selectionRect());
   }
 
   private showCopyStatus(): void {
@@ -1544,11 +1537,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   }
 
   private normalize(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/gi, 'd')
-      .toLowerCase();
+    return removeDiacritics(value).toLowerCase();
   }
 
   private cellKey(row: number, column: number): string {
