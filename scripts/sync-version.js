@@ -25,8 +25,8 @@ function readReleaseNotes() {
 
   const sections = ['highlights', 'features', 'improvements', 'fixes'];
   for (const section of sections) {
-    if (notes[section] !== undefined && !Array.isArray(notes[section])) {
-      throw new Error(`release-notes.json.${section} phải là một mảng.`);
+    if (!Array.isArray(notes[section])) {
+      throw new Error(`release-notes.json.${section} là mục bắt buộc và phải là một mảng (có thể để []).`);
     }
   }
 

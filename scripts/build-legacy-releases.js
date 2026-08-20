@@ -4,10 +4,16 @@
  * loại bỏ hoàn toàn jargon kỹ thuật, tuân theo AGENTS.md changelog rules.
  */
 const fs = require('fs');
+const path = require('path');
+
+const recoveredPath = path.join(__dirname, 'recovered-releases.json');
+const recoveredReleases = fs.existsSync(recoveredPath)
+  ? JSON.parse(fs.readFileSync(recoveredPath, 'utf8'))
+  : [];
 
 // ===========================================================================
-// PHẦN 1: 10 PHIÊN BẢN MỚI NHẤT (v26.08.04-b04 → v26.08.07-b02)
-// Viết tay hoàn toàn, không có jargon
+// PHẦN 1: Các phiên bản gần nhất đã được biên tập thủ công.
+// Viết tay hoàn toàn, không có jargon.
 // ===========================================================================
 const recentReleases = [
   {
@@ -280,22 +286,36 @@ function cleanRelease(rel) {
     version: rel.version,
     date: rel.date,
     title: titleOverrides[rel.version] || cleanText(rel.title),
-    ...(rel.highlights?.length ? { highlights: rel.highlights.map(cleanText) } : {}),
-    ...(rel.features?.length ? { features: rel.features.map(cleanText) } : {}),
-    ...(rel.improvements?.length ? { improvements: rel.improvements.map(cleanText) } : {}),
-    ...(rel.fixes?.length ? { fixes: rel.fixes.map(cleanText) } : {})
+    highlights: Array.isArray(rel.highlights) ? rel.highlights.map(cleanText) : [],
+    features: Array.isArray(rel.features) ? rel.features.map(cleanText) : [],
+    improvements: Array.isArray(rel.improvements) ? rel.improvements.map(cleanText) : [],
+    fixes: Array.isArray(rel.fixes) ? rel.fixes.map(cleanText) : []
   };
 }
 
-// Làm sạch 29 bản từ Git
+// Làm sạch dữ liệu legacy từ Git và các release được khôi phục từ lịch sử Git.
 const cleanedLegacy = rawLegacy.map(cleanRelease);
 
-// Gộp: 10 bản mới nhất (đã viết sạch) + 29 bản từ Git (đã làm sạch)
-// Loại trùng: nếu version đã có trong recentReleases thì bỏ qua từ legacy
+// Loại trùng với nhóm release gần nhất.
 const recentVersions = new Set(recentReleases.map(r => r.version));
 const filteredLegacy = cleanedLegacy.filter(r => !recentVersions.has(r.version));
 
-const allReleases = [...recentReleases, ...filteredLegacy];
+function releaseOrder(version) {
+  const match = String(version || '').match(/^v(\d{2})\.(\d{2})\.(\d{2})-b(\d+)$/);
+  if (!match) return 0;
+  return Number(match[1]) * 1_000_000_000
+    + Number(match[2]) * 10_000_000
+    + Number(match[3]) * 100_000
+    + Number(match[4]);
+}
+
+const uniqueReleases = new Map();
+for (const release of [...recentReleases, ...recoveredReleases, ...filteredLegacy].map(cleanRelease)) {
+  if (!uniqueReleases.has(release.version)) uniqueReleases.set(release.version, release);
+}
+
+const allReleases = [...uniqueReleases.values()]
+  .sort((a, b) => releaseOrder(b.version) - releaseOrder(a.version));
 
 fs.writeFileSync('scripts/legacy-releases.json', JSON.stringify(allReleases, null, 2));
 console.log(`✅ Đã tạo scripts/legacy-releases.json với ${allReleases.length} phiên bản.`);

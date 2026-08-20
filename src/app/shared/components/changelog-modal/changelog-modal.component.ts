@@ -94,45 +94,54 @@ import { StateService } from '../../../core/services/state.service';
 
                 <h4 class="text-sm font-extrabold text-slate-800 dark:text-white mb-2 leading-snug">{{ item.title }}</h4>
 
-                @if (item.highlights && item.highlights.length > 0) {
-                  <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 mb-3">
-                    <ul class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 mb-3">
+                  <span class="text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider block mb-1.5">🚀 Điểm Nổi Bật Bản Này</span>
+                  <ul class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                    @if (item.highlights && item.highlights.length > 0) {
                       @for (hl of item.highlights; track hl) {
                         <li class="flex items-start gap-2">
                           <i class="fa-solid fa-sparkles text-amber-500 text-[10px] mt-1 shrink-0"></i>
                           <span>{{ hl }}</span>
                         </li>
                       }
-                    </ul>
-                  </div>
-                }
+                    } @else {
+                      <li class="text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                    }
+                  </ul>
+                </div>
 
-                @if (item.features && item.features.length > 0) {
-                  <div class="mb-2">
-                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mb-1">🚀 Tính Năng Mới</span>
-                    <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                <div class="mb-2">
+                  <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mb-1">✨ Tính Năng Mới</span>
+                  <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                    @if (item.features && item.features.length > 0) {
                       @for (f of item.features; track f) { <li>{{ f }}</li> }
-                    </ul>
-                  </div>
-                }
+                    } @else {
+                      <li class="list-none -ml-4 text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                    }
+                  </ul>
+                </div>
 
-                @if (item.improvements && item.improvements.length > 0) {
-                  <div class="mb-2">
-                    <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block mb-1">⚡ Tối Ưu & Cải Tiến</span>
-                    <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                <div class="mb-2">
+                  <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block mb-1">⚡ Cải Tiến & Tối Ưu</span>
+                  <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                    @if (item.improvements && item.improvements.length > 0) {
                       @for (imp of item.improvements; track imp) { <li>{{ imp }}</li> }
-                    </ul>
-                  </div>
-                }
+                    } @else {
+                      <li class="list-none -ml-4 text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                    }
+                  </ul>
+                </div>
 
-                @if (item.fixes && item.fixes.length > 0) {
-                  <div class="mb-2">
-                    <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block mb-1">🐛 Sửa Lỗi</span>
-                    <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                <div class="mb-2">
+                  <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block mb-1">🐛 Sửa Lỗi Hệ Thống</span>
+                  <ul class="list-disc pl-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                    @if (item.fixes && item.fixes.length > 0) {
                       @for (fix of item.fixes; track fix) { <li>{{ fix }}</li> }
-                    </ul>
-                  </div>
-                }
+                    } @else {
+                      <li class="list-none -ml-4 text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                    }
+                  </ul>
+                </div>
               </article>
                 }
               </div>

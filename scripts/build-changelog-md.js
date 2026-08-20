@@ -9,6 +9,14 @@ const packageData = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 
 const historyPath = path.join(root, 'public', 'release-history.json');
 const legacyPath = path.join(__dirname, 'legacy-releases.json');
 const releases = JSON.parse(fs.readFileSync(fs.existsSync(historyPath) ? historyPath : legacyPath, 'utf8'));
+const emptyText = '- Không có thay đổi trong nhóm này.\n';
+
+const sections = [
+  ['highlights', '🚀 Điểm Nổi Bật Bản Này'],
+  ['features', '✨ Tính Năng Mới'],
+  ['improvements', '⚡ Cải Tiến & Tối Ưu'],
+  ['fixes', '🐛 Sửa Lỗi Hệ Thống']
+];
 
 let md = `# 📢 Nhật Ký Cập Nhật — LIMS Cloud
 
@@ -21,24 +29,14 @@ Lịch sử phiên bản đầy đủ được hiển thị tại mục [/change
 for (const rel of releases) {
   md += `### ${rel.version}\n\n`;
 
-  if (rel.highlights?.length) {
-    md += `#### 🚀 Tính năng nổi bật\n\n`;
-    rel.highlights.forEach(i => { md += `- ${i}\n`; });
-    md += '\n';
-  }
-  if (rel.features?.length) {
-    md += `#### ✨ Tính năng mới\n\n`;
-    rel.features.forEach(i => { md += `- ${i}\n`; });
-    md += '\n';
-  }
-  if (rel.improvements?.length) {
-    md += `#### ⚡ Tối ưu & cải tiến\n\n`;
-    rel.improvements.forEach(i => { md += `- ${i}\n`; });
-    md += '\n';
-  }
-  if (rel.fixes?.length) {
-    md += `#### 🐛 Sửa lỗi\n\n`;
-    rel.fixes.forEach(i => { md += `- ${i}\n`; });
+  for (const [key, label] of sections) {
+    md += `#### ${label}\n\n`;
+    const items = Array.isArray(rel[key]) ? rel[key] : [];
+    if (items.length > 0) {
+      items.forEach(i => { md += `- ${i}\n`; });
+    } else {
+      md += emptyText;
+    }
     md += '\n';
   }
 }

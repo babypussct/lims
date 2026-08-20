@@ -34,10 +34,10 @@ function normalizeRelease(item) {
     version,
     date: String(item.date || '').trim(),
     title: String(item.title || 'Cập nhật hệ thống').trim(),
-    ...(normalizeItems(item.highlights).length ? { highlights: normalizeItems(item.highlights) } : {}),
-    ...(normalizeItems(item.features).length ? { features: normalizeItems(item.features) } : {}),
-    ...(normalizeItems(item.improvements).length ? { improvements: normalizeItems(item.improvements) } : {}),
-    ...(normalizeItems(item.fixes).length ? { fixes: normalizeItems(item.fixes) } : {}),
+    highlights: normalizeItems(item.highlights),
+    features: normalizeItems(item.features),
+    improvements: normalizeItems(item.improvements),
+    fixes: normalizeItems(item.fixes),
     releaseOrder: releaseOrder(version)
   };
 }

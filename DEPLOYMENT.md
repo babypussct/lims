@@ -2,6 +2,45 @@
 
 Tài liệu này áp dụng cho bản Angular/Vercel hiện tại và thay đổi materialized daily checklist trong Firestore.
 
+## Quy ước phát hành phiên bản mới và changelog
+
+Mọi release mới phải đi qua cùng một nguồn nội dung là `release-notes.json`. Không sửa trực tiếp `CHANGELOG.md` hoặc `public/release-history.json` vì hai file này được sinh lại bởi pipeline đồng bộ phiên bản.
+
+`release-notes.json` bắt buộc có đủ bốn nhóm sau, kể cả khi một nhóm không có nội dung mới thì vẫn giữ mảng rỗng `[]`:
+
+```json
+{
+  "title": "Tiêu đề ngắn mô tả trọng tâm bản phát hành",
+  "highlights": [],
+  "features": [],
+  "improvements": [],
+  "fixes": []
+}
+```
+
+Quy ước hiển thị thống nhất trên toàn hệ thống:
+
+- `highlights` → **Điểm Nổi Bật Bản Này**
+- `features` → **Tính Năng Mới**
+- `improvements` → **Cải Tiến & Tối Ưu**
+- `fixes` → **Sửa Lỗi Hệ Thống**
+
+Các bản lịch sử cũng phải có đủ bốn nhóm. Nhóm không có thay đổi sẽ hiển thị thông báo `Không có thay đổi trong nhóm này.` thay vì bị ẩn, để mọi phiên bản có cùng một template.
+
+Trình tự release chuẩn:
+
+1. Tổng hợp thay đổi kể từ release gần nhất và cập nhật `release-notes.json` theo đúng bốn nhóm trên.
+2. Chạy `npm run sync-version`. Lệnh này phát sinh version theo ngày/build, đồng bộ metadata, tạo `public/release-history.json` và tái tạo `CHANGELOG.md`.
+3. Chạy `npm run validate:release-notes` và chỉ tiếp tục khi pass.
+4. Chạy toàn bộ gate ở mục **Kiểm tra bắt buộc trước deploy** bên dưới.
+5. Nếu release có thay đổi Firestore Rules thì deploy Rules trước frontend và lưu bằng chứng CLI thành công.
+6. Deploy frontend production lên Vercel, sau đó smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
+7. Chỉ commit/push release sau khi version, changelog, gate kiểm thử và bằng chứng deploy đã được review đúng phạm vi.
+
+Nếu chỉ chuẩn hóa template hoặc bảo trì lịch sử cũ mà không phát hành code mới, không phát sinh version mới; dùng `npm run sync-release-history` rồi `node scripts/build-changelog-md.js` để tái tạo dữ liệu và Markdown.
+
+Không đưa credential, token, dữ liệu production hoặc mô tả kỹ thuật nội bộ không cần thiết vào changelog dành cho người dùng.
+
 ## Trạng thái trước triển khai
 
 - Chưa chạy backfill Firestore; chưa có ghi dữ liệu production từ script `backfill-daily-checklists.ts`.

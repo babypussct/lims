@@ -91,55 +91,63 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
 
                 <h3 class="text-xl font-extrabold text-slate-850 dark:text-white mb-3 tracking-tight">{{ item.title }}</h3>
 
-                @if (item.highlights && item.highlights.length > 0) {
-                  <div class="bg-gradient-to-r from-blue-50/70 to-indigo-50/50 dark:from-slate-900/70 dark:to-slate-900/40 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 mb-4">
-                    <h4 class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <i class="fa-solid fa-sparkles text-amber-500"></i> Điểm Nổi Bật Bản Này
-                    </h4>
-                    <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300 font-medium">
+                <div class="bg-gradient-to-r from-blue-50/70 to-indigo-50/50 dark:from-slate-900/70 dark:to-slate-900/40 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 mb-4">
+                  <h4 class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-sparkles text-amber-500"></i> Điểm Nổi Bật Bản Này
+                  </h4>
+                  <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300 font-medium">
+                    @if (item.highlights && item.highlights.length > 0) {
                       @for (hl of item.highlights; track hl) {
                         <li class="flex items-start gap-2.5">
                           <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></span>
                           <span>{{ hl }}</span>
                         </li>
                       }
-                    </ul>
-                  </div>
-                }
+                    } @else {
+                      <li class="text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                    }
+                  </ul>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  @if (item.features && item.features.length > 0) {
-                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-                      <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <i class="fa-solid fa-rocket"></i> Tính Năng Mới
-                      </h4>
-                      <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                  <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+                    <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <i class="fa-solid fa-rocket"></i> Tính Năng Mới
+                    </h4>
+                    <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      @if (item.features && item.features.length > 0) {
                         @for (f of item.features; track f) { <li>{{ f }}</li> }
-                      </ul>
-                    </div>
-                  }
+                      } @else {
+                        <li class="list-none -ml-4 text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                      }
+                    </ul>
+                  </div>
 
-                  @if (item.improvements && item.improvements.length > 0) {
-                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-                      <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt"></i> Cải Tiến & Tối Ưu
-                      </h4>
-                      <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                  <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+                    <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <i class="fa-solid fa-bolt"></i> Cải Tiến & Tối Ưu
+                    </h4>
+                    <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      @if (item.improvements && item.improvements.length > 0) {
                         @for (imp of item.improvements; track imp) { <li>{{ imp }}</li> }
-                      </ul>
-                    </div>
-                  }
+                      } @else {
+                        <li class="list-none -ml-4 text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                      }
+                    </ul>
+                  </div>
 
-                  @if (item.fixes && item.fixes.length > 0) {
-                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 md:col-span-2">
-                      <h4 class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <i class="fa-solid fa-bug"></i> Sửa Lỗi Hệ Thống
-                      </h4>
-                      <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                  <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 md:col-span-2">
+                    <h4 class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <i class="fa-solid fa-bug"></i> Sửa Lỗi Hệ Thống
+                    </h4>
+                    <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      @if (item.fixes && item.fixes.length > 0) {
                         @for (fix of item.fixes; track fix) { <li>{{ fix }}</li> }
-                      </ul>
-                    </div>
-                  }
+                      } @else {
+                        <li class="list-none -ml-4 text-slate-400 dark:text-slate-500">Không có thay đổi trong nhóm này.</li>
+                      }
+                    </ul>
+                  </div>
                 </div>
 
               </article>

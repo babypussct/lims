@@ -24,6 +24,12 @@ if (!releaseNotes || typeof releaseNotes.title !== 'string' || !releaseNotes.tit
   errors.push('release-notes.json phải có title hợp lệ, không trống.');
 }
 
+for (const section of ['highlights', 'features', 'improvements', 'fixes']) {
+  if (!Array.isArray(releaseNotes?.[section])) {
+    errors.push(`release-notes.json.${section} là mục bắt buộc và phải là một mảng (có thể để []).`);
+  }
+}
+
 if (appData.version !== expectedVersion) {
   errors.push(`appData.version phải là ${expectedVersion}, hiện là ${appData.version || 'trống'}.`);
 }
@@ -53,10 +59,44 @@ try {
 if (!Array.isArray(releaseHistory) || !releaseHistory.some(item => item?.version === expectedVersion)) {
   errors.push(`public/release-history.json phải có release ${expectedVersion}.`);
 }
+if (Array.isArray(releaseHistory)) {
+  for (const item of releaseHistory) {
+    for (const section of ['highlights', 'features', 'improvements', 'fixes']) {
+      if (!Array.isArray(item?.[section])) {
+        errors.push(`public/release-history.json: ${item?.version || 'release không rõ'} thiếu mảng ${section}.`);
+      }
+    }
+  }
+}
 
 const changelogContent = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, 'utf8') : '';
 if (!changelogContent.includes(`## Phiên bản hiện tại: ${expectedVersion}`)) {
   errors.push(`CHANGELOG.md phải có tiêu đề phiên bản hiện tại ${expectedVersion}.`);
+}
+if (Array.isArray(releaseHistory) && changelogContent) {
+  const requiredHeadings = [
+    '#### 🚀 Điểm Nổi Bật Bản Này',
+    '#### ✨ Tính Năng Mới',
+    '#### ⚡ Cải Tiến & Tối Ưu',
+    '#### 🐛 Sửa Lỗi Hệ Thống'
+  ];
+  const releaseHeadings = changelogContent.match(/^### v\d{2}\.\d{2}\.\d{2}-b\d+$/gm) || [];
+  if (releaseHeadings.length !== releaseHistory.length) {
+    errors.push(`CHANGELOG.md phải có đúng ${releaseHistory.length} phiên bản, hiện có ${releaseHeadings.length}.`);
+  }
+  for (const item of releaseHistory) {
+    const startMarker = `### ${item.version}\n`;
+    const start = changelogContent.indexOf(startMarker);
+    const next = start < 0 ? -1 : changelogContent.indexOf('\n### ', start + startMarker.length);
+    const block = start < 0
+      ? ''
+      : changelogContent.slice(start, next < 0 ? changelogContent.length : next);
+    for (const heading of requiredHeadings) {
+      if (!block.includes(heading)) {
+        errors.push(`CHANGELOG.md: ${item.version} thiếu mục ${heading.replace(/^####\s+/, '')}.`);
+      }
+    }
+  }
 }
 
 if (errors.length > 0) {
