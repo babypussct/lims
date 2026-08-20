@@ -43,4 +43,19 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(component, /printDocument\(\)/);
     assert.match(component, /#print-container/);
   });
+
+  it('renders sample codes in order with bold codes and normal-weight descriptions on screen and print', () => {
+    const template = read('./daily-checklist.component.html');
+    const component = read('./daily-checklist.component.ts');
+
+    assert.match(template, /@for \(sample of group\.samples; track sample\.sampleId; let isLast = \$last\)/);
+    assert.match(template, /class="font-mono font-black"[^>]*>\{\{sample\.sampleId\}\}<\/span>/);
+    assert.match(template, /font-sans font-normal text-fuchsia-700[^>]*> \(\{\{sample\.description\.nameSnapshot\}\}\)<\/span>/);
+    assert.doesNotMatch(template, /font-sans font-bold text-fuchsia-700/);
+    assert.match(template, /class="cl-print-sample-code">\{\{sample\.sampleId\}\}<\/span>/);
+    assert.match(template, /class="cl-print-sample-description"> \(\{\{sample\.description\.nameSnapshot\}\}\)<\/span>/);
+    assert.match(template, /class="cl-print-sample-separator">; <\/span>/);
+    assert.match(component, /\.cl-print-sample-code \{[\s\S]*?font-weight: 800 !important;/);
+    assert.match(component, /\.cl-print-sample-description,[\s\S]*?\.cl-print-sample-separator \{[\s\S]*?font-weight: 400 !important;/);
+  });
 });

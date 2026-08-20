@@ -36,8 +36,8 @@ export interface DailyBatchAssignmentGroup {
   sampleIds: string[];
   formattedSamples: string;
   samples: DailySampleView[];
-  formattedDescriptions: string;
-  hasMultipleDescriptions: boolean;
+  formattedSampleDetails: string;
+  hasSampleDescriptions: boolean;
   hasDescriptionConflict: boolean;
   targetScope: TargetScopePresentation;
 }

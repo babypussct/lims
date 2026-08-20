@@ -24,7 +24,10 @@ export function computeDailyBatchLayoutHint(
 
   const groupCount = batch.groups.length;
   const maxSampleTextLength = batch.groups.reduce(
-    (max, group) => Math.max(max, group.formattedSamples.length + group.formattedDescriptions.length),
+    (max, group) => Math.max(
+      max,
+      group.hasSampleDescriptions ? group.formattedSampleDetails.length : group.formattedSamples.length
+    ),
     0
   );
   const maxTargetTextLength = batch.groups.reduce(

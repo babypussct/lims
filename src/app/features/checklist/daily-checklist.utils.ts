@@ -159,8 +159,8 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
           sampleIds: [],
           formattedSamples: '',
           samples: [],
-          formattedDescriptions: '',
-          hasMultipleDescriptions: false,
+          formattedSampleDetails: '',
+          hasSampleDescriptions: false,
           hasDescriptionConflict: false,
           targetScope: buildTargetScopePresentation(targetNames, classification)
         };
@@ -235,35 +235,8 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
         samples,
         sampleIds,
         formattedSamples: formatSampleList(sampleIds, { prefixFirst: true }),
-        ...(() => {
-          if (describedSamples.length === 0) {
-            return { formattedDescriptions: '', hasMultipleDescriptions: false };
-          }
-          const descMap = new Map<string, string[]>();
-          for (const sample of samples) {
-            let desc = 'Không có mô tả';
-            if (sample.description) {
-              desc = sample.descriptionAlternatives?.length
-                ? sample.descriptionAlternatives.join(' / ')
-                : sample.description.nameSnapshot;
-            }
-            if (!descMap.has(desc)) {
-              descMap.set(desc, []);
-            }
-            descMap.get(desc)!.push(sample.sampleId);
-          }
-          if (descMap.size === 1) {
-            const onlyDesc = Array.from(descMap.keys())[0];
-            return {
-              formattedDescriptions: onlyDesc === 'Không có mô tả' ? '' : onlyDesc,
-              hasMultipleDescriptions: false
-            };
-          }
-          const formatted = Array.from(descMap.entries()).map(([desc, sIds]) => {
-            return `${formatSampleList(sIds, { prefixFirst: true })} (${desc})`;
-          }).join(' · ');
-          return { formattedDescriptions: formatted, hasMultipleDescriptions: true };
-        })(),
+        formattedSampleDetails: formatDailySampleDetails(samples),
+        hasSampleDescriptions: describedSamples.length > 0,
         hasDescriptionConflict: samples.some(sample => Boolean(sample.descriptionAlternatives?.length))
       };
     }).sort((a, b) => {
@@ -334,4 +307,13 @@ function compareDailySampleIds(a: string, b: string): number {
   const bHasPrefix = /^[a-zA-Z]/.test(String(b || '').trim());
   if (aHasPrefix !== bHasPrefix) return aHasPrefix ? -1 : 1;
   return naturalCompare(a, b);
+}
+
+function formatDailySampleDetails(samples: DailyBatchAssignmentGroup['samples']): string {
+  return samples.map(sample => {
+    const description = sample.descriptionAlternatives?.length
+      ? sample.descriptionAlternatives.join(' / ')
+      : sample.description?.nameSnapshot?.trim();
+    return description ? `${sample.sampleId} (${description})` : sample.sampleId;
+  }).join('; ');
 }

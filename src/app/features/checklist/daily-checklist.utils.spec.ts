@@ -105,8 +105,67 @@ test('sample description snapshots are aggregated without losing physical reques
 
   const [view] = buildDailyBatchViews(overviews);
   assert.equal(view.physicalBatchCount, 2);
-  assert.equal(view.groups[0].formattedDescriptions, 'L0101 (Cá tra) · L0201 (Hành tím)');
+  assert.equal(view.groups[0].formattedSampleDetails, 'L0101 (Cá tra); L0201 (Hành tím)');
   assert.deepEqual(view.groups[0].samples[0].sourceRequestIds, ['REQ-DESC-1']);
+});
+
+test('sample details keep sample-code order when descriptions repeat out of sequence', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      id: 'REQ-DESC-ORDER',
+      sampleList: ['L2519', 'L2319', 'L2619', 'L2419'],
+      sampleDescriptionMap: {
+        L2319: { nameSnapshot: 'Lươn sống' },
+        L2419: { nameSnapshot: 'Ốc hương' },
+        L2519: { nameSnapshot: 'Lươn sống' },
+        L2619: { nameSnapshot: 'Tôm hùm' }
+      }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews([overview]);
+  assert.deepEqual(view.groups[0].samples.map(sample => sample.sampleId), ['L2319', 'L2419', 'L2519', 'L2619']);
+  assert.equal(
+    view.groups[0].formattedSampleDetails,
+    'L2319 (Lươn sống); L2419 (Ốc hương); L2519 (Lươn sống); L2619 (Tôm hùm)'
+  );
+  assert.equal(view.groups[0].formattedSampleDetails.includes('L2319; L2519 (Lươn sống)'), false);
+});
+
+test('sample details repeat a shared description per sample instead of grouping sample codes', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      id: 'REQ-DESC-SAME',
+      sampleList: ['L2519', 'L2319', 'L2419'],
+      sampleDescriptionMap: {
+        L2319: { nameSnapshot: 'Lươn sống' },
+        L2419: { nameSnapshot: 'Lươn sống' },
+        L2519: { nameSnapshot: 'Lươn sống' }
+      }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews([overview]);
+  assert.equal(
+    view.groups[0].formattedSampleDetails,
+    'L2319 (Lươn sống); L2419 (Lươn sống); L2519 (Lươn sống)'
+  );
+});
+
+test('sample details omit empty description parentheses without changing sample order', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      id: 'REQ-DESC-MISSING',
+      sampleList: ['L2519', 'L2319', 'L2419'],
+      sampleDescriptionMap: {
+        L2319: { nameSnapshot: 'Lươn sống' },
+        L2519: { nameSnapshot: 'Ốc hương' }
+      }
+    })
+  ], '2026-07-16', (_item, targetId) => targetId);
+
+  const [view] = buildDailyBatchViews([overview]);
+  assert.equal(view.groups[0].formattedSampleDetails, 'L2319 (Lươn sống); L2419; L2519 (Ốc hương)');
 });
 
 test('conflicting descriptions for the same sample are visible instead of silently overwritten', () => {

@@ -591,9 +591,8 @@ import { computeTargetSignature } from '../targets/target-scope-classifier';
 
       body.daily-checklist-printing #print-container .cl-print-compact-samples {
         margin-bottom: 1.5mm !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
         font-size: 8.5pt !important;
-        font-weight: 800 !important;
+        font-weight: 400 !important;
         overflow-wrap: anywhere !important;
       }
 
@@ -693,9 +692,19 @@ import { computeTargetSignature } from '../targets/target-scope-classifier';
       }
 
       body.daily-checklist-printing #print-container .cl-print-samples {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
         font-size: 9pt !important;
+        font-weight: 400 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-sample-code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
         font-weight: 800 !important;
+      }
+
+      body.daily-checklist-printing #print-container .cl-print-sample-description,
+      body.daily-checklist-printing #print-container .cl-print-sample-separator {
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-weight: 400 !important;
       }
 
       body.daily-checklist-printing #print-container .cl-print-targets {
@@ -852,7 +861,7 @@ export class DailyChecklistComponent implements OnDestroy {
           batch.sopName,
           batch.sopRef || '',
           ...batch.sourceBatches.map(source => source.requestId),
-          ...batch.groups.map(group => group.formattedDescriptions)
+          ...batch.groups.map(group => group.formattedSampleDetails)
         ].join(' ')).includes(search)) {
           return batch;
         }
@@ -861,7 +870,7 @@ export class DailyChecklistComponent implements OnDestroy {
           group.targetScope.headline,
           ...group.sampleIds,
           group.formattedSamples,
-          group.formattedDescriptions
+          group.formattedSampleDetails
         ].join(' ')).includes(search));
         if (matchingGroups.length === 0) return null;
         return {
