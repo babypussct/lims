@@ -2,28 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.20-b03
+## Phiên bản hiện tại: v26.08.22-b01
 
-### v26.08.20-b03
+### v26.08.22-b01
 
 #### 🚀 Điểm Nổi Bật Bản Này
 
-- Thao tác in và xem trước tài liệu Phiếu giao nhận mẫu trên điện thoại và máy tính bảng diễn ra an toàn và ổn định hơn.
-- Tự động tối ưu giao diện hiển thị cho các bảng tính dữ liệu khi xem trên thiết bị di động.
+- Quá trình đồng bộ mã nội bộ cho danh mục chất chuẩn số lượng lớn diễn ra an toàn, liền mạch và không bị gián đoạn quyền hạn giữa chừng.
+- Cửa sổ đồng bộ mã nội bộ hiển thị trạng thái hoàn tất rõ ràng, tự động quét xác minh và làm mới dữ liệu ngay sau khi cập nhật.
 
 #### ✨ Tính Năng Mới
 
-- Hỗ trợ xem trước mượt mà và đồng bộ các tài liệu giao nhận mẫu từ tệp PDF, bảng tính Excel đến các tệp hình ảnh và văn bản.
+- Không có thay đổi trong nhóm này.
 
 #### ⚡ Cải Tiến & Tối Ưu
 
-- Trải nghiệm xem bảng tính trên màn hình nhỏ được tự động mở rộng tối đa vùng dữ liệu quan sát.
-- Tính năng tìm kiếm tài liệu hỗ trợ nhận diện tiếng Việt không dấu chuẩn xác, giúp tra cứu nhanh chóng trong các thư mục.
-- Sao chép vùng dữ liệu bảng tính đã chọn giữ đúng cấu trúc dòng cột khi dán sang các ứng dụng khác.
+- Giao diện đồng bộ mã nội bộ phân định rõ giai đoạn cập nhật dữ liệu và giai đoạn quét xác minh, giúp người dùng dễ dàng theo dõi tiến trình thực tế.
+- Nếu bước làm mới dữ liệu sau đồng bộ gặp sự cố mạng, hệ thống vẫn giữ kết quả thành công và cho phép nhấn Quét lại để xác nhận.
 
 #### 🐛 Sửa Lỗi Hệ Thống
 
-- Khắc phục hiện tượng nút In PDF trong menu thao tác trên điện thoại có thể nhấn khi tài liệu chưa tải xong.
+- Khắc phục lỗi gián đoạn do thiếu quyền khi đồng bộ chuẩn hóa danh mục mã chất chuẩn và các liên kết mã cũ trên tập dữ liệu lớn.
+- Khắc phục hiện tượng thanh tiến độ đạt 100% nhưng giao diện chưa phản hồi trạng thái hoàn thành.
 
 ### v26.08.20-b01
 

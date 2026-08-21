@@ -623,6 +623,56 @@ test('planInternalIdBatches keeps correlated reference_standards and standard_co
   assert.equal(stdChunkIndex, regChunkIndex, 'Standard and Registry must be in the EXACT same batch chunk');
 });
 
+test('planInternalIdBatches keeps a legacy registry alias migration with its canonical target across the 249-change boundary', async () => {
+  const { planInternalIdBatches } = await import('../../../shared/utils/standard-internal-id');
+  const changes: StandardInternalIdSyncChange[] = [];
+
+  // Fill almost one whole chunk. Without correlating __migration__ with its
+  // migratedTo target, the lowercase alias sorts before the uppercase
+  // canonical document and the planner can split the getAfter dependency.
+  for (let i = 0; i < 248; i++) {
+    changes.push({
+      collection: 'reference_standard_logs',
+      documentId: `filler-${String(i).padStart(3, '0')}::log-1`,
+      field: 'internalId',
+      before: 'aa01',
+      after: 'AA01',
+      reason: 'filler',
+    });
+  }
+  changes.push({
+    collection: 'standard_code_registry',
+    documentId: 'ba01',
+    field: '__migration__',
+    before: { migrationStatus: null, migratedTo: null },
+    after: { migrationStatus: 'MIGRATED', migratedTo: 'BA01' },
+    reason: 'mark legacy alias migrated',
+  });
+  changes.push({
+    collection: 'standard_code_registry',
+    documentId: 'BA01',
+    field: '__document__',
+    before: null,
+    after: { id: 'BA01', internal_id: 'BA01', status: 'AVAILABLE', assignmentCount: 0 },
+    reason: 'create canonical registry target',
+  });
+
+  const plan = planInternalIdBatches(changes, 249);
+  assert.equal(plan.totalBatches, 2);
+
+  const aliasChunkIndex = plan.chunks.findIndex(chunk =>
+    chunk.changes.some(c => c.collection === 'standard_code_registry' && c.documentId === 'ba01')
+  );
+  const canonicalChunkIndex = plan.chunks.findIndex(chunk =>
+    chunk.changes.some(c => c.collection === 'standard_code_registry' && c.documentId === 'BA01')
+  );
+
+  assert.ok(aliasChunkIndex >= 0);
+  assert.ok(canonicalChunkIndex >= 0);
+  assert.equal(aliasChunkIndex, canonicalChunkIndex, 'Alias migration and canonical registry target must be atomic');
+  assert.equal(plan.chunks[aliasChunkIndex].changeCount, 2);
+});
+
 test('StandardSyncPartialFailureError retains completedBatchIds, completedChangesCount and failedBatchIndex', () => {
   const { StandardSyncPartialFailureError } = require('../../../shared/utils/standard-internal-id');
 

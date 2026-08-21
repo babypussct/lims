@@ -430,6 +430,17 @@ export function planInternalIdBatches(
           }
         }
       } else if (c.collection === 'standard_code_registry') {
+        // A legacy alias migration is authorized only when Firestore can see
+        // its canonical target via getAfter(). Keep both documents in the
+        // same atomic write so a chunk boundary can never separate them.
+        if (c.field === '__migration__' && c.after && typeof c.after === 'object' && 'migratedTo' in c.after) {
+          const migratedTo = normalizeInternalId((c.after as any).migratedTo);
+          const canonicalKey = `standard_code_registry/${migratedTo}`;
+          if (isValidInternalId(migratedTo) && docMap.has(canonicalKey)) {
+            union(docKey, canonicalKey);
+          }
+        }
+
         // Link to standard if after or before references a standard ID
         const checkOwner = (payload: unknown) => {
           if (payload && typeof payload === 'object' && 'currentStandardId' in payload) {
@@ -456,7 +467,7 @@ export function planInternalIdBatches(
     clusterMap.set(root, cluster);
   }
 
-  // Sort clusters deterministically for stable planning
+  // Sort clusters deterministically for stable planning.
   const clusters = [...clusterMap.entries()]
     .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
     .map(([, cluster]) => cluster);

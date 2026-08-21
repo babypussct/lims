@@ -188,11 +188,22 @@ export type { CorrectionValidationResult };
                 </div>
               }
 
-              @if (isApplying() && applyProgress(); as progress) {
-                <div class="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-2.5">
+              @if (applyProgress(); as progress) {
+                <div
+                  class="rounded-2xl border bg-white dark:bg-slate-900 p-4 shadow-sm space-y-2.5"
+                  [ngClass]="progress.phase === 'ALL_COMPLETED'
+                    ? 'border-emerald-200 dark:border-emerald-900/60'
+                    : 'border-indigo-200 dark:border-indigo-900/60'"
+                >
                   <div class="flex items-center justify-between gap-2 text-xs font-black">
-                    <span class="text-indigo-700 dark:text-indigo-300">
-                      <i class="fa-solid fa-spinner fa-spin mr-1.5" aria-hidden="true"></i>
+                    <span [ngClass]="progress.phase === 'ALL_COMPLETED'
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-indigo-700 dark:text-indigo-300'">
+                      @if (progress.phase === 'ALL_COMPLETED') {
+                        <i class="fa-solid fa-circle-check mr-1.5" aria-hidden="true"></i>
+                      } @else {
+                        <i class="fa-solid fa-spinner fa-spin mr-1.5" aria-hidden="true"></i>
+                      }
                       {{progress.message || 'Đang thực hiện đồng bộ...'}}
                     </span>
                     <span class="font-mono text-slate-600 dark:text-slate-300">{{progress.percent}}%</span>
@@ -685,8 +696,9 @@ export class StandardsInternalIdSyncModalComponent {
     }
   }
 
-  async scan(): Promise<void> {
+  async scan(preserveApplyProgress = false): Promise<void> {
     if (this.isScanning() || this.isApplying()) return;
+    if (!preserveApplyProgress) this.applyProgress.set(null);
     this.isScanning.set(true);
     this.errorMessage.set('');
     try {
@@ -983,6 +995,7 @@ export class StandardsInternalIdSyncModalComponent {
     this.errorMessage.set('');
     this.partialFailure.set(null);
     this.applyProgress.set(null);
+    let appliedBatchIds: string[] | null = null;
     try {
       const batchIds = await this.stdService.applyInternalIdSync(
         current,
@@ -992,9 +1005,9 @@ export class StandardsInternalIdSyncModalComponent {
           this.applyProgress.set(progress);
         },
       );
+      appliedBatchIds = batchIds;
       this.toast.show(`Đã đồng bộ mã nội bộ qua ${batchIds.length} batch.`, 'success');
       this.corrections.set({});
-      this.setReport(await this.stdService.scanInternalIdSync());
     } catch (error: any) {
       if (error instanceof StandardSyncPartialFailureError || error?.name === 'StandardSyncPartialFailureError') {
         this.partialFailure.set(error);
@@ -1005,8 +1018,44 @@ export class StandardsInternalIdSyncModalComponent {
       }
     } finally {
       this.isApplying.set(false);
-      this.applyProgress.set(null);
+      if (!appliedBatchIds) this.applyProgress.set(null);
     }
+
+    if (!appliedBatchIds) return;
+
+    const completedProgress = this.applyProgress() || {
+      currentBatch: appliedBatchIds.length,
+      totalBatches: appliedBatchIds.length,
+      completedChanges: summary.totalChanges,
+      totalChanges: summary.totalChanges,
+      percent: 100,
+      phase: 'ALL_COMPLETED' as const,
+      message: `Đã đồng bộ thành công toàn bộ ${appliedBatchIds.length} batch (${summary.totalChanges} thay đổi).`,
+    };
+
+    this.applyProgress.set({
+      ...completedProgress,
+      phase: 'RE_SCANNING',
+      message: `Đã ghi xong ${appliedBatchIds.length}/${appliedBatchIds.length} batch. Đang quét xác minh dữ liệu sau đồng bộ...`,
+    });
+
+    await this.scan(true);
+
+    if (this.errorMessage()) {
+      this.applyProgress.set({
+        ...completedProgress,
+        phase: 'ALL_COMPLETED',
+        message: `Đồng bộ đã hoàn tất ${appliedBatchIds.length} batch; chưa làm mới được dữ liệu hiển thị. Có thể bấm “Quét lại” để xác minh lại.`,
+      });
+      this.toast.show('Đồng bộ đã hoàn tất, nhưng bước quét xác minh sau đồng bộ chưa thành công.', 'warning');
+      return;
+    }
+
+    this.applyProgress.set({
+      ...completedProgress,
+      phase: 'ALL_COMPLETED',
+      message: `Hoàn tất đồng bộ ${appliedBatchIds.length} batch (${completedProgress.totalChanges} thay đổi). Dữ liệu đã được quét xác minh và làm mới.`,
+    });
   }
 
   async retryRemainingAfterPartialFailure(): Promise<void> {

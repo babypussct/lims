@@ -773,6 +773,49 @@ test('legacy registry aliases can migrate only to a canonical target without del
   await assertFails(deleteDoc(doc(managerDb, legacyAdPath)));
 });
 
+test('legacy registry alias migration is denied when split before its canonical target and succeeds atomically', async () => {
+  const managerDb = dbFor(users.manager);
+  const legacyPath = `artifacts/${APP_ID}/standard_code_registry/ba01`;
+  const canonicalPath = `artifacts/${APP_ID}/standard_code_registry/BA01`;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    await setDoc(doc(db, legacyPath), {
+      id: 'ba01',
+      internal_id: 'ba01',
+      status: 'AVAILABLE',
+      assignmentCount: 0,
+      lastUpdated: seedTime,
+    });
+  });
+
+  // This is exactly the unsafe state produced when the planner puts the alias
+  // in an earlier Firestore batch than the canonical target.
+  await assertFails(updateDoc(doc(managerDb, legacyPath), {
+    migrationStatus: 'MIGRATED',
+    migratedTo: 'BA01',
+    migratedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp(),
+  }));
+
+  const atomicBatch = writeBatch(managerDb);
+  atomicBatch.set(doc(managerDb, canonicalPath), {
+    id: 'BA01',
+    internal_id: 'BA01',
+    status: 'AVAILABLE',
+    assignmentCount: 0,
+    lastUpdated: serverTimestamp(),
+  });
+  atomicBatch.update(doc(managerDb, legacyPath), {
+    migrationStatus: 'MIGRATED',
+    migratedTo: 'BA01',
+    migratedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp(),
+  });
+  await assertSucceeds(atomicBatch.commit());
+});
+
 test('the SDHET business code is accepted while unrelated malformed codes remain denied', async () => {
   const managerDb = dbFor(users.manager);
   await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), {

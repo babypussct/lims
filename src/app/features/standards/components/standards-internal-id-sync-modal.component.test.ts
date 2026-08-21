@@ -538,3 +538,134 @@ test('behavioral: modal component handles real-time progress and partial failure
   assert.equal(modal.errorMessage(), '');
   assert.equal(scanCount, 1);
 });
+
+test('behavioral: successful apply leaves 100% state, then verifies after releasing apply busy state', async () => {
+  const { StandardsInternalIdSyncModalComponent } = await import('./standards-internal-id-sync-modal.component');
+
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype);
+  modal.report = signal({
+    generatedAt: Date.now(),
+    standardsCount: 1,
+    requestsCount: 0,
+    usageCount: 0,
+    registryCount: 0,
+    issues: [],
+    safeChanges: [
+      { collection: 'reference_standards', documentId: 'std-1', field: 'internal_id', before: 'aa01', after: 'AA01', reason: 'norm' },
+    ],
+    conflicts: [],
+  });
+  modal.corrections = signal({});
+  modal.selectedSafeChangeKeys = signal(null);
+  modal.canApply = () => true;
+  modal.isApplying = signal(false);
+  modal.isScanning = signal(false);
+  modal.isBusy = () => modal.isApplying() || modal.isScanning();
+  modal.applyProgress = signal(null);
+  modal.partialFailure = signal(null);
+  modal.errorMessage = signal('');
+  modal.applySummary = () => ({
+    estimatedBatches: 1,
+    totalChanges: 249,
+    totalDocuments: 120,
+    actualWrites: 121,
+    physicalStandardsCount: 120,
+    manualCount: 0,
+    registryCount: 0,
+    requestsCount: 0,
+    usageCount: 0,
+    blockingIssuesCount: 0,
+    byChangeType: { codeNormalization: 120, searchKeyUpdate: 129, manualCorrection: 0, registrySync: 0, snapshotUpdate: 0, referenceRepair: 0 },
+  });
+  modal.confirmation = { confirm: async () => true };
+
+  const toasts: { message: string; type: string }[] = [];
+  modal.toast = { show: (message: string, type: string) => toasts.push({ message, type }) };
+
+  let verificationSawApplying = true;
+  modal.scan = async () => {
+    verificationSawApplying = modal.isApplying();
+    modal.errorMessage.set('');
+  };
+
+  modal.stdService = {
+    applyInternalIdSync: async (_report: any, _corr: any, _keys: any, onProgress: any) => {
+      onProgress({
+        currentBatch: 1,
+        totalBatches: 1,
+        completedChanges: 249,
+        totalChanges: 249,
+        percent: 100,
+        phase: 'BATCH_COMPLETED',
+        message: 'Đã hoàn thành batch 1/1.',
+      });
+      onProgress({
+        currentBatch: 1,
+        totalBatches: 1,
+        completedChanges: 249,
+        totalChanges: 249,
+        percent: 100,
+        phase: 'ALL_COMPLETED',
+        message: 'Đã đồng bộ thành công toàn bộ 1 batch (249 thay đổi).',
+      });
+      return ['batch-001'];
+    },
+  };
+
+  modal.apply = StandardsInternalIdSyncModalComponent.prototype.apply.bind(modal);
+
+  await modal.apply();
+
+  assert.equal(verificationSawApplying, false);
+  assert.equal(modal.isApplying(), false);
+  assert.equal(modal.applyProgress()?.phase, 'ALL_COMPLETED');
+  assert.equal(modal.applyProgress()?.percent, 100);
+  assert.match(modal.applyProgress()?.message || '', /Dữ liệu đã được quét xác minh và làm mới/);
+  assert.equal(toasts[0]?.type, 'success');
+  assert.match(toasts[0]?.message || '', /1 batch/);
+});
+
+test('behavioral: post-apply verification failure does not turn a committed sync into an apply failure', async () => {
+  const { StandardsInternalIdSyncModalComponent } = await import('./standards-internal-id-sync-modal.component');
+
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype);
+  modal.report = signal({ generatedAt: Date.now(), standardsCount: 1, requestsCount: 0, usageCount: 0, registryCount: 0, issues: [], safeChanges: [{}], conflicts: [] });
+  modal.corrections = signal({});
+  modal.selectedSafeChangeKeys = signal(null);
+  modal.canApply = () => true;
+  modal.isApplying = signal(false);
+  modal.isScanning = signal(false);
+  modal.isBusy = () => modal.isApplying() || modal.isScanning();
+  modal.applyProgress = signal(null);
+  modal.partialFailure = signal(null);
+  modal.errorMessage = signal('');
+  modal.applySummary = () => ({
+    estimatedBatches: 1, totalChanges: 1, totalDocuments: 1, actualWrites: 2,
+    physicalStandardsCount: 1, manualCount: 0, registryCount: 0, requestsCount: 0, usageCount: 0,
+    blockingIssuesCount: 0,
+    byChangeType: { codeNormalization: 1, searchKeyUpdate: 0, manualCorrection: 0, registrySync: 0, snapshotUpdate: 0, referenceRepair: 0 },
+  });
+  modal.confirmation = { confirm: async () => true };
+  const toasts: { message: string; type: string }[] = [];
+  modal.toast = { show: (message: string, type: string) => toasts.push({ message, type }) };
+  modal.scan = async () => {
+    modal.errorMessage.set('Không thể quét dữ liệu mã nội bộ.');
+  };
+  modal.stdService = {
+    applyInternalIdSync: async (_report: any, _corr: any, _keys: any, onProgress: any) => {
+      onProgress({ currentBatch: 1, totalBatches: 1, completedChanges: 1, totalChanges: 1, percent: 100, phase: 'ALL_COMPLETED' });
+      return ['batch-001'];
+    },
+  };
+
+  modal.apply = StandardsInternalIdSyncModalComponent.prototype.apply.bind(modal);
+
+  await modal.apply();
+
+  assert.equal(modal.partialFailure(), null);
+  assert.equal(modal.applyProgress()?.phase, 'ALL_COMPLETED');
+  assert.match(modal.applyProgress()?.message || '', /Đồng bộ đã hoàn tất 1 batch/);
+  assert.match(modal.errorMessage(), /Không thể quét dữ liệu/);
+  assert.equal(toasts.some(item => item.type === 'success'), true);
+  assert.equal(toasts.some(item => item.type === 'warning'), true);
+});
