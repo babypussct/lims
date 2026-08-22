@@ -41,17 +41,17 @@ type SheetStyle = NonNullable<CellObject['s']> & {
   border?: Record<string, Record<string, unknown> | undefined>;
 };
 
-type SheetColumnInfo = {
+interface SheetColumnInfo {
   hidden?: boolean;
   wpx?: number;
   wch?: number;
-};
+}
 
-type SheetRowInfo = {
+interface SheetRowInfo {
   hidden?: boolean;
   hpx?: number;
   hpt?: number;
-};
+}
 
 function asBooleanNumber(value: unknown): 0 | 1 {
   return value ? TRUE : FALSE;

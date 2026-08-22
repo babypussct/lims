@@ -16,6 +16,22 @@ export const SPECIAL_INTERNAL_ID = 'SDHET';
 export const STANDARD_INTERNAL_ID_RULE_DESCRIPTION =
   '4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.';
 
+/**
+ * Firestore still accepts far more writes than this, but the sync audit keeps
+ * a small gap below the historical 250-change UI ceiling.
+ *
+ * IMPORTANT: this is only a logical change-count ceiling. Security Rules also
+ * have a separate document-access-call budget, handled below.
+ */
+export const INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH = 249;
+
+/**
+ * Batched writes have a 20-document Security Rules access-call ceiling. Keep
+ * four calls in reserve for shared auth/profile/role checks and model the
+ * remaining cross-document lookups conservatively.
+ */
+export const INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST = 16;
+
 export type StandardInternalIdAssessmentKind = 'VALID' | 'NORMALIZABLE' | 'MISSING' | 'INVALID_FORMAT';
 
 export interface StandardInternalIdAssessment {
@@ -259,7 +275,7 @@ export function calculateInternalIdApplySummary(
   }
 
   const allPlannedChanges = [...safe, ...manualChanges];
-  const batchPlan = planInternalIdBatches(allPlannedChanges, 249);
+  const batchPlan = planInternalIdBatches(allPlannedChanges);
 
   const totalChanges = safe.length + totalManualFieldChanges;
   const totalDocuments = documentKeys.size;
@@ -354,6 +370,7 @@ export interface InternalIdBatchChunkPlan {
   readonly changeCount: number;
   readonly documentCount: number;
   readonly clusterCount: number;
+  readonly estimatedRuleAccessCost: number;
 }
 
 export interface InternalIdBatchPlan {
@@ -362,6 +379,94 @@ export interface InternalIdBatchPlan {
   readonly totalChanges: number;
   readonly totalDocuments: number;
   readonly maxChangesPerBatch: number;
+  readonly maxRuleAccessCostPerBatch: number;
+}
+
+type InternalIdRuleAccessCosts = Map<string, number>;
+
+function mergeRuleAccessCosts(target: InternalIdRuleAccessCosts, source: InternalIdRuleAccessCosts): void {
+  for (const [key, cost] of source.entries()) {
+    target.set(key, Math.max(target.get(key) || 0, cost));
+  }
+}
+
+function totalRuleAccessCost(costs: InternalIdRuleAccessCosts): number {
+  let total = 0;
+  for (const cost of costs.values()) total += cost;
+  return total;
+}
+
+/**
+ * Estimate only the cross-document lookups that vary with the business row.
+ * Shared user/profile/role reads are covered by the four-call reserve above.
+ * A weight of 2 is intentionally conservative for paths used through an
+ * exists/existsAfter + get/getAfter pair because emulator caching is not a
+ * reliable production safety guarantee.
+ */
+function estimateRuleAccessCostsForDocument(
+  docKey: string,
+  docChanges: readonly StandardInternalIdSyncChange[],
+): InternalIdRuleAccessCosts {
+  const costs: InternalIdRuleAccessCosts = new Map();
+  const add = (key: string, cost = 2) => {
+    costs.set(key, Math.max(costs.get(key) || 0, cost));
+  };
+  const first = docChanges[0];
+  if (!first) return costs;
+
+  if (first.collection === 'reference_standards') {
+    const internalIdChange = docChanges.find(change => change.field === 'internal_id');
+    if (internalIdChange?.after) {
+      const code = normalizeInternalId(internalIdChange.after);
+      if (isValidInternalId(code)) add(`standard_code_registry/${code}`);
+    }
+    return costs;
+  }
+
+  if (first.collection === 'reference_standard_logs') {
+    const parentStandardId = String(first.documentId || '').split('::')[0]?.trim();
+    if (parentStandardId) add(`reference_standards/${parentStandardId}`);
+    return costs;
+  }
+
+  // These repair rules consult the referenced standard before the broader
+  // standard_edit fallback is reached. We do not have the full source row in
+  // the planner, so use a per-document dependency key as a safe upper bound.
+  if (first.collection === 'standard_requests' || first.collection === 'standard_usages') {
+    add(`snapshot-parent/${docKey}`);
+    return costs;
+  }
+
+  if (first.collection === 'standard_code_registry') {
+    for (const change of docChanges) {
+      if (change.field === '__migration__' && change.after && typeof change.after === 'object') {
+        const migratedTo = normalizeInternalId((change.after as any).migratedTo);
+        if (isValidInternalId(migratedTo)) add(`standard_code_registry/${migratedTo}`);
+        continue;
+      }
+      if (change.field !== '__document__') continue;
+
+      // canReuseAssignedRegistrySlot() probes the registry path even when no
+      // holder lookup is ultimately required.
+      add(`standard_code_registry/${first.documentId}`, 1);
+
+      const after = change.after && typeof change.after === 'object' ? change.after as any : null;
+      const before = change.before && typeof change.before === 'object' ? change.before as any : null;
+      const nextHolderId = String(after?.currentStandardId || '').trim();
+      const previousHolderId = String(before?.currentStandardId || '').trim();
+      if (after?.status === 'ASSIGNED' && nextHolderId) {
+        add(`reference_standards/${nextHolderId}`);
+      }
+      if (
+        before?.status === 'ASSIGNED' && after?.status === 'ASSIGNED' &&
+        previousHolderId && previousHolderId !== nextHolderId
+      ) {
+        add(`reference_standards/${previousHolderId}`);
+      }
+    }
+  }
+
+  return costs;
 }
 
 /**
@@ -370,10 +475,14 @@ export interface InternalIdBatchPlan {
  */
 export function planInternalIdBatches(
   changes: readonly StandardInternalIdSyncChange[],
-  maxChangesPerBatch = 249,
+  maxChangesPerBatch = INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH,
+  maxRuleAccessCostPerBatch = INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST,
 ): InternalIdBatchPlan {
   if (maxChangesPerBatch < 1) {
     throw new Error('Giới hạn batch phải lớn hơn 0.');
+  }
+  if (maxRuleAccessCostPerBatch < 1) {
+    throw new Error('Ngân sách truy cập Security Rules phải lớn hơn 0.');
   }
   if (!changes || changes.length === 0) {
     return {
@@ -382,6 +491,7 @@ export function planInternalIdBatches(
       totalChanges: 0,
       totalDocuments: 0,
       maxChangesPerBatch,
+      maxRuleAccessCostPerBatch,
     };
   }
 
@@ -453,17 +563,35 @@ export function planInternalIdBatches(
         };
         checkOwner(c.after);
         checkOwner(c.before);
+      } else if (c.collection === 'reference_standard_logs') {
+        // A nested snapshot may validate against getAfter(parent). When that
+        // parent is also being normalized, keep both writes atomic instead of
+        // letting a chunk boundary expose the legacy parent state.
+        const parentStandardId = String(c.documentId || '').split('::')[0]?.trim();
+        const standardKey = `reference_standards/${parentStandardId}`;
+        if (parentStandardId && docMap.has(standardKey)) {
+          union(docKey, standardKey);
+        }
       }
     }
   }
 
   // 3. Assemble clusters
-  const clusterMap = new Map<string, { changes: StandardInternalIdSyncChange[]; docKeys: Set<string> }>();
+  const clusterMap = new Map<string, {
+    changes: StandardInternalIdSyncChange[];
+    docKeys: Set<string>;
+    ruleAccessCosts: InternalIdRuleAccessCosts;
+  }>();
   for (const [docKey, docChanges] of docMap.entries()) {
     const root = find(docKey);
-    const cluster = clusterMap.get(root) || { changes: [], docKeys: new Set<string>() };
+    const cluster = clusterMap.get(root) || {
+      changes: [],
+      docKeys: new Set<string>(),
+      ruleAccessCosts: new Map<string, number>(),
+    };
     cluster.changes.push(...docChanges);
     cluster.docKeys.add(docKey);
+    mergeRuleAccessCosts(cluster.ruleAccessCosts, estimateRuleAccessCostsForDocument(docKey, docChanges));
     clusterMap.set(root, cluster);
   }
 
@@ -473,33 +601,59 @@ export function planInternalIdBatches(
     .map(([, cluster]) => cluster);
 
   // 4. Pack clusters into batch chunks
-  const rawChunks: { changes: StandardInternalIdSyncChange[]; documentCount: number; clusterCount: number }[] = [];
+  const rawChunks: {
+    changes: StandardInternalIdSyncChange[];
+    documentCount: number;
+    clusterCount: number;
+    estimatedRuleAccessCost: number;
+  }[] = [];
   let currentChunk: StandardInternalIdSyncChange[] = [];
   let currentDocs = new Set<string>();
   let currentClusterCount = 0;
+  let currentRuleAccessCosts: InternalIdRuleAccessCosts = new Map();
 
   for (const cluster of clusters) {
+    const clusterRuleAccessCost = totalRuleAccessCost(cluster.ruleAccessCosts);
     if (cluster.changes.length > maxChangesPerBatch) {
       const firstDoc = cluster.changes[0] ? docKeyOf(cluster.changes[0]) : 'không rõ';
       throw new Error(
         `Cụm thay đổi phụ thuộc của tài liệu ${firstDoc} có ${cluster.changes.length} thay đổi, vượt giới hạn an toàn ${maxChangesPerBatch}.`
       );
     }
+    if (clusterRuleAccessCost > maxRuleAccessCostPerBatch) {
+      const firstDoc = cluster.changes[0] ? docKeyOf(cluster.changes[0]) : 'không rõ';
+      throw new Error(
+        `Cụm thay đổi phụ thuộc của tài liệu ${firstDoc} cần khoảng ${clusterRuleAccessCost} lượt truy cập Security Rules, vượt ngân sách an toàn ${maxRuleAccessCostPerBatch}.`
+      );
+    }
 
-    if (currentChunk.length > 0 && currentChunk.length + cluster.changes.length > maxChangesPerBatch) {
+    const mergedRuleAccessCosts = new Map(currentRuleAccessCosts);
+    mergeRuleAccessCosts(mergedRuleAccessCosts, cluster.ruleAccessCosts);
+    const mergedRuleAccessCost = totalRuleAccessCost(mergedRuleAccessCosts);
+
+    if (
+      currentChunk.length > 0 &&
+      (
+        currentChunk.length + cluster.changes.length > maxChangesPerBatch ||
+        mergedRuleAccessCost > maxRuleAccessCostPerBatch
+      )
+    ) {
       rawChunks.push({
         changes: currentChunk,
         documentCount: currentDocs.size,
         clusterCount: currentClusterCount,
+        estimatedRuleAccessCost: totalRuleAccessCost(currentRuleAccessCosts),
       });
       currentChunk = [];
       currentDocs = new Set<string>();
       currentClusterCount = 0;
+      currentRuleAccessCosts = new Map();
     }
 
     currentChunk.push(...cluster.changes);
     for (const dk of cluster.docKeys) currentDocs.add(dk);
     currentClusterCount += 1;
+    mergeRuleAccessCosts(currentRuleAccessCosts, cluster.ruleAccessCosts);
   }
 
   if (currentChunk.length > 0) {
@@ -507,6 +661,7 @@ export function planInternalIdBatches(
       changes: currentChunk,
       documentCount: currentDocs.size,
       clusterCount: currentClusterCount,
+      estimatedRuleAccessCost: totalRuleAccessCost(currentRuleAccessCosts),
     });
   }
 
@@ -516,6 +671,7 @@ export function planInternalIdBatches(
     changeCount: chunk.changes.length,
     documentCount: chunk.documentCount,
     clusterCount: chunk.clusterCount,
+    estimatedRuleAccessCost: chunk.estimatedRuleAccessCost,
   }));
 
   const totalDocuments = docMap.size;
@@ -525,6 +681,7 @@ export function planInternalIdBatches(
     totalChanges: changes.length,
     totalDocuments,
     maxChangesPerBatch,
+    maxRuleAccessCostPerBatch,
   };
 }
 

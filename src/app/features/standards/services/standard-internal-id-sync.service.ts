@@ -23,6 +23,8 @@ import {
 } from '../../../core/models/standard.model';
 import {
   assessInternalId,
+  INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH,
+  INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST,
   isCurrentStandardLifecycle,
   isValidInternalId,
   normalizeInternalId,
@@ -55,12 +57,9 @@ export class StandardInternalIdSyncService {
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
 
-  /**
-   * Keep every logical apply below the requested 250-change safety ceiling.
-   * The value is intentionally 249 rather than 250 because the UI and the
-   * operator-facing error message both promise "smaller than 250".
-   */
-  private readonly MAX_APPLY_CHANGES = 249;
+  /** 249 is only the logical change ceiling; rule-access cost is capped separately. */
+  private readonly MAX_APPLY_CHANGES = INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH;
+  private readonly MAX_RULE_ACCESS_COST = INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST;
 
   async scan(): Promise<StandardInternalIdSyncReport> {
     if (!this.auth.canEditStandards()) {
@@ -478,7 +477,11 @@ export class StandardInternalIdSyncService {
     if (mergedChanges.length === 0) throw new Error('Không có thay đổi an toàn hoặc mã sửa nào để áp dụng.');
 
     // Plan atomic clusters and batch chunks using the shared batch planner
-    const batchPlan = planInternalIdBatches(mergedChanges, this.MAX_APPLY_CHANGES);
+    const batchPlan = planInternalIdBatches(
+      mergedChanges,
+      this.MAX_APPLY_CHANGES,
+      this.MAX_RULE_ACCESS_COST,
+    );
     const currentUser = this.auth.currentUser();
     const batchIds: string[] = [];
     const totalBatches = batchPlan.totalBatches;

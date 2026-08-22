@@ -10,7 +10,7 @@ const componentPath = resolve(
   'src/app/features/standards/components/standards-internal-id-sync-modal.component.ts',
 );
 const source = readFileSync(componentPath, 'utf8');
-const constructorEffect = source.slice(source.indexOf('constructor()'), source.indexOf('async scan():'));
+const constructorEffect = source.slice(source.indexOf('constructor()'), source.indexOf('async scan('));
 
 test('auto-scan keeps busy signals out of the open-state effect dependencies', () => {
   assert.match(source, /signal, untracked \} from '@angular\/core';/);
@@ -64,7 +64,7 @@ test('sync modal exposes selectable groups and searchable warning details', () =
   assert.match(source, /quickBatchTarget = computed/);
   assert.match(source, /Chọn nhanh batch/);
   assert.match(source, /Chọn tất cả/);
-  assert.match(source, /dưới 250 thay đổi/);
+  assert.match(source, /giới hạn an toàn Firestore Security Rules/);
 });
 
 test('sync modal includes MISSING_REFERENCE and PARENT_REFERENCE_MISMATCH under reference filter', () => {
@@ -668,4 +668,51 @@ test('behavioral: post-apply verification failure does not turn a committed sync
   assert.match(modal.errorMessage(), /Không thể quét dữ liệu/);
   assert.equal(toasts.some(item => item.type === 'success'), true);
   assert.equal(toasts.some(item => item.type === 'warning'), true);
+});
+
+test('behavioral: a stalled post-apply verification scan times out instead of hanging completion forever', async () => {
+  const { StandardsInternalIdSyncModalComponent } = await import('./standards-internal-id-sync-modal.component');
+
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype) as any;
+  modal.report = signal({ generatedAt: Date.now(), standardsCount: 1, requestsCount: 0, usageCount: 0, registryCount: 0, issues: [], safeChanges: [{}], conflicts: [] });
+  modal.corrections = signal({});
+  modal.selectedSafeChangeKeys = signal(null);
+  modal.isApplying = signal(false);
+  modal.isScanning = signal(false);
+  modal.isBusy = () => modal.isApplying() || modal.isScanning();
+  modal.hasInvalidCorrections = () => false;
+  modal.applyProgress = signal(null);
+  modal.partialFailure = signal(null);
+  modal.errorMessage = signal('');
+  modal.POST_APPLY_VERIFICATION_TIMEOUT_MS = 5;
+  modal.applySummary = () => ({
+    estimatedBatches: 1, totalChanges: 1, totalDocuments: 1, actualWrites: 2,
+    physicalStandardsCount: 1, manualCount: 0, registryCount: 0, requestsCount: 0, usageCount: 0,
+    blockingIssuesCount: 0,
+    byChangeType: { codeNormalization: 1, searchKeyUpdate: 0, manualCorrection: 0, registrySync: 0, snapshotUpdate: 0, referenceRepair: 0 },
+  });
+  modal.confirmation = { confirm: async () => true };
+  const toasts: { message: string; type: string }[] = [];
+  modal.toast = { show: (message: string, type: string) => toasts.push({ message, type }) };
+  modal.stdService = {
+    applyInternalIdSync: async (_report: any, _corr: any, _keys: any, onProgress: any) => {
+      onProgress({ currentBatch: 1, totalBatches: 1, completedChanges: 1, totalChanges: 1, percent: 100, phase: 'ALL_COMPLETED' });
+      return ['batch-001'];
+    },
+    scanInternalIdSync: () => new Promise(() => {}),
+  };
+
+  modal.canApply = StandardsInternalIdSyncModalComponent.prototype.canApply.bind(modal);
+  modal.scan = StandardsInternalIdSyncModalComponent.prototype.scan.bind(modal);
+  modal.apply = StandardsInternalIdSyncModalComponent.prototype.apply.bind(modal);
+
+  await modal.apply();
+
+  assert.equal(modal.isApplying(), false);
+  assert.equal(modal.isScanning(), false);
+  assert.equal(modal.applyProgress()?.phase, 'ALL_COMPLETED');
+  assert.match(modal.errorMessage(), /quét xác minh sau đồng bộ mất quá lâu/);
+  assert.match(modal.applyProgress()?.message || '', /Đồng bộ đã hoàn tất 1 batch/);
+  assert.equal(toasts.some((item: any) => item.type === 'success'), true);
+  assert.equal(toasts.some((item: any) => item.type === 'warning'), true);
 });

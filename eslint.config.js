@@ -39,6 +39,7 @@ module.exports = defineConfig([
       "no-control-regex": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "@typescript-eslint/no-empty-function": "off",
+      "@typescript-eslint/no-require-imports": "off",
       "@angular-eslint/no-input-rename": "off",
       "@angular-eslint/no-output-native": "off",
     },

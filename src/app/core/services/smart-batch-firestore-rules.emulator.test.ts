@@ -816,6 +816,117 @@ test('legacy registry alias migration is denied when split before its canonical 
   await assertSucceeds(atomicBatch.commit());
 });
 
+test('internal-id snapshot repair batches are constrained by Firestore rule document-access limits', async () => {
+  const managerDb = dbFor(users.manager);
+  const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+
+  const seedRepairSet = async (prefix: string, count: number) => {
+    await env.withSecurityRulesDisabled(async context => {
+      const db = context.firestore();
+      const writes: Promise<unknown>[] = [];
+      for (let i = 0; i < count; i++) {
+        const suffix = i.toString(36).toUpperCase().padStart(3, '0');
+        const code = `A${suffix}`;
+        const standardId = `${prefix}-std-${i}`;
+        const logId = `${prefix}-log-${i}`;
+        writes.push(setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/${standardId}`), {
+          id: standardId,
+          name: `Rule budget ${i}`,
+          internal_id: code,
+          initial_amount: 10,
+          current_amount: 10,
+          unit: 'mg',
+          status: 'AVAILABLE',
+          lifecycle_status: 'ACTIVE',
+          lastUpdated: seedTime,
+        }));
+        writes.push(setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/${standardId}/logs/${logId}`), {
+          id: logId,
+          standardId,
+          internalId: code.toLowerCase(),
+          lastUpdated: seedTime,
+        }));
+      }
+      await Promise.all(writes);
+    });
+  };
+
+  const buildRepairBatch = (prefix: string, count: number) => {
+    const batch = writeBatch(managerDb);
+    for (let i = 0; i < count; i++) {
+      const suffix = i.toString(36).toUpperCase().padStart(3, '0');
+      const code = `A${suffix}`;
+      const standardId = `${prefix}-std-${i}`;
+      const logId = `${prefix}-log-${i}`;
+      batch.update(doc(managerDb, `artifacts/${APP_ID}/reference_standards/${standardId}/logs/${logId}`), {
+        internalId: code,
+        lastUpdated: serverTimestamp(),
+      });
+    }
+    batch.set(doc(managerDb, `artifacts/${APP_ID}/standard_code_sync_batches/${prefix}-audit`), {
+      status: 'APPLIED',
+      generatedAt: 1_700_000_000_000,
+      recordCount: count,
+      changes: [{ kind: 'rule-budget-regression' }],
+      createdAt: serverTimestamp(),
+      createdBy: users.manager.uid,
+    });
+    return batch;
+  };
+
+  await seedRepairSet('within-budget', 7);
+  await assertSucceeds(buildRepairBatch('within-budget', 7).commit());
+
+  await seedRepairSet('over-budget', 20);
+  await assertFails(buildRepairBatch('over-budget', 20).commit());
+});
+
+test('nested log normalization can read a parent normalized in the same atomic batch', async () => {
+  const managerDb = dbFor(users.manager);
+  const standardPath = `artifacts/${APP_ID}/reference_standards/std-parent-normalize`;
+  const logPath = `${standardPath}/logs/log-parent-normalize`;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    await setDoc(doc(db, standardPath), {
+      id: 'std-parent-normalize',
+      name: 'Parent normalization regression',
+      internal_id: ' ba01 ',
+      initial_amount: 10,
+      current_amount: 10,
+      unit: 'mg',
+      status: 'AVAILABLE',
+      lifecycle_status: 'RELEASED',
+      lastUpdated: seedTime,
+    });
+    await setDoc(doc(db, logPath), {
+      id: 'log-parent-normalize',
+      standardId: 'std-parent-normalize',
+      internalId: ' ba01 ',
+      lastUpdated: seedTime,
+    });
+  });
+
+  const splitChild = updateDoc(doc(managerDb, logPath), {
+    internalId: 'BA01',
+    lastUpdated: serverTimestamp(),
+  });
+  await assertFails(splitChild);
+
+  const atomicBatch = writeBatch(managerDb);
+  atomicBatch.update(doc(managerDb, standardPath), {
+    internal_id: 'BA01',
+    search_key: 'parent normalization regression ba01',
+    lastUpdated: serverTimestamp(),
+  });
+  atomicBatch.update(doc(managerDb, logPath), {
+    internalId: 'BA01',
+    lastUpdated: serverTimestamp(),
+  });
+  await assertSucceeds(atomicBatch.commit());
+});
+
 test('the SDHET business code is accepted while unrelated malformed codes remain denied', async () => {
   const managerDb = dbFor(users.manager);
   await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), {

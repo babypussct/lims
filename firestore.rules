@@ -251,7 +251,11 @@ service cloud.firestore {
     }
 
     function canRollbackStandardLogs(appId) {
-      return hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_log_delete');
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return (hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_log_delete')) &&
+        changed.hasOnly(['_isDeleted', 'rolledBackAt', 'rolledBackBy', 'lastUpdated']) &&
+        request.resource.data.get('_isDeleted', false) == true &&
+        request.resource.data.lastUpdated == request.time;
     }
 
     function validRequesterUsageJournalData(appId, stdId, reqId, logId, stockDelta, data) {

@@ -43,3 +43,19 @@ Ví dụ:
 - `fixes`: lỗi người dùng từng gặp và kết quả sau khi khắc phục; không mô tả nguyên nhân bằng mã nguồn.
 
 Trước khi hoàn tất, đọc lại như một kiểm nghiệm viên chưa xem code: nếu người đó không hiểu thay đổi giúp ích gì hoặc cần bấm ở đâu, phải viết lại cho đến khi rõ ràng.
+
+## Kiểm Tra Web Thực Tế Có Đăng Nhập
+
+Khi cần mở ứng dụng thực tế để kiểm tra và màn hình yêu cầu đăng nhập:
+
+1. Ưu tiên tái sử dụng phiên đăng nhập hiện có nếu vẫn còn hợp lệ.
+2. Nếu cần đăng nhập lại, sử dụng luồng **Đăng nhập quản trị** / đăng nhập bằng mật khẩu LIMS.
+3. Tự động lấy thông tin xác thực từ file cục bộ `.env.test.local` ở thư mục gốc repository:
+   - `LIMS_TEST_ADMIN_USERNAME`
+   - `LIMS_TEST_ADMIN_PASSWORD`
+4. Không hỏi người dùng cung cấp lại thông tin đăng nhập nếu hai biến trên đã tồn tại.
+5. Không in, chép lại hoặc đưa mật khẩu vào nội dung trả lời, log, ảnh chụp, tài liệu, commit hay file được Git theo dõi.
+6. Khi thao tác với terminal, không dùng lệnh làm lộ giá trị bí mật ra stdout/stderr. Chỉ đọc bí mật để phục vụ bước đăng nhập.
+7. Nếu lần đăng nhập đầu không thành công, kiểm tra đúng chế độ đăng nhập bằng username/mật khẩu, trạng thái trang và lỗi giao diện rồi thử lại hợp lý trước khi kết luận không thể kiểm tra.
+
+File `.env.test.local` là dữ liệu máy cục bộ và phải tiếp tục nằm ngoài Git.
