@@ -35,7 +35,7 @@
     "test:ui-sop": "tsx --test src/app/features/sop/sop-ui-primitives.contract.test.ts",
     "test:ui-auth-public": "tsx --test src/app/features/auth/auth-public-ui-primitives.contract.test.ts",
     "test:service-worker": "tsx --test src/app/core/utils/service-worker-recovery.test.ts",
-    "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts src/app/features/documents/document-viewer.utils.test.ts src/app/features/documents/excel-univer-converter.test.ts src/app/features/documents/excel-univer-metadata.test.ts",
+    "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts src/app/features/documents/document-viewer.utils.test.ts src/app/features/documents/excel-univer-converter.test.ts src/app/features/documents/excel-univer-metadata.test.ts src/app/features/documents/excel-document-demo.component.test.ts",
     "test:excel-import": "tsx --test src/app/features/results/import/excel-result-import.test.ts",
     "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/features/batch/sample-group.utils.test.ts src/app/features/targets/target-scope-classifier.spec.ts src/app/core/services/calculator.service.test.ts src/app/core/services/smart-batch-security-rules.test.ts scripts/standard-request-security-audit.test.ts && npm run test:firestore-rules",
     "test:firestore-rules": "node scripts/run-firestore-rules-tests.js",

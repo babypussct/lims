@@ -85,6 +85,8 @@ type UniverWorkbook = ReturnType<UniverBundle['univerAPI']['createWorkbook']>;
            class="excel-univer-host"
            tabindex="-1"
            role="region"
+           aria-readonly="true"
+           data-excel-readonly="true"
            aria-label="Bảng tính Excel chỉ đọc"></div>
 
       @if (loading()) {
