@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.22-b01",
-    "title": "Nâng cao độ ổn định và tính liên tục khi đồng bộ mã nội bộ chất chuẩn",
+    "version": "v26.08.23-b01",
+    "title": "Trải nghiệm xem bảng tính Excel trực quan và nâng cấp an toàn đồng bộ mã chất chuẩn",
     "features": [
-      "Quá trình đồng bộ mã nội bộ cho danh mục chất chuẩn số lượng lớn diễn ra an toàn, liền mạch và không bị gián đoạn quyền hạn giữa chừng.",
-      "Cửa sổ đồng bộ mã nội bộ hiển thị trạng thái hoàn tất rõ ràng, tự động quét xác minh và làm mới dữ liệu ngay sau khi cập nhật.",
-      "Giao diện đồng bộ mã nội bộ phân định rõ giai đoạn cập nhật dữ liệu và giai đoạn quét xác minh, giúp người dùng dễ dàng theo dõi tiến trình thực tế.",
-      "Nếu bước làm mới dữ liệu sau đồng bộ gặp sự cố mạng, hệ thống vẫn giữ kết quả thành công và cho phép nhấn Quét lại để xác nhận.",
-      "Khắc phục lỗi gián đoạn do thiếu quyền khi đồng bộ chuẩn hóa danh mục mã chất chuẩn và các liên kết mã cũ trên tập dữ liệu lớn."
+      "Xem trực tiếp bảng tính Excel trong mục Tài liệu với giao diện đầy đủ trang tính, công thức và giữ nguyên định dạng gốc.",
+      "Bảo toàn chính xác định dạng ngày giờ địa phương và bảo vệ nội dung biểu mẫu ở chế độ chỉ đọc an toàn.",
+      "Nâng cao độ ổn định và an toàn phân quyền khi đồng bộ chuẩn hóa mã quản lý nội bộ cho danh mục chất chuẩn lớn.",
+      "Bổ sung trình xem bảng tính Excel chuyên dụng trong mục Tài liệu, cho phép chuyển đổi qua lại giữa các sheet, tra cứu công thức và tải về file gốc nhanh chóng.",
+      "Hiển thị bảng tính chuẩn xác về màu sắc, căn lề ô, phông chữ và kích thước dòng cột tương tự ứng dụng văn phòng quen thuộc."
     ]
   },
   "assetGroups": [

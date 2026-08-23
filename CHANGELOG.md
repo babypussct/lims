@@ -2,28 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.22-b01
+## Phiên bản hiện tại: v26.08.23-b01
 
-### v26.08.22-b01
+### v26.08.23-b01
 
 #### 🚀 Điểm Nổi Bật Bản Này
 
-- Quá trình đồng bộ mã nội bộ cho danh mục chất chuẩn số lượng lớn diễn ra an toàn, liền mạch và không bị gián đoạn quyền hạn giữa chừng.
-- Cửa sổ đồng bộ mã nội bộ hiển thị trạng thái hoàn tất rõ ràng, tự động quét xác minh và làm mới dữ liệu ngay sau khi cập nhật.
+- Xem trực tiếp bảng tính Excel trong mục Tài liệu với giao diện đầy đủ trang tính, công thức và giữ nguyên định dạng gốc.
+- Bảo toàn chính xác định dạng ngày giờ địa phương và bảo vệ nội dung biểu mẫu ở chế độ chỉ đọc an toàn.
+- Nâng cao độ ổn định và an toàn phân quyền khi đồng bộ chuẩn hóa mã quản lý nội bộ cho danh mục chất chuẩn lớn.
 
 #### ✨ Tính Năng Mới
 
-- Không có thay đổi trong nhóm này.
+- Bổ sung trình xem bảng tính Excel chuyên dụng trong mục Tài liệu, cho phép chuyển đổi qua lại giữa các sheet, tra cứu công thức và tải về file gốc nhanh chóng.
 
 #### ⚡ Cải Tiến & Tối Ưu
 
-- Giao diện đồng bộ mã nội bộ phân định rõ giai đoạn cập nhật dữ liệu và giai đoạn quét xác minh, giúp người dùng dễ dàng theo dõi tiến trình thực tế.
-- Nếu bước làm mới dữ liệu sau đồng bộ gặp sự cố mạng, hệ thống vẫn giữ kết quả thành công và cho phép nhấn Quét lại để xác nhận.
+- Hiển thị bảng tính chuẩn xác về màu sắc, căn lề ô, phông chữ và kích thước dòng cột tương tự ứng dụng văn phòng quen thuộc.
+- Tối ưu tốc độ tải và khả năng hiển thị các bảng dữ liệu kiểm nghiệm và biểu mẫu có cấu trúc nhiều sheet.
+- Tăng cường độ an toàn phân quyền và chia nhỏ đợt xử lý khi quản trị viên đồng bộ mã quản lý nội bộ chất chuẩn, tránh quá tải dữ liệu.
 
 #### 🐛 Sửa Lỗi Hệ Thống
 
-- Khắc phục lỗi gián đoạn do thiếu quyền khi đồng bộ chuẩn hóa danh mục mã chất chuẩn và các liên kết mã cũ trên tập dữ liệu lớn.
-- Khắc phục hiện tượng thanh tiến độ đạt 100% nhưng giao diện chưa phản hồi trạng thái hoàn thành.
+- Khắc phục hiện tượng ngày tháng và thời gian trong file Excel hiển thị lệch múi giờ khi mở xem trực tuyến.
+- Khắc phục nguy cơ gián đoạn quyền hạn khi đồng bộ nhật ký hoạt động trên tập dữ liệu chất chuẩn có quy mô lớn.
 
 ### v26.08.20-b01
 
