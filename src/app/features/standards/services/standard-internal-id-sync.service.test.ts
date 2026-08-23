@@ -468,8 +468,8 @@ test('merges multiple planned registry document changes without dropping earlier
   assert.match(merged[0].reason, /Xóa owner dư thừa/);
 });
 
-test('chunks 2053 changes into logical batches smaller than 250 without splitting documents', () => {
-  const { service } = createService();
+test('chunks 2053 changes below both the logical-change and Security Rules budgets', () => {
+  const { planInternalIdBatches, INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST } = require('../../../shared/utils/standard-internal-id');
   const changes: StandardInternalIdSyncChange[] = Array.from({ length: 2053 }, (_, index) => ({
     collection: 'reference_standards',
     documentId: `std-${index}`,
@@ -479,13 +479,13 @@ test('chunks 2053 changes into logical batches smaller than 250 without splittin
     reason: 'test',
   }));
 
-  const chunks = (service as any).chunkChanges(changes, 249) as StandardInternalIdSyncChange[][];
+  const plan = planInternalIdBatches(changes, 249);
+  const chunks = plan.chunks.map((chunk: any) => chunk.changes);
 
-  assert.equal(chunks.length, 9);
+  assert.ok(chunks.length > 9, 'Security Rules access budget should split the old 9 logical chunks further');
   assert.equal(chunks.flat().length, 2053);
   assert.ok(chunks.every(chunk => chunk.length < 250));
-  assert.deepEqual(chunks.slice(0, 8).map(chunk => chunk.length), Array(8).fill(249));
-  assert.equal(chunks[8].length, 61);
+  assert.ok(plan.chunks.every((chunk: any) => chunk.estimatedRuleAccessCost <= INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST));
   assert.equal(new Set(chunks.flat().map(change => change.documentId)).size, 2053);
 });
 
@@ -607,7 +607,7 @@ test('planInternalIdBatches keeps correlated reference_standards and standard_co
     reason: 'registry sync',
   });
 
-  const plan = planInternalIdBatches(changes, 249);
+  const plan = planInternalIdBatches(changes, 249, Number.MAX_SAFE_INTEGER);
   assert.equal(plan.totalBatches, 2);
 
   // Find the chunks containing std-linked-999 and registry BA01
@@ -621,6 +621,50 @@ test('planInternalIdBatches keeps correlated reference_standards and standard_co
   assert.ok(stdChunkIndex >= 0);
   assert.ok(regChunkIndex >= 0);
   assert.equal(stdChunkIndex, regChunkIndex, 'Standard and Registry must be in the EXACT same batch chunk');
+});
+
+test('planInternalIdBatches keeps a changing parent standard with its nested log repairs', () => {
+  const { planInternalIdBatches } = require('../../../shared/utils/standard-internal-id');
+  const changes: StandardInternalIdSyncChange[] = [];
+
+  for (let i = 0; i < 248; i++) {
+    changes.push({
+      collection: 'reference_standard_logs',
+      documentId: `filler-${String(i).padStart(3, '0')}::log-1`,
+      field: 'internalId',
+      before: 'aa01',
+      after: 'AA01',
+      reason: 'filler',
+    });
+  }
+  changes.push({
+    collection: 'reference_standard_logs',
+    documentId: 'std-parent::log-child',
+    field: 'internalId',
+    before: ' ba01 ',
+    after: 'BA01',
+    reason: 'normalize nested snapshot',
+  });
+  changes.push({
+    collection: 'reference_standards',
+    documentId: 'std-parent',
+    field: 'internal_id',
+    before: ' ba01 ',
+    after: 'BA01',
+    reason: 'normalize parent',
+  });
+
+  const plan = planInternalIdBatches(changes, 249, Number.MAX_SAFE_INTEGER);
+  const parentChunkIndex = plan.chunks.findIndex(chunk =>
+    chunk.changes.some(c => c.collection === 'reference_standards' && c.documentId === 'std-parent')
+  );
+  const childChunkIndex = plan.chunks.findIndex(chunk =>
+    chunk.changes.some(c => c.collection === 'reference_standard_logs' && c.documentId === 'std-parent::log-child')
+  );
+
+  assert.ok(parentChunkIndex >= 0);
+  assert.ok(childChunkIndex >= 0);
+  assert.equal(parentChunkIndex, childChunkIndex, 'Parent standard and nested log repair must be atomic');
 });
 
 test('planInternalIdBatches keeps a legacy registry alias migration with its canonical target across the 249-change boundary', async () => {
@@ -657,7 +701,7 @@ test('planInternalIdBatches keeps a legacy registry alias migration with its can
     reason: 'create canonical registry target',
   });
 
-  const plan = planInternalIdBatches(changes, 249);
+  const plan = planInternalIdBatches(changes, 249, Number.MAX_SAFE_INTEGER);
   assert.equal(plan.totalBatches, 2);
 
   const aliasChunkIndex = plan.chunks.findIndex(chunk =>

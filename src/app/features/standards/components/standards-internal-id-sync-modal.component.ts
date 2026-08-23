@@ -256,8 +256,8 @@ export type { CorrectionValidationResult };
                     @if (quickBatchTarget(); as batch) {
                       <span class="text-indigo-700 dark:text-indigo-300">Batch kế tiếp {{batch.batchIndex}}/{{quickBatchPlan().totalBatches}} · {{batch.changeCount}} thay đổi hợp lệ</span>
                     }
-                    @if (selectedSafeChangeCount() > 249) {
-                      <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} batch, mỗi batch dưới 250 thay đổi</span>
+                    @if (applySummary().estimatedBatches > 1) {
+                      <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} batch theo giới hạn an toàn Firestore Security Rules</span>
                     }
                     @if (selectedSafeChangeCount() === 0 && validCorrectionCount() === 0) {
                       <span class="text-red-700 dark:text-red-300">Chưa có mục nào được chọn để đồng bộ.</span>
@@ -532,6 +532,7 @@ export class StandardsInternalIdSyncModalComponent {
   readonly stdService = inject(StandardService);
   readonly confirmation = inject(ConfirmationService);
   readonly toast = inject(ToastService);
+  private readonly POST_APPLY_VERIFICATION_TIMEOUT_MS = 15_000;
 
   isOpen = input(false);
   close = output<void>();
@@ -626,7 +627,7 @@ export class StandardsInternalIdSyncModalComponent {
   });
   selectedSafeChangeCount = computed(() => this.selectedSafeChanges().length);
   selectedSafeDocumentCount = computed(() => new Set(this.selectedSafeChanges().map(change => this.safeDocumentKey(change))).size);
-  quickBatchPlan = computed(() => planInternalIdBatches(this.safeChanges(), 249));
+  quickBatchPlan = computed(() => planInternalIdBatches(this.safeChanges()));
   allSafeChangesSelected = computed(() => {
     return this.safeChanges().length > 0 && this.selectedSafeChangeCount() === this.safeChanges().length;
   });
@@ -696,16 +697,31 @@ export class StandardsInternalIdSyncModalComponent {
     }
   }
 
-  async scan(preserveApplyProgress = false): Promise<void> {
+  async scan(preserveApplyProgress = false, timeoutMs?: number): Promise<void> {
     if (this.isScanning() || this.isApplying()) return;
     if (!preserveApplyProgress) this.applyProgress.set(null);
     this.isScanning.set(true);
     this.errorMessage.set('');
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     try {
-      this.setReport(await this.stdService.scanInternalIdSync());
+      const scanPromise = this.stdService.scanInternalIdSync();
+      const report = timeoutMs && timeoutMs > 0
+        ? await Promise.race([
+            scanPromise,
+            new Promise<never>((_, reject) => {
+              timeoutHandle = setTimeout(() => reject(new Error('POST_APPLY_VERIFICATION_TIMEOUT')), timeoutMs);
+            }),
+          ])
+        : await scanPromise;
+      this.setReport(report);
     } catch (error: any) {
-      this.errorMessage.set(error?.message || 'Không thể quét dữ liệu mã nội bộ.');
+      this.errorMessage.set(
+        error?.message === 'POST_APPLY_VERIFICATION_TIMEOUT'
+          ? 'Đồng bộ đã ghi xong, nhưng quét xác minh sau đồng bộ mất quá lâu. Có thể bấm “Quét lại” để xác minh khi kết nối ổn định.'
+          : error?.message || 'Không thể quét dữ liệu mã nội bộ.'
+      );
     } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
       this.isScanning.set(false);
     }
   }
@@ -1039,7 +1055,10 @@ export class StandardsInternalIdSyncModalComponent {
       message: `Đã ghi xong ${appliedBatchIds.length}/${appliedBatchIds.length} batch. Đang quét xác minh dữ liệu sau đồng bộ...`,
     });
 
-    await this.scan(true);
+    // A committed sync must never leave the modal permanently busy just
+    // because the follow-up verification read stalls. Bound only this
+    // post-apply scan; normal operator-triggered scans remain unbounded.
+    await this.scan(true, this.POST_APPLY_VERIFICATION_TIMEOUT_MS);
 
     if (this.errorMessage()) {
       this.applyProgress.set({
