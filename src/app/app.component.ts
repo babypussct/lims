@@ -351,7 +351,8 @@ export class AppComponent implements OnDestroy {
     return url.startsWith('/privacy-policy')
       || url.startsWith('/terms-of-service')
       || url.startsWith('/changelog')
-      || (!environment.production && url.startsWith('/__ui-primitives'));
+      || (!environment.production && url.startsWith('/__ui-primitives'))
+      || (!environment.production && url.startsWith('/__excel-demo'));
   });
   year = new Date().getFullYear();
   private _navigationFeedbackTimer: ReturnType<typeof setTimeout> | null = null;

@@ -9,6 +9,10 @@ const developmentOnlyRoutes: Routes = environment.production ? [] : [
   {
     path: '__ui-primitives',
     loadComponent: () => import('./shared/components/ui/ui-primitives-demo.component').then(m => m.UiPrimitivesDemoComponent)
+  },
+  {
+    path: '__excel-demo',
+    loadComponent: () => import('./features/documents/excel-document-demo.component').then(m => m.ExcelDocumentDemoComponent)
   }
 ];
 

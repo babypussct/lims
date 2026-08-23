@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
+const read = (relativePath: string): string => readFileSync(join(projectRoot, relativePath), 'utf8');
+
+test('keeps the Excel presentation route dev-only and exercises the real viewer boundary', () => {
+  const routes = read('src/app/app.routes.ts');
+  const app = read('src/app/app.component.ts');
+  const demo = read('src/app/features/documents/excel-document-demo.component.ts');
+  const viewer = read('src/app/features/documents/excel-document-viewer.component.ts');
+  const metadata = read('src/app/features/documents/excel-univer-metadata.ts');
+
+  assert.match(routes, /path: '__excel-demo'/);
+  assert.match(routes, /environment\.production \? \[\] :/);
+  assert.match(app, /url\.startsWith\('\/__excel-demo'\)/);
+  assert.match(demo, /<app-excel-document-viewer/);
+  assert.match(demo, /LIMS_Excel_Preview_Demo\.xlsx/);
+  assert.match(demo, /tìm kiếm bằng Ctrl\+F/);
+  assert.match(demo, /Nhấn Ctrl\+F để mở công cụ tìm kiếm/);
+  assert.match(demo, /new Date\(2026, 7, 22, 15, 30, 45, 250\)/);
+  assert.match(demo, /!autofilter/);
+  assert.match(demo, /yyyy-mm-dd hh:mm:ss\.000/);
+  assert.doesNotMatch(demo, /Date\.UTC/);
+  assert.match(viewer, /createUniver\(/);
+  assert.match(viewer, /aria-readonly="true"/);
+  assert.match(viewer, /data-excel-readonly="true"/);
+  assert.match(viewer, /previewWorkbook\.setEditable\(false\)/);
+  assert.match(viewer, /previewWorkbook\.getWorkbookPermission\(\)\.setReadOnly\(\)/);
+  assert.match(viewer, /applyPreservedMetadata\(/);
+  assert.match(viewer, /worksheet\.setFreeze\(/);
+  assert.match(viewer, /\.createFilter\(\)/);
+  assert.match(viewer, /\.setHyperLink\(/);
+  assert.match(viewer, /\.createOrUpdateNote\(/);
+  assert.match(viewer, /unsupportedFeatures\(\)/);
+  assert.match(metadata, /conditionalFormatting/);
+  assert.match(viewer, /toolbar:\s*false/);
+  assert.match(viewer, /contextMenu:\s*false/);
+  assert.match(viewer, /formulaBar:\s*true/);
+  assert.match(viewer, /sheetBar:\s*true/);
+  assert.match(viewer, /zoomSlider:\s*true/);
+  assert.match(viewer, /addSheetButtonConfig:\s*\{ show: false \}/);
+  assert.doesNotMatch(viewer, /toolbar:\s*true/);
+  assert.doesNotMatch(viewer, /contextMenu:\s*true/);
+  assert.doesNotMatch(viewer, /setEditable\(true\)/);
+  assert.doesNotMatch(viewer, /UniverSheetsConditionalFormattingPreset/);
+  assert.doesNotMatch(viewer, /UniverSheetsDataValidationPreset/);
+  assert.doesNotMatch(viewer, /UniverSheetsDrawingPreset/);
+  assert.doesNotMatch(viewer, /UniverSheetsTablePreset/);
+  assert.match(viewer, /excel-univer-host > div:first-child/);
+});
