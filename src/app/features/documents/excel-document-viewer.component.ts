@@ -14,20 +14,18 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { LocaleType, WrapStrategy, mergeLocales } from '@univerjs/core';
+import { CanceledError, LocaleType, WrapStrategy, mergeLocales } from '@univerjs/core';
 import { createUniver } from '@univerjs/presets';
 import { UniverSheetsCorePreset } from '@univerjs/preset-sheets-core';
 import { UniverSheetsFilterPreset } from '@univerjs/preset-sheets-filter';
 import { UniverSheetsFindReplacePreset } from '@univerjs/preset-sheets-find-replace';
 import { UniverSheetsHyperLinkPreset } from '@univerjs/preset-sheets-hyper-link';
 import { UniverSheetsNotePreset } from '@univerjs/preset-sheets-note';
-import { UniverSheetsSortPreset } from '@univerjs/preset-sheets-sort';
 import sheetsCoreViVN from '@univerjs/preset-sheets-core/locales/vi-VN';
 import sheetsFilterViVN from '@univerjs/preset-sheets-filter/locales/vi-VN';
 import sheetsFindReplaceViVN from '@univerjs/preset-sheets-find-replace/locales/vi-VN';
 import sheetsHyperLinkViVN from '@univerjs/preset-sheets-hyper-link/locales/vi-VN';
 import sheetsNoteViVN from '@univerjs/preset-sheets-note/locales/vi-VN';
-import sheetsSortViVN from '@univerjs/preset-sheets-sort/locales/vi-VN';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
@@ -45,14 +43,15 @@ import {
 import {
   buildExcelPreviewContextMenu,
   buildExcelPreviewFilterCriteria,
+  calculateExcelPreviewSmartLayout,
   classifyExcelPreviewContextTarget,
   getExcelColumnLabel,
-  inferExcelPreviewSortKind,
-  isExcelPreviewTextEntryElement,
+  getExcelPreviewUsedRange,
   isSafeExcelHyperlink,
   parseExcelGoToTarget,
   removeExcelPreviewViewChange,
   serializeExcelPreviewGrid,
+  shouldExcelPreviewTextEntryOwnShortcut,
   upsertExcelPreviewViewChange,
   type ExcelPreviewContextTarget,
   type ExcelPreviewMenuAction,
@@ -138,42 +137,18 @@ interface ExcelPreviewFilterSummary {
       <div class="excel-view-tools-bar" role="toolbar" aria-label="Công cụ xem bảng tính">
         <button type="button"
                 class="excel-view-tool"
-                title="Tìm kiếm trong workbook (Ctrl+F)"
-                aria-label="Tìm kiếm trong workbook (Ctrl+F)"
-                (click)="openFindDialog()">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <span>Tìm kiếm</span>
-          <kbd>Ctrl+F</kbd>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
+                [class.is-active]="contextMenu()?.target === 'navigation'"
                 [disabled]="loading()"
-                title="Chọn nhanh toàn bộ vùng dữ liệu đang dùng (Ctrl+A)"
-                aria-label="Chọn nhanh vùng dữ liệu (Ctrl+A)"
-                (click)="selectPreviewDataRange()">
-          <i class="fa-solid fa-border-all"></i>
-          <span>Chọn vùng</span>
-          <kbd>{{ selectedDataRangeLabel() || 'Ctrl+A' }}</kbd>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
-                [class.is-active]="goToOpen()"
-                [disabled]="loading()"
-                title="Đi tới ô hoặc vùng theo địa chỉ (Ctrl+G)"
-                aria-label="Đi tới ô hoặc vùng (Ctrl+G)"
-                (click)="toggleGoTo()">
-          <i class="fa-solid fa-location-crosshairs"></i>
-          <span>Đi tới ô</span>
-          <kbd>Ctrl+G</kbd>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
-                [disabled]="loading()"
-                title="Thu phóng để vừa chiều rộng vùng dữ liệu"
-                aria-label="Vừa chiều rộng vùng dữ liệu"
-                (click)="fitPreviewWidth()">
-          <i class="fa-solid fa-maximize"></i>
-          <span>Vừa chiều rộng</span>
+                aria-haspopup="menu"
+                [attr.aria-expanded]="contextMenu()?.target === 'navigation'"
+                title="Tìm kiếm, đi tới hoặc chọn vùng"
+                aria-label="Điều hướng bảng tính"
+                (click)="openNavigationMenu($event)">
+          <i class="fa-solid fa-compass"></i>
+          <span>Điều hướng</span>
+          @if (selectedDataRangeLabel()) {
+            <small>{{ selectedDataRangeLabel() }}</small>
+          }
         </button>
         <button type="button"
                 class="excel-view-tool"
@@ -198,45 +173,6 @@ interface ExcelPreviewFilterSummary {
                 (click)="centerPreviewSelection()">
           <i class="fa-solid fa-align-center"></i>
           <span>Căn giữa</span>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
-                [class.is-active]="wrapTextEnabled()"
-                [attr.aria-pressed]="wrapTextEnabled()"
-                [disabled]="loading()"
-                title="Bật hoặc tắt xuống dòng trong vùng ô đang chọn"
-                aria-label="Bật hoặc tắt Wrap text"
-                (click)="togglePreviewWrapText()">
-          <i class="fa-solid fa-align-justify"></i>
-          <span>Wrap text</span>
-          <small>{{ wrapTextEnabled() ? 'bật' : 'tắt' }}</small>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
-                [disabled]="loading()"
-                title="Tự co giãn cột và hàng theo nội dung bản xem trước"
-                aria-label="Autofit cột và hàng"
-                (click)="autofitPreview()">
-          <i class="fa-solid fa-arrows-left-right-to-line"></i>
-          <span>Autofit</span>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
-                [disabled]="loading()"
-                title="Sắp xếp vùng dữ liệu bản xem trước theo cột đầu tiên A đến Z"
-                aria-label="Sort A đến Z"
-                (click)="sortPreview(true)">
-          <i class="fa-solid fa-arrow-down-a-z"></i>
-          <span>Sort A→Z</span>
-        </button>
-        <button type="button"
-                class="excel-view-tool"
-                [disabled]="loading()"
-                title="Sắp xếp vùng dữ liệu bản xem trước theo cột đầu tiên Z đến A"
-                aria-label="Sort Z đến A"
-                (click)="sortPreview(false)">
-          <i class="fa-solid fa-arrow-up-z-a"></i>
-          <span>Sort Z→A</span>
         </button>
         <button type="button"
                 class="excel-view-tool"
@@ -1464,6 +1400,10 @@ interface ExcelPreviewFilterSummary {
     }
 
     @media (max-width: 767px) {
+      .excel-univer-host {
+        touch-action: none;
+      }
+
       .excel-view-tools-bar {
         min-height: 2.75rem;
         padding-inline: .5rem;
@@ -1630,8 +1570,8 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   private removeReadonlyInteractionGuard?: () => void;
   private removeUniverEvents?: () => void;
   private readonly previewBoundsBySheetName = new Map<string, { rows: number; columns: number }>();
+  private readonly previewUsedRangeBySheetName = new Map<string, ExcelRangeMetadata>();
   private readonly viewChangeUndo = new Map<string, () => void>();
-  private readonly sortKindCache = new Map<string, ReturnType<typeof inferExcelPreviewSortKind>>();
 
   private readonly syncDarkMode = effect(() => {
     const dark = this.state.darkMode();
@@ -1754,7 +1694,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     const value = (event.target as HTMLInputElement).value;
     const selection = this.getActivePreviewSelection();
     if (!selection) return;
-    const dataRange = selection.worksheet.getDataRange().getRange();
+    const dataRange = this.getPreviewUsedRange(selection.worksheet);
     const normalized = value.trim().toLocaleLowerCase('vi-VN');
     const matches: number[] = [];
     if (normalized) {
@@ -1866,7 +1806,13 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     const selection = this.getActivePreviewSelection();
     if (!selection) return;
     try {
-      const dataRange = selection.worksheet.getDataRange();
+      const coordinates = this.getPreviewUsedRange(selection.worksheet);
+      const dataRange = selection.worksheet.getRange(
+        coordinates.startRow,
+        coordinates.startColumn,
+        coordinates.endRow - coordinates.startRow + 1,
+        coordinates.endColumn - coordinates.startColumn + 1,
+      );
       selection.workbook.setActiveRange(dataRange);
       this.selectedDataRangeLabel.set(dataRange.getA1Notation());
     } catch {
@@ -1886,7 +1832,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       if (!filterRange) {
         const candidate = getPreviewFilterCandidateRange(
           selection.range.getRange(),
-          selection.worksheet.getDataRange().getRange(),
+          this.getPreviewUsedRange(selection.worksheet),
         );
         if (!candidate) return;
 
@@ -1965,16 +1911,11 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       if (!selection) return;
 
       const selectedRange = selection.range.getRange();
-      const sheetBounds = this.previewBoundsBySheetName.get(selection.worksheet.getSheetName());
-      const fitRange = sheetBounds &&
+      const usedRange = this.getPreviewUsedRange(selection.worksheet);
+      const fitRange =
         selectedRange.startRow === selectedRange.endRow &&
         selectedRange.startColumn === selectedRange.endColumn
-        ? {
-            startRow: 0,
-            startColumn: 0,
-            endRow: Math.max(0, sheetBounds.rows - 1),
-            endColumn: Math.max(0, sheetBounds.columns - 1),
-          }
+        ? usedRange
         : selectedRange;
 
       const columnCount = Math.max(1, fitRange.endColumn - fitRange.startColumn + 1);
@@ -2006,88 +1947,12 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     });
   }
 
-  sortPreview(ascending: boolean): void {
-    void this.runPreviewTool(() => {
-      const selection = this.getActivePreviewSelection();
-      if (!selection) return;
-
-      const sheetName = selection.worksheet.getSheetName();
-      let activeFilterRange: ExcelRangeMetadata | undefined;
-      try {
-        const range = selection.worksheet.getFilter()?.getRange().getRange();
-        if (range) {
-          activeFilterRange = {
-            startRow: range.startRow,
-            startColumn: range.startColumn,
-            endRow: range.endRow,
-            endColumn: range.endColumn,
-          };
-        }
-      } catch {
-        // Fall back to preserved metadata or the selected range below.
-      }
-      const filterRange = activeFilterRange ??
-        this.autoFilterTargets().find(target => target.sheetName === sheetName)?.range;
-      if (filterRange) {
-        const dataStartRow = filterRange.startRow + 1;
-        const dataRowCount = filterRange.endRow - dataStartRow + 1;
-        if (dataRowCount < 1) return;
-
-        const activeCell = selection.workbook.getActiveCell();
-        const activeCellRange = activeCell?.getRange();
-        const activeColumn = activeCellRange?.startColumn ?? filterRange.startColumn;
-        const sortColumn = Math.max(
-          0,
-          Math.min(
-            filterRange.endColumn - filterRange.startColumn,
-            activeColumn - filterRange.startColumn,
-          ),
-        );
-        const sortRange = selection.worksheet.getRange(
-          dataStartRow,
-          filterRange.startColumn,
-          dataRowCount,
-          filterRange.endColumn - filterRange.startColumn + 1,
-        );
-        const before = sortRange.getCellDataGrid();
-        sortRange.sort({ column: sortColumn, ascending });
-        this.markTemporaryViewChange(
-          ascending ? 'Đang sắp xếp tăng dần' : 'Đang sắp xếp giảm dần',
-          'sort',
-          {
-            range: sortRange.getA1Notation(),
-            column: getExcelColumnLabel(filterRange.startColumn + sortColumn),
-            direction: ascending ? 'ascending' : 'descending',
-          },
-          () => this.restoreCellContent(sortRange, before),
-        );
-        return;
-      }
-
-      const selectedRange = selection.range.getRange();
-      if (selectedRange.startRow === selectedRange.endRow &&
-          selectedRange.startColumn === selectedRange.endColumn) return;
-      const before = selection.range.getCellDataGrid();
-      selection.range.sort({ column: 0, ascending });
-      this.markTemporaryViewChange(
-        ascending ? 'Đang sắp xếp tăng dần' : 'Đang sắp xếp giảm dần',
-        'sort',
-        {
-          range: selection.range.getA1Notation(),
-          column: getExcelColumnLabel(selectedRange.startColumn),
-          direction: ascending ? 'ascending' : 'descending',
-        },
-        () => this.restoreCellContent(selection.range, before),
-      );
-    });
-  }
-
   fitPreviewWidth(): void {
     const selection = this.getActivePreviewSelection();
     if (!selection) return;
 
     try {
-      const dataRange = selection.worksheet.getDataRange().getRange();
+      const dataRange = this.getPreviewUsedRange(selection.worksheet);
       let contentWidth = 0;
       for (let column = dataRange.startColumn; column <= dataRange.endColumn; column++) {
         contentWidth += selection.worksheet.getColumnWidth(column);
@@ -2213,6 +2078,19 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.showContextMenu('more', rect.left, rect.bottom + 5);
   }
 
+  openNavigationMenu(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.contextMenu()?.target === 'navigation') {
+      this.closeContextMenu();
+      return;
+    }
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    this.showContextMenu('navigation', rect.left, rect.bottom + 5);
+  }
+
   openPreviewContextMenu(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -2247,6 +2125,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       column: 'Công cụ xem cột',
       row: 'Công cụ xem hàng',
       sheet: 'Công cụ xem sheet',
+      navigation: 'Điều hướng bảng tính',
       more: 'Thêm công cụ xem',
     };
     return labels[target];
@@ -2330,6 +2209,12 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     }
 
     switch (action) {
+      case 'find':
+        this.openFindDialog();
+        break;
+      case 'select-data-range':
+        this.selectPreviewDataRange();
+        break;
       case 'find-value':
         this.findSelectedValue();
         break;
@@ -2355,28 +2240,10 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       case 'clear-column-filter':
         this.clearSelectedColumnFilter();
         break;
-      case 'sort-asc':
-        this.sortPreview(true);
-        break;
-      case 'sort-desc':
-        this.sortPreview(false);
-        break;
       case 'align-left':
       case 'align-center':
       case 'align-right':
         this.alignPreviewSelection(action.replace('align-', '') as 'left' | 'center' | 'right');
-        break;
-      case 'toggle-wrap':
-        this.togglePreviewWrapText();
-        break;
-      case 'autofit-columns':
-        this.autofitSelectedColumns();
-        break;
-      case 'autofit-rows':
-        this.autofitSelectedRows();
-        break;
-      case 'fit-width':
-        this.fitPreviewWidth();
         break;
       case 'fit-selection':
         this.fitPreviewSelection();
@@ -2441,8 +2308,6 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       case 'reset-view':
         this.resetPreviewView();
         break;
-      case 'submenu-format':
-      case 'submenu-data':
       case 'submenu-layout':
         break;
     }
@@ -2483,7 +2348,6 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         hasMultipleSheets: false,
         gridlinesHidden: false,
         frozen: false,
-        sortKind: 'mixed' as const,
       };
     }
 
@@ -2491,10 +2355,9 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       const activeCell = selection.workbook.getActiveCell() ?? selection.range;
       const activeCoordinates = activeCell.getRange();
       const filter = selection.worksheet.getFilter();
-      const dataRange = selection.worksheet.getDataRange().getRange();
+      const dataRange = this.getPreviewUsedRange(selection.worksheet);
       const candidate = getPreviewFilterCandidateRange(selection.range.getRange(), dataRange);
       const freeze = selection.worksheet.getFreeze();
-      const sortKind = this.getCachedSortKind(selection.worksheet, dataRange, activeCoordinates.startColumn, activeCell.getNumberFormat());
       return {
         hasValue: activeCell.getDisplayValues()[0]?.[0] !== '',
         hasFormula: selection.range.getFormulas().some(row => row.some(Boolean)),
@@ -2504,7 +2367,6 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         hasMultipleSheets: selection.workbook.getSheets().length > 1,
         gridlinesHidden: selection.worksheet.hasHiddenGridLines(),
         frozen: !!(freeze.xSplit || freeze.ySplit),
-        sortKind,
       };
     } catch {
       return {
@@ -2516,30 +2378,8 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         hasMultipleSheets: selection.workbook.getSheets().length > 1,
         gridlinesHidden: false,
         frozen: false,
-        sortKind: 'mixed' as const,
       };
     }
-  }
-
-  private getCachedSortKind(
-    worksheet: ReturnType<UniverWorkbook['getActiveSheet']>,
-    dataRange: ExcelRangeMetadata,
-    column: number,
-    numberFormat: string,
-  ): ReturnType<typeof inferExcelPreviewSortKind> {
-    const sampleStart = Math.min(dataRange.endRow, dataRange.startRow + 1);
-    const sampleRows = Math.min(200, Math.max(1, dataRange.endRow - sampleStart + 1));
-    const values = worksheet.getRange(sampleStart, column, sampleRows, 1).getValues().flat();
-    const key = `${worksheet.getSheetId()}:${column}:${sampleStart}:${sampleRows}:${numberFormat}:${values.map(value => String(value ?? '')).join('\u001f')}`;
-    const cached = this.sortKindCache.get(key);
-    if (cached) return cached;
-    const kind = inferExcelPreviewSortKind(values, numberFormat);
-    this.sortKindCache.set(key, kind);
-    if (this.sortKindCache.size > 160) {
-      const oldest = this.sortKindCache.keys().next().value;
-      if (oldest) this.sortKindCache.delete(oldest);
-    }
-    return kind;
   }
 
   private async copyPreviewSelection(action: Extract<ExcelPreviewMenuAction,
@@ -2610,7 +2450,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       if (!filter) {
         const candidate = getPreviewFilterCandidateRange(
           selection.range.getRange(),
-          selection.worksheet.getDataRange().getRange(),
+          this.getPreviewUsedRange(selection.worksheet),
         );
         if (!candidate) return;
         selection.worksheet.getRange(
@@ -2673,7 +2513,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       if (!filter) {
         const candidate = getPreviewFilterCandidateRange(
           selection.range.getRange(),
-          selection.worksheet.getDataRange().getRange(),
+          this.getPreviewUsedRange(selection.worksheet),
         );
         if (!candidate) return;
         selection.worksheet.getRange(
@@ -3366,6 +3206,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
   ): void {
     const boundsByName = new Map<string, { rows: number; columns: number }>();
     this.previewBoundsBySheetName.clear();
+    this.previewUsedRangeBySheetName.clear();
     for (const snapshotSheet of Object.values(snapshotSheets ?? {})) {
       if (!snapshotSheet?.name) continue;
       const bounds = {
@@ -3374,6 +3215,8 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       };
       boundsByName.set(snapshotSheet.name, bounds);
       this.previewBoundsBySheetName.set(snapshotSheet.name, bounds);
+      const usedRange = getExcelPreviewUsedRange(snapshotSheet.cellData);
+      if (usedRange) this.previewUsedRangeBySheetName.set(snapshotSheet.name, usedRange);
     }
 
     const sheetNames: string[] = [];
@@ -3428,6 +3271,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       } catch {
         // Reset must preserve visible cell content even if one metadata item fails again.
       }
+      await this.applyInitialSmartLayout(previewWorkbook, this.loadToken);
       this.syncPreviewFilterSheetNames(previewWorkbook);
       this.installPreviewEvents(previewWorkbook);
       await this.lockPreviewWorkbook(previewWorkbook);
@@ -3462,6 +3306,197 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     }
   }
 
+  private getPreviewUsedRange(
+    worksheet: ReturnType<UniverWorkbook['getActiveSheet']>,
+  ): ExcelRangeMetadata {
+    return this.previewUsedRangeBySheetName.get(worksheet.getSheetName()) ?? {
+      startRow: 0,
+      startColumn: 0,
+      endRow: 0,
+      endColumn: 0,
+    };
+  }
+
+  private async waitForSmartLayoutFrames(
+    expectedLoadToken: number,
+    frameCount = 2,
+  ): Promise<boolean> {
+    for (let frame = 0; frame < frameCount; frame++) {
+      const stillCurrent = await new Promise<boolean>(resolve => {
+        requestAnimationFrame(() => resolve(expectedLoadToken === this.loadToken));
+      });
+      if (!stillCurrent) return false;
+    }
+    return expectedLoadToken === this.loadToken;
+  }
+
+  private async applySmartRowAutoHeight(
+    worksheet: ReturnType<UniverWorkbook['getActiveSheet']>,
+    dataRange: ExcelRangeMetadata,
+    expectedLoadToken: number,
+  ): Promise<boolean> {
+    if (expectedLoadToken !== this.loadToken) return false;
+
+    const rowCount = Math.max(1, dataRange.endRow - dataRange.startRow + 1);
+
+    // Univer measures wrapped row height from the render skeleton. Column width
+    // and wrap commands update the model synchronously, but the skeleton can
+    // still describe the previous layout until the canvas is recalculated.
+    // Refresh first, then use Univer's official row auto-height command via the
+    // facade so both the auto-height flag and measured height are kept in sync.
+    worksheet.refreshCanvas();
+    if (!(await this.waitForSmartLayoutFrames(expectedLoadToken))) return false;
+
+    worksheet.autoResizeRows(dataRange.startRow, rowCount);
+    worksheet.refreshCanvas();
+    if (!(await this.waitForSmartLayoutFrames(expectedLoadToken))) return false;
+
+    // A second pass is intentional: the first pass can change row geometry,
+    // which invalidates text layout for cells whose content spans several lines.
+    worksheet.autoResizeRows(dataRange.startRow, rowCount);
+    worksheet.refreshCanvas();
+    return expectedLoadToken === this.loadToken;
+  }
+
+  private async applySmartColumnAutoWidth(
+    worksheet: ReturnType<UniverWorkbook['getActiveSheet']>,
+    dataRange: ExcelRangeMetadata,
+    expectedLoadToken: number,
+  ): Promise<boolean> {
+    if (expectedLoadToken !== this.loadToken) return false;
+
+    const columnCount = Math.max(1, dataRange.endColumn - dataRange.startColumn + 1);
+
+    // Column autofit depends on Univer's current render skeleton. A newly
+    // activated sheet can exist in the workbook model before that skeleton is
+    // ready, in which case the facade command quietly becomes a no-op.
+    worksheet.refreshCanvas();
+    if (!(await this.waitForSmartLayoutFrames(expectedLoadToken))) return false;
+
+    worksheet.autoResizeColumns(dataRange.startColumn, columnCount);
+    worksheet.refreshCanvas();
+    return this.waitForSmartLayoutFrames(expectedLoadToken, 1);
+  }
+
+  private async refineRenderedSmartLayout(
+    worksheet: ReturnType<UniverWorkbook['getActiveSheet']>,
+    expectedLoadToken: number,
+  ): Promise<boolean> {
+    if (expectedLoadToken !== this.loadToken) return false;
+
+    const mobile = window.matchMedia('(max-width: 767px)').matches;
+    const minColumnWidth = mobile ? 72 : 80;
+    const maxColumnWidth = mobile ? 180 : 260;
+    const minRowHeight = mobile ? 24 : 25;
+    const maxRowHeight = mobile ? 150 : 180;
+    const dataRange = this.getPreviewUsedRange(worksheet);
+    const rowCount = Math.max(1, dataRange.endRow - dataRange.startRow + 1);
+    const columnCount = Math.max(1, dataRange.endColumn - dataRange.startColumn + 1);
+    const usedRange = worksheet.getRange(
+      dataRange.startRow,
+      dataRange.startColumn,
+      rowCount,
+      columnCount,
+    );
+    const smartLayout = calculateExcelPreviewSmartLayout(usedRange.getDisplayValues(), {
+      minColumnWidth,
+      maxColumnWidth,
+      minRowHeight,
+      maxRowHeight,
+    });
+
+    if (!(await this.applySmartColumnAutoWidth(worksheet, dataRange, expectedLoadToken))) return false;
+    smartLayout.columnWidths.forEach((fallbackWidth, offset) => {
+      const column = dataRange.startColumn + offset;
+      const measuredWidth = worksheet.getColumnWidth(column);
+      worksheet.setColumnWidth(
+        column,
+        Math.max(fallbackWidth, Math.min(maxColumnWidth, measuredWidth)),
+      );
+    });
+    usedRange.setWrapStrategy(WrapStrategy.WRAP);
+
+    if (!(await this.applySmartRowAutoHeight(worksheet, dataRange, expectedLoadToken))) return false;
+    smartLayout.rowHeights.forEach((fallbackHeight, offset) => {
+      const row = dataRange.startRow + offset;
+      const measuredHeight = worksheet.getRowHeight(row);
+      worksheet.setRowHeight(
+        row,
+        Math.max(fallbackHeight, Math.min(maxRowHeight, measuredHeight)),
+      );
+    });
+    worksheet.refreshCanvas();
+    return expectedLoadToken === this.loadToken;
+  }
+
+  private async applyInitialSmartLayout(
+    previewWorkbook: UniverWorkbook,
+    expectedLoadToken: number,
+  ): Promise<void> {
+    const mobile = window.matchMedia('(max-width: 767px)').matches;
+    const minColumnWidth = mobile ? 72 : 80;
+    const maxColumnWidth = mobile ? 180 : 260;
+    const originalActiveSheet = previewWorkbook.getActiveSheet();
+
+    for (const worksheet of previewWorkbook.getSheets()) {
+      if (expectedLoadToken !== this.loadToken) return;
+      try {
+        const dataRange = this.getPreviewUsedRange(worksheet);
+        const rowCount = Math.max(1, dataRange.endRow - dataRange.startRow + 1);
+        const columnCount = Math.max(1, dataRange.endColumn - dataRange.startColumn + 1);
+        const usedRange = worksheet.getRange(
+          dataRange.startRow,
+          dataRange.startColumn,
+          rowCount,
+          columnCount,
+        );
+        const displayValues = usedRange.getDisplayValues();
+        const smartLayout = calculateExcelPreviewSmartLayout(displayValues, {
+          minColumnWidth,
+          maxColumnWidth,
+          minRowHeight: mobile ? 24 : 25,
+          maxRowHeight: mobile ? 150 : 180,
+        });
+
+        // Apply a deterministic layout directly to the worksheet model first.
+        // Unlike Univer auto-resize, this also works for sheets that are not the
+        // currently rendered sheet, so every worksheet receives Smart Fit.
+        smartLayout.columnWidths.forEach((width, offset) => {
+          worksheet.setColumnWidth(dataRange.startColumn + offset, width);
+        });
+        usedRange.setWrapStrategy(WrapStrategy.WRAP);
+        smartLayout.rowHeights.forEach((height, offset) => {
+          worksheet.setRowHeight(dataRange.startRow + offset, height);
+        });
+
+      } catch {
+        // Smart Fit is presentation-only; one incompatible sheet must not block preview.
+      }
+    }
+
+    // Univer's native auto-fit commands need a live render skeleton. Refine
+    // every sheet while the preview is still editable, before the read-only
+    // permission layer is installed. Doing this later from ActiveSheetChanged
+    // makes Univer correctly reject the formatting commands and display a
+    // permission dialog when the user merely changes sheets.
+    for (const worksheet of previewWorkbook.getSheets()) {
+      if (expectedLoadToken !== this.loadToken) return;
+      previewWorkbook.setActiveSheet(worksheet);
+      if (!(await this.waitForSmartLayoutFrames(expectedLoadToken, 1))) return;
+      try {
+        await this.refineRenderedSmartLayout(worksheet, expectedLoadToken);
+      } catch {
+        // The deterministic dimensions above remain the safe fallback when a
+        // sheet cannot be refined by Univer's render skeleton.
+      }
+    }
+
+    if (expectedLoadToken === this.loadToken) {
+      previewWorkbook.setActiveSheet(originalActiveSheet);
+      await this.waitForSmartLayoutFrames(expectedLoadToken, 1);
+    }
+  }
+
   private async loadWorkbook(): Promise<void> {
     if (!this.blob || !this.viewReady) return;
     const token = ++this.loadToken;
@@ -3491,7 +3526,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.sourceSnapshot = undefined;
     this.sourceMetadata = undefined;
     this.previewBoundsBySheetName.clear();
-    this.sortKindCache.clear();
+    this.previewUsedRangeBySheetName.clear();
     this.viewChangeUndo.clear();
     this.disposeUniver();
 
@@ -3550,7 +3585,6 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
             sheetsFindReplaceViVN,
             sheetsHyperLinkViVN,
             sheetsNoteViVN,
-            sheetsSortViVN,
           ),
         },
         darkMode: this.state.darkMode(),
@@ -3576,7 +3610,6 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
           UniverSheetsFindReplacePreset(),
           UniverSheetsHyperLinkPreset(),
           UniverSheetsNotePreset(),
-          UniverSheetsSortPreset(),
         ],
       });
 
@@ -3597,6 +3630,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       } catch {
         // Keep the workbook visible and degrade only the incompatible metadata.
       }
+      await this.applyInitialSmartLayout(previewWorkbook, token);
       this.syncPreviewFilterSheetNames(previewWorkbook);
       this.installPreviewEvents(previewWorkbook);
       if (token !== this.loadToken) return;
@@ -3688,6 +3722,11 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.removeUniverEvents?.();
     const api = this.univerAPI;
     if (!api) return;
+    const selectAllGuard = api.onBeforeCommandExecute(command => {
+      if (command.id !== 'sheet.command.select-all') return;
+      this.selectPreviewDataRange();
+      throw new CanceledError();
+    });
     const activeSheetChanged = api.addEvent(api.Event.ActiveSheetChanged, event => {
       this.closeContextMenu();
       this.closeScopedFind();
@@ -3703,6 +3742,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       this.syncPreviewFilterSheetNames(event.workbook);
     });
     this.removeUniverEvents = () => {
+      selectAllGuard.dispose();
       activeSheetChanged.dispose();
       filterChanged.dispose();
       filterCleared.dispose();
@@ -3736,6 +3776,18 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     let longPressTimer: number | undefined;
     let longPressStart: { x: number; y: number } | undefined;
     let longPressTriggered = false;
+    let touchPan: {
+      pointerId: number;
+      startX: number;
+      startY: number;
+      startRow: number;
+      startColumn: number;
+      rowStep: number;
+      columnStep: number;
+      lastRow: number;
+      lastColumn: number;
+      panning: boolean;
+    } | undefined;
     const prevent = (event: Event): void => {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -3766,10 +3818,11 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       const shortcutTarget = keyboardEvent.target instanceof Element
         ? keyboardEvent.target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')
         : null;
-      if (shortcutTarget && isExcelPreviewTextEntryElement(
+      if (shortcutTarget && shouldExcelPreviewTextEntryOwnShortcut(
         shortcutTarget.tagName,
         shortcutTarget.getAttribute('contenteditable') === 'true',
         shortcutTarget.getAttribute('role') ?? '',
+        host.contains(shortcutTarget),
       )) return;
       const viewerFocused = viewerInteractionActive ||
         isInsideHost(event.target) ||
@@ -3793,6 +3846,9 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       if (key === 'a' && !keyboardEvent.shiftKey) {
         prevent(event);
         this.selectPreviewDataRange();
+        // Univer also owns Ctrl+A internally. Re-apply the viewer selection on
+        // the next render so its native "select whole sheet" action cannot win.
+        requestAnimationFrame(() => this.selectPreviewDataRange());
       } else if (key === 'l' && keyboardEvent.shiftKey) {
         prevent(event);
         void this.applyPreviewFilter();
@@ -3847,11 +3903,58 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         longPressTimer = undefined;
       }, 550);
     };
+    const startTouchPan = (event: PointerEvent): void => {
+      if (event.pointerType !== 'touch' || !isSheetCanvas(event.target)) return;
+      const worksheet = this.univerAPI?.getActiveWorkbook()?.getActiveSheet();
+      if (!worksheet) return;
+
+      const scroll = worksheet.getScrollState();
+      const startRow = Math.max(0, scroll.sheetViewStartRow ?? 0);
+      const startColumn = Math.max(0, scroll.sheetViewStartColumn ?? 0);
+      touchPan = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startRow,
+        startColumn,
+        rowStep: Math.max(20, Math.min(42, worksheet.getRowHeight(startRow) * .9)),
+        columnStep: Math.max(36, Math.min(72, worksheet.getColumnWidth(startColumn) * .55)),
+        lastRow: startRow,
+        lastColumn: startColumn,
+        panning: false,
+      };
+    };
     const moveLongPress = (event: PointerEvent): void => {
       if (!longPressStart) return;
       if (Math.hypot(event.clientX - longPressStart.x, event.clientY - longPressStart.y) > 12) {
         cancelLongPress();
       }
+    };
+    const moveTouchPan = (event: PointerEvent): void => {
+      if (!touchPan || touchPan.pointerId !== event.pointerId || longPressTriggered) return;
+      const deltaX = event.clientX - touchPan.startX;
+      const deltaY = event.clientY - touchPan.startY;
+      if (!touchPan.panning && Math.hypot(deltaX, deltaY) <= 10) return;
+
+      touchPan.panning = true;
+      cancelLongPress();
+      prevent(event);
+
+      const worksheet = this.univerAPI?.getActiveWorkbook()?.getActiveSheet();
+      if (!worksheet) return;
+      const targetColumn = Math.max(0, Math.min(
+        worksheet.getMaxColumns() - 1,
+        touchPan.startColumn + Math.round(-deltaX / touchPan.columnStep),
+      ));
+      const targetRow = Math.max(0, Math.min(
+        worksheet.getMaxRows() - 1,
+        touchPan.startRow + Math.round(-deltaY / touchPan.rowStep),
+      ));
+      if (targetColumn === touchPan.lastColumn && targetRow === touchPan.lastRow) return;
+
+      touchPan.lastColumn = targetColumn;
+      touchPan.lastRow = targetRow;
+      worksheet.scrollToCell(targetRow, targetColumn);
     };
     const endLongPress = (event: PointerEvent): void => {
       if (longPressTriggered) {
@@ -3859,6 +3962,11 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         longPressTriggered = false;
       }
       cancelLongPress();
+    };
+    const endTouchPan = (event: PointerEvent): void => {
+      if (!touchPan || touchPan.pointerId !== event.pointerId) return;
+      if (touchPan.panning) prevent(event);
+      touchPan = undefined;
     };
     const enforceReadonlyEditorSurface = (): void => {
       host.querySelectorAll<HTMLElement>('[data-u-comp="editor"], [contenteditable]').forEach(editor => {
@@ -3882,9 +3990,13 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     host.addEventListener('compositionupdate', blockInputMutation, true);
     host.addEventListener('compositionend', blockInputMutation, true);
     host.addEventListener('pointerdown', startLongPress, true);
+    host.addEventListener('pointerdown', startTouchPan, true);
     host.addEventListener('pointermove', moveLongPress, true);
+    host.addEventListener('pointermove', moveTouchPan, true);
     host.addEventListener('pointerup', endLongPress, true);
+    host.addEventListener('pointerup', endTouchPan, true);
     host.addEventListener('pointercancel', endLongPress, true);
+    host.addEventListener('pointercancel', endTouchPan, true);
     document.body.classList.add('excel-view-only');
     window.addEventListener('pointerdown', trackViewerInteraction, true);
     window.addEventListener('focusin', trackViewerInteraction, true);
@@ -3911,14 +4023,19 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       host.removeEventListener('compositionupdate', blockInputMutation, true);
       host.removeEventListener('compositionend', blockInputMutation, true);
       host.removeEventListener('pointerdown', startLongPress, true);
+      host.removeEventListener('pointerdown', startTouchPan, true);
       host.removeEventListener('pointermove', moveLongPress, true);
+      host.removeEventListener('pointermove', moveTouchPan, true);
       host.removeEventListener('pointerup', endLongPress, true);
+      host.removeEventListener('pointerup', endTouchPan, true);
       host.removeEventListener('pointercancel', endLongPress, true);
+      host.removeEventListener('pointercancel', endTouchPan, true);
       window.removeEventListener('pointerdown', trackViewerInteraction, true);
       window.removeEventListener('focusin', trackViewerInteraction, true);
       window.removeEventListener('keydown', blockViewerShortcuts, true);
       document.body.classList.remove('excel-view-only');
       cancelLongPress();
+      touchPan = undefined;
       observer.disconnect();
       this.removeReadonlyInteractionGuard = undefined;
     };

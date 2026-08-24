@@ -3,14 +3,17 @@ import test from 'node:test';
 import {
   buildExcelPreviewContextMenu,
   buildExcelPreviewFilterCriteria,
+  calculateExcelPreviewSmartLayout,
   classifyExcelPreviewContextTarget,
   getExcelColumnLabel,
+  getExcelPreviewUsedRange,
   inferExcelPreviewSortKind,
   isExcelPreviewTextEntryElement,
   isSafeExcelHyperlink,
   parseExcelGoToTarget,
   removeExcelPreviewViewChange,
   serializeExcelPreviewGrid,
+  shouldExcelPreviewTextEntryOwnShortcut,
   upsertExcelPreviewViewChange,
   type ExcelPreviewMenuAction,
 } from './excel-viewer-tools';
@@ -24,7 +27,6 @@ const capabilities = {
   hasMultipleSheets: true,
   gridlinesHidden: false,
   frozen: true,
-  sortKind: 'text' as const,
 };
 
 test('parses safe A1 go-to targets with optional quoted sheet names', () => {
@@ -44,7 +46,7 @@ test('serializes displayed, raw or formula grids as tab-separated text', () => {
   );
 });
 
-test('formats zero-based Excel column indexes and infers contextual sort labels', () => {
+test('formats zero-based Excel column indexes and infers value kinds', () => {
   assert.equal(getExcelColumnLabel(0), 'A');
   assert.equal(getExcelColumnLabel(25), 'Z');
   assert.equal(getExcelColumnLabel(26), 'AA');
@@ -56,10 +58,46 @@ test('formats zero-based Excel column indexes and infers contextual sort labels'
   assert.equal(inferExcelPreviewSortKind([new Date(2026, 0, 1), new Date(2026, 0, 2)]), 'date');
   assert.equal(inferExcelPreviewSortKind([46257, 46258], 'dd/mm/yyyy'), 'date');
   assert.equal(inferExcelPreviewSortKind([1, 'A']), 'mixed');
+});
 
-  const numberMenu = buildExcelPreviewContextMenu('column', { ...capabilities, sortKind: 'number' });
-  assert.ok(numberMenu.some(item => item.label === 'Sắp xếp nhỏ → lớn'));
-  assert.ok(numberMenu.some(item => item.label === 'Sắp xếp lớn → nhỏ'));
+test('finds the true populated bounds without expanding to allocated or styled-only cells', () => {
+  assert.deepEqual(getExcelPreviewUsedRange({
+    0: { 0: { s: { bl: 1 } } },
+    1: { 1: { v: 'Header' } },
+    4: { 3: { v: 0 }, 4: { v: false } },
+    19: { 5: { f: '=SUM(D5:E5)' } },
+    199: { 25: { s: { bg: { rgb: '#FFFFFF' } } } },
+  }), {
+    startRow: 1,
+    startColumn: 1,
+    endRow: 19,
+    endColumn: 5,
+  });
+
+  assert.equal(getExcelPreviewUsedRange({
+    0: { 0: { v: '' } },
+    199: { 25: { s: { bl: 1 } } },
+  }), undefined);
+});
+
+test('calculates deterministic smart-fit widths and wrapped row heights from displayed content', () => {
+  const layout = calculateExcelPreviewSmartLayout([
+    ['Mã', 'Mô tả'],
+    ['A01', 'Nội dung mô tả rất dài cần được xuống dòng thay vì kéo cột rộng vô hạn'],
+    ['A02', 'Dòng 1\nDòng 2'],
+  ], {
+    minColumnWidth: 72,
+    maxColumnWidth: 180,
+    minRowHeight: 24,
+    maxRowHeight: 160,
+  });
+
+  assert.equal(layout.columnWidths.length, 2);
+  assert.equal(layout.columnWidths[0], 72);
+  assert.equal(layout.columnWidths[1], 180);
+  assert.equal(layout.rowHeights[0], 24);
+  assert.ok(layout.rowHeights[1] > 24);
+  assert.ok(layout.rowHeights[2] > 24);
 });
 
 test('keeps text-entry shortcuts local to inputs and textboxes', () => {
@@ -69,13 +107,19 @@ test('keeps text-entry shortcuts local to inputs and textboxes', () => {
   assert.equal(isExcelPreviewTextEntryElement('div', true), true);
   assert.equal(isExcelPreviewTextEntryElement('div', false, 'textbox'), true);
   assert.equal(isExcelPreviewTextEntryElement('canvas'), false);
+
+  assert.equal(shouldExcelPreviewTextEntryOwnShortcut('INPUT'), true);
+  assert.equal(shouldExcelPreviewTextEntryOwnShortcut('div', true), true);
+  assert.equal(shouldExcelPreviewTextEntryOwnShortcut('INPUT', false, '', true), false);
+  assert.equal(shouldExcelPreviewTextEntryOwnShortcut('div', true, '', true), false);
 });
 
-test('builds explicit view-only submenus and safe hyperlink decisions', () => {
+test('builds a compact secondary menu and safe hyperlink decisions', () => {
   const more = buildExcelPreviewContextMenu('more', capabilities);
-  const format = more.find(item => item.action === 'submenu-format');
   const layout = more.find(item => item.action === 'submenu-layout');
-  assert.ok(format?.submenu?.some(item => item.action === 'align-center'));
+  assert.equal(more.some(item => item.action === 'submenu-format'), false);
+  assert.equal(more.some(item => item.action === 'submenu-data'), false);
+  assert.equal(more.some(item => item.action === 'reset-view'), false);
   assert.ok(layout?.submenu?.some(item => item.action === 'toggle-gridlines'));
   assert.equal(isSafeExcelHyperlink('https://example.com/a?q=1'), true);
   assert.equal(isSafeExcelHyperlink('mailto:test@example.com'), true);
@@ -135,6 +179,7 @@ test('returns only the explicit view-only whitelist for each context target', ()
   const columnActions = buildExcelPreviewContextMenu('column', capabilities).map(item => item.action);
   const rowActions = buildExcelPreviewContextMenu('row', capabilities).map(item => item.action);
   const sheetActions = buildExcelPreviewContextMenu('sheet', capabilities).map(item => item.action);
+  const navigationActions = buildExcelPreviewContextMenu('navigation', capabilities).map(item => item.action);
 
   assert.ok(cellActions.includes('copy-display'));
   assert.ok(cellActions.includes('filter-by-value'));
@@ -151,11 +196,14 @@ test('returns only the explicit view-only whitelist for each context target', ()
   assert.ok(sheetActions.includes('reset-view'));
   assert.ok(sheetActions.includes('sheet-list'));
   assert.ok(sheetActions.includes('zoom-100'));
+  assert.deepEqual(navigationActions, ['find', 'go-to', 'select-data-range']);
 
   const forbidden = new Set<ExcelPreviewMenuAction | string>([
     'set-value', 'paste', 'cut', 'delete', 'insert-row', 'insert-column', 'rename-sheet', 'delete-sheet',
+    'sort-asc', 'sort-desc', 'fit-width', 'toggle-wrap', 'autofit-columns', 'autofit-rows',
+    'submenu-format', 'submenu-data',
   ]);
-  for (const target of ['cell', 'column', 'row', 'sheet', 'more'] as const) {
+  for (const target of ['cell', 'column', 'row', 'sheet', 'navigation', 'more'] as const) {
     const actions = buildExcelPreviewContextMenu(target, capabilities).map(menuItem => menuItem.action);
     assert.equal(actions.some(action => forbidden.has(action)), false);
   }

@@ -1,6 +1,6 @@
 import type { CustomFilterOperator, IFilterColumn } from '@univerjs/sheets-filter';
 
-export type ExcelPreviewContextTarget = 'cell' | 'column' | 'row' | 'sheet' | 'more';
+export type ExcelPreviewContextTarget = 'cell' | 'column' | 'row' | 'sheet' | 'navigation' | 'more';
 
 export type ExcelPreviewMenuAction =
   | 'copy-display'
@@ -11,6 +11,8 @@ export type ExcelPreviewMenuAction =
   | 'copy-sheet-name'
   | 'copy-column-name'
   | 'copy-row-number'
+  | 'find'
+  | 'select-data-range'
   | 'find-value'
   | 'find-selection'
   | 'open-filter'
@@ -19,15 +21,9 @@ export type ExcelPreviewMenuAction =
   | 'filter-blanks'
   | 'filter-non-blanks'
   | 'clear-column-filter'
-  | 'sort-asc'
-  | 'sort-desc'
   | 'align-left'
   | 'align-center'
   | 'align-right'
-  | 'toggle-wrap'
-  | 'autofit-columns'
-  | 'autofit-rows'
-  | 'fit-width'
   | 'fit-selection'
   | 'zoom-100'
   | 'set-column-width'
@@ -46,8 +42,6 @@ export type ExcelPreviewMenuAction =
   | 'open-hyperlink'
   | 'cell-info'
   | 'selection-info'
-  | 'submenu-format'
-  | 'submenu-data'
   | 'submenu-layout'
   | 'reset-column-view'
   | 'reset-row-view'
@@ -107,7 +101,18 @@ export interface ExcelPreviewMenuCapabilities {
   hasMultipleSheets: boolean;
   gridlinesHidden: boolean;
   frozen: boolean;
-  sortKind: ExcelPreviewSortKind;
+}
+
+export interface ExcelPreviewUsedRange {
+  startRow: number;
+  startColumn: number;
+  endRow: number;
+  endColumn: number;
+}
+
+export interface ExcelPreviewSmartLayout {
+  columnWidths: number[];
+  rowHeights: number[];
 }
 
 const item = (
@@ -127,13 +132,6 @@ export function buildExcelPreviewContextMenu(
   target: ExcelPreviewContextTarget,
   capabilities: ExcelPreviewMenuCapabilities,
 ): ExcelPreviewMenuItem[] {
-  const sortLabels: Record<ExcelPreviewSortKind, [string, string]> = {
-    text: ['Sắp xếp A → Z', 'Sắp xếp Z → A'],
-    number: ['Sắp xếp nhỏ → lớn', 'Sắp xếp lớn → nhỏ'],
-    date: ['Sắp xếp cũ → mới', 'Sắp xếp mới → cũ'],
-    mixed: ['Sắp xếp tăng dần', 'Sắp xếp giảm dần'],
-  };
-  const [ascendingLabel, descendingLabel] = sortLabels[capabilities.sortKind];
   const copyItems: ExcelPreviewMenuItem[] = [
     item('copy-display', 'Sao chép như đang hiển thị', 'fa-copy', 'clipboard', { shortcut: 'Ctrl+C' }),
     item('copy-raw', 'Sao chép giá trị gốc', 'fa-code', 'clipboard'),
@@ -194,14 +192,9 @@ export function buildExcelPreviewContextMenu(
       item('clear-column-filter', 'Xóa lọc ở cột này', 'fa-filter-circle-xmark', 'find-filter', {
         ...disabled(!capabilities.hasFilter, 'Cột đang chọn chưa có điều kiện lọc.'),
       }),
-      item('sort-asc', ascendingLabel, 'fa-arrow-down-a-z', 'sort'),
-      item('sort-desc', descendingLabel, 'fa-arrow-up-z-a', 'sort'),
       item('align-left', 'Căn trái', 'fa-align-left', 'format'),
       item('align-center', 'Căn giữa', 'fa-align-center', 'format'),
       item('align-right', 'Căn phải', 'fa-align-right', 'format'),
-      item('toggle-wrap', 'Bật/tắt xuống dòng', 'fa-align-justify', 'format'),
-      item('autofit-columns', 'Vừa độ rộng cột', 'fa-arrows-left-right-to-line', 'format'),
-      item('autofit-rows', 'Vừa chiều cao hàng', 'fa-arrows-up-down-to-line', 'format'),
       item('fit-selection', 'Vừa vùng đang chọn', 'fa-expand', 'format'),
       item('freeze-selection', 'Cố định tới ô đang chọn', 'fa-thumbtack', 'layout'),
       ...sharedViewItems,
@@ -232,13 +225,9 @@ export function buildExcelPreviewContextMenu(
       item('clear-column-filter', 'Xóa lọc ở cột này', 'fa-filter-circle-xmark', 'find-filter', {
         ...disabled(!capabilities.hasFilter, 'Cột đang chọn chưa có điều kiện lọc.'),
       }),
-      item('sort-asc', ascendingLabel, 'fa-arrow-down-a-z', 'sort'),
-      item('sort-desc', descendingLabel, 'fa-arrow-up-z-a', 'sort'),
       item('align-left', 'Căn trái', 'fa-align-left', 'format'),
       item('align-center', 'Căn giữa', 'fa-align-center', 'format'),
       item('align-right', 'Căn phải', 'fa-align-right', 'format'),
-      item('toggle-wrap', 'Bật/tắt xuống dòng', 'fa-align-justify', 'format'),
-      item('autofit-columns', 'Vừa độ rộng cột', 'fa-arrows-left-right-to-line', 'format'),
       item('set-column-width', 'Đặt độ rộng cột…', 'fa-ruler-horizontal', 'format'),
       item('freeze-selection', 'Cố định tới cột này', 'fa-thumbtack', 'layout'),
       item('hide-columns', 'Ẩn cột đã chọn', 'fa-eye-slash', 'layout'),
@@ -255,8 +244,6 @@ export function buildExcelPreviewContextMenu(
       item('find-selection', 'Tìm giá trị đang chọn trong hàng', 'fa-magnifying-glass', 'find-filter', {
         ...disabled(!capabilities.hasValue, 'Ô đang chọn không có giá trị để tìm.'),
       }),
-      item('toggle-wrap', 'Bật/tắt xuống dòng', 'fa-align-justify', 'format'),
-      item('autofit-rows', 'Vừa chiều cao hàng', 'fa-arrows-up-down-to-line', 'format'),
       item('set-row-height', 'Đặt chiều cao hàng…', 'fa-ruler-vertical', 'format'),
       item('freeze-selection', 'Cố định tới hàng này', 'fa-thumbtack', 'layout'),
       item('hide-rows', 'Ẩn hàng đã chọn', 'fa-eye-slash', 'layout'),
@@ -266,9 +253,15 @@ export function buildExcelPreviewContextMenu(
     ];
   }
 
+  if (target === 'navigation') {
+    return [
+      item('find', 'Tìm kiếm trong workbook…', 'fa-magnifying-glass', 'navigation', { shortcut: 'Ctrl+F' }),
+      item('go-to', 'Đi tới ô hoặc vùng…', 'fa-location-crosshairs', 'navigation', { shortcut: 'Ctrl+G' }),
+      item('select-data-range', 'Chọn toàn bộ vùng dữ liệu', 'fa-border-all', 'navigation', { shortcut: 'Ctrl+A' }),
+    ];
+  }
+
   const navigationItems: ExcelPreviewMenuItem[] = [
-    item('go-to', 'Đi tới ô hoặc vùng…', 'fa-location-crosshairs', 'navigation', { shortcut: 'Ctrl+G' }),
-    item('fit-width', 'Vừa chiều rộng', 'fa-maximize', 'navigation'),
     item('fit-selection', 'Vừa vùng đang chọn', 'fa-expand', 'navigation'),
     item('zoom-100', 'Trở về 100%', 'fa-magnifying-glass', 'navigation'),
     item('previous-sheet', 'Sheet trước', 'fa-chevron-left', 'navigation', {
@@ -283,31 +276,8 @@ export function buildExcelPreviewContextMenu(
 
   if (target === 'more') {
     return [
-      ...navigationItems.slice(0, 2),
-      item('submenu-format', 'Định dạng hiển thị…', 'fa-paintbrush', 'format', {
-        submenu: [
-          item('fit-selection', 'Vừa vùng đang chọn', 'fa-expand', 'format'),
-          item('zoom-100', 'Trở về 100%', 'fa-magnifying-glass', 'format'),
-          item('align-left', 'Căn trái', 'fa-align-left', 'format'),
-          item('align-center', 'Căn giữa', 'fa-align-center', 'format'),
-          item('align-right', 'Căn phải', 'fa-align-right', 'format'),
-          item('toggle-wrap', 'Bật/tắt xuống dòng', 'fa-align-justify', 'format'),
-          item('autofit-columns', 'Vừa độ rộng cột', 'fa-arrows-left-right-to-line', 'format'),
-          item('autofit-rows', 'Vừa chiều cao hàng', 'fa-arrows-up-down-to-line', 'format'),
-        ],
-      }),
-      item('submenu-data', 'Lọc và sắp xếp…', 'fa-filter', 'find-filter', {
-        submenu: [
-          item('filter-non-blanks', 'Chỉ hiện ô không trống', 'fa-filter-circle-check', 'find-filter', {
-            ...disabled(!capabilities.canFilter, 'Không có vùng dữ liệu đủ ít nhất hai hàng để lọc.'),
-          }),
-          item('filter-blanks', 'Chỉ hiện ô trống', 'fa-filter-circle-xmark', 'find-filter', {
-            ...disabled(!capabilities.canFilter, 'Không có vùng dữ liệu đủ ít nhất hai hàng để lọc.'),
-          }),
-          item('sort-asc', ascendingLabel, 'fa-arrow-down-a-z', 'sort'),
-          item('sort-desc', descendingLabel, 'fa-arrow-up-z-a', 'sort'),
-        ],
-      }),
+      item('fit-selection', 'Vừa vùng đang chọn', 'fa-expand', 'navigation'),
+      item('zoom-100', 'Trở về 100%', 'fa-magnifying-glass', 'navigation'),
       item('submenu-layout', 'Bố cục sheet…', 'fa-table-columns', 'layout', {
         submenu: [
           item('freeze-selection', 'Cố định tới ô đang chọn', 'fa-thumbtack', 'layout'),
@@ -324,15 +294,13 @@ export function buildExcelPreviewContextMenu(
           ),
         ],
       }),
-      ...navigationItems.slice(6),
-      item('reset-view', 'Đặt lại cách xem', 'fa-rotate-left', 'info'),
+      item('sheet-list', 'Danh sách sheet…', 'fa-list', 'navigation'),
+      item('copy-sheet-name', 'Sao chép tên sheet', 'fa-copy', 'clipboard'),
     ];
   }
 
   return [
     ...navigationItems,
-    item('autofit-columns', 'Vừa độ rộng vùng cột', 'fa-arrows-left-right-to-line', 'format'),
-    item('autofit-rows', 'Vừa chiều cao vùng hàng', 'fa-arrows-up-down-to-line', 'format'),
     item('show-all-columns', 'Hiện lại tất cả cột', 'fa-eye', 'layout'),
     item('show-all-rows', 'Hiện lại tất cả hàng', 'fa-eye', 'layout'),
     ...sharedViewItems,
@@ -350,6 +318,102 @@ export function getExcelColumnLabel(columnIndex: number): string {
     value = Math.floor(value / 26);
   }
   return label;
+}
+
+function hasExcelPreviewCellContent(cell: unknown): boolean {
+  if (!cell || typeof cell !== 'object') return false;
+  const data = cell as Record<string, unknown>;
+  const formula = data['f'];
+  if (formula !== undefined && formula !== null && String(formula).trim() !== '') return true;
+
+  if (Object.prototype.hasOwnProperty.call(data, 'v')) {
+    const value = data['v'];
+    if (value !== undefined && value !== null && !(typeof value === 'string' && value === '')) return true;
+  }
+
+  // Univer rich-text cells may carry paragraphs instead of a scalar value.
+  return data['p'] !== undefined && data['p'] !== null;
+}
+
+export function getExcelPreviewUsedRange(
+  cellData: unknown,
+): ExcelPreviewUsedRange | undefined {
+  if (!cellData || typeof cellData !== 'object') return undefined;
+
+  let startRow = Number.POSITIVE_INFINITY;
+  let startColumn = Number.POSITIVE_INFINITY;
+  let endRow = -1;
+  let endColumn = -1;
+
+  for (const [rowKey, rowValue] of Object.entries(cellData as Record<string, unknown>)) {
+    const row = Number(rowKey);
+    if (!Number.isInteger(row) || row < 0 || !rowValue || typeof rowValue !== 'object') continue;
+    for (const [columnKey, cell] of Object.entries(rowValue as Record<string, unknown>)) {
+      const column = Number(columnKey);
+      if (!Number.isInteger(column) || column < 0 || !hasExcelPreviewCellContent(cell)) continue;
+      startRow = Math.min(startRow, row);
+      startColumn = Math.min(startColumn, column);
+      endRow = Math.max(endRow, row);
+      endColumn = Math.max(endColumn, column);
+    }
+  }
+
+  if (endRow < 0 || endColumn < 0) return undefined;
+  return { startRow, startColumn, endRow, endColumn };
+}
+
+export function calculateExcelPreviewSmartLayout(
+  displayValues: string[][],
+  options: {
+    minColumnWidth?: number;
+    maxColumnWidth?: number;
+    minRowHeight?: number;
+    maxRowHeight?: number;
+    averageCharacterWidth?: number;
+    horizontalPadding?: number;
+    lineHeight?: number;
+  } = {},
+): ExcelPreviewSmartLayout {
+  const minColumnWidth = options.minColumnWidth ?? 80;
+  const maxColumnWidth = Math.max(minColumnWidth, options.maxColumnWidth ?? 260);
+  const minRowHeight = options.minRowHeight ?? 24;
+  const maxRowHeight = Math.max(minRowHeight, options.maxRowHeight ?? 180);
+  const averageCharacterWidth = options.averageCharacterWidth ?? 7;
+  const horizontalPadding = options.horizontalPadding ?? 18;
+  const lineHeight = options.lineHeight ?? 18;
+  const columnCount = displayValues.reduce((max, row) => Math.max(max, row.length), 0);
+  if (!columnCount || !displayValues.length) return { columnWidths: [], rowHeights: [] };
+
+  const columnWidths = Array.from({ length: columnCount }, () => minColumnWidth);
+  for (const row of displayValues) {
+    for (let column = 0; column < columnCount; column++) {
+      const value = String(row[column] ?? '');
+      const longestExplicitLine = value.split(/\r?\n/).reduce((max, line) => Math.max(max, line.length), 0);
+      const estimatedWidth = longestExplicitLine * averageCharacterWidth + horizontalPadding;
+      columnWidths[column] = Math.max(
+        columnWidths[column],
+        Math.min(maxColumnWidth, estimatedWidth),
+      );
+    }
+  }
+
+  const rowHeights = displayValues.map(row => {
+    let wrappedLineCount = 1;
+    for (let column = 0; column < columnCount; column++) {
+      const value = String(row[column] ?? '');
+      if (!value) continue;
+      const usableWidth = Math.max(averageCharacterWidth, columnWidths[column] - horizontalPadding);
+      const charactersPerLine = Math.max(1, Math.floor(usableWidth / averageCharacterWidth));
+      const lines = value.split(/\r?\n/).reduce(
+        (count, line) => count + Math.max(1, Math.ceil(line.length / charactersPerLine)),
+        0,
+      );
+      wrappedLineCount = Math.max(wrappedLineCount, lines);
+    }
+    return Math.max(minRowHeight, Math.min(maxRowHeight, wrappedLineCount * lineHeight + 6));
+  });
+
+  return { columnWidths, rowHeights };
 }
 
 export function inferExcelPreviewSortKind(values: unknown[], numberFormat = ''): ExcelPreviewSortKind {
@@ -398,6 +462,15 @@ export function isExcelPreviewTextEntryElement(
 ): boolean {
   return contentEditable || ['input', 'textarea', 'select'].includes(tagName.toLocaleLowerCase()) ||
     role.toLocaleLowerCase() === 'textbox';
+}
+
+export function shouldExcelPreviewTextEntryOwnShortcut(
+  tagName: string,
+  contentEditable = false,
+  role = '',
+  insideWorkbookHost = false,
+): boolean {
+  return !insideWorkbookHost && isExcelPreviewTextEntryElement(tagName, contentEditable, role);
 }
 
 export function isSafeExcelHyperlink(url: string): boolean {

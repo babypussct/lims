@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.24-b06",
-    "title": "Khắc phục Excel Viewer trắng màn hình và ổn định layout Univer",
+    "version": "v26.08.24-b07",
+    "title": "Hoàn thiện Excel Viewer với Smart Fit, Ctrl+A theo vùng dữ liệu và điều hướng ổn định",
     "features": [
-      "Khắc phục lỗi Excel Viewer tạo được workbook nhưng vùng bảng trắng do canvas có chiều cao 0.",
-      "Khôi phục layout đúng của thanh sheet và vùng bảng bằng cách nạp CSS preset Univer ở phạm vi global.",
-      "Bổ sung regression guard và checklist QA để ngăn lỗi CSS Univer quay trở lại trong các lần phát hành sau.",
-      "Chuyển sáu stylesheet preset của Univer vào global styles của Angular để CSS utility áp dụng đầy đủ cho DOM động.",
-      "Bổ sung kiểm thử xác nhận các stylesheet Univer luôn nằm trong angular.json và không bị import lại ở component scope."
+      "Ctrl+A trong Excel Viewer giờ chỉ chọn đúng vùng dữ liệu thực tế của sheet thay vì toàn bộ worksheet của Univer.",
+      "Smart Fit tự tính độ rộng cột, wrap text và chiều cao hàng cho mọi sheet để nội dung dài luôn hiển thị đầy đủ.",
+      "Chuyển sheet không còn xuất hiện hộp thoại quyền do các bước tinh chỉnh layout được hoàn tất trước khi khóa bản xem trước ở chế độ chỉ đọc.",
+      "Tinh gọn thanh công cụ Excel Viewer thành nhóm điều hướng và nhóm công cụ xem, giảm các thao tác định dạng không cần thiết trong bản xem trước chỉ đọc.",
+      "Bổ sung Smart Fit deterministic làm fallback cho cả sheet chưa render, sau đó dùng cơ chế auto-resize của Univer để tinh chỉnh khi skeleton đã sẵn sàng."
     ]
   },
   "assetGroups": [

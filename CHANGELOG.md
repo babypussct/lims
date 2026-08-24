@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.24-b06
+## Phiên bản hiện tại: v26.08.24-b07
+
+### v26.08.24-b07
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Ctrl+A trong Excel Viewer giờ chỉ chọn đúng vùng dữ liệu thực tế của sheet thay vì toàn bộ worksheet của Univer.
+- Smart Fit tự tính độ rộng cột, wrap text và chiều cao hàng cho mọi sheet để nội dung dài luôn hiển thị đầy đủ.
+- Chuyển sheet không còn xuất hiện hộp thoại quyền do các bước tinh chỉnh layout được hoàn tất trước khi khóa bản xem trước ở chế độ chỉ đọc.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tinh gọn thanh công cụ Excel Viewer thành nhóm điều hướng và nhóm công cụ xem, giảm các thao tác định dạng không cần thiết trong bản xem trước chỉ đọc.
+- Bổ sung Smart Fit deterministic làm fallback cho cả sheet chưa render, sau đó dùng cơ chế auto-resize của Univer để tinh chỉnh khi skeleton đã sẵn sàng.
+- Cải thiện thao tác cảm ứng trên bảng tính và bổ sung regression tests cho used range, Smart Fit, shortcut ownership và hành vi chuyển sheet.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Chặn command select-all gốc của Univer bằng CanceledError để Ctrl+A không thể ghi đè vùng dữ liệu đã chọn.
+- Sửa lỗi wrap text và auto height không có hiệu lực ổn định trên các sheet chưa active bằng cách áp kích thước trực tiếp từ display values trước khi refine.
+- Sửa regression bật popup 'phạm vi đã được bảo vệ' khi đổi sheet bằng cách hoàn tất toàn bộ thao tác format trước khi thiết lập quyền read-only.
 
 ### v26.08.24-b06
 
