@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.23-b01",
-    "title": "Trải nghiệm xem bảng tính Excel trực quan và nâng cấp an toàn đồng bộ mã chất chuẩn",
+    "version": "v26.08.24-b02",
+    "title": "Nâng cấp trình xem bảng tính Excel chỉ xem an toàn, tra cứu nhanh và thao tác linh hoạt trên mọi thiết bị",
     "features": [
-      "Xem trực tiếp bảng tính Excel trong mục Tài liệu với giao diện đầy đủ trang tính, công thức và giữ nguyên định dạng gốc.",
-      "Bảo toàn chính xác định dạng ngày giờ địa phương và bảo vệ nội dung biểu mẫu ở chế độ chỉ đọc an toàn.",
-      "Nâng cao độ ổn định và an toàn phân quyền khi đồng bộ chuẩn hóa mã quản lý nội bộ cho danh mục chất chuẩn lớn.",
-      "Bổ sung trình xem bảng tính Excel chuyên dụng trong mục Tài liệu, cho phép chuyển đổi qua lại giữa các sheet, tra cứu công thức và tải về file gốc nhanh chóng.",
-      "Hiển thị bảng tính chuẩn xác về màu sắc, căn lề ô, phông chữ và kích thước dòng cột tương tự ứng dụng văn phòng quen thuộc."
+      "Xem bảng tính Excel trực tiếp trong mục Tài liệu với chế độ chỉ xem an toàn tuyệt đối, ngăn ngừa hoàn toàn nguy cơ vô tình chỉnh sửa biểu mẫu gốc.",
+      "Bổ sung thanh công cụ và phím tắt tiện ích: tìm kiếm nhanh, đi tới ô dữ liệu, lọc và sắp xếp trực quan ngay trên bản xem trước.",
+      "Khắc phục triệt để lỗi trang tính bị trắng khi mở các tập tin có cài đặt bộ lọc, tối ưu hiển thị mượt mà trên cả máy tính và điện thoại.",
+      "Thanh công cụ xem bảng tính tiện lợi: hỗ trợ tìm kiếm nội dung (Ctrl+F), chọn nhanh vùng dữ liệu (Ctrl+A), đi tới ô hoặc phạm vi chỉ định (Ctrl+G), bật bộ lọc nhanh (Ctrl+Shift+L) và sắp xếp thứ tự dữ liệu.",
+      "Menu thao tác nhanh qua chuột phải hoặc chạm giữ trên màn hình cảm ứng: cho phép sao chép dữ liệu linh hoạt, tra cứu nhanh giá trị ô, xem thông tin chi tiết và điều chỉnh căn lề hiển thị."
     ]
   },
   "assetGroups": [

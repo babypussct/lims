@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import ExcelJS from 'exceljs';
 import {
+  applyExcelAutoFilterSafely,
   EXCEL_PRESERVATION_CONTRACT,
+  getApplicableExcelAutoFilterRange,
   extractExcelJsWorkbookMetadata,
+  getPreviewFilterCandidateRange,
   loadExcelWorkbookMetadata,
 } from './excel-univer-metadata';
 
@@ -51,6 +54,130 @@ test('preservation contract extracts freeze pane, autofilter, hyperlink and note
   }]);
 });
 
+test('preserves exact one-row AutoFilter metadata without widening it', async () => {
+  const workbook = new ExcelJS.Workbook();
+
+  const normal = workbook.addWorksheet('Normal filter');
+  normal.addRows([
+    ['Name', 'Value', 'Status', 'Comment'],
+    ['OpenAI', 42, 'OK', 'Observed'],
+    ['Univer', 25, 'OK', 'Preview'],
+  ]);
+  normal.autoFilter = 'A1:D3';
+
+  const oneRow = workbook.addWorksheet('Single row filter');
+  oneRow.addRow(['Header 1', 'Header 2', 'Header 3', 'Header 4']);
+  oneRow.autoFilter = 'A1:D1';
+
+  const oneCell = workbook.addWorksheet('Single cell filter');
+  oneCell.addRow(['Header']);
+  oneCell.autoFilter = 'A1';
+
+  const headerOnly = workbook.addWorksheet('Header only');
+  headerOnly.addRow(['Name', 'Value', 'Status', 'Comment']);
+  headerOnly.autoFilter = 'A1:D1';
+
+  const serialized = await workbook.xlsx.writeBuffer();
+  const reloaded = new ExcelJS.Workbook();
+  await reloaded.xlsx.load(serialized);
+  const metadata = extractExcelJsWorkbookMetadata(reloaded);
+
+  assert.deepEqual(metadata.sheets.map(sheet => sheet.autoFilter), [
+    { startRow: 0, startColumn: 0, endRow: 2, endColumn: 3 },
+    { startRow: 0, startColumn: 0, endRow: 0, endColumn: 3 },
+    { startRow: 0, startColumn: 0, endRow: 0, endColumn: 0 },
+    { startRow: 0, startColumn: 0, endRow: 0, endColumn: 3 },
+  ]);
+
+  assert.deepEqual(
+    getApplicableExcelAutoFilterRange(metadata.sheets[0].autoFilter, { rows: 3, columns: 4 }),
+    { startRow: 0, startColumn: 0, endRow: 2, endColumn: 3 },
+  );
+  assert.equal(
+    getApplicableExcelAutoFilterRange(metadata.sheets[1].autoFilter, { rows: 10, columns: 4 }),
+    undefined,
+  );
+  assert.equal(
+    getApplicableExcelAutoFilterRange(metadata.sheets[2].autoFilter, { rows: 10, columns: 4 }),
+    undefined,
+  );
+  assert.equal(
+    getApplicableExcelAutoFilterRange(metadata.sheets[3].autoFilter, { rows: 1, columns: 4 }),
+    undefined,
+  );
+
+  // A clipped valid range may shrink, but a one-row preview must never be
+  // expanded with a synthetic data row just to satisfy Univer.
+  assert.equal(
+    getApplicableExcelAutoFilterRange(metadata.sheets[0].autoFilter, { rows: 1, columns: 4 }),
+    undefined,
+  );
+});
+
+test('decides AutoFilter application independently from the Univer side effect', () => {
+  const normalFilter = { startRow: 0, startColumn: 0, endRow: 2, endColumn: 3 };
+  const oneRowFilter = { startRow: 0, startColumn: 0, endRow: 0, endColumn: 3 };
+  const appliedRanges: typeof normalFilter[] = [];
+
+  assert.equal(
+    applyExcelAutoFilterSafely(normalFilter, { rows: 3, columns: 4 }, range => {
+      appliedRanges.push(range);
+    }),
+    'applied',
+  );
+  assert.deepEqual(appliedRanges, [normalFilter]);
+
+  assert.equal(
+    applyExcelAutoFilterSafely(oneRowFilter, { rows: 10, columns: 4 }, range => {
+      appliedRanges.push(range);
+    }),
+    'skipped',
+  );
+  assert.deepEqual(appliedRanges, [normalFilter]);
+
+  let readyEvents = 0;
+  let failedEvents = 0;
+  const cellValue = { value: 'Header remains visible' };
+  try {
+    assert.equal(
+      applyExcelAutoFilterSafely(normalFilter, { rows: 3, columns: 4 }, () => {
+        throw new Error('simulated Univer filter failure');
+      }),
+      'failed',
+    );
+    readyEvents++;
+  } catch {
+    failedEvents++;
+  }
+  assert.equal(readyEvents, 1);
+  assert.equal(failedEvents, 0);
+  assert.equal(cellValue.value, 'Header remains visible');
+});
+
+test('uses the selected data area for an explicit preview filter and falls back safely', () => {
+  const selectedTable = { startRow: 4, startColumn: 1, endRow: 12, endColumn: 5 };
+  const worksheetData = { startRow: 0, startColumn: 0, endRow: 30, endColumn: 7 };
+
+  assert.deepEqual(
+    getPreviewFilterCandidateRange(selectedTable, worksheetData),
+    selectedTable,
+  );
+  assert.deepEqual(
+    getPreviewFilterCandidateRange(
+      { startRow: 4, startColumn: 1, endRow: 4, endColumn: 5 },
+      worksheetData,
+    ),
+    worksheetData,
+  );
+  assert.equal(
+    getPreviewFilterCandidateRange(
+      { startRow: 0, startColumn: 0, endRow: 0, endColumn: 3 },
+      { startRow: 0, startColumn: 0, endRow: 0, endColumn: 3 },
+    ),
+    undefined,
+  );
+});
+
 test('preservation contract reports unsupported metadata and blocks conditional formatting', async () => {
   const workbook = new ExcelJS.Workbook();
   const results = workbook.addWorksheet('Results', {
@@ -67,7 +194,7 @@ test('preservation contract reports unsupported metadata and blocks conditional 
   results.getCell('C3').note = 'Kiểm tra lại với hồ sơ gốc';
   results.addConditionalFormatting({
     ref: 'B3:B4',
-    rules: [{ type: 'expression', formulae: ['B3>1'], style: { font: { bold: true } } }],
+    rules: [{ type: 'expression', formulae: ['B3>1'], priority: 1, style: { font: { bold: true } } }],
   });
   const resultsWithValidation = results as typeof results & {
     dataValidations: { add: (address: string, validation: Record<string, unknown>) => void };

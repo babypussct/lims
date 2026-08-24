@@ -395,3 +395,8 @@ html.performance-lite .transition-all {
     animation: none !important;
   }
 }
+
+/* The workbook preview may search, but must not expose Univer's replace affordance. */
+body.excel-view-only [data-u-comp="find-replace-dialog"] a {
+  display: none !important;
+}

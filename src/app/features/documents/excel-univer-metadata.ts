@@ -35,6 +35,13 @@ export interface ExcelRangeMetadata {
   endColumn: number;
 }
 
+export interface ExcelSheetBounds {
+  rows: number;
+  columns: number;
+}
+
+export type ExcelAutoFilterApplyResult = 'applied' | 'skipped' | 'failed';
+
 export interface ExcelHyperlinkMetadata {
   row: number;
   column: number;
@@ -71,6 +78,100 @@ export interface ExcelWorkbookMetadataLoadResult {
   metadata: ExcelWorkbookMetadata;
   limited: boolean;
   blockingFeatures: ExcelUnsupportedFeatureSummary[];
+}
+
+function isInteger(value: number): boolean {
+  return Number.isInteger(value) && Number.isFinite(value);
+}
+
+/**
+ * Returns the part of an AutoFilter range that can be applied to the preview.
+ *
+ * ExcelJS preserves one-row AutoFilter metadata, but Univer 0.25.1 rejects
+ * that range. Keep the original metadata intact and omit the filter instead
+ * of widening it or changing the workbook's meaning.
+ */
+export function getApplicableExcelAutoFilterRange(
+  autoFilter: ExcelRangeMetadata | undefined,
+  bounds: ExcelSheetBounds,
+): ExcelRangeMetadata | undefined {
+  if (!autoFilter || bounds.rows <= 0 || bounds.columns <= 0) return undefined;
+
+  const rangeValues = [
+    autoFilter.startRow,
+    autoFilter.startColumn,
+    autoFilter.endRow,
+    autoFilter.endColumn,
+    bounds.rows,
+    bounds.columns,
+  ];
+  if (!rangeValues.every(isInteger)) return undefined;
+  if (autoFilter.startRow < 0 || autoFilter.startColumn < 0) return undefined;
+  if (autoFilter.endRow < autoFilter.startRow || autoFilter.endColumn < autoFilter.startColumn) {
+    return undefined;
+  }
+
+  const endRow = Math.min(autoFilter.endRow, bounds.rows - 1);
+  const endColumn = Math.min(autoFilter.endColumn, bounds.columns - 1);
+
+  // Univer requires a header row plus at least one more row. Do not create a
+  // synthetic row when the source AutoFilter has only one row.
+  if (endRow <= autoFilter.startRow || endColumn < autoFilter.startColumn) return undefined;
+
+  return {
+    ...autoFilter,
+    endRow,
+    endColumn,
+  };
+}
+
+/**
+ * Applies a filter only when its source range is compatible with the preview.
+ * A filter is optional metadata: an incompatible or failing filter must not
+ * reject the workbook that already contains the cell contents.
+ */
+export function applyExcelAutoFilterSafely(
+  autoFilter: ExcelRangeMetadata | undefined,
+  bounds: ExcelSheetBounds,
+  apply: (range: ExcelRangeMetadata) => void,
+): ExcelAutoFilterApplyResult {
+  const range = getApplicableExcelAutoFilterRange(autoFilter, bounds);
+  if (!range) return 'skipped';
+
+  try {
+    apply(range);
+    return 'applied';
+  } catch {
+    return 'failed';
+  }
+}
+
+/**
+ * Chooses a range for a filter that the viewer user explicitly requests.
+ *
+ * This is intentionally separate from source AutoFilter preservation. Source
+ * metadata is never widened automatically, while a user-triggered preview
+ * filter may fall back from a one-row selection to the sheet's data range.
+ */
+export function getPreviewFilterCandidateRange(
+  selectedRange: ExcelRangeMetadata,
+  dataRange: ExcelRangeMetadata,
+): ExcelRangeMetadata | undefined {
+  const isValidRange = (range: ExcelRangeMetadata): boolean => {
+    const values = [range.startRow, range.startColumn, range.endRow, range.endColumn];
+    return values.every(isInteger) &&
+      range.startRow >= 0 &&
+      range.startColumn >= 0 &&
+      range.endRow >= range.startRow &&
+      range.endColumn >= range.startColumn;
+  };
+
+  const candidate = isValidRange(selectedRange) && selectedRange.endRow > selectedRange.startRow
+    ? selectedRange
+    : dataRange;
+  if (!isValidRange(candidate) || candidate.endRow <= candidate.startRow) return undefined;
+
+  return { ...candidate };
 }
 
 function parseColumnIndex(column: string): number | undefined {

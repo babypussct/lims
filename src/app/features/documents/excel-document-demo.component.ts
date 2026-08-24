@@ -40,7 +40,7 @@ const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.
              [class.fa-circle-notch]="!ready() && !error()" [class.fa-spin]="!ready() && !error()"></i>
           {{ error() || (ready() ? 'Đã nạp workbook · bản xem trước chỉ đọc' : 'Đang nạp workbook mẫu...') }}
         </span>
-        <span class="excel-demo-tip"><i class="fa-solid fa-lightbulb"></i> Chọn ô, xem công thức, tìm kiếm bằng Ctrl+F, chuyển sheet và điều chỉnh zoom.</span>
+        <span class="excel-demo-tip"><i class="fa-solid fa-lightbulb"></i> Ctrl+A chọn vùng, Ctrl+Shift+L mở Filter, Ctrl+F tìm kiếm.</span>
       </div>
 
       <section class="excel-demo-viewer" aria-label="Vùng trình diễn Excel">
@@ -321,6 +321,8 @@ export class ExcelDocumentDemoComponent {
       ['HƯỚNG DẪN THAO TÁC', null],
       ['Tác vụ', 'Mô tả'],
       ['Chọn ô', 'Dùng chuột hoặc phím mũi tên để di chuyển trong bảng.'],
+      ['Chọn vùng dữ liệu', 'Nhấn Ctrl+A để chọn nhanh vùng có dữ liệu của sheet.'],
+      ['Filter', 'Nhấn Ctrl+Shift+L để tạo hoặc mở bộ lọc tạm trong bản xem trước.'],
       ['Tìm kiếm', 'Nhấn Ctrl+F để mở công cụ tìm kiếm của Univer.'],
       ['Chỉ đọc', 'Mọi thao tác chỉ diễn ra trong bản xem trước, không ghi lại tệp gốc.'],
     ]);

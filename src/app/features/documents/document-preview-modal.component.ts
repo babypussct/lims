@@ -58,9 +58,6 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
               <span>{{ formatSize(item.size) }}</span>
               <span class="hidden sm:inline">•</span>
               <span class="hidden sm:inline">{{ formatDate(item.modifiedTime) }}</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300">
-                <i class="fa-solid fa-lock mr-1 text-[8px]"></i>Chỉ đọc
-              </span>
             </div>
           </div>
 
@@ -374,6 +371,10 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
+      // Univer's find dialog is rendered outside this component's preview
+      // section. Let the top-most external dialog consume Escape first;
+      // otherwise the preview modal would close together with the search UI.
+      if (event.defaultPrevented || this.isEscapeOwnedByExternalDialog(event)) return;
       if (this.kind() === 'excel' && this.excelViewer?.handleEscape()) {
         event.preventDefault();
         return;
@@ -410,6 +411,16 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
       event.preventDefault();
       first.focus();
     }
+  }
+
+  private isEscapeOwnedByExternalDialog(event: KeyboardEvent): boolean {
+    const target = event.target;
+    const preview = this.dialog?.nativeElement;
+    if (!(target instanceof Element) || !preview || preview.contains(target)) return false;
+
+    const owner = target.closest<HTMLElement>('[role="dialog"], [role="alertdialog"]');
+    if (!owner || owner === preview) return false;
+    return owner.getAttribute('aria-hidden') !== 'true' && owner.getAttribute('data-state') !== 'closed';
   }
 
   requestClose(): void {

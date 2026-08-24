@@ -221,6 +221,12 @@ describe('Preview Modal & Mobile UI Contract Safeguards', () => {
     assert.match(excelSource, /padding-bottom: max\(env\(safe-area-inset-bottom\), \.5rem\)/);
   });
 
+  it('keeps Escape inside an external nested dialog before applying preview close priority', () => {
+    assert.match(previewSource, /event\.defaultPrevented \|\| this\.isEscapeOwnedByExternalDialog\(event\)/);
+    assert.match(previewSource, /target\.closest<HTMLElement>\('\[role="dialog"\], \[role="alertdialog"\]'\)/);
+    assert.match(previewSource, /owner\.getAttribute\('data-state'\) !== 'closed'/);
+  });
+
   it('handles Escape key priority in preview modal: Excel sub-modes -> Mobile Menu -> Fullscreen -> Close', () => {
     assert.match(previewSource, /if \(this\.kind\(\) === 'excel' && this\.excelViewer\?\.handleEscape\(\)\)/);
     assert.match(previewSource, /if \(this\.mobileMenuOpen\(\)\)/);
