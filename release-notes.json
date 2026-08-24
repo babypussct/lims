@@ -1,27 +1,19 @@
 {
-  "title": "Ổn định quy trình phát hành: mỗi release chỉ tăng một build và changelog tự bảo toàn lịch sử",
+  "title": "Khắc phục Excel Viewer trắng màn hình và ổn định layout Univer",
   "highlights": [
-    "Ngăn việc chạy lại quy trình phát hành làm tăng thêm số build ngoài ý muốn: cùng một release được đồng bộ nhiều lần vẫn giữ nguyên phiên bản.",
-    "Lịch sử cập nhật nay tự bảo toàn các release đã phát hành và có thể phục hồi release bị rơi từ lịch sử Git.",
-    "Đồng bộ version thống nhất giữa package.json, package-lock.json, Service Worker, giao diện và metadata ứng dụng."
+    "Khắc phục lỗi Excel Viewer tạo được workbook nhưng vùng bảng trắng do canvas có chiều cao 0.",
+    "Khôi phục layout đúng của thanh sheet và vùng bảng bằng cách nạp CSS preset Univer ở phạm vi global.",
+    "Bổ sung regression guard và checklist QA để ngăn lỗi CSS Univer quay trở lại trong các lần phát hành sau."
   ],
-  "features": [
-    "Bổ sung cơ chế nhận biết release đã được chuẩn bị hoặc đã đồng bộ để tái sử dụng đúng version hiện tại thay vì tự động tăng build ở mỗi lần chạy.",
-    "Bộ sinh release-history hợp nhất release hiện tại, lịch sử đang có, lịch sử trong HEAD, các snapshot Git trước đó và nguồn dữ liệu lịch sử đã khôi phục.",
-    "Bổ sung release gate cho pre-push và pre-deploy: production chỉ được deploy từ main khi working tree sạch và HEAD đã trùng commit thực tế trên remote."
-  ],
+  "features": [],
   "improvements": [
-    "Validator kiểm tra thêm package-lock.json và chặn trường hợp release-history làm mất một phiên bản đã tồn tại trong HEAD.",
-    "Chuẩn hóa các lệnh release patch/minor/major về cùng pipeline CalVer để tránh một bước thay đổi version riêng trước khi đồng bộ.",
-    "Bổ sung kiểm thử hồi quy cho trường hợp chạy sync nhiều lần, chạy lại sau một lần đồng bộ dở và bảo toàn release cũ qua nhiều nguồn lịch sử.",
-    "Chuẩn hóa chuỗi release:prepare → release:verify → commit → release:prepush → push → release:predeploy → deploy, tránh deploy từ working tree chưa được commit/push.",
-    "Pin Node.js 22 cho môi trường phát hành và bổ sung GitHub Release Gate chạy lại toàn bộ kiểm thử, typecheck và production build trên main/PR.",
-    "Bổ sung runtime gate kiểm tra Node/npm trước verify, pre-push và pre-deploy; CI đọc trực tiếp phiên bản npm từ packageManager để loại bỏ cấu hình version trùng lặp."
+    "Chuyển sáu stylesheet preset của Univer vào global styles của Angular để CSS utility áp dụng đầy đủ cho DOM động.",
+    "Bổ sung kiểm thử xác nhận các stylesheet Univer luôn nằm trong angular.json và không bị import lại ở component scope.",
+    "Ghi nhận checklist QA cho Excel Viewer với baseline production, kết quả xác nhận local và tiêu chí đóng defect EXCEL-VIEW-001."
   ],
   "fixes": [
-    "Khắc phục nguyên nhân làm build có thể nhảy b01 → b03 hoặc b02 → b04 khi bước đồng bộ version được gọi hai lần cho cùng một release.",
-    "Khắc phục lỗi release hiện tại trước đó biến mất khỏi changelog sau khi phát hành bản mới vì bộ sinh lịch sử chỉ ghép current release với legacy snapshot.",
-    "Khôi phục release v26.08.24-b02 đã bị mất khỏi public/release-history.json và CHANGELOG.md.",
-    "Loại bỏ thứ tự deploy trước rồi mới commit/push vốn khiến production khó truy vết chính xác về một commit bất biến."
+    "Sửa lỗi canvas Excel Viewer cao 0px khiến workbook một sheet hoặc nhiều sheet đều không hiển thị dữ liệu.",
+    "Sửa lỗi các tab sheet bị xếp dọc và chiếm toàn bộ chiều rộng do utility flex/grid của Univer không được áp dụng đúng phạm vi.",
+    "Giữ nguyên chế độ chỉ đọc và các công cụ tìm kiếm, đi tới ô, filter, sort, copy và reset sau khi sửa layout."
   ]
 }

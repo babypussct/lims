@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.08.24-b06",
+    "date": "24/8/2026",
+    "title": "Khắc phục Excel Viewer trắng màn hình và ổn định layout Univer",
+    "highlights": [
+      "Khắc phục lỗi Excel Viewer tạo được workbook nhưng vùng bảng trắng do canvas có chiều cao 0.",
+      "Khôi phục layout đúng của thanh sheet và vùng bảng bằng cách nạp CSS preset Univer ở phạm vi global.",
+      "Bổ sung regression guard và checklist QA để ngăn lỗi CSS Univer quay trở lại trong các lần phát hành sau."
+    ],
+    "features": [],
+    "improvements": [
+      "Chuyển sáu stylesheet preset của Univer vào global styles của Angular để CSS utility áp dụng đầy đủ cho DOM động.",
+      "Bổ sung kiểm thử xác nhận các stylesheet Univer luôn nằm trong angular.json và không bị import lại ở component scope.",
+      "Ghi nhận checklist QA cho Excel Viewer với baseline production, kết quả xác nhận local và tiêu chí đóng defect EXCEL-VIEW-001."
+    ],
+    "fixes": [
+      "Sửa lỗi canvas Excel Viewer cao 0px khiến workbook một sheet hoặc nhiều sheet đều không hiển thị dữ liệu.",
+      "Sửa lỗi các tab sheet bị xếp dọc và chiếm toàn bộ chiều rộng do utility flex/grid của Univer không được áp dụng đúng phạm vi.",
+      "Giữ nguyên chế độ chỉ đọc và các công cụ tìm kiếm, đi tới ô, filter, sort, copy và reset sau khi sửa layout."
+    ],
+    "releaseOrder": 26082400006
+  },
+  {
     "version": "v26.08.24-b05",
     "date": "24/8/2026",
     "title": "Ổn định quy trình phát hành: mỗi release chỉ tăng một build và changelog tự bảo toàn lịch sử",

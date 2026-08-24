@@ -36,7 +36,13 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "node_modules/@univerjs/preset-sheets-core/lib/index.css",
+              "node_modules/@univerjs/preset-sheets-filter/lib/index.css",
+              "node_modules/@univerjs/preset-sheets-find-replace/lib/index.css",
+              "node_modules/@univerjs/preset-sheets-hyper-link/lib/index.css",
+              "node_modules/@univerjs/preset-sheets-note/lib/index.css",
+              "node_modules/@univerjs/preset-sheets-sort/lib/index.css"
             ],
             "scripts": [],
             "allowedCommonJsDependencies": [

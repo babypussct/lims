@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.24-b05",
-    "title": "Ổn định quy trình phát hành: mỗi release chỉ tăng một build và changelog tự bảo toàn lịch sử",
+    "version": "v26.08.24-b06",
+    "title": "Khắc phục Excel Viewer trắng màn hình và ổn định layout Univer",
     "features": [
-      "Ngăn việc chạy lại quy trình phát hành làm tăng thêm số build ngoài ý muốn: cùng một release được đồng bộ nhiều lần vẫn giữ nguyên phiên bản.",
-      "Lịch sử cập nhật nay tự bảo toàn các release đã phát hành và có thể phục hồi release bị rơi từ lịch sử Git.",
-      "Đồng bộ version thống nhất giữa package.json, package-lock.json, Service Worker, giao diện và metadata ứng dụng.",
-      "Bổ sung cơ chế nhận biết release đã được chuẩn bị hoặc đã đồng bộ để tái sử dụng đúng version hiện tại thay vì tự động tăng build ở mỗi lần chạy.",
-      "Bộ sinh release-history hợp nhất release hiện tại, lịch sử đang có, lịch sử trong HEAD, các snapshot Git trước đó và nguồn dữ liệu lịch sử đã khôi phục."
+      "Khắc phục lỗi Excel Viewer tạo được workbook nhưng vùng bảng trắng do canvas có chiều cao 0.",
+      "Khôi phục layout đúng của thanh sheet và vùng bảng bằng cách nạp CSS preset Univer ở phạm vi global.",
+      "Bổ sung regression guard và checklist QA để ngăn lỗi CSS Univer quay trở lại trong các lần phát hành sau.",
+      "Chuyển sáu stylesheet preset của Univer vào global styles của Angular để CSS utility áp dụng đầy đủ cho DOM động.",
+      "Bổ sung kiểm thử xác nhận các stylesheet Univer luôn nằm trong angular.json và không bị import lại ở component scope."
     ]
   },
   "assetGroups": [

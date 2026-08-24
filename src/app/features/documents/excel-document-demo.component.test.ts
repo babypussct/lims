@@ -14,6 +14,18 @@ test('keeps the Excel presentation route dev-only and exercises the real viewer 
   const viewer = read('src/app/features/documents/excel-document-viewer.component.ts');
   const previewModal = read('src/app/features/documents/document-preview-modal.component.ts');
   const metadata = read('src/app/features/documents/excel-univer-metadata.ts');
+  const angularConfig = JSON.parse(read('angular.json')) as {
+    projects: Record<string, { architect?: { build?: { options?: { styles?: string[] } } } }>;
+  };
+  const globalStyles = angularConfig.projects['lims-cloud-pro']?.architect?.build?.options?.styles ?? [];
+  const univerStyles = [
+    'node_modules/@univerjs/preset-sheets-core/lib/index.css',
+    'node_modules/@univerjs/preset-sheets-filter/lib/index.css',
+    'node_modules/@univerjs/preset-sheets-find-replace/lib/index.css',
+    'node_modules/@univerjs/preset-sheets-hyper-link/lib/index.css',
+    'node_modules/@univerjs/preset-sheets-note/lib/index.css',
+    'node_modules/@univerjs/preset-sheets-sort/lib/index.css',
+  ];
 
   assert.match(routes, /path: '__excel-demo'/);
   assert.match(routes, /environment\.production \? \[\] :/);
@@ -144,4 +156,8 @@ test('keeps the Excel presentation route dev-only and exercises the real viewer 
   assert.doesNotMatch(viewer, /UniverSheetsDrawingPreset/);
   assert.doesNotMatch(viewer, /UniverSheetsTablePreset/);
   assert.match(viewer, /excel-univer-host > div:first-child/);
+  for (const stylePath of univerStyles) {
+    assert.ok(globalStyles.includes(stylePath), `Univer CSS must be loaded globally: ${stylePath}`);
+    assert.doesNotMatch(viewer, new RegExp(`import ['"]${stylePath.replaceAll('/', '\\/')}['"];`));
+  }
 });

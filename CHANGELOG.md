@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.24-b05
+## Phiên bản hiện tại: v26.08.24-b06
+
+### v26.08.24-b06
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khắc phục lỗi Excel Viewer tạo được workbook nhưng vùng bảng trắng do canvas có chiều cao 0.
+- Khôi phục layout đúng của thanh sheet và vùng bảng bằng cách nạp CSS preset Univer ở phạm vi global.
+- Bổ sung regression guard và checklist QA để ngăn lỗi CSS Univer quay trở lại trong các lần phát hành sau.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuyển sáu stylesheet preset của Univer vào global styles của Angular để CSS utility áp dụng đầy đủ cho DOM động.
+- Bổ sung kiểm thử xác nhận các stylesheet Univer luôn nằm trong angular.json và không bị import lại ở component scope.
+- Ghi nhận checklist QA cho Excel Viewer với baseline production, kết quả xác nhận local và tiêu chí đóng defect EXCEL-VIEW-001.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi canvas Excel Viewer cao 0px khiến workbook một sheet hoặc nhiều sheet đều không hiển thị dữ liệu.
+- Sửa lỗi các tab sheet bị xếp dọc và chiếm toàn bộ chiều rộng do utility flex/grid của Univer không được áp dụng đúng phạm vi.
+- Giữ nguyên chế độ chỉ đọc và các công cụ tìm kiếm, đi tới ô, filter, sort, copy và reset sau khi sửa layout.
 
 ### v26.08.24-b05
 
