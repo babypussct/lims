@@ -58,10 +58,10 @@ function releaseItemsFromPayload(payload: unknown): unknown[] {
 }
 
 function hasMeaningfulContent(doc: ReleaseDoc): boolean {
-  return (doc.highlights && doc.highlights.length > 0)
-    || (doc.features && doc.features.length > 0)
-    || (doc.improvements && doc.improvements.length > 0)
-    || (doc.fixes && doc.fixes.length > 0);
+  return (doc.highlights?.length ?? 0) > 0
+    || (doc.features?.length ?? 0) > 0
+    || (doc.improvements?.length ?? 0) > 0
+    || (doc.fixes?.length ?? 0) > 0;
 }
 
 function mergeReleaseDocPair(existing: ReleaseDoc, incoming: ReleaseDoc): ReleaseDoc {

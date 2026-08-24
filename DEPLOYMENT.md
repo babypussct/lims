@@ -30,29 +30,34 @@ Các bản lịch sử cũng phải có đủ bốn nhóm. Nhóm không có thay
 Trình tự release chuẩn:
 
 1. Tổng hợp thay đổi kể từ release gần nhất và cập nhật `release-notes.json` theo đúng bốn nhóm trên.
-2. Chạy `npm run sync-version`. Lệnh này phát sinh version theo ngày/build, đồng bộ metadata, tạo `public/release-history.json` và tái tạo `CHANGELOG.md`.
-3. Chạy `npm run validate:release-notes` và chỉ tiếp tục khi pass.
-4. Chạy toàn bộ gate ở mục **Kiểm tra bắt buộc trước deploy** bên dưới.
-5. Nếu release có thay đổi Firestore Rules thì deploy Rules trước frontend và lưu bằng chứng CLI thành công.
-6. Deploy frontend production lên Vercel, sau đó smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
-7. Chỉ commit/push release sau khi version, changelog, gate kiểm thử và bằng chứng deploy đã được review đúng phạm vi.
+2. Chạy `npm run release:prepare`. Lệnh này chỉ phát sinh **một** version mới khi `release-notes.json` thực sự đại diện cho release mới; nếu chạy lại trong cùng release thì giữ nguyên version. Lệnh đồng bộ `package.json`, `package-lock.json`, metadata, bảo toàn `public/release-history.json` cũ và tái tạo `CHANGELOG.md`.
+3. Chạy `npm run release:verify`. Gate này kiểm tra Node/npm đúng chính sách repository, chạy toàn bộ test, typecheck application/API, kiểm tra release metadata và production build.
+4. Review `git status`, `git diff --check` và diff thực tế. Chỉ stage đúng phạm vi release cần phát hành.
+5. Commit release. Sau commit, chạy `npm run release:prepush`; gate sẽ chặn khi working tree còn dirty, có conflict, branch local đang behind remote hoặc tracking ref đã stale.
+6. Push commit. `main` và pull request vào `main` còn được GitHub Release Gate chạy lại `release:verify`; Node lấy từ `.nvmrc`, còn npm được đọc trực tiếp từ `package.json.packageManager` để không tồn tại bản version thứ hai trong CI.
+7. Trước production deploy, chạy `npm run release:predeploy`. Gate chỉ pass khi đang ở `main`, working tree sạch, local HEAD không ahead/behind upstream và SHA local trùng HEAD thực tế trên remote.
+8. Nếu release có thay đổi Firestore Rules, chạy `npm run deploy:rules` trước frontend và lưu bằng chứng CLI thành công.
+9. Deploy frontend production bằng `npm run deploy:prod`, sau đó smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
+
+Không deploy production trực tiếp từ working tree chưa commit hoặc commit chưa push. Quy tắc này bảo đảm mỗi deployment luôn truy ngược được về đúng một Git SHA, giúp audit và rollback không phụ thuộc trạng thái máy phát hành.
+
+Nếu Vercel project đang bật Git Integration tự deploy `main`, không chạy thêm `npm run deploy:prod` cho cùng commit; dùng deployment được tạo từ Git SHA đó và thực hiện smoke test như bình thường để tránh tạo hai production deployment cho một release.
 
 Nếu chỉ chuẩn hóa template hoặc bảo trì lịch sử cũ mà không phát hành code mới, không phát sinh version mới; dùng `npm run sync-release-history` rồi `node scripts/build-changelog-md.js` để tái tạo dữ liệu và Markdown.
+
+Không chạy `npm version patch/minor/major` để đánh số release CalVer. Các alias `release:patch`, `release:minor`, `release:major` đều đi qua cùng một pipeline `release:prepare` nhằm tránh tăng version hai lần. Chỉ dùng `RELEASE_FORCE_BUMP=1 npm run release:prepare` khi có chủ đích tạo một release mới dù nội dung release notes chưa thay đổi.
 
 Không đưa credential, token, dữ liệu production hoặc mô tả kỹ thuật nội bộ không cần thiết vào changelog dành cho người dùng.
 
 ## Trạng thái trước triển khai
 
-- Chưa chạy backfill Firestore; chưa có ghi dữ liệu production từ script `backfill-daily-checklists.ts`.
-- TypeScript application và API đã type-check thành công trong môi trường kiểm tra.
-- Bộ regression Daily Checklist đã đạt 11/11 khi chạy bằng Node trên JavaScript được compile từ test TypeScript; runner `tsx` trên máy kiểm tra vẫn bị blocker môi trường `uv_os_get_passwd ... ENOMEM`.
-- Angular production build chưa thể xác nhận trong sandbox vì Angular compiler bị chặn khi đọc đường dẫn ngoài workspace. Bắt buộc chạy lại build trên máy phát hành hoặc CI trước khi deploy.
+Không lưu trạng thái pass/fail của một release cụ thể trong tài liệu quy trình này vì thông tin đó nhanh chóng lỗi thời. Bằng chứng phát hành phải lấy từ output của `release:verify`, GitHub Release Gate và CLI deploy của chính commit đang phát hành.
 
 ## 1. Chuẩn bị
 
 Yêu cầu:
 
-- Node.js và npm theo phiên bản đang dùng trong CI/Vercel.
+- Node.js theo `.nvmrc`/`package.json` và npm theo `packageManager` trong `package.json`. `npm run verify:runtime` sẽ chặn release nếu ba nguồn này lệch nhau hoặc runtime máy phát hành không đúng policy.
 - Quyền deploy Firebase project `lims-cloud-by-otada`.
 - Quyền deploy Vercel project của ứng dụng.
 - Firebase service account được lưu ở vị trí bảo mật và không commit vào Git.
@@ -68,19 +73,29 @@ Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` thay cho `npm` trong các l�
 ## 2. Kiểm tra bắt buộc trước deploy
 
 ```powershell
-npm test
-npx tsc -p tsconfig.app.json --noEmit
-npm run typecheck:api
-npm run build
+npm run release:verify
 ```
 
-Chỉ tiếp tục khi tất cả lệnh trả về exit code `0`. Output Angular production phải nằm tại:
+`release:verify` bắt đầu bằng runtime gate, sau đó chạy `npm test`, TypeScript application/API typecheck, `validate:release-notes` và Angular production build. Chỉ tiếp tục khi lệnh trả về exit code `0`. Output Angular production phải nằm tại:
 
 ```text
 dist/lims-cloud-pro/browser
 ```
 
-Không dùng kết quả build trong sandbox làm bằng chứng phát hành nếu log có lỗi `Cannot read directory "../../..": Access is denied`.
+Sau commit và trước push:
+
+```powershell
+npm run release:prepush
+git push
+```
+
+Sau push và trước deploy:
+
+```powershell
+npm run release:predeploy
+```
+
+Nếu remote thay đổi sau lần fetch gần nhất, gate sẽ dừng và yêu cầu đồng bộ Git trước khi tiếp tục.
 
 ## 3. Đăng nhập công cụ triển khai
 
@@ -111,10 +126,10 @@ Review thay đổi trong `firestore.rules`, đặc biệt collection:
 artifacts/{appId}/daily_checklists/{analysisDate}
 ```
 
-Deploy rules:
+Deploy rules sau khi commit đã được push:
 
 ```powershell
-npx firebase-tools deploy --only firestore:rules --project lims-cloud-by-otada
+npm run deploy:rules
 ```
 
 Xác nhận lệnh hoàn tất thành công trước khi deploy frontend.
@@ -122,7 +137,7 @@ Xác nhận lệnh hoàn tất thành công trước khi deploy frontend.
 ## 5. Deploy hotfix Vercel trước khi backfill
 
 ```powershell
-npx vercel --prod
+npm run deploy:prod
 ```
 
 Vercel sử dụng:

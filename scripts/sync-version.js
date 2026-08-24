@@ -1,11 +1,15 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
+const { RELEASE_SECTIONS, selectReleaseVersion } = require('./release-pipeline');
 
 const packagePath = path.join(__dirname, '../package.json');
+const packageLockPath = path.join(__dirname, '../package-lock.json');
 const ngswPath = path.join(__dirname, '../ngsw-config.json');
 const statePath = path.join(__dirname, '../src/app/core/services/state.service.ts');
 const metadataPath = path.join(__dirname, '../metadata.json');
 const releaseNotesPath = path.join(__dirname, '../release-notes.json');
+const releaseHistoryPath = path.join(__dirname, '../public/release-history.json');
 
 function readReleaseNotes() {
   if (!fs.existsSync(releaseNotesPath)) {
@@ -23,8 +27,7 @@ function readReleaseNotes() {
     throw new Error('release-notes.json phải có trường title không trống.');
   }
 
-  const sections = ['highlights', 'features', 'improvements', 'fixes'];
-  for (const section of sections) {
+  for (const section of RELEASE_SECTIONS) {
     if (!Array.isArray(notes[section])) {
       throw new Error(`release-notes.json.${section} là mục bắt buộc và phải là một mảng (có thể để []).`);
     }
@@ -34,39 +37,59 @@ function readReleaseNotes() {
 }
 
 const releaseNotes = readReleaseNotes();
-
-// 1. Tính toán chuỗi Ngày hiện tại (YY.MM.DD)
-const now = new Date();
-const yy = String(now.getFullYear()).slice(-2);
-const mm = String(now.getMonth() + 1).padStart(2, '0');
-const dd = String(now.getDate()).padStart(2, '0');
-const todayPrefix = `${yy}.${mm}.${dd}`;
-
-// 2. Đọc package.json để kiểm tra lượt build trong ngày
 const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-let buildNum = 1;
-
-// Nếu version trong package.json đã là của ngày hôm nay thì tự động +1 lượt build
-if (pkg.version && pkg.version.startsWith(todayPrefix)) {
-  const match = pkg.version.match(/-b(\d+)$/);
-  if (match) {
-    buildNum = parseInt(match[1], 10) + 1;
+let existingHistory = [];
+if (fs.existsSync(releaseHistoryPath)) {
+  try {
+    existingHistory = JSON.parse(fs.readFileSync(releaseHistoryPath, 'utf8'));
+  } catch {
+    existingHistory = [];
   }
 }
 
-const buildNumStr = String(buildNum).padStart(2, '0');
-const newVersion = `${todayPrefix}-b${buildNumStr}`; // Kết quả ví dụ: 26.07.21-b01
+let headVersion = null;
+try {
+  const headPackage = JSON.parse(execFileSync('git', ['show', 'HEAD:package.json'], {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore']
+  }));
+  headVersion = headPackage.version || null;
+} catch {
+  // Repo không có Git/HEAD vẫn có thể dùng lịch sử đã sinh để chống bump lặp.
+}
 
-// 3. Ghi số phiên bản mới vào package.json
+const force = process.argv.includes('--force') || process.env.RELEASE_FORCE_BUMP === '1';
+const selection = selectReleaseVersion({
+  currentVersion: pkg.version,
+  headVersion,
+  releaseNotes,
+  existingHistory,
+  now: new Date(),
+  force
+});
+const newVersion = selection.version;
+
 pkg.version = newVersion;
 fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
-console.log(`[Auto-Version] 🚀 Đã phát sinh phiên bản: v${newVersion}`);
+console.log(selection.bumped
+  ? `[Auto-Version] 🚀 Đã phát sinh phiên bản: v${newVersion}`
+  : `[Auto-Version] ♻️ Giữ nguyên phiên bản v${newVersion}: ${selection.reason}.`);
+
+if (fs.existsSync(packageLockPath)) {
+  const packageLock = JSON.parse(fs.readFileSync(packageLockPath, 'utf8'));
+  packageLock.version = newVersion;
+  if (packageLock.packages && packageLock.packages['']) {
+    packageLock.packages[''].version = newVersion;
+  }
+  fs.writeFileSync(packageLockPath, JSON.stringify(packageLock, null, 2) + '\n');
+  console.log('✅ Đã đồng bộ package-lock.json');
+}
 
 // 4. Đồng bộ vào ngsw-config.json (Cho popup cập nhật + nội dung release)
 if (fs.existsSync(ngswPath)) {
   const ngswConfig = JSON.parse(fs.readFileSync(ngswPath, 'utf8'));
-  const featureSections = ['highlights', 'features', 'improvements', 'fixes'];
-  const features = featureSections
+  const features = RELEASE_SECTIONS
     .flatMap(section => releaseNotes[section] || [])
     .filter(feature => typeof feature === 'string' && feature.trim())
     .map(feature => feature.trim())

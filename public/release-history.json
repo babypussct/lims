@@ -1,6 +1,58 @@
 [
   {
+    "version": "v26.08.24-b05",
+    "date": "24/8/2026",
+    "title": "Ổn định quy trình phát hành: mỗi release chỉ tăng một build và changelog tự bảo toàn lịch sử",
+    "highlights": [
+      "Ngăn việc chạy lại quy trình phát hành làm tăng thêm số build ngoài ý muốn: cùng một release được đồng bộ nhiều lần vẫn giữ nguyên phiên bản.",
+      "Lịch sử cập nhật nay tự bảo toàn các release đã phát hành và có thể phục hồi release bị rơi từ lịch sử Git.",
+      "Đồng bộ version thống nhất giữa package.json, package-lock.json, Service Worker, giao diện và metadata ứng dụng."
+    ],
+    "features": [
+      "Bổ sung cơ chế nhận biết release đã được chuẩn bị hoặc đã đồng bộ để tái sử dụng đúng version hiện tại thay vì tự động tăng build ở mỗi lần chạy.",
+      "Bộ sinh release-history hợp nhất release hiện tại, lịch sử đang có, lịch sử trong HEAD, các snapshot Git trước đó và nguồn dữ liệu lịch sử đã khôi phục.",
+      "Bổ sung release gate cho pre-push và pre-deploy: production chỉ được deploy từ main khi working tree sạch và HEAD đã trùng commit thực tế trên remote."
+    ],
+    "improvements": [
+      "Validator kiểm tra thêm package-lock.json và chặn trường hợp release-history làm mất một phiên bản đã tồn tại trong HEAD.",
+      "Chuẩn hóa các lệnh release patch/minor/major về cùng pipeline CalVer để tránh một bước thay đổi version riêng trước khi đồng bộ.",
+      "Bổ sung kiểm thử hồi quy cho trường hợp chạy sync nhiều lần, chạy lại sau một lần đồng bộ dở và bảo toàn release cũ qua nhiều nguồn lịch sử.",
+      "Chuẩn hóa chuỗi release:prepare → release:verify → commit → release:prepush → push → release:predeploy → deploy, tránh deploy từ working tree chưa được commit/push.",
+      "Pin Node.js 22 cho môi trường phát hành và bổ sung GitHub Release Gate chạy lại toàn bộ kiểm thử, typecheck và production build trên main/PR.",
+      "Bổ sung runtime gate kiểm tra Node/npm trước verify, pre-push và pre-deploy; CI đọc trực tiếp phiên bản npm từ packageManager để loại bỏ cấu hình version trùng lặp."
+    ],
+    "fixes": [
+      "Khắc phục nguyên nhân làm build có thể nhảy b01 → b03 hoặc b02 → b04 khi bước đồng bộ version được gọi hai lần cho cùng một release.",
+      "Khắc phục lỗi release hiện tại trước đó biến mất khỏi changelog sau khi phát hành bản mới vì bộ sinh lịch sử chỉ ghép current release với legacy snapshot.",
+      "Khôi phục release v26.08.24-b02 đã bị mất khỏi public/release-history.json và CHANGELOG.md.",
+      "Loại bỏ thứ tự deploy trước rồi mới commit/push vốn khiến production khó truy vết chính xác về một commit bất biến."
+    ],
+    "releaseOrder": 26082400005
+  },
+  {
     "version": "v26.08.24-b04",
+    "date": "24/8/2026",
+    "title": "Khôi phục nhật ký cập nhật đầy đủ khi dữ liệu trực tuyến bị rỗng",
+    "highlights": [
+      "Nhật ký cập nhật ưu tiên đọc dữ liệu phát hành đầy đủ từ release-history.json đi kèm ứng dụng thay vì chỉ phụ thuộc vào Service Worker manifest.",
+      "Tự phát hiện và sửa bản ghi phát hành trực tuyến bị rỗng bằng nội dung chi tiết đã đóng gói trong ứng dụng.",
+      "Màn hình changelog tiếp tục hiển thị nội dung đầy đủ ngay cả khi dữ liệu trực tuyến cũ chỉ còn bản ghi giữ chỗ."
+    ],
+    "features": [
+      "Bổ sung cơ chế hợp nhất dữ liệu phát hành theo từng nhóm, lấy nội dung đóng gói làm fallback khi bản ghi trực tuyến thiếu chi tiết."
+    ],
+    "improvements": [
+      "Khi đồng bộ Firestore, hệ thống giữ lại nội dung hợp lệ đã có và chỉ dùng dữ liệu fallback để bổ sung phần còn thiếu.",
+      "Bổ sung kiểm thử hồi quy cho trường hợp bản ghi trực tuyến rỗng nhưng release-history.json có đầy đủ bốn nhóm nội dung."
+    ],
+    "fixes": [
+      "Khắc phục tình trạng changelog hiển thị bốn dòng 'Không có thay đổi trong nhóm này' do bản ghi rỗng trên Firestore lấn át dữ liệu đóng gói.",
+      "Khắc phục việc tự tạo release rỗng khi không đọc được ngsw.json ở môi trường không có Service Worker manifest."
+    ],
+    "releaseOrder": 26082400004
+  },
+  {
+    "version": "v26.08.24-b02",
     "date": "24/8/2026",
     "title": "Nâng cấp trình xem bảng tính Excel chỉ xem an toàn, tra cứu nhanh và thao tác linh hoạt trên mọi thiết bị",
     "highlights": [
@@ -22,7 +74,7 @@
       "Khắc phục lỗi trang tính hiển thị trắng khi mở các tập tin Excel có thiết lập bộ lọc trên một hàng dữ liệu đơn lẻ.",
       "Khắc phục lỗi phím Escape đóng toàn bộ cửa sổ xem tài liệu khi đang sử dụng hộp thoại tìm kiếm hoặc điều hướng ô."
     ],
-    "releaseOrder": 26082400004
+    "releaseOrder": 26082400002
   },
   {
     "version": "v26.08.23-b01",
@@ -46,6 +98,46 @@
       "Khắc phục nguy cơ gián đoạn quyền hạn khi đồng bộ nhật ký hoạt động trên tập dữ liệu chất chuẩn có quy mô lớn."
     ],
     "releaseOrder": 26082300001
+  },
+  {
+    "version": "v26.08.22-b01",
+    "date": "22/8/2026",
+    "title": "Nâng cao độ ổn định và tính liên tục khi đồng bộ mã nội bộ chất chuẩn",
+    "highlights": [
+      "Quá trình đồng bộ mã nội bộ cho danh mục chất chuẩn số lượng lớn diễn ra an toàn, liền mạch và không bị gián đoạn quyền hạn giữa chừng.",
+      "Cửa sổ đồng bộ mã nội bộ hiển thị trạng thái hoàn tất rõ ràng, tự động quét xác minh và làm mới dữ liệu ngay sau khi cập nhật."
+    ],
+    "features": [],
+    "improvements": [
+      "Giao diện đồng bộ mã nội bộ phân định rõ giai đoạn cập nhật dữ liệu và giai đoạn quét xác minh, giúp người dùng dễ dàng theo dõi tiến trình thực tế.",
+      "Nếu bước làm mới dữ liệu sau đồng bộ gặp sự cố mạng, hệ thống vẫn giữ kết quả thành công và cho phép nhấn Quét lại để xác nhận."
+    ],
+    "fixes": [
+      "Khắc phục lỗi gián đoạn do thiếu quyền khi đồng bộ chuẩn hóa danh mục mã chất chuẩn và các liên kết mã cũ trên tập dữ liệu lớn.",
+      "Khắc phục hiện tượng thanh tiến độ đạt 100% nhưng giao diện chưa phản hồi trạng thái hoàn thành."
+    ],
+    "releaseOrder": 26082200001
+  },
+  {
+    "version": "v26.08.20-b03",
+    "date": "20/8/2026",
+    "title": "Nâng cao độ ổn định và trải nghiệm xem tài liệu Phiếu giao nhận mẫu trên di động",
+    "highlights": [
+      "Thao tác in và xem trước tài liệu Phiếu giao nhận mẫu trên điện thoại và máy tính bảng diễn ra an toàn và ổn định hơn.",
+      "Tự động tối ưu giao diện hiển thị cho các bảng tính dữ liệu khi xem trên thiết bị di động."
+    ],
+    "features": [
+      "Hỗ trợ xem trước mượt mà và đồng bộ các tài liệu giao nhận mẫu từ tệp PDF, bảng tính Excel đến các tệp hình ảnh và văn bản."
+    ],
+    "improvements": [
+      "Trải nghiệm xem bảng tính trên màn hình nhỏ được tự động mở rộng tối đa vùng dữ liệu quan sát.",
+      "Tính năng tìm kiếm tài liệu hỗ trợ nhận diện tiếng Việt không dấu chuẩn xác, giúp tra cứu nhanh chóng trong các thư mục.",
+      "Sao chép vùng dữ liệu bảng tính đã chọn giữ đúng cấu trúc dòng cột khi dán sang các ứng dụng khác."
+    ],
+    "fixes": [
+      "Khắc phục hiện tượng nút In PDF trong menu thao tác trên điện thoại có thể nhấn khi tài liệu chưa tải xong."
+    ],
+    "releaseOrder": 26082000003
   },
   {
     "version": "v26.08.20-b01",

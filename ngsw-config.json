@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.24-b04",
-    "title": "Nâng cấp trình xem bảng tính Excel chỉ xem an toàn, tra cứu nhanh và thao tác linh hoạt trên mọi thiết bị",
+    "version": "v26.08.24-b05",
+    "title": "Ổn định quy trình phát hành: mỗi release chỉ tăng một build và changelog tự bảo toàn lịch sử",
     "features": [
-      "Xem bảng tính Excel trực tiếp trong mục Tài liệu với chế độ chỉ xem an toàn tuyệt đối, ngăn ngừa hoàn toàn nguy cơ vô tình chỉnh sửa biểu mẫu gốc.",
-      "Bổ sung thanh công cụ và phím tắt tiện ích: tìm kiếm nhanh, đi tới ô dữ liệu, lọc và sắp xếp trực quan ngay trên bản xem trước.",
-      "Khắc phục triệt để lỗi trang tính bị trắng khi mở các tập tin có cài đặt bộ lọc, tối ưu hiển thị mượt mà trên cả máy tính và điện thoại.",
-      "Thanh công cụ xem bảng tính tiện lợi: hỗ trợ tìm kiếm nội dung (Ctrl+F), chọn nhanh vùng dữ liệu (Ctrl+A), đi tới ô hoặc phạm vi chỉ định (Ctrl+G), bật bộ lọc nhanh (Ctrl+Shift+L) và sắp xếp thứ tự dữ liệu.",
-      "Menu thao tác nhanh qua chuột phải hoặc chạm giữ trên màn hình cảm ứng: cho phép sao chép dữ liệu linh hoạt, tra cứu nhanh giá trị ô, xem thông tin chi tiết và điều chỉnh căn lề hiển thị."
+      "Ngăn việc chạy lại quy trình phát hành làm tăng thêm số build ngoài ý muốn: cùng một release được đồng bộ nhiều lần vẫn giữ nguyên phiên bản.",
+      "Lịch sử cập nhật nay tự bảo toàn các release đã phát hành và có thể phục hồi release bị rơi từ lịch sử Git.",
+      "Đồng bộ version thống nhất giữa package.json, package-lock.json, Service Worker, giao diện và metadata ứng dụng.",
+      "Bổ sung cơ chế nhận biết release đã được chuẩn bị hoặc đã đồng bộ để tái sử dụng đúng version hiện tại thay vì tự động tăng build ở mỗi lần chạy.",
+      "Bộ sinh release-history hợp nhất release hiện tại, lịch sử đang có, lịch sử trong HEAD, các snapshot Git trước đó và nguồn dữ liệu lịch sử đã khôi phục."
     ]
   },
   "assetGroups": [

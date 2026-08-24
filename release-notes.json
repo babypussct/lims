@@ -1,22 +1,27 @@
 {
-  "title": "Nâng cấp trình xem bảng tính Excel chỉ xem an toàn, tra cứu nhanh và thao tác linh hoạt trên mọi thiết bị",
+  "title": "Ổn định quy trình phát hành: mỗi release chỉ tăng một build và changelog tự bảo toàn lịch sử",
   "highlights": [
-    "Xem bảng tính Excel trực tiếp trong mục Tài liệu với chế độ chỉ xem an toàn tuyệt đối, ngăn ngừa hoàn toàn nguy cơ vô tình chỉnh sửa biểu mẫu gốc.",
-    "Bổ sung thanh công cụ và phím tắt tiện ích: tìm kiếm nhanh, đi tới ô dữ liệu, lọc và sắp xếp trực quan ngay trên bản xem trước.",
-    "Khắc phục triệt để lỗi trang tính bị trắng khi mở các tập tin có cài đặt bộ lọc, tối ưu hiển thị mượt mà trên cả máy tính và điện thoại."
+    "Ngăn việc chạy lại quy trình phát hành làm tăng thêm số build ngoài ý muốn: cùng một release được đồng bộ nhiều lần vẫn giữ nguyên phiên bản.",
+    "Lịch sử cập nhật nay tự bảo toàn các release đã phát hành và có thể phục hồi release bị rơi từ lịch sử Git.",
+    "Đồng bộ version thống nhất giữa package.json, package-lock.json, Service Worker, giao diện và metadata ứng dụng."
   ],
   "features": [
-    "Thanh công cụ xem bảng tính tiện lợi: hỗ trợ tìm kiếm nội dung (Ctrl+F), chọn nhanh vùng dữ liệu (Ctrl+A), đi tới ô hoặc phạm vi chỉ định (Ctrl+G), bật bộ lọc nhanh (Ctrl+Shift+L) và sắp xếp thứ tự dữ liệu.",
-    "Menu thao tác nhanh qua chuột phải hoặc chạm giữ trên màn hình cảm ứng: cho phép sao chép dữ liệu linh hoạt, tra cứu nhanh giá trị ô, xem thông tin chi tiết và điều chỉnh căn lề hiển thị.",
-    "Bảng trạng thái xem trực quan: tự động ghi nhận và hiển thị các bộ lọc, sắp xếp hoặc ẩn hiện hàng cột đang áp dụng trong phiên xem, cho phép đặt lại trạng thái ban đầu bất kỳ lúc nào."
+    "Bổ sung cơ chế nhận biết release đã được chuẩn bị hoặc đã đồng bộ để tái sử dụng đúng version hiện tại thay vì tự động tăng build ở mỗi lần chạy.",
+    "Bộ sinh release-history hợp nhất release hiện tại, lịch sử đang có, lịch sử trong HEAD, các snapshot Git trước đó và nguồn dữ liệu lịch sử đã khôi phục.",
+    "Bổ sung release gate cho pre-push và pre-deploy: production chỉ được deploy từ main khi working tree sạch và HEAD đã trùng commit thực tế trên remote."
   ],
   "improvements": [
-    "Khóa an toàn chế độ chỉ xem toàn diện: vô hiệu hóa thanh nhập công thức và thao tác gõ nhầm vào ô dữ liệu, kèm thông báo bảo vệ rõ ràng khi thao tác.",
-    "Bảo toàn trọn vẹn bố cục bảng tính: giữ nguyên công thức, ghi chú, liên kết an toàn, màu sắc ô và định dạng ngày giờ chuẩn xác theo biểu mẫu gốc.",
-    "Tối ưu giao diện xem tài liệu trên thiết bị di động: tự động co giãn vừa màn hình, hỗ trợ vuốt cuộn mượt mà và thao tác menu chạm giữ thuận tiện."
+    "Validator kiểm tra thêm package-lock.json và chặn trường hợp release-history làm mất một phiên bản đã tồn tại trong HEAD.",
+    "Chuẩn hóa các lệnh release patch/minor/major về cùng pipeline CalVer để tránh một bước thay đổi version riêng trước khi đồng bộ.",
+    "Bổ sung kiểm thử hồi quy cho trường hợp chạy sync nhiều lần, chạy lại sau một lần đồng bộ dở và bảo toàn release cũ qua nhiều nguồn lịch sử.",
+    "Chuẩn hóa chuỗi release:prepare → release:verify → commit → release:prepush → push → release:predeploy → deploy, tránh deploy từ working tree chưa được commit/push.",
+    "Pin Node.js 22 cho môi trường phát hành và bổ sung GitHub Release Gate chạy lại toàn bộ kiểm thử, typecheck và production build trên main/PR.",
+    "Bổ sung runtime gate kiểm tra Node/npm trước verify, pre-push và pre-deploy; CI đọc trực tiếp phiên bản npm từ packageManager để loại bỏ cấu hình version trùng lặp."
   ],
   "fixes": [
-    "Khắc phục lỗi trang tính hiển thị trắng khi mở các tập tin Excel có thiết lập bộ lọc trên một hàng dữ liệu đơn lẻ.",
-    "Khắc phục lỗi phím Escape đóng toàn bộ cửa sổ xem tài liệu khi đang sử dụng hộp thoại tìm kiếm hoặc điều hướng ô."
+    "Khắc phục nguyên nhân làm build có thể nhảy b01 → b03 hoặc b02 → b04 khi bước đồng bộ version được gọi hai lần cho cùng một release.",
+    "Khắc phục lỗi release hiện tại trước đó biến mất khỏi changelog sau khi phát hành bản mới vì bộ sinh lịch sử chỉ ghép current release với legacy snapshot.",
+    "Khôi phục release v26.08.24-b02 đã bị mất khỏi public/release-history.json và CHANGELOG.md.",
+    "Loại bỏ thứ tự deploy trước rồi mới commit/push vốn khiến production khó truy vết chính xác về một commit bất biến."
   ]
 }
