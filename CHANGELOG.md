@@ -2,9 +2,9 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.24-b02
+## Phiên bản hiện tại: v26.08.24-b04
 
-### v26.08.24-b02
+### v26.08.24-b04
 
 #### 🚀 Điểm Nổi Bật Bản Này
 
@@ -28,6 +28,29 @@ Lịch sử phiên bản đầy đủ được hiển thị tại mục [/change
 
 - Khắc phục lỗi trang tính hiển thị trắng khi mở các tập tin Excel có thiết lập bộ lọc trên một hàng dữ liệu đơn lẻ.
 - Khắc phục lỗi phím Escape đóng toàn bộ cửa sổ xem tài liệu khi đang sử dụng hộp thoại tìm kiếm hoặc điều hướng ô.
+
+### v26.08.23-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Xem trực tiếp bảng tính Excel trong mục Tài liệu với giao diện đầy đủ trang tính, công thức và giữ nguyên định dạng gốc.
+- Bảo toàn chính xác định dạng ngày giờ địa phương và bảo vệ nội dung biểu mẫu ở chế độ chỉ đọc an toàn.
+- Nâng cao độ ổn định và an toàn phân quyền khi đồng bộ chuẩn hóa mã quản lý nội bộ cho danh mục chất chuẩn lớn.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung trình xem bảng tính Excel chuyên dụng trong mục Tài liệu, cho phép chuyển đổi qua lại giữa các sheet, tra cứu công thức và tải về file gốc nhanh chóng.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hiển thị bảng tính chuẩn xác về màu sắc, căn lề ô, phông chữ và kích thước dòng cột tương tự ứng dụng văn phòng quen thuộc.
+- Tối ưu tốc độ tải và khả năng hiển thị các bảng dữ liệu kiểm nghiệm và biểu mẫu có cấu trúc nhiều sheet.
+- Tăng cường độ an toàn phân quyền và chia nhỏ đợt xử lý khi quản trị viên đồng bộ mã quản lý nội bộ chất chuẩn, tránh quá tải dữ liệu.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục hiện tượng ngày tháng và thời gian trong file Excel hiển thị lệch múi giờ khi mở xem trực tuyến.
+- Khắc phục nguy cơ gián đoạn quyền hạn khi đồng bộ nhật ký hoạt động trên tập dữ liệu chất chuẩn có quy mô lớn.
 
 ### v26.08.20-b01
 

@@ -82,24 +82,37 @@ export class ReleaseService {
   async ensureReleaseExists(version: string, appData: Partial<ReleaseInput>): Promise<void> {
     const normalizedVersion = this.normalizeVersion(version);
     const existing = await this.getRelease(normalizedVersion);
-    if (existing) return;
+    const hasExistingContent = existing && (
+      (existing.highlights && existing.highlights.length > 0) ||
+      (existing.features && existing.features.length > 0) ||
+      (existing.improvements && existing.improvements.length > 0) ||
+      (existing.fixes && existing.fixes.length > 0)
+    );
+    const hasIncomingContent = (
+      (appData.highlights && appData.highlights.length > 0) ||
+      (appData.features && appData.features.length > 0) ||
+      (appData.improvements && appData.improvements.length > 0) ||
+      (appData.fixes && appData.fixes.length > 0)
+    );
+
+    if (existing && hasExistingContent && !hasIncomingContent) return;
 
     const release: ReleaseInput & { releaseOrder: number } = {
       version: normalizedVersion,
-      date: appData.date?.trim() || new Intl.DateTimeFormat('vi-VN').format(new Date()),
-      title: appData.title?.trim() || 'Cập nhật hệ thống',
-      highlights: this.normalizeItems(appData.highlights),
-      features: this.normalizeItems(appData.features),
-      improvements: this.normalizeItems(appData.improvements),
-      fixes: this.normalizeItems(appData.fixes),
+      date: appData.date?.trim() || existing?.date?.trim() || new Intl.DateTimeFormat('vi-VN').format(new Date()),
+      title: appData.title?.trim() && appData.title !== 'Cập nhật hệ thống' ? appData.title.trim() : (existing?.title || 'Cập nhật hệ thống'),
+      highlights: this.normalizeItems(appData.highlights?.length ? appData.highlights : existing?.highlights),
+      features: this.normalizeItems(appData.features?.length ? appData.features : existing?.features),
+      improvements: this.normalizeItems(appData.improvements?.length ? appData.improvements : existing?.improvements),
+      fixes: this.normalizeItems(appData.fixes?.length ? appData.fixes : existing?.fixes),
       releaseOrder: this.getReleaseOrder(normalizedVersion)
     };
 
     await setDoc(doc(this.releasesCollection, normalizedVersion), {
       ...release,
-      createdAt: serverTimestamp(),
+      createdAt: existing?.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
+    }, { merge: true });
   }
 
   private toReleaseDoc(id: string, data: DocumentData): ReleaseDoc {

@@ -50,3 +50,36 @@ test('merges a stale online history with the packaged current release', () => {
 
   assert.deepEqual(result.map(item => item.version), ['v26.08.11-b04', 'v26.08.07-b02']);
 });
+
+test('replaces an empty placeholder doc with rich content from fallback', () => {
+  const emptyPrimary = [
+    {
+      version: 'v26.08.24-b02',
+      date: '24/08/2026',
+      title: 'Cập nhật hệ thống',
+      highlights: [],
+      features: [],
+      improvements: [],
+      fixes: []
+    }
+  ];
+  const richFallback = [
+    {
+      version: 'v26.08.24-b02',
+      date: '24/08/2026',
+      title: 'Nâng cấp Excel Viewer',
+      highlights: ['Xem bảng tính an toàn'],
+      features: ['Tìm kiếm Ctrl+F'],
+      improvements: ['Chế độ chỉ đọc'],
+      fixes: ['Sửa lỗi lọc một hàng']
+    }
+  ];
+
+  const result = mergeReleaseDocs(emptyPrimary, richFallback);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].title, 'Nâng cấp Excel Viewer');
+  assert.deepEqual(result[0].highlights, ['Xem bảng tính an toàn']);
+  assert.deepEqual(result[0].features, ['Tìm kiếm Ctrl+F']);
+  assert.deepEqual(result[0].improvements, ['Chế độ chỉ đọc']);
+  assert.deepEqual(result[0].fixes, ['Sửa lỗi lọc một hàng']);
+});

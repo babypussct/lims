@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.24-b02",
+    "version": "v26.08.24-b04",
     "title": "Nâng cấp trình xem bảng tính Excel chỉ xem an toàn, tra cứu nhanh và thao tác linh hoạt trên mọi thiết bị",
     "features": [
       "Xem bảng tính Excel trực tiếp trong mục Tài liệu với chế độ chỉ xem an toàn tuyệt đối, ngăn ngừa hoàn toàn nguy cơ vô tình chỉnh sửa biểu mẫu gốc.",

@@ -57,16 +57,54 @@ function releaseItemsFromPayload(payload: unknown): unknown[] {
   return Array.isArray(payload['releases']) ? payload['releases'] : [];
 }
 
+function hasMeaningfulContent(doc: ReleaseDoc): boolean {
+  return (doc.highlights && doc.highlights.length > 0)
+    || (doc.features && doc.features.length > 0)
+    || (doc.improvements && doc.improvements.length > 0)
+    || (doc.fixes && doc.fixes.length > 0);
+}
+
+function mergeReleaseDocPair(existing: ReleaseDoc, incoming: ReleaseDoc): ReleaseDoc {
+  const existingHasContent = hasMeaningfulContent(existing);
+  const incomingHasContent = hasMeaningfulContent(incoming);
+
+  if (!existingHasContent && incomingHasContent) {
+    return {
+      ...incoming,
+      id: existing.id || incoming.id,
+      createdAt: existing.createdAt || incoming.createdAt,
+      updatedAt: existing.updatedAt || incoming.updatedAt
+    };
+  }
+
+  return {
+    ...existing,
+    id: existing.id || incoming.id,
+    title: existing.title && existing.title !== 'Cập nhật hệ thống' ? existing.title : (incoming.title || existing.title),
+    date: existing.date || incoming.date,
+    highlights: existing.highlights?.length ? existing.highlights : (incoming.highlights || []),
+    features: existing.features?.length ? existing.features : (incoming.features || []),
+    improvements: existing.improvements?.length ? existing.improvements : (incoming.improvements || []),
+    fixes: existing.fixes?.length ? existing.fixes : (incoming.fixes || []),
+    releaseOrder: existing.releaseOrder || incoming.releaseOrder || getReleaseOrder(existing.version)
+  };
+}
+
 /**
  * Normalizes the public release-history payload, keeps the first copy of each
- * version, and returns newest releases first. The first copy wins so a newly
- * generated release can safely override a stale legacy duplicate.
+ * version, and returns newest releases first. If a first copy is an empty placeholder,
+ * it will be populated with incoming content.
  */
 export function selectReleaseFallback(payload: unknown, limitCount = Number.POSITIVE_INFINITY): ReleaseDoc[] {
   const unique = new Map<string, ReleaseDoc>();
   for (const item of releaseItemsFromPayload(payload)) {
     const release = normalizeReleaseDoc(item);
-    if (release && !unique.has(release.version)) unique.set(release.version, release);
+    if (!release) continue;
+    if (!unique.has(release.version)) {
+      unique.set(release.version, release);
+    } else {
+      unique.set(release.version, mergeReleaseDocPair(unique.get(release.version)!, release));
+    }
   }
 
   const safeLimit = Number.isFinite(limitCount)

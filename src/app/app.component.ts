@@ -518,34 +518,53 @@ export class AppComponent implements OnDestroy {
 
   private async ensureCurrentRelease(version: string): Promise<void> {
     try {
-      const appData = await this.loadEmbeddedAppData();
-      await this.releaseService.ensureReleaseExists(version, {
-        version,
-        title: appData?.title || this.updateTitle() || 'Cập nhật hệ thống',
-        highlights: appData?.features || this.updateFeatures(),
-        features: [],
-        improvements: [],
-        fixes: [],
-        date: new Intl.DateTimeFormat('vi-VN').format(new Date())
-      });
+      const releaseData = await this.loadReleaseData(version);
+      if (releaseData) {
+        await this.releaseService.ensureReleaseExists(version, releaseData);
+      }
     } catch (error) {
       // A release record should never prevent a user from opening the app.
       console.warn('[Release] Không thể tự tạo release trên Firestore:', error);
     }
   }
 
-  private async loadEmbeddedAppData(): Promise<any | null> {
+  private async loadReleaseData(version: string): Promise<any | null> {
     if (typeof fetch !== 'function') return null;
+
+    try {
+      const response = await fetch('/release-history.json', { cache: 'no-store' });
+      if (response.ok) {
+        const history = await response.json();
+        if (Array.isArray(history)) {
+          const normalized = version.startsWith('v') ? version : `v${version}`;
+          const match = history.find(item => item?.version === normalized || item?.version === version);
+          if (match) return match;
+        }
+      }
+    } catch {
+      // Fallback to ngsw.json
+    }
 
     try {
       const response = await fetch('/ngsw.json', { cache: 'no-store' });
       if (!response.ok) return null;
       const manifest = await response.json();
-      return manifest?.appData || null;
+      const appData = manifest?.appData;
+      if (appData) {
+        return {
+          version,
+          title: appData.title || this.updateTitle() || 'Cập nhật hệ thống',
+          highlights: appData.features || this.updateFeatures(),
+          features: [],
+          improvements: [],
+          fixes: [],
+          date: new Intl.DateTimeFormat('vi-VN').format(new Date())
+        };
+      }
     } catch (error) {
       console.warn('[Release] Không đọc được appData từ ngsw.json:', error);
-      return null;
     }
+    return null;
   }
 
   isPrintMode = computed(() => {

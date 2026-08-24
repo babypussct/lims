@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.08.23-b01",
+    "date": "23/08/2026",
+    "title": "Trải nghiệm xem bảng tính Excel trực quan và nâng cấp an toàn đồng bộ mã chất chuẩn",
+    "highlights": [
+      "Xem trực tiếp bảng tính Excel trong mục Tài liệu với giao diện đầy đủ trang tính, công thức và giữ nguyên định dạng gốc.",
+      "Bảo toàn chính xác định dạng ngày giờ địa phương và bảo vệ nội dung biểu mẫu ở chế độ chỉ đọc an toàn.",
+      "Nâng cao độ ổn định và an toàn phân quyền khi đồng bộ chuẩn hóa mã quản lý nội bộ cho danh mục chất chuẩn lớn."
+    ],
+    "features": [
+      "Bổ sung trình xem bảng tính Excel chuyên dụng trong mục Tài liệu, cho phép chuyển đổi qua lại giữa các sheet, tra cứu công thức và tải về file gốc nhanh chóng."
+    ],
+    "improvements": [
+      "Hiển thị bảng tính chuẩn xác về màu sắc, căn lề ô, phông chữ và kích thước dòng cột tương tự ứng dụng văn phòng quen thuộc.",
+      "Tối ưu tốc độ tải và khả năng hiển thị các bảng dữ liệu kiểm nghiệm và biểu mẫu có cấu trúc nhiều sheet.",
+      "Tăng cường độ an toàn phân quyền và chia nhỏ đợt xử lý khi quản trị viên đồng bộ mã quản lý nội bộ chất chuẩn, tránh quá tải dữ liệu."
+    ],
+    "fixes": [
+      "Khắc phục hiện tượng ngày tháng và thời gian trong file Excel hiển thị lệch múi giờ khi mở xem trực tuyến.",
+      "Khắc phục nguy cơ gián đoạn quyền hạn khi đồng bộ nhật ký hoạt động trên tập dữ liệu chất chuẩn có quy mô lớn."
+    ]
+  },
+  {
     "version": "v26.08.20-b01",
     "date": "20/08/2026",
     "title": "Tối ưu hiển thị và sắp xếp mã số mẫu trong Theo Dõi Mẫu & Kết Quả Ngày",
