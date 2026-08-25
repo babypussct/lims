@@ -237,7 +237,7 @@ Như vậy gate cloud role-matrix đại diện cho bốn role đã có evidence
 - Đã mở UID canary tạm thời cho Manager + bốn account role-matrix và chạy UI smoke đọc-only tại mục 0.10; không thực hiện mutation nghiệp vụ. Sau smoke, đã khôi phục `activityFeedV2CanaryUids` và `notificationEventSyncV2CanaryUids` về đúng 1 Manager UID; `activityFeedV2=false`, `notificationEventSyncV2=false`.
 - `npm run release:verify` chạy lại sau thay đổi, exit code `0`; full test, Rules Emulator, typecheck app/API và production build đều pass. Build chỉ còn warning CommonJS/AMD hiện hữu.
 
-Các gate production vẫn cố ý giữ độc lập: chưa bật global flags, chưa chạy workflow mutation thật trên dữ liệu nghiệp vụ production, chưa đánh dấu Staff default UI smoke/monitoring và chưa mở PR9 cleanup trước compatibility window.
+Các gate production vẫn cố ý giữ độc lập: chưa bật global flags, chưa chạy workflow mutation thật trên dữ liệu nghiệp vụ production, chưa đánh dấu Staff default UI smoke và chưa mở PR9 cleanup trước compatibility window. Observation read/error được ghi bổ sung tại mục 0.11.
 
 ## 0.10. V2 canary UI smoke đầy đủ bốn role ngày 2026-08-25
 
