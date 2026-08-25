@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules, đầy đủ role smoke, notification workflow Emulator và observation read/error đã có evidence; V2 global flags vẫn OFF chờ compatibility window và quyết định mở rộng có kiểm soát**
+> Trạng thái: **Đã rollout global có kiểm soát — production migration/Rules, đầy đủ role smoke, notification workflow Emulator, Activity/Bell global smoke và observation read/error đã có evidence; compatibility fields/legacy paths vẫn giữ, PR9 cleanup chưa mở**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -39,7 +39,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 - notification canonical dispatch theo `eventId`, server-side recipient resolution, actor suppression và deterministic inbox ID đã có;
 - Rules V2, registry ↔ Rules contract tests, public traceability restriction và user preference Rules đã có; public traceability hiện yêu cầu action allowlist + `requestId` + `targetType=REQUEST`;
 - backfill tooling và index config đã có local; composite-index contract test giữ đủ Activity/Audit/Print indexes và xác nhận notification query vẫn equality-only; staging và production đã có evidence index READY/backfill;
-- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không bật; UID-scoped canary đang giữ đúng 1 Manager UID ở production, global flags vẫn false;
+- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không có; production hiện đã bật cả hai global flags sau canary, hai canary arrays đang rỗng và rollback config vẫn giữ được;
 - Activity scope resolution đã được tách thành pure helper có test cho permission reduction và downgrade Viewer; service contract xác nhận listener/data scope cũ bị clear trước khi publish scope mới;
 - App Badge sync đã được harden để xử lý API support không đầy đủ và Promise rejection; zero unread ưu tiên `clearAppBadge()` và fallback `setAppBadge(0)` khi browser chỉ expose setter.
 
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: compatibility-window cleanup và quyết định mở global flags. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production. Production index/backfill/Rules và role-matrix production đã có evidence tại mục 0.5/0.8/0.10/0.12; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: compatibility-window cleanup/PR9. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Production index/backfill/Rules, role-matrix và global smoke production đã có evidence tại mục 0.5/0.8/0.10/0.12/0.13; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -185,7 +185,7 @@ Kế hoạch runtime sau release:
 1. Giữ `activityFeedV2=false`, `notificationEventSyncV2=false`.
 2. Gán riêng UID Manager đã xác minh vào hai mảng canary, theo dõi read/error/permission-denied.
 3. Smoke Dashboard và Bell bằng tài khoản canary; nếu lỗi thì xóa hai mảng canary, không rollback dữ liệu.
-4. Sau khi có evidence role matrix và compatibility window, mới bật global flags theo thứ tự reader rồi notification.
+4. Sau khi có evidence role matrix + observation và có quyết định rollout, bật global flags theo thứ tự reader rồi notification; giữ compatibility fields/legacy adapters cho đến khi compatibility window kết thúc và PR9 được mở riêng.
 
 ## 0.7. Manager canary runtime smoke production ngày 2026-08-25
 
@@ -295,6 +295,35 @@ Trong phiên smoke chỉ đọc Dashboard/Bell, sau đó đăng xuất bằng me
 | Business mutation | `0` |
 
 Để test canary, UID Staff default được thêm tạm thời cùng UID Manager trong hai canary arrays trong khi global flags vẫn `false`. Sau smoke đã khôi phục cả hai arrays về đúng `1` UID Manager; cấu hình cuối cùng vẫn là `activityFeedV2=false`, `notificationEventSyncV2=false`, `showLockedFeatures=false`.
+
+## 0.13. Global rollout Activity + Notification ngày 2026-08-25
+
+Sau khi đủ Manager, QC, Lab, Viewer, Pending và Staff default smoke, đã mở global flags theo hai pha. Không tạo workflow nghiệp vụ mới trên production; notification writer vẫn được kiểm chứng bằng Auth/Firestore Emulator tại mục 0.9.
+
+### Pha 1 — Activity V2 global
+
+```text
+activityFeedV2              = true
+activityFeedV2CanaryUids    = []
+notificationEventSyncV2     = false
+notificationCanaryUids      = [Manager]
+```
+
+Manager Dashboard giữ filter `Quan trọng` và `50` detail buttons canonical trong cửa sổ read-only `60` giây; không có `Không có quyền xem hoạt động`, không có `Không thể tải hoạt động`, console error mới `0`.
+
+### Pha 2 — Notification V2 global
+
+```text
+activityFeedV2              = true
+activityFeedV2CanaryUids    = []
+notificationEventSyncV2     = true
+notificationEventSyncV2CanaryUids = []
+showLockedFeatures          = false
+```
+
+Bell Manager mở được dialog và đọc đúng inbox hiện có với `6` thông báo chưa đọc; không đánh dấu, xóa hoặc tạo thông báo. Theo dõi thêm `60` giây giữ Activity `50` detail buttons, không denied/load error và console error mới `0`.
+
+Rollback vẫn là thao tác cấu hình additive: đặt hai global flags về `false` và có thể giữ lại UID Manager trong canary arrays; schema V2, `user`, printable fields, legacy traceability ID và state adapters chưa bị xóa. Compatibility window/PR9 cleanup vẫn chưa hoàn tất và không được suy ra từ smoke global này.
 
 ---
 
@@ -1784,7 +1813,7 @@ Exit: reader V2 có thể bật mà không ảnh hưởng consumer khác.
 - [x] Dashboard V2.
 - [x] deep-link canonical cho Result/Standard/Inventory/System.
 - [x] search/filter.
-- [ ] flag default off → canary → on.
+- [x] flag default off → canary → on (global rollout evidence tại mục 0.13; rollback vẫn giữ được).
 
 Exit: Activity audience symmetry hoạt động production.
 
@@ -1807,7 +1836,7 @@ Exit: Bell là projection của canonical event cho workflow đã migrate.
 - [x] auditClass read restrictions đã pass emulator.
 - [x] publicTraceable get rule đã pass emulator.
 - [x] emulator matrix pass local.
-- [ ] old clients đã qua compatibility window.
+- [ ] old clients đã qua compatibility window (đang giữ compatibility fields/legacy adapters; chưa mở PR9 cleanup).
 
 Exit: backend enforce đúng policy, không phụ thuộc UI.
 
@@ -2496,7 +2525,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] smoke Viewer/Pending denied/hidden (Viewer V2 denied với 0 detail entry, Bell mở được; Pending dừng ở màn hình chờ duyệt, không có Bell; console error `0`).
 - [x] canary flag on (UID-scoped, 1 Manager; global flag vẫn false).
 - [x] monitor read/errors (Manager canary read-only 60 giây, 0 console error mới, 0 Activity denied/load error).
-- [ ] flag on rộng.
+- [x] flag on rộng (Activity global trước, Notification global sau; Activity/Bell read-only smoke + observation `60` giây, config cuối cùng hai global flags `true`, canary arrays rỗng).
 
 ## Notification V2
 
@@ -2508,6 +2537,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] test system update (Auth/Firestore Emulator dispatch fixture).
 - [x] test actor suppression (recipient assertions + retry fixture).
 - [x] canary flag on (UID-scoped, 1 Manager; chưa chạy writer mutation production).
+- [x] flag on rộng (Notification global sau khi Activity global pass; Bell Manager đọc inbox hiện có, không mutation nghiệp vụ).
 
 ## Security cutover
 
