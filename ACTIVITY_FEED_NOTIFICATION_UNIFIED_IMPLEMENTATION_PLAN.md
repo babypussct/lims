@@ -195,7 +195,7 @@ Sau khi release `v26.08.25-b04` được Vercel phục vụ, đã xác minh bằ
 - UID canary được nhận đúng: nút filter V2 `Quan trọng` hiển thị và có `50` nút mở chi tiết Activity canonical.
 - Activity không rơi vào trạng thái `Không có quyền xem hoạt động` hoặc `Không thể tải hoạt động`.
 - Bell mở được panel `role=dialog`, không có lỗi tải thông báo; sau kiểm tra đã đóng panel.
-- Console error trong phiên smoke: `0`.
+- Console error trong phiên smoke: `0`; theo dõi thêm `15` giây sau smoke vẫn `0`.
 - Staff read-only smoke bằng custom token ký local cũng pass: query `STANDARD_VIEW` đọc được `1` bản ghi và notification inbox đọc được `1` bản ghi; staff profile không nằm trong hai danh sách canary khi global flags đều false.
 - Production hiện có `20` profile: `3 manager`, `17 staff`; chưa có profile `qc`, `lab`, `viewer` hoặc `pending`, nên không thể dựng cloud smoke cho các role đó mà không tạo/sửa user dữ liệu thật.
 - Không thực hiện publish/reset/approve/stock mutation trên production; notification writer workflow vẫn chờ fixture hoặc môi trường test an toàn.
