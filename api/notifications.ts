@@ -34,6 +34,38 @@ const USER_INITIATED_ADMIN_EVENTS = new Set([
   'COA_REQUEST', 'BORROW_REQUEST'
 ]);
 
+function initializeFirebaseAdminIfNeeded(): void {
+  if (getApps().length) return;
+
+  // The emulator harness intentionally has no service-account key. Firebase
+  // Admin still needs a project id to route Firestore/Auth calls, while the
+  // emulator endpoints provide the local transport and token verification.
+  if (process.env['FIRESTORE_EMULATOR_HOST'] || process.env['FIREBASE_AUTH_EMULATOR_HOST']) {
+    initializeApp({
+      projectId: process.env['GCLOUD_PROJECT'] || 'demo-lims-notification'
+    });
+    return;
+  }
+
+  const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
+  if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
+
+  let serviceAccount: any;
+  try {
+    serviceAccount = typeof serviceAccountJson === 'string'
+      ? JSON.parse(serviceAccountJson)
+      : serviceAccountJson;
+  } catch (e: any) {
+    throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
+  }
+
+  if (serviceAccount && typeof serviceAccount.private_key === 'string') {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  }
+
+  initializeApp({ credential: cert(serviceAccount) });
+}
+
 function chunks<T>(items: T[] | null | undefined, size: number): T[][] {
   if (!items || !items.length) return [];
   const result: T[][] = [];
@@ -95,25 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
     if (!idToken) return res.status(401).json({ error: 'Thiếu Firebase ID token.' });
 
-    if (!getApps().length) {
-      const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
-      if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
-      
-      let serviceAccount: any;
-      try {
-        serviceAccount = typeof serviceAccountJson === 'string'
-          ? JSON.parse(serviceAccountJson)
-          : serviceAccountJson;
-      } catch (e: any) {
-        throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
-      }
-
-      if (serviceAccount && typeof serviceAccount.private_key === 'string') {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-      }
-
-      initializeApp({ credential: cert(serviceAccount) });
-    }
+    initializeFirebaseAdminIfNeeded();
 
     const decoded = await getAuth().verifyIdToken(idToken);
     const db = getFirestore();

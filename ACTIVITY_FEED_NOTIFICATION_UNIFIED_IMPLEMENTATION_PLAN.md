@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules và role-matrix smoke đã có evidence; Manager canary runtime pass; V2 global flags vẫn OFF chờ monitor/notification gates**
+> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules, role-matrix smoke và notification workflow Emulator đã có evidence; Manager canary runtime pass; V2 global flags vẫn OFF chờ Staff default smoke, monitor và compatibility window**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -39,7 +39,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 - notification canonical dispatch theo `eventId`, server-side recipient resolution, actor suppression và deterministic inbox ID đã có;
 - Rules V2, registry ↔ Rules contract tests, public traceability restriction và user preference Rules đã có; public traceability hiện yêu cầu action allowlist + `requestId` + `targetType=REQUEST`;
 - backfill tooling và index config đã có local; composite-index contract test giữ đủ Activity/Audit/Print indexes và xác nhận notification query vẫn equality-only; staging và production đã có evidence index READY/backfill;
-- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không bật; release tiếp theo bổ sung UID-scoped canary, nhưng chưa bật canary/global ở production;
+- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không bật; UID-scoped canary đang giữ đúng 1 Manager UID ở production, global flags vẫn false;
 - Activity scope resolution đã được tách thành pure helper có test cho permission reduction và downgrade Viewer; service contract xác nhận listener/data scope cũ bị clear trước khi publish scope mới;
 - App Badge sync đã được harden để xử lý API support không đầy đủ và Promise rejection; zero unread ưu tiên `clearAppBadge()` và fallback `setAppBadge(0)` khi browser chỉ expose setter.
 
@@ -47,7 +47,7 @@ Automated evidence gần nhất:
 
 ```text
 npm run test:activity                 → 61/61 pass
-npm run test:notifications            → 27 tests pass, 0 fail
+npm run test:notifications            → 27 unit/policy tests pass + 1 workflow Emulator pass
 npm run test:ui-dashboard             → 2/2 pass
 npm run test:firestore-rules          → 34/34 pass
 npx tsc -p tsconfig.app.json --noEmit → pass
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary observation/monitoring, notification writer workflow, Staff default UI smoke và compatibility-window cleanup. Production index/backfill/Rules và bốn account role-matrix production đã có evidence tại mục 0.5/0.8; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary observation/monitoring, Staff default UI smoke và compatibility-window cleanup. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production. Production index/backfill/Rules và bốn account role-matrix production đã có evidence tại mục 0.5/0.8; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -198,7 +198,7 @@ Sau khi release `v26.08.25-b04` được Vercel phục vụ, đã xác minh bằ
 - Console error trong phiên smoke: `0`; theo dõi thêm `15` giây sau smoke vẫn `0`.
 - Staff read-only smoke bằng custom token ký local cũng pass: query `STANDARD_VIEW` đọc được `1` bản ghi và notification inbox đọc được `1` bản ghi; staff profile không nằm trong hai danh sách canary khi global flags đều false.
 - Production hiện có `20` profile: `3 manager`, `17 staff`; chưa có profile `qc`, `lab`, `viewer` hoặc `pending`, nên không thể dựng cloud smoke cho các role đó mà không tạo/sửa user dữ liệu thật.
-- Không thực hiện publish/reset/approve/stock mutation trên production; notification writer workflow vẫn chờ fixture hoặc môi trường test an toàn.
+- Không thực hiện publish/reset/approve/stock mutation trên production; notification writer workflow được giữ cho fixture/Auth Emulator để tránh làm bẩn dữ liệu nghiệp vụ thật (evidence tại mục 0.9).
 - Staging authenticated role matrix vẫn chưa chạy cloud vì project staging được giữ Spark; automated Rules/Auth-policy evidence vẫn là gate thay thế hiện tại.
 
 ## 0.8. Production role-matrix accounts và admin assignment ngày 2026-08-25
@@ -223,7 +223,21 @@ Runtime smoke sau assignment:
 - Viewer đăng nhập thành công, Dashboard tải được nhưng Activity section không có detail entry (`0` nút mở chi tiết), không có filter `Quan trọng`; không đọc được Activity.
 - Pending đăng nhập thành công và dừng đúng ở màn hình `Đang Chờ Phê Duyệt`.
 
-Như vậy gate cloud role-matrix đại diện cho bốn role đã có evidence production an toàn ở lớp Auth/profile/UI. Chưa bật global flags và chưa thực hiện notification writer mutation; các gate đó vẫn cần được giữ độc lập.
+Như vậy gate cloud role-matrix đại diện cho bốn role đã có evidence production an toàn ở lớp Auth/profile/UI. Chưa bật global flags và chưa thực hiện notification writer mutation trên dữ liệu nghiệp vụ production; workflow tương đương đã được kiểm chứng trong Auth/Firestore Emulator tại mục 0.9.
+
+## 0.9. Notification workflow Emulator và kiểm tra rollback canary ngày 2026-08-25
+
+Đã hoàn tất evidence runtime an toàn cho notification writer mà không tạo request, result, tồn kho hoặc thông báo nghiệp vụ thật trên production:
+
+- Bổ sung Auth + Firestore Emulator vào `firebase.json`; nhánh khởi tạo Admin SDK của `/api/notifications` nhận diện emulator và không yêu cầu service-account key.
+- Thêm `npm run test:notification-workflow`, chạy endpoint `dispatchEvent` thật với Auth ID token giả lập và Firestore Emulator.
+- Fixture đã pass toàn bộ chuỗi: `PUBLISH_RESULT_REPORT`, `RESET_RESULT_DATA`, `REQUEST_STANDARD`, `APPROVE_STANDARD_REQUEST`, `REJECT_STANDARD_REQUEST`, `INVENTORY_LOW_STOCK` và `POST_SYSTEM_UPDATE`.
+- Fixture xác nhận recipient resolution theo permission/role, actor suppression, action URL canonical, `pushStatus=no_token` khi không có FCM token và retry idempotence (`createdCount=0` ở lần gọi lại cùng `eventId`).
+- `npm run test:notifications` đạt `27/27` unit/policy tests và `1/1` workflow Emulator; `npm run typecheck:api` đạt.
+- Đã thử mở UID canary tạm thời cho Manager + bốn account role-matrix để chuẩn bị UI smoke; không thực hiện mutation nghiệp vụ. Sau kiểm tra cấu hình, đã khôi phục `activityFeedV2CanaryUids` và `notificationEventSyncV2CanaryUids` về đúng 1 Manager UID; `activityFeedV2=false`, `notificationEventSyncV2=false`.
+- `npm run release:verify` chạy lại sau thay đổi, exit code `0`; full test, Rules Emulator, typecheck app/API và production build đều pass. Build chỉ còn warning CommonJS/AMD hiện hữu.
+
+Các gate production vẫn cố ý giữ độc lập: chưa bật global flags, chưa chạy workflow mutation thật trên dữ liệu nghiệp vụ production, chưa đánh dấu Staff default UI smoke/monitoring và chưa mở PR9 cleanup trước compatibility window.
 
 ---
 
@@ -402,7 +416,7 @@ Baseline ban đầu của `firebase.json` chỉ khai báo:
 }
 ```
 
-Trong worktree hiện tại `firestore.indexes.json` đã được bổ sung và `firebase.json` đã trỏ tới file; staging đã deploy và xác nhận 7 index `logs` ở trạng thái `READY`, còn production chưa deploy.
+Trong worktree hiện tại `firestore.indexes.json` đã được bổ sung và `firebase.json` đã trỏ tới file; staging và production đều đã deploy và xác nhận đủ 7 index `logs` ở trạng thái `READY`. `firebase.json` cũng khai báo Auth/Firestore Emulator cho workflow fixture local.
 
 ---
 
@@ -1684,8 +1698,8 @@ Checklist:
 - [x] ActivityEventService.
 - [x] writer mới ghi schema v2 + legacy `user`.
 - [x] notification legacy vẫn hoạt động khi flag V2 off.
-- [x] index file được deploy và xác nhận READY ở staging; [ ] production.
-- [x] Rules V2 đã có local/emulator evidence; [ ] production read Rules cutover sau backfill/compatibility window.
+- [x] index file được deploy và xác nhận READY ở staging và production (`7/7` `logs` indexes).
+- [x] Rules V2 đã có local/emulator evidence và production read Rules cutover sau backfill/verify.
 - [x] feature flag V2 default false khi config không bật.
 
 Exit: data mới bắt đầu giàu schema nhưng production UI không đổi.
@@ -2272,6 +2286,7 @@ Trong từng PR chạy nhóm liên quan. Trước release quan trọng chạy t�
 ```bash
 npm run test:activity
 npm run test:notifications
+npm run test:notification-workflow
 npm run test:standards
 npm run test:ui-dashboard
 npm run test:firestore-rules
@@ -2429,12 +2444,12 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 ## Notification V2
 
 - [x] PR6 merge flag off (canonical writer/legacy bridge đã deploy; global flag vẫn false ngoài UID canary).
-- [ ] test result publish.
-- [ ] test result reset.
-- [ ] test standard request/approve/reject.
-- [ ] test low-stock.
-- [ ] test system update.
-- [ ] test actor suppression.
+- [x] test result publish (Auth/Firestore Emulator dispatch fixture).
+- [x] test result reset (Auth/Firestore Emulator dispatch fixture).
+- [x] test standard request/approve/reject (Auth/Firestore Emulator dispatch fixture).
+- [x] test low-stock (Auth/Firestore Emulator dispatch fixture).
+- [x] test system update (Auth/Firestore Emulator dispatch fixture).
+- [x] test actor suppression (recipient assertions + retry fixture).
 - [x] canary flag on (UID-scoped, 1 Manager; chưa chạy writer mutation production).
 
 ## Security cutover
@@ -2448,11 +2463,11 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 ## Enrichment/cleanup
 
-- [ ] PR8.
+- [x] PR8 (aggregation, last-seen, important filter, structured search và mobile/a11y contracts; release verify pass).
 - [ ] compatibility window complete.
 - [ ] PR9 cleanup.
-- [ ] final release verify.
-- [ ] update implementation checklist evidence.
+- [x] final release verify (`npm run release:verify` exit code `0` sau khi thêm notification workflow Emulator).
+- [x] update implementation checklist evidence (mục 0.9 và các checklist runtime đã cập nhật).
 
 ---
 
