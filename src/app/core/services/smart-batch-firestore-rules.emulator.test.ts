@@ -469,7 +469,7 @@ test('public traceability is get-only and requires publicTraceable BUSINESS data
   await assertFails(getDocs(collection(publicDb, `artifacts/${APP_ID}/logs`)));
 });
 
-test('personal printable logs keep V2 ownership after display-name changes and retain legacy fallback', async () => {
+test('personal printable logs require canonical UID ownership after display-name changes', async () => {
   const renamedDisplayName = 'Batch A Renamed';
   const seedTime = Timestamp.fromMillis(1_700_000_000_000);
   await env.withSecurityRulesDisabled(async context => {
@@ -513,12 +513,11 @@ test('personal printable logs keep V2 ownership after display-name changes and r
   )));
   assert.deepEqual(v2Snapshot.docs.map(item => item.id), ['printable-v2-owned']);
 
-  const legacySnapshot = await assertSucceeds(getDocs(query(
+  await assertFails(getDocs(query(
     collection(db, `artifacts/${APP_ID}/logs`),
     where('printable', '==', true),
     where('user', '==', renamedDisplayName)
   )));
-  assert.deepEqual(legacySnapshot.docs.map(item => item.id), ['printable-legacy-renamed']);
 });
 
 test('lastActivitySeenAt preference is private to its owner and server-timestamped', async () => {

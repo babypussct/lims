@@ -48,12 +48,11 @@ export class PrintQueueService {
       return;
     }
 
-    // Manager sees all printable jobs. Non-manager users use UID ownership for
-    // canonical V2 documents and keep a legacy display-name listener during the
-    // compatibility window so pre-backfill printable logs do not disappear.
+    // Manager sees all printable jobs. Non-manager users use canonical UID
+    // ownership; all production printable documents were backfilled before
+    // this UID-only reader was released.
     const isManager = user.role === 'manager';
-    const displayName = user.displayName?.trim() || '';
-    const nextScope = isManager ? `${user.uid}:manager` : `${user.uid}:self:${displayName || '-'}`;
+    const nextScope = isManager ? `${user.uid}:manager` : `${user.uid}:self`;
     if (nextScope === this.scopeKey && this.listeners.length > 0) return;
 
     this.stopListener();
@@ -76,13 +75,6 @@ export class PrintQueueService {
       where('actorUid', '==', user.uid),
       limit(PRINT_QUEUE_LIMIT)
     ]);
-    if (displayName) {
-      this.startListener('legacy-name', path, [
-        where('printable', '==', true),
-        where('user', '==', displayName),
-        limit(PRINT_QUEUE_LIMIT)
-      ]);
-    }
   }
 
   stopListener(): void {

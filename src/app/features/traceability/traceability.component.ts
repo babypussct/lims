@@ -21,6 +21,8 @@ import { QrGlobalService } from '../../core/services/qr-global.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { getActivityActionLabel } from '../../core/activity/activity-feed.utils';
+import { isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
 
 @Component({
   selector: 'app-traceability',
@@ -824,6 +826,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   getActionLabel(action: string | undefined): string {
       if (!action) return 'Không xác định';
+      if (isRegisteredActivityAction(action)) return getActivityActionLabel(action);
       const map: Record<string, string> = {
           'PENDING_REQUEST': 'Yêu cầu chờ duyệt',
           'APPROVED_REQUEST': 'Yêu cầu đã duyệt',
@@ -854,12 +857,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           'generate_pdf': 'Tạo tệp PDF',
           'archive_reports': 'Lưu trữ báo cáo'
       };
-      if (map[action]) return map[action];
-      if (action.includes('APPROVE')) return 'Phê duyệt';
-      if (action.includes('CREATE')) return 'Tạo mới';
-      if (action.includes('UPDATE')) return 'Cập nhật';
-      if (action.includes('DELETE')) return 'Xóa';
-      return action;
+      return map[action] || action;
   }
 
   getSampleTargetMap(): Record<string, string[]> | null {

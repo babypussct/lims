@@ -432,13 +432,7 @@ service cloud.firestore {
     function canReadPersonalPrintableLog(appId, data) {
       return isActiveUser(appId) &&
         data.get('printable', false) == true &&
-        (
-          data.get('actorUid', '') == request.auth.uid ||
-          // Compatibility-only fallback. This remains broad until the
-          // legacy printable documents are backfilled and the name listener
-          // is removed; V2 readers use actorUid instead.
-          isCurrentActorName(appId, data.get('user', ''))
-        );
+        data.get('actorUid', '') == request.auth.uid;
     }
 
     function canReadPublicTraceability(data) {

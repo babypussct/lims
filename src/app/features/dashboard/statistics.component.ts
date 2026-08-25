@@ -15,7 +15,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { AuditLogService } from '../../core/services/audit-log.service';
 import { getActivityAuditActionLabel } from '../../core/activity/activity-feed.utils';
-import { isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
+import { getActivityActionDefinition, isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
+
+const INVENTORY_MOVEMENT_ACTIONS = new Set(['STOCK_IN', 'STOCK_OUT']);
+const RESULT_APPROVAL_ACTIONS = new Set(['DIRECT_APPROVE', 'DIRECT_APPROVE_PLAN', 'APPROVE_REQUEST']);
 
 interface NxtReportItem {
   id: string;
@@ -58,13 +61,30 @@ export class StatisticsComponent {
   
   getLogActionText(action: string): string {
       if (isRegisteredActivityAction(action)) return getActivityAuditActionLabel(action);
-      
-      if (action.includes('APPROVE')) return 'Duyệt yêu cầu'; 
-      if (action.includes('STOCK_IN')) return 'Nhập kho';
-      if (action.includes('STOCK_OUT')) return 'Xuất kho'; 
-      if (action.includes('CREATE')) return 'Tạo mới';
-      if (action.includes('DELETE')) return 'Xóa'; 
-      return 'Cập nhật';
+      return action || 'Cập nhật';
+  }
+
+  getLogActionClass(action: string): string {
+      if (!isRegisteredActivityAction(action)) {
+          return 'bg-slate-50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800';
+      }
+      const definition = getActivityActionDefinition(action);
+      if (definition.importance === 'WARNING') {
+          return 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+      }
+      if (definition.importance === 'IMPORTANT') {
+          return 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+      }
+      if (definition.module === 'INVENTORY') {
+          return 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+      }
+      if (definition.module === 'STANDARD') {
+          return 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+      }
+      if (definition.module === 'SYSTEM') {
+          return 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800';
+      }
+      return 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800';
   }
 
   activeTab = signal<'logs' | 'consumption' | 'sops' | 'nxt' | 'standards'>('logs');
@@ -596,25 +616,21 @@ export class StatisticsComponent {
 
 
   criticalLogs = computed(() => {
-    return this.audit.logs().filter(l =>
-        l.action.includes('DELETE') || 
-        l.action.includes('HARD_DELETE') || 
-        l.action.includes('REJECT') || 
-        l.action.includes('REVOKE')
+    return this.audit.logs().filter(log =>
+        isRegisteredActivityAction(log.action)
+        && getActivityActionDefinition(log.action).importance === 'WARNING'
     ).slice(0, 20);
   });
 
   getLogActionIcon(action: string): string {
-    if (action === 'SAVE_RESULT_DRAFT') return 'fa-solid fa-floppy-disk text-cyan-500';
-    if (action === 'PUBLISH_RESULT_REPORT') return 'fa-solid fa-file-pdf text-emerald-500';
-    if (action === 'REVERT_RESULT_DRAFT') return 'fa-solid fa-unlock text-amber-500';
-    if (action === 'RESET_RESULT_DATA') return 'fa-solid fa-trash-arrow-up text-red-500';
-    if (action === 'RESTORE_RESULT_BACKUP' || action === 'RESTORE_RESULT_VERSION') return 'fa-solid fa-clock-rotate-left text-violet-500';
-
-    if (action.includes('DELETE')) return 'fa-solid fa-trash-can text-red-500';
-    if (action.includes('REJECT')) return 'fa-solid fa-circle-xmark text-rose-500';
-    if (action.includes('REVOKE')) return 'fa-solid fa-hand-holding-hand text-amber-500';
-    return 'fa-solid fa-bolt text-indigo-500';
+    if (!isRegisteredActivityAction(action)) return 'fa-solid fa-bolt text-indigo-500';
+    const definition = getActivityActionDefinition(action);
+    const tone = definition.importance === 'WARNING'
+        ? 'text-red-500'
+        : definition.importance === 'IMPORTANT'
+            ? 'text-blue-500'
+            : 'text-indigo-500';
+    return `fa-solid fa-${definition.iconKey} ${tone}`;
   }
 
   exportType = signal<'summary' | 'daily' | 'monthly' | 'specific_day'>('summary');
@@ -809,7 +825,7 @@ export class StatisticsComponent {
                   const result: { id: string, delta: number }[] = [];
                   const targetId = log.targetId;
 
-                  if (log.action.includes('STOCK')) {
+                  if (INVENTORY_MOVEMENT_ACTIONS.has(log.action)) {
                       const match = log.details.match(/:\s*([+-]?\d+(?:\.\d+)?)/);
                       if (match && targetId) { result.push({ id: targetId, delta: parseFloat(match[1]) }); }
                   }
@@ -831,7 +847,7 @@ export class StatisticsComponent {
                           // Stock was reduced to zero by deletion; handled via stock delta if logged
                       }
                   }
-                  else if (log.action.includes('APPROVE') && log.printData?.items) {
+                  else if (RESULT_APPROVAL_ACTIONS.has(log.action) && log.printData?.items) {
                       log.printData.items.forEach(item => {
                           if (item.isComposite && item.breakdown) {
                               item.breakdown.forEach(sub => result.push({ id: sub.name, delta: -(sub.totalNeed || 0) }));
@@ -891,7 +907,7 @@ export class StatisticsComponent {
                   
                   // Bug Fix: filter by BOTH start and end date (was only checking <= end)
                   if (logTime >= startTime && logTime <= endTime) {
-                      if (log.action.includes('APPROVE') && log.printData?.sop?.id === sopId && log.printData?.items) {
+                      if (RESULT_APPROVAL_ACTIONS.has(log.action) && log.printData?.sop?.id === sopId && log.printData?.items) {
                           log.printData.items.forEach(item => {
                               if (item.isComposite && item.breakdown) {
                                   item.breakdown.forEach(sub => {

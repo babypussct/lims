@@ -21,7 +21,7 @@ test('global activity logs use V2 create validation and separated read policies'
   assert.match(rules, /audience == 'SYSTEM_ADMIN' && hasPermission\(appId, 'user_manage'\)/);
 });
 
-test('business audit readers carry an auditClass predicate before the Rules V2 cutover', () => {
+test('canonical Activity readers no longer depend on the legacy StateService log stream', () => {
   const auditSource = readFileSync(
     resolve(process.cwd(), 'src/app/core/services/audit-log.service.ts'),
     'utf8'
@@ -32,16 +32,11 @@ test('business audit readers carry an auditClass predicate before the Rules V2 c
   );
 
   assert.match(auditSource, /where\('auditClass', '==', 'BUSINESS'\)/);
-  assert.match(
-    stateSource,
-    /currentUser\.role !== 'manager'[\s\S]*where\('auditClass', '==', 'BUSINESS'\)/
-  );
-  assert.match(
-    stateSource,
-    /if \(this\.logsSub\) this\.logsSub\(\);\s*this\.clearGlobalActivityLogCache\(\);/
-  );
-  assert.match(stateSource, /this\.deltaSync\.destroySingleton\(keys\.cacheKey\);/);
-  assert.match(stateSource, /this\.deltaSync\.clearCache\(keys\.cacheKey, keys\.cursorKey\);/);
+  assert.doesNotMatch(stateSource, /ensureLogsListener\(\)/);
+  assert.doesNotMatch(stateSource, /ensurePersonalLogsListener\(\)/);
+  assert.doesNotMatch(stateSource, /where\('user', '==', displayName\)/);
+  assert.doesNotMatch(stateSource, /globalLogsCache|personalLogsCache|printableLogs/);
+  assert.match(readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8'), /data\.get\('actorUid', ''\) == request\.auth\.uid/);
 });
 
 test('lastActivitySeenAt preference is owner-only and independent from notification read state', () => {

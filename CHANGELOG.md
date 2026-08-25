@@ -2,7 +2,37 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.25-b04
+## Phiên bản hiện tại: v26.08.25-b05
+
+### v26.08.25-b05
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Activity Feed và chuông thông báo V2 đã được bật global sau migration, Rules cutover, role smoke và observation production.
+- Đường đọc Dashboard legacy đã được loại bỏ; Activity Feed hiện dùng duy nhất canonical event theo audience và registry.
+- Print Queue cá nhân đã chuyển hoàn toàn sang ownership bằng actorUid; Firestore Rules printable đã siết UID-only.
+- Backfill production đã chuẩn hóa toàn bộ event hiện có và giữ các trường compatibility trong document để traceability/rollback dữ liệu.
+
+#### ✨ Tính Năng Mới
+
+- Dashboard, Statistics và Traceability lấy nhãn, icon, module và mức độ từ Activity Action Registry thay vì heuristic theo chuỗi action.
+- Notification dispatch tiếp tục dùng eventId canonical, recipient resolution server-side, actor suppression và retry idempotence.
+- Các role Manager, QC Lead, Lab Technician, Viewer, Pending và Staff default đã có smoke evidence tương ứng.
+- Rules Emulator, Auth/Firestore notification workflow Emulator và production public/private boundary đã được kiểm tra trong release gate.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Dashboard chỉ khởi động ActivityFeedService khi rollout global/canary hợp lệ; scope thay đổi realtime sẽ clear listener trước khi publish.
+- Các query printable cá nhân không còn phụ thuộc displayName, tránh nhầm quyền khi đổi tên hoặc trùng tên.
+- Dữ liệu cũ vẫn giữ user, printable và printJobId để bảo toàn traceability; cleanup reader không xóa lịch sử.
+- Feature flag và cấu hình rollback vẫn được giữ ở mức rollout để có thể tắt surface V2 nếu cần điều tra.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ fallback Dashboard theo log global/personal và state Activity adapter không còn consumer.
+- Loại bỏ các phân loại action bằng includes trong Dashboard, Statistics và Traceability; action không đăng ký không được suy đoán.
+- Rules từ chối truy vấn printable theo user/displayName và chỉ cho phép actorUid của tài khoản hiện tại.
+- Cập nhật contract/Rules Emulator tests để khóa UID-only ownership và ngăn legacy reader quay lại.
 
 ### v26.08.25-b04
 

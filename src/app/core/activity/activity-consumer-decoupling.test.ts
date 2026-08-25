@@ -11,7 +11,7 @@ test('Statistics reads audit data independently from Activity Feed state', () =>
   assert.doesNotMatch(source, /ensureActivityFeedListeners\(\)/);
 });
 
-test('Print Queue and request badge do not consume StateService printableLogs', () => {
+test('Print Queue and request badge use the canonical UID-owned read model', () => {
   const queue = readFileSync('src/app/features/requests/print-queue.component.ts', 'utf8');
   const requests = readFileSync('src/app/features/requests/request-list.component.ts', 'utf8');
   const service = readFileSync('src/app/core/services/print-queue.service.ts', 'utf8');
@@ -26,7 +26,7 @@ test('Print Queue and request badge do not consume StateService printableLogs', 
   assert.doesNotMatch(requests, /state\.printableLogs\(\)/);
 
   assert.match(service, /where\('actorUid', '==', user\.uid\)/);
-  assert.match(service, /where\('user', '==', displayName\)/);
+  assert.doesNotMatch(service, /where\('user', '==', displayName\)/);
 });
 
 test('InventoryService no longer owns audit date-range reads', () => {
@@ -36,7 +36,10 @@ test('InventoryService no longer owns audit date-range reads', () => {
   assert.match(audit, /getLogsByDateRange\(/);
 });
 
-test('Dashboard remains the only feature consumer of legacy StateService logs during PR3 compatibility', () => {
+test('Dashboard consumes only the canonical ActivityFeedService after PR9 cleanup', () => {
   const dashboard = readFileSync('src/app/features/dashboard/dashboard.component.ts', 'utf8');
-  assert.match(dashboard, /this\.state\.logs\(\)/);
+  assert.match(dashboard, /ActivityFeedService/);
+  assert.doesNotMatch(dashboard, /this\.state\.logs\(\)/);
+  assert.doesNotMatch(dashboard, /ensureActivityFeedListeners\(\)/);
+  assert.doesNotMatch(dashboard, /filterDashboardActivityLogs\(/);
 });

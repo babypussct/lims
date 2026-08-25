@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đã rollout global có kiểm soát — production migration/Rules, đầy đủ role smoke, notification workflow Emulator, Activity/Bell global smoke và observation read/error đã có evidence; compatibility fields/legacy paths vẫn giữ, PR9 cleanup chưa mở**
+> Trạng thái: **Đã hoàn tất implementation PR9 hard cutover trong release b05 và full local/Emulator/release gate; đang thực hiện commit/push/deploy production và nghiệm thu runtime cuối**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -31,7 +31,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 - canonical Activity schema/registry/policies và `ActivityEventService` đã tồn tại;
 - writer Result, Inventory, Standard và các workflow chính trong `StateService` đã ghi schema V2 theo hướng additive, vẫn giữ compatibility fields;
 - `AuditLogService` và `PrintQueueService` đã tách khỏi Activity Feed reader;
-- Print Queue V2 dùng `actorUid` làm ownership key, đồng thời giữ listener `user/displayName` chỉ cho legacy compatibility;
+- Print Queue V2 dùng `actorUid` làm ownership key; listener `user/displayName` đã được loại bỏ trong PR9 sau khi production backfill/verify đạt;
 - `ActivityFeedService`, merge/dedupe, structured search/filter, aggregation, last-seen và Dashboard flag đã có;
 - Dashboard/Statistics dùng label từ canonical registry cho mọi action đã đăng ký; heuristic chỉ còn là fallback cho legacy unknown action trong compatibility path; các action lịch sử Daily Checklist đã được registry hóa để backfill không còn bỏ sót;
 - deep-link Traceability V2 dùng canonical resolver, chỉ sinh `/traceability/{requestId}` khi event có `publicTraceable=true` và requestId hợp lệ, đồng thời encode identifier;
@@ -39,7 +39,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 - notification canonical dispatch theo `eventId`, server-side recipient resolution, actor suppression và deterministic inbox ID đã có;
 - Rules V2, registry ↔ Rules contract tests, public traceability restriction và user preference Rules đã có; public traceability hiện yêu cầu action allowlist + `requestId` + `targetType=REQUEST`;
 - backfill tooling và index config đã có local; composite-index contract test giữ đủ Activity/Audit/Print indexes và xác nhận notification query vẫn equality-only; staging và production đã có evidence index READY/backfill;
-- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không có; production hiện đã bật cả hai global flags sau canary, hai canary arrays đang rỗng và rollback config vẫn giữ được;
+- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn fail-closed nếu config không có; production hiện đã bật cả hai global flags sau canary, hai canary arrays đang rỗng; reader legacy không còn nằm trong release b05, rollback surface dùng deployment/config trước đó;
 - Activity scope resolution đã được tách thành pure helper có test cho permission reduction và downgrade Viewer; service contract xác nhận listener/data scope cũ bị clear trước khi publish scope mới;
 - App Badge sync đã được harden để xử lý API support không đầy đủ và Promise rejection; zero unread ưu tiên `clearAppBadge()` và fallback `setAppBadge(0)` khi browser chỉ expose setter.
 
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: compatibility-window cleanup/PR9. Snapshot dữ liệu và inventory fallback sau global rollout đã được ghi tại mục 0.14, nhưng chưa đủ điều kiện mở PR9. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Production index/backfill/Rules, role-matrix và global smoke production đã có evidence tại mục 0.5/0.8/0.10/0.12/0.13; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** trước nghiệm thu cuối là commit/push, deploy release b05, production UID-only Rules smoke và authenticated runtime smoke sau cleanup. Snapshot dữ liệu trước cleanup được ghi tại mục 0.14; implementation/contract evidence của PR9 được ghi tại mục 0.15. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark; production role matrix đại diện đã có evidence tại mục 0.8/0.10/0.12.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -359,9 +359,39 @@ Collection hiện có `4.195` event, tăng `3` event so với snapshot `4.192` t
 
 ### Kết luận gate
 
-Data compatibility snapshot đạt: toàn bộ `4.195/4.195` event canonical, không còn actor/action/schema lỗi và compatibility `user` vẫn đầy đủ. Tuy nhiên compatibility window chưa thể đánh dấu hoàn tất vì source vẫn còn legacy fallback có chủ đích và chưa có evidence rằng toàn bộ old client đã đi qua ít nhất một release cycle sau global rollout. Do đó không mở PR9 trong bước này; giữ nguyên `user`, printable fields, legacy traceability ID, state adapters và Rules fallback cho đến khi có evidence vòng đời client + plan cleanup riêng.
+Data compatibility snapshot đạt: toàn bộ `4.195/4.195` event canonical, không còn actor/action/schema lỗi và compatibility `user` vẫn đầy đủ. Tại thời điểm snapshot này PR9 chưa mở; sau quyết định hard cutover của người dùng, implementation cleanup được ghi ở mục 0.15. Các compatibility fields trong document vẫn được giữ để bảo toàn traceability và cho phép phục hồi dữ liệu; reader/Rules fallback cũ được xử lý theo release b05.
 
 ---
+
+## 0.15. PR9 hard cutover implementation trong release v26.08.25-b05
+
+Đã triển khai phần cleanup legacy sau khi người dùng yêu cầu đóng toàn bộ kế hoạch. Hard cutover này không xóa document history; chỉ loại bỏ đường đọc/phân loại cũ khỏi release mới và siết ownership bằng UID. Quyết định vận hành đi kèm là các tab/phiên client cũ phải reload hoặc nhận bundle b05 trước khi tiếp tục dùng Activity/Print Queue; release b05 không duy trì legacy reader.
+
+### Thay đổi source/rules
+
+- Xóa `StateService.ensureLogsListener()`, `ensurePersonalLogsListener()`, `ensureActivityFeedListeners()`, `suspendLegacyActivityFeedListeners()` cùng cache/signal Activity legacy và DeltaSync cache riêng của log.
+- Dashboard dùng duy nhất `ActivityFeedService`, không còn `state.logs()`, `filterDashboardActivityLogs()`, scope global/personal cũ hoặc fallback theo tên hiển thị.
+- Dashboard icon, Statistics action label/class/icon, NXT movement/approval classification và Traceability action label đều đọc từ Activity Action Registry hoặc tập action canonical explicit; không còn `action.includes(...)` để suy luận module/quyền/nhãn.
+- `PrintQueueService` non-manager chỉ query `printable=true + actorUid=currentUser.uid`; không còn listener `user/displayName`.
+- `canReadPersonalPrintableLog()` trong Firestore Rules chỉ chấp nhận `actorUid == request.auth.uid`; compatibility `user`, `printable` và `printJobId` vẫn giữ trong dữ liệu để không mất traceability.
+- Xóa utility/test `dashboard-activity` đã không còn consumer; cập nhật contract và Rules Emulator test để ngăn legacy reader/fallback quay lại.
+
+### Automated evidence sau cleanup
+
+```text
+npm run test:activity          → 61/61 pass
+npm run test:standards         → 138/138 pass
+npm run test:ui-dashboard      → 2/2 pass
+npm run test:firestore-rules   → 34/34 pass
+npm run test:notifications     → 27/27 unit + 1/1 workflow Emulator pass
+npx tsc -p tsconfig.app.json --noEmit → pass
+npm run typecheck:api          → pass
+npm run build                  → pass
+npm run release:verify        → pass (full npm test + runtime gate + typecheck + build)
+git diff --check               → pass
+```
+
+Build chỉ còn các cảnh báo CommonJS/AMD dependency hiện hữu từ Univer/React-related; không có compile error. Production deploy và authenticated smoke của release b05 được thực hiện sau khi commit/push, ghi bổ sung vào mục 0.16.
 
 # 1. Quyết định kiến trúc đã chốt
 
@@ -1872,7 +1902,7 @@ Exit: Bell là projection của canonical event cho workflow đã migrate.
 - [x] auditClass read restrictions đã pass emulator.
 - [x] publicTraceable get rule đã pass emulator.
 - [x] emulator matrix pass local.
-- [ ] old clients đã qua compatibility window (đang giữ compatibility fields/legacy adapters; chưa mở PR9 cleanup).
+- [x] old clients đã qua compatibility window theo quyết định hard cutover: client/phiên cũ phải reload hoặc nhận bundle b05; không còn legacy reader sau b05. Compatibility fields ở document layer vẫn giữ để bảo toàn traceability/khả năng phục hồi dữ liệu.
 
 Exit: backend enforce đúng policy, không phụ thuộc UI.
 
@@ -1881,10 +1911,10 @@ Exit: backend enforce đúng policy, không phụ thuộc UI.
 - [x] aggregation.
 - [x] last-seen.
 - [x] “Quan trọng”.
-- [ ] bỏ legacy heuristics.
-- [ ] bỏ legacy personal listener.
-- [ ] bỏ `state.logs()` khỏi Dashboard.
-- [ ] cân nhắc bỏ legacy `user` ở release riêng sau nữa.
+- [x] bỏ legacy heuristics trong Dashboard/Statistics/Traceability bằng registry canonical.
+- [x] bỏ legacy personal listener.
+- [x] bỏ `state.logs()` khỏi Dashboard.
+- [x] giữ legacy `user` ở document layer để bảo toàn traceability; không dùng làm ownership reader.
 
 ---
 
@@ -2080,14 +2110,14 @@ Chỉ mở sau compatibility window.
 
 ### Checklist
 
-- [ ] bỏ `where('user','==',displayName)` personal listener.
-- [ ] bỏ global/personal Dashboard scope cũ.
-- [ ] bỏ `canViewActivityLog()` heuristic.
-- [ ] bỏ Manager special-case Dashboard.
-- [ ] bỏ action string includes classification.
-- [ ] bỏ state Activity adapters không còn consumer.
-- [ ] giữ `user` nếu traceability/older client vẫn cần; nếu bỏ phải là PR/release riêng.
-- [ ] document migration completion.
+- [x] bỏ `where('user','==',displayName)` personal listener.
+- [x] bỏ global/personal Dashboard scope cũ.
+- [x] bỏ `canViewActivityLog()` heuristic.
+- [x] bỏ Manager special-case Dashboard.
+- [x] bỏ action string includes classification.
+- [x] bỏ state Activity adapters không còn consumer.
+- [x] giữ `user` vì traceability/rollback dữ liệu vẫn cần; reader ownership đã chuyển UID-only.
+- [x] document migration completion tại mục 0.15.
 
 ---
 
@@ -2371,9 +2401,9 @@ Lưu report ngoài DB hoặc admin-safe location:
 - [x] Dashboard first load không permission error trong local authenticated-manager smoke; route `#/dashboard` tải hoàn chỉnh và không có console error.
 - [x] Bell unread count đúng trong local smoke: header báo 6 chưa đọc, panel và filter tabs cùng phản ánh 6.
 - [x] Activity click deep-link đúng trong local smoke: Activity `Truy Xuất` mở `#/traceability/{requestId}` và tải đúng hồ sơ theo ID.
-- [ ] permission change clear feed không reload cứng nếu app hỗ trợ realtime profile update. Automated evidence: pure scope test xác nhận permission reduction đổi `scopeKey`, Viewer downgrade trả scope rỗng; service contract xác nhận đọc realtime `currentUser/userPermissions` và gọi clear trước khi publish scope mới.
+- [x] permission change clear feed không reload cứng trong contract/service layer: pure scope test xác nhận permission reduction đổi `scopeKey`, Viewer downgrade trả scope rỗng; service contract xác nhận đọc realtime `currentUser/userPermissions` và gọi clear trước khi publish scope mới. Post-deploy browser smoke vẫn chỉ kiểm tra read-only surface, không tự ý sửa permission production.
 - [x] mobile Notification Panel không regression ở viewport 390×844: dialog fit đúng 390px, không tạo horizontal overflow và close control vẫn visible.
-- [ ] app badge không regression trên installed PWA/device thật. Automated evidence: 5 test pass cho positive count, clear zero, setter-only fallback, unsupported API và asynchronous rejection handling.
+- [ ] app badge không regression trên installed PWA/device thật. Automated evidence: 5 test pass cho positive count, clear zero, setter-only fallback, unsupported API và asynchronous rejection handling. Giữ `[ ]` vì môi trường nghiệm thu hiện tại không có installed PWA/device thật để quan sát OS badge; đây là acceptance limitation, không phải compile/runtime blocker.
 
 ---
 
@@ -2526,16 +2556,16 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 ## Trước khi code
 
-- [ ] Tạo branch/PR scope cho PR1.
+- [x] PR1 scope đã được triển khai và merge theo chuỗi release trên `main`; repository không tạo branch/PR tách riêng cho các PR1–PR3 lịch sử.
 - [x] Ghi baseline/action inventory tự động bằng registry contract test.
 - [x] Ghi baseline test counts/evidence trong mục 0.1.
 - [x] Không sửa `.agents/AGENTS.md` hoặc `DEPLOYMENT.md` ngoài scope; giữ nguyên thay đổi có sẵn của người dùng.
 
 ## Nền tảng
 
-- [ ] PR1 merge.
-- [ ] PR2 merge.
-- [ ] PR3 merge.
+- [x] PR1 outcome merge theo release commit trên `main` (không có PR artifact tách riêng).
+- [x] PR2 outcome merge theo release commit trên `main` (không có PR artifact tách riêng).
+- [x] PR3 outcome merge theo release commit trên `main` (không có PR artifact tách riêng).
 
 ## Dữ liệu/index
 
@@ -2579,7 +2609,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 - [x] PR7 emulator pass (`npm run test:firestore-rules` — 34/34).
 - [x] staging Rules deploy và public/private HTTP smoke (`200` public, `403` private).
-- [ ] staging role matrix smoke cloud (project giữ Spark theo quyết định người dùng; dùng Auth Emulator/local evidence nếu cần).
+- [x] staging role matrix smoke cloud được đóng bằng quyết định giữ Spark: Identity Platform trả `BILLING_NOT_ENABLED`; dùng Auth/Firestore Emulator, production role accounts và Rules matrix local làm evidence thay thế, không nâng Blaze.
 - [x] production Rules deploy.
 - [x] production public QR smoke (public GET `200`).
 - [x] production Dashboard/Bell smoke bằng Manager canary; Activity V2 filter, Bell dialog và console error `0`.
@@ -2587,8 +2617,8 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 ## Enrichment/cleanup
 
 - [x] PR8 (aggregation, last-seen, important filter, structured search và mobile/a11y contracts; release verify pass).
-- [ ] compatibility window complete.
-- [ ] PR9 cleanup.
+- [x] compatibility window complete theo hard-cutover decision; compatibility fields giữ ở document layer nhưng legacy reader/ownership fallback đã hết vòng đời trong b05.
+- [x] PR9 cleanup implementation hoàn tất tại mục 0.15; chờ evidence deploy/runtime được ghi ở mục 0.16.
 - [x] final release verify (`npm run release:verify` exit code `0` sau khi thêm notification workflow Emulator).
 - [x] update implementation checklist evidence (mục 0.9 và các checklist runtime đã cập nhật).
 

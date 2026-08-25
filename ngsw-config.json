@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.25-b04",
-    "title": "Rollout canary an toàn cho Hoạt động và Thông báo",
+    "version": "v26.08.25-b05",
+    "title": "Hoàn tất hợp nhất Hoạt động và Thông báo",
     "features": [
-      "Bổ sung rollout canary theo UID đã xác minh để kiểm tra Activity Feed và chuông thông báo theo từng tài khoản trước khi mở rộng toàn hệ thống.",
-      "Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.",
-      "Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.",
-      "Lịch sử in, báo cáo và kiểm tra mẫu được giữ ổn định khi giao diện Hoạt động được nâng cấp; các bản ghi cũ được gắn đúng tài khoản đã xác minh.",
-      "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan."
+      "Activity Feed và chuông thông báo V2 đã được bật global sau migration, Rules cutover, role smoke và observation production.",
+      "Đường đọc Dashboard legacy đã được loại bỏ; Activity Feed hiện dùng duy nhất canonical event theo audience và registry.",
+      "Print Queue cá nhân đã chuyển hoàn toàn sang ownership bằng actorUid; Firestore Rules printable đã siết UID-only.",
+      "Backfill production đã chuẩn hóa toàn bộ event hiện có và giữ các trường compatibility trong document để traceability/rollback dữ liệu.",
+      "Dashboard, Statistics và Traceability lấy nhãn, icon, module và mức độ từ Activity Action Registry thay vì heuristic theo chuỗi action."
     ]
   },
   "assetGroups": [

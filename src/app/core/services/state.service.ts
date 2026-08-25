@@ -32,7 +32,6 @@ import { resolveMetadataSyncToast } from './notification-policy';
 import { ActivityEventService } from './activity-event.service';
 import { NotificationService } from './notification.service';
 import { isFeatureEnabledForUser, normalizeFeatureCanaryUids } from './feature-rollout';
-import { getDashboardActivityDataScope } from '../../shared/utils/dashboard-activity';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -70,15 +69,10 @@ export class StateService implements OnDestroy {
   private listeners: Unsubscribe[] = [];
   private initGeneration = 0;
   private approvedRunsSub?: Unsubscribe;
-  private logsSub?: Unsubscribe;
-  private personalLogsSub?: Unsubscribe;
-  private globalLogsSyncKeys?: { cacheKey: string; cursorKey: string };
   private usersInfoSub?: Unsubscribe;
   /** Singleton request listener — unregister callback (không hủy listener) */
   private _unregisterStdReqListener?: () => void;
   private activeInitScope: string | null | undefined;
-  private globalLogsCache: Log[] = [];
-  private personalLogsCache: Log[] = [];
   private readonly ON_DEMAND_CACHE_TTL_MS = 2 * 60 * 1000;
   private allStandardRequestsLoad?: Promise<void>;
   private allStandardRequestsLoadedAt = 0;
@@ -106,8 +100,6 @@ export class StateService implements OnDestroy {
   standardRequests = signal<StandardRequest[]>([]);
   allStandardRequests = signal<StandardRequest[]>([]);
   approvedRequests = signal<Request[]>([]);
-  logs = signal<Log[]>([]);
-  printableLogs = signal<Log[]>([]);
 
   stats = signal<{ totalSopsRun: number; totalItemsUsed: number }>({ totalSopsRun: 0, totalItemsUsed: 0 });
 
@@ -142,7 +134,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.25-b04');
+  systemVersion = signal<string>('v26.08.25-b05');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -297,11 +289,7 @@ export class StateService implements OnDestroy {
     this.listeners.forEach(unsub => unsub());
     this.listeners = [];
     this.approvedRunsSub = undefined;
-    this.logsSub = undefined;
-    this.personalLogsSub = undefined;
     this.usersInfoSub = undefined;
-    this.globalLogsCache = [];
-    this.personalLogsCache = [];
     this.allStandardRequestsLoad = undefined;
     this.allStandardRequestsLoadedAt = 0;
     this.referenceStandardsLoad = undefined;
@@ -317,7 +305,6 @@ export class StateService implements OnDestroy {
       this._unregisterStdReqListener();
       this._unregisterStdReqListener = undefined;
     }
-    this.clearGlobalActivityLogCache();
     // Giữ singleton còn subscriber ở màn hình khác, nhưng hủy listener mồ côi sau
     // khi quyền/scope thay đổi để tránh tiếp tục tốn reads cho cache không còn dùng.
     this.deltaSync.destroyInactiveSingletons();
@@ -325,8 +312,6 @@ export class StateService implements OnDestroy {
     this.inventory.set([]);
     this.standards.set([]);
     this.requests.set([]); this.approvedRequests.set([]); this.standardRequests.set([]); this.allStandardRequests.set([]);
-    this.logs.set([]);
-    this.printableLogs.set([]);
     this.usersInfoCache.set(new Map());
   }
 
@@ -482,8 +467,8 @@ export class StateService implements OnDestroy {
     // Approved/result runs feed — now started on-demand via ensureApprovedRequestsListener().
     // This avoids opening the broad result-history stream for users/routes that do not need it.
 
-    // 4. Logs Listener — now started on-demand via ensureLogsListener()
-    // Avoid opening activity/print-feed stream for every route immediately after login.
+    // 4. Activity Feed — owned by ActivityFeedService and started by the
+    // Dashboard only when the canonical V2 rollout is enabled.
 
     // 5. Stats — chỉ tải cho user có quyền Báo cáo
     if (this.auth.canViewReports()) {
@@ -577,152 +562,6 @@ export class StateService implements OnDestroy {
       }
     }, handleError('System Metadata'));
     addListener(sysMetaSub);
-  }
-
-  ensureLogsListener(): void {
-    const currentUser = this.auth.currentUser();
-    if (this.logsSub || !currentUser || !this.auth.canViewReports()) return;
-    const initGeneration = this.initGeneration;
-    const isCurrentInit = () => initGeneration === this.initGeneration;
-
-    // Security cutover: report_view is BUSINESS-audit only. A non-manager
-    // query must carry the auditClass predicate so Firestore Rules can prove
-    // that a SYSTEM event can never enter this compatibility stream.
-    if (currentUser.role !== 'manager') {
-      this.clearGlobalActivityLogCache();
-      const logsPath = `artifacts/${this.fb.APP_ID}/logs`;
-      let isFirstSnapshot = true;
-      const logSub = onSnapshot(
-        query(
-          collection(this.fb.db, logsPath),
-          where('auditClass', '==', 'BUSINESS'),
-          orderBy('timestamp', 'desc'),
-          limit(200)
-        ),
-        snapshot => {
-          this.readMonitor.record(
-            'onSnapshot',
-            logsPath,
-            isFirstSnapshot
-              ? snapshot.size
-              : snapshot.docChanges().filter(change => change.type !== 'removed').length,
-            { phase: isFirstSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
-          );
-          isFirstSnapshot = false;
-          if (!isCurrentInit()) return;
-          this.globalLogsCache = snapshot.docs.map(logDoc => ({
-            id: logDoc.id,
-            ...logDoc.data()
-          } as Log));
-          this.publishActivityLogs();
-        }, error => {
-          if (!isCurrentInit()) return;
-          console.warn('Business audit compatibility listener error:', error.message);
-        }
-      );
-      this.logsSub = () => {
-        logSub();
-        this.logsSub = undefined;
-      };
-      this.listeners.push(this.logsSub);
-      return;
-    }
-
-    const logsSyncConfig: DeltaSyncConfig = {
-      cacheKey: buildScopedDeltaKey(`lims_logs_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
-      cursorKey: buildScopedDeltaKey(`lims_logs_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
-      collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
-      maxCacheSize: 200,
-      orderByField: 'timestamp',
-      orderDirection: 'desc'
-    };
-    this.globalLogsSyncKeys = {
-      cacheKey: logsSyncConfig.cacheKey,
-      cursorKey: logsSyncConfig.cursorKey
-    };
-
-    const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
-      if (!isCurrentInit()) return;
-      this.globalLogsCache = items;
-      this.publishActivityLogs();
-    });
-
-    this.logsSub = () => {
-      logSub();
-      this.logsSub = undefined;
-    };
-    this.listeners.push(this.logsSub);
-  }
-
-  ensurePersonalLogsListener(): void {
-    const displayName = this.auth.currentUser()?.displayName;
-    if (this.personalLogsSub || !this.auth.currentUser() || !displayName) return;
-    const initGeneration = this.initGeneration;
-    const isCurrentInit = () => initGeneration === this.initGeneration;
-
-    // Không ghép where(user) với orderBy(lastUpdated) ở đây: Firestore sẽ
-    // yêu cầu composite index và gây failed-precondition trên project mới.
-    // Query chỉ có equality filter + limit dùng single-field index mặc định;
-    // kết quả được sắp xếp ở client và vẫn bounded ở 100 bản ghi.
-    const personalLogsPath = `artifacts/${this.fb.APP_ID}/logs`;
-    const personalLogsQuery = query(
-      collection(this.fb.db, personalLogsPath),
-      where('user', '==', displayName),
-      limit(100)
-    );
-    let isFirstPersonalSnapshot = true;
-    const personalSub = onSnapshot(personalLogsQuery, (snapshot) => {
-      this.readMonitor.record(
-        'onSnapshot',
-        personalLogsPath,
-        isFirstPersonalSnapshot
-          ? snapshot.size
-          : snapshot.docChanges().filter(change => change.type !== 'removed').length,
-        { phase: isFirstPersonalSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
-      );
-      isFirstPersonalSnapshot = false;
-      if (!isCurrentInit()) return;
-
-      const items: Log[] = snapshot.docs.map(logDoc => ({
-        id: logDoc.id,
-        ...logDoc.data()
-      } as Log));
-      items.sort((a, b) => this.getLogTime(b) - this.getLogTime(a));
-      this.personalLogsCache = items;
-      this.publishActivityLogs();
-    }, (error: any) => {
-      if (!isCurrentInit()) return;
-      console.warn('Personal logs listener error:', error.message);
-    });
-
-    this.personalLogsSub = () => {
-      personalSub();
-      this.personalLogsSub = undefined;
-    };
-    this.listeners.push(this.personalLogsSub);
-  }
-
-
-  private publishActivityLogs(): void {
-    const merged = new Map<string, Log>();
-    [...this.globalLogsCache, ...this.personalLogsCache].forEach(log => {
-      if (log?.id) merged.set(log.id, log);
-    });
-    const logs = Array.from(merged.values()).sort((a, b) => this.getLogTime(b) - this.getLogTime(a));
-    this.logs.set(logs);
-    this.printableLogs.set(logs.filter(l => l.printable === true));
-  }
-
-  private clearGlobalActivityLogCache(): void {
-    const keys = this.globalLogsSyncKeys;
-    if (!keys) return;
-    this.deltaSync.destroySingleton(keys.cacheKey);
-    this.deltaSync.clearCache(keys.cacheKey, keys.cursorKey);
-    this.globalLogsSyncKeys = undefined;
-  }
-
-  private getLogTime(log: Log): number {
-    return timestampToMillis(log.timestamp) ?? 0;
   }
 
   ensureApprovedRequestsListener(): void {
@@ -960,36 +799,6 @@ export class StateService implements OnDestroy {
       this.usersInfoSub = undefined;
     };
     this.listeners.push(this.usersInfoSub);
-  }
-
-  ensureActivityFeedListeners(): void {
-    const scope = getDashboardActivityDataScope(this.auth.canViewReports());
-    if (scope === 'global') {
-      if (this.personalLogsSub) this.personalLogsSub();
-      this.personalLogsCache = [];
-      this.ensureLogsListener();
-    } else {
-      if (this.logsSub) this.logsSub();
-      this.clearGlobalActivityLogCache();
-      this.globalLogsCache = [];
-      this.ensurePersonalLogsListener();
-    }
-    this.publishActivityLogs();
-    this.ensureUserInfoCacheListener();
-  }
-
-  /**
-   * Compatibility reader is suspended while Dashboard V2 is active so the
-   * rollout does not pay for both legacy and audience-scoped listeners.
-   * DeltaSync's persisted cache is intentionally retained for instant rollback.
-   */
-  suspendLegacyActivityFeedListeners(): void {
-    if (this.logsSub) this.logsSub();
-    if (this.personalLogsSub) this.personalLogsSub();
-    this.globalLogsCache = [];
-    this.personalLogsCache = [];
-    this.logs.set([]);
-    this.printableLogs.set([]);
   }
 
   // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
