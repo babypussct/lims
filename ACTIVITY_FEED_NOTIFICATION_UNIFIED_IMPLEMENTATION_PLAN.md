@@ -46,7 +46,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 Automated evidence gần nhất:
 
 ```text
-npm run test:activity                 → 56/56 pass
+npm run test:activity                 → 57/57 pass
 npm run test:notifications            → 27 tests pass, 0 fail
 npm run test:ui-dashboard             → 2/2 pass
 npm run test:firestore-rules          → 34/34 pass
@@ -87,7 +87,7 @@ Các thay đổi tiếp theo đã được triển khai theo hướng additive v
 Evidence mới nhất sau hardening:
 
 ```text
-npm run test:activity                 → 56/56 pass
+npm run test:activity                 → 57/57 pass
 npm run test:notifications            → 27 tests pass, 0 fail
 npm run test:ui-dashboard             → 2/2 pass
 npm run test:firestore-rules          → 34/34 pass
@@ -151,8 +151,24 @@ Do các điều kiện trên, các mục sau vẫn giữ `[ ]`: production backf
 - Production dry-run lần hai đọc `4.192` log, không ghi dữ liệu: `migratable=3.165`, `unresolvedActor=1.027`, `unknownAction=0`, `missingTarget=51`, `invalidV2=0`, `errors=0`, `publicTraceableCandidates=572`.
 - 1.027 unresolved hiện đều là `UNRESOLVED_ACTOR:not-found`; không còn unknown action. Hai action Daily Checklist trước đó đã được classification và không còn nằm trong unresolved report.
 - Commit `3d1c09532ade` đã push lên `main`; `release:predeploy` đạt với remote cùng SHA và Vercel đã phục vụ `v26.08.25-b02`. Smoke public `/`, `/ngsw.json`, `/release-history.json` và `/changelog` đều trả HTTP `200`.
-- Không chạy production apply và không deploy Rules production. Bước còn bị chặn là mapping nghiệp vụ xác thực cho actor legacy `Quản trị viên`/`Admin`; không được tự động gán sang tài khoản hiện tại chỉ dựa trên tên.
+- Tại thời điểm ghi nhận mục 0.4, production apply và Rules cutover còn chờ mapping; trạng thái hoàn tất sau khi người dùng xác nhận được ghi tại mục 0.5.
 - Staging vẫn giữ Spark theo quyết định người dùng; không liên kết Cloud Billing để thực hiện bước này.
+
+## 0.5. Hoàn tất mapping, backfill và Rules production ngày 2026-08-25
+
+Sau khi người dùng xác nhận mapping, các bước production đã được hoàn tất theo thứ tự an toàn:
+
+- Email `oneloveonepeopleforever@gmail.com` đã được xác minh có đúng một Firebase Auth user và đúng một Firestore profile; UID của hai nguồn trùng nhau.
+- Backfill tool đã bổ sung `--actor-map=<JSON ngoài repository>`; file mapping có đúng 2 alias (`Quản trị viên`, `Admin`), được validate target trước khi đọc log và lưu ngoài repository với quyền `600`.
+- Mapped dry-run: `total=4.192`, `migratable=4.192`, `unresolvedActor=0`, `unknownAction=0`, `invalidV2=0`, `errors=0`, `missingTarget=274`, `publicTraceableCandidates=802`; không ghi dữ liệu.
+- Production apply bounded batches đã migrate `4.192/4.192` document bằng merge update, không delete, `errors=0`.
+- Production verify-only đạt `alreadyV2=4.192`, `migratable=0`, `unresolvedActor=0`, `invalidV2=0`, `unknownAction=0`, `errors=0`, exit code `0`.
+- Public candidates sau mapping vẫn chỉ thuộc action allowlist đã chốt: `CREATE_VIRTUAL_MASTER`, `DIRECT_APPROVE`, `DIRECT_APPROVE_PLAN`, `EDIT_REQUEST`; không mở public theo printable hoặc displayName.
+- `npm run deploy:rules` đã release Firestore Rules production thành công sau khi backfill/verify hoàn tất. Smoke unauthenticated sau cutover: public traceability GET `200`, private Activity GET `403`.
+- Release `v26.08.25-b03` đã qua full release verify, `release:prepush`, `release:predeploy` và được push lên `main` tại commit `1778905`.
+- Full release verify của b03 đạt; Activity suite hiện có `57/57` test pass, Firestore Rules Emulator `34/34` pass, API typecheck và production build pass.
+
+Các mục còn giữ `[ ]` là authenticated role-matrix cloud trên staging (Identity Platform không bật được khi giữ Spark), canary flag/runtime authenticated smoke và PR9 compatibility cleanup; các mục này không còn là blocker của backfill hoặc Rules production.
 
 ---
 
@@ -1628,9 +1644,9 @@ Exit: data mới bắt đầu giàu schema nhưng production UI không đổi.
 - [x] staging apply small batch (`migrated=4`) và verify (`alreadyV2=5`, exit code `0`).
 - [x] production dry-run lần hai (`total=4.192`, `migratable=3.165`, `unresolvedActor=1.027`, `unknownAction=0`, `errors=0`; không ghi dữ liệu).
 - [x] classification các action Daily Checklist lịch sử; không còn unknown action.
-- [ ] resolve `1.027` legacy actor chưa có mapping xác thực.
-- [ ] production apply bounded batches.
-- [ ] verify report.
+- [x] resolve `1.027` legacy actor bằng 2 alias đã được người dùng xác nhận và target profile/Auth UID đã verify.
+- [x] production apply bounded batches (`migrated=4.192`, không delete, `errors=0`).
+- [x] verify report (`alreadyV2=4.192`, exit code `0`).
 
 Exit: reader V2 có thể bật mà không ảnh hưởng consumer khác.
 
@@ -1770,6 +1786,8 @@ Exit: backend enforce đúng policy, không phụ thuộc UI.
 - [x] tests with fixtures.
 - [x] staging dry-run.
 - [x] production dry-run evidence lần hai (`4.192` logs, `unknownAction=0`, `unresolvedActor=1.027`, no write).
+- [x] production apply evidence (`4.192` migrated với actor map ngoài repository).
+- [x] production verify evidence (`4.192` alreadyV2, exit code `0`).
 
 ### Exit criteria
 
@@ -2336,9 +2354,9 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] production index deploy.
 - [x] production index READY (`7/7` index `logs`).
 - [x] production dry-run (`4.192` logs, no write).
-- [x] review unresolved report (`1.027` actor chưa xác định, `unknownAction=0`; không tự động gán).
-- [ ] production apply.
-- [ ] production verify.
+- [x] review unresolved report trước mapping (`1.027` actor chưa xác định, `unknownAction=0`; không tự động gán khi chưa có xác nhận).
+- [x] production apply (`4.192` migrated, không delete).
+- [x] production verify (`4.192` alreadyV2, exit code `0`).
 
 ## Reader V2
 
@@ -2368,8 +2386,8 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] PR7 emulator pass (`npm run test:firestore-rules` — 34/34).
 - [x] staging Rules deploy và public/private HTTP smoke (`200` public, `403` private).
 - [ ] staging role matrix smoke cloud (project giữ Spark theo quyết định người dùng; dùng Auth Emulator/local evidence nếu cần).
-- [ ] production Rules deploy.
-- [ ] production public QR smoke.
+- [x] production Rules deploy.
+- [x] production public QR smoke (public GET `200`).
 - [ ] production Dashboard/Bell smoke.
 
 ## Enrichment/cleanup
