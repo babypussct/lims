@@ -1240,7 +1240,7 @@ Authenticated read vẫn theo audience/audit/traceability requirement đã thi�
 - [x] User/security event không public.
 - [x] Public V2 create/read yêu cầu action allowlist, `auditClass=BUSINESS`, `requestId` hợp lệ và `targetType=REQUEST`.
 - [x] Legacy traceability documents trong staging đã được backfill `publicTraceable` trước khi Rules smoke.
-- [ ] Legacy traceability documents trong production được backfill `publicTraceable` trước khi siết Rules.
+- [x] Legacy traceability documents trong production được backfill `publicTraceable` trước khi siết Rules (`4.192` V2 verified; `802` public candidates theo allowlist).
 
 ---
 
@@ -2309,9 +2309,9 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 ## Migration
 
-- [ ] Legacy logs đã backfill hoặc được báo cáo unresolved rõ.
-- [ ] Unknown actions = 0 trước strict Rules, hoặc có exception plan được review.
-- [ ] Index READY production.
+- [x] Legacy logs đã backfill (`4.192/4.192`, không unresolved/error).
+- [x] Unknown actions = 0 trước strict Rules.
+- [x] Index READY production (`7/7` `logs` indexes).
 - [x] Feature flags tồn tại và rollback reader/notification projection được.
 - [x] Compatibility fields/legacy adapters chưa bị xóa sớm.
 
