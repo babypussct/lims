@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules đã hoàn tất; V2 global flags vẫn OFF; đang triển khai UID canary và runtime smoke**
+> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules đã hoàn tất; Manager canary runtime pass; V2 global flags vẫn OFF chờ role matrix**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -46,7 +46,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 Automated evidence gần nhất:
 
 ```text
-npm run test:activity                 → 57/57 pass
+npm run test:activity                 → 61/61 pass
 npm run test:notifications            → 27 tests pass, 0 fail
 npm run test:ui-dashboard             → 2/2 pass
 npm run test:firestore-rules          → 34/34 pass
@@ -178,7 +178,7 @@ Các mục còn giữ `[ ]` là authenticated role-matrix cloud trên staging (I
 - Khi global flag là `false`, hai mảng tùy chọn `activityFeedV2CanaryUids` và `notificationEventSyncV2CanaryUids` chỉ mở đúng cho UID được liệt kê.
 - UID canary được trim/deduplicate; giá trị sai kiểu, rỗng hoặc user chưa đăng nhập đều fail-closed.
 - Dashboard và Notification Center tiếp tục đọc cùng public rollout signals; không cần thay đổi policy, Rules hoặc schema event.
-- `npm run test:activity` sau thay đổi đạt `61/61`; app typecheck đạt; chưa ghi config canary production và chưa bật global flag.
+- `npm run test:activity` sau thay đổi đạt `61/61`; app typecheck đạt; production config đã ghi đúng 1 UID canary cho mỗi feature, còn global flags vẫn false.
 
 Kế hoạch runtime sau release:
 
@@ -186,6 +186,18 @@ Kế hoạch runtime sau release:
 2. Gán riêng UID Manager đã xác minh vào hai mảng canary, theo dõi read/error/permission-denied.
 3. Smoke Dashboard và Bell bằng tài khoản canary; nếu lỗi thì xóa hai mảng canary, không rollback dữ liệu.
 4. Sau khi có evidence role matrix và compatibility window, mới bật global flags theo thứ tự reader rồi notification.
+
+## 0.7. Manager canary runtime smoke production ngày 2026-08-25
+
+Sau khi release `v26.08.25-b04` được Vercel phục vụ, đã xác minh bằng tài khoản quản trị cục bộ có profile `role=manager`:
+
+- Dashboard load đúng route `#/dashboard`, hiển thị release `v26.08.25-b04`.
+- UID canary được nhận đúng: nút filter V2 `Quan trọng` hiển thị và có `50` nút mở chi tiết Activity canonical.
+- Activity không rơi vào trạng thái `Không có quyền xem hoạt động` hoặc `Không thể tải hoạt động`.
+- Bell mở được panel `role=dialog`, không có lỗi tải thông báo; sau kiểm tra đã đóng panel.
+- Console error trong phiên smoke: `0`.
+- Không thực hiện publish/reset/approve/stock mutation trên production; notification writer workflow vẫn chờ fixture hoặc môi trường test an toàn.
+- Staging authenticated role matrix vẫn chưa chạy cloud vì project staging được giữ Spark; automated Rules/Auth-policy evidence vẫn là gate thay thế hiện tại.
 
 ---
 
@@ -2377,26 +2389,26 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 ## Reader V2
 
-- [ ] PR5 merge flag off.
-- [ ] smoke with Manager.
+- [x] PR5 merge flag off (`v26.08.25-b04`, global flag vẫn false).
+- [x] smoke with Manager (production UID canary, Dashboard/Bell, console error `0`).
 - [ ] smoke with QC Lead.
 - [ ] smoke with Lab.
 - [ ] smoke with Staff default.
 - [ ] smoke Viewer/Pending denied/hidden.
-- [ ] canary flag on.
+- [x] canary flag on (UID-scoped, 1 Manager; global flag vẫn false).
 - [ ] monitor read/errors.
 - [ ] flag on rộng.
 
 ## Notification V2
 
-- [ ] PR6 merge flag off.
+- [x] PR6 merge flag off (canonical writer/legacy bridge đã deploy; global flag vẫn false ngoài UID canary).
 - [ ] test result publish.
 - [ ] test result reset.
 - [ ] test standard request/approve/reject.
 - [ ] test low-stock.
 - [ ] test system update.
 - [ ] test actor suppression.
-- [ ] canary flag on.
+- [x] canary flag on (UID-scoped, 1 Manager; chưa chạy writer mutation production).
 
 ## Security cutover
 
@@ -2405,7 +2417,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [ ] staging role matrix smoke cloud (project giữ Spark theo quyết định người dùng; dùng Auth Emulator/local evidence nếu cần).
 - [x] production Rules deploy.
 - [x] production public QR smoke (public GET `200`).
-- [ ] production Dashboard/Bell smoke.
+- [x] production Dashboard/Bell smoke bằng Manager canary; Activity V2 filter, Bell dialog và console error `0`.
 
 ## Enrichment/cleanup
 
