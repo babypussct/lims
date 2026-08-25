@@ -113,7 +113,7 @@ Preflight hạ tầng đã thực hiện ở chế độ đọc:
 
 - Firebase CLI đã tạo project staging riêng `lims-activity-stg-260825` theo yêu cầu; Firestore database `(default)` đã khởi tạo ở `asia-southeast1` với delete protection bật.
 - `npx firebase-tools firestore:indexes --project lims-cloud-by-otada --json` xác nhận trước rollout production chỉ có 13 index cũ cho `inventory`, `requests` và `standard_requests`; 7 index mới cho collection `logs` chưa được deploy.
-- Sau `release:predeploy` đạt với SHA `3ca484359dfb`, `firestore:indexes` đã deploy production thành công và giữ nguyên 13 index cũ; 7 index `logs` đang được Firestore build (`CREATING`), chưa đánh dấu `READY`.
+- Sau `release:predeploy` đạt với SHA `3ca484359dfb`, `firestore:indexes` đã deploy production thành công và giữ nguyên 13 index cũ; Firestore đã xác nhận đủ 7 index `logs` ở trạng thái `READY`.
 - `npm run backfill:activity -- --dry-run --app-id=lims-cloud-fixed --limit=1` chưa thể bắt đầu đọc dữ liệu vì máy phát hành không có `FIREBASE_SERVICE_ACCOUNT`, `GOOGLE_APPLICATION_CREDENTIALS` hoặc Application Default Credentials. Lệnh dừng trước truy vấn Firestore, không có write nào xảy ra.
 - Commit `3ca484359dfb` đã push lên `main`; Vercel Git Integration đã phục vụ release `v26.08.25-b01`. Smoke public `/`, `/ngsw.json`, `/release-history.json` và `/changelog` đều trả HTTP `200`.
 
@@ -134,7 +134,7 @@ Evidence rollout staging đã đạt sau khi tạo credential được xác nh�
 - Firestore Rules đã deploy vào staging; unauthenticated public traceability GET trả `200`, private Activity GET trả `403 PERMISSION_DENIED`.
 - Firebase Authentication chưa thể khởi tạo trên staging Spark; API `initializeAuth` trả `BILLING_NOT_ENABLED`. Không nâng cấp billing tự động; role-matrix authenticated cần được thực hiện sau khi có phê duyệt billing hoặc dùng Auth Emulator.
 
-Do các điều kiện trên, các mục sau vẫn giữ `[ ]`: production index `READY`, production backfill, canary flag, Rules production cutover, authenticated role-matrix smoke và PR9 cleanup. Staging index/dry-run/apply/verify/Rules đã có evidence riêng ở trên; không dùng chúng để suy ra production đã sẵn sàng.
+Do các điều kiện trên, các mục sau vẫn giữ `[ ]`: production backfill, canary flag, Rules production cutover, authenticated role-matrix smoke và PR9 cleanup. Staging index/dry-run/apply/verify/Rules và production index `READY` đã có evidence riêng ở trên; không dùng chúng để suy ra production data/Rules đã sẵn sàng.
 
 ---
 
@@ -1113,8 +1113,8 @@ Lưu ý: Firestore composite index áp theo collection ID; `logs` cũng xuất h
 
 - [x] Deploy index trước reader V2 ở staging.
 - [x] Xác nhận trạng thái READY staging.
-- [x] Deploy index trước reader V2 ở production; 7 index `logs` đang `CREATING`.
-- [ ] Xác nhận trạng thái READY production.
+- [x] Deploy index trước reader V2 ở production.
+- [x] Xác nhận trạng thái READY production (`7/7` index `logs`).
 - [ ] Chỉ sau đó mới bật `activityFeedV2`.
 - [ ] Có smoke query bằng role đại diện trên staging/production.
 
@@ -2314,8 +2314,8 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] staging dry-run.
 - [x] staging apply.
 - [x] staging verify.
-- [x] production index deploy; 7 index `logs` đang `CREATING`.
-- [ ] production index READY.
+- [x] production index deploy.
+- [x] production index READY (`7/7` index `logs`).
 - [ ] production dry-run.
 - [ ] review unresolved.
 - [ ] production apply.
