@@ -2,7 +2,34 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.25-b02
+## Phiên bản hiện tại: v26.08.25-b03
+
+### v26.08.25-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.
+- Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.
+- Lịch sử in, báo cáo và kiểm tra mẫu được giữ ổn định khi giao diện Hoạt động được nâng cấp; các bản ghi cũ được gắn đúng tài khoản đã xác minh.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan.
+- Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý.
+- Lịch sử đánh dấu và bỏ đánh dấu kiểm tra mẫu được hiển thị nhất quán trong hoạt động.
+- Các bản ghi hoạt động trước đây được chuẩn hóa theo tài khoản đã xác minh để tra cứu đúng người thực hiện.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Người dùng có quyền phù hợp có thể xem hoạt động chung của workspace thay vì chỉ thấy thao tác do chính mình thực hiện.
+- Hàng đợi in, thống kê và tra cứu nguồn gốc tiếp tục hoạt động độc lập, không bị ảnh hưởng khi bộ lọc Hoạt động thay đổi.
+- Giao diện Dashboard và chuông thông báo được cải thiện cho màn hình nhỏ, thao tác bàn phím và trạng thái trống hoặc bị từ chối.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn phân loại sai hoạt động khi người thực hiện là quản lý, QC hoặc nhân viên phòng thí nghiệm; quyền hiển thị được xác định theo nghiệp vụ của hoạt động.
+- Ngăn liên kết ngoài, dữ liệu nhạy cảm và nội dung không hợp lệ đi vào hoạt động hoặc thông báo.
+- Giữ quyền sở hữu lịch sử theo tài khoản ngay cả khi người dùng đổi tên hiển thị hoặc bị giảm quyền.
 
 ### v26.08.25-b02
 

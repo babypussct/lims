@@ -1,10 +1,13 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { FieldPath, getFirestore, type DocumentData, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import {
   buildActorIndex,
+  buildLegacyActorAliasMap,
   classifyLegacyActivity,
+  resolveLegacyActor,
+  type LegacyActorAliasMap,
   type ActivityBackfillResult,
   type LegacyUserProfile
 } from './activity-backfill-utils';
@@ -19,6 +22,8 @@ interface MigrationReport {
   startAfter?: string;
   lastDocumentId?: string;
   limit?: number;
+  actorMap?: string;
+  actorAliases: number;
   total: number;
   alreadyV2: number;
   migratable: number;
@@ -38,6 +43,7 @@ const appId = readArgument('--app-id=') || process.env['LIMS_APP_ID'] || 'lims-c
 const maxDocuments = parsePositiveInteger(readArgument('--limit='));
 const startAfterId = readArgument('--start-after=');
 const outputPath = readArgument('--output=');
+const actorMapPath = readArgument('--actor-map=');
 const pageSize = Math.min(300, maxDocuments || 300);
 
 function resolveMode(args: readonly string[]): Mode {
@@ -89,6 +95,7 @@ async function loadActorIndex(): Promise<ReturnType<typeof buildActorIndex>> {
 async function processPage(
   documents: readonly QueryDocumentSnapshot<DocumentData>[],
   actorIndex: ReturnType<typeof buildActorIndex>,
+  actorAliases: LegacyActorAliasMap,
   report: MigrationReport
 ): Promise<void> {
   const db = getFirestore();
@@ -100,7 +107,7 @@ async function processPage(
     report.lastDocumentId = document.id;
     try {
       const data = document.data() as Record<string, unknown>;
-      const result = classifyLegacyActivity(document.id, data, actorIndex);
+      const result = classifyLegacyActivity(document.id, data, actorIndex, actorAliases);
       accumulateReport(report, document.id, data, result);
 
       if (mode === 'apply' && result.status === 'MIGRATABLE' && result.patch) {
@@ -122,6 +129,29 @@ async function processPage(
     await batch.commit();
     report.migrated += writes;
   }
+}
+
+function loadActorAliases(actorIndex: ReturnType<typeof buildActorIndex>): LegacyActorAliasMap {
+  if (!actorMapPath) return new Map();
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(resolve(actorMapPath), 'utf8'));
+  } catch (error) {
+    throw new Error(`Không đọc được actor map ${actorMapPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+    throw new Error('Actor map phải là JSON object dạng legacy identity → UID/email/displayName.');
+  }
+
+  const aliases = buildLegacyActorAliasMap(parsed as Record<string, unknown>);
+  for (const [legacyIdentity, targetIdentity] of aliases) {
+    const target = resolveLegacyActor(targetIdentity, actorIndex);
+    if (target.status !== 'RESOLVED') {
+      throw new Error(`Actor map target không resolve được cho ${legacyIdentity}.`);
+    }
+  }
+  return aliases;
 }
 
 function accumulateReport(
@@ -165,12 +195,15 @@ async function run(): Promise<void> {
   const db = getFirestore();
   db.settings({ ignoreUndefinedProperties: true });
   const actorIndex = await loadActorIndex();
+  const actorAliases = loadActorAliases(actorIndex);
   const report: MigrationReport = {
     appId,
     mode,
     startedAt: new Date().toISOString(),
     startAfter: startAfterId,
     limit: maxDocuments,
+    actorMap: actorMapPath,
+    actorAliases: actorAliases.size,
     total: 0,
     alreadyV2: 0,
     migratable: 0,
@@ -193,7 +226,7 @@ async function run(): Promise<void> {
     if (cursor) query = query.startAfter(cursor);
     const snapshot = await query.get();
     if (snapshot.empty) break;
-    await processPage(snapshot.docs, actorIndex, report);
+    await processPage(snapshot.docs, actorIndex, actorAliases, report);
     cursor = snapshot.docs[snapshot.docs.length - 1].id;
     console.log(`[Activity backfill] ${mode}: processed=${report.total}, cursor=${cursor}`);
     if (snapshot.size < Math.min(pageSize, remaining)) break;
@@ -228,6 +261,7 @@ function renderMarkdown(report: MigrationReport): string {
     `- Started: ${report.startedAt}`,
     `- Completed: ${report.completedAt || ''}`,
     `- Last document: ${report.lastDocumentId ? `\`${report.lastDocumentId}\`` : 'n/a'}`,
+    `- Actor aliases: ${report.actorAliases}${report.actorMap ? ` (\`${report.actorMap}\`)` : ''}`,
     '',
     '| Metric | Count |',
     '|---|---:|',

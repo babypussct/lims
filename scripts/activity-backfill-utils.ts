@@ -19,8 +19,10 @@ export interface ActorIndex {
 }
 
 export type ActorResolution =
-  | { status: 'RESOLVED'; uid: string; actorName: string; matchedBy: 'uid' | 'email' | 'displayName' }
+  | { status: 'RESOLVED'; uid: string; actorName: string; matchedBy: 'uid' | 'email' | 'displayName' | 'legacyAlias' }
   | { status: 'UNRESOLVED'; legacyUser: string; reason: 'empty' | 'not-found' | 'ambiguous' };
+
+export type LegacyActorAliasMap = ReadonlyMap<string, string>;
 
 export interface ActivityBackfillResult {
   status: 'ALREADY_V2' | 'MIGRATABLE' | 'INVALID_V2' | 'UNKNOWN_ACTION' | 'UNRESOLVED_ACTOR';
@@ -45,9 +47,39 @@ export function buildActorIndex(users: readonly LegacyUserProfile[]): ActorIndex
   return { byUid, byEmail, byDisplayName };
 }
 
-export function resolveLegacyActor(legacyUser: unknown, index: ActorIndex): ActorResolution {
+export function buildLegacyActorAliasMap(entries: Record<string, unknown>): Map<string, string> {
+  const aliases = new Map<string, string>();
+  for (const [legacyIdentity, targetIdentity] of Object.entries(entries)) {
+    const legacyKey = normalizeIdentity(legacyIdentity);
+    const target = asOptionalString(targetIdentity);
+    if (!legacyKey || !target) {
+      throw new Error('Legacy actor alias entries require non-empty legacy and target identities.');
+    }
+    const previousTarget = aliases.get(legacyKey);
+    if (previousTarget && previousTarget !== target) {
+      throw new Error(`Conflicting legacy actor aliases for ${legacyIdentity}.`);
+    }
+    aliases.set(legacyKey, target);
+  }
+  return aliases;
+}
+
+export function resolveLegacyActor(
+  legacyUser: unknown,
+  index: ActorIndex,
+  aliases: LegacyActorAliasMap = new Map()
+): ActorResolution {
   const raw = String(legacyUser ?? '').trim();
   if (!raw) return { status: 'UNRESOLVED', legacyUser: '', reason: 'empty' };
+
+  const aliasTarget = aliases.get(normalizeIdentity(raw));
+  if (aliasTarget) {
+    const aliasMatch = resolveLegacyActor(aliasTarget, index);
+    if (aliasMatch.status === 'RESOLVED') {
+      return { ...aliasMatch, matchedBy: 'legacyAlias' };
+    }
+    return { status: 'UNRESOLVED', legacyUser: raw, reason: aliasMatch.reason };
+  }
 
   const uidMatch = index.byUid.get(raw);
   if (uidMatch) return resolved(uidMatch, 'uid', raw);
@@ -66,7 +98,8 @@ export function resolveLegacyActor(legacyUser: unknown, index: ActorIndex): Acto
 export function classifyLegacyActivity(
   id: string,
   data: Record<string, unknown>,
-  actorIndex: ActorIndex
+  actorIndex: ActorIndex,
+  aliases: LegacyActorAliasMap = new Map()
 ): ActivityBackfillResult {
   const action = String(data['action'] ?? '').trim();
   if (isCanonicalV2(id, data)) return { status: 'ALREADY_V2', action };
@@ -79,7 +112,7 @@ export function classifyLegacyActivity(
   }
   if (!isRegisteredActivityAction(action)) return { status: 'UNKNOWN_ACTION', action };
 
-  const actor = resolveLegacyActor(data['actorUid'] || data['user'], actorIndex);
+  const actor = resolveLegacyActor(data['actorUid'] || data['user'], actorIndex, aliases);
   if (actor.status !== 'RESOLVED') {
     return { status: 'UNRESOLVED_ACTOR', action, actor };
   }

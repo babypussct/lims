@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildActorIndex,
+  buildLegacyActorAliasMap,
   classifyLegacyActivity,
   resolveLegacyActor
 } from './activity-backfill-utils';
@@ -24,6 +25,23 @@ test('actor mapping follows UID, email, then unique displayName and never guesse
   assert.deepEqual(resolveLegacyActor('Same Name', users), {
     status: 'UNRESOLVED', legacyUser: 'Same Name', reason: 'ambiguous'
   });
+});
+
+test('explicit legacy actor aliases resolve to a canonical profile without changing normal precedence', () => {
+  const aliases = buildLegacyActorAliasMap({ 'Quản trị viên': 'admin@example.com' });
+  assert.deepEqual(resolveLegacyActor('Quản trị viên', users, aliases), {
+    status: 'RESOLVED', uid: 'uid-admin', actorName: 'Admin Lab', matchedBy: 'legacyAlias'
+  });
+
+  const result = classifyLegacyActivity('legacy-admin', {
+    action: 'SAVE_RESULT_DRAFT',
+    user: 'Quản trị viên',
+    requestId: 'REQ-ADMIN-01',
+    details: 'Lưu nháp'
+  }, users, aliases);
+  assert.equal(result.status, 'MIGRATABLE');
+  assert.equal(result.actor?.matchedBy, 'legacyAlias');
+  assert.equal(result.patch?.['actorUid'], 'uid-admin');
 });
 
 test('known legacy actions receive deterministic V2 classification and traceability flag', () => {
