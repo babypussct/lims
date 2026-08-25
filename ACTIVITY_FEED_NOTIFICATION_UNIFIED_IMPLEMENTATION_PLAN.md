@@ -1340,8 +1340,8 @@ Lưu ý: Firestore composite index áp theo collection ID; `logs` cũng xuất h
 - [x] Xác nhận trạng thái READY staging.
 - [x] Deploy index trước reader V2 ở production.
 - [x] Xác nhận trạng thái READY production (`7/7` index `logs`).
-- [ ] Chỉ sau đó mới bật `activityFeedV2`.
-- [ ] Có smoke query bằng role đại diện trên staging/production.
+- [x] Chỉ sau đó mới bật `activityFeedV2` (production global rollout theo thứ tự reader → notification tại mục 0.13; index production đã `READY` trước khi bật).
+- [x] Có smoke query bằng role đại diện trên production và public/private Rules boundary trên staging (Manager/QC/Lab/Viewer/Pending/Staff default; authenticated staging cloud vẫn giữ `[ ]` vì Spark).
 
 ---
 
