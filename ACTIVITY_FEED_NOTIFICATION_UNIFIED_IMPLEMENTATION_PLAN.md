@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: compatibility-window cleanup/PR9. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Production index/backfill/Rules, role-matrix và global smoke production đã có evidence tại mục 0.5/0.8/0.10/0.12/0.13; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: compatibility-window cleanup/PR9. Snapshot dữ liệu và inventory fallback sau global rollout đã được ghi tại mục 0.14, nhưng chưa đủ điều kiện mở PR9. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Production index/backfill/Rules, role-matrix và global smoke production đã có evidence tại mục 0.5/0.8/0.10/0.12/0.13; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -324,6 +324,42 @@ showLockedFeatures          = false
 Bell Manager mở được dialog và đọc đúng inbox hiện có với `6` thông báo chưa đọc; không đánh dấu, xóa hoặc tạo thông báo. Theo dõi thêm `60` giây giữ Activity `50` detail buttons, không denied/load error và console error mới `0`.
 
 Rollback vẫn là thao tác cấu hình additive: đặt hai global flags về `false` và có thể giữ lại UID Manager trong canary arrays; schema V2, `user`, printable fields, legacy traceability ID và state adapters chưa bị xóa. Compatibility window/PR9 cleanup vẫn chưa hoàn tất và không được suy ra từ smoke global này.
+
+## 0.14. Compatibility audit snapshot sau global rollout ngày 2026-08-25
+
+Đã chạy lại audit production ở chế độ `verify` chỉ đọc sau khi hai global flags đã bật. Audit dùng actor map đã được validate từ bước backfill, đọc toàn bộ collection `artifacts/lims-cloud-fixed/logs`, không tạo batch và không ghi document nào.
+
+Kết quả snapshot lúc `2026-08-25 17:17` (Asia/Ho_Chi_Minh):
+
+```text
+total                         = 4.195
+schemaVersion=2               = 4.195
+eventId trùng document ID     = 4.195
+actorUid hợp lệ               = 4.195
+actorName hợp lệ              = 4.195
+user compatibility hợp lệ     = 4.195
+printable field hiện diện     = 2.419
+printable=true                = 950
+printJobId/printableId có giá trị = 983
+missing canonical identity    = 0
+missing compatibility user    = 0
+invalidV2 / unknownAction     = 0 / 0
+unresolvedActor / errors      = 0 / 0
+```
+
+Collection hiện có `4.195` event, tăng `3` event so với snapshot `4.192` tại thời điểm apply backfill. Ba event tăng thêm là các ghi nhận nghiệp vụ V2 bình thường phát sinh trong production; không có write nghiệp vụ nào được tạo bởi Activity/Bell smoke hoặc compatibility audit. Verify toàn bộ collection trả `alreadyV2=4.195`, `migratable=0` và exit code `0`.
+
+### Inventory consumer/fallback còn tồn tại
+
+- `StateService.ensureLogsListener()` và `ensurePersonalLogsListener()` vẫn tồn tại như compatibility reader cho Dashboard/legacy scope. Khi Dashboard V2 hoạt động, `suspendLegacyActivityFeedListeners()` dừng các listener này nhưng cố ý giữ DeltaSync cache để rollback tức thời.
+- `PrintQueueService` đã đọc ownership canonical bằng `actorUid`; listener `user/displayName` vẫn giữ cho printable log pre-backfill trong compatibility window.
+- `NotificationCenterService` đã no-op legacy fan-out khi `notificationEventSyncV2=true`; compatibility bridge vẫn giữ nhánh legacy để rollback flag an toàn.
+- Firestore Rules vẫn có fallback `user/displayName` cho printable log cá nhân. Chưa thể chuyển UID-only khi chưa chứng minh mọi legacy printable document đã được reader chuyển sang `actorUid` và query display-name đã hết vòng đời.
+- Contract test `activity-consumer-decoupling.test.ts` hiện chủ động khóa inventory này: Print Queue phải có cả canonical UID listener và legacy name listener; Dashboard là consumer duy nhất còn dùng `StateService.logs()` trong PR3 compatibility.
+
+### Kết luận gate
+
+Data compatibility snapshot đạt: toàn bộ `4.195/4.195` event canonical, không còn actor/action/schema lỗi và compatibility `user` vẫn đầy đủ. Tuy nhiên compatibility window chưa thể đánh dấu hoàn tất vì source vẫn còn legacy fallback có chủ đích và chưa có evidence rằng toàn bộ old client đã đi qua ít nhất một release cycle sau global rollout. Do đó không mở PR9 trong bước này; giữ nguyên `user`, printable fields, legacy traceability ID, state adapters và Rules fallback cho đến khi có evidence vòng đời client + plan cleanup riêng.
 
 ---
 
