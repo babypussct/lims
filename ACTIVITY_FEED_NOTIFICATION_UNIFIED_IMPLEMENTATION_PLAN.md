@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules đã hoàn tất; Manager canary runtime pass; V2 global flags vẫn OFF chờ role matrix**
+> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules và role-matrix smoke đã có evidence; Manager canary runtime pass; V2 global flags vẫn OFF chờ monitor/notification gates**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary feature flags, runtime smoke bằng account thật và compatibility-window cleanup. Production index/backfill/Rules đã có evidence tại mục 0.5; authenticated staging role matrix vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary observation/monitoring, notification writer workflow, Staff default UI smoke và compatibility-window cleanup. Production index/backfill/Rules và bốn account role-matrix production đã có evidence tại mục 0.5/0.8; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -200,6 +200,30 @@ Sau khi release `v26.08.25-b04` được Vercel phục vụ, đã xác minh bằ
 - Production hiện có `20` profile: `3 manager`, `17 staff`; chưa có profile `qc`, `lab`, `viewer` hoặc `pending`, nên không thể dựng cloud smoke cho các role đó mà không tạo/sửa user dữ liệu thật.
 - Không thực hiện publish/reset/approve/stock mutation trên production; notification writer workflow vẫn chờ fixture hoặc môi trường test an toàn.
 - Staging authenticated role matrix vẫn chưa chạy cloud vì project staging được giữ Spark; automated Rules/Auth-policy evidence vẫn là gate thay thế hiện tại.
+
+## 0.8. Production role-matrix accounts và admin assignment ngày 2026-08-25
+
+Theo yêu cầu dựng account đại diện cho role matrix, đã tạo bốn Firebase Auth user kiểm thử trong project production hiện tại `lims-cloud-by-otada` bằng tên định danh theo vai trò, sau đó cho từng account đăng nhập lần đầu để ứng dụng tạo profile `pending`. Việc cấp quyền được thực hiện lại từ luồng quản trị của ứng dụng tại `Cấu hình → Người Dùng & Phân Quyền` bằng tài khoản Manager đã xác minh; không ghi mật khẩu vào repository, log hoặc tài liệu.
+
+Kết quả đọc lại trực tiếp từ Firebase sau khi bấm lưu:
+
+| Account kiểm thử | Role | Role group | Quyền hiệu lực lưu trong profile |
+|---|---|---|---:|
+| `qc_lead_test@lims.com` | `staff` | `role_qc_lead` | 13 |
+| `lab_technician_test@lims.com` | `staff` | `role_lab_technician` | 9 |
+| `viewer_test@lims.com` | `viewer` | compatibility default | 0 |
+| `pending_test@lims.com` | `pending` | compatibility default | 0 |
+
+Auth user của cả bốn account đều `disabled=false`; profile tồn tại đúng UID; `customPermissions=[]`. Viewer/Pending vẫn fail closed theo trường `role`, vì vậy role group compatibility default không cấp quyền nghiệp vụ hoặc Activity.
+
+Runtime smoke sau assignment:
+
+- QC Lead đăng nhập thành công, Dashboard tải được và có các entry Activity legacy; `Quan trọng` chưa xuất hiện vì global Activity V2 vẫn OFF.
+- Lab Technician đăng nhập thành công, Dashboard tải được và có các entry Activity legacy; không phát sinh permission error.
+- Viewer đăng nhập thành công, Dashboard tải được nhưng Activity section không có detail entry (`0` nút mở chi tiết), không có filter `Quan trọng`; không đọc được Activity.
+- Pending đăng nhập thành công và dừng đúng ở màn hình `Đang Chờ Phê Duyệt`.
+
+Như vậy gate cloud role-matrix đại diện cho bốn role đã có evidence production an toàn ở lớp Auth/profile/UI. Chưa bật global flags và chưa thực hiện notification writer mutation; các gate đó vẫn cần được giữ độc lập.
 
 ---
 
@@ -2357,7 +2381,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] API typecheck pass.
 - [x] Build pass.
 - [x] `npm run release:verify` pass ngày 2026-08-25.
-- [ ] Runtime smoke bằng các role đại diện pass.
+- [ ] Runtime smoke đầy đủ bằng mọi role đại diện pass (QC/Lab/Viewer/Pending đã pass; Staff default UI smoke còn thiếu).
 
 ---
 
@@ -2393,11 +2417,11 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 - [x] PR5 merge flag off (`v26.08.25-b04`, global flag vẫn false).
 - [x] smoke with Manager (production UID canary, Dashboard/Bell, console error `0`).
-- [ ] smoke with QC Lead.
-- [ ] smoke with Lab.
+- [x] smoke with QC Lead (production test account, Dashboard/legacy Activity load).
+- [x] smoke with Lab (production test account, Dashboard/legacy Activity load).
 - [x] smoke with one existing Staff profile (read-only `STANDARD_VIEW` query; custom token ký local).
 - [ ] smoke with Staff default.
-- [ ] smoke Viewer/Pending denied/hidden.
+- [x] smoke Viewer/Pending denied/hidden (Viewer không có detail entry Activity; Pending dừng ở màn hình chờ duyệt).
 - [x] canary flag on (UID-scoped, 1 Manager; global flag vẫn false).
 - [ ] monitor read/errors.
 - [ ] flag on rộng.
