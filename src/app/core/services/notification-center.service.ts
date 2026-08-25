@@ -5,8 +5,14 @@ import {
   NotificationEvent,
   NotificationLevel
 } from '../models/notification.model';
-import { levelForNotificationType, selectForegroundSurface } from './notification-policy';
+import {
+  isDuplicateNotificationEvent,
+  levelForNotificationType,
+  selectActivityNotificationProjectionMode,
+  selectForegroundSurface
+} from './notification-policy';
 import { NotificationService } from './notification.service';
+import { StateService } from './state.service';
 import { ToastService } from './toast.service';
 
 const DEFAULT_TITLE: Record<NotificationLevel, string> = {
@@ -21,6 +27,7 @@ export class NotificationCenterService {
   private readonly toast = inject(ToastService);
   private readonly inbox = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly state = inject(StateService);
   private readonly seenEvents = new Map<string, number>();
 
   constructor() {
@@ -29,7 +36,7 @@ export class NotificationCenterService {
       if (!incoming) return;
 
       queueMicrotask(() => this.inbox.foregroundMessage.set(null));
-      if (incoming.eventId && this.wasSeen(incoming.eventId)) return;
+      if (incoming.eventId && isDuplicateNotificationEvent(this.seenEvents, incoming.eventId)) return;
 
       const permission = 'Notification' in window ? Notification.permission : 'default';
       const surface = selectForegroundSurface(document.visibilityState, permission);
@@ -91,6 +98,11 @@ export class NotificationCenterService {
         title,
         message: event.message,
         targetId: event.targetId,
+        targetType: event.targetType,
+        targetName: event.targetName,
+        requestId: event.requestId,
+        activityAction: event.activityAction,
+        module: event.module,
         actionUrl: event.actionUrl,
         groupId: eventId,
         eventId
@@ -111,20 +123,59 @@ export class NotificationCenterService {
     return eventId;
   }
 
+  /**
+   * Compatibility bridge for Release D. With the flag off, the exact legacy
+   * notification publisher remains active. With it on, only eventId crosses
+   * the client/server boundary and the backend resolves recipients/policy.
+   */
+  async publishActivityProjection(eventId: string, legacyEvent: NotificationEvent): Promise<string> {
+    if (selectActivityNotificationProjectionMode(this.state.notificationEventSyncV2()) === 'legacy') {
+      return this.publish({ ...legacyEvent, eventId });
+    }
+
+    try {
+      await this.inbox.dispatchEvent(eventId);
+    } catch (error) {
+      console.error('[NotificationCenter] Could not dispatch canonical Activity event:', error);
+      this.toast.showEvent({
+        message: 'Tác vụ đã hoàn thành nhưng chưa thể đồng bộ thông báo từ Activity event.',
+        type: 'warning',
+        dedupeKey: `notification-dispatch-error:${eventId}`
+      });
+    }
+    return eventId;
+  }
+
+  async dispatchActivityProjectionIfEnabled(eventId: string): Promise<boolean> {
+    if (!this.state.notificationEventSyncV2()) return false;
+    try {
+      await this.inbox.dispatchEvent(eventId);
+      return true;
+    } catch (error) {
+      console.error('[NotificationCenter] Could not dispatch canonical Activity event:', error);
+      this.toast.showEvent({
+        message: 'Tác vụ đã hoàn thành nhưng chưa thể đồng bộ thông báo từ Activity event.',
+        type: 'warning',
+        dedupeKey: `notification-dispatch-error:${eventId}`
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Compatibility-only publisher for legacy fan-out branches that had more
+   * recipients than the canonical workflow policy. It becomes a no-op as soon
+   * as notificationEventSyncV2 is enabled, preventing duplicate V2 dispatch.
+   */
+  async publishLegacyIfActivityProjectionDisabled(event: NotificationEvent): Promise<string | null> {
+    if (this.state.notificationEventSyncV2()) return null;
+    return this.publish(event);
+  }
+
   private createEventId(): string {
     return typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-
-  private wasSeen(eventId: string): boolean {
-    const now = Date.now();
-    for (const [id, timestamp] of this.seenEvents) {
-      if (now - timestamp > 5 * 60_000) this.seenEvents.delete(id);
-    }
-    if (this.seenEvents.has(eventId)) return true;
-    this.seenEvents.set(eventId, now);
-    return false;
   }
 
   async deleteBroadcastByGroupId(groupId: string): Promise<void> {

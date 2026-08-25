@@ -10,6 +10,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { PrintQueueComponent } from './print-queue.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
+import { PrintQueueService } from '../../core/services/print-queue.service';
 
 import { Router } from '@angular/router';
 
@@ -49,7 +50,7 @@ import { Router } from '@angular/router';
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'printing' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-print"></i> Hàng đợi In
-                   @if(state.printableLogs().length > 0) { <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 rounded-md text-[10px]">{{state.printableLogs().length}}</span> }
+                   @if(printQueue.printableLogs().length > 0) { <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 rounded-md text-[10px]">{{printQueue.printableLogs().length}}</span> }
                </button>
             </div>
         </div>
@@ -320,6 +321,7 @@ export class RequestListComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService);
   router = inject(Router);
+  printQueue = inject(PrintQueueService);
   cleanName = cleanName; formatNum = formatNum; formatDate = formatDate; formatSampleList = formatSampleList;
   
   currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
@@ -334,6 +336,7 @@ export class RequestListComponent implements OnInit {
   endDate = signal<string>(this.getToday());
 
   ngOnInit() {
+      this.printQueue.ensureListener();
       this.ensureDataForCurrentTab();
       // Check data loaded
       if(this.state.requests().length > 0) {
@@ -426,8 +429,6 @@ export class RequestListComponent implements OnInit {
       if (this.currentTab() === 'approved') {
           this.state.ensureApprovedRequestsListener();
           void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
-      } else if (this.currentTab() === 'printing') {
-          this.state.ensureLogsListener();
       }
   }
 

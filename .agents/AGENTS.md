@@ -4,9 +4,15 @@ Khi người dùng yêu cầu "chuẩn bị deploy", "deploy", "commit" hoặc "
 
 1. Phân tích tất cả thay đổi trong session hiện tại.
 2. Viết hoặc cập nhật `release-notes.json` với nội dung phù hợp.
-3. Chạy `npm run sync-version`.
-4. Chạy `npm run validate:release-notes`.
-5. Báo cáo kết quả cho người dùng.
+3. Chạy `npm run release:prepare` khi đây là một release mới cần tăng version.
+4. Chạy `npm run release:verify` và chỉ tiếp tục khi gate đạt.
+5. Review diff, commit release, rồi chạy `npm run release:prepush` trên working tree sạch.
+6. Push commit lên `main`.
+7. Với frontend, dừng quy trình deploy thủ công tại đây: Vercel Git Integration tự động build và deploy production từ commit vừa push lên GitHub.
+8. Theo dõi deployment gắn với đúng Git SHA và smoke test production khi deployment chuyển sang trạng thái sẵn sàng.
+9. Chỉ chạy `npm run deploy:prod` hoặc Vercel CLI khi người dùng yêu cầu deploy thủ công/fallback một cách rõ ràng; đây không phải bước của quy trình frontend chuẩn.
+
+`npm run release:predeploy` vẫn có thể được dùng bởi các tác vụ hạ tầng cần gate sau push, ví dụ `npm run deploy:rules`. Không chạy `release:predeploy` chỉ để chuẩn bị một frontend deployment mà Vercel đã tự tạo từ GitHub.
 
 Không chỉnh sửa thủ công `ngsw-config.json`, `metadata.json` hoặc phiên bản trong `state.service.ts`; các file này được đồng bộ bởi script.
 

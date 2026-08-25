@@ -15,10 +15,20 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
 import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent } from '../../shared/components/ui';
 import {
   filterDashboardActivityLogs,
-  isSopActivityAction,
   isStandardActivityAction
 } from '../../shared/utils/dashboard-activity';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
+import { ActivityFeedService } from '../../core/services/activity-feed.service';
+import {
+  filterActivityFeedEvents,
+  getActivityActionLabel,
+  getActivityAggregationLabel,
+  getActivityModuleLabel,
+  isActivityEventNewSince,
+  resolveActivityTraceabilityUrl,
+  type ActivityFeedModuleFilter
+} from '../../core/activity/activity-feed.utils';
+import { isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
 import {
   createInclusiveDateRange,
   enumerateInclusiveDates,
@@ -63,6 +73,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   qrService = inject(QrGlobalService);
   changelogService = inject(ChangelogService);
   statsService = inject(StatsService);
+  activityFeed = inject(ActivityFeedService);
 
   statsData = signal<Record<string, MonthlyStatsDoc>>({});
 
@@ -140,27 +151,53 @@ export class DashboardComponent implements OnInit, OnDestroy {
   });
   // Activity Feed Filters
   logSearchTerm = signal<string>('');
-  logFilterCategory = signal<'ALL' | 'SOP' | 'STOCK' | 'STANDARD' | 'APPROVE' | 'SYSTEM'>('ALL');
+  logFilterCategory = signal<ActivityFeedModuleFilter>('ALL');
+  importantActivityOnly = signal(false);
+  activityFeedV2Enabled = computed(() => this.state.activityFeedV2());
+  activityFeedDenied = computed(() => this.activityFeedV2Enabled() && this.activityFeed.status() === 'denied');
+  activityFeedLoading = computed(() => this.activityFeedV2Enabled() && this.activityFeed.status() === 'loading');
+  activityFeedError = computed(() => this.activityFeedV2Enabled() && this.activityFeed.status() === 'error');
+  activityFilterOptions = computed<ActivityFeedModuleFilter[]>(() => {
+      const options: ActivityFeedModuleFilter[] = ['ALL', 'RESULT', 'INVENTORY', 'STANDARD'];
+      const canViewSystem = this.activityFeedV2Enabled()
+          ? this.activityFeed.allowedAudiences().includes('SYSTEM_ADMIN')
+          : this.auth.canManageSystem();
+      if (canViewSystem) options.push('SYSTEM');
+      return options;
+  });
 
   recentLogsGrouped = computed(() => {
-      let logs = this.state.logs();
-      
-      const isManager = this.auth.currentUser()?.role === 'manager';
-      if (!isManager) {
-          logs = logs.filter(l => this.canViewActivityLog(l));
-      }
+      const useV2 = this.activityFeedV2Enabled();
+      const logs = useV2
+          ? filterActivityFeedEvents(
+              this.activityFeed.events(),
+              this.logSearchTerm(),
+              this.logFilterCategory(),
+              this.importantActivityOnly(),
+              50
+          )
+          : filterDashboardActivityLogs(
+              this.state.logs(),
+              this.logSearchTerm(),
+              this.getLegacyActivityCategory(this.logFilterCategory()),
+              action => this.getLogActionText(action),
+              50
+          );
 
-      logs = filterDashboardActivityLogs(
-          logs,
-          this.logSearchTerm(),
-          this.logFilterCategory(),
-          action => this.getLogActionText(action),
-          50
-      );
+      const previousLastSeenAt = useV2 ? this.activityFeed.lastActivitySeenAt() : null;
+      let newDividerPlaced = false;
+      const displayLogs = logs.map(log => {
+          const showNewDivider = useV2
+              && !newDividerPlaced
+              && previousLastSeenAt !== null
+              && isActivityEventNewSince(log as any, previousLastSeenAt);
+          if (showNewDivider) newDividerPlaced = true;
+          return { ...log, showNewDivider };
+      });
 
       // Group by Date
       const groups = new Map<string, any[]>();
-      logs.forEach(l => {
+      displayLogs.forEach(l => {
           const d = timestampToDate(l.timestamp);
           const dateStr = d ? this.formatDateStr(d) : 'Không rõ thời gian';
           if (!groups.has(dateStr)) groups.set(dateStr, []);
@@ -204,49 +241,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return { icon: 'fa-bolt', bg: 'bg-gray-100 dark:bg-slate-700', text: 'text-gray-600 dark:text-gray-300' };
   }
 
-  private readonly _actionTextMap: Record<string, string> = {
-      'CREATE_VIRTUAL_MASTER': 'đã tạo mẻ master ảo',
-      'SAVE_RESULT_DRAFT': 'đã lưu nháp kết quả',
-      'PUBLISH_RESULT_REPORT': 'đã xuất bản báo cáo',
-      'REVERT_RESULT_DRAFT': 'đã hủy xuất bản báo cáo',
-      'RESET_RESULT_DATA': 'đã reset số liệu kết quả',
-      'RESTORE_RESULT_BACKUP': 'đã khôi phục số liệu lưu trữ',
-      'RESTORE_RESULT_VERSION': 'đã khôi phục phiên bản cũ',
-      'DIRECT_APPROVE': 'đã duyệt và đưa phiếu vào hàng đợi in',
-      'EDIT_REQUEST': 'đã chỉnh sửa phiếu yêu cầu',
-      'REQUEST_STANDARD': 'đã yêu cầu mượn chuẩn',
-      'CREATE_STANDARD_REQUEST': 'đã yêu cầu mượn chuẩn',
-      'APPROVE_STANDARD_REQUEST': 'đã duyệt mượn chuẩn',
-      'REJECT_STANDARD_REQUEST': 'đã từ chối mượn chuẩn',
-      'REPORT_RETURN_STANDARD': 'đã báo cáo trả chuẩn',
-      'RETURN_STANDARD': 'đã nhận lại chuẩn',
-      'ASSIGN_STANDARD': 'đã gán chuẩn cho mượn',
-      'LOG_USAGE_STANDARD': 'đã khai báo sử dụng chuẩn',
-      'BACKFILL_USAGE_LOG': 'đã nhập bù hồ sơ mượn chuẩn',
-      'DELETE_USAGE_LOG': 'đã hoàn tác nhật ký sử dụng chuẩn',
-      'REQUEST_COA': 'đã yêu cầu bổ sung CoA'
-  };
-
   private isStandardLogAction(action: string): boolean {
       return isStandardActivityAction(action);
-  }
-
-  private isSopLogAction(action: string): boolean {
-      return isSopActivityAction(action);
-  }
-
-  private canViewActivityLog(log: { action?: string; user?: string }): boolean {
-      if (this.auth.canViewReports()) return true;
-
-      const currentName = this.auth.currentUser()?.displayName;
-      if (currentName && log.user === currentName) return true;
-
-      const act = log.action || '';
-      if (act.includes('STOCK')) return this.auth.canViewInventory();
-      if (this.isStandardLogAction(act)) return this.auth.canViewStandards();
-      if (this.isSopLogAction(act)) return this.auth.canViewSop() || this.auth.canRunBatch();
-      if (act.includes('MAINTENANCE') || act.includes('SYSTEM')) return this.auth.canManageSystem() || this.auth.canViewReports();
-      return false;
   }
 
   private getLocalYYYYMMDD(d: Date): string {
@@ -257,10 +253,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private _todayRolloverTimer: ReturnType<typeof setTimeout> | null = null;
 
   todayActivityCount = computed(() => {
-      let logs = this.state.logs();
-      if (!this.auth.canViewReports()) {
-          logs = logs.filter(l => this.canViewActivityLog(l));
-      }
+      const logs = this.activityFeedV2Enabled() ? this.activityFeed.events() : this.state.logs();
 
       return logs.filter(l => {
           return timestampToLocalDateKey(l.timestamp) === this._todayStr();
@@ -503,9 +496,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
       effect(() => {
           const user = this.auth.currentUser();
           const permissions = this.auth.userPermissions();
-          if (!user || permissions.length === 0) return;
+          const useV2 = this.state.activityFeedV2();
+          if (!user) {
+              this.activityFeed.setEnabled(false);
+              return;
+          }
 
-          this.state.ensureActivityFeedListeners();
+          if (useV2) {
+              this.state.suspendLegacyActivityFeedListeners();
+              this.activityFeed.setEnabled(true);
+              return;
+          }
+
+          this.activityFeed.setEnabled(false);
+          if (permissions.length > 0) this.state.ensureActivityFeedListeners();
+      });
+
+      effect(() => {
+          const options = this.activityFilterOptions();
+          const selected = this.logFilterCategory();
+          if (!options.includes(selected)) this.logFilterCategory.set('ALL');
+      });
+
+      effect(() => {
+          if (!this.activityFeedV2Enabled() || this.activityFeed.status() !== 'ready') return;
+          void this.activityFeed.recordDashboardView();
       });
   }
 
@@ -543,6 +558,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+      this.activityFeed.setEnabled(false);
       if (this._chartDebounceTimer) clearTimeout(this._chartDebounceTimer);
       if (this._todayRolloverTimer) clearTimeout(this._todayRolloverTimer);
       if (this.chartInstance) {
@@ -570,6 +586,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   navTo(path: string) {
       this.router.navigate([`/${path}`]);
+  }
+
+  navToUrl(path: string | undefined): void {
+      if (!path || !path.startsWith('/') || path.startsWith('//')) return;
+      void this.router.navigateByUrl(path);
+  }
+
+  toggleImportantActivity(): void {
+      this.importantActivityOnly.update(value => !value);
+  }
+
+  getActivityActorName(log: { actorName?: string; user?: string }): string {
+      return log.actorName || log.user || 'Hệ thống';
+  }
+
+  getActivityTargetText(log: { targetName?: string; targetId?: string; requestId?: string }): string {
+      return log.targetName || log.targetId || log.requestId || '';
+  }
+
+  getActivityAggregationText(log: { aggregationCount?: number }): string {
+      return this.activityFeedV2Enabled() ? getActivityAggregationLabel(log as any) : '';
+  }
+
+  getActivityModuleText(module: unknown): string {
+      return module === 'RESULT' || module === 'INVENTORY' || module === 'STANDARD' || module === 'SYSTEM'
+          ? getActivityModuleLabel(module)
+          : '';
+  }
+
+  getActivityTraceabilityUrl(log: { publicTraceable?: boolean; requestId?: string }): string | undefined {
+      return resolveActivityTraceabilityUrl(log);
+  }
+
+  getActivityFilterLabel(filter: ActivityFeedModuleFilter): string {
+      if (filter === 'ALL') return 'Tất cả';
+      return getActivityModuleLabel(filter);
   }
 
   async initChart() {
@@ -882,7 +934,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   getLogActionText(action: string): string {
-      if (this._actionTextMap[action]) return this._actionTextMap[action];
+      if (isRegisteredActivityAction(action)) return getActivityActionLabel(action);
       
       if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; 
       if (action.includes('STOCK_IN')) return 'đã nhập kho';
@@ -890,6 +942,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action.includes('CREATE')) return 'đã tạo mới';
       if (action.includes('DELETE')) return 'đã xóa'; 
       return 'đã cập nhật';
+  }
+
+  private getLegacyActivityCategory(filter: ActivityFeedModuleFilter): 'ALL' | 'SOP' | 'STOCK' | 'STANDARD' | 'SYSTEM' {
+      if (filter === 'RESULT') return 'SOP';
+      if (filter === 'INVENTORY') return 'STOCK';
+      return filter;
   }
 
   private loadChart(): Promise<any> {

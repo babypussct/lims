@@ -15,3 +15,15 @@ export function uniqueStringValues(values: unknown): string[] {
     typeof value === 'string' && value.trim().length > 0
   ))];
 }
+
+export function shouldClaimNotificationPush(
+  existing: Record<string, unknown>,
+  sendPush: boolean,
+  now: number,
+  claimTimeoutMs = 2 * 60_000
+): boolean {
+  if (!sendPush) return false;
+  if (existing['pushStatus'] === 'failed') return true;
+  return existing['pushStatus'] === 'sending'
+    && Number(existing['pushClaimedAt'] || 0) < now - claimTimeoutMs;
+}

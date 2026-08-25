@@ -1,4 +1,16 @@
-export type NotificationType = 'COA_REQUEST' | 'BORROW_REQUEST' | 'REQUEST_APPROVED' | 'REQUEST_REJECTED' | 'RETURN_OVERDUE' | 'STOCK_LOW_ALERT' | 'SYSTEM_INFO' | 'SYSTEM_UPDATE';
+export type NotificationType =
+  | 'COA_REQUEST'
+  | 'BORROW_REQUEST'
+  | 'REQUEST_APPROVED'
+  | 'REQUEST_REJECTED'
+  | 'RETURN_OVERDUE'
+  | 'STOCK_LOW_ALERT'
+  | 'SYSTEM_INFO'
+  | 'SYSTEM_UPDATE'
+  | 'RESULT_PUBLISHED'
+  | 'RESULT_RESET'
+  | 'RESULT_REVERTED'
+  | 'STANDARD_RETURN_PENDING';
 
 export type NotificationLevel = 'success' | 'error' | 'info' | 'warning';
 export type NotificationChannel = 'toast' | 'inbox' | 'push';
@@ -10,6 +22,8 @@ export type NotificationRecipient = string | 'role:admin' | 'role:all';
  */
 export interface NotificationEvent {
   eventId?: string;
+  activityAction?: string;
+  module?: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'SYSTEM';
   recipientUid?: NotificationRecipient;
   senderUid?: string;
   senderName?: string;
@@ -18,6 +32,9 @@ export interface NotificationEvent {
   title?: string;
   message: string;
   targetId?: string;
+  targetType?: string;
+  targetName?: string;
+  requestId?: string;
   actionUrl?: string;
   actionLabel?: string;
   channels: NotificationChannel[];
@@ -41,6 +58,11 @@ export interface AppNotification {
   actionUrl?: string;             // Route to navigate to when clicked (e.g., '/standards/123')
   groupId?: string;               // Optional: shared ID grouping fan-out copies of the same event
   eventId?: string;               // Stable ID shared by inbox, toast and push channels
+  activityAction?: string;        // Canonical Activity action when projected from /logs
+  module?: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'SYSTEM';
+  targetType?: string;
+  targetName?: string;
+  requestId?: string;
 
   isRead: boolean;
   createdAt: number;              // Timestamp (Date.now())

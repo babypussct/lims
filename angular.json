@@ -91,6 +91,18 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "staging": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "serviceWorker": false
             }
           },
           "defaultConfiguration": "production"
@@ -103,6 +115,9 @@
             },
             "development": {
               "buildTarget": "lims-cloud-pro:build:development"
+            },
+            "staging": {
+              "buildTarget": "lims-cloud-pro:build:staging"
             }
           },
           "defaultConfiguration": "development"

@@ -26,6 +26,7 @@ import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { StandardTagCatalogService } from './standard-tag-catalog.service';
+import { ActivityEventService } from '../../../core/services/activity-event.service';
 import {
   assertTagLimit,
   MAX_RETURN_TAGS,
@@ -52,6 +53,7 @@ export class StandardRequestService {
   private notificationCenter = inject(NotificationCenterService);
   private readMonitor = inject(FirestoreReadMonitor);
   private tagCatalog = inject(StandardTagCatalogService);
+  private activityEvents = inject(ActivityEventService);
 
   constructor() {
     // Cleanup singleton khi user logout hoặc đổi account
@@ -193,6 +195,7 @@ export class StandardRequestService {
     }
 
     const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
+    const activityRef = this.activityEvents.createRef();
     request.id = reqRef.id;
     request.createdAt = Date.now();
     request.updatedAt = Date.now();
@@ -239,14 +242,28 @@ export class StandardRequestService {
       // Reserve the lot atomically for both normal requests and direct assignment.
       // dispenseStandard() clears this flag immediately after a direct assignment.
       transaction.update(stdRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
+
+      if (!isAssign) {
+        const activityEvent = this.activityEvents.build({
+          eventId: activityRef.id,
+          action: 'REQUEST_STANDARD',
+          details: `Yêu cầu chuẩn: ${trustedRequest.standardName}`,
+          targetType: 'STANDARD',
+          targetId: trustedRequest.standardId,
+          targetName: trustedRequest.standardName,
+          requestId: reqRef.id,
+          metadata: {
+            internalId: trustedRequest.internalId,
+            requestedBy: trustedRequest.requestedBy,
+            expectedAmount: trustedRequest.expectedAmount
+          }
+        });
+        this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
+      }
     });
 
-    if (isAssign) {
-      await this.crud.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
-    } else {
-      await this.crud.logGlobalActivity('REQUEST_STANDARD', `Yêu cầu chuẩn: ${request.standardName}`, request.id);
-      await this.notificationCenter.publish({
-        eventId: `standard-request:${request.id}:created`,
+    if (!isAssign) {
+      await this.notificationCenter.publishActivityProjection(activityRef.id, {
         recipientUid: 'role:admin', senderUid: currentUser?.uid,
         senderName: currentUser?.displayName || 'Người dùng',
         type: 'BORROW_REQUEST', title: 'Yêu cầu mượn chuẩn',
@@ -273,6 +290,7 @@ export class StandardRequestService {
       updates = { ...updates, sopTags: normalized };
     }
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+    const activityRef = this.activityEvents.createRef();
     let reqData: StandardRequest | null = null;
 
     await runTransaction(this.fb.db, async transaction => {
@@ -337,17 +355,33 @@ export class StandardRequestService {
         transaction.update(stdRef, { has_pending_request: deleteField(), lastUpdated: serverTimestamp() });
       }
       reqData = { ...freshRequest, status, ...safeUpdates } as StandardRequest;
+
+      const action = status === 'REJECTED'
+        ? 'REJECT_STANDARD_REQUEST'
+        : status === 'PENDING_RETURN'
+          ? 'REPORT_RETURN_STANDARD'
+          : 'UPDATE_STANDARD_REQUEST';
+      const details = status === 'REJECTED'
+        ? `Từ chối yêu cầu: ${freshRequest.standardName}`
+        : status === 'PENDING_RETURN'
+          ? `Báo cáo trả chuẩn: ${freshRequest.standardName}`
+          : `Cập nhật yêu cầu: ${freshRequest.standardName} -> ${status}`;
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action,
+        details,
+        targetType: 'STANDARD',
+        targetId: freshRequest.standardId,
+        targetName: freshRequest.standardName,
+        requestId,
+        metadata: { oldStatus: freshRequest.status, newStatus: status }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
 
     if (reqData) {
-      let action = 'UPDATE_STANDARD_REQUEST';
-      let details = `Cập nhật yêu cầu: ${(reqData as StandardRequest).standardName} -> ${status}`;
-
       if (status === 'REJECTED') {
-        action = 'REJECT_STANDARD_REQUEST';
-        details = `Từ chối yêu cầu: ${(reqData as StandardRequest).standardName}`;
-        await this.notificationCenter.publish({
-          eventId: `standard-request:${requestId}:rejected`,
+        await this.notificationCenter.publishActivityProjection(activityRef.id, {
           recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Hệ thống',
           type: 'REQUEST_REJECTED', title: 'Yêu cầu bị từ chối',
@@ -356,10 +390,16 @@ export class StandardRequestService {
           channels: ['inbox', 'push']
         });
       } else if (status === 'PENDING_RETURN') {
-        action = 'REPORT_RETURN_STANDARD';
-        details = `Báo cáo trả chuẩn: ${(reqData as StandardRequest).standardName}`;
+        await this.notificationCenter.publishActivityProjection(activityRef.id, {
+          recipientUid: 'role:admin', senderUid: currentUser.uid,
+          senderName: currentUser.displayName || 'Người dùng',
+          type: 'STANDARD_RETURN_PENDING', title: 'Chuẩn đang chờ nhận trả',
+          message: `${(reqData as StandardRequest).requestedByName} đã báo trả lô chuẩn ${(reqData as StandardRequest).standardName}.`,
+          targetId: (reqData as StandardRequest).standardId,
+          actionUrl: `/standards/${(reqData as StandardRequest).standardId}`,
+          channels: ['inbox', 'push']
+        });
       }
-      await this.crud.logGlobalActivity(action, details, requestId);
     }
   }
 
@@ -374,6 +414,7 @@ export class StandardRequestService {
     }
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+    const activityRef = this.activityEvents.createRef();
     let reqData: StandardRequest | null = null;
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
@@ -405,13 +446,25 @@ export class StandardRequestService {
         approvedByName: currentUser.displayName || currentUser.email || approverName || approverId,
         approvalDate: Date.now(), updatedAt: Date.now(), lastUpdated: serverTimestamp()
       });
+
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: isAssign ? 'ASSIGN_STANDARD' : 'APPROVE_STANDARD_REQUEST',
+        details: isAssign
+          ? `Gán chuẩn: ${reqData.standardName} cho ${reqData.requestedByName}`
+          : `Duyệt cấp chuẩn: ${reqData.standardName}`,
+        targetType: 'STANDARD',
+        targetId: standardId,
+        targetName: reqData.standardName,
+        requestId,
+        metadata: { requestedBy: reqData.requestedBy }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
 
     if (reqData) {
       if (!isAssign) {
-        await this.crud.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
-        await this.notificationCenter.publish({
-          eventId: `standard-request:${requestId}:approved`,
+        await this.notificationCenter.publishActivityProjection(activityRef.id, {
           recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Quản trị viên',
           type: 'REQUEST_APPROVED', title: 'Yêu cầu được duyệt',
@@ -422,8 +475,7 @@ export class StandardRequestService {
       } else {
         // Send to the person who received it
         if (currentUser.uid !== (reqData as StandardRequest).requestedBy) {
-          await this.notificationCenter.publish({
-            eventId: `standard-request:${requestId}:direct-assignment:recipient`,
+          await this.notificationCenter.publishActivityProjection(activityRef.id, {
             recipientUid: (reqData as StandardRequest).requestedBy, senderUid: currentUser.uid,
             senderName: currentUser.displayName || 'Quản trị viên',
             type: 'REQUEST_APPROVED', title: 'Được cấp chuẩn',
@@ -431,11 +483,13 @@ export class StandardRequestService {
             targetId: standardId, actionUrl: `/standards/${standardId}`,
             channels: ['inbox', 'push']
           });
+        } else {
+          await this.notificationCenter.dispatchActivityProjectionIfEnabled(activityRef.id);
         }
         
         // Also send to all admins (manager) so they know a standard was assigned, 
         // and so the person testing can see the notification themselves.
-        await this.notificationCenter.publish({
+        await this.notificationCenter.publishLegacyIfActivityProjectionDisabled({
           eventId: `standard-request:${requestId}:direct-assignment:admins`,
           recipientUid: 'role:admin', senderUid: currentUser.uid,
           senderName: currentUser.displayName || 'Quản trị viên',
@@ -503,6 +557,7 @@ export class StandardRequestService {
     }
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+    const activityRef = this.activityEvents.createRef();
     let reqData: StandardRequest | null = null;
     let returnResult: ReturnStandardResult = { tagMergeStatus: 'NOT_REQUESTED' };
 
@@ -625,11 +680,27 @@ export class StandardRequestService {
       reqUpdateData['confirmedUnit'] = stockUnit;
       reqUpdateData['lastUpdated'] = serverTimestamp();
       transaction.update(reqRef, reqUpdateData);
-    });
 
-    if (reqData) {
-      await this.crud.logGlobalActivity('RETURN_STANDARD', `Nhận lại chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
-    }
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'RETURN_STANDARD',
+        details: `Nhận lại chuẩn: ${reqData.standardName}`,
+        targetType: 'STANDARD',
+        targetId: standardId,
+        targetName: reqData.standardName,
+        requestId,
+        metadata: {
+          oldValue: stdData.current_amount || 0,
+          newValue: newAmount,
+          unit: stockUnit,
+          isDepleted,
+          adjustmentAmount,
+          disposalAmount
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
+    });
+    await this.notificationCenter.dispatchActivityProjectionIfEnabled(activityRef.id);
     // Merge ngay document mới vào cache KHÔNG xóa trước — để giữ nguyên toàn bộ danh sách chuẩn
     try {
       const freshSnap = await getDoc(stdRef);
@@ -649,6 +720,7 @@ export class StandardRequestService {
     }
     if (!request.id) throw new Error('Yêu cầu không có mã định danh.');
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${request.id}`);
+    const activityRef = this.activityEvents.createRef();
     let didRollback = false;
     let freshRequest: StandardRequest | null = null;
 
@@ -726,6 +798,21 @@ export class StandardRequestService {
         rolledBackBy: currentUser.uid,
         lastUpdated: serverTimestamp()
       });
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'HARD_DELETE_REQUEST',
+        details: `Rollback lịch sử yêu cầu: ${freshRequest.standardName} (Người yêu cầu: ${freshRequest.requestedByName})`,
+        targetType: 'STANDARD',
+        targetId: freshRequest.standardId,
+        targetName: freshRequest.standardName,
+        requestId: request.id,
+        metadata: {
+          oldStatus: freshRequest.status,
+          requestedBy: freshRequest.requestedBy,
+          usageCount: (freshRequest.usageLogs || []).filter(log => !log._isDeleted).length
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
       didRollback = true;
     });
 
@@ -734,13 +821,6 @@ export class StandardRequestService {
       [],
       [request.id]
     );
-    if (didRollback && freshRequest) {
-      await this.crud.logGlobalActivity(
-        'HARD_DELETE_REQUEST',
-        `Rollback lịch sử yêu cầu: ${(freshRequest as StandardRequest).standardName} (Người yêu cầu: ${(freshRequest as StandardRequest).requestedByName})`,
-        request.id
-      );
-    }
   }
 
   // ─── Purchase Requests ────────────────────────────────────────────────────────

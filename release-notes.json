@@ -1,19 +1,22 @@
 {
-  "title": "Hoàn thiện Excel Viewer với Smart Fit, Ctrl+A theo vùng dữ liệu và điều hướng ổn định",
+  "title": "Hoạt động và thông báo nhất quán hơn trong công việc phòng kiểm nghiệm",
   "highlights": [
-    "Ctrl+A trong Excel Viewer giờ chỉ chọn đúng vùng dữ liệu thực tế của sheet thay vì toàn bộ worksheet của Univer.",
-    "Smart Fit tự tính độ rộng cột, wrap text và chiều cao hàng cho mọi sheet để nội dung dài luôn hiển thị đầy đủ.",
-    "Chuyển sheet không còn xuất hiện hộp thoại quyền do các bước tinh chỉnh layout được hoàn tất trước khi khóa bản xem trước ở chế độ chỉ đọc."
+    "Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.",
+    "Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.",
+    "Lịch sử in và báo cáo được giữ ổn định khi giao diện Hoạt động được nâng cấp."
   ],
-  "features": [],
+  "features": [
+    "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan.",
+    "Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý."
+  ],
   "improvements": [
-    "Tinh gọn thanh công cụ Excel Viewer thành nhóm điều hướng và nhóm công cụ xem, giảm các thao tác định dạng không cần thiết trong bản xem trước chỉ đọc.",
-    "Bổ sung Smart Fit deterministic làm fallback cho cả sheet chưa render, sau đó dùng cơ chế auto-resize của Univer để tinh chỉnh khi skeleton đã sẵn sàng.",
-    "Cải thiện thao tác cảm ứng trên bảng tính và bổ sung regression tests cho used range, Smart Fit, shortcut ownership và hành vi chuyển sheet."
+    "Người dùng có quyền phù hợp có thể xem hoạt động chung của workspace thay vì chỉ thấy thao tác do chính mình thực hiện.",
+    "Hàng đợi in, thống kê và tra cứu nguồn gốc tiếp tục hoạt động độc lập, không bị ảnh hưởng khi bộ lọc Hoạt động thay đổi.",
+    "Giao diện Dashboard và chuông thông báo được cải thiện cho màn hình nhỏ, thao tác bàn phím và trạng thái trống hoặc bị từ chối."
   ],
   "fixes": [
-    "Chặn command select-all gốc của Univer bằng CanceledError để Ctrl+A không thể ghi đè vùng dữ liệu đã chọn.",
-    "Sửa lỗi wrap text và auto height không có hiệu lực ổn định trên các sheet chưa active bằng cách áp kích thước trực tiếp từ display values trước khi refine.",
-    "Sửa regression bật popup 'phạm vi đã được bảo vệ' khi đổi sheet bằng cách hoàn tất toàn bộ thao tác format trước khi thiết lập quyền read-only."
+    "Ngăn phân loại sai hoạt động khi người thực hiện là quản lý, QC hoặc nhân viên phòng thí nghiệm; quyền hiển thị được xác định theo nghiệp vụ của hoạt động.",
+    "Ngăn liên kết ngoài, dữ liệu nhạy cảm và nội dung không hợp lệ đi vào hoạt động hoặc thông báo.",
+    "Giữ quyền sở hữu lịch sử theo tài khoản ngay cả khi người dùng đổi tên hiển thị hoặc bị giảm quyền."
   ]
 }

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   levelForNotificationType,
+  isDuplicateNotificationEvent,
   resolveMetadataSyncToast,
+  selectActivityNotificationProjectionMode,
   selectForegroundSurface
 } from './notification-policy';
 
@@ -11,6 +13,19 @@ describe('notification routing policy', () => {
     assert.equal(selectForegroundSurface('visible', 'granted'), 'toast');
     assert.equal(selectForegroundSurface('hidden', 'granted'), 'browser');
     assert.equal(selectForegroundSurface('hidden', 'denied'), 'none');
+  });
+
+  it('keeps legacy publishers flag-off and selects canonical event dispatch flag-on', () => {
+    assert.equal(selectActivityNotificationProjectionMode(false), 'legacy');
+    assert.equal(selectActivityNotificationProjectionMode(true), 'canonical');
+  });
+
+  it('deduplicates foreground push/toast by eventId within the bounded window', () => {
+    const seen = new Map<string, number>();
+    assert.equal(isDuplicateNotificationEvent(seen, 'event-a', 1_000), false);
+    assert.equal(isDuplicateNotificationEvent(seen, 'event-a', 2_000), true);
+    assert.equal(isDuplicateNotificationEvent(seen, 'event-b', 2_000), false);
+    assert.equal(isDuplicateNotificationEvent(seen, 'event-a', 400_001, 300_000), false);
   });
 
   it('maps workflow types to consistent levels', () => {

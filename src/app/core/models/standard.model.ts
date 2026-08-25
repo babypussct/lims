@@ -332,6 +332,9 @@ export interface ReferenceStandard {
 
   restock_requested?: boolean; // Flag if purchased has been requested
   coa_requested_by?: string; // UID of user who requested CoA upload
+  /** Retry-safe server recipient context for the most recent CoA completion event. */
+  lastCoaNotificationEventId?: string;
+  lastCoaRequestedByUid?: string;
   lastUpdated?: any;
   _isDeleted?: boolean;
 }

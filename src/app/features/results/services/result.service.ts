@@ -6,6 +6,8 @@ import { AnalysisResultDraft } from '../../../core/models/analysis-result.model'
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { DailyChecklistMaterializerService } from '../../../core/services/daily-checklist-materializer.service';
+import { ActivityEventService } from '../../../core/services/activity-event.service';
+import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { Request } from '../../../core/models/request.model';
 import { DailyChecklistEntry } from '../../../core/models/daily-checklist.model';
 import { buildDailyChecklistEntry } from '../../../core/utils/daily-checklist-projection';
@@ -19,6 +21,8 @@ export class ResultService {
   private reportService = inject(ReportService);
   private toast = inject(ToastService);
   private dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
+  private activityEvents = inject(ActivityEventService);
+  private notificationCenter = inject(NotificationCenterService);
 
   private getDocRef(requestId: string) {
     // Tái sử dụng collection 'requests' để có đầy đủ quyền đọc/ghi trên Production
@@ -83,30 +87,34 @@ export class ResultService {
     details: string,
     requestId: string,
     sopId: string,
-    sopName: string
-  ): Promise<void> {
+    sopName: string,
+    metadata: Record<string, unknown> = {}
+  ): Promise<string | null> {
     try {
-      const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-      await setDoc(logRef, {
-        id: logRef.id,
+      const event = this.activityEvents.build({
         action,
         details,
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
+        targetType: 'REQUEST',
         targetId: requestId,
+        targetName: sopName,
         requestId,
-        sopId,
         printable: false,
-        printData: {
-          sop: {
-            id: sopId,
-            name: sopName
+        metadata: { sopId, ...metadata },
+        legacyFields: {
+          sopId,
+          printData: {
+            sop: {
+              id: sopId,
+              name: sopName
+            }
           }
         }
       });
+      await this.activityEvents.write(event);
+      return event.eventId;
     } catch (e) {
       console.error('Lỗi khi ghi nhật ký hoạt động kết quả:', e);
+      return null;
     }
   }
 
@@ -524,7 +532,8 @@ export class ResultService {
           `Lưu nháp kết quả phân tích mẻ chạy: ${sopName} (ID: ${requestId})`,
           requestId,
           sopId,
-          sopName
+          sopName,
+          { version: draft.version ?? legacyResult['version'] ?? 0 }
         );
       }
 
@@ -563,7 +572,8 @@ export class ResultService {
           `Khôi phục kết quả từ bản backup gần nhất: ${draft.sopName} (ID: ${requestId})`,
           requestId,
           draft.sopId || '',
-          draft.sopName || ''
+          draft.sopName || '',
+          { version: draft.version ?? 0 }
         );
 
         return { ...draft, ...restoredData, updatedAt: new Date().toISOString() } as any;
@@ -586,7 +596,8 @@ export class ResultService {
           `Khôi phục kết quả từ history v${latestHistory.version}: ${draft.sopName} (ID: ${requestId})`,
           requestId,
           draft.sopId || '',
-          draft.sopName || ''
+          draft.sopName || '',
+          { version: latestHistory.version }
         );
 
         return { ...draft, ...restoredData, updatedAt: new Date().toISOString() } as any;
@@ -695,7 +706,8 @@ export class ResultService {
           `Rollback kết quả về bản v${versionNumber}${displayName}: ${draft.sopName} (ID: ${requestId})`,
           requestId,
           draft.sopId || '',
-          draft.sopName || ''
+          draft.sopName || '',
+          { version: versionNumber, reportId, prefix }
         );
 
         return {
@@ -972,13 +984,17 @@ export class ResultService {
         ? (prefix === '' ? ' (Không tiền tố)' : ` (nhóm ${prefix})`)
         : ' (Tất cả mẫu)';
 
-      await this.logActivity(
+      const publishEventId = await this.logActivity(
         'PUBLISH_RESULT_REPORT',
         `Xuất bản báo cáo kết quả bản v${nextVersion}${displayName}: ${currentDraft.sopName} (ID: ${requestId})`,
         requestId,
         currentDraft.sopId || '',
-        currentDraft.sopName || ''
+        currentDraft.sopName || '',
+        { version: nextVersion, reportId: targetReportId, prefix: prefix ?? 'ALL' }
       );
+      if (publishEventId) {
+        await this.notificationCenter.dispatchActivityProjectionIfEnabled(publishEventId);
+      }
 
       this.toast.show(`Báo cáo PDF ${isPrefixReport ? (prefix === '' ? 'Không tiền tố' : 'nhóm ' + prefix) : 'chung'} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
       return {
@@ -1066,7 +1082,8 @@ export class ResultService {
         `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ draft sang completed (ID: ${requestId})`,
         requestId,
         draft.sopId || '',
-        draft.sopName || ''
+        draft.sopName || '',
+        { version: draft.version ?? 0 }
       );
       return true;
     } catch (error) {
@@ -1104,7 +1121,8 @@ export class ResultService {
         `Mở khóa chỉnh sửa mẻ chạy (chuẩn bị tăng phiên bản): ${currentDraft.sopName} (ID: ${requestId})`,
         requestId,
         currentDraft.sopId || '',
-        currentDraft.sopName || ''
+        currentDraft.sopName || '',
+        { version: currentDraft.version ?? 0 }
       );
 
       this.toast.show('Đã mở khóa kết quả mẻ chạy để chỉnh sửa!', 'success');
@@ -1254,13 +1272,17 @@ export class ResultService {
       
       await batch.commit();
 
-      await this.logActivity(
+      const resetEventId = await this.logActivity(
         'RESET_RESULT_DATA',
         `Reset toàn bộ dữ liệu kết quả mẻ chạy: ${currentDraft.sopName || reqData['sopName']} (ID: ${requestId})`,
         requestId,
         currentDraft.sopId || reqData['sopId'] || '',
-        currentDraft.sopName || reqData['sopName'] || ''
+        currentDraft.sopName || reqData['sopName'] || '',
+        { version: currentDraft.version ?? 0 }
       );
+      if (resetEventId) {
+        await this.notificationCenter.dispatchActivityProjectionIfEnabled(resetEventId);
+      }
 
       this.toast.show('Đã reset và xóa toàn bộ số liệu của mẻ chạy thành công!', 'success');
       return resetResult;
@@ -1322,5 +1344,3 @@ export class ResultService {
     }
   }
 }
-
-

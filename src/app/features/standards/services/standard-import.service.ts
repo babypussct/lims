@@ -13,6 +13,7 @@ import { ProgressService } from '../../../core/services/progress.service';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
+import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import {
   STANDARD_IMPORT_MAX_ATOMIC_WRITES,
@@ -53,6 +54,7 @@ export class StandardImportService {
   private crud = inject(StandardCrudService);
   private codeRegistry = inject(StandardCodeRegistryService);
   private progressService = inject(ProgressService);
+  private activityEvents = inject(ActivityEventService);
 
   // ─── Excel Date Parser ────────────────────────────────────────────────────────
   parseExcelDate(val: unknown): string {
@@ -287,7 +289,7 @@ export class StandardImportService {
 
     const newItemsCount = validItems.filter(item => item.mode === 'CREATE').length;
     const plannedWrites = countAtomicStandardImportWrites(validItems, new Set(existing.keys())) +
-      newItemsCount + autoReleaseOwners.size;
+      newItemsCount + autoReleaseOwners.size + 1;
     if (plannedWrites > STANDARD_IMPORT_MAX_ATOMIC_WRITES) {
       throw new Error(
         `Import cần ${plannedWrites} thao tác, vượt giới hạn an toàn ${STANDARD_IMPORT_MAX_ATOMIC_WRITES}. ` +
@@ -419,6 +421,22 @@ export class StandardImportService {
         actorName: importer?.displayName
       });
       batch.set(metadataUpdate.ref, metadataUpdate.data, { merge: true });
+      const activityRef = this.activityEvents.createRef();
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'IMPORT_STANDARDS',
+        details: `Import chuẩn: ${resultSummary || 'không có thay đổi dữ liệu mới'}.`,
+        targetType: 'STANDARD_IMPORT',
+        targetName: 'Import chất chuẩn đối chiếu',
+        metadata: {
+          count: validItems.length,
+          created,
+          updated,
+          skippedInvalid,
+          skippedLogs
+        }
+      });
+      this.activityEvents.setInBatch(batch, activityRef, activityEvent);
       this.progressService.update(validItems.length, 'Đang commit toàn bộ batch lên Firestore...');
       await batch.commit();
       this.progressService.update(validItems.length + 1, 'Đã commit thành công.');
@@ -575,6 +593,7 @@ export class StandardImportService {
         this.progressService.update(processed, `Đang xử lý ${logs.length} log của ${standard.name}`);
         const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
         for (let offset = 0; offset < logs.length; offset += 100) {
+          const activityRef = this.activityEvents.createRef();
           const chunk = logs.slice(offset, offset + 100).map(log => {
             const normalized = log.normalized_unit === standard.unit && Number.isFinite(log.normalized_amount)
               ? Number(log.normalized_amount)
@@ -650,6 +669,23 @@ export class StandardImportService {
                 { ...entry.log, lastUpdated: serverTimestamp() }
               );
             });
+
+            const activityEvent = this.activityEvents.build({
+              eventId: activityRef.id,
+              action: 'IMPORT_STANDARD_USAGE_LOGS',
+              details: `Import ${accepted.length} nhật ký sử dụng chuẩn: ${freshStandard.name}.`,
+              targetType: 'STANDARD',
+              targetId: stdId,
+              targetName: freshStandard.name,
+              metadata: {
+                standardId: stdId,
+                count: accepted.length,
+                oldValue: freshStandard.current_amount || 0,
+                newValue: Math.max(0, newAmount),
+                unit: freshStandard.unit
+              }
+            });
+            this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
           });
         }
       }

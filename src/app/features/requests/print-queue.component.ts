@@ -12,6 +12,7 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
 import { ToastService } from '../../core/services/toast.service';
 import { timestampToDate } from '../../shared/utils/timestamp';
+import { PrintQueueService } from '../../core/services/print-queue.service';
 
 @Component({
   selector: 'app-print-queue',
@@ -124,6 +125,7 @@ export class PrintQueueComponent implements OnInit {
   fb = inject(FirebaseService);
   toast = inject(ToastService);
   router = inject(Router);
+  queue = inject(PrintQueueService);
   
   isLoading = signal(true);
   isPrinting = signal(false);
@@ -131,8 +133,8 @@ export class PrintQueueComponent implements OnInit {
   formatDate = formatDate;
 
   ngOnInit() {
-      this.state.ensureActivityFeedListeners();
-      if (this.state.printableLogs().length > 0) {
+      this.queue.ensureListener();
+      if (this.queue.printableLogs().length > 0) {
           this.isLoading.set(false);
       } else {
           setTimeout(() => this.isLoading.set(false), 800);
@@ -140,11 +142,7 @@ export class PrintQueueComponent implements OnInit {
   }
 
   filteredLogs = computed(() => {
-      const all = this.state.printableLogs();
-      const user = this.auth.currentUser();
-      if (!user) return [];
-      if (user.role === 'manager') return all;
-      return all.filter(log => log.user === user.displayName);
+      return this.queue.printableLogs();
   });
 
   areAllSelected = computed(() => {
@@ -252,8 +250,7 @@ export class PrintQueueComponent implements OnInit {
   }
 
   async deleteSingle(log: Log) {
-    const sopName = log.sopBasicInfo?.name || log.printData?.sop.name || 'phiếu';
-    await this.state.deletePrintLog(log.id, sopName, log.printJobId);
+    await this.queue.remove(log);
   }
 
   editBatch(log: Log) {
@@ -269,7 +266,7 @@ export class PrintQueueComponent implements OnInit {
     const logsToDelete = this.filteredLogs().filter(log => ids.has(log.id));
     
     if (logsToDelete.length > 0) {
-        await this.state.deleteSelectedPrintLogs(logsToDelete);
+        await this.queue.removeMany(logsToDelete);
         this.selectedLogIds.set(new Set());
     }
   }

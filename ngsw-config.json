@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.24-b07",
-    "title": "Hoàn thiện Excel Viewer với Smart Fit, Ctrl+A theo vùng dữ liệu và điều hướng ổn định",
+    "version": "v26.08.25-b01",
+    "title": "Hoạt động và thông báo nhất quán hơn trong công việc phòng kiểm nghiệm",
     "features": [
-      "Ctrl+A trong Excel Viewer giờ chỉ chọn đúng vùng dữ liệu thực tế của sheet thay vì toàn bộ worksheet của Univer.",
-      "Smart Fit tự tính độ rộng cột, wrap text và chiều cao hàng cho mọi sheet để nội dung dài luôn hiển thị đầy đủ.",
-      "Chuyển sheet không còn xuất hiện hộp thoại quyền do các bước tinh chỉnh layout được hoàn tất trước khi khóa bản xem trước ở chế độ chỉ đọc.",
-      "Tinh gọn thanh công cụ Excel Viewer thành nhóm điều hướng và nhóm công cụ xem, giảm các thao tác định dạng không cần thiết trong bản xem trước chỉ đọc.",
-      "Bổ sung Smart Fit deterministic làm fallback cho cả sheet chưa render, sau đó dùng cơ chế auto-resize của Univer để tinh chỉnh khi skeleton đã sẵn sàng."
+      "Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.",
+      "Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.",
+      "Lịch sử in và báo cáo được giữ ổn định khi giao diện Hoạt động được nâng cấp.",
+      "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan.",
+      "Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý."
     ]
   },
   "assetGroups": [

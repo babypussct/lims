@@ -19,6 +19,8 @@ import { ToastService } from '../../../core/services/toast.service';
 import { generateSlug, sanitizeForFirebase } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
+import { NotificationEvent } from '../../../core/models/notification.model';
+import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { StandardTagCatalogService } from './standard-tag-catalog.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
 import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
@@ -46,6 +48,7 @@ export class StandardCrudService {
   private toast = inject(ToastService);
   private cache = inject(StandardCacheService);
   private notificationCenter = inject(NotificationCenterService);
+  private activityEvents = inject(ActivityEventService);
   private tagCatalog = inject(StandardTagCatalogService);
   private codeRegistry = inject(StandardCodeRegistryService);
 
@@ -213,6 +216,8 @@ export class StandardCrudService {
         has_pending_request: _pending,
         restock_requested: _restock,
         coa_requested_by: _coaRequester,
+        lastCoaNotificationEventId: _lastCoaNotificationEventId,
+        lastCoaRequestedByUid: _lastCoaRequestedByUid,
         lastUpdated: _lastUpdated,
         _isDeleted: _deleted,
         lifecycle_status: _lifecycleStatus,
@@ -496,6 +501,7 @@ export class StandardCrudService {
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền cập nhật tồn kho chuẩn.');
     if (!Number.isFinite(newAmount) || newAmount < 0) throw new Error('Tồn kho mới phải là số không âm.');
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+    const activityRef = this.activityEvents.createRef();
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
@@ -508,8 +514,22 @@ export class StandardCrudService {
         status: newAmount <= 0 ? 'DEPLETED' : 'AVAILABLE',
         lastUpdated: serverTimestamp()
       });
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'UPDATE_STOCK',
+        details: `Cập nhật tồn kho: ${newAmount} (${reason})`,
+        targetType: 'STANDARD',
+        targetId: stdId,
+        targetName: fresh.name,
+        metadata: {
+          oldValue: fresh.current_amount || 0,
+          newValue: newAmount,
+          unit: fresh.unit,
+          reason
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
-    await this.logGlobalActivity('UPDATE_STOCK', `Cập nhật tồn kho: ${newAmount} (${reason})`, stdId);
     await this.fb.updateMetadata('standards');
   }
 
@@ -688,15 +708,25 @@ export class StandardCrudService {
       throw new Error('Bạn không có quyền yêu cầu cập nhật CoA.');
     }
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+    const activityRef = this.activityEvents.createRef();
     await runTransaction(this.fb.db, async transaction => {
       const snap = await transaction.get(ref);
       if (!snap.exists()) throw new Error('Chuẩn không tồn tại.');
       if (snap.data()['certificate_ref']) throw new Error('Chuẩn đã có CoA.');
       if (snap.data()['coa_requested_by']) throw new Error('Yêu cầu CoA cho chuẩn này đã được gửi trước đó.');
       transaction.update(ref, { coa_requested_by: user.uid, lastUpdated: serverTimestamp() });
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'REQUEST_COA',
+        details: `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`,
+        targetType: 'STANDARD',
+        targetId: std.id,
+        targetName: std.name,
+        metadata: { lotNumber: std.lot_number || undefined }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
-    await this.logGlobalActivity('REQUEST_COA', `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`, std.id);
-    await this.notificationCenter.publish({
+    await this.notificationCenter.publishActivityProjection(activityRef.id, {
       recipientUid: 'role:admin',
       senderUid: user?.uid,
       senderName: user?.displayName || 'Người dùng',
@@ -724,41 +754,64 @@ export class StandardCrudService {
       .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard));
     if (freshStandards.length === 0) throw new Error('Các chuẩn cần cập nhật không còn tồn tại.');
 
+    const activityRef = this.activityEvents.createRef();
+    const requesterUids = [...new Set(freshStandards.map(item => item.coa_requested_by).filter(Boolean))] as string[];
     const batch = writeBatch(this.fb.db);
     freshStandards.forEach(standard => {
+      const coaRecipientContext = standard.coa_requested_by
+        ? {
+            lastCoaNotificationEventId: activityRef.id,
+            lastCoaRequestedByUid: standard.coa_requested_by
+          }
+        : {};
       batch.update(
         doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standard.id}`),
         {
           certificate_ref: certificateUrl,
           coa_requested_by: deleteField(),
+          ...coaRecipientContext,
           lastUpdated: serverTimestamp()
         }
       );
     });
+    const activityEvent = this.activityEvents.build({
+      eventId: activityRef.id,
+      action: 'UPLOAD_STANDARD_COA',
+      details: `Cập nhật CoA cho ${freshStandards.length} lô chuẩn: ${freshStandards[0].name}`,
+      targetType: 'STANDARD',
+      targetId: freshStandards[0].id,
+      targetName: freshStandards[0].name,
+      metadata: {
+        standardCount: freshStandards.length,
+        standardIds: freshStandards.map(item => item.id).slice(0, 50)
+      }
+    });
+    this.activityEvents.setInBatch(batch, activityRef, activityEvent);
     await batch.commit();
     await this.fb.updateMetadata('standards');
     this.cache.invalidateLocalStandardsCache();
 
     const admin = this.auth.currentUser();
-    const recipients = [...new Set(freshStandards.map(item => item.coa_requested_by).filter(Boolean))] as string[];
-    const coaEventId = `coa-upload:${freshStandards[0].id}:${encodeURIComponent(certificateUrl).slice(-160)}`;
-    await Promise.all(recipients.map(recipientUid => this.notificationCenter.publish({
-      eventId: coaEventId,
+    const legacyEventFor = (recipientUid: string): NotificationEvent => ({
+      eventId: activityRef.id,
       recipientUid,
       senderUid: admin?.uid,
       senderName: admin?.displayName || 'Quản trị viên',
-      type: 'SYSTEM_INFO',
+      type: 'SYSTEM_INFO' as const,
       title: 'Đã cập nhật CoA',
       message: `File CoA của chuẩn "${freshStandards[0].name}" đã được tải lên thành công.`,
       targetId: freshStandards[0].id,
       actionUrl: `/standards/${freshStandards[0].id}`,
       channels: ['inbox', 'push']
-    })));
-    await this.logGlobalActivity(
-      'UPLOAD_STANDARD_COA',
-      `Cập nhật CoA cho ${freshStandards.length} lô chuẩn: ${freshStandards[0].name}`,
-      freshStandards[0].id
-    );
+    });
+    if (requesterUids.length > 0) {
+      await this.notificationCenter.publishActivityProjection(activityRef.id, legacyEventFor(requesterUids[0]));
+      await Promise.all(requesterUids.slice(1).map(recipientUid =>
+        this.notificationCenter.publishLegacyIfActivityProjectionDisabled(legacyEventFor(recipientUid))
+      ));
+    } else {
+      await this.notificationCenter.dispatchActivityProjectionIfEnabled(activityRef.id);
+    }
   }
 
   private validateStandardAmounts(std: ReferenceStandard): void {
@@ -774,12 +827,13 @@ export class StandardCrudService {
 
   // ─── Global Activity Logging ──────────────────────────────────────────────────
   async logGlobalActivity(action: string, details: string, targetId?: string): Promise<void> {
-    const logRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
-    await setDoc(logRef, {
-      id: logRef.id, action, details,
-      timestamp: serverTimestamp(), lastUpdated: serverTimestamp(),
-      user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
-      targetId: targetId ?? null
+    const event = this.activityEvents.build({
+      action,
+      details,
+      targetType: 'STANDARD',
+      targetId,
+      metadata: targetId ? { standardId: targetId } : undefined
     });
+    await this.activityEvents.write(event);
   }
 }

@@ -42,6 +42,8 @@ export interface Request {
   approvedAt?: any;
   rejectedAt?: any;
   user?: string;
+  /** Stable owner/requester identity for notification and audit workflows. */
+  createdByUid?: string;
   inputs?: any;
   margin?: number;
   analysisDate?: string;

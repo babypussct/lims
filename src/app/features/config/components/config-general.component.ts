@@ -9,8 +9,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { CategoryItem, PrintConfig } from '../../../core/models/config.model';
 import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
-import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
-import { NotificationService } from '../../../core/services/notification.service';
+import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
@@ -88,7 +87,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   inventoryService = inject(InventoryService);
   standardService = inject(StandardService);
   router = inject(Router);
-  notificationService = inject(NotificationService);
   notificationCenter = inject(NotificationCenterService);
 
   versionControl = new FormControl('');
@@ -163,29 +161,9 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   async postSystemUpdate() {
       if (!this.newUpdateContent.trim()) return;
-      const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
-      const newRef = doc(updatesRef);
-
       const content = this.newUpdateContent.trim();
       const actionUrl = this.newUpdateActionUrl.trim();
-
-      await setDoc(newRef, {
-          content: content,
-          type: this.newUpdateType,
-          actionUrl: actionUrl,
-          timestamp: serverTimestamp()
-      });
-
-      // Gửi Broadcast (thông báo đẩy) tới tất cả user
-      await this.notificationCenter.publish({
-          recipientUid: 'role:all',
-          eventId: newRef.id,
-          type: 'SYSTEM_UPDATE',
-          title: 'Thông báo hệ thống',
-          message: content,
-          actionUrl: actionUrl,
-          channels: ['inbox', 'push']
-      });
+      await this.state.postSystemUpdate(content, this.newUpdateType, actionUrl);
 
       this.newUpdateContent = '';
       this.newUpdateActionUrl = '';

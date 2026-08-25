@@ -13,6 +13,9 @@ import { AppButtonComponent, AppPageHeaderComponent, AppToolbarComponent } from 
 import { timestampToDate, timestampToMillis } from '../../shared/utils/timestamp';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
+import { AuditLogService } from '../../core/services/audit-log.service';
+import { getActivityAuditActionLabel } from '../../core/activity/activity-feed.utils';
+import { isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
 
 interface NxtReportItem {
   id: string;
@@ -47,26 +50,14 @@ export class StatisticsComponent {
   statsService = inject(StatsService);
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
+  audit = inject(AuditLogService);
   formatDate = formatDate;
   formatNum = formatNum;
   cleanName = cleanName;
   getAvatarUrl = getAvatarUrl;
   
   getLogActionText(action: string): string {
-      if (action === 'SAVE_RESULT_DRAFT') return 'Lưu nháp kết quả';
-      if (action === 'PUBLISH_RESULT_REPORT') return 'Xuất bản báo cáo';
-      if (action === 'REVERT_RESULT_DRAFT') return 'Hủy xuất bản báo cáo';
-      if (action === 'RESET_RESULT_DATA') return 'Reset số liệu mẻ';
-      if (action === 'RESTORE_RESULT_BACKUP') return 'Khôi phục từ bản backup';
-      if (action === 'RESTORE_RESULT_VERSION') return 'Rollback phiên bản cũ';
-      if (action === 'DIRECT_APPROVE') return 'Duyệt & xếp hàng in';
-
-      if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'Yêu cầu mượn chuẩn';
-      if (action === 'APPROVE_STANDARD_REQUEST') return 'Duyệt mượn chuẩn';
-      if (action === 'REJECT_STANDARD_REQUEST') return 'Từ chối mượn chuẩn';
-      if (action === 'REPORT_RETURN_STANDARD') return 'Báo cáo trả chuẩn';
-      if (action === 'RETURN_STANDARD') return 'Nhận lại chuẩn';
-      if (action === 'ASSIGN_STANDARD') return 'Gán chuẩn cho mượn';
+      if (isRegisteredActivityAction(action)) return getActivityAuditActionLabel(action);
       
       if (action.includes('APPROVE')) return 'Duyệt yêu cầu'; 
       if (action.includes('STOCK_IN')) return 'Nhập kho';
@@ -605,7 +596,7 @@ export class StatisticsComponent {
 
 
   criticalLogs = computed(() => {
-    return this.state.logs().filter(l => 
+    return this.audit.logs().filter(l =>
         l.action.includes('DELETE') || 
         l.action.includes('HARD_DELETE') || 
         l.action.includes('REJECT') || 
@@ -685,7 +676,7 @@ export class StatisticsComponent {
 
   constructor() {
     this.state.ensureApprovedRequestsListener();
-    this.state.ensureActivityFeedListeners();
+    this.audit.ensureListener();
     // Load on-demand (listeners removed for Spark Free optimization)
     void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
 
@@ -805,7 +796,7 @@ export class StatisticsComponent {
           // correctly calculate futureNetChange (movements AFTER the period end).
           // We need logs beyond 'end' to subtract from current stock to get end-of-period stock.
           const maxNow = new Date(); maxNow.setHours(23,59,59,999);
-          const logs = await this.invService.getLogsByDateRange(start, maxNow);
+          const logs = await this.audit.getLogsByDateRange(start, maxNow);
           
           if (sopId === 'all') {
               const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
@@ -944,7 +935,7 @@ export class StatisticsComponent {
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
       const sopId = this.selectedSopId();
 
-      return this.state.logs().filter(log => {
+      return this.audit.logs().filter(log => {
           const d = timestampToDate(log.timestamp);
           if (!d) return false;
           const inDate = d >= start && d <= end;

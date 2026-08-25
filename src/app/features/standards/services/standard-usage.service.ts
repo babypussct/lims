@@ -14,6 +14,7 @@ import { normalizePositiveStandardAmount } from '../../../shared/utils/standard-
 import { isValidInternalId } from '../../../shared/utils/standard-internal-id';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
+import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 import { buildStandardBackfillRecords } from '../../../shared/utils/standard-backfill';
@@ -35,6 +36,7 @@ export class StandardUsageService {
   private deltaSync = inject(DeltaSyncService);
   private notificationCenter = inject(NotificationCenterService);
   private readMonitor = inject(FirestoreReadMonitor);
+  private activityEvents = inject(ActivityEventService);
 
   // ─── Listen to Global Usage Logs ─────────────────────────────────────────────
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
@@ -153,6 +155,7 @@ export class StandardUsageService {
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
     const newLogRef = doc(logsRef);
+    const activityRef = this.activityEvents.createRef();
 
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
@@ -203,6 +206,23 @@ export class StandardUsageService {
       transaction.set(newLogRef, log);
       const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
       transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
+
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'LOG_USAGE_STANDARD',
+        details: `Khai báo sử dụng ${log.amount_used}${usageUnit} chuẩn: ${stdData.name || stdId}`,
+        targetType: 'STANDARD',
+        targetId: stdId,
+        targetName: stdData.name,
+        metadata: {
+          usageLogId: newLogRef.id,
+          amount: amountToDeduct,
+          unit: stockUnit,
+          oldValue: currentAmount,
+          newValue: newAmount
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
   }
 
@@ -221,7 +241,7 @@ export class StandardUsageService {
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
     const newLogRef = doc(logsRef);
     const requestRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
-    const activityRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
+    const activityRef = this.activityEvents.createRef();
     const backfilledAt = Date.now();
     const enteredByName = currentUser.displayName || currentUser.email || currentUser.uid;
 
@@ -277,20 +297,29 @@ export class StandardUsageService {
         sanitizeForFirebase({ ...usageLog, lastUpdated: serverTimestamp() })
       );
       transaction.set(requestRef, sanitizeForFirebase({ ...request, lastUpdated: serverTimestamp() }));
-      transaction.set(activityRef, {
-        id: activityRef.id,
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
         action: 'BACKFILL_USAGE_LOG',
         details:
           `Nhập bù hồ sơ mượn đã hoàn thành: ${stdData.name} ` +
           `(Mã: ${stdData.internal_id || stdId}, Lô: ${stdData.lot_number || 'N/A'}) — ` +
           `${usageLog.amount_used}${usageLog.unit || ''} cho ${usageLog.user} ngày ${newLogDate}`,
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        user: enteredByName,
+        actorUid: currentUser.uid,
+        actorName: enteredByName,
+        targetType: 'STANDARD_REQUEST',
         targetId: requestRef.id,
-        module: 'STANDARDS',
-        status: 'COMPLETED'
+        targetName: stdData.name,
+        requestId: requestRef.id,
+        metadata: {
+          standardId: stdId,
+          analysisDate: newLogDate,
+          amount: usageLog.amount_used,
+          unit: usageLog.unit || '',
+          internalId: stdData.internal_id || undefined
+        },
+        legacyFields: { status: 'COMPLETED' }
       });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
   }
 
@@ -305,8 +334,10 @@ export class StandardUsageService {
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
     const newLogRef = doc(logsRef);
+    const activityRef = this.activityEvents.createRef();
+    const lowStockActivityRef = this.activityEvents.createRef();
 
-    await runTransaction(this.fb.db, async (transaction) => {
+    const lowStockContext = await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
       const reqDoc = await transaction.get(reqRef);
       if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
@@ -370,26 +401,73 @@ export class StandardUsageService {
         lastUsageLogId: newLogRef.id,
         updatedAt: Date.now(), lastUpdated: serverTimestamp()
       });
+
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'LOG_USAGE_STANDARD',
+        details: `Khai báo sử dụng ${amount}${unit} chuẩn: ${stdData.name || standardId}`,
+        targetType: 'STANDARD',
+        targetId: standardId,
+        targetName: stdData.name,
+        requestId,
+        metadata: {
+          usageLogId: newLogRef.id,
+          amount: amountToDeduct,
+          unit: stockUnit,
+          oldValue: stdData.current_amount || 0,
+          newValue: newAmount
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
+
+      const initialAmount = Number(stdData.initial_amount || 0);
+      const previousAmount = Number(stdData.current_amount || 0);
+      const threshold = initialAmount * 0.2;
+      const crossedLowStockThreshold = initialAmount > 0
+        && previousAmount > threshold
+        && newAmount > 0
+        && newAmount <= threshold;
+      if (crossedLowStockThreshold) {
+        const context = {
+          name: stdData.name || standardId,
+          current: newAmount,
+          unit: stockUnit
+        };
+        const lowStockEvent = this.activityEvents.build({
+          eventId: lowStockActivityRef.id,
+          action: 'STANDARD_LOW_STOCK',
+          details: `Tồn chất chuẩn xuống dưới 20%: ${stdData.name || standardId} còn ${formatNum(newAmount)} ${stockUnit}`,
+          targetType: 'STANDARD',
+          targetId: standardId,
+          targetName: stdData.name,
+          requestId,
+          metadata: {
+            thresholdPercent: 20,
+            thresholdAmount: threshold,
+            oldValue: previousAmount,
+            newValue: newAmount,
+            unit: stockUnit,
+            usageLogId: newLogRef.id
+          }
+        });
+        this.activityEvents.setInTransaction(transaction, lowStockActivityRef, lowStockEvent);
+        return context;
+      }
+      return null;
     });
 
-    await this.crud.logGlobalActivity('LOG_USAGE_STANDARD', `Khai báo sử dụng ${amount}${unit} chuẩn: ${standardId}`, requestId);
-
-    // Cảnh báo tồn kho thấp (< 20%)
-    const afterSnap = await getDoc(stdRef);
-    if (afterSnap.exists()) {
-      const s = afterSnap.data() as ReferenceStandard;
-      const initial = s.initial_amount || 0;
-      const current = s.current_amount || 0;
-      if (current > 0 && current <= initial * 0.2) {
-        await this.notificationCenter.publish({
-          eventId: `standard-usage:${newLogRef.id}:stock-low`,
-          recipientUid: 'role:admin', senderUid: 'system', senderName: 'Hệ thống LIMS',
-          type: 'STOCK_LOW_ALERT', title: 'Cảnh báo tồn kho thấp',
-          message: `Lô chuẩn ${s.name} chỉ còn ${formatNum(current)} ${s.unit} (dưới 20%). Vui lòng cân nhắc đặt mua thêm.`,
-          targetId: standardId, actionUrl: `/standards/${standardId}`,
-          channels: ['inbox', 'push']
-        });
-      }
+    if (lowStockContext) {
+      await this.notificationCenter.publishActivityProjection(lowStockActivityRef.id, {
+        recipientUid: 'role:admin',
+        senderUid: currentUser.uid,
+        senderName: currentUser.displayName || currentUser.email || 'Người dùng',
+        type: 'STOCK_LOW_ALERT',
+        title: 'Cảnh báo tồn kho thấp',
+        message: `Lô chuẩn ${lowStockContext.name} chỉ còn ${formatNum(lowStockContext.current)} ${lowStockContext.unit} (dưới 20%). Vui lòng cân nhắc đặt mua thêm.`,
+        targetId: standardId,
+        actionUrl: `/standards/${standardId}`,
+        channels: ['inbox', 'push']
+      });
     }
   }
 
@@ -402,6 +480,7 @@ export class StandardUsageService {
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${logId}`);
     const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
+    const activityRef = this.activityEvents.createRef();
 
     let didRollback = false;
     await runTransaction(this.fb.db, async (transaction) => {
@@ -471,12 +550,24 @@ export class StandardUsageService {
       } else {
         transaction.set(globalLogRef, { ...logData, ...rollbackFields });
       }
+
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: 'DELETE_USAGE_LOG',
+        details: `Rollback nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`,
+        targetType: 'STANDARD',
+        targetId: stdId,
+        targetName: stdData?.name || logData.standardName,
+        requestId: effectiveRequestId,
+        metadata: {
+          usageLogId: logId,
+          amount: logData.normalized_amount ?? logData.amount_used,
+          unit: logData.normalized_unit || logData.unit
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
       didRollback = true;
     });
-
-    if (didRollback) {
-      await this.crud.logGlobalActivity('DELETE_USAGE_LOG', `Rollback nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`, logId);
-    }
   }
 
   async queryUsageLogsBeforeTimestamp(

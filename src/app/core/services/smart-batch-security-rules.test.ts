@@ -83,10 +83,12 @@ test('result details require an operational role to write', () => {
   assert.doesNotMatch(block, /allow read, write:\s*if isSignedIn\(\)/);
 });
 
-test('audit log creation validates permission, actor identity and server timestamp', () => {
+test('activity log creation validates V2 classification, actor identity and server timestamp', () => {
   const block = rules.slice(rules.indexOf('match /artifacts/{appId}/logs/{logId}'));
-  assert.match(block, /allow create:\s*if canCreateAuditLog\(appId\) && validAuditLogCreate/);
-  assert.match(rules, /isCurrentActorName\(appId, data\.get\('user', ''\)\)/);
+  assert.match(block, /allow create:\s*if canCreateAuditLog\(appId\) &&\s*validCanonicalActivityCreate/);
+  assert.match(rules, /data\.get\('actorUid', ''\) == request\.auth\.uid/);
+  assert.match(rules, /isCurrentActorName\(appId, actorName\)/);
+  assert.match(rules, /validActivityClassification\(data\)/);
   assert.match(rules, /data\.timestamp == request\.time/);
 });
 
@@ -96,8 +98,10 @@ test('an unselected matrix remains any and the obsolete parent split filter stay
   assert.match(smartBatchSource, /createEmptyBlock\(`Nhóm mẫu #\$\{b\.length \+ 1\}`\)/);
 });
 
-test('print queue selects the global or personal log listener through the permission-aware state helper', () => {
-  assert.match(printQueueSource, /this\.state\.ensureActivityFeedListeners\(\)/);
+test('print queue owns its independent listener instead of consuming Activity Feed state', () => {
+  assert.match(printQueueSource, /this\.queue\.ensureListener\(\)/);
+  assert.match(printQueueSource, /this\.queue\.printableLogs\(\)/);
+  assert.doesNotMatch(printQueueSource, /this\.state\.ensureActivityFeedListeners\(\)/);
   assert.doesNotMatch(printQueueSource, /this\.state\.ensureLogsListener\(\)/);
 });
 

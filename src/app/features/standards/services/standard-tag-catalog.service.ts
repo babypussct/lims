@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { StateService } from '../../../core/services/state.service';
 import { TargetService } from '../../targets/target.service';
 import { Sop, TargetGroup } from '../../../core/models/sop.model';
@@ -54,6 +55,7 @@ export interface AccreditationMethodImportPreview {
 export class StandardTagCatalogService {
   private readonly fb = inject(FirebaseService);
   private readonly auth = inject(AuthService);
+  private readonly activityEvents = inject(ActivityEventService);
   private readonly state = inject(StateService);
   private readonly targetService = inject(TargetService);
 
@@ -533,16 +535,13 @@ export class StandardTagCatalogService {
 
   private async logActivity(action: string, details: string, targetId?: string): Promise<void> {
     try {
-      const ref = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
-      await setDoc(ref, {
-        id: ref.id,
+      const event = this.activityEvents.build({
         action,
         details,
-        targetId: targetId || null,
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        user: this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || this.auth.currentUser()?.uid || 'Hệ thống',
+        targetType: 'STANDARD_TAG',
+        targetId
       });
+      await this.activityEvents.write(event);
     } catch (error) {
       console.warn('[StandardTagCatalogService] Activity log failed:', error);
     }

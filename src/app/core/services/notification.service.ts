@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
+import { syncAppBadge } from './notification-badge';
 
 // Notifications older than 15 days are auto-cleaned up on listener start
 const CLEANUP_AGE_MS = 15 * 24 * 60 * 60 * 1000;
@@ -75,6 +76,21 @@ export class NotificationService {
             appId: this.fb.APP_ID,
             notification,
             sendPush: options.sendPush !== false
+        });
+    }
+
+    /**
+     * Server-authoritative projection of an already committed canonical event.
+     * The client supplies only eventId; policy, recipients and deep-link are
+     * resolved by /api/notifications from the stored Activity event.
+     */
+    async dispatchEvent(eventId: string): Promise<Record<string, unknown>> {
+        const normalized = eventId.trim();
+        if (!normalized || normalized.includes('/')) throw new Error('eventId không hợp lệ.');
+        return this.callNotificationApi({
+            action: 'dispatchEvent',
+            appId: this.fb.APP_ID,
+            eventId: normalized
         });
     }
 
@@ -194,17 +210,9 @@ export class NotificationService {
 
     // ── App Badge API ─────────────────────────────────────────────────────────
     private updateAppBadge(count: number) {
-        if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
-            try {
-                if (count > 0) {
-                    (navigator as any).setAppBadge(count);
-                } else {
-                    (navigator as any).clearAppBadge();
-                }
-            } catch (e) {
-                console.warn('[NotificationService] Failed to update app badge', e);
-            }
-        }
+        if (typeof navigator === 'undefined') return;
+        void syncAppBadge(navigator, count)
+            .catch(e => console.warn('[NotificationService] Failed to update app badge', e));
     }
 
     // ── Read / Delete ─────────────────────────────────────────────────────────

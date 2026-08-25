@@ -29,6 +29,8 @@ import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
 import { getCanonicalId } from '../../features/results/shared/compound-id-resolver';
 import { resolveMetadataSyncToast } from './notification-policy';
+import { ActivityEventService } from './activity-event.service';
+import { NotificationService } from './notification.service';
 import { getDashboardActivityDataScope } from '../../shared/utils/dashboard-activity';
 
 export interface DirectBatchPlanItem {
@@ -61,6 +63,8 @@ export class StateService implements OnDestroy {
   private statsService = inject(StatsService);
   private readMonitor = inject(FirestoreReadMonitor);
   private dailyChecklistMaterializer = inject(DailyChecklistMaterializerService);
+  private activityEvents = inject(ActivityEventService);
+  private notificationInbox = inject(NotificationService);
 
   private listeners: Unsubscribe[] = [];
   private initGeneration = 0;
@@ -137,11 +141,17 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.24-b07');
+  systemVersion = signal<string>('v26.08.25-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
   showLockedFeatures = signal<boolean>(false);
+  /**
+   * Rollout switch for Dashboard Activity Feed V2. Fail-closed/off by default;
+   * production can only opt in through config/system after indexes + Rules are ready.
+   */
+  activityFeedV2 = signal<boolean>(false);
+  notificationEventSyncV2 = signal<boolean>(false);
   private sysConfigSub?: Unsubscribe;
 
   selectedSop = signal<Sop | null>(null);
@@ -556,9 +566,53 @@ export class StateService implements OnDestroy {
   }
 
   ensureLogsListener(): void {
-    if (this.logsSub || !this.auth.currentUser() || !this.auth.canViewReports()) return;
+    const currentUser = this.auth.currentUser();
+    if (this.logsSub || !currentUser || !this.auth.canViewReports()) return;
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
+
+    // Security cutover: report_view is BUSINESS-audit only. A non-manager
+    // query must carry the auditClass predicate so Firestore Rules can prove
+    // that a SYSTEM event can never enter this compatibility stream.
+    if (currentUser.role !== 'manager') {
+      this.clearGlobalActivityLogCache();
+      const logsPath = `artifacts/${this.fb.APP_ID}/logs`;
+      let isFirstSnapshot = true;
+      const logSub = onSnapshot(
+        query(
+          collection(this.fb.db, logsPath),
+          where('auditClass', '==', 'BUSINESS'),
+          orderBy('timestamp', 'desc'),
+          limit(200)
+        ),
+        snapshot => {
+          this.readMonitor.record(
+            'onSnapshot',
+            logsPath,
+            isFirstSnapshot
+              ? snapshot.size
+              : snapshot.docChanges().filter(change => change.type !== 'removed').length,
+            { phase: isFirstSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
+          );
+          isFirstSnapshot = false;
+          if (!isCurrentInit()) return;
+          this.globalLogsCache = snapshot.docs.map(logDoc => ({
+            id: logDoc.id,
+            ...logDoc.data()
+          } as Log));
+          this.publishActivityLogs();
+        }, error => {
+          if (!isCurrentInit()) return;
+          console.warn('Business audit compatibility listener error:', error.message);
+        }
+      );
+      this.logsSub = () => {
+        logSub();
+        this.logsSub = undefined;
+      };
+      this.listeners.push(this.logsSub);
+      return;
+    }
 
     const logsSyncConfig: DeltaSyncConfig = {
       cacheKey: buildScopedDeltaKey(`lims_logs_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
@@ -910,6 +964,20 @@ export class StateService implements OnDestroy {
     this.ensureUserInfoCacheListener();
   }
 
+  /**
+   * Compatibility reader is suspended while Dashboard V2 is active so the
+   * rollout does not pay for both legacy and audience-scoped listeners.
+   * DeltaSync's persisted cache is intentionally retained for instant rollback.
+   */
+  suspendLegacyActivityFeedListeners(): void {
+    if (this.logsSub) this.logsSub();
+    if (this.personalLogsSub) this.personalLogsSub();
+    this.globalLogsCache = [];
+    this.personalLogsCache = [];
+    this.logs.set([]);
+    this.printableLogs.set([]);
+  }
+
   // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
   private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
   private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
@@ -942,6 +1010,8 @@ export class StateService implements OnDestroy {
             if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
             if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
             if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
+            this.activityFeedV2.set(d['activityFeedV2'] === true);
+            this.notificationEventSyncV2.set(d['notificationEventSyncV2'] === true);
             this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
           }
         });
@@ -978,6 +1048,8 @@ export class StateService implements OnDestroy {
         if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
         if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
         if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
+        this.activityFeedV2.set(d['activityFeedV2'] === true);
+        this.notificationEventSyncV2.set(d['notificationEventSyncV2'] === true);
         this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
       }
 
@@ -1006,6 +1078,8 @@ export class StateService implements OnDestroy {
       if (cache.system?.['maintenanceMode'] !== undefined) this.maintenanceMode.set(cache.system['maintenanceMode']);
       if (cache.system?.['maintenanceMessage']) this.maintenanceMessage.set(cache.system['maintenanceMessage']);
       if (cache.system?.['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(cache.system['showLockedFeatures']);
+      this.activityFeedV2.set(cache.system?.['activityFeedV2'] === true);
+      this.notificationEventSyncV2.set(cache.system?.['notificationEventSyncV2'] === true);
       this.maintenanceScheduledTime.set(cache.system?.['maintenanceScheduledTime'] || null);
       return true;
     } catch (_) { return false; /* ignore stale/corrupt cache */ }
@@ -1217,19 +1291,86 @@ export class StateService implements OnDestroy {
     await this.loadConfig();
   }
 
+  async postSystemUpdate(content: string, updateType: string, actionUrl: string): Promise<string> {
+    const currentUser = this.auth.currentUser();
+    if (!currentUser || currentUser.role !== 'manager') {
+      throw new Error('Chỉ quản trị viên được đăng thông báo hệ thống.');
+    }
+    const normalizedContent = content.trim();
+    if (!normalizedContent) throw new Error('Nội dung thông báo hệ thống không được để trống.');
+    const normalizedActionUrl = actionUrl.trim();
+    const safeActionUrl = normalizedActionUrl.startsWith('/') && !normalizedActionUrl.startsWith('//')
+      ? normalizedActionUrl
+      : '';
+
+    const updateRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`));
+    const activityRef = this.activityEvents.createRef(updateRef.id);
+    const batch = writeBatch(this.fb.db);
+    batch.set(updateRef, {
+      content: normalizedContent,
+      type: updateType,
+      actionUrl: safeActionUrl,
+      timestamp: serverTimestamp()
+    });
+    const activityEvent = this.activityEvents.build({
+      eventId: activityRef.id,
+      action: 'POST_SYSTEM_UPDATE',
+      details: normalizedContent,
+      targetType: 'SYSTEM_UPDATE',
+      targetId: updateRef.id,
+      targetName: 'Thông báo hệ thống',
+      actionUrl: safeActionUrl || '/config',
+      metadata: { updateType }
+    });
+    this.activityEvents.setInBatch(batch, activityRef, activityEvent);
+    await batch.commit();
+
+    if (this.notificationEventSyncV2()) {
+      await this.dispatchActivityNotificationIfEnabled(activityRef.id);
+    } else {
+      await this.notificationInbox.notify({
+        recipientUid: 'role:all',
+        senderUid: currentUser.uid,
+        senderName: currentUser.displayName || 'Quản trị viên',
+        type: 'SYSTEM_UPDATE',
+        level: 'info',
+        title: 'Thông báo hệ thống',
+        message: normalizedContent,
+        actionUrl: safeActionUrl,
+        groupId: activityRef.id,
+        eventId: activityRef.id
+      });
+    }
+    return updateRef.id;
+  }
+
   async logMaintenanceActivity(action: string, details: string) {
     try {
-      const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-      await setDoc(logRef, {
+      const event = this.activityEvents.build({
         action,
         details,
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        user: this.getCurrentUserName(),
         printable: false
       });
+      await this.activityEvents.write(event);
+      if (action === 'MAINTENANCE_ON' || action === 'MAINTENANCE_OFF') {
+        await this.dispatchActivityNotificationIfEnabled(event.eventId);
+      }
     } catch (e) {
       console.warn("Failed to write maintenance audit log:", e);
+    }
+  }
+
+  private async dispatchActivityNotificationIfEnabled(eventId: string): Promise<void> {
+    if (!this.notificationEventSyncV2()) return;
+    try {
+      await this.notificationInbox.dispatchEvent(eventId);
+    } catch (error) {
+      console.warn('[StateService] Canonical notification dispatch failed:', error);
+      this.toast.showEvent({
+        message: 'Tác vụ đã hoàn thành nhưng chưa thể đồng bộ thông báo từ Activity event.',
+        type: 'warning',
+        dedupeKey: `notification-dispatch-error:${eventId}`
+      });
     }
   }
 
@@ -1383,6 +1524,7 @@ export class StateService implements OnDestroy {
         timestamp: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         user: this.getCurrentUserName(),
+        createdByUid: this.auth.currentUser()?.uid || '',
         inputs: formInputs,
         margin: formInputs.safetyMargin || 0,
         analysisDate: formInputs.analysisDate,
@@ -1450,6 +1592,7 @@ export class StateService implements OnDestroy {
           lastUpdated: serverTimestamp(),
           approvedAt: serverTimestamp(),
           user: this.getCurrentUserName(),
+          createdByUid: this.auth.currentUser()?.uid || '',
           inputs: formInputs,
           margin: formInputs.safetyMargin || 0,
           analysisDate: formInputs.analysisDate,
@@ -1484,22 +1627,29 @@ export class StateService implements OnDestroy {
           createdByUid: this.auth.currentUser()?.uid || ''
         });
 
-        transaction.set(logRef, sanitizeForFirebase({
+        const activityEvent = this.activityEvents.build({
+          eventId: logRef.id,
           action: 'DIRECT_APPROVE',
           details: `Duyệt trực tiếp và đưa vào hàng đợi in SOP: ${sop.name}`,
-          timestamp: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
-          user: this.getCurrentUserName(),
+          targetType: 'REQUEST',
+          targetId: reqRef.id,
+          targetName: sop.name,
+          requestId: reqRef.id,
           printable: true,
           printJobId: printJobRef.id,
-          requestId: reqRef.id,
-          sopBasicInfo: {
-            name: sop.name,
-            category: sop.category,
-            ref: sop.ref
+          publicTraceable: true,
+          metadata: { sopId: sop.id, analysisDate: formInputs.analysisDate },
+          legacyFields: {
+            sopBasicInfo: {
+              name: sop.name,
+              category: sop.category,
+              ref: sop.ref
+            }
           }
-        }));
+        });
+        this.activityEvents.setInTransaction(transaction, logRef, activityEvent);
       });
+      await this.dispatchActivityNotificationIfEnabled(logRef.id);
       if (dailyProjection) {
         await this.dailyChecklistMaterializer.materializeRequestBestEffort(
           dailyProjection,
@@ -1611,6 +1761,7 @@ export class StateService implements OnDestroy {
           lastUpdated: serverTimestamp(),
           approvedAt: serverTimestamp(),
           user: this.getCurrentUserName(),
+          createdByUid: this.auth.currentUser()?.uid || '',
           inputs: item.formInputs,
           margin: item.formInputs.safetyMargin || 0,
           analysisDate: item.formInputs.analysisDate,
@@ -1686,22 +1837,32 @@ export class StateService implements OnDestroy {
             createdByUid: this.auth.currentUser()?.uid || ''
           });
 
-          transaction.set(item.logRef, sanitizeForFirebase({
+          const activityEvent = this.activityEvents.build({
+            eventId: item.logRef.id,
             action: 'DIRECT_APPROVE_PLAN',
             details: `Duyệt kế hoạch SmartBatch, SOP: ${item.sop.name}`,
-            timestamp: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-            user: this.getCurrentUserName(),
+            targetType: 'REQUEST',
+            targetId: item.requestRef.id,
+            targetName: item.sop.name,
+            requestId: item.requestRef.id,
             printable: true,
             printJobId: item.printJobRef.id,
-            requestId: item.requestRef.id,
-            planId: `PLAN-${planTimestamp}`,
-            sopBasicInfo: {
-              name: item.sop.name,
-              category: item.sop.category,
-              ref: item.sop.ref
+            publicTraceable: true,
+            metadata: {
+              sopId: item.sop.id,
+              analysisDate: item.formInputs.analysisDate,
+              planId: `PLAN-${planTimestamp}`
+            },
+            legacyFields: {
+              planId: `PLAN-${planTimestamp}`,
+              sopBasicInfo: {
+                name: item.sop.name,
+                category: item.sop.category,
+                ref: item.sop.ref
+              }
             }
-          }));
+          });
+          this.activityEvents.setInTransaction(transaction, item.logRef, activityEvent);
         });
       });
       await this.dailyChecklistMaterializer.materializeRequestsBestEffort(
@@ -1735,6 +1896,7 @@ export class StateService implements OnDestroy {
     }
     if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
     const currentSop = this.sops().find(sop => sop.id === req.sopId);
+    const activityRef = this.activityEvents.createRef(`TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
 
     try {
       const targetScopeSnapshots = await this.buildLegacyTargetScopeTraceability(req, currentSop);
@@ -1781,9 +1943,6 @@ export class StateService implements OnDestroy {
           } : {})
         });
         const sop = currentSop;
-
-        const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
 
         if (sop && req.inputs) {
           const calcService = this.injector.get(CalculatorService);
@@ -1832,27 +1991,44 @@ export class StateService implements OnDestroy {
             createdByUid: this.auth.currentUser()?.uid || ''
           });
 
-          transaction.set(logRef, sanitizeForFirebase({
+          const activityEvent = this.activityEvents.build({
+            eventId: activityRef.id,
             action: 'APPROVE_REQUEST',
             details: `Duyệt yêu cầu: ${req.sopName}`,
-            timestamp: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-            user: this.getCurrentUserName(),
+            targetType: 'REQUEST',
+            targetId: req.id,
+            targetName: req.sopName,
+            requestId: req.id,
             printable: true,
             printJobId: printJobRef.id,
-            requestId: req.id,
-            sopBasicInfo: {
-              name: sop.name,
-              category: sop.category,
-              ref: sop.ref
+            publicTraceable: true,
+            metadata: { sopId: req.sopId, analysisDate: req.analysisDate },
+            legacyFields: {
+              sopBasicInfo: {
+                name: sop.name,
+                category: sop.category,
+                ref: sop.ref
+              }
             }
-          }));
+          });
+          this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
         } else {
-          transaction.set(logRef, sanitizeForFirebase({
-            action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), lastUpdated: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
-          }));
+          const activityEvent = this.activityEvents.build({
+            eventId: activityRef.id,
+            action: 'APPROVE_REQUEST',
+            details: `Duyệt yêu cầu: ${req.sopName}`,
+            targetType: 'REQUEST',
+            targetId: req.id,
+            targetName: req.sopName,
+            requestId: req.id,
+            printable: false,
+            publicTraceable: true,
+            metadata: { sopId: req.sopId, analysisDate: req.analysisDate }
+          });
+          this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
         }
       });
+      await this.dispatchActivityNotificationIfEnabled(activityRef.id);
       await this.dailyChecklistMaterializer.materializeRequestBestEffort(
         approvedProjection,
         'approveRequest'
@@ -1870,6 +2046,7 @@ export class StateService implements OnDestroy {
 
   async revokeApproval(req: Request, targetStatus: 'pending' | 'rejected' = 'pending') {
     if (!this.auth.canApprove()) return;
+    const activityRef = this.activityEvents.createRef();
 
     try {
       await runTransaction(this.fb.db, async (transaction) => {
@@ -1890,18 +2067,21 @@ export class StateService implements OnDestroy {
           updates.rejectedAt = serverTimestamp();
         }
         transaction.update(reqRef, updates);
-        const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
-        transaction.set(logRef, sanitizeForFirebase({
+        const activityEvent = this.activityEvents.build({
+          eventId: activityRef.id,
           action: targetStatus === 'rejected' ? 'REVOKE_AND_REJECT' : 'REVOKE_APPROVE',
           details: `${actionText}: ${req.sopName}`,
-          timestamp: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
-          user: this.getCurrentUserName(),
+          targetType: 'REQUEST',
+          targetId: req.id,
+          targetName: req.sopName,
+          requestId: req.id,
           printable: false,
-          requestId: req.id
-        }));
+          metadata: { sopId: req.sopId, newStatus: targetStatus }
+        });
+        this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
       });
+      await this.dispatchActivityNotificationIfEnabled(activityRef.id);
       await this.dailyChecklistMaterializer.deleteEntryBestEffort(
         req.analysisDate,
         req.id,
@@ -2055,23 +2235,29 @@ export class StateService implements OnDestroy {
           createdByUid: this.auth.currentUser()?.uid || ''
         });
 
-        transaction.set(logRef, sanitizeForFirebase({
+        const activityEvent = this.activityEvents.build({
+          eventId: logRef.id,
           action: 'EDIT_REQUEST',
           details: `Chỉnh sửa phiếu: ${req.sopName}`,
-          timestamp: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
-          user: this.getCurrentUserName(),
-          diff: editDiff,
+          targetType: 'REQUEST',
+          targetId: req.id,
+          targetName: req.sopName,
+          requestId: req.id,
           printable: true,
           printJobId: printJobRef.id,
-          requestId: req.id,
-          supersedesLogIds: previousPrintableLogDocs.map(d => d.id),
-          sopBasicInfo: {
-            name: sop.name,
-            category: sop.category,
-            ref: sop.ref
+          publicTraceable: true,
+          metadata: { sopId: req.sopId, analysisDate: formInputs.analysisDate },
+          legacyFields: {
+            diff: editDiff,
+            supersedesLogIds: previousPrintableLogDocs.map(d => d.id),
+            sopBasicInfo: {
+              name: sop.name,
+              category: sop.category,
+              ref: sop.ref
+            }
           }
-        }));
+        });
+        this.activityEvents.setInTransaction(transaction, logRef, activityEvent);
       });
       await this.dailyChecklistMaterializer.syncRequestBestEffort(
         updatedProjection,

@@ -35,13 +35,13 @@ Trình tự release chuẩn:
 4. Review `git status`, `git diff --check` và diff thực tế. Chỉ stage đúng phạm vi release cần phát hành.
 5. Commit release. Sau commit, chạy `npm run release:prepush`; gate sẽ chặn khi working tree còn dirty, có conflict, branch local đang behind remote hoặc tracking ref đã stale.
 6. Push commit. `main` và pull request vào `main` còn được GitHub Release Gate chạy lại `release:verify`; Node lấy từ `.nvmrc`, còn npm được đọc trực tiếp từ `package.json.packageManager` để không tồn tại bản version thứ hai trong CI.
-7. Trước production deploy, chạy `npm run release:predeploy`. Gate chỉ pass khi đang ở `main`, working tree sạch, local HEAD không ahead/behind upstream và SHA local trùng HEAD thực tế trên remote.
-8. Nếu release có thay đổi Firestore Rules, chạy `npm run deploy:rules` trước frontend và lưu bằng chứng CLI thành công.
-9. Deploy frontend production bằng `npm run deploy:prod`, sau đó smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
+7. Sau khi push `main`, Vercel Git Integration tự động build và deploy production từ commit vừa được đẩy lên GitHub. Không chạy `npm run release:predeploy`, `npm run deploy:prod` hoặc `npx vercel --prod` trong quy trình frontend chuẩn.
+8. Nếu release có thay đổi Firestore Rules, chạy `npm run deploy:rules` sau khi commit đã được push và lưu bằng chứng CLI thành công. Lệnh này tự chạy `release:predeploy` để xác nhận SHA local/remote trước khi deploy Rules.
+9. Theo dõi deployment Vercel gắn với đúng Git SHA; khi deployment sẵn sàng, smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
 
 Không deploy production trực tiếp từ working tree chưa commit hoặc commit chưa push. Quy tắc này bảo đảm mỗi deployment luôn truy ngược được về đúng một Git SHA, giúp audit và rollback không phụ thuộc trạng thái máy phát hành.
 
-Nếu Vercel project đang bật Git Integration tự deploy `main`, không chạy thêm `npm run deploy:prod` cho cùng commit; dùng deployment được tạo từ Git SHA đó và thực hiện smoke test như bình thường để tránh tạo hai production deployment cho một release.
+Project Vercel của ứng dụng dùng Git Integration để tự deploy `main`. `npm run deploy:prod` được giữ lại như lệnh fallback/manual khi có yêu cầu rõ ràng, không phải bước mặc định của release.
 
 Nếu chỉ chuẩn hóa template hoặc bảo trì lịch sử cũ mà không phát hành code mới, không phát sinh version mới; dùng `npm run sync-release-history` rồi `node scripts/build-changelog-md.js` để tái tạo dữ liệu và Markdown.
 
@@ -51,7 +51,7 @@ Không đưa credential, token, dữ liệu production hoặc mô tả kỹ thu�
 
 ## Trạng thái trước triển khai
 
-Không lưu trạng thái pass/fail của một release cụ thể trong tài liệu quy trình này vì thông tin đó nhanh chóng lỗi thời. Bằng chứng phát hành phải lấy từ output của `release:verify`, GitHub Release Gate và CLI deploy của chính commit đang phát hành.
+Không lưu trạng thái pass/fail của một release cụ thể trong tài liệu quy trình này vì thông tin đó nhanh chóng lỗi thời. Bằng chứng phát hành phải lấy từ output của `release:verify`, GitHub Release Gate và trạng thái deployment Vercel gắn với chính Git SHA đang phát hành; với Firestore Rules thì dùng output CLI của lệnh deploy Rules.
 
 ## 1. Chuẩn bị
 
@@ -59,7 +59,7 @@ Yêu cầu:
 
 - Node.js theo `.nvmrc`/`package.json` và npm theo `packageManager` trong `package.json`. `npm run verify:runtime` sẽ chặn release nếu ba nguồn này lệch nhau hoặc runtime máy phát hành không đúng policy.
 - Quyền deploy Firebase project `lims-cloud-by-otada`.
-- Quyền deploy Vercel project của ứng dụng.
+- Quyền xem project/deployment Vercel để xác nhận trạng thái và smoke test; không cần Vercel CLI để deploy frontend theo quy trình chuẩn.
 - Firebase service account được lưu ở vị trí bảo mật và không commit vào Git.
 
 Tại thư mục repository:
@@ -89,13 +89,7 @@ npm run release:prepush
 git push
 ```
 
-Sau push và trước deploy:
-
-```powershell
-npm run release:predeploy
-```
-
-Nếu remote thay đổi sau lần fetch gần nhất, gate sẽ dừng và yêu cầu đồng bộ Git trước khi tiếp tục.
+Sau push, frontend được Vercel Git Integration tự động build/deploy từ GitHub. Không cần chạy thêm gate `release:predeploy` cho frontend. Gate này chỉ còn được dùng bởi các lệnh triển khai hạ tầng/manual có yêu cầu xác nhận SHA local/remote, ví dụ `npm run deploy:rules`.
 
 ## 3. Đăng nhập công cụ triển khai
 
@@ -106,17 +100,7 @@ npx firebase-tools login
 npx firebase-tools use lims-cloud-by-otada
 ```
 
-Vercel:
-
-```powershell
-npx vercel whoami
-```
-
-Nếu chưa đăng nhập:
-
-```powershell
-npx vercel login
-```
+Không cần đăng nhập Vercel CLI cho frontend release chuẩn vì deployment được kích hoạt từ GitHub. Chỉ cần đăng nhập Vercel CLI khi thực hiện một thao tác manual/fallback được yêu cầu riêng.
 
 ## 4. Deploy Firestore rules
 
@@ -132,20 +116,18 @@ Deploy rules sau khi commit đã được push:
 npm run deploy:rules
 ```
 
-Xác nhận lệnh hoàn tất thành công trước khi deploy frontend.
+Xác nhận lệnh hoàn tất thành công và deployment Vercel của cùng release đã sẵn sàng trước khi thực hiện các bước backfill hoặc xác minh production phụ thuộc Rules mới.
 
-## 5. Deploy hotfix Vercel trước khi backfill
+## 5. Xác nhận Vercel auto-deploy trước khi backfill
 
-```powershell
-npm run deploy:prod
-```
+Sau khi commit release được push lên `main`, chờ deployment Vercel tương ứng với đúng Git SHA hoàn tất. Không chạy thêm `npm run deploy:prod` cho cùng commit.
 
-Vercel sử dụng:
+Vercel Git Integration sử dụng:
 
 - Build command: `npx ng build --configuration=production --no-progress`
 - Output directory: `dist/lims-cloud-pro/browser`
 
-Chỉ chấp nhận deployment khi Angular build hoàn tất không lỗi. Hotfix này phải lên trước backfill để document Daily Checklist bị thiếu vẫn fallback về `requests` thay vì biến thành ngày rỗng.
+Chỉ chấp nhận deployment khi Angular build hoàn tất không lỗi và deployment gắn đúng commit release. Hotfix này phải lên trước backfill để document Daily Checklist bị thiếu vẫn fallback về `requests` thay vì biến thành ngày rỗng.
 
 ## 6. Smoke test hotfix trước khi ghi production data
 

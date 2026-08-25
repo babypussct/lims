@@ -1,6 +1,7 @@
 import { NotificationLevel, NotificationType } from '../models/notification.model';
 
 export type ForegroundSurface = 'toast' | 'browser' | 'none';
+export type ActivityNotificationProjectionMode = 'legacy' | 'canonical';
 
 export interface MetadataSyncEvent {
   id?: string;
@@ -31,6 +32,26 @@ export function selectForegroundSurface(
   if (visibility === 'visible') return 'toast';
   if (browserPermission === 'granted') return 'browser';
   return 'none';
+}
+
+export function selectActivityNotificationProjectionMode(
+  notificationEventSyncV2: boolean
+): ActivityNotificationProjectionMode {
+  return notificationEventSyncV2 ? 'canonical' : 'legacy';
+}
+
+export function isDuplicateNotificationEvent(
+  seenEvents: Map<string, number>,
+  eventId: string,
+  now = Date.now(),
+  ttlMs = 5 * 60_000
+): boolean {
+  for (const [id, timestamp] of seenEvents) {
+    if (now - timestamp > ttlMs) seenEvents.delete(id);
+  }
+  if (seenEvents.has(eventId)) return true;
+  seenEvents.set(eventId, now);
+  return false;
 }
 
 /**

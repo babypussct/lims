@@ -10,9 +10,11 @@ import {
 } from 'firebase/firestore';
 import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
-import { Log } from '../../core/models/log.model';
 import { normalizeInventoryItem } from '../../shared/utils/utils';
 import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor.service';
+import { ActivityEventService } from '../../core/services/activity-event.service';
+import { NotificationCenterService } from '../../core/services/notification-center.service';
+import { crossedInventoryLowStockThreshold, resolveInventoryLowStockThreshold } from './inventory-low-stock';
 
 
 export interface InventoryPage {
@@ -27,6 +29,8 @@ export class InventoryService {
   private state = inject(StateService);
   private toast = inject(ToastService);
   private readMonitor = inject(FirestoreReadMonitor);
+  private activityEvents = inject(ActivityEventService);
+  private notificationCenter = inject(NotificationCenterService);
   private inFlightItemReads = new Map<string, Promise<InventoryItem[]>>();
 
   // ─── SINGLE SOURCE OF TRUTH ────────────────────────────────────────────────
@@ -199,25 +203,6 @@ export class InventoryService {
     };
   }
 
-  // --- REPORTING Operations ---
-
-  async getLogsByDateRange(startDate: Date, endDate: Date): Promise<Log[]> {
-    const start = new Date(startDate); start.setHours(0,0,0,0);
-    const end = new Date(endDate); end.setHours(23,59,59,999);
-
-    const logsRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs');
-    const q = query(
-      logsRef,
-      where('timestamp', '>=', start),
-      where('timestamp', '<=', end),
-      orderBy('timestamp', 'asc')
-    );
-
-    const snapshot = await getDocs(q);
-    this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/logs`, snapshot.size);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Log));
-  }
-
   async getStockCard(itemId: string): Promise<StockHistoryItem[]> {
       const ref = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemId, 'history');
       const q = query(ref, orderBy('timestamp', 'desc'), limit(500));
@@ -234,7 +219,11 @@ export class InventoryService {
     const currentUser = this.state.getCurrentUserName();
 
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.id);
-    const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+    const globalLogRef = this.activityEvents.createRef();
+    const lowStockActivityRef = this.activityEvents.createRef();
+    const lowStockThreshold = resolveInventoryLowStockThreshold(item.threshold);
+    const crossedLowStockThreshold = !isNew
+      && crossedInventoryLowStockThreshold(oldStock, item.stock, lowStockThreshold);
     
     await runTransaction(this.fb.db, async (transaction) => {
         // A. Inventory Write
@@ -273,16 +262,45 @@ export class InventoryService {
             ? `Tạo mới: ${item.id} (${item.stock}${item.unit})`
             : (item.stock !== oldStock ? `Cập nhật: ${item.id} (Tồn kho: ${oldStock} -> ${item.stock})` : `Cập nhật: ${item.id}`);
             
-        transaction.set(globalLogRef, {
+        const activityEvent = this.activityEvents.build({
+            eventId: globalLogRef.id,
             action,
             details,
-            timestamp: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-            user: currentUser,
+            targetType: 'INVENTORY_ITEM',
             targetId: item.id,
-            reason: reason
+            targetName: item.id,
+            metadata: {
+              oldValue: isNew ? undefined : oldStock,
+              newValue: item.stock,
+              unit: item.unit,
+              reason
+            },
+            legacyFields: { reason }
         });
+        this.activityEvents.setInTransaction(transaction, globalLogRef, activityEvent);
+
+        if (crossedLowStockThreshold) {
+            const lowStockEvent = this.activityEvents.build({
+              eventId: lowStockActivityRef.id,
+              action: 'INVENTORY_LOW_STOCK',
+              details: `Tồn kho xuống ngưỡng thấp: ${item.id} còn ${item.stock} ${item.unit}`,
+              targetType: 'INVENTORY_ITEM',
+              targetId: item.id,
+              targetName: item.id,
+              metadata: {
+                threshold: lowStockThreshold,
+                oldValue: oldStock,
+                newValue: item.stock,
+                unit: item.unit,
+                sourceAction: action
+              }
+            });
+            this.activityEvents.setInTransaction(transaction, lowStockActivityRef, lowStockEvent);
+        }
     });
+    if (crossedLowStockThreshold) {
+      await this.notificationCenter.dispatchActivityProjectionIfEnabled(lowStockActivityRef.id);
+    }
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
@@ -290,7 +308,7 @@ export class InventoryService {
   async deleteItem(id: string, reason = '') {
     const currentUser = this.state.getCurrentUserName();
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
-    const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+    const globalLogRef = this.activityEvents.createRef();
     
     let finalStock = 0;
     try {
@@ -308,15 +326,17 @@ export class InventoryService {
         lastUpdated: serverTimestamp()
     });
     
-    finalBatch.set(globalLogRef, {
+    const activityEvent = this.activityEvents.build({
+        eventId: globalLogRef.id,
         action: 'SOFT_DELETE_ITEM',
         details: `Đưa vào Thùng rác: ${id} (Tồn cuối: ${finalStock})`,
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        user: currentUser,
+        targetType: 'INVENTORY_ITEM',
         targetId: id,
-        reason: reason
+        targetName: id,
+        metadata: { oldValue: finalStock, reason },
+        legacyFields: { reason }
     });
+    this.activityEvents.setInBatch(finalBatch, globalLogRef, activityEvent);
 
     await finalBatch.commit();
     this.invalidateLocalInventoryCache();
@@ -327,7 +347,7 @@ export class InventoryService {
   async restoreItem(id: string) {
       const currentUser = this.state.getCurrentUserName();
       const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
-      const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+      const globalLogRef = this.activityEvents.createRef();
       
       const finalBatch = writeBatch(this.fb.db);
       finalBatch.update(invRef, {
@@ -336,14 +356,14 @@ export class InventoryService {
           lastUpdated: serverTimestamp()
       });
       
-      finalBatch.set(globalLogRef, {
+      const activityEvent = this.activityEvents.build({
+          eventId: globalLogRef.id,
           action: 'RESTORE_ITEM',
           details: `Khôi phục từ Thùng rác: ${id}`,
-          timestamp: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
-          user: currentUser,
+          targetType: 'INVENTORY_ITEM',
           targetId: id
       });
+      this.activityEvents.setInBatch(finalBatch, globalLogRef, activityEvent);
   
       await finalBatch.commit();
       this.invalidateLocalInventoryCache();
@@ -355,16 +375,20 @@ export class InventoryService {
     
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
     const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history'));
-    const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+    const globalLogRef = this.activityEvents.createRef();
+    const lowStockActivityRef = this.activityEvents.createRef();
+    let crossedLowStockThreshold = false;
 
     await runTransaction(this.fb.db, async (transaction) => {
         const snapshot = await transaction.get(invRef);
         if (!snapshot.exists()) throw new Error(`Không tìm thấy vật tư "${id}".`);
         const freshStock = Number(snapshot.data()['stock'] || 0);
         const newStock = freshStock + adjustment;
+        const threshold = resolveInventoryLowStockThreshold(snapshot.data()['threshold']);
         if (!Number.isFinite(newStock) || newStock < 0) {
             throw new Error(`Tồn kho "${id}" không đủ hoặc kết quả điều chỉnh không hợp lệ.`);
         }
+        crossedLowStockThreshold = crossedInventoryLowStockThreshold(freshStock, newStock, threshold);
 
         // A. Update Stock
         transaction.update(invRef, { stock: newStock, lastUpdated: serverTimestamp() });
@@ -383,16 +407,44 @@ export class InventoryService {
 
         // C. Write Global Log
         const actionType = adjustment > 0 ? 'STOCK_IN' : 'STOCK_OUT';
-        transaction.set(globalLogRef, {
+        const activityEvent = this.activityEvents.build({
+            eventId: globalLogRef.id,
             action: actionType,
             details: `Điều chỉnh kho ${id}: ${adjustment > 0 ? '+' : ''}${adjustment}`,
-            timestamp: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-            user: currentUser,
+            targetType: 'INVENTORY_ITEM',
             targetId: id,
-            reason: reason
+            targetName: id,
+            metadata: {
+              oldValue: freshStock,
+              newValue: newStock,
+              reason
+            },
+            legacyFields: { reason }
         });
+        this.activityEvents.setInTransaction(transaction, globalLogRef, activityEvent);
+
+        if (crossedLowStockThreshold) {
+          const lowStockEvent = this.activityEvents.build({
+            eventId: lowStockActivityRef.id,
+            action: 'INVENTORY_LOW_STOCK',
+            details: `Tồn kho xuống ngưỡng thấp: ${id} còn ${newStock}`,
+            targetType: 'INVENTORY_ITEM',
+            targetId: id,
+            targetName: id,
+            metadata: {
+              threshold,
+              oldValue: freshStock,
+              newValue: newStock,
+              reason,
+              sourceAction: actionType
+            }
+          });
+          this.activityEvents.setInTransaction(transaction, lowStockActivityRef, lowStockEvent);
+        }
     });
+    if (crossedLowStockThreshold) {
+      await this.notificationCenter.dispatchActivityProjectionIfEnabled(lowStockActivityRef.id);
+    }
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
@@ -417,18 +469,20 @@ export class InventoryService {
     });
 
     // Add single global log for batch operation
-    const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-    batch.set(globalLogRef, {
+    const globalLogRef = this.activityEvents.createRef();
+    const activityEvent = this.activityEvents.build({
+        eventId: globalLogRef.id,
         action: 'BULK_ZERO',
         details: `Đặt tồn kho về 0 cho ${ids.length} mục.`,
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        user: currentUser,
+        targetType: 'INVENTORY_BATCH',
         targetId: 'BATCH',
-        reason: reason
+        metadata: { count: ids.length, reason },
+        legacyFields: { reason }
     });
+    this.activityEvents.setInBatch(batch, globalLogRef, activityEvent);
 
     await batch.commit();
+    await this.notificationCenter.dispatchActivityProjectionIfEnabled(globalLogRef.id);
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }

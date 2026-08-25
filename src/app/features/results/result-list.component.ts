@@ -14,6 +14,7 @@ import {
   setDoc, where, writeBatch
 } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
+import { ActivityEventService } from '../../core/services/activity-event.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 
@@ -651,6 +652,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private readMonitor = inject(FirestoreReadMonitor);
   private toast = inject(ToastService);
   private printService = inject(PrintService);
+  private activityEvents = inject(ActivityEventService);
 
   formatSampleList = formatSampleList;
   getSafeGoogleUrl = getSafeGoogleUrl;
@@ -1606,19 +1608,24 @@ export class ResultListComponent implements OnInit, OnDestroy {
       // 7. Tạo nhật ký kiểm tra
       const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      batch.set(logRef, {
-        id: logId,
+      const activityEvent = this.activityEvents.build({
+        eventId: logId,
         action: 'CREATE_VIRTUAL_MASTER',
         details: `Đã tạo mẻ tổng hợp (gộp mẫu) cho ${masterId}`,
-        user: this.state.getCurrentUserName(),
-        timestamp: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
+        targetType: 'REQUEST',
+        targetId: masterId,
+        targetName: curveRun.sopName,
         requestId: masterId,
-        sopBasicInfo: {
+        publicTraceable: true,
+        metadata: { sopId: curveRun.sopId, count: sops.length },
+        legacyFields: {
+          sopBasicInfo: {
             name: curveRun.sopName,
             category: 'SOP'
+          }
         }
       });
+      this.activityEvents.setInBatch(batch, logRef, activityEvent);
 
       await batch.commit();
       

@@ -31,12 +31,17 @@ const APP_ID = 'lims-rules-test-app';
 const rules = readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8');
 
 const users = {
-  viewer: { uid: 'viewer', email: 'viewer@example.test', displayName: 'Viewer', role: 'viewer', roleId: 'role_viewer' },
-  pending: { uid: 'pending', email: 'pending@example.test', displayName: 'Pending', role: 'pending', roleId: 'role_pending' },
-  batchA: { uid: 'batch-a', email: 'batch-a@example.test', displayName: 'Batch A', role: 'staff', roleId: 'role_lab_technician' },
-  batchB: { uid: 'batch-b', email: 'batch-b@example.test', displayName: 'Batch B', role: 'staff', roleId: 'role_lab_technician' },
-  approver: { uid: 'approver', email: 'approver@example.test', displayName: 'Approver', role: 'staff', roleId: 'role_qc_lead' },
-  manager: { uid: 'manager', email: 'manager@example.test', displayName: 'Manager', role: 'manager', roleId: 'role_manager' }
+  viewer: { uid: 'viewer', email: 'viewer@example.test', displayName: 'Viewer', role: 'viewer', roleId: 'role_viewer', permissions: [], customPermissions: [] },
+  pending: { uid: 'pending', email: 'pending@example.test', displayName: 'Pending', role: 'pending', roleId: 'role_pending', permissions: [], customPermissions: [] },
+  batchA: { uid: 'batch-a', email: 'batch-a@example.test', displayName: 'Batch A', role: 'staff', roleId: 'role_lab_technician', permissions: [], customPermissions: [] },
+  batchB: { uid: 'batch-b', email: 'batch-b@example.test', displayName: 'Batch B', role: 'staff', roleId: 'role_lab_technician', permissions: [], customPermissions: [] },
+  approver: { uid: 'approver', email: 'approver@example.test', displayName: 'Approver', role: 'staff', roleId: 'role_qc_lead', permissions: [], customPermissions: [] },
+  staffDefault: { uid: 'staff-default', email: 'staff-default@example.test', displayName: 'Staff Default', role: 'staff', roleId: 'role_staff_default', permissions: [], customPermissions: [] },
+  customReportOnly: { uid: 'report-only', email: 'report-only@example.test', displayName: 'Report Only', role: 'staff', roleId: 'role_custom_report_only', permissions: [], customPermissions: ['report_view'] },
+  customUserManage: { uid: 'user-manage', email: 'user-manage@example.test', displayName: 'User Manage', role: 'staff', roleId: 'role_custom_user_manage', permissions: [], customPermissions: ['user_manage'] },
+  inventoryViewer: { uid: 'inventory-viewer', email: 'inventory-viewer@example.test', displayName: 'Inventory Viewer', role: 'staff', roleId: 'role_custom_inventory_viewer', permissions: [], customPermissions: ['inventory_view'] },
+  standardViewer: { uid: 'standard-viewer', email: 'standard-viewer@example.test', displayName: 'Standard Viewer', role: 'staff', roleId: 'role_custom_standard_viewer', permissions: [], customPermissions: ['standard_view'] },
+  manager: { uid: 'manager', email: 'manager@example.test', displayName: 'Manager', role: 'manager', roleId: 'role_manager', permissions: [], customPermissions: [] }
 } as const;
 
 type TestUser = (typeof users)[keyof typeof users];
@@ -57,13 +62,48 @@ async function seedBaseData(): Promise<void> {
         displayName: user.displayName,
         role: user.role,
         roleId: user.roleId,
-        permissions: [],
-        customPermissions: []
+        permissions: [...user.permissions],
+        customPermissions: [...user.customPermissions]
       }
     )));
 
     const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    const activityEvent = (
+      id: string,
+      actor: TestUser,
+      action: string,
+      module: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'SYSTEM',
+      audience: 'RESULT_VIEW' | 'RESULT_OPERATOR' | 'INVENTORY_VIEW' | 'INVENTORY_OPERATOR' | 'STANDARD_VIEW' | 'STANDARD_OPERATOR' | 'SYSTEM_ADMIN',
+      importance: 'NORMAL' | 'IMPORTANT' | 'WARNING',
+      auditClass: 'BUSINESS' | 'SYSTEM',
+      activityVisible = true,
+      publicTraceable = false,
+      extra: Record<string, unknown> = {}
+    ) => ({
+      id,
+      eventId: id,
+      schemaVersion: 2,
+      action,
+      module,
+      audience,
+      importance,
+      auditClass,
+      activityVisible,
+      actorUid: actor.uid,
+      actorName: actor.displayName,
+      user: actor.displayName,
+      details: `${action} test event`,
+      timestamp: seedTime,
+      lastUpdated: seedTime,
+      publicTraceable,
+      ...extra
+    });
     await Promise.all([
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_report_only`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_user_manage`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_inventory_viewer`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_standard_viewer`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_downgraded`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/print_jobs/owned-by-a`), {
         requestId: 'request-a',
         createdByUid: users.batchA.uid,
@@ -96,20 +136,40 @@ async function seedBaseData(): Promise<void> {
         timestamp: seedTime,
         lastUpdated: seedTime
       }),
-      setDoc(doc(db, `artifacts/${APP_ID}/logs/log-a`), {
-        user: users.batchA.displayName,
-        action: 'PRINT',
-        details: 'Batch A print job',
-        printable: true,
-        timestamp: seedTime
-      }),
-      setDoc(doc(db, `artifacts/${APP_ID}/logs/log-b`), {
-        user: users.batchB.displayName,
-        action: 'PRINT',
-        details: 'Batch B print job',
-        printable: true,
-        timestamp: seedTime
-      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/result-op-manager`), activityEvent(
+        'result-op-manager', users.manager, 'SAVE_RESULT_DRAFT', 'RESULT', 'RESULT_OPERATOR', 'NORMAL', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/result-op-qc`), activityEvent(
+        'result-op-qc', users.approver, 'SAVE_RESULT_DRAFT', 'RESULT', 'RESULT_OPERATOR', 'NORMAL', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/result-op-lab-b`), activityEvent(
+        'result-op-lab-b', users.batchB, 'SAVE_RESULT_DRAFT', 'RESULT', 'RESULT_OPERATOR', 'NORMAL', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/result-view-manager`), activityEvent(
+        'result-view-manager', users.manager, 'PUBLISH_RESULT_REPORT', 'RESULT', 'RESULT_VIEW', 'IMPORTANT', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/inventory-view-manager`), activityEvent(
+        'inventory-view-manager', users.manager, 'UPDATE_INFO', 'INVENTORY', 'INVENTORY_VIEW', 'NORMAL', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/inventory-operator-manager`), activityEvent(
+        'inventory-operator-manager', users.manager, 'SOFT_DELETE_ITEM', 'INVENTORY', 'INVENTORY_OPERATOR', 'WARNING', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/standard-view-manager`), activityEvent(
+        'standard-view-manager', users.manager, 'UPDATE_STANDARD', 'STANDARD', 'STANDARD_VIEW', 'NORMAL', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/standard-operator-manager`), activityEvent(
+        'standard-operator-manager', users.manager, 'NORMALIZE_STANDARD_NAMES', 'STANDARD', 'STANDARD_OPERATOR', 'IMPORTANT', 'BUSINESS'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/system-maintenance`), activityEvent(
+        'system-maintenance', users.manager, 'MAINTENANCE_ON', 'SYSTEM', 'SYSTEM_ADMIN', 'WARNING', 'SYSTEM'
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/public-trace`), activityEvent(
+        'public-trace', users.manager, 'DIRECT_APPROVE', 'RESULT', 'RESULT_VIEW', 'IMPORTANT', 'BUSINESS', true, true,
+        { targetType: 'REQUEST', requestId: 'public-request', printable: true }
+      )),
+      setDoc(doc(db, `artifacts/${APP_ID}/logs/private-business`), activityEvent(
+        'private-business', users.manager, 'APPROVE_REQUEST', 'RESULT', 'RESULT_VIEW', 'IMPORTANT', 'BUSINESS'
+      )),
       setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-requester`), {
         id: 'std-requester',
         name: 'Requester Standard',
@@ -231,6 +291,33 @@ function buildSecureUsageBatch(logId: string, amount = 10) {
   return batch;
 }
 
+function canonicalActivityCreatePayload(
+  id: string,
+  user: TestUser,
+  overrides: Record<string, unknown> = {}
+) {
+  return {
+    id,
+    eventId: id,
+    schemaVersion: 2,
+    action: 'SAVE_RESULT_DRAFT',
+    module: 'RESULT',
+    audience: 'RESULT_OPERATOR',
+    importance: 'NORMAL',
+    auditClass: 'BUSINESS',
+    activityVisible: true,
+    actorUid: user.uid,
+    actorName: user.displayName,
+    user: user.displayName,
+    details: 'Canonical activity create test',
+    metadata: { source: 'rules-emulator' },
+    timestamp: serverTimestamp(),
+    lastUpdated: serverTimestamp(),
+    publicTraceable: false,
+    ...overrides
+  };
+}
+
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
@@ -271,21 +358,241 @@ test('release history is readable before authentication for the public changelog
   assert.equal(snapshot.docs[0].data()['version'], 'v26.08.11-b03');
 });
 
-test('batch_run can query only its personal log feed while manager can query the global feed', async () => {
-  const batchDb = dbFor(users.batchA);
-  const personalLogs = query(
-    collection(batchDb, `artifacts/${APP_ID}/logs`),
-    where('user', '==', users.batchA.displayName)
+test('Activity RESULT_OPERATOR is actor-independent and viewer/pending fail closed', async () => {
+  const resultOperatorQuery = (user: TestUser) => query(
+    collection(dbFor(user), `artifacts/${APP_ID}/logs`),
+    where('audience', '==', 'RESULT_OPERATOR'),
+    where('activityVisible', '==', true)
   );
-  const personalSnapshot = await assertSucceeds(getDocs(personalLogs));
-  assert.equal(personalSnapshot.size, 1);
-  assert.equal(personalSnapshot.docs[0]?.data()['user'], users.batchA.displayName);
 
-  await assertFails(getDocs(collection(batchDb, `artifacts/${APP_ID}/logs`)));
+  const labSnapshot = await assertSucceeds(getDocs(resultOperatorQuery(users.batchA)));
+  assert.deepEqual(
+    new Set(labSnapshot.docs.map(document => document.data()['actorUid'])),
+    new Set([users.manager.uid, users.approver.uid, users.batchB.uid])
+  );
+
+  await assertFails(getDocs(resultOperatorQuery(users.staffDefault)));
+  await assertFails(getDocs(resultOperatorQuery(users.viewer)));
+  await assertFails(getDocs(resultOperatorQuery(users.pending)));
+
+  const managerSnapshot = await assertSucceeds(
+    getDocs(collection(dbFor(users.manager), `artifacts/${APP_ID}/logs`))
+  );
+  assert.equal(managerSnapshot.size, 11);
+});
+
+test('SYSTEM Activity is visible only to user_manage or Manager', async () => {
+  const systemQuery = (user: TestUser) => query(
+    collection(dbFor(user), `artifacts/${APP_ID}/logs`),
+    where('audience', '==', 'SYSTEM_ADMIN'),
+    where('activityVisible', '==', true)
+  );
+
+  await assertFails(getDocs(systemQuery(users.batchA)));
+  await assertFails(getDocs(systemQuery(users.approver)));
+  await assertFails(getDocs(systemQuery(users.customReportOnly)));
+
+  const userManageSnapshot = await assertSucceeds(getDocs(systemQuery(users.customUserManage)));
+  assert.equal(userManageSnapshot.size, 1);
+  assert.equal(userManageSnapshot.docs[0]?.id, 'system-maintenance');
+
+  const managerSnapshot = await assertSucceeds(getDocs(systemQuery(users.manager)));
+  assert.equal(managerSnapshot.size, 1);
+});
+
+test('inventory and standard Activity audiences follow view/operator permissions', async () => {
+  const audienceQuery = (user: TestUser, audience: string) => query(
+    collection(dbFor(user), `artifacts/${APP_ID}/logs`),
+    where('audience', '==', audience),
+    where('activityVisible', '==', true)
+  );
+
+  const inventoryView = await assertSucceeds(getDocs(audienceQuery(users.inventoryViewer, 'INVENTORY_VIEW')));
+  assert.equal(inventoryView.size, 1);
+  await assertFails(getDocs(audienceQuery(users.inventoryViewer, 'INVENTORY_OPERATOR')));
+
+  const standardView = await assertSucceeds(getDocs(audienceQuery(users.standardViewer, 'STANDARD_VIEW')));
+  assert.equal(standardView.size, 1);
+  await assertFails(getDocs(audienceQuery(users.standardViewer, 'STANDARD_OPERATOR')));
+});
+
+test('BUSINESS and SYSTEM audit classes are independently authorized', async () => {
+  const auditQuery = (user: TestUser, auditClass: 'BUSINESS' | 'SYSTEM') => query(
+    collection(dbFor(user), `artifacts/${APP_ID}/logs`),
+    where('auditClass', '==', auditClass)
+  );
+
+  const businessSnapshot = await assertSucceeds(getDocs(auditQuery(users.customReportOnly, 'BUSINESS')));
+  assert.equal(businessSnapshot.size, 10);
+  await assertFails(getDocs(auditQuery(users.customReportOnly, 'SYSTEM')));
+
+  const systemSnapshot = await assertSucceeds(getDocs(auditQuery(users.customUserManage, 'SYSTEM')));
+  assert.equal(systemSnapshot.size, 1);
+  await assertFails(getDocs(auditQuery(users.customUserManage, 'BUSINESS')));
+
+  const managerSnapshot = await assertSucceeds(
+    getDocs(collection(dbFor(users.manager), `artifacts/${APP_ID}/logs`))
+  );
+  assert.equal(managerSnapshot.size, 11);
+});
+
+test('permission downgrade immediately removes Activity audience access', async () => {
+  const batchDb = dbFor(users.batchA);
+  const resultOperatorQuery = query(
+    collection(batchDb, `artifacts/${APP_ID}/logs`),
+    where('audience', '==', 'RESULT_OPERATOR'),
+    where('activityVisible', '==', true)
+  );
+  await assertSucceeds(getDocs(resultOperatorQuery));
+
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/users/${users.batchA.uid}`), {
+      roleId: 'role_downgraded',
+      permissions: [],
+      customPermissions: []
+    });
+  });
+
+  await assertFails(getDocs(resultOperatorQuery));
+});
+
+test('public traceability is get-only and requires publicTraceable BUSINESS data', async () => {
+  const publicDb = env.unauthenticatedContext().firestore();
+
+  const traceSnapshot = await assertSucceeds(
+    getDoc(doc(publicDb, `artifacts/${APP_ID}/logs/public-trace`))
+  );
+  assert.equal(traceSnapshot.data()?.['publicTraceable'], true);
+
+  await assertFails(getDoc(doc(publicDb, `artifacts/${APP_ID}/logs/private-business`)));
+  await assertFails(getDoc(doc(publicDb, `artifacts/${APP_ID}/logs/system-maintenance`)));
+  await assertFails(getDocs(collection(publicDb, `artifacts/${APP_ID}/logs`)));
+});
+
+test('personal printable logs keep V2 ownership after display-name changes and retain legacy fallback', async () => {
+  const renamedDisplayName = 'Batch A Renamed';
+  const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, `artifacts/${APP_ID}/logs/printable-v2-owned`), {
+      id: 'printable-v2-owned',
+      eventId: 'printable-v2-owned',
+      schemaVersion: 2,
+      action: 'DIRECT_APPROVE',
+      module: 'RESULT',
+      audience: 'RESULT_VIEW',
+      importance: 'IMPORTANT',
+      auditClass: 'BUSINESS',
+      activityVisible: true,
+      actorUid: users.batchA.uid,
+      actorName: users.batchA.displayName,
+      user: users.batchA.displayName,
+      details: 'Printable event created before profile rename',
+      timestamp: seedTime,
+      lastUpdated: seedTime,
+      publicTraceable: false,
+      printable: true
+    });
+    await setDoc(doc(db, `artifacts/${APP_ID}/logs/printable-legacy-renamed`), {
+      action: 'PRINT',
+      user: renamedDisplayName,
+      details: 'Legacy printable event',
+      timestamp: seedTime,
+      printable: true
+    });
+    await updateDoc(doc(db, `artifacts/${APP_ID}/users/${users.batchA.uid}`), {
+      displayName: renamedDisplayName
+    });
+  });
+
+  const db = dbFor(users.batchA);
+  const v2Snapshot = await assertSucceeds(getDocs(query(
+    collection(db, `artifacts/${APP_ID}/logs`),
+    where('printable', '==', true),
+    where('actorUid', '==', users.batchA.uid)
+  )));
+  assert.deepEqual(v2Snapshot.docs.map(item => item.id), ['printable-v2-owned']);
+
+  const legacySnapshot = await assertSucceeds(getDocs(query(
+    collection(db, `artifacts/${APP_ID}/logs`),
+    where('printable', '==', true),
+    where('user', '==', renamedDisplayName)
+  )));
+  assert.deepEqual(legacySnapshot.docs.map(item => item.id), ['printable-legacy-renamed']);
+});
+
+test('lastActivitySeenAt preference is private to its owner and server-timestamped', async () => {
+  const batchDb = dbFor(users.batchA);
+  const preferencePath = `artifacts/${APP_ID}/user_preferences/${users.batchA.uid}`;
+  const preferenceRef = doc(batchDb, preferencePath);
+
+  await assertSucceeds(setDoc(preferenceRef, { lastActivitySeenAt: serverTimestamp() }));
+  const ownPreference = await assertSucceeds(getDoc(preferenceRef));
+  assert.ok(ownPreference.data()?.['lastActivitySeenAt']);
+
+  await assertFails(getDoc(doc(dbFor(users.batchB), preferencePath)));
+  await assertFails(getDoc(doc(dbFor(users.manager), preferencePath)));
+  await assertFails(setDoc(preferenceRef, {
+    lastActivitySeenAt: Timestamp.fromMillis(1_786_182_400_000)
+  }, { merge: true }));
+  await assertFails(setDoc(preferenceRef, {
+    lastActivitySeenAt: serverTimestamp(),
+    notificationReadState: true
+  }, { merge: true }));
+});
+
+test('canonical Activity create rejects forged identity, classification and unsafe payloads', async () => {
+  const db = dbFor(users.batchA);
+  const validId = 'create-valid-result';
+  await assertSucceeds(setDoc(
+    doc(db, `artifacts/${APP_ID}/logs/${validId}`),
+    canonicalActivityCreatePayload(validId, users.batchA)
+  ));
+
+  const assertCreateDenied = async (id: string, overrides: Record<string, unknown>) => {
+    await assertFails(setDoc(
+      doc(db, `artifacts/${APP_ID}/logs/${id}`),
+      canonicalActivityCreatePayload(id, users.batchA, overrides)
+    ));
+  };
+
+  await assertCreateDenied('create-forged-uid', { actorUid: users.batchB.uid });
+  await assertCreateDenied('create-forged-name', { actorName: 'Forged Actor', user: 'Forged Actor' });
+  await assertCreateDenied('create-forged-user', { user: users.batchB.displayName });
+  await assertCreateDenied('create-forged-audience', { audience: 'RESULT_VIEW' });
+  await assertCreateDenied('create-forged-module', { module: 'SYSTEM' });
+  await assertCreateDenied('create-forged-audit', { auditClass: 'SYSTEM' });
+  await assertCreateDenied('create-forged-importance', { importance: 'WARNING' });
+  await assertCreateDenied('create-forged-visibility', { activityVisible: false });
+  await assertCreateDenied('create-unknown-action', { action: 'UNKNOWN_ACTION' });
+  await assertCreateDenied('create-wrong-event-id', { eventId: 'different-id' });
+  await assertCreateDenied('create-client-time', {
+    timestamp: Timestamp.fromMillis(1_786_182_400_000),
+    lastUpdated: Timestamp.fromMillis(1_786_182_400_000)
+  });
+  await assertCreateDenied('create-oversized-details', { details: 'x'.repeat(2001) });
+  await assertCreateDenied('create-oversized-metadata', {
+    metadata: Object.fromEntries(Array.from({ length: 41 }, (_, index) => [`key${index}`, index]))
+  });
+  await assertCreateDenied('create-illegal-public', { publicTraceable: true });
+
+  const systemPayload = {
+    action: 'MAINTENANCE_ON',
+    module: 'SYSTEM',
+    audience: 'SYSTEM_ADMIN',
+    importance: 'WARNING',
+    auditClass: 'SYSTEM',
+    activityVisible: true,
+    publicTraceable: false
+  };
+  await assertCreateDenied('create-system-as-lab', systemPayload);
 
   const managerDb = dbFor(users.manager);
-  const globalSnapshot = await assertSucceeds(getDocs(collection(managerDb, `artifacts/${APP_ID}/logs`)));
-  assert.equal(globalSnapshot.size, 2);
+  const managerSystemId = 'create-system-manager';
+  await assertSucceeds(setDoc(
+    doc(managerDb, `artifacts/${APP_ID}/logs/${managerSystemId}`),
+    canonicalActivityCreatePayload(managerSystemId, users.manager, systemPayload)
+  ));
 });
 
 test('batch_run, sop_approve and manager can read print jobs but viewer cannot', async () => {

@@ -21,6 +21,16 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /'Xin chào, '/);
     assert.match(template, />Nhật ký \{\{state\.systemVersion\(\)\}\}<\/span>/);
     assert.match(template, /Quét mã/);
+    assert.match(template, /aria-label="Tìm kiếm hoạt động"/);
+    assert.match(template, /\[attr\.aria-pressed\]/);
+    assert.match(template, /flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2/);
+    assert.match(template, /relative w-full sm:w-1\/2/);
+    assert.match(template, /overflow-x-auto custom-scrollbar/);
+    assert.match(template, /\[attr\.aria-busy\]="activityFeedLoading\(\)"/);
+    assert.match(template, /getActivityTraceabilityUrl\(log\); as traceabilityUrl/);
+    assert.match(template, /aria-label\]="'Truy xuất nguồn gốc '/);
+    assert.match(template, /focus-visible:ring-2 focus-visible:ring-blue-500/);
+    assert.match(template, /role="separator" aria-label="Mới kể từ lần truy cập trước"/);
   });
 
   it('uses the shared page header, toolbar and buttons on management statistics', () => {

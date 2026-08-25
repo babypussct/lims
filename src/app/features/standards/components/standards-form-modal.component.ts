@@ -6,7 +6,6 @@ import { StandardService } from '../standard.service';
 import { GoogleDriveService } from '../../../core/services/google-drive.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
 import { sanitizeLegacyTagKeys } from '../services/standard-tag.utils';
@@ -168,7 +167,6 @@ export class StandardsFormModalComponent {
   toast = inject(ToastService);
   googleDriveService = inject(GoogleDriveService);
   auth = inject(AuthService);
-  notificationCenter = inject(NotificationCenterService);
   tagCatalog = inject(StandardTagCatalogService);
 
   isProcessing = signal(false);
@@ -315,37 +313,26 @@ export class StandardsFormModalComponent {
     
         if (this.std()) {
             const originalStd = this.std()!;
-            let coaNotification: {
-                recipientUid: string;
-                eventId: string;
-                message: string;
-            } | null = null;
-            
-            // Nếu chuẩn đang có người yêu cầu CoA và Admin vừa upload/điền link CoA xong
-            if (originalStd.coa_requested_by && standardData.certificate_ref) {
-                coaNotification = {
-                    recipientUid: originalStd.coa_requested_by,
-                    eventId: `coa-form:${standardData.id}:${encodeURIComponent(standardData.certificate_ref).slice(-160)}`,
-                    message: `File CoA của chuẩn "${standardData.name}" đã được tải lên thành công qua Form Chỉnh sửa.`
-                };
-                (standardData as any).coa_requested_by = null;
+            const completesPendingCoaRequest = Boolean(
+                originalStd.coa_requested_by &&
+                standardData.certificate_ref &&
+                standardData.certificate_ref !== originalStd.certificate_ref
+            );
+            const completedCertificateRef = completesPendingCoaRequest
+                ? standardData.certificate_ref!
+                : null;
+            if (completedCertificateRef) {
+                // completeCoaUpload() owns the certificate write + requester clear +
+                // canonical Activity event atomically. Keep ordinary metadata edits
+                // from leaving a half-completed CoA workflow if dispatch setup fails.
+                standardData.certificate_ref = originalStd.certificate_ref;
             }
 
             await this.stdService.updateStandard(standardData, {
                 originalTags: this.originalStandardSopTags,
             });
-            if (coaNotification) {
-                const admin = this.auth.currentUser();
-                await this.notificationCenter.publish({
-                    ...coaNotification,
-                    senderUid: admin?.uid,
-                    senderName: admin?.displayName || 'Quản trị viên',
-                    type: 'SYSTEM_INFO',
-                    title: 'Đã cập nhật CoA',
-                    targetId: standardData.id,
-                    actionUrl: `/standards/${standardData.id}`,
-                    channels: ['inbox', 'push']
-                });
+            if (completedCertificateRef) {
+                await this.stdService.completeCoaUpload([originalStd], completedCertificateRef);
             }
             this.toast.show('Cập nhật chuẩn thành công!', 'success');
         } else {

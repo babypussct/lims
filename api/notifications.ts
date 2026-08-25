@@ -8,11 +8,26 @@ import {
   getFirestore
 } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { notificationDocumentId, uniqueStringValues } from './_lib/notification-utils.js';
+import { notificationDocumentId, shouldClaimNotificationPush, uniqueStringValues } from './_lib/notification-utils.js';
+import {
+  actorMayDispatchContract,
+  canonicalDispatchActionUrl,
+  fallbackRolePermissions,
+  notificationTitleForType,
+  resultStakeholderUids,
+  standardCoaRequesterUids,
+  standardRequesterUids,
+  suppressActorUid,
+  userHasAnyPermission,
+  validateCanonicalDispatchEvent,
+  type ActivityDispatchContract,
+  type CanonicalDispatchEvent
+} from './_lib/activity-notification-dispatch.js';
 
 const NOTIFICATION_TYPES = new Set([
   'COA_REQUEST', 'BORROW_REQUEST', 'REQUEST_APPROVED', 'REQUEST_REJECTED',
-  'RETURN_OVERDUE', 'STOCK_LOW_ALERT', 'SYSTEM_INFO', 'SYSTEM_UPDATE'
+  'RETURN_OVERDUE', 'STOCK_LOW_ALERT', 'SYSTEM_INFO', 'SYSTEM_UPDATE',
+  'RESULT_PUBLISHED', 'RESULT_RESET', 'RESULT_REVERTED', 'STANDARD_RETURN_PENDING'
 ]);
 
 const USER_INITIATED_ADMIN_EVENTS = new Set([
@@ -121,8 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const roleConfig = await db.doc(`artifacts/${appId}/roles_config/${roleId}`).get();
       if (roleConfig.exists && Array.isArray(roleConfig.data()?.['permissions'])) {
         rolePermissions = roleConfig.data()?.['permissions'] || [];
-      } else if (roleId === 'role_qc_lead') {
-        rolePermissions = ['standard_edit', 'standard_approve'];
+      } else {
+        rolePermissions = fallbackRolePermissions(roleId);
       }
     }
     const canManageStandards = isManager
@@ -201,77 +216,193 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, deletedCount: snapshot.size });
     }
 
-    if (action !== 'publish') return res.status(400).json({ error: 'Action không hợp lệ.' });
-
-    const input = (body.notification && typeof body.notification === 'object') ? body.notification : {};
-    const recipientUid = typeof input.recipientUid === 'string' ? input.recipientUid : '';
-    const type = typeof input.type === 'string' ? input.type : '';
-    const title = typeof input.title === 'string' ? input.title.trim() : '';
-    const message = typeof input.message === 'string' ? input.message.trim() : '';
-
-    if (!recipientUid || !NOTIFICATION_TYPES.has(type) || !title || !message) {
-      return res.status(400).json({ error: 'Notification thiếu recipient, type, title hoặc message.' });
-    }
-    if (title.length > 160 || message.length > 4000) {
-      return res.status(400).json({ error: 'Nội dung thông báo vượt quá giới hạn.' });
+    if (action !== 'publish' && action !== 'dispatchEvent') {
+      return res.status(400).json({ error: 'Action không hợp lệ.' });
     }
 
-    if (recipientUid === 'role:all' && (!isManager || type !== 'SYSTEM_UPDATE')) {
-      return res.status(403).json({ error: 'Không có quyền gửi broadcast toàn hệ thống.' });
-    }
-    if (recipientUid === 'role:admin' && !isManager && !canManageStandards && !USER_INITIATED_ADMIN_EVENTS.has(type)) {
-      return res.status(403).json({ error: 'Không có quyền gửi loại thông báo này đến quản trị viên.' });
-    }
-    if (!recipientUid.startsWith('role:') && !canManageStandards && recipientUid !== decoded.uid) {
-      return res.status(403).json({ error: 'Không có quyền gửi thông báo trực tiếp cho người dùng khác.' });
-    }
-
-    let recipientUids: string[];
+    let input: any;
+    let recipientUids: string[] = [];
     let loadedUsersMap: Map<string, DocumentData> | null = null;
+    let dispatchContract: ActivityDispatchContract | null = null;
+    let dispatchAction = '';
 
-    if (recipientUid === 'role:all' || recipientUid === 'role:admin') {
-      const users = await usersCollection.get();
-      const roles = recipientUid === 'role:admin'
-        ? await db.collection(`artifacts/${appId}/roles_config`).get()
-        : null;
-      const permissionsByRole = new Map<string, string[]>(
-        roles?.docs ? roles.docs.map(roleDoc => {
-          const data = roleDoc.data() || {};
-          return [
-            roleDoc.id,
-            Array.isArray(data['permissions']) ? (data['permissions'] as string[]) : []
-          ];
-        }) : []
-      );
+    const loadRecipientDirectory = async () => {
+      const [users, roles] = await Promise.all([
+        usersCollection.get(),
+        db.collection(`artifacts/${appId}/roles_config`).get()
+      ]);
+      loadedUsersMap = new Map(users.docs.map(userDoc => [userDoc.id, userDoc.data() || {}]));
+      const permissionsByRole = new Map<string, string[]>(roles.docs.map(roleDoc => {
+        const data = roleDoc.data() || {};
+        return [roleDoc.id, Array.isArray(data['permissions']) ? data['permissions'] as string[] : []];
+      }));
+      return { users, permissionsByRole };
+    };
 
-      loadedUsersMap = new Map();
-      const matchingUids: string[] = [];
-
-      for (const userDoc of users.docs) {
+    const resolvePermissionRecipients = async (requiredPermissions: readonly string[]) => {
+      const { users, permissionsByRole } = await loadRecipientDirectory();
+      return users.docs.filter(userDoc => {
         const userData = userDoc.data() || {};
-        loadedUsersMap.set(userDoc.id, userData);
+        const roleId = typeof userData['roleId'] === 'string' && userData['roleId']
+          ? userData['roleId']
+          : 'role_staff_default';
+        const configured = permissionsByRole.has(roleId)
+          ? permissionsByRole.get(roleId) || []
+          : fallbackRolePermissions(roleId);
+        return userHasAnyPermission(userData, configured, requiredPermissions);
+      }).map(userDoc => userDoc.id);
+    };
 
-        if (recipientUid === 'role:all') {
-          matchingUids.push(userDoc.id);
-        } else {
-          const configuredRolePermissions = permissionsByRole.get(userData['roleId'] || 'role_staff_default') || [];
-          const roleStr = typeof userData['role'] === 'string' ? userData['role'].toLowerCase() : '';
-          const isAdmin = roleStr === 'manager'
-            || (Array.isArray(userData['permissions']) && userData['permissions'].includes('standard_approve'))
-            || (Array.isArray(userData['customPermissions']) && userData['customPermissions'].includes('standard_approve'))
-            || (Array.isArray(configuredRolePermissions) && configuredRolePermissions.includes('standard_approve'))
-            || (userData['roleId'] === 'role_qc_lead' && !permissionsByRole.has('role_qc_lead'));
+    if (action === 'dispatchEvent') {
+      const requestedEventId = typeof body.eventId === 'string' ? body.eventId.trim() : '';
+      if (!requestedEventId || requestedEventId.length > 500 || requestedEventId.includes('/')) {
+        return res.status(400).json({ error: 'eventId không hợp lệ.' });
+      }
 
-          if (isAdmin) {
-            matchingUids.push(userDoc.id);
-          }
+      const eventSnapshot = await db.doc(`artifacts/${appId}/logs/${requestedEventId}`).get();
+      if (!eventSnapshot.exists) return res.status(404).json({ error: 'Activity event không tồn tại.' });
+      const event = eventSnapshot.data() as CanonicalDispatchEvent;
+      const validation = validateCanonicalDispatchEvent(requestedEventId, event);
+      if (!validation.ok) {
+        return res.status(400).json({ error: `Activity event không đủ điều kiện dispatch (${validation.reason}).` });
+      }
+      if (event.actorUid !== decoded.uid) {
+        return res.status(403).json({ error: 'Chỉ actor của Activity event được dispatch/retry notification.' });
+      }
+
+      dispatchContract = validation.contract;
+      dispatchAction = validation.action;
+      if (!actorMayDispatchContract(profile, rolePermissions, dispatchContract)) {
+        return res.status(403).json({ error: 'Actor không có quyền dispatch workflow notification này.' });
+      }
+      if (dispatchContract.recipientStrategy === 'STANDARD_APPROVERS') {
+        recipientUids = await resolvePermissionRecipients(['standard_approve', 'standard_edit']);
+      } else if (dispatchContract.recipientStrategy === 'INVENTORY_OPERATORS') {
+        recipientUids = await resolvePermissionRecipients(['inventory_edit']);
+      } else if (dispatchContract.recipientStrategy === 'SYSTEM_ADMINS') {
+        recipientUids = await resolvePermissionRecipients(['user_manage']);
+      } else if (dispatchContract.recipientStrategy === 'SYSTEM_ALL_USERS') {
+        const { users } = await loadRecipientDirectory();
+        recipientUids = users.docs.map(userDoc => userDoc.id);
+      } else if (dispatchContract.recipientStrategy === 'STANDARD_REQUESTER') {
+        const requestId = typeof event.requestId === 'string' ? event.requestId.trim() : '';
+        if (requestId) {
+          const requestSnapshot = await db.doc(`artifacts/${appId}/standard_requests/${requestId}`).get();
+          if (requestSnapshot.exists) recipientUids = standardRequesterUids(requestSnapshot.data() || {});
+        }
+      } else if (dispatchContract.recipientStrategy === 'STANDARD_COA_REQUESTERS') {
+        const standards = await db.collection(`artifacts/${appId}/reference_standards`)
+          .where('lastCoaNotificationEventId', '==', requestedEventId)
+          .get();
+        recipientUids = standardCoaRequesterUids(standards.docs.map(item => item.data() || {}));
+      } else if (dispatchContract.recipientStrategy === 'RESULT_STAKEHOLDERS') {
+        const requestId = typeof event.requestId === 'string' && event.requestId.trim()
+          ? event.requestId.trim()
+          : (typeof event.targetId === 'string' ? event.targetId.trim() : '');
+        if (requestId) {
+          const requestSnapshot = await db.doc(`artifacts/${appId}/requests/${requestId}`).get();
+          if (requestSnapshot.exists) recipientUids = resultStakeholderUids(requestSnapshot.data() || {});
         }
       }
 
-      recipientUids = [...new Set(matchingUids)];
-      console.log(`[Notifications API] Resolved ${recipientUid} to ${recipientUids.length} users:`, recipientUids);
+      recipientUids = suppressActorUid(
+        recipientUids,
+        String(event.actorUid),
+        dispatchContract.suppressActor
+      );
+      const title = notificationTitleForType(dispatchContract.type);
+      const message = typeof event.details === 'string' ? event.details.trim() : '';
+      input = cleanObject({
+        eventId: requestedEventId,
+        type: dispatchContract.type,
+        title,
+        message,
+        level: event.module === 'SYSTEM' || dispatchContract.type === 'STOCK_LOW_ALERT' ? 'warning' : 'info',
+        targetId: typeof event.targetId === 'string' ? event.targetId : undefined,
+        targetType: typeof event.targetType === 'string' ? event.targetType : undefined,
+        targetName: typeof event.targetName === 'string' ? event.targetName : undefined,
+        requestId: typeof event.requestId === 'string' ? event.requestId : undefined,
+        activityAction: validation.action,
+        module: dispatchContract.module,
+        actionUrl: canonicalDispatchActionUrl(validation.action, event),
+        senderUid: decoded.uid,
+        senderName: typeof event.actorName === 'string' && event.actorName.trim()
+          ? event.actorName.trim()
+          : (profile['displayName'] || decoded['name'] || 'Người dùng')
+      });
     } else {
-      recipientUids = [recipientUid];
+      input = (body.notification && typeof body.notification === 'object') ? body.notification : {};
+      const recipientUid = typeof input.recipientUid === 'string' ? input.recipientUid : '';
+      const type = typeof input.type === 'string' ? input.type : '';
+      const title = typeof input.title === 'string' ? input.title.trim() : '';
+      const message = typeof input.message === 'string' ? input.message.trim() : '';
+
+      if (!recipientUid || !NOTIFICATION_TYPES.has(type) || !title || !message) {
+        return res.status(400).json({ error: 'Notification thiếu recipient, type, title hoặc message.' });
+      }
+      if (title.length > 160 || message.length > 4000) {
+        return res.status(400).json({ error: 'Nội dung thông báo vượt quá giới hạn.' });
+      }
+
+      if (recipientUid === 'role:all' && (!isManager || type !== 'SYSTEM_UPDATE')) {
+        return res.status(403).json({ error: 'Không có quyền gửi broadcast toàn hệ thống.' });
+      }
+      if (recipientUid === 'role:admin' && !isManager && !canManageStandards && !USER_INITIATED_ADMIN_EVENTS.has(type)) {
+        return res.status(403).json({ error: 'Không có quyền gửi loại thông báo này đến quản trị viên.' });
+      }
+      if (!recipientUid.startsWith('role:') && !canManageStandards && recipientUid !== decoded.uid) {
+        return res.status(403).json({ error: 'Không có quyền gửi thông báo trực tiếp cho người dùng khác.' });
+      }
+
+      if (recipientUid === 'role:all' || recipientUid === 'role:admin') {
+        const users = await usersCollection.get();
+        const roles = recipientUid === 'role:admin'
+          ? await db.collection(`artifacts/${appId}/roles_config`).get()
+          : null;
+        const permissionsByRole = new Map<string, string[]>(
+          roles?.docs ? roles.docs.map(roleDoc => {
+            const data = roleDoc.data() || {};
+            return [
+              roleDoc.id,
+              Array.isArray(data['permissions']) ? (data['permissions'] as string[]) : []
+            ];
+          }) : []
+        );
+
+        loadedUsersMap = new Map();
+        const matchingUids: string[] = [];
+
+        for (const userDoc of users.docs) {
+          const userData = userDoc.data() || {};
+          loadedUsersMap.set(userDoc.id, userData);
+
+          if (recipientUid === 'role:all') {
+            matchingUids.push(userDoc.id);
+          } else {
+            const configuredRolePermissions = permissionsByRole.get(userData['roleId'] || 'role_staff_default') || [];
+            const roleStr = typeof userData['role'] === 'string' ? userData['role'].toLowerCase() : '';
+            const isAdmin = roleStr === 'manager'
+              || (Array.isArray(userData['permissions']) && userData['permissions'].includes('standard_approve'))
+              || (Array.isArray(userData['customPermissions']) && userData['customPermissions'].includes('standard_approve'))
+              || (Array.isArray(configuredRolePermissions) && configuredRolePermissions.includes('standard_approve'))
+              || (userData['roleId'] === 'role_qc_lead' && !permissionsByRole.has('role_qc_lead'));
+
+            if (isAdmin) matchingUids.push(userDoc.id);
+          }
+        }
+
+        recipientUids = [...new Set(matchingUids)];
+        console.log(`[Notifications API] Resolved ${recipientUid} to ${recipientUids.length} users:`, recipientUids);
+      } else {
+        recipientUids = [recipientUid];
+      }
+    }
+
+    const type = typeof input.type === 'string' ? input.type : '';
+    const title = typeof input.title === 'string' ? input.title.trim() : '';
+    const message = typeof input.message === 'string' ? input.message.trim() : '';
+    if (!NOTIFICATION_TYPES.has(type) || !title || !message || title.length > 160 || message.length > 4000) {
+      return res.status(400).json({ error: 'Notification projection không hợp lệ.' });
     }
 
     if (!recipientUids.length) return res.status(200).json({ success: true, recipientCount: 0, sentCount: 0 });
@@ -290,6 +421,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       title,
       message,
       targetId: input.targetId,
+      targetType: input.targetType,
+      targetName: input.targetName,
+      requestId: input.requestId,
+      activityAction: input.activityAction,
+      module: input.module,
       actionUrl: input.actionUrl,
       senderUid: decoded.uid,
       senderName: (typeof input.senderName === 'string' && input.senderName.trim())
@@ -301,7 +437,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       createdAt
     });
 
-    const sendPush = body.sendPush !== false;
+    const sendPush = dispatchContract
+      ? dispatchContract.channels.includes('push')
+      : body.sendPush !== false;
     const pushClaimId = notificationCollection.doc().id;
     const claimedRecipientUids: string[] = [];
     let createdCount = 0;
@@ -320,9 +458,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const ref = refs[index];
           if (snapshot.exists) {
             const existing = snapshot.data() || {};
-            const claimExpired = existing['pushStatus'] === 'sending'
-              && Number(existing['pushClaimedAt'] || 0) < createdAt - 2 * 60_000;
-            if (sendPush && (existing['pushStatus'] === 'failed' || claimExpired)) {
+            if (shouldClaimNotificationPush(existing, sendPush, createdAt)) {
               transaction.update(ref, {
                 pushStatus: 'sending',
                 pushClaimId,
@@ -382,7 +518,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               title,
               body: message,
               level: typeof input.level === 'string' ? input.level : 'info',
-              actionUrl: typeof input.actionUrl === 'string' ? input.actionUrl : ''
+              actionUrl: typeof input.actionUrl === 'string' ? input.actionUrl : '',
+              activityAction: typeof input.activityAction === 'string' ? input.activityAction : '',
+              module: typeof input.module === 'string' ? input.module : '',
+              requestId: typeof input.requestId === 'string' ? input.requestId : ''
             },
             webpush: {
               headers: { Urgency: 'high' },
@@ -441,9 +580,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    console.log('[Notifications API] Dispatch result', {
+      eventId,
+      action: dispatchAction || 'legacy-publish',
+      recipientCount: recipientUids.length,
+      createdCount,
+      pushSentCount: sentCount,
+      pushFailureCount: failureCount
+    });
+
     return res.status(200).json({
       success: true,
       eventId,
+      ...(dispatchAction ? { activityAction: dispatchAction } : {}),
       recipientCount: recipientUids.length,
       createdCount,
       deduplicatedCount: recipientUids.length - createdCount,
