@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đã hoàn tất implementation PR9 hard cutover trong release b05 và full local/Emulator/release gate; đang thực hiện commit/push/deploy production và nghiệm thu runtime cuối**
+> Trạng thái: **Đã hoàn tất triển khai production và nghiệm thu runtime release v26.08.25-b05; Activity/Notification global, UID-only printable Rules, registry-only consumers và evidence audit đã đạt**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** trước nghiệm thu cuối là commit/push, deploy release b05, production UID-only Rules smoke và authenticated runtime smoke sau cleanup. Snapshot dữ liệu trước cleanup được ghi tại mục 0.14; implementation/contract evidence của PR9 được ghi tại mục 0.15. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark; production role matrix đại diện đã có evidence tại mục 0.8/0.10/0.12.
+Các gate commit/push, deploy release b05, production UID-only Rules smoke và authenticated runtime smoke sau cleanup đã hoàn tất, evidence tại mục 0.16. Snapshot dữ liệu trước cleanup được ghi tại mục 0.14; implementation/contract evidence của PR9 được ghi tại mục 0.15. Notification writer workflow vẫn dùng fixture Auth/Firestore Emulator end-to-end, không chạy mutation nghiệp vụ thật trên production; đây là giới hạn an toàn có chủ ý. Authenticated staging role matrix cloud vẫn không thể bật trên Spark (`BILLING_NOT_ENABLED`), đã được đóng bằng production role accounts, Auth/Firestore Emulator và Rules matrix evidence.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -391,7 +391,65 @@ npm run release:verify        → pass (full npm test + runtime gate + typecheck
 git diff --check               → pass
 ```
 
-Build chỉ còn các cảnh báo CommonJS/AMD dependency hiện hữu từ Univer/React-related; không có compile error. Production deploy và authenticated smoke của release b05 được thực hiện sau khi commit/push, ghi bổ sung vào mục 0.16.
+Build chỉ còn các cảnh báo CommonJS/AMD dependency hiện hữu từ Univer/React-related; không có compile error. Production deploy và authenticated smoke của release b05 được ghi tại mục 0.16.
+
+## 0.16. Production release b05 và nghiệm thu runtime cuối ngày 2026-08-25
+
+### Release/deployment evidence
+
+- Commit implementation + release metadata: `d8728690b3e339fbd9aa8ee9d17484296285d0d5` (`feat(activity): complete unified feed hard cutover`), đã push thành công lên `origin/main`; local `HEAD` và `origin/main` trùng SHA, working tree sạch.
+- `npm run release:prepush` và `npm run release:predeploy` đều đạt; `release:verify` trước commit đạt đầy đủ test, runtime gate, typecheck app/API và production build.
+- GitHub/Vercel deployment của đúng SHA `d872869` có trạng thái `success`, deployment ID `6086280872`; preview deployment: `https://nafiqpm6-8kus8zox3-babypusscts-projects.vercel.app`.
+- Alias production `https://nafiqpm6.vercel.app` đã phục vụ `release-history.json` với release mới nhất `v26.08.25-b05`; ứng dụng hiển thị badge `Nhật ký v26.08.25-b05`.
+
+### Firestore Rules final cutover
+
+- `npm run deploy:rules` đã deploy Rules UID-only sau khi frontend b05 đã phục vụ production; predeploy gate xác nhận local/remote cùng SHA.
+- Public traceability document `TRC-1772768059788-622`: REST unauthenticated GET `200`.
+- Private Activity document `01Gj87ySic0p7NayA6nb`: REST unauthenticated GET `403`.
+- Authenticated QC test account bằng custom-token read-only check: query `printable=true + actorUid=currentUid` trả `200` với 1 row; query `printable=true + user=displayName` trả `403`. Không tạo, sửa, xóa hoặc reset document production trong smoke này.
+- Sau khi Rules final đã deploy, không còn khoảng lệch client cũ–Rules: frontend b05 đã bỏ listener `user/displayName` trước khi ownership Rule được siết UID-only.
+
+### Authenticated Manager runtime smoke
+
+Đăng nhập bằng luồng `Tài Khoản → Đăng nhập LIMS` trên alias production, không dùng Google/QR và không chạy mutation nghiệp vụ:
+
+- Dashboard tải đúng `#/dashboard`, profile hiển thị `manager`, release badge là `v26.08.25-b05`.
+- Activity Feed canonical tải `50` nút `Mở chi tiết hoạt động`; không xuất hiện `Không có quyền xem hoạt động`, `Không thể tải hoạt động` hoặc `PERMISSION_DENIED`.
+- Bộ lọc `Quan trọng` chuyển `aria-pressed=true` và trả đúng danh sách; khi tắt lại, toàn bộ feed và `15` nút Traceability canonical hiển thị.
+- Bấm Traceability từ Activity mở thành công `#/traceability/zkWuZmLb47kORduHvJMp`; trang hiển thị Transaction ID, actor, trạng thái đã duyệt và dữ liệu hồ sơ tương ứng.
+- Bell mở đúng `role=dialog`, hiển thị `6 thông báo chưa đọc`; các tab `Tất cả/Chưa đọc/Cần xử lý` cùng phản ánh số unread. Panel đã được đóng lại, không đánh dấu đọc, không xóa và không tạo notification.
+- Print Queue `#/printing` tải `300` dòng printable, không có empty/error state; Manager nhìn thấy queue toàn cục đúng policy Manager.
+- Console error trong các surface và sau cửa sổ quan sát `60` giây: `0`; không có chuỗi `PERMISSION_DENIED`, `Không có quyền xem hoạt động` hoặc `Không thể tải hoạt động`.
+
+### Production read-only audit sau release
+
+```text
+config/system.activityFeedV2                    = true
+config/system.notificationEventSyncV2           = true
+config/system.activityFeedV2CanaryUids          = []
+config/system.notificationEventSyncV2CanaryUids = []
+config/system.showLockedFeatures                = false
+
+logs total                                      = 4.195
+schemaVersion=2                                 = 4.195
+eventId == document ID                          = 4.195
+actorUid / actorName / user hợp lệ              = 4.195 / 4.195 / 4.195
+canonical identity thiếu                        = 0
+logs indexes khai báo                           = 7
+```
+
+Audit dùng Admin SDK ở chế độ đọc, không tạo write nghiệp vụ. Các giá trị config được đọc lại sau deploy, không chỉnh sửa trong nghiệm thu.
+
+### Giới hạn môi trường được chấp nhận
+
+- Staging cloud role matrix không chạy được khi giữ Spark vì Identity Platform trả `BILLING_NOT_ENABLED`; quyết định không nâng Blaze được giữ nguyên. Evidence thay thế là bốn production role accounts, Auth/Firestore Emulator workflow và Rules matrix 34/34.
+- App Badge trên OS của installed PWA/device thật chưa thể quan sát trong môi trường này; automated badge suite `5/5` đã pass cho positive count, zero/clear, setter-only fallback, unsupported API và async rejection. Không dùng giới hạn này để suy ra lỗi production.
+- Permission-change live mutation trên production không được thực hiện để tránh sửa quyền tài khoản thật trong nghiệm thu; pure scope/service contract và Emulator evidence xác nhận listener scope cũ được clear trước khi publish scope mới, Viewer/Pending fail closed.
+
+### Kết luận nghiệm thu
+
+Release `v26.08.25-b05` đã được phát hành production, Rules final đã ở UID-only, dữ liệu Activity canonical đã verify đủ, Activity/Bell/Traceability/Print Queue đã smoke read-only và cửa sổ quan sát không phát sinh lỗi. Compatibility fields (`user`, `printable`, `printJobId`) vẫn được giữ ở document layer; chỉ legacy reader và ownership fallback bị loại bỏ. Phiên client cũ phải reload/nhận bundle b05 trước khi tiếp tục dùng các surface đã hard cutover. Rollback vẫn khả dụng bằng deployment frontend trước đó và Rules/config release trước, không cần xóa dữ liệu lịch sử.
 
 # 1. Quyết định kiến trúc đã chốt
 
@@ -2618,7 +2676,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 - [x] PR8 (aggregation, last-seen, important filter, structured search và mobile/a11y contracts; release verify pass).
 - [x] compatibility window complete theo hard-cutover decision; compatibility fields giữ ở document layer nhưng legacy reader/ownership fallback đã hết vòng đời trong b05.
-- [x] PR9 cleanup implementation hoàn tất tại mục 0.15; chờ evidence deploy/runtime được ghi ở mục 0.16.
+- [x] PR9 cleanup implementation hoàn tất tại mục 0.15; production deploy, Rules cutover và runtime evidence hoàn tất tại mục 0.16.
 - [x] final release verify (`npm run release:verify` exit code `0` sau khi thêm notification workflow Emulator).
 - [x] update implementation checklist evidence (mục 0.9 và các checklist runtime đã cập nhật).
 
