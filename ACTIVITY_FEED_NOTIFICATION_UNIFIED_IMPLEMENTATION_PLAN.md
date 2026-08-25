@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules, role-matrix smoke và notification workflow Emulator đã có evidence; Manager canary runtime pass; V2 global flags vẫn OFF chờ Staff default smoke, monitor và compatibility window**
+> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules, bốn-role V2 smoke và notification workflow Emulator đã có evidence; V2 global flags vẫn OFF chờ Staff default smoke, monitor/observation và compatibility window**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary observation/monitoring, Staff default UI smoke và compatibility-window cleanup. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production. Production index/backfill/Rules và bốn account role-matrix production đã có evidence tại mục 0.5/0.8; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary observation/monitoring, Staff default UI smoke và compatibility-window cleanup. Notification writer workflow đã có fixture Auth/Firestore Emulator end-to-end nhưng chưa chạy mutation nghiệp vụ thật trên production. Production index/backfill/Rules và bốn account role-matrix production đã có evidence tại mục 0.5/0.8/0.10; authenticated staging role matrix cloud vẫn bị chặn bởi billing Spark.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -234,10 +234,33 @@ Như vậy gate cloud role-matrix đại diện cho bốn role đã có evidence
 - Fixture đã pass toàn bộ chuỗi: `PUBLISH_RESULT_REPORT`, `RESET_RESULT_DATA`, `REQUEST_STANDARD`, `APPROVE_STANDARD_REQUEST`, `REJECT_STANDARD_REQUEST`, `INVENTORY_LOW_STOCK` và `POST_SYSTEM_UPDATE`.
 - Fixture xác nhận recipient resolution theo permission/role, actor suppression, action URL canonical, `pushStatus=no_token` khi không có FCM token và retry idempotence (`createdCount=0` ở lần gọi lại cùng `eventId`).
 - `npm run test:notifications` đạt `27/27` unit/policy tests và `1/1` workflow Emulator; `npm run typecheck:api` đạt.
-- Đã thử mở UID canary tạm thời cho Manager + bốn account role-matrix để chuẩn bị UI smoke; không thực hiện mutation nghiệp vụ. Sau kiểm tra cấu hình, đã khôi phục `activityFeedV2CanaryUids` và `notificationEventSyncV2CanaryUids` về đúng 1 Manager UID; `activityFeedV2=false`, `notificationEventSyncV2=false`.
+- Đã mở UID canary tạm thời cho Manager + bốn account role-matrix và chạy UI smoke đọc-only tại mục 0.10; không thực hiện mutation nghiệp vụ. Sau smoke, đã khôi phục `activityFeedV2CanaryUids` và `notificationEventSyncV2CanaryUids` về đúng 1 Manager UID; `activityFeedV2=false`, `notificationEventSyncV2=false`.
 - `npm run release:verify` chạy lại sau thay đổi, exit code `0`; full test, Rules Emulator, typecheck app/API và production build đều pass. Build chỉ còn warning CommonJS/AMD hiện hữu.
 
 Các gate production vẫn cố ý giữ độc lập: chưa bật global flags, chưa chạy workflow mutation thật trên dữ liệu nghiệp vụ production, chưa đánh dấu Staff default UI smoke/monitoring và chưa mở PR9 cleanup trước compatibility window.
+
+## 0.10. V2 canary UI smoke đầy đủ bốn role ngày 2026-08-25
+
+Sau khi người dùng xác nhận tại action-time, đã chạy smoke trên production qua luồng `Đăng nhập quản trị` bằng bốn account role-matrix. Trong suốt phiên chỉ đọc Dashboard/Bell; không publish, reset, approve/reject, chỉnh kho, đổi quyền hoặc ghi dữ liệu nghiệp vụ.
+
+| Role | Activity V2 | Bell | Kết quả bảo mật/UI | Console error |
+|---|---|---|---|---:|
+| QC Lead | Filter `Quan trọng` hiển thị; `50` nút mở chi tiết canonical | Mở được dialog | Đọc Activity đúng phạm vi role | `0` |
+| Lab Technician | Filter `Quan trọng` hiển thị; `50` nút mở chi tiết canonical | Mở được dialog | Đọc Activity đúng phạm vi role | `0` |
+| Viewer | V2 surface hiển thị trạng thái denied; `0` nút detail | Mở được dialog | Hiện `Không có quyền xem hoạt động`, không lọt dữ liệu | `0` |
+| Pending | Không vào Dashboard | Không hiển thị | Dừng đúng màn hình `Đang Chờ Phê Duyệt` | `0` |
+
+Kết thúc smoke đã xác minh lại cấu hình production:
+
+```text
+activityFeedV2              = false
+notificationEventSyncV2     = false
+activityFeedV2CanaryUids    = 1 (Manager)
+notificationCanaryUids      = 1 (Manager)
+showLockedFeatures          = false
+```
+
+Gate còn mở sau evidence này: Staff default UI smoke, observation/monitoring đủ thời lượng trước rollout rộng, quyết định bật global flags, compatibility window và PR9 cleanup. Bốn-role UI smoke không được dùng để suy ra notification writer mutation production đã an toàn; phần đó vẫn dùng fixture Emulator tại mục 0.9.
 
 ---
 
@@ -2396,7 +2419,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] API typecheck pass.
 - [x] Build pass.
 - [x] `npm run release:verify` pass ngày 2026-08-25.
-- [ ] Runtime smoke đầy đủ bằng mọi role đại diện pass (QC/Lab/Viewer/Pending đã pass; Staff default UI smoke còn thiếu).
+- [ ] Runtime smoke đầy đủ bằng mọi role đại diện pass (QC/Lab/Viewer/Pending đã pass cả V2 canary UI smoke; Staff default UI smoke còn thiếu).
 
 ---
 
@@ -2432,11 +2455,11 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 - [x] PR5 merge flag off (`v26.08.25-b04`, global flag vẫn false).
 - [x] smoke with Manager (production UID canary, Dashboard/Bell, console error `0`).
-- [x] smoke with QC Lead (production test account, Dashboard/legacy Activity load).
-- [x] smoke with Lab (production test account, Dashboard/legacy Activity load).
+- [x] smoke with QC Lead (production test account, V2 canary Dashboard/Bell, `Quan trọng`, 50 detail buttons, console error `0`).
+- [x] smoke with Lab (production test account, V2 canary Dashboard/Bell, `Quan trọng`, 50 detail buttons, console error `0`).
 - [x] smoke with one existing Staff profile (read-only `STANDARD_VIEW` query; custom token ký local).
 - [ ] smoke with Staff default.
-- [x] smoke Viewer/Pending denied/hidden (Viewer không có detail entry Activity; Pending dừng ở màn hình chờ duyệt).
+- [x] smoke Viewer/Pending denied/hidden (Viewer V2 denied với 0 detail entry, Bell mở được; Pending dừng ở màn hình chờ duyệt, không có Bell; console error `0`).
 - [x] canary flag on (UID-scoped, 1 Manager; global flag vẫn false).
 - [ ] monitor read/errors.
 - [ ] flag on rộng.
