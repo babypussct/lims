@@ -150,6 +150,7 @@ Do các điều kiện trên, các mục sau vẫn giữ `[ ]`: production backf
 - `npm run test:activity` đạt `56/56`; `npm run test:firestore-rules` đạt `34/34`.
 - Production dry-run lần hai đọc `4.192` log, không ghi dữ liệu: `migratable=3.165`, `unresolvedActor=1.027`, `unknownAction=0`, `missingTarget=51`, `invalidV2=0`, `errors=0`, `publicTraceableCandidates=572`.
 - 1.027 unresolved hiện đều là `UNRESOLVED_ACTOR:not-found`; không còn unknown action. Hai action Daily Checklist trước đó đã được classification và không còn nằm trong unresolved report.
+- Commit `3d1c09532ade` đã push lên `main`; `release:predeploy` đạt với remote cùng SHA và Vercel đã phục vụ `v26.08.25-b02`. Smoke public `/`, `/ngsw.json`, `/release-history.json` và `/changelog` đều trả HTTP `200`.
 - Không chạy production apply và không deploy Rules production. Bước còn bị chặn là mapping nghiệp vụ xác thực cho actor legacy `Quản trị viên`/`Admin`; không được tự động gán sang tài khoản hiện tại chỉ dựa trên tên.
 - Staging vẫn giữ Spark theo quyết định người dùng; không liên kết Cloud Billing để thực hiện bước này.
 
