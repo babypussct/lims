@@ -171,6 +171,26 @@ export const ACTIVITY_ACTION_REGISTRY = {
     publicTraceableAllowed: true,
     notification: none()
   }),
+  DAILY_CHECK_ITEM: define('DAILY_CHECK_ITEM', {
+    module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'NORMAL', activityVisible: true,
+    label: 'đã đánh dấu kiểm tra mẫu', iconKey: 'list-check', defaultActionUrl: resultUrl,
+    notification: none()
+  }),
+  DAILY_UNCHECK_ITEM: define('DAILY_UNCHECK_ITEM', {
+    module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'WARNING', activityVisible: true,
+    label: 'đã bỏ đánh dấu kiểm tra mẫu', iconKey: 'list-check', defaultActionUrl: resultUrl,
+    notification: none()
+  }),
+  DAILY_CHECK_BULK: define('DAILY_CHECK_BULK', {
+    module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'NORMAL', activityVisible: true,
+    label: 'đã đánh dấu kiểm tra mẫu hàng loạt', iconKey: 'list-check', defaultActionUrl: resultUrl,
+    notification: none()
+  }),
+  DAILY_UNCHECK_BULK: define('DAILY_UNCHECK_BULK', {
+    module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'WARNING', activityVisible: true,
+    label: 'đã bỏ đánh dấu kiểm tra mẫu hàng loạt', iconKey: 'list-check', defaultActionUrl: resultUrl,
+    notification: none()
+  }),
 
   CREATE_ITEM: define('CREATE_ITEM', {
     module: 'INVENTORY', audience: 'INVENTORY_VIEW', importance: 'NORMAL', activityVisible: true,

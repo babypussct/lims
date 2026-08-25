@@ -3,11 +3,12 @@
   "highlights": [
     "Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.",
     "Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.",
-    "Lịch sử in và báo cáo được giữ ổn định khi giao diện Hoạt động được nâng cấp."
+    "Lịch sử in, báo cáo và kiểm tra mẫu được giữ ổn định khi giao diện Hoạt động được nâng cấp."
   ],
   "features": [
     "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan.",
-    "Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý."
+    "Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý.",
+    "Lịch sử đánh dấu và bỏ đánh dấu kiểm tra mẫu được hiển thị nhất quán trong hoạt động."
   ],
   "improvements": [
     "Người dùng có quyền phù hợp có thể xem hoạt động chung của workspace thay vì chỉ thấy thao tác do chính mình thực hiện.",

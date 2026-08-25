@@ -44,6 +44,32 @@ test('known legacy actions receive deterministic V2 classification and traceabil
   assert.equal(result.patch?.['actionUrl'], '/requests');
 });
 
+test('historical daily checklist actions are classified as result-operator events', () => {
+  const checked = classifyLegacyActivity('daily-check-01', {
+    action: 'DAILY_CHECK_ITEM',
+    user: 'Lab A',
+    requestId: 'REQ-DAILY-01',
+    targetId: 'sample-01',
+    details: 'Check mẫu'
+  }, users);
+  assert.equal(checked.status, 'MIGRATABLE');
+  assert.equal(checked.patch?.['module'], 'RESULT');
+  assert.equal(checked.patch?.['audience'], 'RESULT_OPERATOR');
+  assert.equal(checked.patch?.['importance'], 'NORMAL');
+  assert.equal(checked.patch?.['targetType'], 'REQUEST');
+  assert.equal(checked.patch?.['actionUrl'], '/results/REQ-DAILY-01');
+
+  const unchecked = classifyLegacyActivity('daily-uncheck-01', {
+    action: 'DAILY_UNCHECK_ITEM',
+    user: 'Lab A',
+    requestId: 'REQ-DAILY-01',
+    details: 'Bỏ check mẫu'
+  }, users);
+  assert.equal(unchecked.status, 'MIGRATABLE');
+  assert.equal(unchecked.patch?.['importance'], 'WARNING');
+  assert.equal(unchecked.patch?.['activityVisible'], true);
+});
+
 test('backfill canonicalizes stale actor names and does not expose printable-only legacy logs', () => {
   const staleName = classifyLegacyActivity('legacy-result', {
     action: 'APPROVE_REQUEST',

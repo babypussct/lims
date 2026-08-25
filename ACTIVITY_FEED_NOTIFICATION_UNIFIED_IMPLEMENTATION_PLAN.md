@@ -33,7 +33,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 - `AuditLogService` và `PrintQueueService` đã tách khỏi Activity Feed reader;
 - Print Queue V2 dùng `actorUid` làm ownership key, đồng thời giữ listener `user/displayName` chỉ cho legacy compatibility;
 - `ActivityFeedService`, merge/dedupe, structured search/filter, aggregation, last-seen và Dashboard flag đã có;
-- Dashboard/Statistics dùng label từ canonical registry cho mọi action đã đăng ký; heuristic chỉ còn là fallback cho legacy unknown action trong compatibility path;
+- Dashboard/Statistics dùng label từ canonical registry cho mọi action đã đăng ký; heuristic chỉ còn là fallback cho legacy unknown action trong compatibility path; các action lịch sử Daily Checklist đã được registry hóa để backfill không còn bỏ sót;
 - deep-link Traceability V2 dùng canonical resolver, chỉ sinh `/traceability/{requestId}` khi event có `publicTraceable=true` và requestId hợp lệ, đồng thời encode identifier;
 - Activity Feed header/search đã responsive hơn trên mobile; action buttons V2 có accessible label/focus state và regression contract;
 - notification canonical dispatch theo `eventId`, server-side recipient resolution, actor suppression và deterministic inbox ID đã có;
@@ -46,7 +46,7 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 Automated evidence gần nhất:
 
 ```text
-npm run test:activity                 → 55/55 pass
+npm run test:activity                 → 56/56 pass
 npm run test:notifications            → 27 tests pass, 0 fail
 npm run test:ui-dashboard             → 2/2 pass
 npm run test:firestore-rules          → 34/34 pass
@@ -87,7 +87,7 @@ Các thay đổi tiếp theo đã được triển khai theo hướng additive v
 Evidence mới nhất sau hardening:
 
 ```text
-npm run test:activity                 → 55/55 pass
+npm run test:activity                 → 56/56 pass
 npm run test:notifications            → 27 tests pass, 0 fail
 npm run test:ui-dashboard             → 2/2 pass
 npm run test:firestore-rules          → 34/34 pass
@@ -139,6 +139,19 @@ Evidence rollout staging đã đạt sau khi tạo credential được xác nh�
 - Firebase Authentication/Identity Platform chưa thể khởi tạo trên staging Spark; API `initializeAuth` trả `BILLING_NOT_ENABLED`. Quyết định ngày 2026-08-25: giữ project staging ở Spark, không liên kết Cloud Billing; authenticated role-matrix cloud chưa chạy, chỉ dùng Auth Emulator/local evidence khi cần.
 
 Do các điều kiện trên, các mục sau vẫn giữ `[ ]`: production backfill, canary flag, Rules production cutover, authenticated role-matrix smoke và PR9 cleanup. Staging index/dry-run/apply/verify/Rules và production index `READY` đã có evidence riêng ở trên; không dùng chúng để suy ra production data/Rules đã sẵn sàng.
+
+## 0.4. Tiếp tục xử lý legacy action và production dry-run ngày 2026-08-25
+
+Đã hoàn tất phần classification còn thiếu mà không thay đổi dữ liệu production:
+
+- Registry V2 và Rules đã bổ sung `DAILY_CHECK_ITEM`, `DAILY_UNCHECK_ITEM`, `DAILY_CHECK_BULK` và `DAILY_UNCHECK_BULK` theo mã nguồn Daily Checklist lịch sử; tất cả được phân loại `RESULT/RESULT_OPERATOR`, không tạo notification và không được public traceability.
+- `DAILY_CHECK_*` có mức thông thường; `DAILY_UNCHECK_*` có mức cảnh báo để giữ ý nghĩa thao tác bỏ đánh dấu trong Activity Feed.
+- Test backfill xác nhận action item được migrate với `targetType=REQUEST` và route `/results/{requestId}`; contract test xác nhận registry và Firestore Rules vẫn lockstep.
+- `npm run test:activity` đạt `56/56`; `npm run test:firestore-rules` đạt `34/34`.
+- Production dry-run lần hai đọc `4.192` log, không ghi dữ liệu: `migratable=3.165`, `unresolvedActor=1.027`, `unknownAction=0`, `missingTarget=51`, `invalidV2=0`, `errors=0`, `publicTraceableCandidates=572`.
+- 1.027 unresolved hiện đều là `UNRESOLVED_ACTOR:not-found`; không còn unknown action. Hai action Daily Checklist trước đó đã được classification và không còn nằm trong unresolved report.
+- Không chạy production apply và không deploy Rules production. Bước còn bị chặn là mapping nghiệp vụ xác thực cho actor legacy `Quản trị viên`/`Admin`; không được tự động gán sang tài khoản hiện tại chỉ dựa trên tên.
+- Staging vẫn giữ Spark theo quyết định người dùng; không liên kết Cloud Billing để thực hiện bước này.
 
 ---
 
@@ -1612,8 +1625,9 @@ Exit: data mới bắt đầu giàu schema nhưng production UI không đổi.
 - [x] Request print badge tách Activity.
 - [x] backfill dry-run staging (`total=5`, `migratable=4`, `alreadyV2=1`, unresolved/invalid/unknown/error = 0).
 - [x] staging apply small batch (`migrated=4`) và verify (`alreadyV2=5`, exit code `0`).
-- [x] production dry-run (`total=4.192`, `migratable=3.163`, `unresolvedActor=1.027`, `unknownAction=2`, `errors=0`; không ghi dữ liệu).
-- [ ] resolve unknown action/actor.
+- [x] production dry-run lần hai (`total=4.192`, `migratable=3.165`, `unresolvedActor=1.027`, `unknownAction=0`, `errors=0`; không ghi dữ liệu).
+- [x] classification các action Daily Checklist lịch sử; không còn unknown action.
+- [ ] resolve `1.027` legacy actor chưa có mapping xác thực.
 - [ ] production apply bounded batches.
 - [ ] verify report.
 
@@ -1754,7 +1768,7 @@ Exit: backend enforce đúng policy, không phụ thuộc UI.
 - [x] bounded batch/checkpoint.
 - [x] tests with fixtures.
 - [x] staging dry-run.
-- [ ] production dry-run evidence.
+- [x] production dry-run evidence lần hai (`4.192` logs, `unknownAction=0`, `unresolvedActor=1.027`, no write).
 
 ### Exit criteria
 
@@ -2321,7 +2335,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] production index deploy.
 - [x] production index READY (`7/7` index `logs`).
 - [x] production dry-run (`4.192` logs, no write).
-- [x] review unresolved report (`1.027` actor chưa xác định, `2` unknown action; không tự động gán).
+- [x] review unresolved report (`1.027` actor chưa xác định, `unknownAction=0`; không tự động gán).
 - [ ] production apply.
 - [ ] production verify.
 
