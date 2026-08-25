@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules, bốn-role V2 smoke và notification workflow Emulator đã có evidence; V2 global flags vẫn OFF chờ Staff default smoke, monitor/observation và compatibility window**
+> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules, bốn-role V2 smoke, notification workflow Emulator và observation read/error 60 giây đã có evidence; V2 global flags vẫn OFF chờ Staff default smoke và compatibility window**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -260,7 +260,24 @@ notificationCanaryUids      = 1 (Manager)
 showLockedFeatures          = false
 ```
 
-Gate còn mở sau evidence này: Staff default UI smoke, observation/monitoring đủ thời lượng trước rollout rộng, quyết định bật global flags, compatibility window và PR9 cleanup. Bốn-role UI smoke không được dùng để suy ra notification writer mutation production đã an toàn; phần đó vẫn dùng fixture Emulator tại mục 0.9.
+Gate còn mở sau evidence này: Staff default UI smoke, quyết định bật global flags, compatibility window và PR9 cleanup. Bốn-role UI smoke không được dùng để suy ra notification writer mutation production đã an toàn; phần đó vẫn dùng fixture Emulator tại mục 0.9.
+
+## 0.11. Observation read/error sau canary ngày 2026-08-25
+
+Sau khi khôi phục canary về đúng một UID Manager, đã theo dõi Dashboard production ở chế độ read-only trong `60` giây liên tục. Phiên quan sát không click thao tác nghiệp vụ, không mở form ghi dữ liệu và không thay đổi cấu hình.
+
+```text
+Thời gian (Asia/Ho_Chi_Minh) = 2026-08-25 15:34:36 → 15:35:46
+Route                         = #/dashboard
+Release                       = v26.08.25-b04
+Activity V2 filter            = 1 nút `Quan trọng`
+Canonical detail buttons      = 50
+`Không có quyền xem hoạt động`= 0
+`Không thể tải hoạt động`     = 0
+Console error mới trong kỳ    = 0
+```
+
+Kết luận: Manager canary giữ ổn định trong cửa sổ quan sát ngắn đã chạy; không có read error hoặc permission-denied mới. Đây là evidence monitor/read-error của canary, không phải cam kết SLA dài hạn. Global flags tiếp tục giữ `false`; chưa bật rộng vì Staff default UI smoke, compatibility window và quyết định PR9 vẫn chưa hoàn tất.
 
 ---
 
@@ -2461,7 +2478,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [ ] smoke with Staff default.
 - [x] smoke Viewer/Pending denied/hidden (Viewer V2 denied với 0 detail entry, Bell mở được; Pending dừng ở màn hình chờ duyệt, không có Bell; console error `0`).
 - [x] canary flag on (UID-scoped, 1 Manager; global flag vẫn false).
-- [ ] monitor read/errors.
+- [x] monitor read/errors (Manager canary read-only 60 giây, 0 console error mới, 0 Activity denied/load error).
 - [ ] flag on rộng.
 
 ## Notification V2
