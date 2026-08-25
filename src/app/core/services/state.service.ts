@@ -31,6 +31,7 @@ import { getCanonicalId } from '../../features/results/shared/compound-id-resolv
 import { resolveMetadataSyncToast } from './notification-policy';
 import { ActivityEventService } from './activity-event.service';
 import { NotificationService } from './notification.service';
+import { isFeatureEnabledForUser, normalizeFeatureCanaryUids } from './feature-rollout';
 import { getDashboardActivityDataScope } from '../../shared/utils/dashboard-activity';
 
 export interface DirectBatchPlanItem {
@@ -141,17 +142,30 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.08.25-b03');
+  systemVersion = signal<string>('v26.08.25-b04');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
   showLockedFeatures = signal<boolean>(false);
   /**
-   * Rollout switch for Dashboard Activity Feed V2. Fail-closed/off by default;
-   * production can only opt in through config/system after indexes + Rules are ready.
+   * Rollout switches for the unified Activity/Bell projections. They are
+   * fail-closed for unauthenticated users and support a UID-scoped canary
+   * while the global switch remains false.
    */
-  activityFeedV2 = signal<boolean>(false);
-  notificationEventSyncV2 = signal<boolean>(false);
+  private activityFeedV2Configured = signal<boolean>(false);
+  private activityFeedV2CanaryUids = signal<string[]>([]);
+  private notificationEventSyncV2Configured = signal<boolean>(false);
+  private notificationEventSyncV2CanaryUids = signal<string[]>([]);
+  activityFeedV2 = computed(() => isFeatureEnabledForUser(
+    this.activityFeedV2Configured(),
+    this.activityFeedV2CanaryUids(),
+    this.auth.currentUserUid(),
+  ));
+  notificationEventSyncV2 = computed(() => isFeatureEnabledForUser(
+    this.notificationEventSyncV2Configured(),
+    this.notificationEventSyncV2CanaryUids(),
+    this.auth.currentUserUid(),
+  ));
   private sysConfigSub?: Unsubscribe;
 
   selectedSop = signal<Sop | null>(null);
@@ -982,6 +996,17 @@ export class StateService implements OnDestroy {
   private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
   private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
 
+  private applyFeatureRolloutConfig(config: Record<string, unknown>): void {
+    this.activityFeedV2Configured.set(config['activityFeedV2'] === true);
+    this.activityFeedV2CanaryUids.set(
+      normalizeFeatureCanaryUids(config['activityFeedV2CanaryUids']),
+    );
+    this.notificationEventSyncV2Configured.set(config['notificationEventSyncV2'] === true);
+    this.notificationEventSyncV2CanaryUids.set(
+      normalizeFeatureCanaryUids(config['notificationEventSyncV2CanaryUids']),
+    );
+  }
+
   async loadConfig(initGeneration?: number): Promise<void> {
     const isLoadActive = () => initGeneration === undefined || initGeneration === this.initGeneration;
 
@@ -1010,8 +1035,7 @@ export class StateService implements OnDestroy {
             if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
             if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
             if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
-            this.activityFeedV2.set(d['activityFeedV2'] === true);
-            this.notificationEventSyncV2.set(d['notificationEventSyncV2'] === true);
+            this.applyFeatureRolloutConfig(d);
             this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
           }
         });
@@ -1048,8 +1072,7 @@ export class StateService implements OnDestroy {
         if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
         if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
         if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
-        this.activityFeedV2.set(d['activityFeedV2'] === true);
-        this.notificationEventSyncV2.set(d['notificationEventSyncV2'] === true);
+        this.applyFeatureRolloutConfig(d);
         this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
       }
 
@@ -1078,8 +1101,7 @@ export class StateService implements OnDestroy {
       if (cache.system?.['maintenanceMode'] !== undefined) this.maintenanceMode.set(cache.system['maintenanceMode']);
       if (cache.system?.['maintenanceMessage']) this.maintenanceMessage.set(cache.system['maintenanceMessage']);
       if (cache.system?.['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(cache.system['showLockedFeatures']);
-      this.activityFeedV2.set(cache.system?.['activityFeedV2'] === true);
-      this.notificationEventSyncV2.set(cache.system?.['notificationEventSyncV2'] === true);
+      this.applyFeatureRolloutConfig((cache.system ?? {}) as Record<string, unknown>);
       this.maintenanceScheduledTime.set(cache.system?.['maintenanceScheduledTime'] || null);
       return true;
     } catch (_) { return false; /* ignore stale/corrupt cache */ }

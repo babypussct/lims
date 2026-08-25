@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.25-b03",
-    "title": "Hoạt động và thông báo nhất quán hơn trong công việc phòng kiểm nghiệm",
+    "version": "v26.08.25-b04",
+    "title": "Rollout canary an toàn cho Hoạt động và Thông báo",
     "features": [
+      "Bổ sung rollout canary theo UID đã xác minh để kiểm tra Activity Feed và chuông thông báo theo từng tài khoản trước khi mở rộng toàn hệ thống.",
       "Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.",
       "Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.",
       "Lịch sử in, báo cáo và kiểm tra mẫu được giữ ổn định khi giao diện Hoạt động được nâng cấp; các bản ghi cũ được gắn đúng tài khoản đã xác minh.",
-      "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan.",
-      "Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý."
+      "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan."
     ]
   },
   "assetGroups": [

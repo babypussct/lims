@@ -1,7 +1,7 @@
 # Kế hoạch triển khai hợp nhất Hoạt động gần đây, Chuông thông báo và Audit Trail
 
 > Ngày lập kế hoạch: 2026-08-25
-> Trạng thái: **Đang triển khai additive — local gates pass; staging đã rollout một phần; chưa deploy/cutover production**
+> Trạng thái: **Đang rollout có kiểm soát — production migration/Rules đã hoàn tất; V2 global flags vẫn OFF; đang triển khai UID canary và runtime smoke**
 > Phạm vi: Dashboard Activity Feed, `/logs`, chuông `/notifications`, toast/push, Audit/Statistics, Print Queue, Traceability, Firestore Rules, migration dữ liệu và rollout/rollback.
 > Mục tiêu chính: một hành động nghiệp vụ chỉ được mô tả **một lần** bằng canonical event; Dashboard, chuông, push và audit dùng chung nguồn sự kiện nhưng có policy hiển thị/recipient riêng.
 
@@ -38,8 +38,8 @@ Phần code local hiện đã đi xa hơn baseline ban đầu của tài liệu.
 - Activity Feed header/search đã responsive hơn trên mobile; action buttons V2 có accessible label/focus state và regression contract;
 - notification canonical dispatch theo `eventId`, server-side recipient resolution, actor suppression và deterministic inbox ID đã có;
 - Rules V2, registry ↔ Rules contract tests, public traceability restriction và user preference Rules đã có; public traceability hiện yêu cầu action allowlist + `requestId` + `targetType=REQUEST`;
-- backfill tooling và index config đã có local; composite-index contract test giữ đủ Activity/Audit/Print indexes và xác nhận notification query vẫn equality-only; staging đã có evidence index READY và backfill, production vẫn chưa chạy;
-- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không bật, nên local code không đồng nghĩa production cutover;
+- backfill tooling và index config đã có local; composite-index contract test giữ đủ Activity/Audit/Print indexes và xác nhận notification query vẫn equality-only; staging và production đã có evidence index READY/backfill;
+- feature flags `activityFeedV2` và `notificationEventSyncV2` vẫn default false nếu config không bật; release tiếp theo bổ sung UID-scoped canary, nhưng chưa bật canary/global ở production;
 - Activity scope resolution đã được tách thành pure helper có test cho permission reduction và downgrade Viewer; service contract xác nhận listener/data scope cũ bị clear trước khi publish scope mới;
 - App Badge sync đã được harden để xử lý API support không đầy đủ và Promise rejection; zero unread ưu tiên `clearAppBadge()` và fallback `setAppBadge(0)` khi browser chỉ expose setter.
 
@@ -70,7 +70,7 @@ Notification Panel @ 390×844      → dialog 390px, document scrollWidth 390px,
 
 Smoke này chỉ là local authenticated-manager evidence, không thay thế canary/role-matrix/staging-production gates. `permission change` realtime và App Badge API chưa được coi là runtime pass vì chưa có thao tác end-to-end tương ứng, dù cả hai hiện đã có automated regression evidence ở tầng policy/service contract.
 
-Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: production index/backfill, canary feature flags, runtime smoke bằng account thật và compatibility-window cleanup. Staging index/backfill/Rules đã có evidence tại mục 0.3; authenticated staging role matrix vẫn bị chặn bởi billing Spark.
+Các gate **chưa được coi là hoàn tất** nếu chưa có evidence riêng: canary feature flags, runtime smoke bằng account thật và compatibility-window cleanup. Production index/backfill/Rules đã có evidence tại mục 0.5; authenticated staging role matrix vẫn bị chặn bởi billing Spark.
 
 ## 0.2. Tiếp tục local hardening đã xác nhận ngày 2026-08-25
 
@@ -169,6 +169,23 @@ Sau khi người dùng xác nhận mapping, các bước production đã đượ
 - Full release verify của b03 đạt; Activity suite hiện có `57/57` test pass, Firestore Rules Emulator `34/34` pass, API typecheck và production build pass.
 
 Các mục còn giữ `[ ]` là authenticated role-matrix cloud trên staging (Identity Platform không bật được khi giữ Spark), canary flag/runtime authenticated smoke và PR9 compatibility cleanup; các mục này không còn là blocker của backfill hoặc Rules production.
+
+## 0.6. Bổ sung UID canary cho rollout V2 ngày 2026-08-25
+
+Để thực hiện đúng thứ tự `flag off → canary → monitor → on rộng`, release tiếp theo bổ sung lớp rollout additive:
+
+- `activityFeedV2` và `notificationEventSyncV2` vẫn là công tắc global; chỉ `true` mới mở cho toàn bộ user đã đăng nhập.
+- Khi global flag là `false`, hai mảng tùy chọn `activityFeedV2CanaryUids` và `notificationEventSyncV2CanaryUids` chỉ mở đúng cho UID được liệt kê.
+- UID canary được trim/deduplicate; giá trị sai kiểu, rỗng hoặc user chưa đăng nhập đều fail-closed.
+- Dashboard và Notification Center tiếp tục đọc cùng public rollout signals; không cần thay đổi policy, Rules hoặc schema event.
+- `npm run test:activity` sau thay đổi đạt `61/61`; app typecheck đạt; chưa ghi config canary production và chưa bật global flag.
+
+Kế hoạch runtime sau release:
+
+1. Giữ `activityFeedV2=false`, `notificationEventSyncV2=false`.
+2. Gán riêng UID Manager đã xác minh vào hai mảng canary, theo dõi read/error/permission-denied.
+3. Smoke Dashboard và Bell bằng tài khoản canary; nếu lỗi thì xóa hai mảng canary, không rollback dữ liệu.
+4. Sau khi có evidence role matrix và compatibility window, mới bật global flags theo thứ tự reader rồi notification.
 
 ---
 

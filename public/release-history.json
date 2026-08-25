@@ -1,5 +1,35 @@
 [
   {
+    "version": "v26.08.25-b04",
+    "date": "25/8/2026",
+    "title": "Rollout canary an toàn cho Hoạt động và Thông báo",
+    "highlights": [
+      "Bổ sung rollout canary theo UID đã xác minh để kiểm tra Activity Feed và chuông thông báo theo từng tài khoản trước khi mở rộng toàn hệ thống.",
+      "Hoạt động trên phiếu, kết quả, kho và chất chuẩn được trình bày theo đúng phạm vi công việc người dùng được phân quyền.",
+      "Thông báo chuông và hoạt động liên quan dùng cùng một nội dung, liên kết mở đúng hồ sơ và hạn chế gửi lặp.",
+      "Lịch sử in, báo cáo và kiểm tra mẫu được giữ ổn định khi giao diện Hoạt động được nâng cấp; các bản ghi cũ được gắn đúng tài khoản đã xác minh."
+    ],
+    "features": [
+      "Bổ sung cách xem hoạt động theo nhóm nghiệp vụ, mức độ quan trọng, tìm kiếm theo thông tin có cấu trúc và mở nhanh hồ sơ liên quan.",
+      "Bổ sung cảnh báo tồn kho sắp hết theo thời điểm chuyển ngưỡng để người dùng nhận đúng thông tin cần xử lý.",
+      "Lịch sử đánh dấu và bỏ đánh dấu kiểm tra mẫu được hiển thị nhất quán trong hoạt động.",
+      "Các bản ghi hoạt động trước đây được chuẩn hóa theo tài khoản đã xác minh để tra cứu đúng người thực hiện."
+    ],
+    "improvements": [
+      "Feature flag V2 vẫn fail-closed cho người chưa đăng nhập; cấu hình sai hoặc thiếu UID không thể tự bật rollout.",
+      "Người dùng có quyền phù hợp có thể xem hoạt động chung của workspace thay vì chỉ thấy thao tác do chính mình thực hiện.",
+      "Hàng đợi in, thống kê và tra cứu nguồn gốc tiếp tục hoạt động độc lập, không bị ảnh hưởng khi bộ lọc Hoạt động thay đổi.",
+      "Giao diện Dashboard và chuông thông báo được cải thiện cho màn hình nhỏ, thao tác bàn phím và trạng thái trống hoặc bị từ chối."
+    ],
+    "fixes": [
+      "Ngăn việc thử nghiệm canary làm thay đổi hành vi của toàn bộ người dùng khi công tắc global vẫn đang tắt.",
+      "Ngăn phân loại sai hoạt động khi người thực hiện là quản lý, QC hoặc nhân viên phòng thí nghiệm; quyền hiển thị được xác định theo nghiệp vụ của hoạt động.",
+      "Ngăn liên kết ngoài, dữ liệu nhạy cảm và nội dung không hợp lệ đi vào hoạt động hoặc thông báo.",
+      "Giữ quyền sở hữu lịch sử theo tài khoản ngay cả khi người dùng đổi tên hiển thị hoặc bị giảm quyền."
+    ],
+    "releaseOrder": 26082500004
+  },
+  {
     "version": "v26.08.25-b03",
     "date": "25/8/2026",
     "title": "Hoạt động và thông báo nhất quán hơn trong công việc phòng kiểm nghiệm",
