@@ -196,6 +196,8 @@ Sau khi release `v26.08.25-b04` được Vercel phục vụ, đã xác minh bằ
 - Activity không rơi vào trạng thái `Không có quyền xem hoạt động` hoặc `Không thể tải hoạt động`.
 - Bell mở được panel `role=dialog`, không có lỗi tải thông báo; sau kiểm tra đã đóng panel.
 - Console error trong phiên smoke: `0`.
+- Staff read-only smoke bằng custom token ký local cũng pass: query `STANDARD_VIEW` đọc được `1` bản ghi và notification inbox đọc được `1` bản ghi; staff profile không nằm trong hai danh sách canary khi global flags đều false.
+- Production hiện có `20` profile: `3 manager`, `17 staff`; chưa có profile `qc`, `lab`, `viewer` hoặc `pending`, nên không thể dựng cloud smoke cho các role đó mà không tạo/sửa user dữ liệu thật.
 - Không thực hiện publish/reset/approve/stock mutation trên production; notification writer workflow vẫn chờ fixture hoặc môi trường test an toàn.
 - Staging authenticated role matrix vẫn chưa chạy cloud vì project staging được giữ Spark; automated Rules/Auth-policy evidence vẫn là gate thay thế hiện tại.
 
@@ -2393,6 +2395,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] smoke with Manager (production UID canary, Dashboard/Bell, console error `0`).
 - [ ] smoke with QC Lead.
 - [ ] smoke with Lab.
+- [x] smoke with one existing Staff profile (read-only `STANDARD_VIEW` query; custom token ký local).
 - [ ] smoke with Staff default.
 - [ ] smoke Viewer/Pending denied/hidden.
 - [x] canary flag on (UID-scoped, 1 Manager; global flag vẫn false).
