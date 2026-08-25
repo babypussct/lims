@@ -114,6 +114,10 @@ Preflight hạ tầng đã thực hiện ở chế độ đọc:
 - Firebase CLI đã tạo project staging riêng `lims-activity-stg-260825` theo yêu cầu; Firestore database `(default)` đã khởi tạo ở `asia-southeast1` với delete protection bật.
 - `npx firebase-tools firestore:indexes --project lims-cloud-by-otada --json` xác nhận trước rollout production chỉ có 13 index cũ cho `inventory`, `requests` và `standard_requests`; 7 index mới cho collection `logs` chưa được deploy.
 - Sau `release:predeploy` đạt với SHA `3ca484359dfb`, `firestore:indexes` đã deploy production thành công và giữ nguyên 13 index cũ; Firestore đã xác nhận đủ 7 index `logs` ở trạng thái `READY`.
+- Private key production đã được tạo bằng owner account, kiểm tra đúng project `lims-cloud-by-otada` và lưu ngoài repository với quyền file `600`; không đưa credential vào source hoặc commit.
+- Production Activity backfill dry-run đã đọc `4.192` log, không ghi dữ liệu: `migratable=3.163`, `unresolvedActor=1.027`, `unknownAction=2`, `missingTarget=51`, `invalidV2=0`, `errors=0`, `publicTraceableCandidates=572`.
+- Unresolved report đã được phân nhóm: `1.009` log mang actor legacy `Quản trị viên`, `18` log mang `Admin`; các profile tương ứng không còn trong Firestore/Auth nên không tự động gán sang tài khoản khác. Hai unknown action là `DAILY_CHECK_ITEM` và `DAILY_UNCHECK_ITEM`, cần classification legacy được review trước khi migrate.
+- Không chạy production apply hoặc Rules cutover sau dry-run; giữ nguyên dữ liệu legacy để tránh ghi attribution suy đoán.
 - `npm run backfill:activity -- --dry-run --app-id=lims-cloud-fixed --limit=1` chưa thể bắt đầu đọc dữ liệu vì máy phát hành không có `FIREBASE_SERVICE_ACCOUNT`, `GOOGLE_APPLICATION_CREDENTIALS` hoặc Application Default Credentials. Lệnh dừng trước truy vấn Firestore, không có write nào xảy ra.
 - Commit `3ca484359dfb` đã push lên `main`; Vercel Git Integration đã phục vụ release `v26.08.25-b01`. Smoke public `/`, `/ngsw.json`, `/release-history.json` và `/changelog` đều trả HTTP `200`.
 
@@ -132,7 +136,7 @@ Evidence rollout staging đã đạt sau khi tạo credential được xác nh�
 - Activity backfill staging apply: `migrated=4`, không có unresolved/error.
 - Activity backfill staging verify: `alreadyV2=5`, exit code `0`.
 - Firestore Rules đã deploy vào staging; unauthenticated public traceability GET trả `200`, private Activity GET trả `403 PERMISSION_DENIED`.
-- Firebase Authentication chưa thể khởi tạo trên staging Spark; API `initializeAuth` trả `BILLING_NOT_ENABLED`. Không nâng cấp billing tự động; role-matrix authenticated cần được thực hiện sau khi có phê duyệt billing hoặc dùng Auth Emulator.
+- Firebase Authentication/Identity Platform chưa thể khởi tạo trên staging Spark; API `initializeAuth` trả `BILLING_NOT_ENABLED`. Quyết định ngày 2026-08-25: giữ project staging ở Spark, không liên kết Cloud Billing; authenticated role-matrix cloud chưa chạy, chỉ dùng Auth Emulator/local evidence khi cần.
 
 Do các điều kiện trên, các mục sau vẫn giữ `[ ]`: production backfill, canary flag, Rules production cutover, authenticated role-matrix smoke và PR9 cleanup. Staging index/dry-run/apply/verify/Rules và production index `READY` đã có evidence riêng ở trên; không dùng chúng để suy ra production data/Rules đã sẵn sàng.
 
@@ -1608,7 +1612,7 @@ Exit: data mới bắt đầu giàu schema nhưng production UI không đổi.
 - [x] Request print badge tách Activity.
 - [x] backfill dry-run staging (`total=5`, `migratable=4`, `alreadyV2=1`, unresolved/invalid/unknown/error = 0).
 - [x] staging apply small batch (`migrated=4`) và verify (`alreadyV2=5`, exit code `0`).
-- [ ] production dry-run.
+- [x] production dry-run (`total=4.192`, `migratable=3.163`, `unresolvedActor=1.027`, `unknownAction=2`, `errors=0`; không ghi dữ liệu).
 - [ ] resolve unknown action/actor.
 - [ ] production apply bounded batches.
 - [ ] verify report.
@@ -2316,8 +2320,8 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 - [x] staging verify.
 - [x] production index deploy.
 - [x] production index READY (`7/7` index `logs`).
-- [ ] production dry-run.
-- [ ] review unresolved.
+- [x] production dry-run (`4.192` logs, no write).
+- [x] review unresolved report (`1.027` actor chưa xác định, `2` unknown action; không tự động gán).
 - [ ] production apply.
 - [ ] production verify.
 
@@ -2348,7 +2352,7 @@ Chỉ coi hạng mục hoàn tất khi tất cả mục sau đúng:
 
 - [x] PR7 emulator pass (`npm run test:firestore-rules` — 34/34).
 - [x] staging Rules deploy và public/private HTTP smoke (`200` public, `403` private).
-- [ ] staging role matrix smoke (đang bị chặn bởi `BILLING_NOT_ENABLED` trên Firebase Authentication Spark; chưa tự ý nâng billing).
+- [ ] staging role matrix smoke cloud (project giữ Spark theo quyết định người dùng; dùng Auth Emulator/local evidence nếu cần).
 - [ ] production Rules deploy.
 - [ ] production public QR smoke.
 - [ ] production Dashboard/Bell smoke.
