@@ -29,7 +29,7 @@ jobs:
           java-version: '21'
 
       - name: Use repository npm version
-        run: npm install --global "$(node -p 'require(\"./package.json\").packageManager')"
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
 
       - name: Install dependencies
         run: npm ci
