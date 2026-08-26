@@ -572,7 +572,6 @@ const CONFIG = {
         'Tất cả mẫu thử đều không phát hiện':                          'checkTatCaND',
         'Có mẫu thử phát hiện':                                         'checkCoMauPhatHien',
         'Mẫu kiểm tra nội bộ':                                          'qcKiemTraNoiBo',
-        'Hệ số hồi quy tuyến tính':                                      'qcR2',
         'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
         'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDang',
         'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcThemChuan',
@@ -591,11 +590,10 @@ const CONFIG = {
       columns: {},
       checkboxLines: {
         'Mẫu kiểm tra nội bộ':                                          'qcKiemTraNoiBo',
-        'Hệ số hồi quy tuyến tính':                                      'qcR2',
         'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
-        'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDangMauNhiem',
-        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcNhanDangSpike',
-        'Độ thu hồi IS':                                                 'qcThuHoiIS',
+        'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDang',
+        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcThemChuan',
+        'Độ thu hồi IS':                                                 'qcThuHoi',
         'Đánh giá chung':                                                'qcDanhGiaChung'
       },
       signaturePlaceholders: {

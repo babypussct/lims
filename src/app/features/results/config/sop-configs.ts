@@ -90,7 +90,6 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
       'Tất cả mẫu thử đều không phát hiện': 'checkTatCaND',
       'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
       'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo',
-      'Hệ số hồi quy tuyến tính': 'qcR2',
       'Độ lệch thời gian lưu': 'qcThoiGianLuu',
       'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm': 'qcNhanDang',
       'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb': 'qcThemChuan',

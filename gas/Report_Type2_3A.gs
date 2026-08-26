@@ -1,6 +1,6 @@
 
 function generateType2_3aReport(body, sopConfig, metadata, samples) {
-  fillTextFields(body, sopConfig, metadata);
+  fillTextFields(body, sopConfig, metadata, samples);
   return fillSampleTable(body, sopConfig, samples);
 }
 
@@ -12,7 +12,7 @@ function generateCustomSingleAnalyteType2Report(templateId, metadata, samples, f
   }
 
   return generateReportFromTemplate(templateId, folder, fileName, ({ body }) => {
-    fillTextFields(body, sopConfig, metadata);
+    fillTextFields(body, sopConfig, metadata, samples);
 
     const tables = body.getTables();
     let calibrationTable = null;
@@ -64,7 +64,14 @@ function generateCustomSingleAnalyteType2Report(templateId, metadata, samples, f
 /**
  * Điền các trường văn bản tự do, checkbox và ngày tháng ký duyệt
  */
-function fillTextFields(body, sopConfig, metadata) {
+function fillTextFields(body, sopConfig, metadata, samples) {
+  const detectionFlags = typeof resolveBatchDetectionFlags === 'function'
+    ? resolveBatchDetectionFlags(samples, sopConfig, metadata)
+    : {
+        checkTatCaND: metadata.checkTatCaND === true,
+        checkCoMauPhatHien: metadata.checkCoMauPhatHien === true
+      };
+
   // 1. Text replacements đơn giản
   if (sopConfig.textReplacements) {
     for (const [searchText, fieldName] of Object.entries(sopConfig.textReplacements)) {
@@ -76,17 +83,23 @@ function fillTextFields(body, sopConfig, metadata) {
   // 2. Checkbox lines: dùng replaceText cấp paragraph để GIỮ NGUYÊN in đậm/in nghiêng
   if (sopConfig.checkboxLines) {
     for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
-      const isChecked = metadata[fieldName] === true;
+      const effectiveValue = fieldName === 'checkTatCaND' || fieldName === 'checkCoMauPhatHien'
+        ? detectionFlags[fieldName]
+        : metadata[fieldName];
+      const isChecked = effectiveValue === true;
       const checkChar = isChecked ? '☑' : '☐';
       
       let searchResult = body.findText(lineText);
       while (searchResult) {
         const para = searchResult.getElement().getParent().asParagraph();
-        // Thay thế đúng vị trí [ ] hoặc ☐ hoặc □, không làm hỏng font chữ
-        para.replaceText('\\[ \\]', checkChar);
+        // Luôn ghi đè cả checkbox đã tick sẵn trong template để trạng thái PDF
+        // phản ánh metadata hiện tại, không phụ thuộc giá trị mặc định của form.
+        para.replaceText('\\[\\s*[xXvV]?\\s*\\]', checkChar);
+        para.replaceText('\\(\\s*[xXvV]?\\s*\\)', checkChar);
         para.replaceText('☐', checkChar);
         para.replaceText('□', checkChar);
-        para.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+        para.replaceText('☑', checkChar);
+        para.replaceText('☒', checkChar);
         
         // Tìm tiếp tục từ kết quả vừa tìm được để xử lý cho các trang sau
         searchResult = body.findText(lineText, searchResult);
@@ -97,7 +110,12 @@ function fillTextFields(body, sopConfig, metadata) {
   // 2.1 Điền các Checkbox dùng chung (Khối lượng, Loại mẫu, Tình trạng) nếu có ở cấp độ biểu mẫu
   // Truyền metadata vào vị trí sample vì đối với Type 2/3A, thông tin chung áp dụng cho toàn mẻ
   if (typeof fillCommonSampleCheckboxes === 'function') {
-    fillCommonSampleCheckboxes(body, metadata, metadata, sopConfig);
+    const effectiveMetadata = {
+      ...metadata,
+      checkTatCaND: detectionFlags.checkTatCaND,
+      checkCoMauPhatHien: detectionFlags.checkCoMauPhatHien
+    };
+    fillCommonSampleCheckboxes(body, effectiveMetadata, effectiveMetadata, sopConfig);
   }
 
   // 3. Custom: Xử lý điền Ngày tháng thông qua placeholder trên biểu mẫu (date1, date2)
@@ -747,7 +765,7 @@ function fillQcTableCheckboxes(body, sopConfig, metadata, sopId) {
       }
     }
 
-    if (fieldName && metadata[fieldName] !== undefined) {
+    if (fieldName) {
       const val = metadata[fieldName];
       const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
       
@@ -760,21 +778,21 @@ function fillQcTableCheckboxes(body, sopConfig, metadata, sopId) {
         datChar = "☐";
         khongDatChar = "☑";
         naChar = "☐";
-      } else { // null (N/A)
+      } else { // null/undefined (N/A)
         datChar = "☐";
         khongDatChar = "☐";
         naChar = "☑";
       }
 
       // Khớp và thay thế đúng checkbox Đạt/Không đạt/N/A
-      replaceCheckboxSafely(evalCell, '[\\[\\(] ?[\\]\\)]\\s*Đạt', datChar);
-      replaceCheckboxSafely(evalCell, '[☐□☑]\\s*Đạt', datChar);
+      replaceCheckboxSafely(evalCell, '[\\[\\(]\\s*[xXvV]?\\s*[\\]\\)]\\s*Đạt', datChar);
+      replaceCheckboxSafely(evalCell, '[☐□☑☒]\\s*Đạt', datChar);
 
-      replaceCheckboxSafely(evalCell, '[\\[\\(] ?[\\]\\)]\\s*Không đạt', khongDatChar);
-      replaceCheckboxSafely(evalCell, '[☐□☑]\\s*Không đạt', khongDatChar);
+      replaceCheckboxSafely(evalCell, '[\\[\\(]\\s*[xXvV]?\\s*[\\]\\)]\\s*Không đạt', khongDatChar);
+      replaceCheckboxSafely(evalCell, '[☐□☑☒]\\s*Không đạt', khongDatChar);
 
-      replaceCheckboxSafely(evalCell, '[\\[\\(] ?[\\]\\)]\\s*N/A', naChar);
-      replaceCheckboxSafely(evalCell, '[☐□☑]\\s*N/A', naChar);
+      replaceCheckboxSafely(evalCell, '[\\[\\(]\\s*[xXvV]?\\s*[\\]\\)]\\s*N/A', naChar);
+      replaceCheckboxSafely(evalCell, '[☐□☑☒]\\s*N/A', naChar);
     }
   }
 }

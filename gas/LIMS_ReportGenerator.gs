@@ -4,7 +4,7 @@
 
 /**
  * Helper function for safely replacing checkbox char
- * Chỉ tìm và thay thế đúng vị trí ký tự Checkbox [☐□☑] hoặc [ ] hoặc ( )
+ * Chỉ tìm và thay thế đúng vị trí ký tự Checkbox Unicode hoặc [ ]/[x]/[v]/( )/(x)/(v)
  * nhằm bảo toàn toàn bộ Format và Layout (Tab stop, in đậm, in nghiêng) của Google Docs.
  */
 function replaceCheckboxSafely(el, pattern, charToInsert) {
@@ -16,7 +16,7 @@ function replaceCheckboxSafely(el, pattern, charToInsert) {
       const end = found.getEndOffsetInclusive();
       const textStr = textElement.getText().substring(start, end + 1);
       
-      const match = textStr.match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+      const match = textStr.match(/([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
       const boxIndex = match ? match.index : -1;
       const matchLength = match ? match[0].length : 1;
       
@@ -1225,7 +1225,7 @@ function qcTemplateLabelMatches(rowLabel, configuredLabel) {
 
 function isWritableQcEvaluationCellText(cellText) {
   const text = cellText === undefined || cellText === null ? '' : cellText.toString();
-  const checkbox = '(?:[☐□☑]|\\[ ?\\]|\\( ?\\))';
+  const checkbox = '(?:[☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))';
   return new RegExp(checkbox + '\\s*Đạt', 'i').test(text) &&
     new RegExp(checkbox + '\\s*Không đạt', 'i').test(text) &&
     new RegExp(checkbox + '\\s*N/A', 'i').test(text);
@@ -1420,7 +1420,7 @@ function matchType3bTemplateCompoundCell(cellText, compounds) {
 
 function isType3bFormCheckWritableResultCellText(cellText) {
   const text = cellText === undefined || cellText === null ? '' : cellText.toString();
-  const hasMutableNdCheckbox = /([☐□☑]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))[^A-Za-z0-9]*ND/i.test(text);
+  const hasMutableNdCheckbox = /([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))[^A-Za-z0-9]*ND/i.test(text);
   const hasNumericResultTarget = /[…\.]{2,}/.test(text);
   return hasMutableNdCheckbox && hasNumericResultTarget;
 }
@@ -2209,7 +2209,15 @@ function isDetectedResultValue(value) {
   const normalized = value.toString().trim();
   if (normalized === '') return false;
   const upper = normalized.toUpperCase();
-  return upper !== 'N/A' && upper !== 'ND' && normalized !== '—';
+  return upper !== 'N/A' && upper !== 'ND' && upper !== 'KPH' && normalized !== '—';
+}
+
+function isSampleResultStateValue(value) {
+  if (value === null || value === undefined) return false;
+  const normalized = value.toString().trim();
+  if (normalized === '') return false;
+  const upper = normalized.toUpperCase();
+  return upper !== 'N/A' && normalized !== '—';
 }
 
 function getConfiguredSampleResultKeys(sopConfig, metadata) {
@@ -2218,6 +2226,22 @@ function getConfiguredSampleResultKeys(sopConfig, metadata) {
   if (sopConfig && Array.isArray(sopConfig.resultColumns)) {
     sopConfig.resultColumns.forEach(column => {
       if (column && column.key) resultKeys.add(column.key);
+    });
+  }
+
+  if (sopConfig && sopConfig.columns && typeof sopConfig.columns === 'object') {
+    const structuralColumns = new Set([
+      'loSo',
+      'maSoMau',
+      'ghiChu',
+      'khoiLuong',
+      'heSoPhaLoang',
+      'hSoPhaLoang',
+      'checkBoSungNuoc',
+      'checkHonHopLamSach'
+    ]);
+    Object.keys(sopConfig.columns).forEach(key => {
+      if (!structuralColumns.has(key)) resultKeys.add(key);
     });
   }
 
@@ -2250,12 +2274,103 @@ function hasDetectedSampleResult(sample, sopConfig, metadata) {
   return false;
 }
 
+function hasSampleResultState(sample, sopConfig, metadata) {
+  if (!sample || typeof sample !== 'object') return false;
+
+  const resultKeys = getConfiguredSampleResultKeys(sopConfig, metadata);
+  for (const key of resultKeys) {
+    if (sample[key + '_nd'] === true) return true;
+    if (isSampleResultStateValue(sample[key])) return true;
+  }
+  return false;
+}
+
+function resolveSampleDetectionFlags(sample, sopConfig, metadata) {
+  const explicitDetected = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
+  const explicitAllNd = sample.checkTatCaND === true || metadata.checkTatCaND === true;
+
+  // Explicit checked flags are authoritative. If stale payload data contains both,
+  // prefer "Phát hiện" so the two mutually-exclusive states never render together.
+  if (explicitDetected || explicitAllNd) {
+    return {
+      checkCoMauPhatHien: explicitDetected,
+      checkTatCaND: explicitAllNd && !explicitDetected
+    };
+  }
+
+  const hasPositive = hasDetectedSampleResult(sample, sopConfig, metadata);
+  const hasAnyResultState = hasSampleResultState(sample, sopConfig, metadata);
+  return {
+    checkCoMauPhatHien: hasPositive,
+    checkTatCaND: hasAnyResultState && !hasPositive
+  };
+}
+
+function isQcControlSampleForDetection(sample, metadata) {
+  if (!sample || typeof sample !== 'object') return false;
+  const rawCode = sample.maSoMau === null || sample.maSoMau === undefined ? '' : String(sample.maSoMau).trim();
+  if (!rawCode) return false;
+
+  const normalizedCode = rawCode.toUpperCase();
+  const configuredControlLabels = [metadata.blankName, metadata.spikeName, metadata.checkSampleName]
+    .filter(value => value !== null && value !== undefined && String(value).trim() !== '')
+    .map(value => String(value).trim().toUpperCase());
+  if (configuredControlLabels.includes(normalizedCode)) return true;
+
+  return normalizedCode === 'BLANK' ||
+    normalizedCode === 'SPIKE' ||
+    normalizedCode === 'CHECK_SAMPLE' ||
+    normalizedCode === 'FINAL' ||
+    normalizedCode.startsWith('QC_') ||
+    /^SPIKE_\d+$/.test(normalizedCode) ||
+    /^SP_\d+$/.test(normalizedCode);
+}
+
+function resolveBatchDetectionFlags(samples, sopConfig, metadata) {
+  const explicitDetected = metadata.checkCoMauPhatHien === true;
+  const explicitAllNd = metadata.checkTatCaND === true;
+  if (explicitDetected || explicitAllNd) {
+    return {
+      checkCoMauPhatHien: explicitDetected,
+      checkTatCaND: explicitAllNd && !explicitDetected
+    };
+  }
+
+  const sampleList = Array.isArray(samples) ? samples : [];
+  let hasPositive = false;
+  let hasAnyResultState = false;
+
+  for (const sample of sampleList) {
+    if (isQcControlSampleForDetection(sample, metadata)) continue;
+    if (hasDetectedSampleResult(sample, sopConfig, metadata)) {
+      hasPositive = true;
+      hasAnyResultState = true;
+      break;
+    }
+    if (hasSampleResultState(sample, sopConfig, metadata)) {
+      hasAnyResultState = true;
+    }
+  }
+
+  return {
+    checkCoMauPhatHien: hasPositive,
+    checkTatCaND: hasAnyResultState && !hasPositive
+  };
+}
+
 function fillCommonSampleCheckboxes(element, metadata, sample, sopConfig) {
   try {
-    let khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+    const rawKhoiLuong = sample.khoiLuong !== undefined && sample.khoiLuong !== null
+      ? sample.khoiLuong
+      : metadata.khoiLuong;
+    let khoiLuongVal = rawKhoiLuong === undefined || rawKhoiLuong === null
+      ? ''
+      : rawKhoiLuong.toString().trim();
     
     // Nếu không phải form Đơn thì luôn ép khối lượng về 10.0g cho mọi mẻ gộp / form check
-    if (metadata.printFormType !== 'formDon') {
+    // Chỉ áp dụng khi loại form đã được payload xác định rõ. Payload thiếu loại form
+    // không được tự tạo trạng thái checkbox dương tính trong PDF.
+    if (metadata.printFormType && metadata.printFormType !== 'formDon') {
       khoiLuongVal = '10.0';
     }
     
@@ -2268,7 +2383,7 @@ function fillCommonSampleCheckboxes(element, metadata, sample, sopConfig) {
       klOtherText = khoiLuongVal;
     }
     
-    const cbPattern = '([☑☐□N]|\\[\\s*\\]|\\(\\s*\\))';
+    const cbPattern = '([☑☒☐□]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))';
 
     replaceCheckboxSafely(element, 'm\\s*=\\s*' + cbPattern, kl10Check);
     if (klOtherText !== '………') {
@@ -2279,24 +2394,36 @@ function fillCommonSampleCheckboxes(element, metadata, sample, sopConfig) {
     element.replaceText('{{khoiLuong}}', khoiLuongVal);
     // Bắt thêm case chữ m =g mà user đề cập trong bảng kết quả mẫu
     // Nếu là form check, nếu có chữ m = ........ g thì thay bằng 10.0
-    if (metadata.printFormType !== 'formDon') {
+    if (metadata.printFormType && metadata.printFormType !== 'formDon') {
       replaceDotsSafely(element, 'm\\s*=\\s*[…\\.]+', ' 10.0 ');
     }
 
     // --- Phân giải và xử lý Hệ số pha loãng ---
-    const fVal = (sample.heSoPhaLoang || sample.hSoPhaLoang || metadata.heSoPhaLoang || '1').toString().trim();
-    const isF1 = fVal === '1';
+    const rawF = sample.heSoPhaLoang !== undefined && sample.heSoPhaLoang !== null
+      ? sample.heSoPhaLoang
+      : (sample.hSoPhaLoang !== undefined && sample.hSoPhaLoang !== null
+          ? sample.hSoPhaLoang
+          : metadata.heSoPhaLoang);
+    const fVal = rawF === undefined || rawF === null ? '' : rawF.toString().trim();
+    const hasFValue = fVal !== '';
+    const isF1 = hasFValue && fVal === '1';
     const f1Check = isF1 ? '☑' : '☐';
-    const fOtherCheck = !isF1 ? '☑' : '☐';
+    const fOtherCheck = hasFValue && !isF1 ? '☑' : '☐';
     
     replaceCheckboxSafely(element, 'Hệ số pha loãng:\\s*' + cbPattern, f1Check);
     replaceCheckboxSafely(element, 'f\\s*=\\s*1\\s*;\\s*' + cbPattern, fOtherCheck);
-    if (!isF1) {
+    if (hasFValue && !isF1) {
       replaceDotsSafely(element, 'f\\s*=\\s*[…\\.]+', fVal);
     }
 
     // --- Phân giải giá trị Loại mẫu ---
-    const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
+    const rawLoaiMau = sample.loaiMau !== undefined && sample.loaiMau !== null
+      ? sample.loaiMau
+      : metadata.loaiMau;
+    const loaiMauVal = rawLoaiMau === undefined || rawLoaiMau === null
+      ? ''
+      : rawLoaiMau.toString().trim();
+    const hasLoaiMau = loaiMauVal !== '';
     
     // Các loại mẫu cũ
     let isTuoi = loaiMauVal === 'Nông sản tươi';
@@ -2310,7 +2437,7 @@ function fillCommonSampleCheckboxes(element, metadata, sample, sopConfig) {
     let isNuoiTrong = loaiMauVal === 'Nuôi trồng';
     
     // Khác
-    let isLmKhac = !isTuoi && !isKho && !isThuySan && !isUong && !isSanXuat && !isSinhHoat && !isNuoiTrong;
+    let isLmKhac = hasLoaiMau && !isTuoi && !isKho && !isThuySan && !isUong && !isSanXuat && !isSinhHoat && !isNuoiTrong;
     let lmKhacText = isLmKhac ? loaiMauVal : '………';
     
     const isSopTbvtvThucPham = metadata.sopId === 'tbvtv-thuc-pham-gcmsms' || metadata.sopId === 'tbvtv-thuc-pham-gcmsms-rut-gon' || metadata.sourceSopId === 'tbvtv-thuc-pham-gcmsms';
@@ -2348,9 +2475,15 @@ function fillCommonSampleCheckboxes(element, metadata, sample, sopConfig) {
       replaceDotsSafely(element, '100\\.0\\s*;\\s*[…\\.]+', vOtherText);
     }
 
-    const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
-    let isBinhThuong = ttMauVal === 'Bình thường';
-    let isTtKhac = !isBinhThuong;
+    const rawTinhTrang = sample.tinhTrangMau !== undefined && sample.tinhTrangMau !== null
+      ? sample.tinhTrangMau
+      : metadata.tinhTrangMau;
+    const ttMauVal = rawTinhTrang === undefined || rawTinhTrang === null
+      ? ''
+      : rawTinhTrang.toString().trim();
+    const hasTinhTrang = ttMauVal !== '';
+    let isBinhThuong = hasTinhTrang && ttMauVal === 'Bình thường';
+    let isTtKhac = hasTinhTrang && !isBinhThuong;
     let ttKhacText = isTtKhac ? ttMauVal : '………';
     
     const btCheck = isBinhThuong ? '☑' : '☐';
@@ -2363,17 +2496,9 @@ function fillCommonSampleCheckboxes(element, metadata, sample, sopConfig) {
     }
 
     // Logic Phát hiện / Không phát hiện (Generic fallback if not specifically handled by SOP)
-    let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
-    let isKhongPhatHien = sample.checkTatCaND === true || metadata.checkTatCaND === true;
-    
-    if (!isPhatHien && !isKhongPhatHien) {
-      const hasAnyResult = hasDetectedSampleResult(sample, sopConfig, metadata);
-      if (hasAnyResult) {
-        isPhatHien = true;
-      } else {
-        isKhongPhatHien = true;
-      }
-    }
+    const detectionFlags = resolveSampleDetectionFlags(sample, sopConfig, metadata);
+    const isPhatHien = detectionFlags.checkCoMauPhatHien;
+    const isKhongPhatHien = detectionFlags.checkTatCaND;
     
     const phCheck = isPhatHien ? '☑' : '☐';
     const kphCheck = isKhongPhatHien ? '☑' : '☐';

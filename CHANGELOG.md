@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.25-b05
+## Phiên bản hiện tại: v26.08.26-b01
+
+### v26.08.26-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đồng bộ trạng thái đánh giá giữa giao diện LIMS và PDF kết quả cho SOP 9.14 cùng các biểu mẫu GAS dùng chung renderer.
+- Loại bỏ các giá trị nghiệp vụ mặc định bị tự suy diễn khi payload không cung cấp dữ liệu, giúp PDF phản ánh đúng dữ liệu người dùng đã nhập.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa xử lý checkbox Unicode và ASCII để luôn ghi đè trạng thái tick có sẵn trong template theo dữ liệu hiện tại.
+- Trạng thái phát hiện/không phát hiện được suy ra từ kết quả mẫu thực tế và bỏ qua các mẫu QC kiểm soát khi đánh giá toàn mẻ.
+- Bổ sung regression test cho mapping QC SOP 9.14, Form Check/Form Đơn, pagination, nhận dạng mẫu và dữ liệu số 0.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- QC thiếu dữ liệu không còn bị đánh giá ngầm là Đạt; renderer chuyển về N/A hoặc bỏ chọn theo đúng ngữ cảnh.
+- Không còn tự gán F=1, khối lượng 10 g, loại mẫu Thủy sản hoặc tình trạng Bình thường khi metadata tương ứng bị thiếu.
+- Sửa mapping SOP 9.14 để các mục Mẫu kiểm tra nội bộ, Độ lệch thời gian lưu, yêu cầu nhận dạng, mẫu thêm chuẩn 5 ppb và độ thu hồi IS đồng bộ giữa UI và PDF.
+- Template có checkbox tick sẵn như ☑, ☒, [x] hoặc (x) được xóa/ghi đè đúng thay vì giữ trạng thái cũ.
 
 ### v26.08.25-b05
 

@@ -68,6 +68,45 @@ function loadGasFiles(relativePaths: string[]): Record<string, unknown> {
   return context;
 }
 
+function createMutableFindTextCell(initialText: string) {
+  let text = initialText;
+  const textElement = {
+    getText: () => text,
+    insertText(offset: number, value: string) {
+      text = text.slice(0, offset) + value + text.slice(offset);
+      return textElement;
+    },
+    deleteText(start: number, endInclusive: number) {
+      if (endInclusive >= start) {
+        text = text.slice(0, start) + text.slice(endInclusive + 1);
+      }
+      return textElement;
+    },
+  };
+
+  const cell = {
+    getText: () => text,
+    replaceText(pattern: string, replacement: string) {
+      text = text.replace(new RegExp(pattern, 'g'), replacement);
+      return cell;
+    },
+    findText(pattern: string, from?: { getEndOffsetInclusive(): number }) {
+      const startAt = from ? from.getEndOffsetInclusive() + 1 : 0;
+      const match = new RegExp(pattern).exec(text.slice(startAt));
+      if (!match) return null;
+      const start = startAt + (match.index ?? 0);
+      const end = start + match[0].length - 1;
+      return {
+        getElement: () => ({ asText: () => textElement }),
+        getStartOffset: () => start,
+        getEndOffsetInclusive: () => end,
+      };
+    },
+  };
+
+  return { cell, getText: () => text };
+}
+
 test('Trifluralin parser preserves dd/MM/yyyy and separates analyst name', () => {
   const context = loadGasFile('gas/Report_Trifluralin.gs');
   const parse = context['parseDatedPersonValue'] as (value: unknown) => { date: string; name: string };
@@ -84,6 +123,72 @@ test('Trifluralin parser preserves dd/MM/yyyy and separates analyst name', () =>
     { ...parse('20/05/2026') },
     { date: '20/05/2026', name: '' },
   );
+});
+
+test('Trifluralin custom placeholders derive batch detection while ignoring positive QC controls', () => {
+  const context = loadGasFiles(['gas/LIMS_ReportGenerator.gs', 'gas/Report_Trifluralin.gs']);
+  const replacements: Record<string, string> = {};
+  const body = {
+    replaceText(pattern: string, replacement: string) {
+      replacements[pattern] = replacement;
+      return body;
+    },
+  };
+  const calibrationCell = {
+    getText: () => '',
+    replaceText: () => calibrationCell,
+  };
+  const calibrationTable = {
+    getNumRows: () => 8,
+    getRow: () => ({ getCell: () => calibrationCell }),
+  };
+  context['CONFIG'] = {
+    SOP_CONFIG: {
+      'trifluralin-gcms': {
+        defaultFontSize: 13,
+        columns: { loSo: 0, maSoMau: 1, kqTrifluralin: 2, ghiChu: 3 },
+      },
+    },
+  };
+  context['generateReportFromTemplate'] = (
+    _templateId: string,
+    _folder: unknown,
+    _fileName: string,
+    renderDocument: (args: { body: typeof body }) => unknown,
+  ) => renderDocument({ body });
+  context['fillTextFields'] = () => undefined;
+  context['requireTrifluralinCalibrationTable'] = () => calibrationTable;
+  context['setCellText'] = () => undefined;
+  context['fillSampleTable'] = () => ({});
+  context['assertPostGenerationReportComplete'] = () => undefined;
+
+  const generate = context['generateCustomReport_trifluralin_gcms'] as (
+    templateId: string,
+    metadata: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+    folder: unknown,
+    fileName: string,
+    version?: number,
+  ) => unknown;
+  generate(
+    'template-trifluralin',
+    {
+      checkTatCaND: false,
+      checkCoMauPhatHien: false,
+      spikeName: 'Spike QC',
+    },
+    [
+      { maSoMau: 'Spike QC', kqTrifluralin: '25' },
+      { maSoMau: 'S01', kqTrifluralin: 'ND' },
+    ],
+    {},
+    'report',
+  );
+
+  const replacementFor = (fragment: string) => Object.entries(replacements)
+    .find(([pattern]) => pattern.includes(fragment))?.[1];
+  assert.equal(replacementFor('CheckTatCaND'), '☑');
+  assert.equal(replacementFor('CheckCoMauPhatHien'), '☐');
 });
 
 test('template variant routing is complete and resolves every configured Form Check/Form Don pair', () => {
@@ -162,6 +267,61 @@ test('SOP 9.14 full and compact templates stay outside generic Form Check/Form D
     resolveTemplate('tbvtv-thuc-pham-gcmsms-rut-gon', { printFormType: 'formRutGon' }),
     vm.runInContext("CONFIG.TEMPLATES['tbvtv-thuc-pham-gcmsms-rut-gon']", context as vm.Context),
   );
+});
+
+test('SOP 9.14 full and compact GAS QC mappings use the canonical UI keys', () => {
+  const context = loadGasFile('gas/SOP_Configs.gs');
+  const gasConfigs = vm.runInContext(
+    'CONFIG.SOP_CONFIG',
+    context as vm.Context,
+  ) as Record<string, { checkboxLines?: Record<string, string> }>;
+
+  const expectedQcMappings = {
+    'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo',
+    'Độ lệch thời gian lưu': 'qcThoiGianLuu',
+    'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm': 'qcNhanDang',
+    'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb': 'qcThemChuan',
+    'Độ thu hồi IS': 'qcThuHoi',
+    'Đánh giá chung': 'qcDanhGiaChung',
+  };
+
+  for (const sopId of ['tbvtv-thuc-pham-gcmsms', 'tbvtv-thuc-pham-gcmsms-rut-gon']) {
+    const checkboxLines = gasConfigs[sopId].checkboxLines ?? {};
+    for (const [label, key] of Object.entries(expectedQcMappings)) {
+      assert.equal(checkboxLines[label], key, `${sopId}: ${label}`);
+    }
+    assert.equal(checkboxLines['Hệ số hồi quy tuyến tính'], undefined, `${sopId}: qcR2 must not be hidden in PDF config`);
+  }
+
+  assert.equal(
+    ANGULAR_SOP_CONFIG['tbvtv-thuc-pham-gcmsms-rut-gon'].checkboxLines?.['Hệ số hồi quy tuyến tính'],
+    undefined,
+    'SOP 9.14 compact Angular config must not expose hidden qcR2 metadata',
+  );
+});
+
+test('all GAS checkbox mappings that are UI-configured stay aligned with Angular', () => {
+  const context = loadGasFile('gas/SOP_Configs.gs');
+  const gasConfigs = vm.runInContext(
+    'CONFIG.SOP_CONFIG',
+    context as vm.Context,
+  ) as Record<string, { checkboxLines?: Record<string, string> }>;
+
+  const sharedCheckboxConfigs = [
+    'trifluralin-gcms',
+    'fipronil-chlorpyrifos',
+    'chlor-huu-co',
+    'tbvtv-thuc-pham-gcmsms-rut-gon',
+  ];
+
+  for (const sopId of sharedCheckboxConfigs) {
+    const gasCheckboxLines = JSON.parse(JSON.stringify(gasConfigs[sopId].checkboxLines ?? {}));
+    assert.deepEqual(
+      gasCheckboxLines,
+      ANGULAR_SOP_CONFIG[sopId].checkboxLines ?? {},
+      `${sopId}: GAS/UI checkbox metadata keys must stay identical`,
+    );
+  }
 });
 
 function createTemplateTable(rows: string[][]) {
@@ -567,6 +727,36 @@ test('Fipronil-style preflight requires configured QC rows and writable checkbox
     ],
     /QC row "Hệ số hồi quy tuyến tính" has no writable Đạt\/Không đạt\/N\/A checkbox markers/,
   );
+});
+
+test('QC and Form Check preflight accept every mutable checkbox marker used by GAS renderers', () => {
+  const context = loadGasFile('gas/LIMS_ReportGenerator.gs');
+  const isWritableQcEvaluationCellText = context['isWritableQcEvaluationCellText'] as (value: string) => boolean;
+  const isType3bFormCheckWritableResultCellText = context['isType3bFormCheckWritableResultCellText'] as (value: string) => boolean;
+
+  const markerSets = [
+    ['☐', '□', '☑'],
+    ['☒', '[x]', '(v)'],
+    ['[ ]', '[V]', '(X)'],
+  ];
+  for (const [dat, khongDat, na] of markerSets) {
+    assert.equal(
+      isWritableQcEvaluationCellText(`${dat} Đạt; ${khongDat} Không đạt; ${na} N/A`),
+      true,
+    );
+  }
+
+  for (const marker of ['☐', '□', '☑', '☒', '[ ]', '[x]', '[V]', '( )', '(x)', '(V)']) {
+    assert.equal(isType3bFormCheckWritableResultCellText(`${marker} ND ........`), true, marker);
+  }
+});
+
+test('common GAS checkbox pattern does not treat literal N as a writable checkbox marker', () => {
+  const source = fs.readFileSync(path.join(process.cwd(), 'gas/LIMS_ReportGenerator.gs'), 'utf8');
+  const cbPatternLine = source.split('\n').find((line) => line.includes('const cbPattern =')) ?? '';
+
+  assert.match(cbPatternLine, /☑☒☐□/);
+  assert.doesNotMatch(cbPatternLine, /☐□N|□N/);
 });
 
 test('valid Fipronil-style templates pass custom preflight for full and compact SOPs', () => {
@@ -2271,6 +2461,22 @@ test('GAS Type3B analyte lists stay aligned with Angular SOP configuration', () 
     );
     const gasResultColumns = Array.from(gasConfig.resultColumns, ({ key }) => key);
 
+    assert.equal(
+      new Set(gasCompounds).size,
+      gasCompounds.length,
+      `${sopId}: GAS compounds must not contain duplicate canonical analytes`,
+    );
+    assert.equal(
+      new Set(gasResultColumns).size,
+      gasResultColumns.length,
+      `${sopId}: GAS resultColumns must not contain duplicate canonical analytes`,
+    );
+    assert.equal(
+      new Set(angularCompounds).size,
+      angularCompounds.length,
+      `${sopId}: Angular compounds must not contain duplicate canonical analytes`,
+    );
+
     assert.deepEqual(
       gasCompounds,
       gasResultColumns,
@@ -2309,6 +2515,211 @@ test('Type3B missing QC data renders as N/A instead of Dat', () => {
   );
 });
 
+test('Type3B shared QC table overwrites checked ASCII and Unicode template defaults', () => {
+  const context = loadGasFile('gas/Report_Type3B.gs');
+  const evalCell = createMutableFindTextCell('[x] Đạt   (v) Không đạt   ☒ N/A');
+  const plainCell = (value: string) => ({
+    getText: () => value,
+    setText: () => undefined,
+    replaceText: () => undefined,
+    findText: () => null,
+  });
+  const rowValues = [
+    ['Thông số đánh giá', '', 'Đánh giá'],
+    ['Mẫu kiểm tra nội bộ', '', ''],
+    ['filler 1', '', ''],
+    ['filler 2', '', ''],
+    ['filler 3', '', ''],
+    ['filler 4', '', ''],
+  ];
+  const table = {
+    getNumRows: () => rowValues.length,
+    getRow: (rowIndex: number) => ({
+      getNumCells: () => 3,
+      getText: () => rowValues[rowIndex].join(' '),
+      getCell: (cellIndex: number) => {
+        if (rowIndex === 1 && cellIndex === 2) return evalCell.cell;
+        return plainCell(rowValues[rowIndex][cellIndex]);
+      },
+    }),
+  };
+  const element = {
+    replaceText: () => element,
+    findText: () => null,
+    getType: () => 'TABLE',
+    asTable: () => table,
+  };
+  context['DocumentApp'] = { ElementType: { TABLE: 'TABLE' } };
+  context['fillCommonSampleCheckboxes'] = () => undefined;
+  context['replaceCheckboxInElementRecursive'] = () => undefined;
+
+  const fillType3bSampleForElements = context['fillType3bSampleForElements'] as (
+    elements: unknown[],
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    sample: Record<string, unknown>,
+  ) => void;
+  fillType3bSampleForElements(
+    [element],
+    { checkboxLines: { 'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo' }, compounds: [] },
+    {},
+    { maSoMau: 'S1' },
+  );
+
+  assert.equal(evalCell.getText(), '☐ Đạt   ☐ Không đạt   ☑ N/A');
+});
+
+test('Type3B ND renderer clears pre-ticked Unicode and ASCII markers for assigned and unassigned analytes', () => {
+  const runCase = (marker: string, assigned: boolean) => {
+    const context = loadGasFile('gas/Report_Type3B.gs');
+    const resultCell = createMutableFindTextCell(`${marker} ND ........`);
+    const compoundCell = { getText: () => 'Fipronil' };
+    const table = {
+      getNumRows: () => 1,
+      getRow: () => ({
+        getNumCells: () => 2,
+        getText: () => `Fipronil ${resultCell.getText()}`,
+        getCell: (index: number) => index === 0 ? compoundCell : resultCell.cell,
+      }),
+    };
+    const element = {
+      replaceText: () => element,
+      findText: () => null,
+      getType: () => 'TABLE',
+      asTable: () => table,
+    };
+    context['DocumentApp'] = { ElementType: { TABLE: 'TABLE' } };
+    context['fillCommonSampleCheckboxes'] = () => undefined;
+    context['isType3BTargetAssigned'] = () => assigned;
+
+    const fillType3bSampleForElements = context['fillType3bSampleForElements'] as (
+      elements: unknown[],
+      sopConfig: Record<string, unknown>,
+      metadata: Record<string, unknown>,
+      sample: Record<string, unknown>,
+    ) => void;
+    fillType3bSampleForElements(
+      [element],
+      { compounds: ['Fipronil'] },
+      {},
+      { maSoMau: 'S1', Fipronil_nd: false },
+    );
+    return resultCell.getText();
+  };
+
+  assert.equal(runCase('☒', false), '☐ ND ........');
+  assert.equal(runCase('[v]', true), '☐ ND ........');
+});
+
+test('Type2/3A QC renderer overwrites pre-ticked template defaults when metadata is missing', () => {
+  const context = loadGasFiles(['gas/LIMS_ReportGenerator.gs', 'gas/Report_Type2_3A.gs']);
+  const evalCell = createMutableFindTextCell('[x] Đạt   (v) Không đạt   ☒ N/A');
+  const qcTable = {
+    getNumRows: () => 2,
+    getRow: () => ({
+      getCell: (index: number) => {
+        if (index === 0) return { getText: () => 'Mẫu kiểm tra nội bộ' };
+        if (index === 2) return evalCell.cell;
+        return { getText: () => '' };
+      },
+    }),
+  };
+  context['requireFipronilQcTable'] = () => qcTable;
+
+  const fillQcTableCheckboxes = context['fillQcTableCheckboxes'] as (
+    body: unknown,
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    sopId: string,
+  ) => void;
+
+  fillQcTableCheckboxes(
+    {},
+    { checkboxLines: { 'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo' } },
+    {},
+    'tbvtv-thuc-pham-gcmsms-rut-gon',
+  );
+
+  assert.equal(evalCell.getText(), '☐ Đạt   ☐ Không đạt   ☑ N/A');
+});
+
+test('Type3B per-analyte QC missing/N/A clears both Dat and Khong Dat template ticks', () => {
+  const context = loadGasFile('gas/Report_Type3B.gs');
+  const buildState = context['buildPerAnalyteQcCheckboxState'] as (value: unknown) => {
+    dat: boolean;
+    khongDat: boolean;
+  };
+  const setNth = context['_setNthQcCheckboxInCells'] as (
+    cells: unknown[],
+    n: number,
+    labelPattern: string,
+    isChecked: boolean,
+  ) => void;
+
+  for (const value of [undefined, null, '', 'N/A']) {
+    assert.deepEqual({ ...buildState(value) }, { dat: false, khongDat: false });
+  }
+
+  const qcCell = createMutableFindTextCell('[x] Đ   (v) KĐ');
+  setNth([qcCell.cell], 0, 'Đ', false);
+  setNth([qcCell.cell], 0, 'KĐ', false);
+  assert.equal(qcCell.getText(), '☐ Đ   ☐ KĐ');
+});
+
+test('Type3B unassigned analyte cleanup removes every checked template marker without looping', () => {
+  const context = loadGasFile('gas/Report_Type3B.gs');
+  const clearCheckboxes = context['_clearCheckboxesInCells'] as (cells: unknown[]) => void;
+  const cell = createMutableFindTextCell('☑ ND   [x] Đ   (v) KĐ   ☒ N/A   [ ] untouched');
+
+  clearCheckboxes([cell.cell]);
+
+  assert.equal(cell.getText(), '☐ ND   ☐ Đ   ☐ KĐ   ☐ N/A   [ ] untouched');
+});
+
+test('Type3B result-summary checkbox lines and placeholders use derived sample detection state', () => {
+  const context = loadGasFiles(['gas/LIMS_ReportGenerator.gs', 'gas/Report_Type3B.gs']);
+  const renderedChecks: Record<string, string> = {};
+  const renderedPlaceholders: Record<string, string> = {};
+  context['DocumentApp'] = { ElementType: { TABLE: 'TABLE' } };
+  context['fillCommonSampleCheckboxes'] = () => undefined;
+  context['replaceCheckboxInElementRecursive'] = (_element: unknown, lineText: string, checkChar: string) => {
+    renderedChecks[lineText] = checkChar;
+  };
+
+  const element = {
+    getType: () => 'PARAGRAPH',
+    findText: () => null,
+    replaceText(pattern: string, replacement: string) {
+      renderedPlaceholders[pattern] = replacement;
+      return element;
+    },
+  };
+
+  const fillType3bSampleForElements = context['fillType3bSampleForElements'] as (
+    elements: unknown[],
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    sample: Record<string, unknown>,
+  ) => void;
+  fillType3bSampleForElements(
+    [element],
+    {
+      resultColumns: [{ key: 'aldrin' }],
+      checkboxLines: {
+        'Các mẫu thử không phát hiện': 'checkTatCaND',
+        'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
+      },
+    },
+    { checkTatCaND: false, checkCoMauPhatHien: false },
+    { maSoMau: 'S01', aldrin: 'ND', aldrin_nd: true },
+  );
+
+  assert.equal(renderedChecks['Các mẫu thử không phát hiện'], '☑');
+  assert.equal(renderedChecks['Có mẫu thử phát hiện'], '☐');
+  assert.equal(renderedPlaceholders['{{checkTatCaND}}'], '☑');
+  assert.equal(renderedPlaceholders['{{checkCoMauPhatHien}}'], '☐');
+});
+
 test('sample metadata alone does not auto-detect an analyte result', () => {
   const context = loadGasFile('gas/LIMS_ReportGenerator.gs');
   const hasDetectedSampleResult = context['hasDetectedSampleResult'] as (
@@ -2335,6 +2746,169 @@ test('sample metadata alone does not auto-detect an analyte result', () => {
   );
   assert.equal(hasDetectedSampleResult({ fipronil: 'ND', fipronil_nd: true }, sopConfig, metadata), false);
   assert.equal(hasDetectedSampleResult({ fipronil: 0, fipronil_nd: false }, sopConfig, metadata), true);
+});
+
+test('shared GAS detection flags distinguish ND, detected, cleared, and unassigned result states', () => {
+  const context = loadGasFile('gas/LIMS_ReportGenerator.gs');
+  const hasSampleResultState = context['hasSampleResultState'] as (
+    sample: Record<string, unknown>,
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+  ) => boolean;
+  const resolveSampleDetectionFlags = context['resolveSampleDetectionFlags'] as (
+    sample: Record<string, unknown>,
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+  ) => { checkTatCaND: boolean; checkCoMauPhatHien: boolean };
+
+  const sopConfig = { resultColumns: [{ key: 'fipronil' }] };
+  const metadata = { targetInfo: { fipronil: { displayName: 'Fipronil' } } };
+  const flags = (sample: Record<string, unknown>, extraMetadata: Record<string, unknown> = {}) => ({
+    ...resolveSampleDetectionFlags(sample, sopConfig, { ...metadata, ...extraMetadata }),
+  });
+
+  assert.equal(hasSampleResultState({ fipronil: '', fipronil_nd: true }, sopConfig, metadata), true);
+  assert.deepEqual(flags({ fipronil: '', fipronil_nd: true }), {
+    checkCoMauPhatHien: false,
+    checkTatCaND: true,
+  });
+  assert.deepEqual(flags({ fipronil: 'ND', fipronil_nd: false }), {
+    checkCoMauPhatHien: false,
+    checkTatCaND: true,
+  });
+  assert.deepEqual(flags({ fipronil: 'KPH', fipronil_nd: false }), {
+    checkCoMauPhatHien: false,
+    checkTatCaND: true,
+  });
+  assert.deepEqual(flags({ fipronil: 0, fipronil_nd: false }), {
+    checkCoMauPhatHien: true,
+    checkTatCaND: false,
+  });
+  assert.deepEqual(flags({ fipronil: '', fipronil_nd: false }), {
+    checkCoMauPhatHien: false,
+    checkTatCaND: false,
+  });
+  assert.deepEqual(flags({ fipronil: 'N/A', fipronil_nd: false }), {
+    checkCoMauPhatHien: false,
+    checkTatCaND: false,
+  });
+  assert.deepEqual(
+    flags(
+      { fipronil: '4.2', fipronil_nd: false, checkTatCaND: false, checkCoMauPhatHien: false },
+      { checkTatCaND: false, checkCoMauPhatHien: false },
+    ),
+    { checkCoMauPhatHien: true, checkTatCaND: false },
+  );
+  assert.deepEqual(
+    flags(
+      { fipronil: 'ND', fipronil_nd: true, checkTatCaND: true, checkCoMauPhatHien: true },
+      { checkTatCaND: true, checkCoMauPhatHien: true },
+    ),
+    { checkCoMauPhatHien: true, checkTatCaND: false },
+  );
+});
+
+test('batch GAS detection ignores QC controls and derives Type2 result columns when metadata flags are both false', () => {
+  const context = loadGasFile('gas/LIMS_ReportGenerator.gs');
+  const resolveBatchDetectionFlags = context['resolveBatchDetectionFlags'] as (
+    samples: Record<string, unknown>[],
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+  ) => { checkTatCaND: boolean; checkCoMauPhatHien: boolean };
+
+  const sopConfig = {
+    columns: {
+      loSo: 0,
+      maSoMau: 1,
+      kqTrifluralin: 2,
+      ghiChu: 3,
+    },
+  };
+  const metadata = {
+    blankName: 'My Blank',
+    spikeName: 'My Spike',
+    checkTatCaND: false,
+    checkCoMauPhatHien: false,
+  };
+  const flags = (samples: Record<string, unknown>[]) => ({
+    ...resolveBatchDetectionFlags(samples, sopConfig, metadata),
+  });
+
+  assert.deepEqual(
+    flags([
+      { maSoMau: 'My Blank', kqTrifluralin: 'ND' },
+      { maSoMau: 'My Spike', kqTrifluralin: '25' },
+      { maSoMau: 'S01', kqTrifluralin: 'ND' },
+      { maSoMau: 'FINAL', kqTrifluralin: '22' },
+    ]),
+    { checkCoMauPhatHien: false, checkTatCaND: true },
+  );
+
+  assert.deepEqual(
+    flags([
+      { maSoMau: 'My Spike', kqTrifluralin: '25' },
+      { maSoMau: 'S01', kqTrifluralin: '' },
+      { maSoMau: 'S02', kqTrifluralin: 'N/A' },
+    ]),
+    { checkCoMauPhatHien: false, checkTatCaND: false },
+  );
+
+  assert.deepEqual(
+    flags([
+      { maSoMau: 'My Spike', kqTrifluralin: '25' },
+      { maSoMau: 'S01', kqTrifluralin: '0.8' },
+    ]),
+    { checkCoMauPhatHien: true, checkTatCaND: false },
+  );
+});
+
+test('Type2/3A checkbox lines use derived batch detection state instead of stale false metadata flags', () => {
+  const context = loadGasFiles(['gas/LIMS_ReportGenerator.gs', 'gas/Report_Type2_3A.gs']);
+  context['fillCommonSampleCheckboxes'] = () => undefined;
+
+  const renderedChecks: Record<string, string> = {};
+  const body = {
+    replaceText: () => body,
+    findText(lineText: string, previous?: unknown) {
+      if (previous) return null;
+      const paragraph = {
+        replaceText(_pattern: string, replacement: string) {
+          renderedChecks[lineText] = replacement;
+          return paragraph;
+        },
+      };
+      return {
+        getElement: () => ({
+          getParent: () => ({ asParagraph: () => paragraph }),
+        }),
+      };
+    },
+  };
+
+  const fillTextFields = context['fillTextFields'] as (
+    body: unknown,
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+  ) => void;
+  fillTextFields(
+    body,
+    {
+      columns: { maSoMau: 0, kqFip: 1 },
+      checkboxLines: {
+        'Tất cả mẫu thử đều không phát hiện': 'checkTatCaND',
+        'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
+      },
+    },
+    { checkTatCaND: false, checkCoMauPhatHien: false, spikeName: 'Spike QC' },
+    [
+      { maSoMau: 'Spike QC', kqFip: '10' },
+      { maSoMau: 'S01', kqFip: 'ND' },
+    ],
+  );
+
+  assert.equal(renderedChecks['Tất cả mẫu thử đều không phát hiện'], '☑');
+  assert.equal(renderedChecks['Có mẫu thử phát hiện'], '☐');
 });
 
 test('generic chromatogram helper leaves non-chromatogram tables untouched', () => {
@@ -2369,6 +2943,75 @@ test('generic chromatogram helper leaves non-chromatogram tables untouched', () 
 
   fillChromatogram(table, {}, { compounds: ['Fipronil'] }, () => true);
   assert.equal(cellReads, 0);
+});
+
+test('Type3B generic chromatogram sample ND checkbox follows only the explicit ND flag', () => {
+  const runCase = (
+    sample: Record<string, unknown>,
+    assigned: boolean,
+    sampleCellText = '☐ ND',
+    blankCellText = '☐ ND',
+  ) => {
+    const context = loadGasFile('gas/Report_Type3B.gs');
+    const fillChromatogram = context['_fillGenericChromatogramTable'] as (
+      table: Record<string, unknown>,
+      sample: Record<string, unknown>,
+      sopConfig: Record<string, unknown>,
+      isAssigned: (sampleCode: string, compound: string) => boolean,
+    ) => void;
+
+    const sampleCell = createMutableFindTextCell(sampleCellText);
+    const blankCell = createMutableFindTextCell(blankCellText);
+    const plainCell = (text: string) => ({
+      getText: () => text,
+      findText: () => null,
+    });
+    const headerCells = [plainCell('Sắc ký đồ'), plainCell('Mẫu thử'), plainCell('Mẫu nền')];
+    const analyteCells = [plainCell('Fipronil'), sampleCell.cell, blankCell.cell];
+    const fillerCells = [plainCell(''), plainCell(''), plainCell('')];
+    const rows = [headerCells, analyteCells, fillerCells, fillerCells, fillerCells].map((cells) => ({
+      getNumCells: () => cells.length,
+      getText: () => cells.map((cell) => cell.getText()).join(' '),
+      getCell: (index: number) => cells[index],
+    }));
+    const table = {
+      getNumRows: () => rows.length,
+      getRow: (index: number) => rows[index],
+    };
+
+    fillChromatogram(
+      table,
+      { maSoMau: 'S01', ...sample },
+      { compounds: ['Fipronil'] },
+      () => assigned,
+    );
+    return { sampleCell: sampleCell.getText(), blankCell: blankCell.getText() };
+  };
+
+  assert.deepEqual(runCase({ Fipronil: '', Fipronil_nd: true }, true), {
+    sampleCell: '☑ ND',
+    blankCell: '☑ ND',
+  });
+  assert.deepEqual(runCase({ Fipronil: '4.2', Fipronil_nd: false }, true), {
+    sampleCell: '☐ ND',
+    blankCell: '☑ ND',
+  });
+  assert.deepEqual(runCase({ Fipronil: '', Fipronil_nd: false }, true), {
+    sampleCell: '☐ ND',
+    blankCell: '☑ ND',
+  });
+  assert.deepEqual(
+    runCase(
+      { Fipronil: '4.2', Fipronil_nd: false },
+      false,
+      '☑ ND ☒ Đ',
+      '[x] ND (v) Đ',
+    ),
+    {
+      sampleCell: '☐ ND ☐ Đ',
+      blankCell: '☐ ND ☐ Đ',
+    },
+  );
 });
 
 test('Type2/3A sample pagination fails fast when template capacity is exhausted', () => {
@@ -2757,6 +3400,234 @@ test('Dichlorvos and Chloroform wrappers delegate with the correct SOP identity'
   assert.equal(calls[1][6], 'ChloroformCustom');
 });
 
+test('Fipronil-style reporter fails fast when required header metadata mutation fails', () => {
+  const context = loadGasFile('gas/Report_FipronilChlorpyrifos.gs');
+  context['CONFIG'] = {
+    SOP_CONFIG: {
+      'fipronil-chlorpyrifos': { defaultFontSize: 9, checkboxLines: {} },
+    },
+  };
+  context['generateReportFromTemplate'] = (
+    _templateId: string,
+    _folder: unknown,
+    _fileName: string,
+    renderDocument: (args: { body: Record<string, unknown> }) => unknown,
+  ) => renderDocument({ body: { findText: () => null } });
+  context['fillTextFields'] = () => undefined;
+  context['replaceCheckboxSafely'] = () => {
+    throw new Error('metadata mutation failed');
+  };
+  context['replaceDotsSafely'] = () => undefined;
+  context['fillQcTableCheckboxes'] = () => {
+    throw new Error('reporter continued after required metadata failure');
+  };
+
+  const generate = context['generateCustomReport_fipronil_chlorpyrifos'] as (
+    templateId: string,
+    metadata: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+    folder: unknown,
+    fileName: string,
+    version?: number,
+  ) => unknown;
+
+  assert.throws(
+    () => generate('template-fip', { heSoPhaLoang: '1' }, [], {}, 'file-fip', 1),
+    /metadata mutation failed/,
+  );
+});
+
+test('Fipronil-style header renderer overwrites pre-ticked checkbox marker variants', () => {
+  const context = loadGasFiles(['gas/LIMS_ReportGenerator.gs', 'gas/Report_FipronilChlorpyrifos.gs']);
+  const body = createMutableFindTextCell(
+    'Hệ số pha loãng: [x] f= 1 ; (v)\n' +
+    'Loại mẫu: ☒ Thủy sản ; [V]\n' +
+    'Tình trạng mẫu: (X) Bình thường ; ☑',
+  );
+  context['CONFIG'] = {
+    SOP_CONFIG: {
+      'fipronil-chlorpyrifos': { checkboxLines: {} },
+    },
+  };
+  context['generateReportFromTemplate'] = (
+    _templateId: string,
+    _folder: unknown,
+    _fileName: string,
+    renderDocument: (args: { body: Record<string, unknown> }) => unknown,
+  ) => renderDocument({ body: body.cell });
+  context['fillTextFields'] = () => undefined;
+  context['fillQcTableCheckboxes'] = () => undefined;
+  context['requireFipronilCalibrationTable'] = () => ({
+    getRow: () => ({ getCell: () => ({ setText: () => undefined }) }),
+  });
+  context['setCellText'] = () => undefined;
+  context['fillSampleTable'] = () => ({});
+  context['assertPostGenerationReportComplete'] = () => undefined;
+
+  const generate = context['generateCustomReport_fipronil_chlorpyrifos'] as (
+    templateId: string,
+    metadata: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+    folder: unknown,
+    fileName: string,
+    version?: number,
+  ) => unknown;
+  generate(
+    'template-fip',
+    { heSoPhaLoang: '1', loaiMau: 'Thủy sản', tinhTrangMau: 'Bình thường' },
+    [],
+    {},
+    'file-fip',
+    1,
+  );
+
+  assert.equal(
+    body.getText(),
+    'Hệ số pha loãng: ☑ f= 1 ; ☐\n' +
+    'Loại mẫu: ☑ Thủy sản ; ☐\n' +
+    'Tình trạng mẫu: ☑ Bình thường ; ☐',
+  );
+});
+
+test('Fipronil-style header renderer does not manufacture defaults when metadata is missing', () => {
+  const context = loadGasFiles(['gas/LIMS_ReportGenerator.gs', 'gas/Report_FipronilChlorpyrifos.gs']);
+  const body = createMutableFindTextCell(
+    'Hệ số pha loãng: ☑ f= 1 ; ☒\n' +
+    'Loại mẫu: [x] Thủy sản ; (v) Khác: ………\n' +
+    'Tình trạng mẫu: ☑ Bình thường ; [V] Khác: ………',
+  );
+  context['CONFIG'] = {
+    SOP_CONFIG: {
+      'fipronil-chlorpyrifos': { checkboxLines: {} },
+    },
+  };
+  context['generateReportFromTemplate'] = (
+    _templateId: string,
+    _folder: unknown,
+    _fileName: string,
+    renderDocument: (args: { body: Record<string, unknown> }) => unknown,
+  ) => renderDocument({ body: body.cell });
+  context['fillTextFields'] = () => undefined;
+  context['fillQcTableCheckboxes'] = () => undefined;
+  context['requireFipronilCalibrationTable'] = () => ({
+    getRow: () => ({ getCell: () => ({ setText: () => undefined }) }),
+  });
+  context['setCellText'] = () => undefined;
+  context['fillSampleTable'] = () => ({});
+  context['assertPostGenerationReportComplete'] = () => undefined;
+
+  const generate = context['generateCustomReport_fipronil_chlorpyrifos'] as (
+    templateId: string,
+    metadata: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+    folder: unknown,
+    fileName: string,
+    version?: number,
+  ) => unknown;
+  generate('template-fip', {}, [], {}, 'file-fip', 1);
+
+  assert.equal(
+    body.getText(),
+    'Hệ số pha loãng: ☐ f= 1 ; ☐\n' +
+    'Loại mẫu: ☐ Thủy sản ; ☐ Khác: ………\n' +
+    'Tình trạng mẫu: ☐ Bình thường ; ☐ Khác: ………',
+  );
+});
+
+test('shared sample checkbox renderer keeps missing metadata unchecked but preserves explicit UI defaults', () => {
+  const context = loadGasFile('gas/LIMS_ReportGenerator.gs');
+  const fillCommonSampleCheckboxes = context['fillCommonSampleCheckboxes'] as (
+    element: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    sample: Record<string, unknown>,
+    sopConfig: Record<string, unknown>,
+  ) => void;
+
+  const missing = createMutableFindTextCell(
+    'Hệ số pha loãng: ☑ f = 1 ; ☒\n' +
+    'Loại mẫu: [x] Thuỷ sản ; (v) Khác: ………\n' +
+    'Tình trạng mẫu: ☑ Bình thường ; [V] Khác: ………',
+  );
+  fillCommonSampleCheckboxes(missing.cell, {}, {}, {});
+  assert.equal(
+    missing.getText(),
+    'Hệ số pha loãng: ☐ f = 1 ; ☐\n' +
+    'Loại mẫu: ☐ Thuỷ sản ; ☐ Khác: ………\n' +
+    'Tình trạng mẫu: ☐ Bình thường ; ☐ Khác: ………',
+  );
+
+  const explicit = createMutableFindTextCell(
+    'Hệ số pha loãng: ☐ f = 1 ; ☑\n' +
+    'Loại mẫu: ☐ Thuỷ sản ; ☑ Khác: ………\n' +
+    'Tình trạng mẫu: ☐ Bình thường ; ☑ Khác: ………',
+  );
+  fillCommonSampleCheckboxes(
+    explicit.cell,
+    {
+      heSoPhaLoang: '1',
+      loaiMau: 'Thủy sản',
+      tinhTrangMau: 'Bình thường',
+      sopId: 'tbvtv-thuc-pham-gcmsms',
+    },
+    {},
+    {},
+  );
+  assert.equal(
+    explicit.getText(),
+    'Hệ số pha loãng: ☑ f = 1 ; ☐\n' +
+    'Loại mẫu: ☑ Thuỷ sản ; ☐ Khác: ………\n' +
+    'Tình trạng mẫu: ☑ Bình thường ; ☐ Khác: ………',
+  );
+});
+
+test('Type3B Form Don leaves missing mass and dilution blank instead of inventing 10g and F=1', () => {
+  const context = loadGasFile('gas/Report_Type3B.gs');
+  context['DocumentApp'] = { ElementType: { TABLE: 'TABLE' } };
+
+  const headers = ['Mã số mẫu', 'Khối lượng (g)', 'F', 'Vial No', 'Kết quả (µg/g)'];
+  const written: Record<number, string> = {};
+  const headerRow = {
+    getText: () => headers.join(' '),
+    getNumCells: () => headers.length,
+    getCell: (index: number) => ({ getText: () => headers[index] }),
+  };
+  const dataRow = {
+    getNumCells: () => headers.length,
+    getCell: () => ({ getText: () => '' }),
+  };
+  const table = {
+    getNumRows: () => 2,
+    getRow: (index: number) => index === 0 ? headerRow : dataRow,
+  };
+  const pageElement = {
+    getType: () => 'TABLE',
+    asTable: () => table,
+  };
+  context['setCellText'] = (_row: unknown, column: number, value: unknown) => {
+    written[column] = value === undefined || value === null ? '' : String(value);
+  };
+
+  const fillFormDonTables = context['_fillFormDonTablesDynamically'] as (
+    pageElements: unknown[],
+    metadata: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+    compoundName: string,
+    sopConfig: Record<string, unknown>,
+  ) => { resultTableCount: number; resultRowsWritten: number };
+
+  const stats = fillFormDonTables(
+    [pageElement],
+    {},
+    [{ maSoMau: 'S01', Fipronil: 'ND' }],
+    'Fipronil',
+    { defaultFontSize: 9 },
+  );
+
+  assert.deepEqual({ ...stats }, { resultTableCount: 1, resultRowsWritten: 1 });
+  assert.equal(written[1], '');
+  assert.equal(written[2], '');
+});
+
 test('Form Don result resolution preserves zero, ND, N/A, and explicit empty values', () => {
   const type3bContext = loadGasFile('gas/Report_Type3B.gs');
   const resolveResult = type3bContext['resolveFormDonResultValue'] as (
@@ -2790,6 +3661,10 @@ test('Form Don header contract resolves required columns without hard-coded inde
   assert.deepEqual(
     { ...resolveCalibrationColumns(['Area', 'Nồng độ (ng/ml)', 'Điểm chuẩn', 'Vial No']) },
     { loSoCol: 2, vialCol: 3, kqCol: 1, areaCol: 0 },
+  );
+  assert.deepEqual(
+    { ...resolveCalibrationColumns(['Điểm chuẩn', 'Nội chuẩn cần dùng (ng/ml)', 'Nồng độ chuẩn (ng/ml)', 'Vial No']) },
+    { loSoCol: 0, vialCol: 3, kqCol: 2, areaCol: -1 },
   );
   assert.deepEqual(
     { ...resolveResultColumns(['Kết quả (µg/g)', 'Mã số mẫu', 'Vial', 'Khối lượng (g)', 'F']) },
@@ -2835,6 +3710,7 @@ test('Type3B custom calibration uses its own strict header contract without posi
 
   assert.equal(isCustomCalibrationCandidate(['Nồng độ (ng/ml)', 'Điểm chuẩn', 'Vial No']), true);
   assert.equal(isCustomCalibrationCandidate(['C (ng/ml)', 'Vial No']), true);
+  assert.equal(isCustomCalibrationCandidate(['Thể tích (ml)', 'Vial No']), false);
   assert.equal(isCustomCalibrationCandidate(['Điểm chuẩn', 'Vial No', 'Area']), false);
   assert.equal(isCustomCalibrationCandidate(['Điểm chuẩn', 'Nồng độ (ng/ml)']), false);
   assert.equal(isCustomCalibrationCandidate(['Mã số mẫu', 'Vial No', 'Kết quả']), false);
@@ -2846,6 +3722,10 @@ test('Type3B custom calibration uses its own strict header contract without posi
   assert.deepEqual(
     { ...resolveCustomCalibrationColumns(['Nồng độ (ng/ml)', 'Vial No']) },
     { vialCol: 1, kqCol: 0 },
+  );
+  assert.deepEqual(
+    { ...resolveCustomCalibrationColumns(['Vial No', 'Nội chuẩn cần dùng (ng/ml)', 'Nồng độ chuẩn (ng/ml)']) },
+    { vialCol: 0, kqCol: 2 },
   );
   assert.throws(
     () => resolveCustomCalibrationColumns(['Điểm chuẩn', 'Nồng độ (ng/ml)']),

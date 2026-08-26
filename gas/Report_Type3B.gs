@@ -21,6 +21,13 @@ function buildQcCheckboxLabels(value) {
   };
 }
 
+function buildPerAnalyteQcCheckboxState(value) {
+  return {
+    dat: value === 'Đạt' || value === '☑',
+    khongDat: value === 'Không đạt' || value === '☒' || value === 'Không Đạt',
+  };
+}
+
 function valueOrEmpty(value) {
   return value !== undefined && value !== null ? value : '';
 }
@@ -279,7 +286,18 @@ function isType3BTargetAssigned(sampleTargetMap, sampleCode, compoundDisplayName
  * Helper thay thế placeholder và điền kết quả cho mẫu dạng 3B trên danh sách các phần tử
  */
 function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
-  const allFields = { ...metadata, ...sample };
+  const detectionFlags = typeof resolveSampleDetectionFlags === 'function'
+    ? resolveSampleDetectionFlags(sample, sopConfig, metadata)
+    : {
+        checkTatCaND: sample.checkTatCaND === true || metadata.checkTatCaND === true,
+        checkCoMauPhatHien: sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true
+      };
+  const allFields = {
+    ...metadata,
+    ...sample,
+    checkTatCaND: detectionFlags.checkTatCaND,
+    checkCoMauPhatHien: detectionFlags.checkCoMauPhatHien
+  };
   
   // Bộ lọc chỉ định (Target Assignment Resolver) — V2: Canonical ID
   const sampleTargetMap = metadata.sampleTargetMap || (metadata.inputs && metadata.inputs.sampleTargetMap) || null;
@@ -448,7 +466,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
       // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
     if (sopConfig.checkboxLines) {
       for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
-        const isChecked = metadata[fieldName] === true;
+        const isChecked = allFields[fieldName] === true;
         const checkChar = isChecked ? '☑' : '☐';
         replaceCheckboxInElementRecursive(element, lineText, checkChar);
       }
@@ -530,14 +548,14 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
               const { datCheck, khongDatCheck, naCheck } = buildQcCheckboxLabels(val);
 
-              evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
-              evalCell.replaceText('[☐□☑] Đạt', datCheck);
+              evalCell.replaceText('[\\[\\(]\\s*[xXvV]?\\s*[\\]\\)]\\s*Đạt', datCheck);
+              evalCell.replaceText('[☐□☑☒]\\s*Đạt', datCheck);
 
-              evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
-              evalCell.replaceText('[☐□☑] Không đạt', khongDatCheck);
+              evalCell.replaceText('[\\[\\(]\\s*[xXvV]?\\s*[\\]\\)]\\s*Không đạt', khongDatCheck);
+              evalCell.replaceText('[☐□☑☒]\\s*Không đạt', khongDatCheck);
 
-              evalCell.replaceText('[\\[\\(] ?[\\]\\)] N/A', naCheck);
-              evalCell.replaceText('[☐□☑] N/A', naCheck);
+              evalCell.replaceText('[\\[\\(]\\s*[xXvV]?\\s*[\\]\\)]\\s*N/A', naCheck);
+              evalCell.replaceText('[☐□☑☒]\\s*N/A', naCheck);
             }
           }
         }
@@ -632,15 +650,15 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             if (!isAssigned) {
               // Hoạt chất KHÔNG được chỉ định (N/A) -> Tự động xoá trắng các dấu tick (nếu có sẵn trên form)
               for (const cell of segmentCells) {
-                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))[^A-Za-z0-9]*ND');
+                let foundNd = cell.findText('([☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))[^A-Za-z0-9]*ND');
                 if (foundNd) {
                   try {
                     const textElement = foundNd.getElement().asText();
                     const start = foundNd.getStartOffset();
-                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
+                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
                     if (match) {
                       const mStr = match[0].toLowerCase();
-                      if (mStr === '☑' || mStr.includes('x') || mStr.includes('v')) {
+                      if (mStr === '☑' || mStr === '☒' || mStr.includes('x') || mStr.includes('v')) {
                         const insertPos = start + match.index;
                         textElement.insertText(insertPos, '☐');
                         textElement.deleteText(insertPos + 1, insertPos + match[0].length);
@@ -673,12 +691,12 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               
               // 7.1. Tìm checkbox ND và điền kết quả (dấu chấm) trong segment
               for (const cell of segmentCells) {
-                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))[^A-Za-z0-9]*ND');
+                let foundNd = cell.findText('([☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))[^A-Za-z0-9]*ND');
                 if (foundNd) {
                   try {
                     const textElement = foundNd.getElement().asText();
                     const start = foundNd.getStartOffset();
-                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
+                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
                     if (match) {
                       const insertPos = start + match.index;
                       const charToInsert = isNd ? '☑' : '☐';
@@ -717,13 +735,12 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               // 7.2. Tìm và tick các ô QC Đ/KĐ theo thứ tự trong segment
               for (let i = 0; i < qcList.length; i++) {
                 const qcStatus = qcList[i];
-                if (qcStatus) {
-                  const checkDat = (qcStatus === 'Đạt' || qcStatus === '☑');
-                  const checkKhongDat = (qcStatus === 'Không đạt' || qcStatus === '☒' || qcStatus === 'Không Đạt');
-                  
-                  _setNthQcCheckboxInCells(segmentCells, i, 'Đ', checkDat);
-                  _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', checkKhongDat);
-                }
+                const { dat, khongDat } = buildPerAnalyteQcCheckboxState(qcStatus);
+
+                // Luôn ghi đè cả hai ô. Giá trị thiếu/N/A phải để trống,
+                // không được giữ dấu tick mặc định của template.
+                _setNthQcCheckboxInCells(segmentCells, i, 'Đ', dat);
+                _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', khongDat);
               }
             }
           }
@@ -824,13 +841,19 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
       
       const isAssigned = isTargetAssignedForGas(sample.maSoMau, compound);
       if (!isAssigned) {
-        // Hoạt chất KHÔNG được chỉ định (N/A) -> Để nguyên form mặc định
+        // Hoạt chất KHÔNG được chỉ định (N/A) -> xoá mọi tick có sẵn trong
+        // segment để template mặc định không thể làm sai PDF.
+        const segmentCells = [];
+        for (let c = startCol + 1; c <= endCol; c++) {
+          segmentCells.push(row.getCell(c));
+        }
+        _clearCheckboxesInCells(segmentCells);
         continue;
       } else {
         const payloadKey = _getPayloadKey(compound);
-        const kqVal = sample[payloadKey] !== undefined && sample[payloadKey] !== null ? sample[payloadKey].toString() : '';
-        const ndVal = sample[payloadKey + '_nd'] === true ? '☑' : '☐';
-        const isDetected = (kqVal !== '' || ndVal === '☑');
+        // Checkbox ND của mẫu thử chỉ phản ánh trạng thái ND explicit.
+        // Có kết quả định lượng nghĩa là mẫu được phát hiện, không phải ND.
+        const isNd = sample[payloadKey + '_nd'] === true;
         
         let ndCount = 0;
         for (let c = startCol + 1; c <= endCol; c++) {
@@ -840,7 +863,7 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
           if (cellText.includes('nd')) {
             // Lần xuất hiện đầu tiên của ND trong segment là Mẫu thử
             if (ndCount === 0) {
-              _replaceGenericCheckbox(cell, 'nd', isDetected);
+              _replaceGenericCheckbox(cell, 'nd', isNd);
             } 
             // Lần thứ hai là Mẫu nền (luôn ND)
             else if (ndCount === 1) {
@@ -857,9 +880,36 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
   }
 }
 
+function _clearCheckboxesInCells(cells) {
+  // Chỉ tìm trạng thái đang được tick. Sau khi đổi thành ☐, match đó biến mất,
+  // nên có thể tìm lại từ đầu mà không phụ thuộc RangeElement đã bị thay đổi.
+  const pattern = '([☑☒]|\\[\\s*[xXvV]\\s*\\]|\\(\\s*[xXvV]\\s*\\))';
+
+  for (const cell of cells) {
+    let found = cell.findText(pattern);
+    while (found) {
+      try {
+        const textElement = found.getElement().asText();
+        const start = found.getStartOffset();
+        const matchedText = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1);
+        const match = matchedText.match(/([☑☒]|\[\s*[xXvV]\s*\]|\(\s*[xXvV]\s*\))/);
+        if (match) {
+          const insertPos = start + match.index;
+          textElement.insertText(insertPos, '☐');
+          textElement.deleteText(insertPos + 1, insertPos + match[0].length);
+        }
+      } catch(e) {
+        Logger.log(`[Type3B][required-qc] Không thể clear checkbox cho hoạt chất không được chỉ định: ${e.toString()}`);
+        throw e;
+      }
+      found = cell.findText(pattern);
+    }
+  }
+}
+
 function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
   let matchIndex = 0;
-  const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
+  const pattern = '([☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*' + labelPattern;
   
   for (const cell of cells) {
     let found = cell.findText(pattern);
@@ -884,7 +934,7 @@ function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
           try {
             const textElement = found.getElement().asText();
             const start = found.getStartOffset();
-            const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+            const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
             if (match) {
               textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
               textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
@@ -903,7 +953,12 @@ function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
 }
 
 function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
-  const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
+  // Các caller dò text trên bản lowercase nhưng template thực tế thường dùng
+  // "ND"/"Đ" viết hoa. Dùng pattern tường minh để không phụ thuộc case.
+  const normalizedLabelPattern = labelPattern === 'nd'
+    ? '[Nn][Dd]'
+    : ((labelPattern === 'Đ' || labelPattern === 'đ') ? '[Đđ]' : labelPattern);
+  const pattern = '([☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*' + normalizedLabelPattern;
   let found = cell.findText(pattern);
   while (found) {
     let isFalseMatch = false;
@@ -925,7 +980,7 @@ function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
       try {
         const textElement = found.getElement().asText();
         const start = found.getStartOffset();
-        const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+        const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
         if (match) {
           textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
           textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
@@ -943,7 +998,7 @@ function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
  * Helper tìm và tick checkbox ở vị trí thứ n trong một dòng table (hỗ trợ nhiều QC liên tiếp)
  */
 function _setNthQcCheckboxInRow(row, targetIndex, labelPattern, isChecked) {
-  const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
+  const pattern = '([☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*' + labelPattern;
   let found = row.findText(pattern);
   let count = 0;
   
@@ -954,7 +1009,7 @@ function _setNthQcCheckboxInRow(row, targetIndex, labelPattern, isChecked) {
         const start = found.getStartOffset();
         const end = found.getEndOffsetInclusive();
         const textStr = textElement.getText().substring(start, end + 1);
-        const match = textStr.match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+        const match = textStr.match(/([☐□☑☒]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
         
         if (match) {
           const insertPos = start + match.index;
@@ -999,10 +1054,12 @@ function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
   if (type === DocumentApp.ElementType.PARAGRAPH) {
     const para = element.asParagraph();
     if (para.getText().includes(lineText)) {
-      para.replaceText('\\[ \\]', checkChar);
+      para.replaceText('\\[\\s*[xXvV]?\\s*\\]', checkChar);
+      para.replaceText('\\(\\s*[xXvV]?\\s*\\)', checkChar);
       para.replaceText('☐', checkChar);
       para.replaceText('□', checkChar);
-      para.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+      para.replaceText('☑', checkChar);
+      para.replaceText('☒', checkChar);
     }
   } else if (type === DocumentApp.ElementType.TABLE) {
     const table = element.asTable();
@@ -1011,10 +1068,12 @@ function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
       for (let c = 0; c < row.getNumCells(); c++) {
         const cell = row.getCell(c);
         if (cell.getText().includes(lineText)) {
-          cell.replaceText('\\[ \\]', checkChar);
+          cell.replaceText('\\[\\s*[xXvV]?\\s*\\]', checkChar);
+          cell.replaceText('\\(\\s*[xXvV]?\\s*\\)', checkChar);
           cell.replaceText('☐', checkChar);
           cell.replaceText('□', checkChar);
-          cell.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+          cell.replaceText('☑', checkChar);
+          cell.replaceText('☒', checkChar);
         }
       }
     }
@@ -1064,6 +1123,18 @@ function normalizeFormDonHeaderText(value) {
   return text.replace(/đ/g, 'd').replace(/\s+/g, ' ').trim();
 }
 
+function isFormDonCalibrationConcentrationHeaderText(value) {
+  const text = normalizeFormDonHeaderText(value);
+  if (!text) return false;
+
+  // Không dùng riêng đơn vị "ml" để nhận diện cột nồng độ: các cột khác như
+  // "Nội chuẩn cần dùng (ng/ml)" cũng có cùng đơn vị và sẽ gây ambiguity.
+  if (text.includes('noi chuan')) return false;
+  if (text.includes('nong do')) return true;
+  if (/^concentration\b/.test(text)) return true;
+  return /^c(?:\s+chuan)?\s*(?:\(|$)/.test(text);
+}
+
 function resolveUniqueFormDonHeaderColumn(headerTexts, tableName, columnName, matcher, optional) {
   const matches = [];
   for (let i = 0; i < headerTexts.length; i++) {
@@ -1102,7 +1173,7 @@ function resolveFormDonCalibrationHeaderColumns(headerTexts) {
       return text.includes('vial') || text.includes('lo so');
     }, false),
     nongDo: resolveUniqueFormDonHeaderColumn(headerTexts, 'calibration table', 'Nồng độ', function(text) {
-      return text.includes('ml') || text.includes('nong do');
+      return isFormDonCalibrationConcentrationHeaderText(text);
     }, false),
     area: resolveUniqueFormDonHeaderColumn(headerTexts, 'calibration table', 'Area/Diện tích', function(text) {
       return text.includes('area') || text.includes('dien tich');
@@ -1124,7 +1195,7 @@ function isType3bCustomCalibrationHeaderCandidate(headerTexts) {
   for (let i = 0; i < headerTexts.length; i++) {
     const text = normalizeFormDonHeaderText(headerTexts[i]);
     if (text.includes('vial') || text.includes('lo so')) hasVial = true;
-    if (text.includes('nong do') || text.includes('ml')) hasConcentration = true;
+    if (isFormDonCalibrationConcentrationHeaderText(text)) hasConcentration = true;
   }
 
   return hasVial && hasConcentration;
@@ -1136,7 +1207,7 @@ function resolveType3bCustomCalibrationHeaderColumns(headerTexts) {
       return text.includes('vial') || text.includes('lo so');
     }, false),
     nongDo: resolveUniqueFormDonHeaderColumn(headerTexts, 'custom calibration table', 'Nồng độ', function(text) {
-      return text.includes('ml') || text.includes('nong do');
+      return isFormDonCalibrationConcentrationHeaderText(text);
     }, false),
   };
   assertDistinctFormDonHeaderColumns('custom calibration table', columns);
@@ -1168,7 +1239,7 @@ function isFormDonCalibrationTableCandidate(table) {
     const text = normalizeFormDonHeaderText(headerTexts[i]);
     if (text.includes('diem chuan') || text.includes('ten diem')) hasPoint = true;
     if (text.includes('vial') || text.includes('lo so')) hasVial = true;
-    if (text.includes('nong do') || text.includes('ml')) hasConcentration = true;
+    if (isFormDonCalibrationConcentrationHeaderText(text)) hasConcentration = true;
     if (text.includes('ma so mau') || text.includes('ma mau') || text.includes('mau thu') || text.includes('khoi luong')) {
       hasSampleOrMass = true;
     }
@@ -1343,12 +1414,15 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
         }
         
         const kqVal = resolveFormDonResultValue(sample, compoundName, backendKey);
+        const fVal = sample.heSoPhaLoang !== undefined && sample.heSoPhaLoang !== null
+          ? sample.heSoPhaLoang
+          : sample.hSoPhaLoang;
         
         try {
           const chunkSize = sopConfig.maSoMauChunkSize || 0;
           if (maSoMauCol >= 0 && maSoMauCol < row.getNumCells()) setCellText(row, maSoMauCol, valueOrEmpty(sample.maSoMau).toString(), chunkSize, sopConfig.defaultFontSize);
-          if (khoiLuongCol >= 0 && khoiLuongCol < row.getNumCells()) setCellText(row, khoiLuongCol, (sample.khoiLuong || '10.0').toString(), null, sopConfig.defaultFontSize);
-          if (fCol >= 0 && fCol < row.getNumCells()) setCellText(row, fCol, (sample.heSoPhaLoang || sample.hSoPhaLoang || '1').toString(), null, sopConfig.defaultFontSize);
+          if (khoiLuongCol >= 0 && khoiLuongCol < row.getNumCells()) setCellText(row, khoiLuongCol, valueOrEmpty(sample.khoiLuong).toString(), null, sopConfig.defaultFontSize);
+          if (fCol >= 0 && fCol < row.getNumCells()) setCellText(row, fCol, valueOrEmpty(fVal).toString(), null, sopConfig.defaultFontSize);
           if (loSoCol >= 0 && loSoCol < row.getNumCells()) setCellText(row, loSoCol, valueOrEmpty(sample.loSo).toString(), null, sopConfig.defaultFontSize);
           if (kqCol >= 0 && kqCol < row.getNumCells()) setCellText(row, kqCol, valueOrEmpty(kqVal).toString(), null, sopConfig.defaultFontSize);
           if (ghiChuCol >= 0 && ghiChuCol < row.getNumCells()) setCellText(row, ghiChuCol, valueOrEmpty(sample.ghiChu).toString(), null, sopConfig.defaultFontSize);
@@ -1368,5 +1442,3 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
     resultRowsWritten,
   };
 }
-
-

@@ -19,7 +19,7 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
 
   // 1. Điền các text fields & checkbox chung bằng bộ khung mặc định
   const sopConfig = CONFIG.SOP_CONFIG['trifluralin-gcms'];
-  fillTextFields(body, sopConfig, metadata);
+  fillTextFields(body, sopConfig, metadata, samples);
 
   // 1.5. Bổ sung thay thế các placeholder riêng biệt của biểu mẫu Trifluralin (nếu có trong template)
   const analystVal = metadata.ngayNguoiPhanTich || '';
@@ -40,8 +40,9 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
     nameThamTra = parsedVerifier.name;
   }
 
-  body.replaceText('\\{\\{CheckTatCaND\\}\\}', metadata.checkTatCaND ? '☑' : '☐');
-  body.replaceText('\\{\\{CheckCoMauPhatHien\\}\\}', metadata.checkCoMauPhatHien ? '☑' : '☐');
+  const detectionFlags = resolveBatchDetectionFlags(samples, sopConfig, metadata);
+  body.replaceText('\\{\\{CheckTatCaND\\}\\}', detectionFlags.checkTatCaND ? '☑' : '☐');
+  body.replaceText('\\{\\{CheckCoMauPhatHien\\}\\}', detectionFlags.checkCoMauPhatHien ? '☑' : '☐');
   body.replaceText('\\{\\{NgayPhanTich\\}\\}', datePhanTich);
   body.replaceText('\\{\\{NguoiPhanTich\\}\\}', namePhanTich);
   body.replaceText('\\{\\{NgayThamTra\\}\\}', dateThamTra);

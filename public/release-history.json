@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.08.26-b01",
+    "date": "26/8/2026",
+    "title": "Đồng bộ đánh giá UI và PDF cho báo cáo GAS",
+    "highlights": [
+      "Đồng bộ trạng thái đánh giá giữa giao diện LIMS và PDF kết quả cho SOP 9.14 cùng các biểu mẫu GAS dùng chung renderer.",
+      "Loại bỏ các giá trị nghiệp vụ mặc định bị tự suy diễn khi payload không cung cấp dữ liệu, giúp PDF phản ánh đúng dữ liệu người dùng đã nhập."
+    ],
+    "features": [],
+    "improvements": [
+      "Chuẩn hóa xử lý checkbox Unicode và ASCII để luôn ghi đè trạng thái tick có sẵn trong template theo dữ liệu hiện tại.",
+      "Trạng thái phát hiện/không phát hiện được suy ra từ kết quả mẫu thực tế và bỏ qua các mẫu QC kiểm soát khi đánh giá toàn mẻ.",
+      "Bổ sung regression test cho mapping QC SOP 9.14, Form Check/Form Đơn, pagination, nhận dạng mẫu và dữ liệu số 0."
+    ],
+    "fixes": [
+      "QC thiếu dữ liệu không còn bị đánh giá ngầm là Đạt; renderer chuyển về N/A hoặc bỏ chọn theo đúng ngữ cảnh.",
+      "Không còn tự gán F=1, khối lượng 10 g, loại mẫu Thủy sản hoặc tình trạng Bình thường khi metadata tương ứng bị thiếu.",
+      "Sửa mapping SOP 9.14 để các mục Mẫu kiểm tra nội bộ, Độ lệch thời gian lưu, yêu cầu nhận dạng, mẫu thêm chuẩn 5 ppb và độ thu hồi IS đồng bộ giữa UI và PDF.",
+      "Template có checkbox tick sẵn như ☑, ☒, [x] hoặc (x) được xóa/ghi đè đúng thay vì giữ trạng thái cũ."
+    ],
+    "releaseOrder": 26082600001
+  },
+  {
     "version": "v26.08.25-b05",
     "date": "25/8/2026",
     "title": "Hoàn tất hợp nhất Hoạt động và Thông báo",
