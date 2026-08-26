@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.08.26-b02",
+    "date": "26/8/2026",
+    "title": "Quét mã chất chuẩn nhanh hơn và báo cáo GAS ổn định hơn",
+    "highlights": [
+      "Quét và đồng bộ mã nội bộ Chất chuẩn phản hồi ổn định hơn khi dữ liệu lớn hoặc kết nối chậm, tránh cửa sổ bị giữ ở trạng thái đang xử lý quá lâu.",
+      "Báo cáo GAS tiếp tục giữ đúng lựa chọn QC của người dùng ngay cả khi biểu mẫu thực tế có khác biệt nhỏ về khoảng trắng hoặc cách trình bày checkbox."
+    ],
+    "features": [],
+    "improvements": [
+      "Tăng tốc bước rà soát nhật ký Chất chuẩn bằng cách xử lý nhiều nhóm dữ liệu đồng thời nhưng vẫn giới hạn tải an toàn.",
+      "Cho phép người dùng Quét lại khi một lần quét mã nội bộ mất quá lâu thay vì phải đóng và mở lại cửa sổ.",
+      "Bổ sung kiểm tra tự động để bảo đảm dữ liệu QC của SOP 9.14 được giữ nguyên khi tạo PDF."
+    ],
+    "fixes": [
+      "Đồng bộ mã nội bộ sẽ dừng an toàn trước khi ghi nếu lần kiểm tra dữ liệu mới nhất không hoàn tất kịp thời, tránh ghi từ trạng thái chưa được xác minh.",
+      "Sửa nhận dạng các dòng QC trong biểu mẫu GAS khi nhãn có xuống dòng hoặc khoảng trắng khác với cấu hình.",
+      "Biểu mẫu GAS không còn bắt buộc phải có lựa chọn N/A riêng nếu nghiệp vụ biểu diễn N/A bằng trạng thái bỏ chọn cả Đạt và Không đạt."
+    ],
+    "releaseOrder": 26082600002
+  },
+  {
     "version": "v26.08.26-b01",
     "date": "26/8/2026",
     "title": "Đồng bộ đánh giá UI và PDF cho báo cáo GAS",

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.26-b01",
-    "title": "Đồng bộ đánh giá UI và PDF cho báo cáo GAS",
+    "version": "v26.08.26-b02",
+    "title": "Quét mã chất chuẩn nhanh hơn và báo cáo GAS ổn định hơn",
     "features": [
-      "Đồng bộ trạng thái đánh giá giữa giao diện LIMS và PDF kết quả cho SOP 9.14 cùng các biểu mẫu GAS dùng chung renderer.",
-      "Loại bỏ các giá trị nghiệp vụ mặc định bị tự suy diễn khi payload không cung cấp dữ liệu, giúp PDF phản ánh đúng dữ liệu người dùng đã nhập.",
-      "Chuẩn hóa xử lý checkbox Unicode và ASCII để luôn ghi đè trạng thái tick có sẵn trong template theo dữ liệu hiện tại.",
-      "Trạng thái phát hiện/không phát hiện được suy ra từ kết quả mẫu thực tế và bỏ qua các mẫu QC kiểm soát khi đánh giá toàn mẻ.",
-      "Bổ sung regression test cho mapping QC SOP 9.14, Form Check/Form Đơn, pagination, nhận dạng mẫu và dữ liệu số 0."
+      "Quét và đồng bộ mã nội bộ Chất chuẩn phản hồi ổn định hơn khi dữ liệu lớn hoặc kết nối chậm, tránh cửa sổ bị giữ ở trạng thái đang xử lý quá lâu.",
+      "Báo cáo GAS tiếp tục giữ đúng lựa chọn QC của người dùng ngay cả khi biểu mẫu thực tế có khác biệt nhỏ về khoảng trắng hoặc cách trình bày checkbox.",
+      "Tăng tốc bước rà soát nhật ký Chất chuẩn bằng cách xử lý nhiều nhóm dữ liệu đồng thời nhưng vẫn giới hạn tải an toàn.",
+      "Cho phép người dùng Quét lại khi một lần quét mã nội bộ mất quá lâu thay vì phải đóng và mở lại cửa sổ.",
+      "Bổ sung kiểm tra tự động để bảo đảm dữ liệu QC của SOP 9.14 được giữ nguyên khi tạo PDF."
     ]
   },
   "assetGroups": [

@@ -1227,8 +1227,7 @@ function isWritableQcEvaluationCellText(cellText) {
   const text = cellText === undefined || cellText === null ? '' : cellText.toString();
   const checkbox = '(?:[☐□☑☒]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))';
   return new RegExp(checkbox + '\\s*Đạt', 'i').test(text) &&
-    new RegExp(checkbox + '\\s*Không đạt', 'i').test(text) &&
-    new RegExp(checkbox + '\\s*N/A', 'i').test(text);
+    new RegExp(checkbox + '\\s*Không đạt', 'i').test(text);
 }
 
 function assertFipronilQcTableContract(qcTable, sopConfig, sopId) {
@@ -1251,7 +1250,7 @@ function assertFipronilQcTableContract(qcTable, sopConfig, sopId) {
     }
     const evaluationText = getTemplateTableCellText(qcTable, rowIndex, 2);
     if (!isWritableQcEvaluationCellText(evaluationText)) {
-      throw new Error(`Template contract invalid for SOP ${sopId}: QC row "${mapping.label}" has no writable Đạt/Không đạt/N/A checkbox markers`);
+      throw new Error(`Template contract invalid for SOP ${sopId}: QC row "${mapping.label}" has no writable Đạt/Không đạt checkbox markers`);
     }
   });
 }

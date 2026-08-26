@@ -32,6 +32,31 @@ function valueOrEmpty(value) {
   return value !== undefined && value !== null ? value : '';
 }
 
+function normalizeType3bQcLabelText(value) {
+  return valueOrEmpty(value).toString().replace(/\s+/g, '').toLowerCase();
+}
+
+function isType3bQcLabelMatch(actualText, configuredText) {
+  const actual = normalizeType3bQcLabelText(actualText);
+  const configured = normalizeType3bQcLabelText(configuredText);
+  return !!actual && !!configured && (actual.includes(configured) || configured.includes(actual));
+}
+
+function resolveType3bSharedQcValue(fields, fieldName) {
+  const canonicalValue = fields ? fields[fieldName] : undefined;
+  if (canonicalValue !== undefined && canonicalValue !== null && canonicalValue !== '') {
+    return canonicalValue;
+  }
+
+  const legacyAliases = {
+    qcNhanDang: 'qcNhanDangMauNhiem',
+    qcThemChuan: 'qcNhanDangSpike',
+    qcThuHoi: 'qcThuHoiIS'
+  };
+  const legacyKey = legacyAliases[fieldName];
+  return legacyKey && fields ? fields[legacyKey] : canonicalValue;
+}
+
 function firstDefinedValue(primary, secondary, fallback) {
   if (primary !== undefined && primary !== null) return primary;
   if (secondary !== undefined && secondary !== null) return secondary;
@@ -463,10 +488,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         }
       }
 
-      // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
+    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
     if (sopConfig.checkboxLines) {
       for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
-        const isChecked = allFields[fieldName] === true;
+        const isChecked = resolveType3bSharedQcValue(allFields, fieldName) === true;
         const checkChar = isChecked ? '☑' : '☐';
         replaceCheckboxInElementRecursive(element, lineText, checkChar);
       }
@@ -528,7 +553,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             let fieldName = null;
             if (checkboxLines) {
               for (const [keyText, fName] of Object.entries(checkboxLines)) {
-                if (labelText.includes(keyText) || keyText.includes(labelText)) {
+                if (isType3bQcLabelMatch(labelText, keyText)) {
                   fieldName = fName;
                   break;
                 }
@@ -544,7 +569,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
 
             if (fieldName) {
               // Missing QC data is N/A, never an implicit pass.
-              const val = allFields[fieldName];
+              const val = resolveType3bSharedQcValue(allFields, fieldName);
               const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
               const { datCheck, khongDatCheck, naCheck } = buildQcCheckboxLabels(val);
 
@@ -1053,7 +1078,7 @@ function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
   const type = element.getType();
   if (type === DocumentApp.ElementType.PARAGRAPH) {
     const para = element.asParagraph();
-    if (para.getText().includes(lineText)) {
+    if (isType3bQcLabelMatch(para.getText(), lineText)) {
       para.replaceText('\\[\\s*[xXvV]?\\s*\\]', checkChar);
       para.replaceText('\\(\\s*[xXvV]?\\s*\\)', checkChar);
       para.replaceText('☐', checkChar);
@@ -1067,7 +1092,7 @@ function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
       const row = table.getRow(r);
       for (let c = 0; c < row.getNumCells(); c++) {
         const cell = row.getCell(c);
-        if (cell.getText().includes(lineText)) {
+        if (isType3bQcLabelMatch(cell.getText(), lineText)) {
           cell.replaceText('\\[\\s*[xXvV]?\\s*\\]', checkChar);
           cell.replaceText('\\(\\s*[xXvV]?\\s*\\)', checkChar);
           cell.replaceText('☐', checkChar);

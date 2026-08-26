@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.26-b01
+## Phiên bản hiện tại: v26.08.26-b02
+
+### v26.08.26-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Quét và đồng bộ mã nội bộ Chất chuẩn phản hồi ổn định hơn khi dữ liệu lớn hoặc kết nối chậm, tránh cửa sổ bị giữ ở trạng thái đang xử lý quá lâu.
+- Báo cáo GAS tiếp tục giữ đúng lựa chọn QC của người dùng ngay cả khi biểu mẫu thực tế có khác biệt nhỏ về khoảng trắng hoặc cách trình bày checkbox.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tăng tốc bước rà soát nhật ký Chất chuẩn bằng cách xử lý nhiều nhóm dữ liệu đồng thời nhưng vẫn giới hạn tải an toàn.
+- Cho phép người dùng Quét lại khi một lần quét mã nội bộ mất quá lâu thay vì phải đóng và mở lại cửa sổ.
+- Bổ sung kiểm tra tự động để bảo đảm dữ liệu QC của SOP 9.14 được giữ nguyên khi tạo PDF.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Đồng bộ mã nội bộ sẽ dừng an toàn trước khi ghi nếu lần kiểm tra dữ liệu mới nhất không hoàn tất kịp thời, tránh ghi từ trạng thái chưa được xác minh.
+- Sửa nhận dạng các dòng QC trong biểu mẫu GAS khi nhãn có xuống dòng hoặc khoảng trắng khác với cấu hình.
+- Biểu mẫu GAS không còn bắt buộc phải có lựa chọn N/A riêng nếu nghiệp vụ biểu diễn N/A bằng trạng thái bỏ chọn cả Đạt và Không đạt.
 
 ### v26.08.26-b01
 

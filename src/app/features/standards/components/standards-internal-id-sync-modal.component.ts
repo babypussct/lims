@@ -532,6 +532,7 @@ export class StandardsInternalIdSyncModalComponent {
   readonly stdService = inject(StandardService);
   readonly confirmation = inject(ConfirmationService);
   readonly toast = inject(ToastService);
+  private readonly SCAN_TIMEOUT_MS = 60_000;
   private readonly POST_APPLY_VERIFICATION_TIMEOUT_MS = 15_000;
 
   isOpen = input(false);
@@ -697,19 +698,22 @@ export class StandardsInternalIdSyncModalComponent {
     }
   }
 
-  async scan(preserveApplyProgress = false, timeoutMs?: number): Promise<void> {
+  async scan(preserveApplyProgress = false, timeoutMs = this.SCAN_TIMEOUT_MS): Promise<void> {
     if (this.isScanning() || this.isApplying()) return;
     if (!preserveApplyProgress) this.applyProgress.set(null);
     this.isScanning.set(true);
     this.errorMessage.set('');
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutCode = preserveApplyProgress
+      ? 'POST_APPLY_VERIFICATION_TIMEOUT'
+      : 'INTERNAL_ID_SCAN_TIMEOUT';
     try {
       const scanPromise = this.stdService.scanInternalIdSync();
       const report = timeoutMs && timeoutMs > 0
         ? await Promise.race([
             scanPromise,
             new Promise<never>((_, reject) => {
-              timeoutHandle = setTimeout(() => reject(new Error('POST_APPLY_VERIFICATION_TIMEOUT')), timeoutMs);
+              timeoutHandle = setTimeout(() => reject(new Error(timeoutCode)), timeoutMs);
             }),
           ])
         : await scanPromise;
@@ -718,6 +722,8 @@ export class StandardsInternalIdSyncModalComponent {
       this.errorMessage.set(
         error?.message === 'POST_APPLY_VERIFICATION_TIMEOUT'
           ? 'Đồng bộ đã ghi xong, nhưng quét xác minh sau đồng bộ mất quá lâu. Có thể bấm “Quét lại” để xác minh khi kết nối ổn định.'
+          : error?.message === 'INTERNAL_ID_SCAN_TIMEOUT'
+            ? 'Quét mã nội bộ mất quá lâu và đã được dừng chờ để tránh khóa cửa sổ. Có thể bấm “Quét lại” khi kết nối ổn định.'
           : error?.message || 'Không thể quét dữ liệu mã nội bộ.'
       );
     } finally {
@@ -1056,8 +1062,8 @@ export class StandardsInternalIdSyncModalComponent {
     });
 
     // A committed sync must never leave the modal permanently busy just
-    // because the follow-up verification read stalls. Bound only this
-    // post-apply scan; normal operator-triggered scans remain unbounded.
+    // because the follow-up verification read stalls. Normal scans are also
+    // bounded, while this verification pass uses a tighter timeout.
     await this.scan(true, this.POST_APPLY_VERIFICATION_TIMEOUT_MS);
 
     if (this.errorMessage()) {

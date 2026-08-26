@@ -46,6 +46,54 @@ test('untracked prevents a busy-signal change from scheduling another scan', () 
   assert.equal(autoScan(), 2);
 });
 
+test('behavioral: stalled normal scan times out, clears busy state, and a retry cannot be overwritten by the late scan', async () => {
+  const { StandardsInternalIdSyncModalComponent } = await import('./standards-internal-id-sync-modal.component');
+
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype) as any;
+  modal.report = signal(null);
+  modal.selectedSafeChangeKeys = signal(null);
+  modal.isApplying = signal(false);
+  modal.isScanning = signal(false);
+  modal.applyProgress = signal(null);
+  modal.errorMessage = signal('');
+  modal.SCAN_TIMEOUT_MS = 5;
+
+  let resolveFirstScan!: (report: any) => void;
+  const firstScan = new Promise(resolve => {
+    resolveFirstScan = resolve;
+  });
+  const firstReport = {
+    scanId: 'scan-old', generatedAt: 1, standardsCount: 1, requestsCount: 0,
+    usageCount: 0, registryCount: 0, issues: [], safeChanges: [], conflicts: [],
+  };
+  const retryReport = {
+    scanId: 'scan-retry', generatedAt: 2, standardsCount: 1, requestsCount: 0,
+    usageCount: 0, registryCount: 0, issues: [], safeChanges: [], conflicts: [],
+  };
+  let calls = 0;
+  modal.stdService = {
+    scanInternalIdSync: () => ++calls === 1 ? firstScan : Promise.resolve(retryReport),
+  };
+  modal.scan = StandardsInternalIdSyncModalComponent.prototype.scan.bind(modal);
+
+  await modal.scan();
+
+  assert.equal(modal.isScanning(), false);
+  assert.equal(modal.report(), null);
+  assert.match(modal.errorMessage(), /Quét mã nội bộ mất quá lâu/);
+
+  await modal.scan();
+
+  assert.equal(modal.isScanning(), false);
+  assert.equal(modal.errorMessage(), '');
+  assert.equal(modal.report()?.scanId, 'scan-retry');
+
+  resolveFirstScan(firstReport);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(modal.report()?.scanId, 'scan-retry');
+});
+
 test('sync modal exposes selectable groups and searchable warning details', () => {
   assert.match(source, /type SyncFilter = 'all' \| 'manual' \| 'safe' \| 'duplicate' \| 'registry' \| 'reference'/);
   assert.match(source, /readonly filterOptions/);

@@ -34,6 +34,39 @@ function createService(): {
   return { service, issues, safeChanges, addIssue, addChange };
 }
 
+test('bounded concurrency helper limits simultaneous work and preserves input order', async () => {
+  const service = Object.create(StandardInternalIdSyncService.prototype) as any;
+  let active = 0;
+  let maxActive = 0;
+  const items = Array.from({ length: 12 }, (_, index) => index);
+
+  const results = await service.mapWithConcurrency(items, 3, async (item: number) => {
+    active += 1;
+    maxActive = Math.max(maxActive, active);
+    await new Promise(resolve => setTimeout(resolve, item % 2 === 0 ? 4 : 1));
+    active -= 1;
+    return item * 10;
+  });
+
+  assert.equal(maxActive, 3);
+  assert.deepEqual(results, items.map(item => item * 10));
+});
+
+test('apply aborts a stalled fresh scan before any write phase begins', async () => {
+  const service = Object.create(StandardInternalIdSyncService.prototype) as any;
+  service.auth = { canEditStandards: () => true };
+  service.PRE_APPLY_SCAN_TIMEOUT_MS = 5;
+  service.scan = () => new Promise(() => {});
+
+  await assert.rejects(
+    service.apply({
+      generatedAt: Date.now(), standardsCount: 0, requestsCount: 0, usageCount: 0,
+      registryCount: 0, issues: [], safeChanges: [], conflicts: [],
+    }),
+    /Chưa có thay đổi nào được ghi/,
+  );
+});
+
 test('detects MISSING_REFERENCE as a blocking error when top-level request lacks standardId', () => {
   const { service, issues, safeChanges, addIssue, addChange } = createService();
   const byId = new Map<string, ReferenceStandard>();

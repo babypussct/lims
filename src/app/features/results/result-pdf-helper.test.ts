@@ -95,6 +95,42 @@ test('Form Check grouped PDF keeps sample labels when values belong to multiple 
   );
 });
 
+test('SOP 9.14 unified PDF payload preserves all shared QC selections', () => {
+  const payload = buildUnifiedType3bPdfPayload(
+    {
+      page1Data: {
+        printFormType: 'formCheck',
+        qcThoiGianLuu: true,
+        qcThemChuan: true,
+        qcThuHoi: true,
+        qcDanhGiaChung: true,
+        ngayNguoiPhanTich: '2026-08-26',
+        ngayNguoiThamTra: '2026-08-26'
+      },
+      resultData: {
+        A001: { selected: true, etofenprox: 'ND', etofenprox_nd: true }
+      }
+    },
+    {
+      sampleList: ['A001'],
+      sampleTargetMap: { A001: ['etofenprox'] }
+    },
+    'ALL',
+    {
+      id: 'tbvtv-thuc-pham-gcmsms',
+      formType: 'type3b',
+      compounds: ['etofenprox']
+    },
+    formatDate,
+    getRunDate
+  );
+
+  assert.equal(payload.metadata.qcThoiGianLuu, true);
+  assert.equal(payload.metadata.qcThemChuan, true);
+  assert.equal(payload.metadata.qcThuHoi, true);
+  assert.equal(payload.metadata.qcDanhGiaChung, true);
+});
+
 test('Unified Type3B preserves blank, ND, N/A, and numeric zero for single samples', () => {
   const cases = [
     { code: 'BLANK01', input: { etofenprox: '' }, sampleValue: '', nd: false, runValue: '', summary: 'N/A' },

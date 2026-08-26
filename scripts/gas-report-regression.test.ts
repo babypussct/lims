@@ -725,7 +725,7 @@ test('Fipronil-style preflight requires configured QC rows and writable checkbox
       createFipronilQcTemplateTable({ unwritableLabel: 'Hệ số hồi quy tuyến tính' }),
       createFipronilSampleTemplateTable(),
     ],
-    /QC row "Hệ số hồi quy tuyến tính" has no writable Đạt\/Không đạt\/N\/A checkbox markers/,
+    /QC row "Hệ số hồi quy tuyến tính" has no writable Đạt\/Không đạt checkbox markers/,
   );
 });
 
@@ -745,6 +745,13 @@ test('QC and Form Check preflight accept every mutable checkbox marker used by G
       true,
     );
   }
+
+  assert.equal(
+    isWritableQcEvaluationCellText('☐ Đạt; ☐ Không đạt'),
+    true,
+    'Fipronil production templates may omit an explicit N/A marker; renderer leaves both choices clear for N/A',
+  );
+  assert.equal(isWritableQcEvaluationCellText('☐ Đạt; Không đạt; N/A'), false);
 
   for (const marker of ['☐', '□', '☑', '☒', '[ ]', '[x]', '[V]', '( )', '(x)', '(V)']) {
     assert.equal(isType3bFormCheckWritableResultCellText(`${marker} ND ........`), true, marker);
@@ -2567,6 +2574,136 @@ test('Type3B shared QC table overwrites checked ASCII and Unicode template defau
   );
 
   assert.equal(evalCell.getText(), '☐ Đạt   ☐ Không đạt   ☑ N/A');
+});
+
+test('Type3B SOP 9.14 QC rows tolerate harmless whitespace differences in template labels', () => {
+  const context = loadGasFile('gas/Report_Type3B.gs');
+  const spikeEvalCell = createMutableFindTextCell('[ ] Đạt   [ ] Không đạt   [ ] N/A');
+  const recoveryEvalCell = createMutableFindTextCell('[ ] Đạt   [ ] Không đạt   [ ] N/A');
+  const plainCell = (value: string) => ({
+    getText: () => value,
+    setText: () => undefined,
+    replaceText: () => undefined,
+    findText: () => null,
+  });
+  const rowValues = [
+    ['Thông số đánh giá', '', 'Đánh giá'],
+    ['Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5 ppb', '', ''],
+    ['Độ thu hồi\nIS', '', ''],
+    ['filler 1', '', ''],
+    ['filler 2', '', ''],
+    ['filler 3', '', ''],
+  ];
+  const table = {
+    getNumRows: () => rowValues.length,
+    getRow: (rowIndex: number) => ({
+      getNumCells: () => 3,
+      getText: () => rowValues[rowIndex].join(' '),
+      getCell: (cellIndex: number) => {
+        if (rowIndex === 1 && cellIndex === 2) return spikeEvalCell.cell;
+        if (rowIndex === 2 && cellIndex === 2) return recoveryEvalCell.cell;
+        return plainCell(rowValues[rowIndex][cellIndex]);
+      },
+    }),
+  };
+  const element = {
+    replaceText: () => element,
+    findText: () => null,
+    getType: () => 'TABLE',
+    asTable: () => table,
+  };
+  context['DocumentApp'] = { ElementType: { TABLE: 'TABLE' } };
+  context['fillCommonSampleCheckboxes'] = () => undefined;
+  context['replaceCheckboxInElementRecursive'] = () => undefined;
+
+  const fillType3bSampleForElements = context['fillType3bSampleForElements'] as (
+    elements: unknown[],
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    sample: Record<string, unknown>,
+  ) => void;
+  fillType3bSampleForElements(
+    [element],
+    {
+      checkboxLines: {
+        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb': 'qcThemChuan',
+        'Độ thu hồi IS': 'qcThuHoi',
+      },
+      compounds: [],
+    },
+    { qcThemChuan: false, qcThuHoi: true },
+    { maSoMau: 'S1' },
+  );
+
+  assert.equal(spikeEvalCell.getText(), '☐ Đạt   ☑ Không đạt   ☐ N/A');
+  assert.equal(recoveryEvalCell.getText(), '☑ Đạt   ☐ Không đạt   ☐ N/A');
+});
+
+test('Type3B SOP 9.14 QC rows accept legacy UI keys while canonical values take precedence', () => {
+  const context = loadGasFile('gas/Report_Type3B.gs');
+  const spikeEvalCell = createMutableFindTextCell('☐ Đạt   ☐ Không đạt');
+  const recoveryEvalCell = createMutableFindTextCell('☐ Đạt   ☐ Không đạt');
+  const plainCell = (value: string) => ({
+    getText: () => value,
+    setText: () => undefined,
+    replaceText: () => undefined,
+    findText: () => null,
+  });
+  const rowValues = [
+    ['Thông số đánh giá', '', 'Đánh giá'],
+    ['Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb', '', ''],
+    ['Độ thu hồi IS', '', ''],
+    ['filler 1', '', ''],
+    ['filler 2', '', ''],
+    ['filler 3', '', ''],
+  ];
+  const table = {
+    getNumRows: () => rowValues.length,
+    getRow: (rowIndex: number) => ({
+      getNumCells: () => 3,
+      getText: () => rowValues[rowIndex].join(' '),
+      getCell: (cellIndex: number) => {
+        if (rowIndex === 1 && cellIndex === 2) return spikeEvalCell.cell;
+        if (rowIndex === 2 && cellIndex === 2) return recoveryEvalCell.cell;
+        return plainCell(rowValues[rowIndex][cellIndex]);
+      },
+    }),
+  };
+  const element = {
+    replaceText: () => element,
+    findText: () => null,
+    getType: () => 'TABLE',
+    asTable: () => table,
+  };
+  context['DocumentApp'] = { ElementType: { TABLE: 'TABLE' } };
+  context['fillCommonSampleCheckboxes'] = () => undefined;
+  context['replaceCheckboxInElementRecursive'] = () => undefined;
+
+  const fillType3bSampleForElements = context['fillType3bSampleForElements'] as (
+    elements: unknown[],
+    sopConfig: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+    sample: Record<string, unknown>,
+  ) => void;
+  fillType3bSampleForElements(
+    [element],
+    {
+      checkboxLines: {
+        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb': 'qcThemChuan',
+        'Độ thu hồi IS': 'qcThuHoi',
+      },
+      compounds: [],
+    },
+    {
+      qcNhanDangSpike: true,
+      qcThuHoi: false,
+      qcThuHoiIS: true,
+    },
+    { maSoMau: 'S1' },
+  );
+
+  assert.equal(spikeEvalCell.getText(), '☑ Đạt   ☐ Không đạt');
+  assert.equal(recoveryEvalCell.getText(), '☐ Đạt   ☑ Không đạt');
 });
 
 test('Type3B ND renderer clears pre-ticked Unicode and ASCII markers for assigned and unassigned analytes', () => {

@@ -60,6 +60,8 @@ export class StandardInternalIdSyncService {
   /** 249 is only the logical change ceiling; rule-access cost is capped separately. */
   private readonly MAX_APPLY_CHANGES = INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH;
   private readonly MAX_RULE_ACCESS_COST = INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST;
+  private readonly NESTED_LOG_READ_CONCURRENCY = 8;
+  private readonly PRE_APPLY_SCAN_TIMEOUT_MS = 60_000;
 
   async scan(): Promise<StandardInternalIdSyncReport> {
     if (!this.auth.canEditStandards()) {
@@ -307,8 +309,17 @@ export class StandardInternalIdSyncService {
     let nestedUsageCount = 0;
     // The global collection is not assumed to be the only copy. This explicit
     // admin scan also checks each physical standard's nested log collection.
-    for (const standard of standards) {
-      const logsSnapshot = await getDocs(collection(this.fb.db, `${base}/reference_standards/${standard.id}/logs`));
+    // Read several parents at once to avoid serial latency, but keep a hard
+    // concurrency ceiling so a large inventory does not burst Firestore.
+    const nestedLogSnapshots = await this.mapWithConcurrency(
+      standards,
+      this.NESTED_LOG_READ_CONCURRENCY,
+      async standard => ({
+        standard,
+        logsSnapshot: await getDocs(collection(this.fb.db, `${base}/reference_standards/${standard.id}/logs`)),
+      }),
+    );
+    for (const { standard, logsSnapshot } of nestedLogSnapshots) {
       nestedUsageCount += logsSnapshot.size;
       for (const logSnapshot of logsSnapshot.docs) {
         const rawLogData = logSnapshot.data() as AnyRecord;
@@ -406,7 +417,11 @@ export class StandardInternalIdSyncService {
 
     // Re-scan immediately before writing so a stale preview cannot overwrite a
     // newly assigned code or a newly created request.
-    const freshReport = await this.scan();
+    const freshReport = await this.withTimeout(
+      this.scan(),
+      this.PRE_APPLY_SCAN_TIMEOUT_MS,
+      'Quét tươi dữ liệu trước khi đồng bộ mất quá lâu. Chưa có thay đổi nào được ghi; hãy kiểm tra kết nối rồi thử lại.',
+    );
     const selectedKeys = selectedChangeKeys ? new Set(selectedChangeKeys) : null;
     const changes = freshReport.safeChanges.filter(change =>
       !selectedKeys || selectedKeys.has(this.safeChangeKey(change))
@@ -640,6 +655,43 @@ export class StandardInternalIdSyncService {
     });
 
     return batchIds;
+  }
+
+  private async mapWithConcurrency<T, R>(
+    items: readonly T[],
+    concurrency: number,
+    task: (item: T, index: number) => Promise<R>,
+  ): Promise<R[]> {
+    if (items.length === 0) return [];
+    const workerCount = Math.max(1, Math.min(Math.floor(concurrency) || 1, items.length));
+    const results = new Array<R>(items.length);
+    let nextIndex = 0;
+
+    const worker = async (): Promise<void> => {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= items.length) return;
+        results[index] = await task(items[index], index);
+      }
+    };
+
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    return results;
+  }
+
+  private async withTimeout<T>(operation: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+    if (!timeoutMs || timeoutMs <= 0) return operation;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    try {
+      return await Promise.race([
+        operation,
+        new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
   }
 
   async getRecentBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
