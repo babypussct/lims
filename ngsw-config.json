@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.26-b02",
-    "title": "Quét mã chất chuẩn nhanh hơn và báo cáo GAS ổn định hơn",
+    "version": "v26.08.26-b03",
+    "title": "Xuất bản báo cáo PDF ổn định hơn khi thử lại",
     "features": [
-      "Quét và đồng bộ mã nội bộ Chất chuẩn phản hồi ổn định hơn khi dữ liệu lớn hoặc kết nối chậm, tránh cửa sổ bị giữ ở trạng thái đang xử lý quá lâu.",
-      "Báo cáo GAS tiếp tục giữ đúng lựa chọn QC của người dùng ngay cả khi biểu mẫu thực tế có khác biệt nhỏ về khoảng trắng hoặc cách trình bày checkbox.",
-      "Tăng tốc bước rà soát nhật ký Chất chuẩn bằng cách xử lý nhiều nhóm dữ liệu đồng thời nhưng vẫn giới hạn tải an toàn.",
-      "Cho phép người dùng Quét lại khi một lần quét mã nội bộ mất quá lâu thay vì phải đóng và mở lại cửa sổ.",
-      "Bổ sung kiểm tra tự động để bảo đảm dữ liệu QC của SOP 9.14 được giữ nguyên khi tạo PDF."
+      "Các lần thử lại khi xuất báo cáo PDF được nhận diện đúng theo nội dung dữ liệu thực tế, tránh nhầm lẫn giữa các bản báo cáo khác nhau.",
+      "Giữ khả năng dùng lại bản PDF đã tạo khi người dùng gửi lại đúng cùng một nội dung sau sự cố mạng hoặc lưu nháp.",
+      "Bổ sung kiểm thử hồi quy cho các trường hợp thay đổi kết quả, thông tin mẻ và thứ tự trường dữ liệu trước khi xuất bản lại.",
+      "Sửa lỗi không thể xuất lại báo cáo sau khi dữ liệu kết quả hoặc metadata đã được chỉnh sửa trong khi vẫn ở cùng phiên bản hiển thị.",
+      "Giữ nguyên cơ chế chống tạo PDF trùng của GAS trong khi phân biệt đúng các payload báo cáo khác nhau."
     ]
   },
   "assetGroups": [

@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.26-b02
+## Phiên bản hiện tại: v26.08.26-b03
+
+### v26.08.26-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Các lần thử lại khi xuất báo cáo PDF được nhận diện đúng theo nội dung dữ liệu thực tế, tránh nhầm lẫn giữa các bản báo cáo khác nhau.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ khả năng dùng lại bản PDF đã tạo khi người dùng gửi lại đúng cùng một nội dung sau sự cố mạng hoặc lưu nháp.
+- Bổ sung kiểm thử hồi quy cho các trường hợp thay đổi kết quả, thông tin mẻ và thứ tự trường dữ liệu trước khi xuất bản lại.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi không thể xuất lại báo cáo sau khi dữ liệu kết quả hoặc metadata đã được chỉnh sửa trong khi vẫn ở cùng phiên bản hiển thị.
+- Giữ nguyên cơ chế chống tạo PDF trùng của GAS trong khi phân biệt đúng các payload báo cáo khác nhau.
 
 ### v26.08.26-b02
 

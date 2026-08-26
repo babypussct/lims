@@ -11,6 +11,7 @@ import { NotificationCenterService } from '../../../core/services/notification-c
 import { Request } from '../../../core/models/request.model';
 import { DailyChecklistEntry } from '../../../core/models/daily-checklist.model';
 import { buildDailyChecklistEntry } from '../../../core/utils/daily-checklist-projection';
+import { buildGeneratePdfRequestId } from './report-request-id';
 
 @Injectable({
   providedIn: 'root'
@@ -730,22 +731,6 @@ export class ResultService {
   /**
    * Xuất bản PDF báo cáo và lưu backup trực tiếp vào Sub-collection history
    */
-  private buildGeneratePdfRequestId(
-    batchRequestId: string,
-    version: number,
-    prefix?: string,
-    includedSamples?: string[]
-  ): string {
-    const reportScope = `${prefix ?? 'ALL'}|${[...(includedSamples || [])].sort().join(',')}`;
-    let hash = 2166136261;
-    for (let i = 0; i < reportScope.length; i++) {
-      hash ^= reportScope.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-    const scopeHash = (hash >>> 0).toString(16).padStart(8, '0');
-    return `pdf:${batchRequestId}:v${version}:${scopeHash}`;
-  }
-
   async publishReport(
     requestId: string,
     draftData: Partial<AnalysisResultDraft>,
@@ -815,7 +800,15 @@ export class ResultService {
 
       // Gán version vào payload gửi sang Google Apps Script
       payload.version = nextVersion;
-      payload.requestId = this.buildGeneratePdfRequestId(requestId, nextVersion, prefix, includedSamples);
+      payload.requestId = buildGeneratePdfRequestId({
+        batchRequestId: requestId,
+        version: nextVersion,
+        prefix,
+        includedSamples,
+        sopId: payload.sopId,
+        metadata: payload.metadata,
+        samples: payload.samples,
+      });
 
       // 2. Gọi API GAS tạo báo cáo PDF
       this.toast.show(`Đang gửi lệnh tạo báo cáo PDF bản v${nextVersion}${isPrefixReport ? ' (nhóm ' + (prefix === '' ? 'Không tiền tố' : prefix) + ')' : ''} sang Google Docs...`, 'info');
