@@ -809,7 +809,7 @@ service cloud.firestore {
 
     // MODULE KHO (INVENTORY)
     match /artifacts/{appId}/inventory/{itemId} {
-      allow read: if hasPermission(appId, 'inventory_view');
+      allow read: if hasPermission(appId, 'inventory_view') || hasPermission(appId, 'report_view');
       allow create, delete: if hasPermission(appId, 'inventory_edit');
       allow update: if hasPermission(appId, 'inventory_edit') || (
         hasPermission(appId, 'batch_run') &&
@@ -943,7 +943,8 @@ service cloud.firestore {
           canRollbackReferenceStandardUpdate(appId);
       }
 
-      allow read: if hasPermission(appId, 'standard_view');
+      allow read: if hasPermission(appId, 'standard_view') ||
+        (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if hasPermission(appId, 'standard_edit') &&
         validStandardTagArray(request.resource.data) &&
         validInternalId(request.resource.data.get('internal_id', ''));
@@ -1230,6 +1231,7 @@ service cloud.firestore {
       }
 
       allow read: if canOperateStandards(appId) || hasPermission(appId, 'standard_log_view') ||
+        (isActiveUser(appId) && hasPermission(appId, 'report_view')) ||
         hasPermission(appId, 'standard_log_delete') || (
         isSignedIn() && resource.data.requestedBy == request.auth.uid
       );
@@ -1305,7 +1307,8 @@ service cloud.firestore {
     // MODULE YEU CAU KIEM NGHIEM VA KET QUA (REQUESTS)
     match /artifacts/{appId}/requests/{reqId} {
       allow get: if true; // Public read cho phep truy xuat ket qua/QR code khong can dang nhap
-      allow list: if canUseSopWorkspace(appId);
+      allow list: if canUseSopWorkspace(appId) ||
+        (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if validRequestCreate(appId, request.resource.data);
       allow update: if isManager(appId) || hasPermission(appId, 'sop_approve') || validBatchRequestUpdate(appId);
       allow delete: if isManager(appId);
@@ -1329,7 +1332,8 @@ service cloud.firestore {
 
     // Yeu cau in an nhan / barcode (Print Jobs)
     match /artifacts/{appId}/print_jobs/{jobId} {
-      allow get, list: if canUseSopWorkspace(appId);
+      allow get, list: if canUseSopWorkspace(appId) ||
+        (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if canEditResults(appId) &&
         request.resource.data.get('requestId', '') is string &&
         request.resource.data.get('requestId', '').size() > 0 &&
@@ -1338,10 +1342,9 @@ service cloud.firestore {
         request.resource.data.createdAt == request.time &&
         request.resource.data.lastUpdated == request.time;
       allow update: if false;
-      allow delete: if isManager(appId) || hasPermission(appId, 'sop_approve') || (
-        isActiveUser(appId) && hasPermission(appId, 'batch_run') &&
-        resource.data.get('createdByUid', '') == request.auth.uid
-      );
+      // Print jobs are immutable historical snapshots used by reporting and
+      // traceability. Removing an item from the queue only flips log.printable.
+      allow delete: if false;
     }
 
     // Thu vien Target Master

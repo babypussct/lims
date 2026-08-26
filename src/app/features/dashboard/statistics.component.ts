@@ -14,11 +14,25 @@ import { timestampToDate, timestampToMillis } from '../../shared/utils/timestamp
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { AuditLogService } from '../../core/services/audit-log.service';
+import type { InventoryItem } from '../../core/models/inventory.model';
 import { getActivityAuditActionLabel } from '../../core/activity/activity-feed.utils';
 import { getActivityActionDefinition, isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
-
-const INVENTORY_MOVEMENT_ACTIONS = new Set(['STOCK_IN', 'STOCK_OUT']);
-const RESULT_APPROVAL_ACTIONS = new Set(['DIRECT_APPROVE', 'DIRECT_APPROVE_PLAN', 'APPROVE_REQUEST']);
+import { toLocalDateKey, type InclusiveDateRange } from '../../shared/utils/date-range';
+import {
+  aggregateReportConsumption,
+  aggregateNxtMovements,
+  aggregateSopFrequency,
+  buildReportSopOptions,
+  enrichReportLogsWithPrintData,
+  findUnresolvedLegacyNxtApprovalLogs,
+  filterReportRequests,
+  getReportRequestDate,
+  getMonthKeysForStatisticsRange,
+  matchesReportSop,
+  needsLegacyNxtPrintData,
+  resolveStatisticsDateRange,
+  type ReportSopOption
+} from './statistics-report.utils';
 
 interface NxtReportItem {
   id: string;
@@ -29,6 +43,19 @@ interface NxtReportItem {
   importQty: number;
   exportQty: number;
   endStock: number;
+}
+
+interface ReportSnapshot {
+  range: InclusiveDateRange;
+  inventory: InventoryItem[];
+  approvedRequests: ReturnType<StateService['approvedRequests']>;
+  businessLogs: Log[];
+  monthlyStats: Record<string, MonthlyStatsDoc>;
+  referenceStandards: ReturnType<StateService['standards']>;
+  standardRequests: ReturnType<StateService['allStandardRequests']>;
+  sopOptions: ReportSopOption[];
+  complete: boolean;
+  warnings: string[];
 }
 
 @Component({
@@ -105,19 +132,54 @@ export class StatisticsComponent {
   hasGenerated = signal(false);
   nxtData = signal<NxtReportItem[]>([]);
   statsData = signal<Record<string, MonthlyStatsDoc>>({});
+  reportLogs = signal<Log[]>([]);
+  reportInventory = signal<InventoryItem[]>([]);
+  private allTimeStatsReady = signal(false);
+  private allTimeStatsLoad?: Promise<void>;
+  private reportInventoryReady = signal(false);
+  private reportInventoryLoad?: Promise<void>;
+  private reportStatsReady = signal(false);
+  private referenceStandardsReady = signal(false);
+  private standardRequestsReady = signal(false);
+  private approvedHistoryReady = signal(false);
+  private reportLogsReady = signal(false);
+  private reportStatsLoadGeneration = 0;
+  private reportLogsLoadGeneration = 0;
+  private approvedHistoryLoadGeneration = 0;
+  private nxtReportGeneration = 0;
+  private reportDatasetErrors = signal<Record<string, string>>({});
 
-  // Helper function to extract stats for a specific day
-  private getDayStats(d: Date): { totalSamples: number, totalBatches: number, totalQcs: number, sops: Record<string, { samples: number, batches: number, qcs: number }> } {
-      const y = d.getFullYear();
-      const mStr = String(d.getMonth() + 1).padStart(2, '0');
-      const dStr = String(d.getDate()).padStart(2, '0');
-      const monthKey = `${y}-${mStr}`;
-      const dayKey = `${y}-${mStr}-${dStr}`;
-      
-      const stats = this.statsData()[monthKey];
-      if (stats && stats[dayKey]) return stats[dayKey];
-      return { totalSamples: 0, totalBatches: 0, totalQcs: 0, sops: {} };
-  }
+  reportWarnings = computed(() => {
+    const errors = this.reportDatasetErrors();
+    const warnings = Object.values(errors);
+    const pending = new Set<string>();
+
+    // Stats + approved history underpin the common SOP selector and several
+    // report surfaces, so expose their pending state across all report tabs.
+    if (!this.reportStatsReady()) pending.add('Thống kê tháng');
+    if (!this.approvedHistoryReady()) pending.add('Lịch sử phiếu đã duyệt');
+
+    const active = this.activeTab();
+    if (active === 'logs' && !this.reportLogsReady()) pending.add('Nhật ký nghiệp vụ');
+    if (active === 'consumption') {
+      if (!this.reportInventoryReady()) pending.add('Kho Báo Cáo');
+      if (!this.referenceStandardsReady()) pending.add('Chuẩn đối chiếu');
+    }
+    if (active === 'standards') {
+      if (!this.referenceStandardsReady()) pending.add('Chuẩn đối chiếu');
+      if (!this.standardRequestsReady()) pending.add('Lịch sử mượn chuẩn');
+      if (!this.reportLogsReady()) pending.add('Nhật ký nghiệp vụ');
+    }
+
+    for (const dataset of pending) {
+      if (!errors[dataset]) warnings.push(`${dataset}: đang tải dữ liệu đầy đủ...`);
+    }
+    return warnings;
+  });
+
+  reportSopOptions = computed(() => this.buildReportSopOptionsForRange(this.getActiveDateRange()));
+
+  reportSnapshot = computed<ReportSnapshot>(() => this.buildReportSnapshot(this.getActiveDateRange()));
 
   showGlobalExportModal = signal(false);
   exportInventory = signal(true);
@@ -235,31 +297,141 @@ export class StatisticsComponent {
       await new Promise(r => setTimeout(r, 100));
       
       try {
-          const XLSX = await import('xlsx');
-          const wb = XLSX.utils.book_new();
-          const start = this.startDate();
-          const end = this.endDate();
+          await this.ensureAllTimeStatsLoaded();
+          const activeRange = this.getActiveDateRange();
+          const start = toLocalDateKey(activeRange.start);
+          const end = toLocalDateKey(activeRange.end);
+          const reportStart = new Date(activeRange.start);
+          const reportEnd = new Date(activeRange.end);
           const currentUser = this.auth.currentUser();
           const sopId = this.selectedSopId();
+          const exportInventory = this.exportInventory();
+          const exportConsumption = this.exportConsumption();
+          const exportSop = this.exportSop();
+          const exportLogs = this.exportLogs();
+          const exportStandards = this.exportStandards();
+          const exportPerSop = this.exportPerSop();
+          const exportType = this.exportType();
+          const specificDay = this.specificDay();
+          const excludeMargin = this.excludeMargin();
+
+          const missingStatsMonths = getMonthKeysForStatisticsRange(activeRange)
+              .filter(key => !Object.prototype.hasOwnProperty.call(this.statsData(), key));
+          const approvedLoad = this.state.loadApprovedRequestsForDateRange(start, end)
+              .then(result => {
+                  this.approvedHistoryReady.set(result.complete);
+                  this.setReportDatasetError(
+                      'Lịch sử phiếu đã duyệt',
+                      result.complete ? null : new Error('Không thể xác nhận dữ liệu đã tải đầy đủ.')
+                  );
+                  return result;
+              })
+              .catch(error => {
+                  this.approvedHistoryReady.set(false);
+                  this.setReportDatasetError('Lịch sử phiếu đã duyệt', error);
+                  throw error;
+              });
+          const statsLoad = missingStatsMonths.length > 0
+              ? this.statsService.getStatsForMonths(missingStatsMonths).then(result => {
+                  this.statsData.update(prev => ({ ...prev, ...result }));
+                  this.reportStatsReady.set(true);
+                  this.setReportDatasetError('Thống kê tháng', null);
+              }).catch(error => {
+                  this.reportStatsReady.set(false);
+                  this.setReportDatasetError('Thống kê tháng', error);
+                  throw error;
+              })
+              : Promise.resolve().then(() => {
+                  this.reportStatsReady.set(true);
+                  this.setReportDatasetError('Thống kê tháng', null);
+              });
+          const inventoryLoad = exportInventory || exportConsumption
+              ? this.ensureReportInventoryLoaded()
+              : Promise.resolve();
+          // N-X-T has an additional completeness dependency: it must read
+          // BUSINESS movements through today (not only through reportEnd) and
+          // resolve every legacy approval print snapshot used for stock
+          // reconstruction. Complete this work before creating the workbook so
+          // a missing historical snapshot can never yield a plausible partial
+          // Excel file.
+          const nxtLoad = exportInventory
+              ? this.generateNxtReport(true, { range: activeRange, sopId })
+              : Promise.resolve<NxtReportItem[]>([]);
+          // Trang bìa luôn hiển thị KPI sức khỏe chuẩn, nên đây là dependency
+          // bắt buộc của mọi export, không phụ thuộc checkbox sheet Standards.
+          const coverStandardsLoad = this.ensureExportCoverStandardsLoaded();
+          const reportLogsLoad = exportLogs || exportStandards
+              ? this.fetchCompleteReportLogs(reportStart, reportEnd)
+                  .then(logs => {
+                      this.reportLogs.set(logs);
+                      this.reportLogsReady.set(true);
+                      this.setReportDatasetError('Nhật ký nghiệp vụ', null);
+                  })
+                  .catch(error => {
+                      this.reportLogs.set([]);
+                      this.reportLogsReady.set(false);
+                      this.setReportDatasetError('Nhật ký nghiệp vụ', error);
+                      throw error;
+                  })
+              : Promise.resolve();
+          const [approvedLoadResult, , , exportNxtRows] = await Promise.all([
+              approvedLoad,
+              statsLoad,
+              inventoryLoad,
+              nxtLoad,
+              coverStandardsLoad,
+              reportLogsLoad
+          ]);
+          if (!approvedLoadResult.complete) {
+              throw new Error('Không thể tải đầy đủ lịch sử phiếu đã duyệt cho khoảng thời gian đã chọn.');
+          }
+
+          // Freeze one canonical snapshot after every selected-sheet dependency
+          // has completed. Everything below must derive from this snapshot and
+          // the export settings captured above, never from live report signals.
+          const exportSnapshot = this.buildReportSnapshot(activeRange);
+          const selectedSopName = this.getSnapshotSopName(exportSnapshot, sopId);
+          const exportApprovedRequests = filterReportRequests(
+            exportSnapshot.approvedRequests,
+            exportSnapshot.range,
+            sopId,
+            selectedSopName
+          );
+          const exportConsumptionSummary = aggregateReportConsumption(exportApprovedRequests);
+          const exportSopFrequency = aggregateSopFrequency(
+            exportSnapshot.monthlyStats,
+            exportSnapshot.range,
+            sopId,
+            selectedSopName
+          );
+          const exportFilteredLogs = exportSnapshot.businessLogs.filter(log =>
+            matchesReportSop(log, sopId, selectedSopName)
+          );
+          const exportHealthStats = this.calculateHealthStats(exportSnapshot);
+          const safetyConfig = this.state.safetyConfig();
+
+          // Chỉ bắt đầu dựng workbook sau khi mọi dependency bắt buộc của các
+          // sheet đã chọn và của Trang bìa đã được xác nhận là đầy đủ.
+          const XLSX = await import('xlsx');
+          const wb = XLSX.utils.book_new();
           
           const exportInfo = [
             ["BÁO CÁO TỔNG HỢP HỆ THỐNG LIMS"],
             [`Thời gian: ${start} đến ${end}`],
             [`Người xuất: ${currentUser?.displayName || currentUser?.email || 'Admin'}`],
             [`Ngày xuất: ${new Date().toLocaleString('vi-VN')}`],
-            [`SOP: ${sopId === 'all' ? 'Tất cả quy trình' : this.getSelectedSopName()}`],
+            [`SOP: ${sopId === 'all' ? 'Tất cả quy trình' : selectedSopName}`],
             []
           ];
 
           const sheetsAdded: string[] = [];
 
           // ===== 1. NXT =====
-          if (this.exportInventory()) {
+          if (exportInventory) {
               this.exportProgress.update(p => ({ ...p, nxt: 'working' }));
               await new Promise(r => setTimeout(r, 50));
               
-              await this.generateNxtReport();
-              const nxtRows = this.nxtData();
+              const nxtRows = exportNxtRows;
               
               if (sopId === 'all') {
                   const data = nxtRows.map((row: any, index: number) => ({
@@ -278,7 +450,7 @@ export class StatisticsComponent {
                     'Tổng lượng xuất': row.exportQty
                   }));
                   const ws = XLSX.utils.json_to_sheet([]);
-                  XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`CHI TIẾT XUẤT KHO - ${this.getSelectedSopName()}`]], { origin: "A1" });
+                  XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`CHI TIẾT XUẤT KHO - ${selectedSopName}`]], { origin: "A1" });
                   XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
                   this.formatSheet(ws, XLSX, 8, data.length, [6, 20, 35, 10, 16]);
                   XLSX.utils.book_append_sheet(wb, ws, "Xuất SOP");
@@ -289,18 +461,15 @@ export class StatisticsComponent {
           }
 
           // ===== 2. CONSUMPTION (Full logic from exportConsumptionExcel) =====
-          if (this.exportConsumption()) {
+          if (exportConsumption) {
               this.exportProgress.update(p => ({ ...p, consumption: 'working' }));
               await new Promise(r => setTimeout(r, 50));
               
-              const history = this.state.approvedRequests();
-              const startD = new Date(start); startD.setHours(0,0,0,0);
-              const endD = new Date(end); endD.setHours(23,59,59,999);
-              const type = this.exportType();
-              const specDay = this.specificDay();
-              const useBaseAmount = this.excludeMargin();
-              const safetyConfig = this.state.safetyConfig();
-              const inventoryMap = new Map(this.state.inventory().map((i: any) => [i.name, i]));
+              const history = exportSnapshot.approvedRequests;
+              const type = exportType;
+              const specDay = specificDay;
+              const useBaseAmount = excludeMargin;
+              const inventoryMap = new Map(exportSnapshot.inventory.map((i: any) => [i.id, i]));
 
               const getCalculatedItemAmount = (item: any, reqMargin: number) => {
                   if (!useBaseAmount) return item.amount;
@@ -320,30 +489,20 @@ export class StatisticsComponent {
                   return item.amount;
               };
 
-              // Filter requests
-              const filteredHistory = history.filter((req: any) => {
-                  const d = this.getRequestDate(req);
-                  if (!d) return false;
-                  if (d < startD || d > endD) return false;
-                  if (sopId !== 'all' && req.sopId !== sopId) return false;
-                  if (type === 'specific_day' && d.getDate() !== specDay) return false;
-                  return true;
-              });
+              const filteredHistory = filterReportRequests(
+                  history,
+                  activeRange,
+                  sopId,
+                  selectedSopName,
+                  type === 'specific_day' ? specDay : undefined
+              );
 
               // Build consumption data based on type
               if (type === 'summary' || type === 'specific_day') {
-                  const map = new Map<string, {amount: number, unit: string, displayName: string}>();
-                  filteredHistory.forEach((req: any) => {
+                  const sortedData = aggregateReportConsumption(filteredHistory, (item, req) => {
                       const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
-                      req.items.forEach((item: any) => {
-                          const itemAmount = getCalculatedItemAmount(item, reqMargin);
-                          const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
-                          map.set(item.name, { amount: current.amount + itemAmount, unit: current.unit, displayName: item.displayName || current.displayName || item.name });
-                      });
+                      return getCalculatedItemAmount(item, reqMargin);
                   });
-                  const sortedData = Array.from(map.entries())
-                      .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
-                      .sort((a,b) => b.amount - a.amount);
                   const data = sortedData.map((row, i) => ({
                       'STT': i + 1, 'Mã hóa chất/vật tư': row.name, 'Tên hóa chất/Vật tư': row.displayName,
                       'Tổng tiêu hao': parseFloat(row.amount.toFixed(3)), 'ĐVT': row.unit
@@ -365,7 +524,7 @@ export class StatisticsComponent {
                       if (!d) return;
                       let colKey = '';
                       if (type === 'daily') {
-                          colKey = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+                          colKey = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
                       } else {
                           colKey = `T${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
                       }
@@ -384,7 +543,8 @@ export class StatisticsComponent {
 
                   const sortedColumns = Array.from(columnsSet).sort((a, b) => {
                       if (type === 'daily') {
-                          const [d1, m1] = a.split('/'); const [d2, m2] = b.split('/');
+                          const [d1, m1, y1] = a.split('/'); const [d2, m2, y2] = b.split('/');
+                          if (y1 !== y2) return parseInt(y1) - parseInt(y2);
                           if (m1 !== m2) return parseInt(m1) - parseInt(m2);
                           return parseInt(d1) - parseInt(d2);
                       } else {
@@ -413,7 +573,7 @@ export class StatisticsComponent {
               }
 
               // Per-SOP breakdown sheets
-              if (this.exportPerSop() && sopId === 'all') {
+              if (exportPerSop && sopId === 'all') {
                   const sopMap = new Map<string, { sopName: string, items: Map<string, {amount: number, unit: string, displayName: string}> }>();
                   filteredHistory.forEach((req: any) => {
                       const sName = req.sopName || req.sopId || 'Unknown';
@@ -452,11 +612,11 @@ export class StatisticsComponent {
           }
 
           // ===== 3. SOP Frequency =====
-          if (this.exportSop()) {
+          if (exportSop) {
               this.exportProgress.update(p => ({ ...p, sop: 'working' }));
               await new Promise(r => setTimeout(r, 50));
               
-              const sops = this.sopFrequencyData();
+              const sops = exportSopFrequency;
               const sopRows = sops.map((d: any, index: number) => ({
                 'STT': index + 1, 'Quy trình (SOP)': d.name, 'Số lần chạy': d.count, 'Tổng số mẫu': d.samples, 'Tổng QC': d.qcs, 'Tỷ trọng (%)': formatNum(d.percent)
               }));
@@ -472,11 +632,11 @@ export class StatisticsComponent {
           }
 
           // ===== 4. Audit Logs =====
-          if (this.exportLogs()) {
+          if (exportLogs) {
               this.exportProgress.update(p => ({ ...p, logs: 'working' }));
               await new Promise(r => setTimeout(r, 50));
               
-              const logs = this.filteredLogs();
+              const logs = exportFilteredLogs;
               const logRows = logs.map((l: any, index: number) => ({
                 'STT': index + 1, 'Thời gian': formatDate(l.timestamp), 'Hoạt động': this.getLogActionText(l.action), 'Chi tiết': l.details, 'Người thực hiện': l.user
               }));
@@ -492,7 +652,7 @@ export class StatisticsComponent {
           }
 
           // ===== 5. Standards Health =====
-          if (this.exportStandards()) {
+          if (exportStandards) {
               this.exportProgress.update(p => ({ ...p, standards: 'working' }));
               await new Promise(r => setTimeout(r, 50));
               
@@ -500,7 +660,7 @@ export class StatisticsComponent {
               XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["SỨC KHỎE & TRUY XUẤT CHUẨN ĐỐI CHIẾU"]], { origin: "A1" });
               
               // Section A: Summary
-              const stats = this.healthStats();
+              const stats = exportHealthStats;
               XLSX.utils.sheet_add_aoa(ws, [
                   ["TỔNG QUAN"],
                   ["Đang mượn / Sử dụng:", stats.borrowing],
@@ -510,7 +670,7 @@ export class StatisticsComponent {
               ], { origin: "A8" });
 
               // Section C: All borrowed
-              const borrowed = this.state.allStandardRequests().filter((r: any) => r.status === 'IN_PROGRESS');
+              const borrowed = exportSnapshot.standardRequests.filter((r: any) => r.status === 'IN_PROGRESS');
               if (borrowed.length > 0) {
                   const startRow = 15;
                   XLSX.utils.sheet_add_aoa(ws, [["DANH SÁCH ĐANG MƯỢN"]], { origin: `A${startRow}` });
@@ -532,23 +692,17 @@ export class StatisticsComponent {
           // ===== COVER SHEET (Always first) =====
           {
               const coverWs = XLSX.utils.aoa_to_sheet([]);
-              const approvedCount = this.state.approvedRequests().filter((req: any) => {
-                  const d = this.getRequestDate(req);
-                  if (!d) return false;
-                  const s = new Date(start); s.setHours(0,0,0,0);
-                  const e = new Date(end); e.setHours(23,59,59,999);
-                  return d >= s && d <= e;
-              }).length;
+              const approvedCount = exportApprovedRequests.length;
 
-              const topSop = this.sopFrequencyData()[0];
-              const stats = this.healthStats();
+              const topSop = exportSopFrequency[0];
+              const stats = exportHealthStats;
 
               XLSX.utils.sheet_add_aoa(coverWs, [
                   ["BÁO CÁO TỔNG HỢP HỆ THỐNG LIMS"],
                   [],
                   ["Đơn vị:", "Phòng thí nghiệm"],
                   ["Khoảng thời gian:", `${start}  đến  ${end}`],
-                  ["SOP:", sopId === 'all' ? 'Tất cả quy trình' : this.getSelectedSopName()],
+                  ["SOP:", sopId === 'all' ? 'Tất cả quy trình' : selectedSopName],
                   ["Người xuất báo cáo:", currentUser?.displayName || currentUser?.email || 'Admin'],
                   ["Ngày giờ xuất:", new Date().toLocaleString('vi-VN')],
                   [],
@@ -557,7 +711,7 @@ export class StatisticsComponent {
                   ["═══════════════════════════════════════════"],
                   [],
                   ["Tổng phiếu đã duyệt:", approvedCount],
-                  ["Tổng mặt hàng tiêu hao:", this.consumptionData().length],
+                  ["Tổng mặt hàng tiêu hao:", exportConsumptionSummary.length],
                   ["SOP chạy nhiều nhất:", topSop ? `${topSop.name} (${topSop.count} lần)` : 'N/A'],
                   ["Chuẩn đang mượn:", stats.borrowing],
                   ["Chuẩn hết hạn:", stats.expired],
@@ -602,24 +756,16 @@ export class StatisticsComponent {
 
 
   healthStats = computed(() => {
-    const reqs = this.state.allStandardRequests();
-    const stds = this.state.standards();
-    const now = Date.now();
-    return {
-        borrowing: reqs.filter(r => r.status === 'IN_PROGRESS').length,
-
-        expired: stds.filter((s: any) => s.expiry_date && new Date(s.expiry_date).getTime() < now).length,
-        lowStock: stds.filter((s: any) => (s.current_amount ?? 0) < 5).length
-    };
+    return this.calculateHealthStats(this.reportSnapshot());
   });
 
 
 
   criticalLogs = computed(() => {
-    return this.audit.logs().filter(log =>
+    return this.reportLogs().filter(log =>
         isRegisteredActivityAction(log.action)
         && getActivityActionDefinition(log.action).importance === 'WARNING'
-    ).slice(0, 20);
+    ).slice(-20).reverse();
   });
 
   getLogActionIcon(action: string): string {
@@ -640,6 +786,205 @@ export class StatisticsComponent {
   // --- BACKFILL UI STATE ---
   isBackfilling = signal(false);
   backfillProgressText = signal('');
+
+  private getActiveDateRange(): InclusiveDateRange {
+    const start = this.startDate();
+    const end = this.endDate();
+    const allTimeStats = !start && !end && this.allTimeStatsReady()
+      ? this.statsData()
+      : {};
+    return resolveStatisticsDateRange(start, end, allTimeStats, this.getToday());
+  }
+
+  private buildReportSopOptionsForRange(range: InclusiveDateRange): ReportSopOption[] {
+    const approvedRequests = filterReportRequests(this.state.approvedRequests(), range);
+    const businessLogs = this.reportLogs().filter(log => {
+      const date = timestampToDate(log.timestamp);
+      return !!date && date >= range.start && date <= range.end;
+    });
+    return buildReportSopOptions(
+      this.state.sops().filter(sop => !sop.isArchived),
+      approvedRequests,
+      businessLogs,
+      this.statsData(),
+      range
+    );
+  }
+
+  private buildReportSnapshot(range: InclusiveDateRange): ReportSnapshot {
+    const approvedRequests = filterReportRequests(this.state.approvedRequests(), range);
+    const businessLogs = this.reportLogs().filter(log => {
+      const date = timestampToDate(log.timestamp);
+      return !!date && date >= range.start && date <= range.end;
+    });
+    const warnings = this.reportWarnings();
+
+    return {
+      range: { start: new Date(range.start), end: new Date(range.end), days: range.days },
+      inventory: [...this.reportInventory()],
+      approvedRequests: [...approvedRequests],
+      businessLogs: [...businessLogs],
+      monthlyStats: { ...this.statsData() },
+      referenceStandards: [...this.state.standards()],
+      standardRequests: [...this.state.allStandardRequests()],
+      sopOptions: buildReportSopOptions(
+        this.state.sops().filter(sop => !sop.isArchived),
+        approvedRequests,
+        businessLogs,
+        this.statsData(),
+        range
+      ),
+      complete: warnings.length === 0,
+      warnings: [...warnings]
+    };
+  }
+
+  private getSnapshotSopName(snapshot: ReportSnapshot, sopId: string): string {
+    if (sopId === 'all') return 'Tất cả';
+    return snapshot.sopOptions.find(sop => sop.id === sopId)?.name || sopId;
+  }
+
+  private calculateHealthStats(snapshot: ReportSnapshot, now = Date.now()) {
+    return {
+      borrowing: snapshot.standardRequests.filter(r => r.status === 'IN_PROGRESS').length,
+      expired: snapshot.referenceStandards.filter((s: any) =>
+        s.expiry_date && new Date(s.expiry_date).getTime() < now
+      ).length,
+      lowStock: snapshot.referenceStandards.filter((s: any) => (s.current_amount ?? 0) < 5).length
+    };
+  }
+
+  private async ensureAllTimeStatsLoaded(): Promise<void> {
+    if (this.startDate() || this.endDate() || this.allTimeStatsReady()) return;
+    if (this.allTimeStatsLoad) return this.allTimeStatsLoad;
+
+    this.reportStatsReady.set(false);
+    this.setReportDatasetError('Thống kê tháng', null);
+    const load = this.statsService.getAllMonthlyStats()
+      .then(data => {
+        this.statsData.set(data);
+        this.allTimeStatsReady.set(true);
+        this.reportStatsReady.set(true);
+        this.setReportDatasetError('Thống kê tháng', null);
+      })
+      .catch(error => {
+        this.allTimeStatsReady.set(false);
+        this.reportStatsReady.set(false);
+        this.setReportDatasetError('Thống kê tháng', error);
+        throw error;
+      })
+      .finally(() => {
+        if (this.allTimeStatsLoad === load) this.allTimeStatsLoad = undefined;
+      });
+    this.allTimeStatsLoad = load;
+    return load;
+  }
+
+  private setReportDatasetError(dataset: string, error: unknown | null): void {
+    this.reportDatasetErrors.update(current => {
+      const next = { ...current };
+      if (!error) {
+        delete next[dataset];
+        return next;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      next[dataset] = `${dataset}: ${message}`;
+      return next;
+    });
+  }
+
+  /**
+   * The Excel cover is always emitted and always contains standards-health
+   * KPIs. Therefore these two datasets are unconditional export dependencies,
+   * even when the dedicated Standards sheet is not selected.
+   */
+  private async ensureExportCoverStandardsLoaded(): Promise<void> {
+    this.referenceStandardsReady.set(false);
+    this.standardRequestsReady.set(false);
+    this.setReportDatasetError('Chuẩn đối chiếu', null);
+    this.setReportDatasetError('Lịch sử mượn chuẩn', null);
+
+    const [standardsResult, requestsResult] = await Promise.all([
+      this.state.loadReferenceStandards()
+        .then(result => {
+          this.referenceStandardsReady.set(result.complete);
+          this.setReportDatasetError(
+            'Chuẩn đối chiếu',
+            result.complete ? null : new Error('Không thể xác nhận dữ liệu đã tải đầy đủ.')
+          );
+          return result;
+        })
+        .catch(error => {
+          this.referenceStandardsReady.set(false);
+          this.setReportDatasetError('Chuẩn đối chiếu', error);
+          throw error;
+        }),
+      this.state.loadAllStandardRequests()
+        .then(result => {
+          this.standardRequestsReady.set(result.complete);
+          this.setReportDatasetError(
+            'Lịch sử mượn chuẩn',
+            result.complete ? null : new Error('Không thể xác nhận dữ liệu đã tải đầy đủ.')
+          );
+          return result;
+        })
+        .catch(error => {
+          this.standardRequestsReady.set(false);
+          this.setReportDatasetError('Lịch sử mượn chuẩn', error);
+          throw error;
+        })
+    ]);
+
+    const incomplete: string[] = [];
+    if (!standardsResult.complete) incomplete.push('Chuẩn đối chiếu');
+    if (!requestsResult.complete) incomplete.push('Lịch sử mượn chuẩn');
+    if (incomplete.length > 0) {
+      throw new Error(`Không thể tải đầy đủ dữ liệu bắt buộc cho Trang bìa: ${incomplete.join(', ')}.`);
+    }
+  }
+
+  private async ensureReportInventoryLoaded(forceRefresh = false): Promise<void> {
+    if (!forceRefresh && this.reportInventoryReady()) return;
+    if (this.reportInventoryLoad) return this.reportInventoryLoad;
+
+    this.reportInventoryReady.set(false);
+    this.setReportDatasetError('Kho Báo Cáo', null);
+    const load = this.invService.getAllInventoryForReports()
+      .then(items => {
+        this.reportInventory.set(items);
+        this.reportInventoryReady.set(true);
+        this.setReportDatasetError('Kho Báo Cáo', null);
+      })
+      .catch(error => {
+        this.reportInventory.set([]);
+        this.reportInventoryReady.set(false);
+        this.setReportDatasetError('Kho Báo Cáo', error);
+        throw error;
+      })
+      .finally(() => {
+        if (this.reportInventoryLoad === load) this.reportInventoryLoad = undefined;
+      });
+    this.reportInventoryLoad = load;
+    return load;
+  }
+
+  private async fetchCompleteReportLogs(start: Date, end: Date): Promise<Log[]> {
+    const logs = await this.audit.getLogsByDateRange(start, end);
+    const printDataByLog = await this.audit.getPrintDataForLogs(logs);
+    const unresolved = logs.filter(log =>
+      !!log.printJobId && !log.printData && !printDataByLog.has(log.id)
+    );
+    if (unresolved.length > 0) {
+      throw new Error(`Thiếu ${unresolved.length} snapshot print_jobs được tham chiếu bởi nhật ký.`);
+    }
+    return enrichReportLogsWithPrintData(logs, printDataByLog);
+  }
+
+  getDateRangeDisplayText(): string {
+    if (!this.startDate() && !this.endDate()) return 'Tất cả thời gian';
+    const range = this.getActiveDateRange();
+    return `${toLocalDateKey(range.start)} → ${toLocalDateKey(range.end)}`;
+  }
   
   async runStatsBackfill() {
     if (this.isBackfilling()) return;
@@ -650,10 +995,13 @@ export class StatisticsComponent {
         return;
     }
 
+    await this.ensureAllTimeStatsLoaded();
+
     // Tự động dùng khoảng thời gian từ đầu năm 01/01 để đảm bảo nạp đủ lịch sử các tháng so sánh
     const currentYearStart = `${new Date().getFullYear()}-01-01`;
-    const selectedStart = this.startDate();
-    const endStr = this.endDate();
+    const selectedRange = this.getActiveDateRange();
+    const selectedStart = toLocalDateKey(selectedRange.start);
+    const endStr = toLocalDateKey(selectedRange.end);
     
     // Sử dụng từ đầu năm nếu bộ lọc hiện tại ngắn hơn
     const startStr = selectedStart > currentYearStart ? currentYearStart : selectedStart;
@@ -666,8 +1014,6 @@ export class StatisticsComponent {
         return;
     }
 
-    const start = new Date(startStr);
-    const end = new Date(endStr);
     this.isBackfilling.set(true);
     this.backfillProgressText.set('Đang khởi tạo...');
     
@@ -691,11 +1037,6 @@ export class StatisticsComponent {
   }
 
   constructor() {
-    this.state.ensureApprovedRequestsListener();
-    this.audit.ensureListener();
-    // Load on-demand (listeners removed for Spark Free optimization)
-    void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
-
     // Reference standards are only needed by the health/consumption views or
     // an explicit standards export. Do not pay the cold-start bulk read while
     // the statistics page is opened on the activity tab.
@@ -703,20 +1044,54 @@ export class StatisticsComponent {
       const needsStandards = this.activeTab() === 'standards'
         || this.activeTab() === 'consumption'
         || this.exportStandards();
-      if (needsStandards) void this.state.loadReferenceStandards();
+      if (needsStandards) {
+        this.referenceStandardsReady.set(false);
+        this.setReportDatasetError('Chuẩn đối chiếu', null);
+        void this.state.loadReferenceStandards()
+          .then(result => {
+            this.referenceStandardsReady.set(result.complete);
+            this.setReportDatasetError(
+              'Chuẩn đối chiếu',
+              result.complete ? null : new Error('Không thể xác nhận dữ liệu đã tải đầy đủ.')
+            );
+          })
+          .catch(error => {
+            this.referenceStandardsReady.set(false);
+            this.setReportDatasetError('Chuẩn đối chiếu', error);
+          });
+      }
 
-      const needsStandardRequests = this.activeTab() === 'nxt'
-        || this.activeTab() === 'standards'
+      const needsStandardRequests = this.activeTab() === 'standards'
         || this.exportStandards();
-      if (needsStandardRequests) void this.state.loadAllStandardRequests();
+      if (needsStandardRequests) {
+        this.standardRequestsReady.set(false);
+        this.setReportDatasetError('Lịch sử mượn chuẩn', null);
+        void this.state.loadAllStandardRequests()
+          .then(result => {
+            this.standardRequestsReady.set(result.complete);
+            this.setReportDatasetError(
+              'Lịch sử mượn chuẩn',
+              result.complete ? null : new Error('Không thể xác nhận dữ liệu đã tải đầy đủ.')
+            );
+          })
+          .catch(error => {
+            this.standardRequestsReady.set(false);
+            this.setReportDatasetError('Lịch sử mượn chuẩn', error);
+          });
+      }
     });
 
     effect(() => {
         const active = this.activeTab();
         const consData = this.consumptionData();
-        const inv = this.state.inventory();
+        const inventory = this.reportInventory();
 
         if (active === 'consumption') {
+            if (!this.reportInventoryReady()) {
+              void this.ensureReportInventoryLoaded().catch(error => {
+                console.error('Error fetching report inventory:', error);
+              });
+            }
             setTimeout(() => {
                 this.createConsumptionBarChart();
                 this.createCategoryPieChart();
@@ -726,29 +1101,125 @@ export class StatisticsComponent {
     });
 
     effect(() => {
-        const start = new Date(this.startDate());
-        const end = new Date(this.endDate());
-        const months = new Set<string>();
-        
-        const d = new Date(start);
-        d.setDate(1);
-        while (d <= end) {
-            months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-            d.setMonth(d.getMonth() + 1);
+        const user = this.auth.currentUser();
+        if (!user || !this.auth.canViewReports()) return;
+
+        const start = this.startDate();
+        const end = this.endDate();
+        if (!start && !end) {
+            void this.ensureAllTimeStatsLoaded().catch(error => {
+                console.error('Error fetching all-time report stats:', error);
+            });
+            return;
         }
-        
-        this.statsService.getStatsForMonths(Array.from(months)).then(result => {
+
+        const range = resolveStatisticsDateRange(start, end, {}, this.getToday());
+        const cachedStats = this.statsData();
+        const missingKeys = getMonthKeysForStatisticsRange(range)
+            .filter(key => !Object.prototype.hasOwnProperty.call(cachedStats, key));
+        const generation = ++this.reportStatsLoadGeneration;
+        this.reportStatsReady.set(false);
+        this.setReportDatasetError('Thống kê tháng', null);
+        if (missingKeys.length === 0) {
+            this.reportStatsReady.set(true);
+            return;
+        }
+
+        this.statsService.getStatsForMonths(missingKeys).then(result => {
+            if (generation !== this.reportStatsLoadGeneration) return;
             this.statsData.update(prev => ({ ...prev, ...result }));
+            this.reportStatsReady.set(true);
+            this.setReportDatasetError('Thống kê tháng', null);
+        }).catch(error => {
+            if (generation !== this.reportStatsLoadGeneration) return;
+            this.reportStatsReady.set(false);
+            this.setReportDatasetError('Thống kê tháng', error);
+            console.error('Error fetching report stats:', error);
+        });
+    });
+
+    // Approved-result history is loaded by the same inclusive effective range
+    // used by every report tab. All-time waits for the full aggregate history
+    // so blank filter values never become an accidental no-op query.
+    effect(() => {
+        const start = this.startDate();
+        const end = this.endDate();
+        if (!start && !end && !this.allTimeStatsReady()) return;
+
+        const range = this.getActiveDateRange();
+        const generation = ++this.approvedHistoryLoadGeneration;
+        this.approvedHistoryReady.set(false);
+        this.setReportDatasetError('Lịch sử phiếu đã duyệt', null);
+        void this.state.loadApprovedRequestsForDateRange(
+            toLocalDateKey(range.start),
+            toLocalDateKey(range.end)
+        ).then(result => {
+            if (generation !== this.approvedHistoryLoadGeneration) return;
+            this.approvedHistoryReady.set(result.complete);
+            this.setReportDatasetError(
+              'Lịch sử phiếu đã duyệt',
+              result.complete ? null : new Error('Không thể xác nhận dữ liệu đã tải đầy đủ.')
+            );
+        }).catch(error => {
+            if (generation === this.approvedHistoryLoadGeneration) {
+              this.approvedHistoryReady.set(false);
+              this.setReportDatasetError('Lịch sử phiếu đã duyệt', error);
+            }
+        });
+    });
+
+    // The realtime audit listener is intentionally capped at recent records.
+    // The report table needs the complete selected range instead.
+    effect(() => {
+        const user = this.auth.currentUser();
+        const needsLogs = this.activeTab() === 'logs'
+          || this.activeTab() === 'nxt'
+          || this.activeTab() === 'standards'
+          || this.exportLogs();
+        if (!user || !this.auth.canViewReports() || !needsLogs) return;
+
+        const start = this.startDate();
+        const end = this.endDate();
+        if (!start && !end && !this.allTimeStatsReady()) return;
+
+        const range = this.getActiveDateRange();
+        const generation = ++this.reportLogsLoadGeneration;
+        this.reportLogsReady.set(false);
+        this.setReportDatasetError('Nhật ký nghiệp vụ', null);
+        this.fetchCompleteReportLogs(range.start, range.end).then(logs => {
+            if (generation === this.reportLogsLoadGeneration) {
+              this.reportLogs.set(logs);
+              this.reportLogsReady.set(true);
+              this.setReportDatasetError('Nhật ký nghiệp vụ', null);
+            }
+        }).catch(error => {
+            if (generation === this.reportLogsLoadGeneration) {
+              this.reportLogs.set([]);
+              this.reportLogsReady.set(false);
+              this.setReportDatasetError('Nhật ký nghiệp vụ', error);
+            }
+            console.error('Error fetching report audit logs:', error);
         });
     });
   }
 
   // --- Actions ---
   onDateRangeChange(range: { start: string, end: string, label: string }) {
+      this.invalidateNxtReport();
       this.startDate.set(range.start);
       this.endDate.set(range.end);
-      this.hasGenerated.set(false); // Force recalculation if date changes
-      void this.state.loadApprovedRequestsForDateRange(range.start, range.end);
+  }
+
+  onSopSelectionChange(sopId: string) {
+      this.invalidateNxtReport();
+      this.selectedSopId.set(sopId);
+  }
+
+  private invalidateNxtReport(): void {
+      this.nxtReportGeneration++;
+      this.isLoading.set(false);
+      this.hasGenerated.set(false);
+      this.nxtData.set([]);
   }
 
   private toLocalDateStr(d: Date): string {
@@ -760,118 +1231,78 @@ export class StatisticsComponent {
   private getToday(): string { return this.toLocalDateStr(new Date()); }
   private getFirstDayOfMonth(): string { const d = new Date(); return this.toLocalDateStr(new Date(d.getFullYear(), d.getMonth(), 1)); }
   private getRequestDate(request: any): Date | null {
-      if (typeof request?.analysisDate === 'string') {
-          const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(request.analysisDate);
-          if (match) {
-              const year = Number(match[1]);
-              const month = Number(match[2]);
-              const day = Number(match[3]);
-              const date = new Date(year, month - 1, day);
-              if (
-                  date.getFullYear() === year
-                  && date.getMonth() === month - 1
-                  && date.getDate() === day
-              ) return date;
-          }
-      }
-      return timestampToDate(request?.approvedAt ?? request?.timestamp);
+      return getReportRequestDate(request);
   }
   
   getUnitClass(unit: string): string { return (unit.includes('ml') || unit.includes('l')) ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'; }
 
   getSelectedSopName(): string {
       const id = this.selectedSopId();
-      if (id === 'all') return 'Tất cả';
-      const sop = this.state.sops().find(s => s.id === id);
-      return sop ? sop.name : id;
+      return this.getSnapshotSopName(this.reportSnapshot(), id);
   }
 
 
   // --- NXT / EXPORT DETAIL REPORT LOGIC ---
-  async generateNxtReport() {
+  async generateNxtReport(
+    throwOnError = false,
+    reportContext?: { range: InclusiveDateRange; sopId: string }
+  ): Promise<NxtReportItem[]> {
+      const generation = ++this.nxtReportGeneration;
+      const filterStart = this.startDate();
+      const filterEnd = this.endDate();
+      const sopId = reportContext?.sopId ?? this.selectedSopId();
+      const fallbackKey = this.getToday();
       this.isLoading.set(true);
       this.nxtData.set([]);
-      await this.state.loadAllStandardRequests();
-      
-      // Snapshot all filter values at the start to avoid race conditions
-      // if the user changes a filter while the async operation is running.
-      const startRaw = this.startDate();
-      const endRaw = this.endDate();
-      const sopId = this.selectedSopId();
-
-      // Use local timezone perfectly without shifting 
-      const start = new Date(startRaw + 'T00:00:00');
-      const end = new Date(endRaw + 'T23:59:59.999');
-      const startTime = start.getTime();
-      const endTime = end.getTime();
       
       try {
-          const inventory = await this.invService.getAllInventory();
+          if (!reportContext && !filterStart && !filterEnd) await this.ensureAllTimeStatsLoaded();
+          if (generation !== this.nxtReportGeneration) {
+              throw new Error('Bộ lọc Báo Cáo đã thay đổi trong lúc đang tính N-X-T.');
+          }
+
+          // Use the filter values captured before the first await. Blank dates
+          // resolve against the complete all-time stats loaded just above.
+          const range = reportContext?.range ?? resolveStatisticsDateRange(
+            filterStart,
+            filterEnd,
+            !filterStart && !filterEnd ? this.statsData() : {},
+            fallbackKey
+          );
+          const start = new Date(range.start);
+          const end = new Date(range.end);
+          const startTime = start.getTime();
+          const endTime = end.getTime();
+
+          await this.ensureReportInventoryLoaded();
+          if (generation !== this.nxtReportGeneration) {
+              throw new Error('Bộ lọc Báo Cáo đã thay đổi trong lúc đang tính N-X-T.');
+          }
+          const inventory = this.reportInventory();
 
           // Bug Fix: Fetch logs from 'start' up to 'today' (not just 'end') so we can
           // correctly calculate futureNetChange (movements AFTER the period end).
           // We need logs beyond 'end' to subtract from current stock to get end-of-period stock.
           const maxNow = new Date(); maxNow.setHours(23,59,59,999);
           const logs = await this.audit.getLogsByDateRange(start, maxNow);
+          if (generation !== this.nxtReportGeneration) {
+              throw new Error('Bộ lọc Báo Cáo đã thay đổi trong lúc đang tính N-X-T.');
+          }
+          const legacyPrintData = await this.audit.getPrintDataForLogs(
+              logs.filter(needsLegacyNxtPrintData)
+          );
+          if (generation !== this.nxtReportGeneration) {
+              throw new Error('Bộ lọc Báo Cáo đã thay đổi trong lúc đang tính N-X-T.');
+          }
+          const unresolvedLegacyApprovals = findUnresolvedLegacyNxtApprovalLogs(logs, legacyPrintData);
+          if (unresolvedLegacyApprovals.length > 0) {
+              throw new Error(
+                  `N-X-T thiếu ${unresolvedLegacyApprovals.length} snapshot phê duyệt lịch sử cần để tái dựng biến động kho.`
+              );
+          }
+          const movements = aggregateNxtMovements(logs, legacyPrintData, startTime, endTime, sopId);
           
           if (sopId === 'all') {
-              const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
-              inventory.forEach(item => movements.set(item.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 }));
-
-              logs.forEach(log => {
-                  const logTime = timestampToMillis(log.timestamp);
-                  if (logTime === null) return;
-                  
-                  const result: { id: string, delta: number }[] = [];
-                  const targetId = log.targetId;
-
-                  if (INVENTORY_MOVEMENT_ACTIONS.has(log.action)) {
-                      const match = log.details.match(/:\s*([+-]?\d+(?:\.\d+)?)/);
-                      if (match && targetId) { result.push({ id: targetId, delta: parseFloat(match[1]) }); }
-                  }
-                  else if (log.action === 'CREATE_ITEM') {
-                      const match = log.details.match(/\(([-+]?\d+(?:\.\d+)?)/);
-                      if (match && targetId) { result.push({ id: targetId, delta: parseFloat(match[1]) }); }
-                  }
-                  else if (log.action === 'UPDATE_INFO') {
-                      const match = log.details.match(/Tồn kho:\s*([-+]?\d+(?:\.\d+)?)\s*->\s*([-+]?\d+(?:\.\d+)?)/);
-                      if (match && targetId) { 
-                          const oldStock = parseFloat(match[1]);
-                          const newStock = parseFloat(match[2]);
-                          result.push({ id: targetId, delta: newStock - oldStock }); 
-                      }
-                  }
-                  else if (log.action === 'DELETE_ITEM' || log.action === 'HARD_DELETE_STANDARD_REQUEST') {
-                      // finalStock can be used for absolute accuracy when available
-                      if (log.finalStock !== undefined && targetId) {
-                          // Stock was reduced to zero by deletion; handled via stock delta if logged
-                      }
-                  }
-                  else if (RESULT_APPROVAL_ACTIONS.has(log.action) && log.printData?.items) {
-                      log.printData.items.forEach(item => {
-                          if (item.isComposite && item.breakdown) {
-                              item.breakdown.forEach(sub => result.push({ id: sub.name, delta: -(sub.totalNeed || 0) }));
-                          } else {
-                              result.push({ id: item.name, delta: -(item.stockNeed || 0) });
-                          }
-                      });
-                  }
-
-                  result.forEach(change => {
-                      if (!movements.has(change.id)) movements.set(change.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 });
-                      const entry = movements.get(change.id)!;
-                      
-                      if (logTime > endTime) {
-                          // Movements AFTER the period: used to back-calculate end-of-period stock
-                          entry.futureNetChange += change.delta;
-                      } else {
-                          // Movements WITHIN the period (start <= logTime <= end)
-                          if (change.delta > 0) entry.inPeriodImport += change.delta;
-                          else entry.inPeriodExport += Math.abs(change.delta);
-                      }
-                  });
-              });
-
               const report: NxtReportItem[] = [];
               const allIds = new Set([...inventory.map(i => i.id), ...movements.keys()]);
               
@@ -896,35 +1327,18 @@ export class StatisticsComponent {
                       });
                   }
               });
-              this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
+              const sortedReport = report.sort((a,b) => a.name.localeCompare(b.name));
+              this.nxtData.set(sortedReport);
+              this.hasGenerated.set(true);
+              this.setReportDatasetError('N-X-T', null);
+              return sortedReport;
 
           } else {
               // --- SOP-specific export detail mode ---
-              const consumptionMap = new Map<string, number>();
-              logs.forEach(log => {
-                  const logTime = timestampToMillis(log.timestamp);
-                  if (logTime === null) return;
-                  
-                  // Bug Fix: filter by BOTH start and end date (was only checking <= end)
-                  if (logTime >= startTime && logTime <= endTime) {
-                      if (RESULT_APPROVAL_ACTIONS.has(log.action) && log.printData?.sop?.id === sopId && log.printData?.items) {
-                          log.printData.items.forEach(item => {
-                              if (item.isComposite && item.breakdown) {
-                                  item.breakdown.forEach(sub => {
-                                      const cur = consumptionMap.get(sub.name) || 0;
-                                      consumptionMap.set(sub.name, cur + (sub.totalNeed || 0));
-                                  });
-                              } else {
-                                  const cur = consumptionMap.get(item.name) || 0;
-                                  consumptionMap.set(item.name, cur + (item.stockNeed || 0));
-                              }
-                          });
-                      }
-                  }
-              });
-
               const report: NxtReportItem[] = [];
-              consumptionMap.forEach((qty, id) => {
+              movements.forEach((movement, id) => {
+                  const qty = movement.inPeriodExport;
+                  if (qty === 0) return;
                   const item = inventory.find(i => i.id === id);
                   report.push({
                       id: id,
@@ -937,109 +1351,69 @@ export class StatisticsComponent {
                       endStock: 0 
                   });
               });
-              this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
+              const sortedReport = report.sort((a,b) => a.name.localeCompare(b.name));
+              this.nxtData.set(sortedReport);
+              this.hasGenerated.set(true);
+              this.setReportDatasetError('N-X-T', null);
+              return sortedReport;
           }
 
-          this.hasGenerated.set(true);
-
-      } catch (e) { console.error(e); } finally { this.isLoading.set(false); }
+      } catch (e) {
+          if (generation !== this.nxtReportGeneration) {
+              if (throwOnError) throw e;
+              return [];
+          }
+          this.setReportDatasetError('N-X-T', e);
+          console.error(e);
+          if (throwOnError) throw e;
+          return [];
+      } finally {
+          if (generation === this.nxtReportGeneration) this.isLoading.set(false);
+      }
   }
 
 
   filteredLogs = computed(() => {
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
       const sopId = this.selectedSopId();
+      const sopName = this.getSelectedSopName();
 
-      return this.audit.logs().filter(log => {
-          const d = timestampToDate(log.timestamp);
-          if (!d) return false;
-          const inDate = d >= start && d <= end;
-          if (!inDate) return false;
-          if (sopId === 'all') return true;
-          return log.printData?.sop?.id === sopId || (log as any).sopId === sopId;
+      return this.reportSnapshot().businessLogs.filter(log => {
+          return matchesReportSop(log, sopId, sopName);
       });
   });
 
-  filteredStandardRequests = computed(() => {
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+  filteredApprovedRequests = computed(() => {
+      const snapshot = this.reportSnapshot();
+      return filterReportRequests(
+        snapshot.approvedRequests,
+        snapshot.range,
+        this.selectedSopId(),
+        this.getSelectedSopName()
+      );
+  });
 
-      return this.state.allStandardRequests().filter(req => {
+  filteredStandardRequests = computed(() => {
+      const { start, end } = this.reportSnapshot().range;
+
+      return this.reportSnapshot().standardRequests.filter(req => {
           const d = new Date(req.requestDate);
           return d >= start && d <= end;
       });
   });
 
   consumptionData = computed(() => {
-    const history = this.state.approvedRequests();
-    const map = new Map<string, {amount: number, unit: string, displayName: string}>();
-    
-    const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-    const end = new Date(this.endDate()); end.setHours(23,59,59,999);
-    const sopId = this.selectedSopId();
-
-    history.forEach(req => {
-        const d = this.getRequestDate(req);
-        if (!d) return;
-
-        if (d < start || d > end) return;
-        if (sopId !== 'all' && req.sopId !== sopId) return;
-
-        req.items.forEach((item: any) => {
-            const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
-            map.set(item.name, { 
-                amount: current.amount + item.amount, 
-                unit: current.unit,
-                displayName: item.displayName || current.displayName || item.name
-            });
-        });
-    });
-
-    return Array.from(map.entries())
-        .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
-        .sort((a,b) => b.amount - a.amount);
+    return aggregateReportConsumption(this.filteredApprovedRequests());
   });
 
   sopFrequencyData = computed(() => {
-    const startStr = this.startDate();
-    const endStr = this.endDate();
-    const start = new Date(startStr); start.setHours(0,0,0,0);
-    const end = new Date(endStr); end.setHours(23,59,59,999);
-    const sopIdFilter = this.selectedSopId();
-    
-    // Đọc statsData để tạo dependency (trigger computed khi data về)
-    const stats = this.statsData();
-
-    const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
-    if (diffDays < 0) return [];
-    
-    const map = new Map<string, {count: number, samples: number, qcs: number}>();
-    let totalBatchesGlobal = 0;
-
-    // Use < instead of <= to prevent off-by-one error since diffDays represents the count of days (rounded from ~0.99 to 1 for same day)
-    for (let i = 0; i < diffDays; i++) {
-        const currentDay = new Date(start.getTime() + (i * 24 * 3600 * 1000));
-        const dayStats = this.getDayStats(currentDay);
-        
-        for (const [sopKey, sStats] of Object.entries(dayStats.sops)) {
-            if (sopIdFilter !== 'all' && sopKey !== sopIdFilter && sopKey !== this.getSelectedSopName()) continue;
-            
-            const current = map.get(sopKey) || { count: 0, samples: 0, qcs: 0 };
-            map.set(sopKey, {
-                count: current.count + sStats.batches,
-                samples: current.samples + sStats.samples,
-                qcs: current.qcs + (sStats.qcs || 0)
-            });
-            totalBatchesGlobal += sStats.batches;
-        }
-    }
-
-    if (totalBatchesGlobal === 0) return [];
-
-    return Array.from(map.entries())
-        .map(([name, val]) => ({ name, count: val.count, samples: val.samples, qcs: val.qcs, percent: (val.count/totalBatchesGlobal)*100 }))
-        .sort((a,b) => b.count - a.count);
+    const snapshot = this.reportSnapshot();
+    const sopId = this.selectedSopId();
+    return aggregateSopFrequency(
+      snapshot.monthlyStats,
+      snapshot.range,
+      sopId,
+      this.getSnapshotSopName(snapshot, sopId)
+    );
   });
 
   async createConsumptionBarChart() {
@@ -1108,10 +1482,10 @@ export class StatisticsComponent {
       
       // Build lookup maps by both ID and name for robust matching
       // consumptionData uses item.name which is the Firestore document ID (item ID)
-      const invByIdMap = new Map(this.state.inventory().map(i => [i.id, i.category]));
-      const invByNameMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
-      const stdByIdMap = new Map(this.state.standards().map((s: any) => [s.id, 'Chất chuẩn đối chiếu']));
-      const stdByNameMap = new Map(this.state.standards().map((s: any) => [s.name, 'Chất chuẩn đối chiếu']));
+      const invByIdMap = new Map(this.reportSnapshot().inventory.map(i => [i.id, i.category]));
+      const invByNameMap = new Map(this.reportSnapshot().inventory.map(i => [i.name, i.category]));
+      const stdByIdMap = new Map(this.reportSnapshot().referenceStandards.map((s: any) => [s.id, 'Chất chuẩn đối chiếu']));
+      const stdByNameMap = new Map(this.reportSnapshot().referenceStandards.map((s: any) => [s.name, 'Chất chuẩn đối chiếu']));
       
       data.forEach(d => {
           // Priority: lookup by ID first (most reliable), then by display name as fallback
@@ -1155,31 +1529,27 @@ export class StatisticsComponent {
       if (!ctx) return;
 
       // Group consumption by date for trend
-      const history = this.state.approvedRequests();
+      const history = this.filteredApprovedRequests();
       const trendMap = new Map<string, number>();
-      const start = new Date(this.startDate());
-      const end = new Date(this.endDate());
 
       history.forEach(req => {
           const d = this.getRequestDate(req);
           if (!d) return;
-          if (d >= start && d <= end) {
-              const key = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-              let dayTotal = 0;
-              req.items.forEach(i => dayTotal += i.amount);
-              trendMap.set(key, (trendMap.get(key) || 0) + dayTotal);
-          }
+          const key = toLocalDateKey(d);
+          let dayTotal = 0;
+          req.items.forEach(i => dayTotal += i.amount);
+          trendMap.set(key, (trendMap.get(key) || 0) + dayTotal);
       });
 
-      const sortedKeys = Array.from(trendMap.keys()).sort((a,b) => {
-          const [d1, m1] = a.split('/'); const [d2, m2] = b.split('/');
-          return new Date(2025, parseInt(m1)-1, parseInt(d1)).getTime() - new Date(2025, parseInt(m2)-1, parseInt(d2)).getTime();
-      });
+      const sortedKeys = Array.from(trendMap.keys()).sort();
 
       this.lineChart = new Chart(ctx, {
           type: 'line',
           data: {
-              labels: sortedKeys,
+              labels: sortedKeys.map(key => {
+                  const [year, month, day] = key.split('-');
+                  return `${day}/${month}/${year}`;
+              }),
               datasets: [{
                   label: 'Tổng lượng dùng',
                   data: sortedKeys.map(k => trendMap.get(k)),

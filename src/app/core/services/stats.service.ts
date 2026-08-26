@@ -14,9 +14,11 @@ import {
   limit,
   startAfter,
   setDoc,
-  writeBatch
+  writeBatch,
+  deleteField
 } from 'firebase/firestore';
 import { timestampToDate } from '../../shared/utils/timestamp';
+import { createInclusiveDateRange, enumerateInclusiveDates, toLocalDateKey } from '../../shared/utils/date-range';
 
 export interface DailyStats {
   totalSamples: number;
@@ -146,7 +148,7 @@ export class StatsService {
         }
       } catch (e) {
         console.error(`Error fetching stats for ${key}:`, e);
-        result[key] = {};
+        throw e;
       }
     }
     return result;
@@ -165,6 +167,7 @@ export class StatsService {
       });
     } catch (e) {
       console.error('Error fetching all monthly stats:', e);
+      throw e;
     }
     return result;
   }
@@ -174,8 +177,9 @@ export class StatsService {
    * Quét tất cả Requests từ startDate đến endDate và ghi đè vào bảng monthly_stats.
    */
   async runBackfill(startDateStr: string, endDateStr: string, onProgress: (msg: string) => void): Promise<void> {
-    const start = new Date(startDateStr); start.setHours(0, 0, 0, 0);
-    const end = new Date(endDateStr); end.setHours(23, 59, 59, 999);
+    const range = createInclusiveDateRange(startDateStr, endDateStr);
+    if (!range) throw new Error('Khoảng ngày backfill không hợp lệ.');
+    const { start, end } = range;
 
     try {
       // Đã loại bỏ code xóa toàn bộ bảng monthly_stats ở đây để tránh làm mất dữ liệu lịch sử
@@ -258,11 +262,28 @@ export class StatsService {
         }
     }
 
-    // Ghi dữ liệu đã tổng hợp vào Firestore bằng Batch
+    // Ghi dữ liệu đã tổng hợp vào Firestore bằng Batch.
+    // Mọi ngày thuộc đúng khoảng backfill đều được ghi lại hoặc xóa trường cũ
+    // nếu hiện không còn request tương ứng. Cách này tránh dữ liệu ngày bị stale
+    // nhưng vẫn giữ nguyên các ngày ngoài khoảng backfill trong cùng document tháng.
+    const daysByMonth = new Map<string, string[]>();
+    for (const date of enumerateInclusiveDates(range)) {
+        const dayKey = toLocalDateKey(date);
+        const monthKey = dayKey.slice(0, 7);
+        const monthDays = daysByMonth.get(monthKey) || [];
+        monthDays.push(dayKey);
+        daysByMonth.set(monthKey, monthDays);
+    }
+
     const batch = writeBatch(this.fb.db);
-    for (const [monthKey, monthData] of Object.entries(statsMap)) {
+    for (const [monthKey, dayKeys] of daysByMonth.entries()) {
         const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/monthly_stats`, monthKey);
-        batch.set(docRef, monthData, { merge: true });
+        const monthData = statsMap[monthKey] || {};
+        const patch: Record<string, DailyStats | ReturnType<typeof deleteField>> = {};
+        dayKeys.forEach(dayKey => {
+            patch[dayKey] = monthData[dayKey] || deleteField();
+        });
+        batch.set(docRef, patch, { merge: true });
     }
 
     await batch.commit();

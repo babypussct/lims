@@ -44,9 +44,21 @@ test('print jobs are not public and signed-in users do not receive blanket write
   );
   assert.doesNotMatch(block, /allow read:\s*if\s*true/);
   assert.doesNotMatch(block, /allow write:\s*if\s*isSignedIn\(\)/);
-  assert.match(block, /allow get, list:\s*if canUseSopWorkspace\(appId\)/);
+  assert.match(block, /allow get, list:\s*if canUseSopWorkspace\(appId\) \|\|/);
+  assert.match(block, /hasPermission\(appId, 'report_view'\)/);
   assert.match(block, /createdByUid/);
   assert.match(block, /allow update:\s*if false/);
+  assert.match(block, /allow delete:\s*if false/);
+});
+
+test('report_view can read persisted inventory without receiving inventory write privileges', () => {
+  const block = ruleBlock(
+    'match /artifacts/{appId}/inventory/{itemId}',
+    '// MODULE CHUAN DOI CHIEU'
+  );
+  assert.match(block, /allow read:\s*if hasPermission\(appId, 'inventory_view'\) \|\| hasPermission\(appId, 'report_view'\)/);
+  assert.doesNotMatch(block, /allow create, delete:\s*if[^;]*report_view/);
+  assert.doesNotMatch(block, /allow update:\s*if[^;]*report_view/);
 });
 
 test('batch_run cannot approve or arbitrarily rewrite an existing request', () => {

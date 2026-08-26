@@ -129,9 +129,6 @@ export class PrintQueueService {
         doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id),
         { printable: false, lastUpdated: serverTimestamp() }
       );
-      if (log.printJobId) {
-        batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
-      }
       await batch.commit();
       this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
     } catch (error: any) {
@@ -148,9 +145,6 @@ export class PrintQueueService {
           doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id),
           { printable: false, lastUpdated: serverTimestamp() }
         );
-        if (log.printJobId) {
-          batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
-        }
       });
       await batch.commit();
       this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);

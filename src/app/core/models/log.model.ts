@@ -37,8 +37,16 @@ export interface Log {
   // New Architecture (Split Data)
   printJobId?: string; // Reference to 'print_jobs' collection
   requestId?: string; // Reference to 'requests' collection
+  metadata?: Record<string, unknown>;
   module?: string; // e.g. 'STANDARDS', 'SOP'
   finalStock?: number; // Captured snapshot for deletions
+  /**
+   * Immutable stock deltas produced by the business action.
+   * Positive values add stock; negative values consume stock.
+   * New activity writers populate this so historical NXT reports do not
+   * depend on mutable request/print-job documents.
+   */
+  inventoryDeltas?: Record<string, number>;
   sopBasicInfo?: {     // Lightweight info for list display
       name: string;
       category: string;

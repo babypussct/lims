@@ -6,7 +6,7 @@ import {
   addDoc, updateDoc, query, orderBy, limit, where,
   serverTimestamp, increment, setDoc, getDocs, deleteDoc, deleteField,
   Unsubscribe, DocumentReference, writeBatch, QueryDocumentSnapshot,
-  Query, QueryConstraint, QuerySnapshot, startAfter
+  Query, QueryConstraint, QuerySnapshot, startAfter, documentId
 } from 'firebase/firestore';
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
@@ -51,6 +51,12 @@ export interface ApprovedRequestsHistoryLoadResult {
   reads: number;
 }
 
+export interface ReportCollectionLoadResult {
+  complete: boolean;
+  loaded: number;
+  reads: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StateService implements OnDestroy {
   private fb = inject(FirebaseService);
@@ -74,13 +80,14 @@ export class StateService implements OnDestroy {
   private _unregisterStdReqListener?: () => void;
   private activeInitScope: string | null | undefined;
   private readonly ON_DEMAND_CACHE_TTL_MS = 2 * 60 * 1000;
-  private allStandardRequestsLoad?: Promise<void>;
+  private allStandardRequestsLoad?: Promise<ReportCollectionLoadResult>;
   private allStandardRequestsLoadedAt = 0;
-  private referenceStandardsLoad?: Promise<void>;
+  private referenceStandardsLoad?: Promise<ReportCollectionLoadResult>;
   private referenceStandardsLoadedAt = 0;
   private readonly APPROVED_REQUEST_RECENT_LIMIT = 300;
   private readonly APPROVED_REQUEST_HISTORY_PAGE_SIZE = 100;
   private readonly APPROVED_REQUEST_HISTORY_MAX_PAGES = 1000;
+  private readonly REPORT_COLLECTION_PAGE_SIZE = 250;
   private readonly MAX_DIRECT_REQUEST_PAYLOAD_BYTES = 900_000;
   private approvedRecentRequests = new Map<string, Request>();
   private approvedHistoryRequests = new Map<string, Request>();
@@ -566,7 +573,11 @@ export class StateService implements OnDestroy {
 
   ensureApprovedRequestsListener(): void {
     if (this.approvedRunsSub || !this.auth.currentUser()) return;
-    if (!(this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run') || this.auth.canViewReports())) return;
+    // This is an operational/recent-feed listener only. Reporting deliberately
+    // uses loadApprovedRequestsForDateRange() so a report_view-only account does
+    // not keep a background listener alive or mistake a bounded recent cache for
+    // complete report history.
+    if (!(this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run'))) return;
 
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
@@ -917,30 +928,36 @@ export class StateService implements OnDestroy {
   }
 
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
-  async loadAllStandardRequests(forceRefresh = false): Promise<void> {
+  async loadAllStandardRequests(forceRefresh = false): Promise<ReportCollectionLoadResult> {
     if (!forceRefresh && this.allStandardRequestsLoadedAt > 0
-      && Date.now() - this.allStandardRequestsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS) return;
+      && Date.now() - this.allStandardRequestsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS) {
+      return { complete: true, loaded: this.allStandardRequests().length, reads: 0 };
+    }
     if (this.allStandardRequestsLoad) return this.allStandardRequestsLoad;
 
     const initGeneration = this.initGeneration;
-    const load = (async () => {
+    const load = (async (): Promise<ReportCollectionLoadResult> => {
       try {
         const canReadAll = this.auth.canAssignStandards()
           || this.auth.canViewStandardLogs()
-          || this.auth.canDeleteStandardLogs();
+          || this.auth.canDeleteStandardLogs()
+          || this.auth.canViewReports();
         const currentUser = this.auth.currentUser();
         if (!currentUser) {
           this.allStandardRequests.set([]);
-          this.allStandardRequestsLoadedAt = Date.now();
-          return;
+          return { complete: false, loaded: 0, reads: 0 };
         }
 
         const requestsPath = `artifacts/${this.fb.APP_ID}/standard_requests`;
         const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
         const requestService = this.injector.get(StandardRequestService);
-        const listenerCached = await requestService.getRequestsFromListenerCache();
+        // Operational listener caches are bounded/recent-state optimizations.
+        // A report_view load must prove completeness from Firestore instead.
+        const listenerCached = this.auth.canViewReports()
+          ? null
+          : await requestService.getRequestsFromListenerCache();
         if (listenerCached) {
-          if (initGeneration !== this.initGeneration) return;
+          if (initGeneration !== this.initGeneration) return { complete: false, loaded: 0, reads: 0 };
           const items = listenerCached
             .filter(request => !request._isDeleted)
             .sort((a, b) =>
@@ -950,31 +967,47 @@ export class StateService implements OnDestroy {
           this.allStandardRequests.set(items);
           this.allStandardRequestsLoadedAt = Date.now();
           this.readMonitor.record('getDocs', requestsPath, listenerCached.length, { phase: 'cache', fromCache: true });
-          return;
+          return { complete: true, loaded: items.length, reads: 0 };
         }
 
         const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
-        const source = canReadAll
-          ? query(colRef, limit(1000))
-          : query(colRef, where('requestedBy', '==', currentUser.uid), limit(1000));
-        const snap = await getDocs(source);
-        this.readMonitor.record('getDocs', requestsPath, snap.size);
-        if (initGeneration !== this.initGeneration) return;
-        const items = snap.docs
-          .map(d => ({ id: d.id, ...d.data() } as StandardRequest))
+        const items: StandardRequest[] = [];
+        let cursor: QueryDocumentSnapshot | null = null;
+        let reads = 0;
+        while (true) {
+          const constraints: QueryConstraint[] = [];
+          if (!canReadAll) constraints.push(where('requestedBy', '==', currentUser.uid));
+          constraints.push(orderBy(documentId()), limit(this.REPORT_COLLECTION_PAGE_SIZE));
+          if (cursor) constraints.splice(constraints.length - 1, 0, startAfter(cursor));
+          const snap = await getDocs(query(colRef, ...constraints));
+          reads += snap.size;
+          this.readMonitor.record('getDocs', requestsPath, snap.size, {
+            phase: 'report-page',
+            fromCache: snap.metadata.fromCache
+          });
+          snap.forEach(d => items.push({ id: d.id, ...d.data() } as StandardRequest));
+          if (initGeneration !== this.initGeneration) return { complete: false, loaded: 0, reads };
+          if (snap.size < this.REPORT_COLLECTION_PAGE_SIZE) break;
+          cursor = snap.docs[snap.docs.length - 1];
+        }
+        const visibleItems = items
           .filter(request => !request._isDeleted)
           .sort((a, b) =>
             (timestampToMillis(b.requestDate ?? b.createdAt) ?? 0)
             - (timestampToMillis(a.requestDate ?? a.createdAt) ?? 0)
           );
-        this.allStandardRequests.set(items);
+        this.allStandardRequests.set(visibleItems);
         this.allStandardRequestsLoadedAt = Date.now();
-      } catch (e) { console.warn('loadAllStandardRequests error:', e); }
+        return { complete: true, loaded: visibleItems.length, reads };
+      } catch (e) {
+        console.warn('loadAllStandardRequests error:', e);
+        throw e;
+      }
     })();
 
     this.allStandardRequestsLoad = load;
     try {
-      await load;
+      return await load;
     } finally {
       if (this.allStandardRequestsLoad === load) this.allStandardRequestsLoad = undefined;
     }
@@ -983,48 +1016,68 @@ export class StateService implements OnDestroy {
   // ─── standards (reference_standards): Load on-demand for Statistics ───────────
   // Replaces the removed realtime listener on the legacy 'standards' collection.
   // Populates state.standards() signal so statistics.component.ts works unchanged.
-  async loadReferenceStandards(forceRefresh = false): Promise<void> {
+  async loadReferenceStandards(forceRefresh = false): Promise<ReportCollectionLoadResult> {
     if (!forceRefresh && this.referenceStandardsLoadedAt > 0
-      && Date.now() - this.referenceStandardsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS) return;
+      && Date.now() - this.referenceStandardsLoadedAt < this.ON_DEMAND_CACHE_TTL_MS) {
+      return { complete: true, loaded: this.standards().length, reads: 0 };
+    }
     if (this.referenceStandardsLoad) return this.referenceStandardsLoad;
 
     const initGeneration = this.initGeneration;
-    const load = (async () => {
+    const load = (async (): Promise<ReportCollectionLoadResult> => {
       try {
+        if (!this.auth.currentUser() || !(this.auth.hasPermission('standard_view') || this.auth.canViewReports())) {
+          return { complete: false, loaded: 0, reads: 0 };
+        }
         const cacheKey = buildScopedDeltaKey(
           'lims_reference_standards_cache_' + this.fb.APP_ID,
           this.auth.getDeltaCacheScope()
         );
         const cached = this.deltaSync.getCache<ReferenceStandard>(cacheKey);
-        if (!forceRefresh && cached && cached.length > 0) {
+        if (!this.auth.canViewReports() && !forceRefresh && cached && cached.length > 0) {
           this.standards.set(cached.filter(standard =>
             !standard._isDeleted && standard.status !== 'DELETED'
           ));
           this.referenceStandardsLoadedAt = Date.now();
           this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, cached.length, { phase: 'cache', fromCache: true });
-          return;
+          return { complete: true, loaded: this.standards().length, reads: 0 };
         }
 
         const standardsPath = `artifacts/${this.fb.APP_ID}/reference_standards`;
         const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-        // Đồng bộ với giới hạn DeltaSync của reference_standards. Luồng này
-        // chỉ là fallback khi chưa có cache; tránh một getDocs không giới hạn
-        // nếu dữ liệu cũ đã phình lớn bất thường.
-        const snap = await getDocs(query(colRef, limit(10000)));
-        this.readMonitor.record('getDocs', standardsPath, snap.size);
-        if (initGeneration !== this.initGeneration) return;
-        const standards = snap.docs
-          .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+        const standards: ReferenceStandard[] = [];
+        let cursor: QueryDocumentSnapshot | null = null;
+        let reads = 0;
+        while (true) {
+          const constraints: QueryConstraint[] = [orderBy(documentId())];
+          if (cursor) constraints.push(startAfter(cursor));
+          constraints.push(limit(this.REPORT_COLLECTION_PAGE_SIZE));
+          const snap = await getDocs(query(colRef, ...constraints));
+          reads += snap.size;
+          this.readMonitor.record('getDocs', standardsPath, snap.size, {
+            phase: 'report-page',
+            fromCache: snap.metadata.fromCache
+          });
+          snap.forEach(d => standards.push({ id: d.id, ...d.data() } as ReferenceStandard));
+          if (initGeneration !== this.initGeneration) return { complete: false, loaded: 0, reads };
+          if (snap.size < this.REPORT_COLLECTION_PAGE_SIZE) break;
+          cursor = snap.docs[snap.docs.length - 1];
+        }
+        const visibleStandards = standards
           .filter(standard => !standard._isDeleted && standard.status !== 'DELETED')
           .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
-        this.standards.set(standards);
+        this.standards.set(visibleStandards);
         this.referenceStandardsLoadedAt = Date.now();
-      } catch (e) { console.warn('loadReferenceStandards error:', e); }
+        return { complete: true, loaded: visibleStandards.length, reads };
+      } catch (e) {
+        console.warn('loadReferenceStandards error:', e);
+        throw e;
+      }
     })();
 
     this.referenceStandardsLoad = load;
     try {
-      await load;
+      return await load;
     } finally {
       if (this.referenceStandardsLoad === load) this.referenceStandardsLoad = undefined;
     }
@@ -1227,6 +1280,14 @@ export class StateService implements OnDestroy {
       }
     });
     return Array.from(itemsToDeduct.entries()).map(([name, amount]) => ({ name, amount }));
+  }
+
+  private getRequestItemInventoryDeltas(items: readonly RequestItem[], multiplier: 1 | -1): Record<string, number> {
+    const deltas: Record<string, number> = {};
+    items.forEach(item => {
+      deltas[item.name] = (deltas[item.name] || 0) + (item.amount * multiplier);
+    });
+    return deltas;
   }
 
   private mapToRequestItems(calculatedItems: CalculatedItem[], invMap: Record<string, InventoryItem>): RequestItem[] {
@@ -1471,6 +1532,9 @@ export class StateService implements OnDestroy {
           publicTraceable: true,
           metadata: { sopId: sop.id, analysisDate: formInputs.analysisDate },
           legacyFields: {
+            inventoryDeltas: Object.fromEntries(
+              itemsToDeduct.map(item => [item.name, -item.amount])
+            ),
             sopBasicInfo: {
               name: sop.name,
               category: sop.category,
@@ -1686,6 +1750,9 @@ export class StateService implements OnDestroy {
             },
             legacyFields: {
               planId: `PLAN-${planTimestamp}`,
+              inventoryDeltas: Object.fromEntries(
+                this.getItemsToDeduct(item.calculatedItems).map(deduction => [deduction.name, -deduction.amount])
+              ),
               sopBasicInfo: {
                 name: item.sop.name,
                 category: item.sop.category,
@@ -1835,6 +1902,7 @@ export class StateService implements OnDestroy {
             publicTraceable: true,
             metadata: { sopId: req.sopId, analysisDate: req.analysisDate },
             legacyFields: {
+              inventoryDeltas: this.getRequestItemInventoryDeltas(req.items, -1),
               sopBasicInfo: {
                 name: sop.name,
                 category: sop.category,
@@ -1908,7 +1976,10 @@ export class StateService implements OnDestroy {
           targetName: req.sopName,
           requestId: req.id,
           printable: false,
-          metadata: { sopId: req.sopId, newStatus: targetStatus }
+          metadata: { sopId: req.sopId, newStatus: targetStatus },
+          legacyFields: {
+            inventoryDeltas: this.getRequestItemInventoryDeltas(req.items, 1)
+          }
         });
         this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
       });
@@ -2043,10 +2114,6 @@ export class StateService implements OnDestroy {
             supersededBy: logId,
             lastUpdated: serverTimestamp()
           });
-          const oldPrintJobId = logDoc.data()['printJobId'];
-          if (oldPrintJobId) {
-            transaction.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', oldPrintJobId));
-          }
         });
 
         const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
@@ -2080,6 +2147,7 @@ export class StateService implements OnDestroy {
           metadata: { sopId: req.sopId, analysisDate: formInputs.analysisDate },
           legacyFields: {
             diff: editDiff,
+            inventoryDeltas: inventoryDiff,
             supersedesLogIds: previousPrintableLogDocs.map(d => d.id),
             sopBasicInfo: {
               name: sop.name,
@@ -2185,10 +2253,6 @@ export class StateService implements OnDestroy {
       const batch = writeBatch(this.fb.db);
       const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
       batch.update(logRef, { printable: false, lastUpdated: serverTimestamp() });
-      if (printJobId) {
-        const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
-        batch.delete(jobRef);
-      }
       await batch.commit();
       this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
     } catch (e: any) {
@@ -2201,9 +2265,6 @@ export class StateService implements OnDestroy {
       const batch = writeBatch(this.fb.db);
       logs.forEach(log => {
         batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false, lastUpdated: serverTimestamp() });
-        if (log.printJobId) {
-          batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
-        }
       });
       await batch.commit();
       this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);

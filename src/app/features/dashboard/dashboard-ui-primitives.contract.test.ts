@@ -64,4 +64,87 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /4\. Nhật ký hoạt động \(Audit Log\)/);
     assert.match(template, /5\. Tình trạng và truy xuất chất chuẩn/);
   });
+
+  it('treats standards health as an unconditional Excel cover dependency', () => {
+    const component = read('./statistics.component.ts');
+    const helperStart = component.indexOf('private async ensureExportCoverStandardsLoaded()');
+    const helperEnd = component.indexOf('private async ensureReportInventoryLoaded', helperStart);
+    const helper = component.slice(helperStart, helperEnd);
+
+    assert.ok(helperStart >= 0);
+    assert.match(helper, /this\.state\.loadReferenceStandards\(\)/);
+    assert.match(helper, /this\.state\.loadAllStandardRequests\(\)/);
+    assert.match(helper, /Không thể tải đầy đủ dữ liệu bắt buộc cho Trang bìa/);
+
+    const coverLoad = component.indexOf('const coverStandardsLoad = this.ensureExportCoverStandardsLoaded();');
+    const dependencyBarrier = component.indexOf('const [approvedLoadResult, , , exportNxtRows] = await Promise.all([', coverLoad);
+    const workbookCreation = component.indexOf("const XLSX = await import('xlsx');", dependencyBarrier);
+
+    assert.ok(coverLoad >= 0, 'global export must always preload cover standards dependencies');
+    assert.ok(dependencyBarrier > coverLoad, 'export must await all required datasets');
+    assert.ok(workbookCreation > dependencyBarrier, 'workbook creation must happen only after completeness checks');
+  });
+
+  it('hard-stops N-X-T completeness before creating the Excel workbook', () => {
+    const component = read('./statistics.component.ts');
+    const exportStart = component.indexOf('async runGlobalExport()');
+    const nxtLoad = component.indexOf('const nxtLoad = exportInventory', exportStart);
+    const dependencyBarrier = component.indexOf('await Promise.all([', nxtLoad);
+    const workbookCreation = component.indexOf("const XLSX = await import('xlsx');", dependencyBarrier);
+    const nxtSheet = component.indexOf('const nxtRows = exportNxtRows;', workbookCreation);
+
+    assert.ok(nxtLoad > exportStart, 'selected N-X-T export must preload complete reconstruction data');
+    assert.match(component.slice(nxtLoad, dependencyBarrier), /this\.generateNxtReport\(true, \{ range: activeRange, sopId \}\)/);
+    assert.ok(dependencyBarrier > nxtLoad, 'N-X-T load must be part of the export dependency barrier');
+    assert.ok(workbookCreation > dependencyBarrier, 'workbook creation must wait for N-X-T completeness');
+    assert.ok(nxtSheet > workbookCreation, 'N-X-T sheet must reuse the prevalidated rows');
+  });
+
+  it('freezes one canonical report snapshot before building the Excel workbook', () => {
+    const component = read('./statistics.component.ts');
+    const exportStart = component.indexOf('async runGlobalExport()');
+    const dependencyBarrier = component.indexOf('const [approvedLoadResult, , , exportNxtRows] = await Promise.all([', exportStart);
+    const snapshotBoundary = component.indexOf('const exportSnapshot = this.buildReportSnapshot(activeRange);', dependencyBarrier);
+    const workbookCreation = component.indexOf("const XLSX = await import('xlsx');", snapshotBoundary);
+    const exportEnd = component.indexOf('// Handle native input event for specific day', workbookCreation);
+    const frozenExport = component.slice(snapshotBoundary, exportEnd);
+
+    assert.ok(exportStart >= 0);
+    assert.ok(snapshotBoundary > dependencyBarrier, 'snapshot must be captured after all report loaders complete');
+    assert.ok(workbookCreation > snapshotBoundary, 'workbook must be derived only after the snapshot is frozen');
+    assert.match(frozenExport, /const selectedSopName = this\.getSnapshotSopName\(exportSnapshot, sopId\)/);
+    assert.match(frozenExport, /aggregateSopFrequency\(\s*exportSnapshot\.monthlyStats,\s*exportSnapshot\.range,/);
+    assert.match(frozenExport, /const nxtRows = exportNxtRows/);
+    assert.doesNotMatch(frozenExport, /this\.generateNxtReport\(/);
+
+    for (const liveComputed of [
+      'this.reportSnapshot()',
+      'this.sopFrequencyData()',
+      'this.filteredApprovedRequests()',
+      'this.filteredLogs()',
+      'this.healthStats()',
+      'this.consumptionData()',
+      'this.getSelectedSopName()'
+    ]) {
+      assert.equal(
+        frozenExport.includes(liveComputed),
+        false,
+        `Excel generation must not re-read live computed state via ${liveComputed}`
+      );
+    }
+  });
+
+  it('derives SOP frequency UI data from the canonical report snapshot', () => {
+    const component = read('./statistics.component.ts');
+    const computedStart = component.indexOf('sopFrequencyData = computed(() => {');
+    const computedEnd = component.indexOf('async createConsumptionBarChart()', computedStart);
+    const computedBody = component.slice(computedStart, computedEnd);
+
+    assert.ok(computedStart >= 0);
+    assert.match(computedBody, /const snapshot = this\.reportSnapshot\(\)/);
+    assert.match(computedBody, /snapshot\.monthlyStats/);
+    assert.match(computedBody, /snapshot\.range/);
+    assert.doesNotMatch(computedBody, /this\.statsData\(\)/);
+    assert.doesNotMatch(computedBody, /this\.getActiveDateRange\(\)/);
+  });
 });

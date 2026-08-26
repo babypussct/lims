@@ -1,15 +1,20 @@
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
+  documentId,
   getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
+  startAfter,
   where,
+  type DocumentData,
+  type QueryDocumentSnapshot,
+  type QuerySnapshot,
   type Unsubscribe
 } from 'firebase/firestore';
-import type { Log } from '../models/log.model';
+import type { Log, PrintData } from '../models/log.model';
 import { timestampToMillis } from '../../shared/utils/timestamp';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
@@ -90,16 +95,80 @@ export class AuditLogService {
     end.setHours(23, 59, 59, 999);
 
     const path = `artifacts/${this.fb.APP_ID}/logs`;
-    const snapshot = await getDocs(query(
-      collection(this.fb.db, path),
-      where('auditClass', '==', 'BUSINESS'),
-      where('timestamp', '>=', start),
-      where('timestamp', '<=', end),
-      orderBy('timestamp', 'asc')
-    ));
-    this.readMonitor.record('getDocs', path, snapshot.size, { phase: 'history', fromCache: snapshot.metadata.fromCache });
-    return snapshot.docs
-      .map(document => ({ id: document.id, ...document.data() } as Log))
+    const logs: Log[] = [];
+    const pageSize = 500;
+    let cursor: QueryDocumentSnapshot | null = null;
+
+    while (true) {
+      const snapshot: QuerySnapshot<DocumentData> = await getDocs(query(
+        collection(this.fb.db, path),
+        where('auditClass', '==', 'BUSINESS'),
+        where('timestamp', '>=', start),
+        where('timestamp', '<=', end),
+        orderBy('timestamp', 'desc'),
+        ...(cursor ? [startAfter(cursor)] : []),
+        limit(pageSize)
+      ));
+      this.readMonitor.record('getDocs', path, snapshot.size, {
+        phase: 'report-page',
+        fromCache: snapshot.metadata.fromCache
+      });
+      snapshot.forEach(document => logs.push({ id: document.id, ...document.data() } as Log));
+      if (snapshot.size < pageSize) break;
+      cursor = snapshot.docs[snapshot.docs.length - 1];
+    }
+
+    return logs
       .sort((a, b) => (timestampToMillis(a.timestamp) ?? 0) - (timestampToMillis(b.timestamp) ?? 0));
+  }
+
+  /**
+   * Resolve immutable print snapshots referenced by audit logs.
+   * Legacy logs may embed printData directly; V2 logs reference print_jobs.
+   * Results are keyed by log id so callers cannot accidentally double-count
+   * a shared or repeated print-job id.
+   */
+  async getPrintDataForLogs(logs: readonly Log[]): Promise<Map<string, PrintData>> {
+    if (!this.auth.canViewReports()) throw new Error('Bạn không có quyền xem dữ liệu báo cáo.');
+
+    const resolved = new Map<string, PrintData>();
+    const logIdsByJobId = new Map<string, string[]>();
+
+    for (const log of logs) {
+      if (log.printData) {
+        resolved.set(log.id, log.printData);
+        continue;
+      }
+      if (!log.printJobId) continue;
+      const related = logIdsByJobId.get(log.printJobId) || [];
+      related.push(log.id);
+      logIdsByJobId.set(log.printJobId, related);
+    }
+
+    const jobIds = [...logIdsByJobId.keys()];
+    if (jobIds.length === 0) return resolved;
+
+    const path = `artifacts/${this.fb.APP_ID}/print_jobs`;
+    const chunkSize = 30;
+    for (let i = 0; i < jobIds.length; i += chunkSize) {
+      const chunk = jobIds.slice(i, i + chunkSize);
+      const snapshot = await getDocs(query(
+        collection(this.fb.db, path),
+        where(documentId(), 'in', chunk)
+      ));
+      this.readMonitor.record('getDocs', path, snapshot.size, {
+        phase: 'report-print-data',
+        fromCache: snapshot.metadata.fromCache
+      });
+
+      snapshot.forEach(document => {
+        const printData = document.data() as PrintData;
+        for (const logId of logIdsByJobId.get(document.id) || []) {
+          resolved.set(logId, printData);
+        }
+      });
+    }
+
+    return resolved;
   }
 }

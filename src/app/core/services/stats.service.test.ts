@@ -30,3 +30,23 @@ test('incrementStats preserves SOP names containing dots as nested map keys', ()
   assert.match(source, /sops: \{\s*\[sopKey\]: \{/);
   assert.doesNotMatch(source, /`\$\{dayKey\}\.sops\.\$\{sopKey\}/);
 });
+
+test('runBackfill clears stale day fields inside the selected range without replacing the whole month', () => {
+  assert.match(source, /createInclusiveDateRange\(startDateStr, endDateStr\)/);
+  assert.match(source, /for \(const date of enumerateInclusiveDates\(range\)\)/);
+  assert.match(source, /patch\[dayKey\] = monthData\[dayKey\] \|\| deleteField\(\)/);
+  assert.match(source, /batch\.set\(docRef, patch, \{ merge: true \}\)/);
+  assert.doesNotMatch(source, /batch\.set\(docRef, monthData, \{ merge: true \}\)/);
+});
+
+test('report stats reads surface Firestore failures instead of silently publishing empty data', () => {
+  const rangeLoaderStart = source.indexOf('async getStatsForMonths');
+  const allTimeLoaderStart = source.indexOf('async getAllMonthlyStats');
+  const backfillStart = source.indexOf('async runBackfill');
+  const rangeLoader = source.slice(rangeLoaderStart, allTimeLoaderStart);
+  const allTimeLoader = source.slice(allTimeLoaderStart, backfillStart);
+
+  assert.match(rangeLoader, /catch \(e\) \{[\s\S]*throw e;/);
+  assert.doesNotMatch(rangeLoader, /catch \(e\) \{[\s\S]*result\[key\] = \{\};/);
+  assert.match(allTimeLoader, /catch \(e\) \{[\s\S]*throw e;/);
+});

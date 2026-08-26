@@ -594,12 +594,44 @@ test('canonical Activity create rejects forged identity, classification and unsa
   ));
 });
 
-test('batch_run, sop_approve and manager can read print jobs but viewer cannot', async () => {
+test('batch_run, sop_approve, manager and report_view can read print jobs but viewer cannot', async () => {
   const printJobPath = `artifacts/${APP_ID}/print_jobs/owned-by-a`;
-  for (const user of [users.batchA, users.approver, users.manager]) {
+  for (const user of [users.batchA, users.approver, users.manager, users.customReportOnly]) {
     await assertSucceeds(getDoc(doc(dbFor(user), printJobPath)));
   }
   await assertFails(getDoc(doc(dbFor(users.viewer), printJobPath)));
+});
+
+test('report_view can read inventory for NXT reporting without inventory write access', async () => {
+  const inventoryPath = `artifacts/${APP_ID}/inventory/inventory-1`;
+  await assertSucceeds(getDoc(doc(dbFor(users.customReportOnly), inventoryPath)));
+  await assertFails(updateDoc(doc(dbFor(users.customReportOnly), inventoryPath), {
+    stock: 999,
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(getDoc(doc(dbFor(users.pending), inventoryPath)));
+});
+
+test('report_view can read reporting dependencies without receiving operational write access', async () => {
+  const reportDb = dbFor(users.customReportOnly);
+  const pendingDb = dbFor(users.pending);
+  const requestPath = `artifacts/${APP_ID}/requests/pending-request`;
+  const standardPath = `artifacts/${APP_ID}/reference_standards/std-requester`;
+  const standardRequestPath = `artifacts/${APP_ID}/standard_requests/requester-lifecycle`;
+
+  await assertSucceeds(getDocs(collection(reportDb, `artifacts/${APP_ID}/requests`)));
+  await assertSucceeds(getDoc(doc(reportDb, standardPath)));
+  await assertSucceeds(getDocs(collection(reportDb, `artifacts/${APP_ID}/reference_standards`)));
+  await assertSucceeds(getDoc(doc(reportDb, standardRequestPath)));
+  await assertSucceeds(getDocs(collection(reportDb, `artifacts/${APP_ID}/standard_requests`)));
+
+  await assertFails(getDocs(collection(pendingDb, `artifacts/${APP_ID}/requests`)));
+  await assertFails(getDoc(doc(pendingDb, standardPath)));
+  await assertFails(getDoc(doc(pendingDb, standardRequestPath)));
+
+  await assertFails(updateDoc(doc(reportDb, requestPath), { status: 'approved', lastUpdated: serverTimestamp() }));
+  await assertFails(updateDoc(doc(reportDb, standardPath), { current_amount: 99, lastUpdated: serverTimestamp() }));
+  await assertFails(updateDoc(doc(reportDb, standardRequestPath), { status: 'APPROVED', lastUpdated: serverTimestamp() }));
 });
 
 test('stats writes require batch_run, sop_approve or manager privileges', async () => {
@@ -1276,11 +1308,11 @@ test('print job creation binds ownership to the authenticated creator', async ()
   }));
 });
 
-test('batch_run can delete only its own print jobs; approver and manager can delete others', async () => {
-  await assertSucceeds(deleteDoc(doc(dbFor(users.batchA), `artifacts/${APP_ID}/print_jobs/owned-by-a`)));
+test('print jobs are immutable historical snapshots and cannot be deleted by clients', async () => {
+  await assertFails(deleteDoc(doc(dbFor(users.batchA), `artifacts/${APP_ID}/print_jobs/owned-by-a`)));
   await assertFails(deleteDoc(doc(dbFor(users.batchA), `artifacts/${APP_ID}/print_jobs/owned-by-b`)));
 
-  await assertSucceeds(deleteDoc(doc(dbFor(users.approver), `artifacts/${APP_ID}/print_jobs/owned-by-b`)));
+  await assertFails(deleteDoc(doc(dbFor(users.approver), `artifacts/${APP_ID}/print_jobs/owned-by-b`)));
 
   await env.withSecurityRulesDisabled(async context => {
     const seedTime = Timestamp.fromMillis(1_700_000_000_000);
@@ -1292,7 +1324,7 @@ test('batch_run can delete only its own print jobs; approver and manager can del
       lastUpdated: seedTime
     });
   });
-  await assertSucceeds(deleteDoc(doc(dbFor(users.manager), `artifacts/${APP_ID}/print_jobs/manager-delete`)));
+  await assertFails(deleteDoc(doc(dbFor(users.manager), `artifacts/${APP_ID}/print_jobs/manager-delete`)));
 });
 
 test('batch_run cannot promote pending to approved, while sop_approve and manager can', async () => {

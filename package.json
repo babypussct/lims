@@ -32,7 +32,7 @@
     "test:ui-primitives": "tsx --test src/app/shared/components/ui/ui-primitives.contract.test.ts src/app/shared/components/confirmation-modal/confirmation-modal.component.test.ts",
     "test:ui-contracts": "npm run test:ui-primitives && npm run test:ui-dashboard && npm run test:ui-inventory && npm run test:ui-results && npm run test:ui-recipes && npm run test:ui-preparation && npm run test:ui-standards && npm run test:ui-targets && npm run test:ui-documents && npm run test:ui-checklist && npm run test:ui-labels && npm run test:ui-config && npm run test:ui-traceability && npm run test:ui-sop && npm run test:ui-auth-public",
     "test:ui-guardrails": "node scripts/ui-guardrails.js",
-    "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts",
+    "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts",
     "test:ui-inventory": "tsx --test src/app/features/inventory/inventory-ui-primitives.contract.test.ts",
     "test:ui-results": "tsx --test src/app/features/results/result-list-ui-primitives.contract.test.ts",
     "test:ui-recipes": "tsx --test src/app/features/recipes/recipe-ui-primitives.contract.test.ts",

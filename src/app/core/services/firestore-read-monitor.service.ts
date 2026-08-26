@@ -9,7 +9,10 @@ export type FirestoreReadPhase =
   | 'page'
   | 'earliest'
   | 'history'
-  | 'batch';
+  | 'batch'
+  | 'report-page'
+  | 'report-print-data'
+  | 'report-inventory';
 
 export interface FirestoreReadMetric {
   operation: FirestoreReadOperation;

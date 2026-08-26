@@ -6,7 +6,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, getDoc,
   collection, addDoc, serverTimestamp, writeBatch,
   query, where, orderBy, limit, startAfter, getDocs, 
-  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer, deleteField
+  QueryConstraint, QueryDocumentSnapshot, QuerySnapshot, DocumentData, runTransaction, getCountFromServer, deleteField, documentId
 } from 'firebase/firestore';
 import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -15,6 +15,7 @@ import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor
 import { ActivityEventService } from '../../core/services/activity-event.service';
 import { NotificationCenterService } from '../../core/services/notification-center.service';
 import { crossedInventoryLowStockThreshold, resolveInventoryLowStockThreshold } from './inventory-low-stock';
+import { AuthService } from '../../core/services/auth.service';
 
 
 export interface InventoryPage {
@@ -28,6 +29,7 @@ export class InventoryService {
   private fb = inject(FirebaseService);
   private state = inject(StateService);
   private toast = inject(ToastService);
+  private auth = inject(AuthService);
   private readMonitor = inject(FirestoreReadMonitor);
   private activityEvents = inject(ActivityEventService);
   private notificationCenter = inject(NotificationCenterService);
@@ -158,6 +160,39 @@ export class InventoryService {
     return this.state.inventory();
   }
 
+  /**
+   * Reporting needs the persisted inventory snapshot, including soft-deleted
+   * items that are intentionally filtered out of the operational state cache.
+   * Keeping those rows is required to reconstruct historical N-X-T balances.
+   */
+  async getAllInventoryForReports(): Promise<InventoryItem[]> {
+    if (!this.auth.canViewReports()) throw new Error('Bạn không có quyền xem dữ liệu kho của Báo Cáo.');
+
+    const path = `artifacts/${this.fb.APP_ID}/inventory`;
+    const colRef = collection(this.fb.db, path);
+    const pageSize = 500;
+    const items: InventoryItem[] = [];
+    let cursor: QueryDocumentSnapshot | null = null;
+
+    while (true) {
+      const snapshot: QuerySnapshot<DocumentData> = await getDocs(query(
+        colRef,
+        orderBy(documentId()),
+        ...(cursor ? [startAfter(cursor)] : []),
+        limit(pageSize)
+      ));
+      this.readMonitor.record('getDocs', path, snapshot.size, {
+        phase: 'report-inventory',
+        fromCache: snapshot.metadata.fromCache
+      });
+      snapshot.forEach(document => items.push({ id: document.id, ...document.data() } as InventoryItem));
+      if (snapshot.size < pageSize) break;
+      cursor = snapshot.docs[snapshot.docs.length - 1];
+    }
+
+    return items;
+  }
+
   async getInventoryPage(
     pageSize: number, 
     lastDoc: QueryDocumentSnapshot | null, 
@@ -275,7 +310,12 @@ export class InventoryService {
               unit: item.unit,
               reason
             },
-            legacyFields: { reason }
+            legacyFields: {
+              reason,
+              ...((isNew || item.stock !== oldStock) ? {
+                inventoryDeltas: { [item.id]: isNew ? item.stock : item.stock - oldStock }
+              } : {})
+            }
         });
         this.activityEvents.setInTransaction(transaction, globalLogRef, activityEvent);
 
@@ -419,7 +459,10 @@ export class InventoryService {
               newValue: newStock,
               reason
             },
-            legacyFields: { reason }
+            legacyFields: {
+              reason,
+              inventoryDeltas: { [id]: adjustment }
+            }
         });
         this.activityEvents.setInTransaction(transaction, globalLogRef, activityEvent);
 
@@ -452,36 +495,54 @@ export class InventoryService {
   async bulkZeroStock(ids: string[], reason = '') {
     if (!ids || ids.length === 0) return;
     const currentUser = this.state.getCurrentUserName();
-    const batch = writeBatch(this.fb.db);
-    
-    ids.forEach(id => {
-      const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
-      const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history'));
-      
-      batch.update(invRef, { stock: 0, lastUpdated: serverTimestamp() });
-      
-      batch.set(historyRef, {
+    const globalLogRef = this.activityEvents.createRef();
+    const uniqueIds = [...new Set(ids)];
+
+    await runTransaction(this.fb.db, async transaction => {
+      const rows: Array<{
+        id: string;
+        invRef: ReturnType<typeof doc>;
+        stock: number;
+        historyRef: ReturnType<typeof doc>;
+      }> = [];
+      for (const id of uniqueIds) {
+        const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
+        const snapshot = await transaction.get(invRef);
+        if (!snapshot.exists()) throw new Error(`Không tìm thấy vật tư "${id}".`);
+        rows.push({
+          id,
+          invRef,
+          stock: Number(snapshot.data()['stock'] || 0),
+          historyRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history'))
+        });
+      }
+
+      const inventoryDeltas: Record<string, number> = {};
+      rows.forEach(row => {
+        transaction.update(row.invRef, { stock: 0, lastUpdated: serverTimestamp() });
+        transaction.set(row.historyRef, {
           timestamp: serverTimestamp(),
           lastUpdated: serverTimestamp(),
           actionType: 'ADJUST',
-          amountChange: 0, stockAfter: 0, reference: reason || 'Bulk Zero Out', user: currentUser
-      } as StockHistoryItem);
-    });
+          amountChange: -row.stock,
+          stockAfter: 0,
+          reference: reason || 'Bulk Zero Out',
+          user: currentUser
+        } as StockHistoryItem);
+        if (row.stock !== 0) inventoryDeltas[row.id] = -row.stock;
+      });
 
-    // Add single global log for batch operation
-    const globalLogRef = this.activityEvents.createRef();
-    const activityEvent = this.activityEvents.build({
+      const activityEvent = this.activityEvents.build({
         eventId: globalLogRef.id,
         action: 'BULK_ZERO',
-        details: `Đặt tồn kho về 0 cho ${ids.length} mục.`,
+        details: `Đặt tồn kho về 0 cho ${uniqueIds.length} mục.`,
         targetType: 'INVENTORY_BATCH',
         targetId: 'BATCH',
-        metadata: { count: ids.length, reason },
-        legacyFields: { reason }
+        metadata: { count: uniqueIds.length, reason },
+        legacyFields: { reason, inventoryDeltas }
+      });
+      this.activityEvents.setInTransaction(transaction, globalLogRef, activityEvent);
     });
-    this.activityEvents.setInBatch(batch, globalLogRef, activityEvent);
-
-    await batch.commit();
     await this.notificationCenter.dispatchActivityProjectionIfEnabled(globalLogRef.id);
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');

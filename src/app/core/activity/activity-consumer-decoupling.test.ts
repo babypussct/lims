@@ -5,8 +5,9 @@ import test from 'node:test';
 test('Statistics reads audit data independently from Activity Feed state', () => {
   const source = readFileSync('src/app/features/dashboard/statistics.component.ts', 'utf8');
   assert.match(source, /AuditLogService/);
-  assert.match(source, /this\.audit\.logs\(\)/);
   assert.match(source, /this\.audit\.getLogsByDateRange\(/);
+  assert.match(source, /reportLogs = signal<Log\[\]>\(\[\]\)/);
+  assert.doesNotMatch(source, /this\.audit\.logs\(\)/);
   assert.doesNotMatch(source, /this\.state\.logs\(\)/);
   assert.doesNotMatch(source, /ensureActivityFeedListeners\(\)/);
 });
@@ -34,6 +35,23 @@ test('InventoryService no longer owns audit date-range reads', () => {
   const audit = readFileSync('src/app/core/services/audit-log.service.ts', 'utf8');
   assert.doesNotMatch(inventory, /getLogsByDateRange\(/);
   assert.match(audit, /getLogsByDateRange\(/);
+});
+
+test('report-only approved-request history stays on the bounded range loader instead of the recent realtime listener', () => {
+  const state = readFileSync('src/app/core/services/state.service.ts', 'utf8');
+  const listenerStart = state.indexOf('ensureApprovedRequestsListener(): void');
+  const rangeLoaderStart = state.indexOf('async loadApprovedRequestsForDateRange', listenerStart);
+  const listenerBody = state.slice(listenerStart, rangeLoaderStart);
+
+  assert.ok(listenerStart >= 0);
+  assert.ok(rangeLoaderStart > listenerStart);
+  assert.match(listenerBody, /hasPermission\('sop_view'\)/);
+  assert.match(listenerBody, /hasPermission\('batch_run'\)/);
+  assert.doesNotMatch(listenerBody, /canViewReports\(\)/);
+
+  const rangeLoaderEnd = state.indexOf('private isApprovedRequest', rangeLoaderStart);
+  const rangeLoaderBody = state.slice(rangeLoaderStart, rangeLoaderEnd);
+  assert.match(rangeLoaderBody, /canViewReports\(\)/);
 });
 
 test('Dashboard consumes only the canonical ActivityFeedService after PR9 cleanup', () => {
