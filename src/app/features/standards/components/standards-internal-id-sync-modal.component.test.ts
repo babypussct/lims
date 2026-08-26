@@ -200,9 +200,11 @@ test('behavioral: calculateInternalIdApplySummary accounts for active vs release
   assert.equal(summary.totalChanges, 6);
   // Total business documents = 4 (req-1, std-active, AA01, std-released)
   assert.equal(summary.totalDocuments, 4);
-  // Actual writes = 4 business docs + 1 audit batch write = 5
-  assert.equal(summary.actualWrites, 5);
-  assert.equal(summary.estimatedBatches, 1);
+  // The conservative Security Rules access budget splits these changes into
+  // two atomic chunks, so each chunk gets its own immutable audit write.
+  // Actual writes = 4 business docs + 2 audit batch writes = 6.
+  assert.equal(summary.actualWrites, 6);
+  assert.equal(summary.estimatedBatches, 2);
   assert.equal(summary.manualCount, 2);
   assert.equal(summary.safeCount, 1);
   assert.equal(summary.physicalStandardsCount, 2);

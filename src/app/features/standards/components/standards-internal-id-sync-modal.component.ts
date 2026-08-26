@@ -532,8 +532,8 @@ export class StandardsInternalIdSyncModalComponent {
   readonly stdService = inject(StandardService);
   readonly confirmation = inject(ConfirmationService);
   readonly toast = inject(ToastService);
-  private readonly SCAN_TIMEOUT_MS = 60_000;
-  private readonly POST_APPLY_VERIFICATION_TIMEOUT_MS = 15_000;
+  private readonly SCAN_TIMEOUT_MS = 120_000;
+  private readonly POST_APPLY_VERIFICATION_TIMEOUT_MS = 120_000;
 
   isOpen = input(false);
   close = output<void>();

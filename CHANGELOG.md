@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.26-b03
+## Phiên bản hiện tại: v26.08.26-b04
+
+### v26.08.26-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đồng bộ mã nội bộ chất chuẩn theo từng batch an toàn, có quét lại trước và sau khi ghi để bảo vệ dữ liệu nghiệp vụ.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tự chia nhỏ các thay đổi liên quan đến registry, yêu cầu và nhật ký theo ngân sách truy cập Firestore Rules, đồng thời lưu audit snapshot Before/After cho từng batch.
+- Tăng thời gian chờ cho các lượt quét lớn và chỉ cho phép sửa tham chiếu nhật ký khi mã của chuẩn cha đã được xác minh hợp lệ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi batch đồng bộ bị từ chối do các lượt tra cứu Security Rules trùng lặp trong cùng một ghi atomic.
+- Không còn phân loại nhầm thay đổi nhật ký là an toàn khi hồ sơ chuẩn cha đang thiếu hoặc có mã không hợp lệ.
 
 ### v26.08.26-b03
 

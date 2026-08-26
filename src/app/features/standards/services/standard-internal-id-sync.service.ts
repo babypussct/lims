@@ -61,7 +61,7 @@ export class StandardInternalIdSyncService {
   private readonly MAX_APPLY_CHANGES = INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH;
   private readonly MAX_RULE_ACCESS_COST = INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST;
   private readonly NESTED_LOG_READ_CONCURRENCY = 8;
-  private readonly PRE_APPLY_SCAN_TIMEOUT_MS = 60_000;
+  private readonly PRE_APPLY_SCAN_TIMEOUT_MS = 120_000;
 
   async scan(): Promise<StandardInternalIdSyncReport> {
     if (!this.auth.canEditStandards()) {
@@ -719,6 +719,11 @@ export class StandardInternalIdSyncService {
       : '';
 
     let standard: ReferenceStandard | undefined;
+    let standardIdRepair: {
+      before: string | null;
+      after: string;
+      reason: string;
+    } | null = null;
 
     if (parentStandardId) {
       // Nested log under reference_standards/{parentStandardId}/logs/{logId}
@@ -727,14 +732,11 @@ export class StandardInternalIdSyncService {
         // Field is genuinely missing in the nested document data.
         // Auto-repair is permitted since parent path is the Source of Truth,
         // but it MUST be explicitly recorded as a safeChange / audit.
-        addChange({
-          collection: collectionName,
-          documentId,
-          field: 'standardId',
+        standardIdRepair = {
           before: null,
           after: parentStandardId,
           reason: 'Bổ sung trường standardId còn thiếu cho nhật ký lồng từ thư mục chuẩn cha.',
-        });
+        };
         standard = parentStandard;
       } else {
         // Field is present in nested document data
@@ -746,14 +748,11 @@ export class StandardInternalIdSyncService {
           const nonDeleted = codeMatches.filter(c => !c._isDeleted && c.status !== 'DELETED');
           if (nonDeleted.length === 1 && nonDeleted[0].id === parentStandardId) {
             standard = nonDeleted[0];
-            addChange({
-              collection: collectionName,
-              documentId,
-              field: 'standardId',
+            standardIdRepair = {
               before: rawStandardId,
               after: parentStandardId,
               reason: 'Sửa tham chiếu cũ dùng Mã quản lý nội bộ trong nhật ký lồng về khóa bản ghi chuẩn cha duy nhất.',
-            });
+            };
           } else {
             // StandardId inside nested document differs from parent standard!
             addIssue({
@@ -796,14 +795,11 @@ export class StandardInternalIdSyncService {
         const nonDeleted = codeMatches.filter(candidate => !candidate._isDeleted && candidate.status !== 'DELETED');
         if (nonDeleted.length === 1) {
           standard = nonDeleted[0];
-          addChange({
-            collection: collectionName,
-            documentId,
-            field: 'standardId',
+          standardIdRepair = {
             before: rawStandardId,
             after: standard.id,
             reason: 'Sửa tham chiếu cũ dùng Mã quản lý nội bộ thay vì khóa bản ghi vật lý; chỉ áp dụng khi đối chiếu duy nhất.',
-          });
+          };
         } else {
           addIssue({
             kind: 'REQUEST_REFERENCE',
@@ -843,6 +839,15 @@ export class StandardInternalIdSyncService {
         autoFixable: false,
       });
       return;
+    }
+
+    if (standardIdRepair) {
+      addChange({
+        collection: collectionName,
+        documentId,
+        field: 'standardId',
+        ...standardIdRepair,
+      });
     }
 
     const currentValue = data[internalField];

@@ -1,15 +1,15 @@
 {
-  "title": "Xuất bản báo cáo PDF ổn định hơn khi thử lại",
+  "title": "Đồng bộ mã nội bộ chất chuẩn an toàn và đầy đủ hơn",
   "highlights": [
-    "Các lần thử lại khi xuất báo cáo PDF được nhận diện đúng theo nội dung dữ liệu thực tế, tránh nhầm lẫn giữa các bản báo cáo khác nhau."
+    "Đồng bộ mã nội bộ chất chuẩn theo từng batch an toàn, có quét lại trước và sau khi ghi để bảo vệ dữ liệu nghiệp vụ."
   ],
   "features": [],
   "improvements": [
-    "Giữ khả năng dùng lại bản PDF đã tạo khi người dùng gửi lại đúng cùng một nội dung sau sự cố mạng hoặc lưu nháp.",
-    "Bổ sung kiểm thử hồi quy cho các trường hợp thay đổi kết quả, thông tin mẻ và thứ tự trường dữ liệu trước khi xuất bản lại."
+    "Tự chia nhỏ các thay đổi liên quan đến registry, yêu cầu và nhật ký theo ngân sách truy cập Firestore Rules, đồng thời lưu audit snapshot Before/After cho từng batch.",
+    "Tăng thời gian chờ cho các lượt quét lớn và chỉ cho phép sửa tham chiếu nhật ký khi mã của chuẩn cha đã được xác minh hợp lệ."
   ],
   "fixes": [
-    "Sửa lỗi không thể xuất lại báo cáo sau khi dữ liệu kết quả hoặc metadata đã được chỉnh sửa trong khi vẫn ở cùng phiên bản hiển thị.",
-    "Giữ nguyên cơ chế chống tạo PDF trùng của GAS trong khi phân biệt đúng các payload báo cáo khác nhau."
+    "Sửa lỗi batch đồng bộ bị từ chối do các lượt tra cứu Security Rules trùng lặp trong cùng một ghi atomic.",
+    "Không còn phân loại nhầm thay đổi nhật ký là an toàn khi hồ sơ chuẩn cha đang thiếu hoặc có mã không hợp lệ."
   ]
 }

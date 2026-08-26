@@ -148,6 +148,37 @@ test('backfills missing standardId in nested logs from parent path as an explici
   assert.match(safeChanges[0].reason, /Bổ sung trường standardId còn thiếu cho nhật ký lồng/);
 });
 
+test('does not mark a nested standardId repair safe when the parent code is invalid', () => {
+  const { service, issues, safeChanges, addIssue, addChange } = createService();
+  const standard: ReferenceStandard = {
+    id: 'std-invalid-parent',
+    name: 'Standard with invalid code',
+    internal_id: 'SD HẾT',
+    status: 'AVAILABLE',
+  } as ReferenceStandard;
+  const byId = new Map([[standard.id, standard]]);
+  const byCode = new Map<string, ReferenceStandard[]>();
+
+  service.inspectReferenceSnapshot(
+    'reference_standard_logs',
+    'std-invalid-parent::log-1',
+    { id: 'log-1' },
+    byId,
+    byCode,
+    addIssue,
+    addChange,
+    'internalId',
+    standard.id,
+  );
+
+  assert.equal(safeChanges.length, 0);
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0].kind, 'USAGE_REFERENCE');
+  assert.equal(issues[0].severity, 'ERROR');
+  assert.equal(issues[0].blocking, true);
+  assert.match(issues[0].detail, /SD HẾT/);
+});
+
 test('flags PARENT_REFERENCE_MISMATCH when nested log standardId points to a different standard', () => {
   const { service, issues, safeChanges, addIssue, addChange } = createService();
   const parentStandard: ReferenceStandard = {

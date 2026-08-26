@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.08.26-b04",
+    "date": "26/8/2026",
+    "title": "Đồng bộ mã nội bộ chất chuẩn an toàn và đầy đủ hơn",
+    "highlights": [
+      "Đồng bộ mã nội bộ chất chuẩn theo từng batch an toàn, có quét lại trước và sau khi ghi để bảo vệ dữ liệu nghiệp vụ."
+    ],
+    "features": [],
+    "improvements": [
+      "Tự chia nhỏ các thay đổi liên quan đến registry, yêu cầu và nhật ký theo ngân sách truy cập Firestore Rules, đồng thời lưu audit snapshot Before/After cho từng batch.",
+      "Tăng thời gian chờ cho các lượt quét lớn và chỉ cho phép sửa tham chiếu nhật ký khi mã của chuẩn cha đã được xác minh hợp lệ."
+    ],
+    "fixes": [
+      "Sửa lỗi batch đồng bộ bị từ chối do các lượt tra cứu Security Rules trùng lặp trong cùng một ghi atomic.",
+      "Không còn phân loại nhầm thay đổi nhật ký là an toàn khi hồ sơ chuẩn cha đang thiếu hoặc có mã không hợp lệ."
+    ],
+    "releaseOrder": 26082600004
+  },
+  {
     "version": "v26.08.26-b03",
     "date": "26/8/2026",
     "title": "Xuất bản báo cáo PDF ổn định hơn khi thử lại",

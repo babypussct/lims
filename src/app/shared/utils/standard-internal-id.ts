@@ -27,10 +27,11 @@ export const INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH = 249;
 
 /**
  * Batched writes have a 20-document Security Rules access-call ceiling. Keep
- * four calls in reserve for shared auth/profile/role checks and model the
- * remaining cross-document lookups conservatively.
+ * the planner at six conservative dependency units: production accepts three
+ * nested-log repairs with their immutable audit write, while a fourth can
+ * cross the boundary before emulator caching is applied consistently.
  */
-export const INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST = 16;
+export const INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST = 6;
 
 export type StandardInternalIdAssessmentKind = 'VALID' | 'NORMALIZABLE' | 'MISSING' | 'INVALID_FORMAT';
 

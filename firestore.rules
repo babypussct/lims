@@ -15,16 +15,59 @@ service cloud.firestore {
       return value is string && (value == 'SDHET' || value.matches('^[ABC][A-Z0-9]{3}$'));
     }
 
+    // Keep one post-write lookup per referenced standard. Repeating the same
+    // getAfter() expression is not a safe way to rely on emulator caching in
+    // a large atomic batch.
+    function standardAfterHasInternalId(standardPath, expectedInternalId) {
+      let standardAfter = getAfter(standardPath).data;
+      return validInternalId(standardAfter.get('internal_id', '')) &&
+        expectedInternalId == standardAfter.get('internal_id', '');
+    }
+
+    function standardAfterOwnsActiveCode(standardPath, expectedCode) {
+      let standardAfter = getAfter(standardPath).data;
+      return standardAfter.get('internal_id', '') == expectedCode &&
+        standardAfter.get('lifecycle_status', 'ACTIVE') == 'ACTIVE';
+    }
+
+    function assignedRegistryAfterMatches(registryPath, expectedCode, expectedStandardId) {
+      let registryAfter = getAfter(registryPath).data;
+      return registryAfter.get('status', '') == 'ASSIGNED' &&
+        registryAfter.get('internal_id', '') == expectedCode &&
+        registryAfter.get('currentStandardId', '') == expectedStandardId;
+    }
+
+    function releasableRegistryAfterMatches(registryPath, expectedStandardId) {
+      let registryAfter = getAfter(registryPath).data;
+      return (
+        (registryAfter.get('status', '') == 'AVAILABLE' &&
+          registryAfter.get('lastReleasedStandardId', '') == expectedStandardId) ||
+        (registryAfter.get('status', '') == 'ASSIGNED' &&
+          registryAfter.get('currentStandardId', '') != expectedStandardId &&
+          registryAfter.get('lastReleasedStandardId', '') == expectedStandardId)
+      );
+    }
+
+    function releasedStandardAfterMatches(standardPath, expectedTime) {
+      let standardAfter = getAfter(standardPath).data;
+      return ['RELEASED', 'CLOSED'].hasAny([
+          standardAfter.get('lifecycle_status', 'ACTIVE')
+        ]) &&
+        standardAfter.get('internal_id_released_at', null) == expectedTime;
+    }
+
     function canRepairStandardRequestSnapshot(appId) {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       let stdId = request.resource.data.get('standardId', resource.data.get('standardId', ''));
       let standardPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(stdId);
-      return hasPermission(appId, 'standard_edit') &&
+      // getAfter() is intentionally the only parent lookup: a missing parent
+      // raises a rule-evaluation error and denies the write, while avoiding a
+      // duplicate access call in a multi-document repair batch.
+      return hasAuditedStandardEdit(appId) &&
         changed.hasOnly(['standardId', 'internalId', 'usageLogs', 'lastUpdated']) &&
         request.resource.data.lastUpdated == request.time &&
-        stdId is string && stdId.size() > 0 && exists(standardPath) &&
-        validInternalId(getAfter(standardPath).data.get('internal_id', '')) &&
-        request.resource.data.get('internalId', '') == getAfter(standardPath).data.get('internal_id', '') &&
+        stdId is string && stdId.size() > 0 &&
+        standardAfterHasInternalId(standardPath, request.resource.data.get('internalId', '')) &&
         (!('usageLogs' in request.resource.data) || request.resource.data.usageLogs is list);
     }
 
@@ -32,25 +75,22 @@ service cloud.firestore {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       let stdId = request.resource.data.get('standardId', resource.data.get('standardId', ''));
       let standardPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(stdId);
-      return hasPermission(appId, 'standard_edit') &&
+      return hasAuditedStandardEdit(appId) &&
         changed.hasOnly(['standardId', 'internalId', 'lastUpdated']) &&
         request.resource.data.lastUpdated == request.time &&
-        stdId is string && stdId.size() > 0 && exists(standardPath) &&
-        validInternalId(getAfter(standardPath).data.get('internal_id', '')) &&
-        request.resource.data.get('standardId', '') == stdId &&
-        request.resource.data.get('internalId', '') == getAfter(standardPath).data.get('internal_id', '');
+        stdId is string && stdId.size() > 0 &&
+        standardAfterHasInternalId(standardPath, request.resource.data.get('internalId', '')) &&
+        request.resource.data.get('standardId', '') == stdId;
     }
 
     function canRepairNestedStandardUsageSnapshot(appId, stdId) {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       let standardPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(stdId);
-      return hasPermission(appId, 'standard_edit') &&
+      return hasAuditedStandardEdit(appId) &&
         changed.hasOnly(['standardId', 'internalId', 'lastUpdated']) &&
         request.resource.data.lastUpdated == request.time &&
-        exists(standardPath) &&
-        validInternalId(getAfter(standardPath).data.get('internal_id', '')) &&
         request.resource.data.get('standardId', stdId) == stdId &&
-        request.resource.data.get('internalId', '') == getAfter(standardPath).data.get('internal_id', '');
+        standardAfterHasInternalId(standardPath, request.resource.data.get('internalId', ''));
     }
 
     // 2. Kiem tra tai lieu User Profile co ton tai khong
@@ -127,6 +167,14 @@ service cloud.firestore {
     // 6. Kiem tra User co mot quyen cu the nao do khong (Tuyet doi khong gay crash neu user profile chua ton tai)
     function hasPermission(appId, permission) {
       return userExists(appId) && evaluateUserPermission(appId, getUserProfile(appId), permission);
+    }
+
+    // Audited standard synchronization is already restricted to the
+    // standard_edit capability. A direct profile read is sufficient here:
+    // get() fails closed when the profile is missing and saves one document
+    // access call per atomic batch compared with exists()+get().
+    function hasAuditedStandardEdit(appId) {
+      return isSignedIn() && evaluateUserPermission(appId, getUserProfile(appId), 'standard_edit');
     }
 
     // Operational data must follow the same active-role boundary as the client.
@@ -855,17 +903,11 @@ service cloud.firestore {
         let remainsCurrent = request.resource.data.get('_isDeleted', false) != true &&
           request.resource.data.get('status', '') != 'DELETED' &&
           request.resource.data.get('lifecycle_status', 'ACTIVE') == 'ACTIVE';
-        return hasPermission(appId, 'standard_edit') &&
+        return !validInternalId(resource.data.get('internal_id', '')) && hasAuditedStandardEdit(appId) &&
           changed.hasOnly(['internal_id', 'search_key', 'lastUpdated']) &&
-          !validInternalId(resource.data.get('internal_id', '')) &&
           validInternalId(code) &&
           request.resource.data.lastUpdated == request.time &&
-          (!remainsCurrent || (
-            existsAfter(registryPath) &&
-            getAfter(registryPath).data.get('status', '') == 'ASSIGNED' &&
-            getAfter(registryPath).data.get('internal_id', '') == code &&
-            getAfter(registryPath).data.get('currentStandardId', '') == stdId
-          ));
+          (!remainsCurrent || assignedRegistryAfterMatches(registryPath, code, stdId));
       }
 
       function noOpenStandardWorkflow(data) {
@@ -880,7 +922,7 @@ service cloud.firestore {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
         let code = resource.data.get('internal_id', '');
         let registryPath = /databases/$(database)/documents/artifacts/$(appId)/standard_code_registry/$(code);
-        return hasPermission(appId, 'standard_edit') &&
+        return hasAuditedStandardEdit(appId) &&
           changed.hasOnly([
             'lifecycle_status', 'internal_id_released_at',
             'internal_id_release_reason', 'lastUpdated'
@@ -889,14 +931,7 @@ service cloud.firestore {
           request.resource.data.get('lifecycle_status', '') == 'RELEASED' &&
           noOpenStandardWorkflow(request.resource.data) &&
           request.resource.data.lastUpdated == request.time &&
-          existsAfter(registryPath) &&
-          (
-            (getAfter(registryPath).data.get('status', '') == 'AVAILABLE' &&
-              getAfter(registryPath).data.get('lastReleasedStandardId', '') == stdId) ||
-            (getAfter(registryPath).data.get('status', '') == 'ASSIGNED' &&
-              getAfter(registryPath).data.get('currentStandardId', '') != stdId &&
-              getAfter(registryPath).data.get('lastReleasedStandardId', '') == stdId)
-          );
+          releasableRegistryAfterMatches(registryPath, stdId);
       }
 
       function canUpdateReferenceStandard(appId) {
@@ -950,47 +985,47 @@ service cloud.firestore {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
         let migratedTo = request.resource.data.get('migratedTo', '');
         let canonicalPath = /databases/$(database)/documents/artifacts/$(appId)/standard_code_registry/$(migratedTo);
-        return hasPermission(appId, 'standard_edit') &&
-          !validInternalId(code) &&
+        return !validInternalId(code) && hasAuditedStandardEdit(appId) &&
           changed.hasOnly(['migrationStatus', 'migratedTo', 'migratedAt', 'lastUpdated']) &&
           request.resource.data.get('migrationStatus', '') == 'MIGRATED' &&
           validInternalId(migratedTo) &&
           request.resource.data.migratedAt == request.time &&
           request.resource.data.lastUpdated == request.time &&
-          existsAfter(canonicalPath) &&
-          getAfter(canonicalPath).data.get('id', '') == migratedTo &&
-          getAfter(canonicalPath).data.get('internal_id', '') == migratedTo;
+          canonicalRegistryAfterMatches(canonicalPath, migratedTo);
+      }
+
+      function canonicalRegistryAfterMatches(registryPath, expectedCode) {
+        let registryAfter = getAfter(registryPath).data;
+        return registryAfter.get('id', '') == expectedCode &&
+          registryAfter.get('internal_id', '') == expectedCode;
       }
 
       function validRegistryHolder(appId) {
         let holderId = request.resource.data.get('currentStandardId', '');
         let holderPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(holderId);
+        // As above, getAfter() fails closed for a missing holder and costs one
+        // access call instead of an existsAfter()+getAfter() pair.
         return holderId is string && holderId.size() > 0 &&
-          existsAfter(holderPath) &&
-          getAfter(holderPath).data.get('internal_id', '') == code &&
-          getAfter(holderPath).data.get('lifecycle_status', 'ACTIVE') == 'ACTIVE';
+          standardAfterOwnsActiveCode(holderPath, code);
       }
 
       function canReuseAssignedRegistrySlot(appId) {
-        let registryPath = /databases/$(database)/documents/artifacts/$(appId)/standard_code_registry/$(code);
-        let previousHolderId = exists(registryPath) ? resource.data.get('currentStandardId', '') : '';
+        let previousHolderId = resource.data.get('currentStandardId', '');
         let previousHolderPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(previousHolderId);
-        return !exists(registryPath) ||
-          resource.data.get('status', '') != 'ASSIGNED' ||
+        // This helper is used only by the update branch. An update already
+        // proves that the registry document exists, so no self-exists lookup
+        // is needed here. The create branch has no prior slot to reuse.
+        return resource.data.get('status', '') != 'ASSIGNED' ||
           request.resource.data.get('status', '') != 'ASSIGNED' ||
           previousHolderId == request.resource.data.get('currentStandardId', '') ||
           (
             previousHolderId is string && previousHolderId.size() > 0 &&
-            existsAfter(previousHolderPath) &&
-            ['RELEASED', 'CLOSED'].hasAny([
-              getAfter(previousHolderPath).data.get('lifecycle_status', 'ACTIVE')
-            ]) &&
-            getAfter(previousHolderPath).data.get('internal_id_released_at', null) == request.time
+            releasedStandardAfterMatches(previousHolderPath, request.time)
           );
       }
 
       allow read: if hasPermission(appId, 'standard_view') || hasPermission(appId, 'standard_edit');
-      allow create: if hasPermission(appId, 'standard_edit') &&
+      allow create: if hasAuditedStandardEdit(appId) &&
         validInternalId(code) &&
         request.resource.data.keys().hasOnly([
           'id', 'internal_id', 'status', 'currentStandardId', 'assignmentCount',
@@ -1002,13 +1037,12 @@ service cloud.firestore {
         request.resource.data.get('assignmentCount', 0) is number &&
         request.resource.data.get('assignmentCount', 0) >= 0 &&
         request.resource.data.lastUpdated == request.time &&
-        canReuseAssignedRegistrySlot(appId) &&
         (
           request.resource.data.get('status', '') != 'ASSIGNED' ||
           validRegistryHolder(appId)
         );
       allow update: if canMarkLegacyRegistryMigrated(appId) || (
-        hasPermission(appId, 'standard_edit') &&
+        hasAuditedStandardEdit(appId) &&
         validInternalId(code) &&
         request.resource.data.keys().hasOnly([
           'id', 'internal_id', 'status', 'currentStandardId', 'assignmentCount',
@@ -1032,7 +1066,7 @@ service cloud.firestore {
     // Immutable audit record for a legacy-code synchronization batch.
     match /artifacts/{appId}/standard_code_sync_batches/{batchId} {
       allow read: if hasPermission(appId, 'standard_edit');
-      allow create: if hasPermission(appId, 'standard_edit') &&
+      allow create: if hasAuditedStandardEdit(appId) &&
         request.resource.data.status == 'APPLIED' &&
         request.resource.data.createdBy == request.auth.uid &&
         request.resource.data.createdAt == request.time &&
