@@ -6,10 +6,10 @@
   "framework": "angular",
   "functions": {
     "api/backup/create.ts": {
-      "includeFiles": ["gas/**", ".clasp.json"]
+      "includeFiles": "{gas/**,.clasp.json}"
     },
     "api/backup/status.ts": {
-      "includeFiles": ["gas/**", ".clasp.json"]
+      "includeFiles": "{gas/**,.clasp.json}"
     }
   },
   "crons": [
