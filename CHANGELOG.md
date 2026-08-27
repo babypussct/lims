@@ -2,7 +2,35 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.28-b01
+## Phiên bản hiện tại: v26.08.28-b02
+
+### v26.08.28-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.
+- Mỗi backup được kiểm tra đọc ngược, checksum, cấu trúc catalog và quyền truy cập trước khi được công nhận hoàn tất; không sử dụng Firestore managed export cần gói thanh toán.
+- Có dry-run, khôi phục an toàn phần còn thiếu, restore chọn lọc, full replace có xác nhận riêng và checkpoint mã hóa để tiếp tục khi restore bị gián đoạn.
+
+#### ✨ Tính Năng Mới
+
+- Thu thập đệ quy toàn bộ catalog Firestore hiện tại, các subcollection/collection group, hồ sơ người dùng và đối soát UID giữa Auth với hồ sơ Firestore.
+- Quét cây Drive nguồn, các ID tệp được tham chiếu trong dữ liệu, toàn bộ template cấu hình và native copy cho tệp Workspace để phục hồi tốt hơn.
+- Chụp source/config Apps Script trong repository và kiểm chứng thêm project, content, deployments đang sống qua Apps Script API với quyền chỉ đọc.
+- Thêm màn hình quản trị, quyền BACKUP_CREATE/BACKUP_VERIFY/BACKUP_RESTORE, audit log token-free và hướng dẫn cấu hình OAuth/quota/restore.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung guard dung lượng Drive trước và sau backup, giới hạn đọc/ghi Firestore, manifest minh bạch về consistency boundary và cảnh báo khi dữ liệu nguồn có vấn đề.
+- Khôi phục Drive theo quan hệ parent trước, tự remap link Firestore khi tệp bị tạo lại bằng ID mới, đồng thời bảo vệ thay đổi nghiệp vụ hiện có trong RECOVER_MISSING.
+- Loại bỏ đường export/import JSON cũ có nguy cơ khôi phục không an toàn; mọi thao tác restore mới đều đi qua kiểm tra integrity và xác thực quyền quản trị.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không còn coi backup chỉ gồm hai collection sops và inventory là backup toàn hệ thống.
+- Sửa các trường hợp restore batch/JSON cũ có thể gây lỗi hoặc ghi đè không kiểm soát; bổ sung kiểm tra kiểu dữ liệu Firestore, catalog và Drive ACL.
+- Ngăn việc công nhận backup hoàn tất nếu thiếu live Apps Script snapshot, thiếu payload/tệp, checksum sai, quyền chia sẻ không an toàn hoặc không đọc lại được manifest.
+- Sửa cấu hình đóng gói function Vercel để deployment production có thể trace source Apps Script và khởi chạy đúng schema.
 
 ### v26.08.28-b01
 

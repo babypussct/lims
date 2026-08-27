@@ -19,6 +19,7 @@
   "fixes": [
     "Không còn coi backup chỉ gồm hai collection sops và inventory là backup toàn hệ thống.",
     "Sửa các trường hợp restore batch/JSON cũ có thể gây lỗi hoặc ghi đè không kiểm soát; bổ sung kiểm tra kiểu dữ liệu Firestore, catalog và Drive ACL.",
-    "Ngăn việc công nhận backup hoàn tất nếu thiếu live Apps Script snapshot, thiếu payload/tệp, checksum sai, quyền chia sẻ không an toàn hoặc không đọc lại được manifest."
+    "Ngăn việc công nhận backup hoàn tất nếu thiếu live Apps Script snapshot, thiếu payload/tệp, checksum sai, quyền chia sẻ không an toàn hoặc không đọc lại được manifest.",
+    "Sửa cấu hình đóng gói function Vercel để deployment production có thể trace source Apps Script và khởi chạy đúng schema."
   ]
 }
