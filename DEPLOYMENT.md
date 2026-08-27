@@ -43,6 +43,31 @@ Không deploy production trực tiếp từ working tree chưa commit hoặc com
 
 Project Vercel duy nhất của ứng dụng là `nafiqpm6`, dùng Git Integration để build `main` và Deployment Checks để chặn promotion trước CI. `npm run deploy:prod` được giữ lại như lệnh fallback/manual khi có yêu cầu break-glass rõ ràng; thao tác này vẫn phải qua `release:predeploy`, kiểm tra release metadata của commit cuối và phải được ghi nhận bằng SHA/deployment ID.
 
+## Chính sách lưu giữ thông báo
+
+Notification inbox chỉ lưu dữ liệu trong 7 ngày kể từ `createdAt`. Cleanup chính
+được thực hiện bởi Vercel Cron gọi `/api/notifications-retention` mỗi ngày lúc
+18:15 UTC (01:15 giờ Việt Nam; tài khoản Vercel Hobby có thể chạy trong phạm vi
+giờ đã cấu hình). Endpoint xác thực bằng `CRON_SECRET`, lấy app ID từ `APP_ID`
+hoặc `LIMS_APP_ID`, rồi xóa theo query `createdAt < cutoff`.
+
+Để cron hoạt động trên production, Vercel project phải có các biến môi trường:
+
+- `FIREBASE_SERVICE_ACCOUNT`: service account hiện đang dùng cho các API Admin.
+- `APP_ID`: `lims-cloud-fixed` (đã có trong cấu hình triển khai hiện tại).
+- `CRON_SECRET`: chuỗi bí mật riêng, tối thiểu 16 ký tự; không commit vào repo,
+  không đưa vào release notes và không ghi vào log.
+
+Cleanup chia batch 400 document và giới hạn 2.000 document mỗi lần chạy để giữ
+dư địa cho quota Spark. Nếu response/log trả `quotaCapped: true`, cron sẽ tiếp
+tục xử lý phần còn lại ở lần chạy kế tiếp; cần kiểm tra lưu lượng nếu tình trạng
+này lặp lại.
+
+Không dùng Firestore TTL hoặc Firebase Cloud Functions cho chính sách này vì đây
+là các capability cần cân nhắc ngoài phạm vi Spark. Không áp dụng retention này
+cho Activity/audit logs (`artifacts/{appId}/logs`) hoặc
+`user_preferences.lastActivitySeenAt`; đó là các dữ liệu có vòng đời độc lập.
+
 `npm run release:discipline` so sánh phạm vi thay đổi với base Git. Nếu code ứng dụng, API, GAS, Firestore hoặc cấu hình production thay đổi mà version/release notes không đổi, gate sẽ fail. Commit chỉ thay đổi docs, workflow hoặc test không cần phát sinh version; `scripts/vercel-ignore-build.js` sẽ bỏ qua Vercel build cho các commit đó.
 
 Nếu chỉ chuẩn hóa template hoặc bảo trì lịch sử cũ mà không phát hành code mới, không phát sinh version mới; dùng `npm run sync-release-history` rồi `node scripts/build-changelog-md.js` để tái tạo dữ liệu và Markdown.

@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.27-b02
+## Phiên bản hiện tại: v26.08.27-b03
+
+### v26.08.27-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mục “Mới kể từ lần truy cập trước” trên Dashboard được ghi nhận theo từng lần mở lại, phản ánh đúng các hoạt động phát sinh sau lần xem gần nhất.
+- Hộp thông báo áp dụng vòng đời 7 ngày và tự dọn hằng ngày, giảm dữ liệu dư thừa nhưng không ảnh hưởng nhật ký nghiệp vụ.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung cleanup backend có xác thực CRON_SECRET, xử lý theo batch 400 bản ghi và giới hạn 2.000 bản ghi mỗi lần chạy để phù hợp quota Spark.
+- Giữ Activity Feed, audit log và mốc lần xem cuối độc lập với retention của hộp thông báo.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Ẩn ngay thông báo quá hạn khỏi giao diện và badge, đồng thời dọn bù an toàn các bản ghi cũ đã được listener tải về trước lịch chạy nền.
+- Dùng một cơ chế khởi tạo Firebase Admin dùng chung cho API thông báo và tác vụ dọn định kỳ, giảm cấu hình trùng lặp.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi Dashboard đánh dấu trạng thái đã xem ở phạm vi dùng chung, khiến lần truy cập sau không hiển thị đúng hoạt động mới.
+- Sửa lỗi thông báo cũ hơn thời hạn vẫn có thể xuất hiện trong danh sách hoặc số đếm chưa đọc.
+- Bổ sung kiểm tra không xóa các bản ghi thông báo thiếu hoặc có timestamp không hợp lệ để tránh dọn nhầm dữ liệu.
 
 ### v26.08.27-b02
 

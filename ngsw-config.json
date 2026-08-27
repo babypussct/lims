@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.27-b02",
-    "title": "Báo cáo quản trị hiển thị đầy đủ nhật ký và số liệu kho lịch sử",
+    "version": "v26.08.27-b03",
+    "title": "Dashboard cập nhật đúng theo từng lần truy cập và hộp thông báo gọn nhẹ",
     "features": [
-      "Nhật ký hoạt động không còn bị ẩn chỉ vì một số phiếu lịch sử thiếu dữ liệu phục vụ riêng cho báo cáo kho.",
-      "Báo cáo nhập - xuất - tồn khôi phục được các biến động lịch sử khi phiếu gốc vẫn còn thông tin đầy đủ.",
-      "Bổ sung khả năng đối chiếu phiếu gốc và lịch sử chỉnh sửa để tính lại số liệu kho trong các kỳ báo cáo cũ.",
-      "Giữ nguyên trạng thái cảnh báo đối với những biến động không đủ căn cứ xác minh, tránh hiển thị số liệu phỏng đoán.",
-      "Tách điều kiện đầy đủ dữ liệu của Nhật ký hoạt động khỏi điều kiện tái dựng báo cáo nhập - xuất - tồn."
+      "Mục “Mới kể từ lần truy cập trước” trên Dashboard được ghi nhận theo từng lần mở lại, phản ánh đúng các hoạt động phát sinh sau lần xem gần nhất.",
+      "Hộp thông báo áp dụng vòng đời 7 ngày và tự dọn hằng ngày, giảm dữ liệu dư thừa nhưng không ảnh hưởng nhật ký nghiệp vụ.",
+      "Bổ sung cleanup backend có xác thực CRON_SECRET, xử lý theo batch 400 bản ghi và giới hạn 2.000 bản ghi mỗi lần chạy để phù hợp quota Spark.",
+      "Giữ Activity Feed, audit log và mốc lần xem cuối độc lập với retention của hộp thông báo.",
+      "Ẩn ngay thông báo quá hạn khỏi giao diện và badge, đồng thời dọn bù an toàn các bản ghi cũ đã được listener tải về trước lịch chạy nền."
     ]
   },
   "assetGroups": [

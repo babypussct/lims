@@ -10,8 +10,11 @@ import { AppNotification, NotificationLevel } from '../models/notification.model
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
 import { syncAppBadge } from './notification-badge';
 
-// Notifications older than 15 days are auto-cleaned up on listener start
-const CLEANUP_AGE_MS = 15 * 24 * 60 * 60 * 1000;
+// The backend cron is the authoritative cleanup. The client keeps the same
+// window as a fast UI guard and a best-effort fallback for already-visible
+// documents when a user opens the app before the daily cron runs.
+const NOTIFICATION_RETENTION_DAYS = 7;
+const CLEANUP_AGE_MS = NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 // Inbox realtime chỉ cần một cửa sổ hữu hạn. Các thông báo cũ hơn vẫn được
 // dọn nền theo retention policy, nhưng không được phép làm listener login đọc
 // vô hạn nếu dữ liệu cũ còn tồn tại.
@@ -121,8 +124,12 @@ export class NotificationService {
                 { phase: isFirstSnapshot ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
             );
             isFirstSnapshot = false;
-            const items: AppNotification[] = [];
-            snapshot.forEach(d => items.push({ ...d.data(), id: d.id } as AppNotification));
+            const rawItems: AppNotification[] = [];
+            snapshot.forEach(d => rawItems.push({ ...d.data(), id: d.id } as AppNotification));
+
+            const now = Date.now();
+            const staleItems = rawItems.filter(n => n.id && this.isExpired(n.createdAt, now));
+            const items = rawItems.filter(n => !this.isExpired(n.createdAt, now));
 
             // Sort newest first
             items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -136,8 +143,9 @@ export class NotificationService {
             // Render items up to the current displayLimit
             this.notifications.set(items.slice(0, this.displayLimit()));
 
-            // Trigger 90-day cleanup in background (fire-and-forget)
-            this._cleanupOldNotifications(items);
+            // Backend cleanup is authoritative; remove any stale documents
+            // already returned by this listener as a low-cost fallback.
+            this._cleanupOldNotifications(staleItems);
 
         }, (error) => {
             console.error('[NotificationService] Listener error:', error.message);
@@ -309,14 +317,11 @@ export class NotificationService {
         });
     }
 
-    // ── Auto-cleanup: delete notifications older than 90 days ────────────────
+    // ── Best-effort client cleanup; backend cron is authoritative ────────────
     private _isCleaningUp = false;
 
-    private async _cleanupOldNotifications(allItems: AppNotification[]) {
+    private async _cleanupOldNotifications(stale: AppNotification[]) {
         if (this._isCleaningUp) return;
-
-        const cutoff = Date.now() - CLEANUP_AGE_MS;
-        const stale = allItems.filter(n => n.id && (n.createdAt || 0) < cutoff);
         if (stale.length === 0) return;
 
         this._isCleaningUp = true;
@@ -327,12 +332,18 @@ export class NotificationService {
                 batch.delete(docRef);
             });
             await batch.commit();
-            console.log(`[NotificationService] Auto-cleaned ${stale.length} notifications older than 15 days.`);
+            console.log(`[NotificationService] Best-effort cleaned ${stale.length} notifications older than ${NOTIFICATION_RETENTION_DAYS} days.`);
         } catch (e) {
             console.warn('[NotificationService] Cleanup failed (non-critical):', e);
         } finally {
             this._isCleaningUp = false;
         }
+    }
+
+    private isExpired(createdAt: unknown, now: number): boolean {
+        return typeof createdAt === 'number'
+            && Number.isFinite(createdAt)
+            && createdAt < now - CLEANUP_AGE_MS;
     }
 
     private parseLevel(value: unknown): NotificationLevel {

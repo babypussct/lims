@@ -4,6 +4,12 @@
   "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "outputDirectory": "dist/lims-cloud-pro/browser",
   "framework": "angular",
+  "crons": [
+    {
+      "path": "/api/notifications-retention",
+      "schedule": "15 18 * * *"
+    }
+  ],
   "alias": [
     "nafiqpm6.vercel.app",
     "nafiqpm6-babypusscts-projects.vercel.app",

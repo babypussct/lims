@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import {
   CollectionReference,
@@ -8,6 +7,7 @@ import {
   getFirestore
 } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { initializeFirebaseAdminIfNeeded } from './_lib/firebase-admin.js';
 import { notificationDocumentId, shouldClaimNotificationPush, uniqueStringValues } from './_lib/notification-utils.js';
 import {
   actorMayDispatchContract,
@@ -33,38 +33,6 @@ const NOTIFICATION_TYPES = new Set([
 const USER_INITIATED_ADMIN_EVENTS = new Set([
   'COA_REQUEST', 'BORROW_REQUEST'
 ]);
-
-function initializeFirebaseAdminIfNeeded(): void {
-  if (getApps().length) return;
-
-  // The emulator harness intentionally has no service-account key. Firebase
-  // Admin still needs a project id to route Firestore/Auth calls, while the
-  // emulator endpoints provide the local transport and token verification.
-  if (process.env['FIRESTORE_EMULATOR_HOST'] || process.env['FIREBASE_AUTH_EMULATOR_HOST']) {
-    initializeApp({
-      projectId: process.env['GCLOUD_PROJECT'] || 'demo-lims-notification'
-    });
-    return;
-  }
-
-  const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
-  if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
-
-  let serviceAccount: any;
-  try {
-    serviceAccount = typeof serviceAccountJson === 'string'
-      ? JSON.parse(serviceAccountJson)
-      : serviceAccountJson;
-  } catch (e: any) {
-    throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
-  }
-
-  if (serviceAccount && typeof serviceAccount.private_key === 'string') {
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-  }
-
-  initializeApp({ credential: cert(serviceAccount) });
-}
 
 function chunks<T>(items: T[] | null | undefined, size: number): T[][] {
   if (!items || !items.length) return [];

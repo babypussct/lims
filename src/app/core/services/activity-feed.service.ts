@@ -43,8 +43,6 @@ export class ActivityFeedService {
   readonly lastActivitySeenAt = signal<unknown | null>(null);
   readonly denied = computed(() => this.status() === 'denied');
   readonly hasFeedAccess = computed(() => this.allowedAudiences().length > 0 && !this.denied());
-  private recordedViewScope: string | null = null;
-
   constructor() {
     effect(() => {
       const enabled = this.enabled();
@@ -55,21 +53,29 @@ export class ActivityFeedService {
   }
 
   setEnabled(enabled: boolean): void {
+    // Invalidate listeners and in-flight last-seen reads synchronously when
+    // the Dashboard is torn down. Angular effects are scheduled, so waiting
+    // for reconcileScope() here would let a fast route change reuse the old
+    // view session.
+    if (!enabled && this.enabled()) {
+      this.stopListenersAndClear();
+      this.status.set('disabled');
+    }
     this.enabled.set(enabled);
   }
 
   /**
-   * Records one Activity-view session per resolved user/audience scope. The
-   * previously persisted marker remains exposed for the whole session so the
-   * Dashboard can render a stable "new since last visit" divider.
+   * Records the previous marker and starts a new Activity-view session.
+   * Dashboard calls this once after the feed panel is actually visible; the
+   * caller owns the per-component visit guard so returning to Dashboard in
+   * the same app session still creates a new visit.
    */
   async recordDashboardView(): Promise<void> {
     const uid = this.auth.currentUser()?.uid;
     const scope = this.scopeKey();
-    if (!uid || !scope || this.status() !== 'ready' || this.recordedViewScope === scope) return;
+    if (!uid || !scope || this.status() !== 'ready') return;
 
     const generation = this.generation;
-    this.recordedViewScope = scope;
     const path = `artifacts/${this.fb.APP_ID}/user_preferences/${uid}`;
     const preferenceRef = doc(this.fb.db, path);
     try {
@@ -80,7 +86,6 @@ export class ActivityFeedService {
       await setDoc(preferenceRef, { lastActivitySeenAt: serverTimestamp() }, { merge: true });
     } catch (error) {
       if (generation !== this.generation || scope !== this.scopeKey()) return;
-      this.recordedViewScope = null;
       console.warn('Activity Feed last-seen preference error:', error);
     }
   }
@@ -100,7 +105,6 @@ export class ActivityFeedService {
     this.scopeKey.set(nextScope);
     this.errorMessage.set(null);
     this.lastActivitySeenAt.set(null);
-    this.recordedViewScope = null;
 
     if (!enabled) {
       this.status.set('disabled');
@@ -176,6 +180,5 @@ export class ActivityFeedService {
     this.audienceSnapshots.clear();
     this.events.set([]);
     this.lastActivitySeenAt.set(null);
-    this.recordedViewScope = null;
   }
 }

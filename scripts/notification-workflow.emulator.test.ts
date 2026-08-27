@@ -3,6 +3,7 @@ import test from 'node:test';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, type DocumentData } from 'firebase-admin/firestore';
 import handler from '../api/notifications.ts';
+import retentionHandler from '../api/notifications-retention.ts';
 
 const APP_ID = 'lims-notification-workflow-fixture';
 const PROJECT_ID = process.env['GCLOUD_PROJECT'] || 'demo-lims-notification';
@@ -62,6 +63,29 @@ const invoke = async (
     end: () => res
   } as any;
   await handler(req, res);
+  return { statusCode, body: responseBody };
+};
+
+const invokeRetention = async (authorization: string): Promise<ResponseShape> => {
+  let statusCode = 200;
+  let responseBody: Record<string, unknown> | undefined;
+  const req = {
+    method: 'GET',
+    headers: { authorization }
+  } as any;
+  const res = {
+    setHeader: () => undefined,
+    status: (status: number) => {
+      statusCode = status;
+      return res;
+    },
+    json: (bodyValue: Record<string, unknown>) => {
+      responseBody = bodyValue;
+      return res;
+    },
+    end: () => res
+  } as any;
+  await retentionHandler(req, res);
   return { statusCode, body: responseBody };
 };
 
@@ -223,4 +247,37 @@ test('notification workflow fan-out, recipient policy, suppression and idempoten
   assert.equal(publishDoc?.['activityAction'], 'PUBLISH_RESULT_REPORT');
   assert.equal(publishDoc?.['actionUrl'], '/results/result-1');
   assert.equal(publishDoc?.['pushStatus'], 'no_token');
+
+  const now = Date.now();
+  await db.doc(`artifacts/${APP_ID}/notifications/retention-old`).set({
+    recipientUid: manager.uid,
+    type: 'SYSTEM_INFO',
+    title: 'Old notification',
+    message: 'Should be removed by retention cleanup',
+    isRead: false,
+    createdAt: now - 8 * 24 * 60 * 60 * 1000
+  });
+  await db.doc(`artifacts/${APP_ID}/notifications/retention-recent`).set({
+    recipientUid: manager.uid,
+    type: 'SYSTEM_INFO',
+    title: 'Recent notification',
+    message: 'Should remain inside retention window',
+    isRead: false,
+    createdAt: now - 6 * 24 * 60 * 60 * 1000
+  });
+
+  process.env['LIMS_APP_ID'] = APP_ID;
+  process.env['CRON_SECRET'] = 'fixture-cron-secret';
+  const unauthorizedCleanup = await invokeRetention('Bearer wrong-secret');
+  assert.equal(unauthorizedCleanup.statusCode, 401);
+
+  const cleanup = await invokeRetention('Bearer fixture-cron-secret');
+  assert.equal(cleanup.statusCode, 200);
+  assert.equal(cleanup.body?.['retentionDays'], 7);
+  assert.equal(cleanup.body?.['deletedCount'], 1);
+  assert.equal(cleanup.body?.['quotaCapped'], false);
+
+  const remainingIds = (await notificationDocs()).map(doc => doc['id']);
+  assert.equal(remainingIds.includes('retention-old'), false);
+  assert.equal(remainingIds.includes('retention-recent'), true);
 });

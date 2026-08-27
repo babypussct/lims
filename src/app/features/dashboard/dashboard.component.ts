@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms'; 
@@ -60,7 +60,7 @@ import { ChangelogService } from '../../core/services/changelog.service';
   templateUrl: './dashboard.component.html',
   styles: []
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   state = inject(StateService);
   invService = inject(InventoryService); 
   stdService = inject(StandardService);
@@ -404,6 +404,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   today = new Date();
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
   doughnutChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('doughnutChart');
+  activityFeedPanel = viewChild<ElementRef<HTMLElement>>('activityFeedPanel');
   chartInstance: any = null;
   doughnutChartInstance: any = null;
   
@@ -411,6 +412,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private _lastDarkMode: boolean | null = null;
   private chartLoader?: Promise<any>;
   private _allStatsLoaded = false;
+  private activityFeedViewVisible = signal(false);
+  private activityFeedViewRecorded = false;
+  private activityFeedVisibilityObserver?: IntersectionObserver;
 
   constructor() {
       this.scheduleTodayRollover();
@@ -501,7 +505,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
       effect(() => {
-          if (!this.activityFeedV2Enabled() || this.activityFeed.status() !== 'ready') return;
+          const enabled = this.activityFeedV2Enabled();
+          if (!enabled) {
+              this.activityFeedViewRecorded = false;
+              return;
+          }
+          if (!this.activityFeedViewVisible()
+              || this.activityFeed.status() !== 'ready'
+              || this.activityFeedViewRecorded) return;
+          this.activityFeedViewRecorded = true;
           void this.activityFeed.recordDashboardView();
       });
   }
@@ -525,6 +537,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.isLoading.set(false);
   }
 
+  ngAfterViewInit(): void {
+      const panel = this.activityFeedPanel()?.nativeElement;
+      if (!panel || typeof IntersectionObserver !== 'function') {
+          // Older embedded browsers do not expose IntersectionObserver. The
+          // panel is rendered in the current view, so use the safe fallback.
+          this.activityFeedViewVisible.set(true);
+          return;
+      }
+
+      this.activityFeedVisibilityObserver = new IntersectionObserver(entries => {
+          if (!entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.25)) return;
+          this.activityFeedViewVisible.set(true);
+          this.activityFeedVisibilityObserver?.disconnect();
+          this.activityFeedVisibilityObserver = undefined;
+      }, { threshold: [0.25] });
+      this.activityFeedVisibilityObserver.observe(panel);
+  }
+
 
 
   getAvatar(name: string | undefined | null): string {
@@ -540,6 +570,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+      this.activityFeedVisibilityObserver?.disconnect();
+      this.activityFeedVisibilityObserver = undefined;
       this.activityFeed.setEnabled(false);
       if (this._chartDebounceTimer) clearTimeout(this._chartDebounceTimer);
       if (this._todayRolloverTimer) clearTimeout(this._todayRolloverTimer);

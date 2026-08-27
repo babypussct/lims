@@ -46,3 +46,25 @@ test('Dashboard V2 uses structured feed service, primary module filters and no d
   assert.match(template, /aria-label="Tìm kiếm hoạt động"/);
   assert.match(template, /aria-pressed/);
 });
+
+test('Dashboard records last-seen only after the Activity panel is visible for the current visit', () => {
+  const component = readFileSync('src/app/features/dashboard/dashboard.component.ts', 'utf8');
+  const template = readFileSync('src/app/features/dashboard/dashboard.component.html', 'utf8');
+
+  assert.match(component, /AfterViewInit/);
+  assert.match(component, /activityFeedViewVisible = signal\(false\)/);
+  assert.match(component, /activityFeedViewRecorded = false/);
+  assert.match(component, /IntersectionObserver/);
+  assert.match(component, /!this\.activityFeedViewVisible\(\)/);
+  assert.match(component, /this\.activityFeedViewRecorded = true/);
+  assert.match(component, /this\.activityFeedVisibilityObserver\?\.disconnect\(\)/);
+  assert.match(template, /#activityFeedPanel/);
+});
+
+test('Activity Feed invalidates a torn-down Dashboard view synchronously', () => {
+  const service = readFileSync('src/app/core/services/activity-feed.service.ts', 'utf8');
+
+  assert.match(service, /if \(!enabled && this\.enabled\(\)\)/);
+  assert.match(service, /this\.stopListenersAndClear\(\);\s*this\.status\.set\('disabled'\);/);
+  assert.doesNotMatch(service, /recordedViewScope/);
+});
