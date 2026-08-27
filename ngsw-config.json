@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.26-b04",
-    "title": "Đồng bộ mã nội bộ chất chuẩn an toàn và đầy đủ hơn",
+    "version": "v26.08.27-b01",
+    "title": "Báo cáo đầy đủ, chính xác và có kiểm soát phát hành chặt chẽ hơn",
     "features": [
-      "Đồng bộ mã nội bộ chất chuẩn theo từng batch an toàn, có quét lại trước và sau khi ghi để bảo vệ dữ liệu nghiệp vụ.",
-      "Tự chia nhỏ các thay đổi liên quan đến registry, yêu cầu và nhật ký theo ngân sách truy cập Firestore Rules, đồng thời lưu audit snapshot Before/After cho từng batch.",
-      "Tăng thời gian chờ cho các lượt quét lớn và chỉ cho phép sửa tham chiếu nhật ký khi mã của chuẩn cha đã được xác minh hợp lệ.",
-      "Sửa lỗi batch đồng bộ bị từ chối do các lượt tra cứu Security Rules trùng lặp trong cùng một ghi atomic.",
-      "Không còn phân loại nhầm thay đổi nhật ký là an toàn khi hồ sơ chuẩn cha đang thiếu hoặc có mã không hợp lệ."
+      "Báo cáo thống kê tải đầy đủ dữ liệu lịch sử theo từng trang và chỉ kết luận khi đã xác minh nguồn dữ liệu hoàn tất.",
+      "Production chỉ được gán domain sau khi Release Gate thành công, đồng thời tự chặn thay đổi ứng dụng không có version và changelog mới.",
+      "Bổ sung bộ kiểm tra release discipline cho code, API, GAS, Firestore và cấu hình production trước khi push hoặc promote deployment.",
+      "Bổ sung dữ liệu biến động tồn kho trong lịch sử audit để báo cáo có thể tái dựng nhập, xuất và hoàn trả theo thời gian.",
+      "Phân trang toàn bộ yêu cầu chất chuẩn, chuẩn đối chiếu và yêu cầu đã duyệt thay vì dùng cache hoặc giới hạn bản ghi gần nhất cho báo cáo."
     ]
   },
   "assetGroups": [

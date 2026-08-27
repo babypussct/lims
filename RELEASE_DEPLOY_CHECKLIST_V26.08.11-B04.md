@@ -1,5 +1,7 @@
 # Checklist phát hành `v26.08.11-b04` trên `main`
 
+> **Hồ sơ lịch sử, không phải quy trình hiện hành.** Bản này từng deploy thủ công trước khi project `nafiqpm6` áp dụng Git Integration + Deployment Check. Mọi release mới phải theo `DEPLOYMENT.md`; không lặp lại lệnh Vercel CLI được ghi trong bằng chứng bên dưới.
+
 Mục tiêu: đưa toàn bộ thay đổi đang có trong checkout lên release mới, sửa lỗi Nhật ký cập nhật rỗng trên Dashboard/hộp thoại/trang công khai, rồi commit, push và xác minh deployment theo bằng chứng thực tế.
 
 ## 1. Snapshot và nguyên nhân

@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.26-b04",
+  "version": "26.08.27-b01",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -10,8 +10,9 @@
     "sync-release-history": "node scripts/sync-release-history.js",
     "release:prepare": "npm run sync-version",
     "release:verify": "npm run verify:runtime && npm test && npx tsc -p tsconfig.app.json --noEmit && npm run typecheck:api && npm run build",
-    "release:prepush": "npm run verify:runtime && npm run validate:release-notes && node scripts/release-gate.js prepush",
-    "release:predeploy": "npm run verify:runtime && npm run validate:release-notes && node scripts/release-gate.js predeploy",
+    "release:discipline": "node scripts/release-discipline.js",
+    "release:prepush": "npm run verify:runtime && npm run validate:release-notes && npm run release:discipline && node scripts/release-gate.js prepush",
+    "release:predeploy": "npm run verify:runtime && npm run validate:release-notes && node scripts/release-discipline.js --base=HEAD^ && node scripts/release-gate.js predeploy",
     "release:patch": "npm run release:prepare",
     "release:minor": "npm run release:prepare",
     "release:major": "npm run release:prepare",
@@ -57,7 +58,7 @@
     "gas:push": "npm run test:gas && npx clasp push",
     "gas:watch": "npx clasp push --watch",
     "test:prep": "tsx --test src/app/features/preparation/prep-calculation.engine.test.ts src/app/features/preparation/smart-prep.boundary.test.ts",
-    "test:release": "node --test scripts/release-pipeline.test.js scripts/release-gate.test.js scripts/verify-runtime.test.js && tsx --test src/app/core/services/changelog-fallback.test.ts",
+    "test:release": "node --test scripts/release-pipeline.test.js scripts/release-gate.test.js scripts/release-discipline.test.js scripts/vercel-ignore-build.test.js scripts/verify-runtime.test.js && tsx --test src/app/core/services/changelog-fallback.test.ts",
     "test:changelog": "npm run test:release",
     "verify:runtime": "node scripts/verify-runtime.js",
     "validate:release-notes": "node scripts/validate-release-notes.js",

@@ -1,5 +1,13 @@
 name: Release Gate
 
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     branches: [main]
@@ -34,5 +42,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify release discipline for pull request
+        if: github.event_name == 'pull_request'
+        env:
+          RELEASE_BASE_REF: origin/${{ github.base_ref }}
+        run: npm run release:discipline
+
+      - name: Verify release discipline for main push
+        if: github.event_name == 'push'
+        env:
+          RELEASE_BASE_REF: ${{ github.event.before }}
+        run: npm run release:discipline
+
       - name: Verify release and production build
         run: npm run release:verify
+
+      - name: Notify Vercel deployment check
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - nafiqpm6: release-verify"

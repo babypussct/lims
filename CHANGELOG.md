@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.26-b04
+## Phiên bản hiện tại: v26.08.27-b01
+
+### v26.08.27-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Báo cáo thống kê tải đầy đủ dữ liệu lịch sử theo từng trang và chỉ kết luận khi đã xác minh nguồn dữ liệu hoàn tất.
+- Production chỉ được gán domain sau khi Release Gate thành công, đồng thời tự chặn thay đổi ứng dụng không có version và changelog mới.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung bộ kiểm tra release discipline cho code, API, GAS, Firestore và cấu hình production trước khi push hoặc promote deployment.
+- Bổ sung dữ liệu biến động tồn kho trong lịch sử audit để báo cáo có thể tái dựng nhập, xuất và hoàn trả theo thời gian.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Phân trang toàn bộ yêu cầu chất chuẩn, chuẩn đối chiếu và yêu cầu đã duyệt thay vì dùng cache hoặc giới hạn bản ghi gần nhất cho báo cáo.
+- Giữ lịch sử phiếu in phục vụ audit khi người dùng xóa mục khỏi hàng đợi và giảm các listener nền không cần thiết cho tài khoản chỉ xem báo cáo.
+- Bỏ qua Vercel build đối với commit chỉ thay đổi tài liệu, CI hoặc kiểm thử để lịch sử production không còn nhiễu.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa báo cáo thiếu dữ liệu lịch sử do nhầm cache vận hành có giới hạn là dữ liệu hoàn chỉnh.
+- Sửa cảnh báo báo cáo chưa hoàn tất xuất hiện sai sau khi các nguồn dữ liệu bắt buộc đã tải thành công.
+- Đồng bộ quyền đọc Firestore tối thiểu cho tài khoản có quyền xem báo cáo mà không mở rộng quyền ghi, sửa hoặc xóa.
 
 ### v26.08.26-b04
 

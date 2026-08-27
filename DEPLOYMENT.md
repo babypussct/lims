@@ -34,14 +34,16 @@ Trình tự release chuẩn:
 3. Chạy `npm run release:verify`. Gate này kiểm tra Node/npm đúng chính sách repository, chạy toàn bộ test, typecheck application/API, kiểm tra release metadata và production build.
 4. Review `git status`, `git diff --check` và diff thực tế. Chỉ stage đúng phạm vi release cần phát hành.
 5. Commit release. Sau commit, chạy `npm run release:prepush`; gate sẽ chặn khi working tree còn dirty, có conflict, branch local đang behind remote hoặc tracking ref đã stale.
-6. Push commit. `main` và pull request vào `main` còn được GitHub Release Gate chạy lại `release:verify`; Node lấy từ `.nvmrc`, còn npm được đọc trực tiếp từ `package.json.packageManager` để không tồn tại bản version thứ hai trong CI.
-7. Sau khi push `main`, Vercel Git Integration tự động build và deploy production từ commit vừa được đẩy lên GitHub. Không chạy `npm run release:predeploy`, `npm run deploy:prod` hoặc `npx vercel --prod` trong quy trình frontend chuẩn.
+6. Push commit. `main` và pull request vào `main` được GitHub Release Gate chạy `release:discipline` và `release:verify`; Node lấy từ `.nvmrc`, còn npm được đọc trực tiếp từ `package.json.packageManager` để không tồn tại bản version thứ hai trong CI.
+7. Sau khi push `main`, Vercel Git Integration tạo production deployment nhưng **không gán domain production ngay**. Deployment Check bắt buộc `Vercel - nafiqpm6: release-verify` chỉ được cập nhật thành công sau khi toàn bộ GitHub Release Gate đạt; khi gate fail/cancel/không chạy, alias tiếp tục phục vụ deployment ổn định trước đó. Không chạy `npm run release:predeploy`, `npm run deploy:prod`, `npx vercel --prod` hoặc Force Promote trong quy trình frontend chuẩn.
 8. Nếu release có thay đổi Firestore Rules, chạy `npm run deploy:rules` sau khi commit đã được push và lưu bằng chứng CLI thành công. Lệnh này tự chạy `release:predeploy` để xác nhận SHA local/remote trước khi deploy Rules.
-9. Theo dõi deployment Vercel gắn với đúng Git SHA; khi deployment sẵn sàng, smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
+9. Theo dõi deployment Vercel gắn với đúng Git SHA và xác nhận Deployment Check đã đạt trước khi alias chuyển; sau đó smoke test `/`, `/ngsw.json`, `/release-history.json`, trang `/changelog` và modal Nhật Ký Cập Nhật.
 
 Không deploy production trực tiếp từ working tree chưa commit hoặc commit chưa push. Quy tắc này bảo đảm mỗi deployment luôn truy ngược được về đúng một Git SHA, giúp audit và rollback không phụ thuộc trạng thái máy phát hành.
 
-Project Vercel của ứng dụng dùng Git Integration để tự deploy `main`. `npm run deploy:prod` được giữ lại như lệnh fallback/manual khi có yêu cầu rõ ràng, không phải bước mặc định của release.
+Project Vercel duy nhất của ứng dụng là `nafiqpm6`, dùng Git Integration để build `main` và Deployment Checks để chặn promotion trước CI. `npm run deploy:prod` được giữ lại như lệnh fallback/manual khi có yêu cầu break-glass rõ ràng; thao tác này vẫn phải qua `release:predeploy`, kiểm tra release metadata của commit cuối và phải được ghi nhận bằng SHA/deployment ID.
+
+`npm run release:discipline` so sánh phạm vi thay đổi với base Git. Nếu code ứng dụng, API, GAS, Firestore hoặc cấu hình production thay đổi mà version/release notes không đổi, gate sẽ fail. Commit chỉ thay đổi docs, workflow hoặc test không cần phát sinh version; `scripts/vercel-ignore-build.js` sẽ bỏ qua Vercel build cho các commit đó.
 
 Nếu chỉ chuẩn hóa template hoặc bảo trì lịch sử cũ mà không phát hành code mới, không phát sinh version mới; dùng `npm run sync-release-history` rồi `node scripts/build-changelog-md.js` để tái tạo dữ liệu và Markdown.
 
@@ -51,7 +53,7 @@ Không đưa credential, token, dữ liệu production hoặc mô tả kỹ thu�
 
 ## Trạng thái trước triển khai
 
-Không lưu trạng thái pass/fail của một release cụ thể trong tài liệu quy trình này vì thông tin đó nhanh chóng lỗi thời. Bằng chứng phát hành phải lấy từ output của `release:verify`, GitHub Release Gate và trạng thái deployment Vercel gắn với chính Git SHA đang phát hành; với Firestore Rules thì dùng output CLI của lệnh deploy Rules.
+Không lưu trạng thái pass/fail của một release cụ thể trong tài liệu quy trình này vì thông tin đó nhanh chóng lỗi thời. Bằng chứng phát hành phải lấy từ output của `release:discipline`, `release:verify`, GitHub Release Gate, Vercel Deployment Check và trạng thái deployment gắn với chính Git SHA đang phát hành; với Firestore Rules thì dùng output CLI của lệnh deploy Rules.
 
 ## 1. Chuẩn bị
 
@@ -76,7 +78,7 @@ Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` thay cho `npm` trong các l�
 npm run release:verify
 ```
 
-`release:verify` bắt đầu bằng runtime gate, sau đó chạy `npm test`, TypeScript application/API typecheck, `validate:release-notes` và Angular production build. Chỉ tiếp tục khi lệnh trả về exit code `0`. Output Angular production phải nằm tại:
+`release:discipline` chặn code production không có release metadata mới. `release:verify` bắt đầu bằng runtime gate, sau đó chạy `npm test`, TypeScript application/API typecheck, `validate:release-notes` và Angular production build. Chỉ tiếp tục khi cả hai lệnh trả về exit code `0`. Output Angular production phải nằm tại:
 
 ```text
 dist/lims-cloud-pro/browser
@@ -89,7 +91,7 @@ npm run release:prepush
 git push
 ```
 
-Sau push, frontend được Vercel Git Integration tự động build/deploy từ GitHub. Không cần chạy thêm gate `release:predeploy` cho frontend. Gate này chỉ còn được dùng bởi các lệnh triển khai hạ tầng/manual có yêu cầu xác nhận SHA local/remote, ví dụ `npm run deploy:rules`.
+Sau push, Vercel Git Integration build từ GitHub nhưng chỉ gán production alias sau khi check `Vercel - nafiqpm6: release-verify` thành công. Không cần chạy thêm gate `release:predeploy` cho frontend. Gate này chỉ còn được dùng bởi các lệnh triển khai hạ tầng/manual có yêu cầu xác nhận SHA local/remote, ví dụ `npm run deploy:rules`.
 
 ## 3. Đăng nhập công cụ triển khai
 
@@ -120,7 +122,7 @@ Xác nhận lệnh hoàn tất thành công và deployment Vercel của cùng re
 
 ## 5. Xác nhận Vercel auto-deploy trước khi backfill
 
-Sau khi commit release được push lên `main`, chờ deployment Vercel tương ứng với đúng Git SHA hoàn tất. Không chạy thêm `npm run deploy:prod` cho cùng commit.
+Sau khi commit release được push lên `main`, chờ GitHub Release Gate và Vercel Deployment Check của đúng Git SHA hoàn tất. Chỉ chấp nhận production khi alias trỏ đúng deployment đã qua check. Không chạy thêm `npm run deploy:prod` cho cùng commit.
 
 Vercel Git Integration sử dụng:
 
