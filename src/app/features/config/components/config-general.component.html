@@ -255,14 +255,90 @@
                     An Toàn Dữ Liệu
                 </h3>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <button (click)="exportData()" class="p-2 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 transition">
-                        <i class="fa-solid fa-download"></i> Backup JSON
-                    </button>
-                    <label class="p-2 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 transition cursor-pointer">
-                        <i class="fa-solid fa-upload"></i> Restore JSON
-                        <input type="file" class="hidden" accept=".json" (change)="importData($event)">
-                    </label>
+                <div class="rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 p-4 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div>
+                            <div class="text-[11px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Backup toàn diện qua Google Drive
+                            </div>
+                            <p class="text-[10px] leading-relaxed text-indigo-700/80 dark:text-indigo-300/80 mt-1">
+                                Gồm toàn bộ Firestore trong namespace LIMS, Firebase Auth, tệp CoA, PDF, Google Docs, Google Sheets/Excel, thư mục nguồn và cấu hình triển khai Apps Script. Payload được nén, mã hóa AES-256-GCM và kiểm tra checksum trước restore.
+                            </p>
+                        </div>
+                        <button type="button" (click)="loadBackupStatus(true)" [disabled]="backupBusy() !== 'idle'" class="shrink-0 text-[10px] bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 rounded-lg px-3 py-1.5 font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:opacity-50">
+                            <i class="fa-solid fa-rotate mr-1"></i> Kiểm tra cấu hình
+                        </button>
+                    </div>
+
+                    @if (backupStatus(); as backup) {
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div class="rounded-lg bg-white/80 dark:bg-slate-800/70 border border-indigo-100 dark:border-slate-700 p-3">
+                                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400">Firestore coverage</div>
+                                <div class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1">{{backup.firestore.topLevelCollectionCount}} collection + {{backup.firestore.nestedPatternCount}} mẫu subcollection</div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Root collection: {{backup.firestore.rootCollectionCount}} · Auth và session tạm được xử lý riêng</div>
+                            </div>
+                            <div class="rounded-lg bg-white/80 dark:bg-slate-800/70 border border-indigo-100 dark:border-slate-700 p-3">
+                                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400">Drive coverage</div>
+                                <div class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1">{{backup.drive.sourceFolderCount}} thư mục nguồn · {{backup.drive.templateCount}} Docs/Sheets mẫu</div>
+                                <div class="text-[10px] mt-1" [class.text-emerald-600]="backup.ready" [class.text-amber-600]="!backup.ready">{{backup.ready ? 'Sẵn sàng tạo backup' : 'Chưa đủ cấu hình để chạy backup'}}</div>
+                            </div>
+                            <div class="rounded-lg bg-white/80 dark:bg-slate-800/70 border border-indigo-100 dark:border-slate-700 p-3">
+                                <div class="text-[9px] font-black uppercase tracking-wide text-slate-400">Apps Script deployment</div>
+                                <div class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1">{{backup.appsScript.scriptIdConfigured ? 'Đã nhận diện scriptId' : 'Thiếu scriptId'}}</div>
+                                <div class="text-[10px] mt-1" [class.text-emerald-600]="backup.appsScript.sourceBundleAvailable && backup.appsScript.scopesConfigured" [class.text-amber-600]="!backup.appsScript.sourceBundleAvailable || !backup.appsScript.scopesConfigured">{{backup.appsScript.sourceBundleAvailable ? 'Có source bundle' : 'Thiếu gas/appsscript.json'}} · {{backup.appsScript.scopesConfigured ? 'đủ scope live' : 'cần scope read-only'}}</div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!backupStatus()?.ready) {
+                        <div class="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3 text-[10px] leading-relaxed text-amber-700 dark:text-amber-300">
+                            <div class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Cần hoàn tất cấu hình triển khai</div>
+                            <div>Phải có khóa mã hóa trong biến môi trường server, thư mục backup riêng trên Drive, quyền đọc các thư mục CoA/mẫu và OAuth scope Drive + Apps Script read-only để chụp đúng project/deployment đang chạy. Ứng dụng không tự lưu khóa hoặc token vào Firestore/Google Drive.</div>
+                            <button type="button" (click)="connectBackupDrive()" class="mt-2 px-3 py-1.5 rounded-lg bg-amber-600 text-white font-bold hover:bg-amber-700">Kết nối Google Drive</button>
+                        </div>
+                    }
+
+                    <div class="rounded-lg bg-white/80 dark:bg-slate-800/70 border border-indigo-100 dark:border-slate-700 p-3 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">Bản backup đã lưu</label>
+                            <select [ngModel]="backupSelectedId()" (ngModelChange)="backupSelectedId.set($event)" [disabled]="backupBusy() !== 'idle'" class="min-w-0 flex-1 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                                <option value="">-- Chưa chọn --</option>
+                                @for (item of backupList(); track item.backupFolderId) {
+                                    <option [value]="item.backupFolderId">{{item.backupId}} · {{backupStatusLabel(item.status)}}{{item.verified ? ' · integrity đạt' : ''}} · {{item.firestoreDocuments ?? '?'}} docs · {{backupDate(item.completedAt || item.createdTime)}}</option>
+                                }
+                            </select>
+                            <button type="button" (click)="refreshBackupList()" [disabled]="backupBusy() !== 'idle'" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 disabled:opacity-50">Nạp danh sách</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button type="button" (click)="createComprehensiveBackup()" [disabled]="backupBusy() !== 'idle' || !backupStatus()?.ready" class="py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Tạo backup mới</button>
+                            <button type="button" (click)="verifySelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupSelectedId()" class="py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-black hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-shield-check mr-1"></i> Kiểm tra integrity</button>
+                            <button type="button" (click)="dryRunSelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupSelectedId()" class="py-2 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-[10px] font-black hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Dry-run đối chiếu</button>
+                        </div>
+
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-slate-600 dark:text-slate-300">
+                            <label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" [ngModel]="backupRestoreDrive()" (ngModelChange)="backupRestoreDrive.set($event)" class="rounded border-slate-300 text-indigo-600"> Khôi phục tệp Drive bị thiếu</label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" [ngModel]="backupRestoreAuth()" (ngModelChange)="backupRestoreAuth.set($event)" class="rounded border-slate-300 text-indigo-600"> Khôi phục Auth user bị thiếu</label>
+                        </div>
+                        <button type="button" (click)="recoverMissingFromSelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupSelectedId()" class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-life-ring mr-1"></i> Restore an toàn — chỉ bổ sung phần bị thiếu</button>
+                        @if (resumableRestoreCheckpoint(); as checkpoint) {
+                            <button type="button" (click)="resumeMissingRestore()" [disabled]="backupBusy() !== 'idle'" class="w-full py-2 rounded-lg border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[10px] font-black hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-forward-step mr-1"></i> Tiếp tục restore dở dang · {{checkpoint.restoreId}} · {{checkpoint.phase}}</button>
+                        }
+                        <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-relaxed">Full-replace không có trên nút nhanh: API yêu cầu xác nhận riêng, backup dự phòng khác đã verify và không xóa auth/session tạm ngoài chính sách. Đây là lớp chống thao tác nhầm.</div>
+                    </div>
+
+                    @if (backupBusy() !== 'idle') {
+                        <div class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> {{backupBusyLabel()}}</div>
+                    }
+                    @if (backupLastCreate(); as created) {
+                        <div class="text-[10px] rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 p-2">Backup gần nhất: {{created.backupId}} · {{created.summary.firestoreDocuments}} Firestore docs · {{created.summary.authUsers}} Auth · {{created.summary.driveAssets}} Drive assets.</div>
+                    }
+                    @if (backupLastVerification(); as verification) {
+                        <div class="text-[10px] rounded-lg p-2" [class.bg-emerald-50]="verification.verified" [class.text-emerald-700]="verification.verified" [class.bg-rose-50]="!verification.verified" [class.text-rose-700]="!verification.verified">{{verification.verified ? 'Integrity đạt.' : 'Integrity không đạt.'}} Đã kiểm tra {{verification.checkedParts}} part và {{verification.checkedAssets}} Drive assets; {{verification.errors.length}} lỗi.</div>
+                    }
+                    @if (backupLastRestore(); as restored) {
+                        <div class="text-[10px] rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 p-2">Restore report: {{restored.report.firestore.created}} tạo mới · {{restored.report.firestore.updated}} cập nhật · {{restored.report.firestore.different}} khác · {{restored.report.drive.recreated}} Drive tạo lại · {{restored.report.auth.imported}} Auth import.</div>
+                    }
                 </div>
 
                 <div class="relative mt-2 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3">

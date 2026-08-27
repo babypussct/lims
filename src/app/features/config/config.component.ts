@@ -260,14 +260,17 @@ export class ConfigComponent {
     { val: PERMISSIONS.SOP_APPROVE, label: 'Duyệt SOP' },
     { val: PERMISSIONS.REPORT_VIEW, label: 'Xem Báo Cáo' },
     { val: PERMISSIONS.USER_MANAGE, label: 'Quản Lý Hệ Thống' },
-    { val: PERMISSIONS.BYPASS_MAINTENANCE, label: 'Vượt Bảo Trì' }
+    { val: PERMISSIONS.BYPASS_MAINTENANCE, label: 'Vượt Bảo Trì' },
+    { val: PERMISSIONS.BACKUP_CREATE, label: 'Tạo Backup Toàn Diện' },
+    { val: PERMISSIONS.BACKUP_VERIFY, label: 'Kiểm Tra Backup' },
+    { val: PERMISSIONS.BACKUP_RESTORE, label: 'Restore Backup' }
   ];
 
   permissionGroups = [
     { label: 'Kho & vận hành', permissions: [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.INVENTORY_EDIT, PERMISSIONS.BATCH_RUN] },
     { label: 'Chất chuẩn', permissions: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_EDIT, PERMISSIONS.STANDARD_APPROVE, PERMISSIONS.STANDARD_LOG_VIEW, PERMISSIONS.STANDARD_LOG_DELETE] },
     { label: 'Tài liệu & báo cáo', permissions: [PERMISSIONS.RECIPE_VIEW, PERMISSIONS.RECIPE_EDIT, PERMISSIONS.SOP_VIEW, PERMISSIONS.SOP_EDIT, PERMISSIONS.SOP_APPROVE, PERMISSIONS.REPORT_VIEW] },
-    { label: 'Quản trị', permissions: [PERMISSIONS.USER_MANAGE, PERMISSIONS.BYPASS_MAINTENANCE] }
+    { label: 'Quản trị', permissions: [PERMISSIONS.USER_MANAGE, PERMISSIONS.BYPASS_MAINTENANCE, PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE] }
   ];
 
   permissionLabel(permission: string): string {

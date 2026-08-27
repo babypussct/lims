@@ -11,6 +11,7 @@ import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
+import { BackupService, type BackupListItem, type BackupStatusResponse, type BackupCreateResponse, type BackupVerificationResponse, type RestoreResponse, type RestoreCheckpointListItem } from '../../../core/services/backup.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
@@ -88,6 +89,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   standardService = inject(StandardService);
   router = inject(Router);
   notificationCenter = inject(NotificationCenterService);
+  backupService = inject(BackupService);
 
   versionControl = new FormControl('');
   maintenanceModeLocal = signal(false);
@@ -115,6 +117,16 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   recycleItems = signal<any[]>([]);
   private xlsxLoader?: Promise<typeof import('xlsx')>;
 
+  backupStatus = signal<BackupStatusResponse | null>(null);
+  backupList = signal<BackupListItem[]>([]);
+  backupSelectedId = signal('');
+  backupBusy = signal<'idle' | 'status' | 'list' | 'create' | 'verify' | 'dry-run' | 'restore'>('idle');
+  backupLastCreate = signal<BackupCreateResponse | null>(null);
+  backupLastVerification = signal<BackupVerificationResponse | null>(null);
+  backupLastRestore = signal<RestoreResponse | null>(null);
+  backupRestoreDrive = signal(true);
+  backupRestoreAuth = signal(true);
+
   readonly firestoreRulesNotice =
     'Rules triển khai được quản lý trong file firestore.rules của mã nguồn. Màn hình Config không còn nhúng hoặc sao chép bản rules để tránh phát tán cấu hình cũ.';
 
@@ -136,6 +148,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       footerText: ''
     });
     this.listenSystemUpdates();
+    void this.loadBackupStatus();
   }
 
   ngOnDestroy() {
@@ -363,6 +376,183 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       } catch (e) { this.toast.show('Lỗi tính dung lượng.', 'error'); }
   }
 
+  private backupErrorMessage(error: any): string {
+    return error?.message || error?.error || 'Không thể thực hiện thao tác backup.';
+  }
+
+  async loadBackupStatus(showError = false) {
+    this.backupBusy.set('status');
+    try {
+      const status = await this.backupService.getStatus();
+      this.backupStatus.set(status);
+      if (status.drive.accessAvailable && status.drive.backupFolderConfigured && status.encryption.configured) {
+        await this.refreshBackupList(false);
+      }
+    } catch (error) {
+      if (showError) this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      if (this.backupBusy() === 'status') this.backupBusy.set('idle');
+    }
+  }
+
+  async refreshBackupList(showError = true) {
+    this.backupBusy.set('list');
+    try {
+      const result = await this.backupService.listBackups();
+      this.backupList.set(result.backups);
+      const selected = this.backupSelectedId();
+      if (!selected || !result.backups.some(item => item.backupFolderId === selected)) {
+        const firstValid = result.backups.find(item => item.status === 'COMPLETED' || item.status === 'COMPLETED_WITH_WARNINGS');
+        this.backupSelectedId.set(firstValid?.backupFolderId || result.backups[0]?.backupFolderId || '');
+      }
+    } catch (error) {
+      if (showError) this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      if (this.backupBusy() === 'list') this.backupBusy.set('idle');
+    }
+  }
+
+  connectBackupDrive() {
+    const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.assign(`/api/oauth/google/backup-start?returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
+  async createComprehensiveBackup() {
+    if (!await this.confirmationService.confirm({
+      message: 'Tạo backup toàn diện gồm Firestore, Firebase Auth, các liên kết Drive, tệp CoA, Google Docs, Google Sheets/Excel, PDF và cấu hình Apps Script. Dữ liệu sẽ được mã hóa trước khi tải lên Drive. Tiếp tục?',
+      confirmText: 'Tạo Backup Toàn Diện'
+    })) return;
+    this.backupBusy.set('create');
+    try {
+      const result = await this.backupService.createBackup(this.state.systemVersion());
+      this.backupLastCreate.set(result);
+      await this.refreshBackupList(false);
+      const label = result.status === 'COMPLETED' ? 'Backup toàn diện đã hoàn tất.' : `Backup hoàn tất với trạng thái ${result.status}.`;
+      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.`, result.status === 'COMPLETED' ? 'success' : 'info');
+    } catch (error) {
+      this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      this.backupBusy.set('idle');
+    }
+  }
+
+  private selectedBackupFolderId(): string {
+    return this.backupSelectedId() || this.backupList().find(item => item.status === 'COMPLETED' || item.status === 'COMPLETED_WITH_WARNINGS')?.backupFolderId || '';
+  }
+
+  async verifySelectedBackup() {
+    const backupFolderId = this.selectedBackupFolderId();
+    if (!backupFolderId) {
+      this.toast.show('Chưa có backup để kiểm tra.', 'info');
+      return;
+    }
+    this.backupBusy.set('verify');
+    try {
+      const result = await this.backupService.verifyBackup(backupFolderId);
+      this.backupLastVerification.set(result);
+      this.toast.show(result.verified ? `Integrity đạt: ${result.checkedParts} phân đoạn, ${result.checkedAssets} tệp Drive.` : `Integrity không đạt: ${result.errors.length} lỗi.`, result.verified ? 'success' : 'error');
+    } catch (error) {
+      this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      this.backupBusy.set('idle');
+    }
+  }
+
+  async dryRunSelectedBackup() {
+    const backupFolderId = this.selectedBackupFolderId();
+    if (!backupFolderId) {
+      this.toast.show('Chưa có backup để đối chiếu.', 'info');
+      return;
+    }
+    this.backupBusy.set('dry-run');
+    try {
+      const result = await this.backupService.restoreBackup({
+        backupFolderId,
+        mode: 'DRY_RUN',
+        restoreDrive: false,
+        restoreAuth: false,
+      });
+      this.backupLastRestore.set(result);
+      const report = result.report.firestore;
+      this.toast.show(`Dry-run xong: thiếu ${report.missing}, khác ${report.different}, không đổi ${report.unchanged}.`, 'info');
+    } catch (error) {
+      this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      this.backupBusy.set('idle');
+    }
+  }
+
+  resumableRestoreCheckpoint(): RestoreCheckpointListItem | null {
+    const selected = this.backupList().find(item => item.backupFolderId === this.selectedBackupFolderId());
+    const checkpoint = selected?.restoreCheckpoints?.find(item => item.mode === 'RECOVER_MISSING' && item.phase !== 'COMPLETED');
+    return checkpoint || null;
+  }
+
+  async recoverMissingFromSelectedBackup(resumeRestoreId?: string) {
+    const backupFolderId = this.selectedBackupFolderId();
+    if (!backupFolderId) {
+      this.toast.show('Chưa có backup để restore.', 'info');
+      return;
+    }
+    if (!await this.confirmationService.confirm({
+      message: resumeRestoreId
+        ? 'Tiếp tục restore an toàn từ checkpoint. Hệ thống sẽ chạy lại các bước theo cơ chế idempotent và không ghi đè dữ liệu nghiệp vụ hiện có ngoài việc sửa liên kết Drive bị đổi ID. Tiếp tục?'
+        : 'Restore an toàn sẽ chỉ bổ sung document Firestore, Auth user và tệp Drive đang bị thiếu; dữ liệu hiện có không bị ghi đè. Nên chạy Dry-run trước. Tiếp tục?',
+      confirmText: resumeRestoreId ? 'Tiếp Tục Restore' : 'Khôi Phục Phần Thiếu'
+    })) return;
+    this.backupBusy.set('restore');
+    try {
+      const result = await this.backupService.restoreBackup({
+        backupFolderId,
+        mode: 'RECOVER_MISSING',
+        restoreDrive: this.backupRestoreDrive(),
+        restoreAuth: this.backupRestoreAuth(),
+        resumeRestoreId,
+      });
+      this.backupLastRestore.set(result);
+      const report = result.report.firestore;
+      this.toast.show(`Restore xong: thêm ${report.created} Firestore docs, tạo lại ${result.report.drive.recreated} tệp/thư mục Drive, import ${result.report.auth.imported} Auth user.`, result.success ? 'success' : 'error');
+      await this.refreshBackupList(false);
+    } catch (error) {
+      this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      this.backupBusy.set('idle');
+    }
+  }
+
+  async resumeMissingRestore() {
+    const checkpoint = this.resumableRestoreCheckpoint();
+    if (checkpoint) await this.recoverMissingFromSelectedBackup(checkpoint.restoreId);
+  }
+
+  backupBusyLabel(): string {
+    switch (this.backupBusy()) {
+      case 'status': return 'Đang kiểm tra cấu hình...';
+      case 'list': return 'Đang đọc danh sách backup...';
+      case 'create': return 'Đang tạo backup toàn diện...';
+      case 'verify': return 'Đang kiểm tra checksum...';
+      case 'dry-run': return 'Đang đối chiếu, chưa ghi dữ liệu...';
+      case 'restore': return 'Đang restore an toàn...';
+      default: return '';
+    }
+  }
+
+  backupDate(value?: string | null): string {
+    if (!value) return 'Chưa ghi nhận';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Chưa ghi nhận' : date.toLocaleString('vi-VN');
+  }
+
+  backupStatusLabel(status: string): string {
+    switch (status) {
+      case 'COMPLETED': return 'Hoàn tất';
+      case 'COMPLETED_WITH_WARNINGS': return 'Hoàn tất, có cảnh báo';
+      case 'FAILED': return 'Thất bại';
+      case 'INVALID': return 'Không hợp lệ';
+      default: return status;
+    }
+  }
+
   async savePrintConfig() {
       try {
           await this.state.savePrintConfig(this.printConfig());
@@ -372,29 +562,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           this.toast.show(`Không thể lưu cấu hình in: ${e?.message || e}`, 'error');
       }
   }
-  async exportData() {
-      try {
-          const data = await this.fb.exportData();
-          const json = JSON.stringify(data, null, 2);
-          const blob = new Blob([json], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = `LIMS_Backup_${this.fb.APP_ID}.json`; a.click(); URL.revokeObjectURL(url);
-          this.toast.show('Đã tải backup.');
-      } catch (e) { this.toast.show('Backup lỗi', 'error'); }
-  }
-
-  async importData(event: any) {
-      const file = event.target.files[0]; if (!file) return;
-      if (await this.confirmationService.confirm({ message: 'Restore sẽ GHI ĐÈ dữ liệu. Tiếp tục?', confirmText: 'Restore', isDangerous: true })) {
-          const reader = new FileReader();
-          reader.onload = async (e: any) => {
-              try { await this.fb.importData(JSON.parse(e.target.result)); this.toast.show('Restore thành công!', 'success'); setTimeout(() => window.location.reload(), 1000); }
-              catch (err) { this.toast.show('File lỗi', 'error'); }
-          };
-          reader.readAsText(file);
-      }
-  }
-
   async saveMaintenanceConfig() {
       const msg = this.maintenanceMessageLocal.value || 'Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.';
       const scheduledVal = this.maintenanceScheduledTimeLocal.value || null;

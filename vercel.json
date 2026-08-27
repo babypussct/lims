@@ -4,6 +4,14 @@
   "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "outputDirectory": "dist/lims-cloud-pro/browser",
   "framework": "angular",
+  "functions": {
+    "api/backup/create.ts": {
+      "includeFiles": ["gas/**", ".clasp.json"]
+    },
+    "api/backup/status.ts": {
+      "includeFiles": ["gas/**", ".clasp.json"]
+    }
+  },
   "crons": [
     {
       "path": "/api/notifications-retention",

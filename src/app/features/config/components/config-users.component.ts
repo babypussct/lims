@@ -552,7 +552,10 @@ export class ConfigUsersComponent implements OnInit {
       ring: 'var(--tw-colors-slate-500, #64748b)',
       perms: [
         { val: PERMISSIONS.REPORT_VIEW, label: 'Xem Báo cáo Tổng hợp' },
-        { val: PERMISSIONS.USER_MANAGE, label: 'Quản trị nhân sự (Admin)' }
+        { val: PERMISSIONS.USER_MANAGE, label: 'Quản trị nhân sự (Admin)' },
+        { val: PERMISSIONS.BACKUP_CREATE, label: 'Tạo Backup Toàn Diện' },
+        { val: PERMISSIONS.BACKUP_VERIFY, label: 'Kiểm tra Backup' },
+        { val: PERMISSIONS.BACKUP_RESTORE, label: 'Restore Backup' }
       ]
     }
   ];

@@ -4,6 +4,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 export const GOOGLE_SESSION_COOKIE = 'lims_google_oauth';
 export const GOOGLE_STATE_COOKIE = 'lims_google_oauth_state';
 export const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+/** Full Drive scope is deliberately restricted to the administrator backup flow. */
+export const BACKUP_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive';
+/** Read-only Apps Script scopes used to capture the deployed project, source and deployments. */
+export const BACKUP_APPS_SCRIPT_SCOPES = [
+  'https://www.googleapis.com/auth/script.projects.readonly',
+  'https://www.googleapis.com/auth/script.deployments.readonly',
+] as const;
+export const BACKUP_OAUTH_SCOPES = [BACKUP_DRIVE_SCOPES, ...BACKUP_APPS_SCRIPT_SCOPES].join(' ');
 
 export interface GoogleSession {
   accessToken: string;

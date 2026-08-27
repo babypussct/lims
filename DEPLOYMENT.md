@@ -43,6 +43,69 @@ Không deploy production trực tiếp từ working tree chưa commit hoặc com
 
 Project Vercel duy nhất của ứng dụng là `nafiqpm6`, dùng Git Integration để build `main` và Deployment Checks để chặn promotion trước CI. `npm run deploy:prod` được giữ lại như lệnh fallback/manual khi có yêu cầu break-glass rõ ràng; thao tác này vẫn phải qua `release:predeploy`, kiểm tra release metadata của commit cuối và phải được ghi nhận bằng SHA/deployment ID.
 
+## Backup toàn diện LIMS trên Spark
+
+Backup/restore toàn diện được triển khai bằng API serverless của Vercel và Google Drive API. Thiết kế này **không dùng Firestore managed export/import, Cloud Storage hoặc Cloud Functions**, vì vậy không cần chuyển Firebase sang Blaze chỉ để chạy backup. Tất cả payload được nén và mã hóa AES-256-GCM trước khi upload Drive.
+
+### Biến môi trường bắt buộc
+
+Thiết lập ở Vercel Production, Preview (nếu cần kiểm thử) và môi trường chạy API; không đặt trong Angular `environment.*`, không commit và không đưa vào changelog:
+
+| Biến | Mục đích |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Service account cho Firebase Admin SDK; giữ nguyên cơ chế hiện tại. |
+| `APP_ID` hoặc `LIMS_APP_ID` | Phải là `lims-cloud-fixed`, khớp namespace `artifacts/lims-cloud-fixed`. |
+| `LIMS_BACKUP_ENCRYPTION_KEY` | Khóa 32 byte, biểu diễn bằng 64 ký tự hex hoặc base64. Mất khóa đồng nghĩa không thể giải mã backup. |
+| `LIMS_BACKUP_ENCRYPTION_KEY_ID` | Tên phiên bản khóa, ví dụ `primary-2026`; phải được giữ nguyên để verify/restore. |
+| `LIMS_BACKUP_DRIVE_FOLDER_ID` | Thư mục Drive private dùng làm parent của toàn bộ thư mục `LIMS_BACKUP_*`. |
+| `GOOGLE_OAUTH_CLIENT_ID` | OAuth client ID của server-side authorization-code flow. |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth client secret; chỉ lưu trong Vercel secret. |
+| `OAUTH_COOKIE_SECRET` | Secret hiện có để mã hóa cookie OAuth server-side. |
+
+### Quyền Drive dùng cho backup
+
+Luồng upload báo cáo thông thường tiếp tục dùng scope hạn chế `drive.file`. Backup toàn diện có luồng riêng `/api/oauth/google/backup-start`, yêu cầu quản trị viên cấp `https://www.googleapis.com/auth/drive` để có thể đọc **cả tệp đã tồn tại trên Drive**, bao gồm CoA, PDF, Docs mẫu và Excel/Sheets do Apps Script hoặc người dùng tạo trước đó. Luồng này đồng thời yêu cầu hai scope chỉ đọc của Apps Script là `https://www.googleapis.com/auth/script.projects.readonly` và `https://www.googleapis.com/auth/script.deployments.readonly` để chụp nội dung project/deployment đang chạy, không chỉ bản `.gs` trong source bundle. Nếu không muốn giữ refresh token trong cookie quản trị, có thể cấu hình:
+
+| Biến | Mục đích |
+|---|---|
+| `LIMS_BACKUP_DRIVE_REFRESH_TOKEN` | Refresh token của một tài khoản backup riêng đã cấp full Drive scope; đây là phương án phù hợp cho restore khi không có browser session. |
+| `LIMS_DRIVE_SOURCE_FOLDER_IDS` | Danh sách folder ID nguồn, phân tách bằng dấu phẩy. Nên cấu hình rõ cả thư mục báo cáo và thư mục CoA. |
+| `LIMS_DRIVE_COA_FOLDER_ID` | Folder CoA riêng; mặc định dùng folder CoA hiện tại đã kiểm kê. Engine luôn đưa folder này vào coverage để tránh cấu hình root bị thiếu CoA. |
+| `LIMS_DRIVE_ROOT_FOLDER_ID` hoặc `GOOGLE_DRIVE_FOLDER_ID` | Fallback một folder nguồn khi không dùng danh sách ở trên. |
+| `LIMS_DRIVE_TEMPLATE_IDS` | Danh sách ID các Google Docs/Sheets mẫu; nếu bỏ trống, engine dùng catalog hiện đang có trong `gas/SOP_Configs.gs`. |
+| `LIMS_BACKUP_DRIVE_RESTORE_FOLDER_ID` | Folder đích an toàn để tạo lại file/folder bị xóa khi restore. Bắt buộc nếu muốn phục hồi object đã mất khỏi Drive Trash. |
+| `LIMS_APPS_SCRIPT_ID`, `LIMS_APPS_SCRIPT_DEPLOYMENT_ID`, `LIMS_APPS_SCRIPT_WEB_APP_URL` | Metadata deployment Apps Script; `LIMS_APPS_SCRIPT_ID` ưu tiên hơn `scriptId` trong `.clasp.json`. Source `.gs`, `appsscript.json`, `.clasp.json`, nội dung project live và danh sách deployment live đều được snapshot mã hóa vào backup. |
+| `LIMS_BACKUP_MIN_DRIVE_FREE_BYTES` | Tùy chọn; nếu Drive trả về storage limit, backup dừng trước khi tạo folder khi dung lượng trống thấp hơn ngưỡng này. Không đặt giá trị nếu tài khoản/Shared Drive không có quota hữu hạn. |
+
+Refresh token backup phải thuộc đúng tài khoản có quyền đọc folder nguồn và ghi folder backup. Không dán token vào Firestore, Google Docs, issue, log hoặc giao diện. Nếu source folder nằm trong Shared Drive, tài khoản phải được cấp quyền tương ứng và API cần được kiểm tra trên chính Shared Drive đó.
+
+### Giới hạn quota và Auth restore
+
+Để không để một lần chạy ăn hết quota Spark, engine mặc định dừng nếu một backup vượt 40.000 document reads. Có thể điều chỉnh có kiểm soát bằng:
+
+```text
+LIMS_BACKUP_MAX_FIRESTORE_READS=40000
+LIMS_BACKUP_MAX_FIRESTORE_WRITES=18000
+```
+
+Không đặt hai giá trị này sát trần nếu ứng dụng vẫn đang phục vụ người dùng. Manifest lưu lại số reads/writes và số byte/API request Drive; cần theo dõi sau mỗi lần chạy.
+
+Firebase Auth được backup riêng theo trang 1.000 user. Nếu `UserRecord` có password hash, restore Auth cần thêm `LIMS_BACKUP_AUTH_HASH_ALGORITHM` cùng các tham số hash tương ứng (`LIMS_BACKUP_AUTH_HASH_KEY`, `LIMS_BACKUP_AUTH_SALT_SEPARATOR`, `LIMS_BACKUP_AUTH_HASH_ROUNDS`, `LIMS_BACKUP_AUTH_HASH_MEMORY_COST`, `LIMS_BACKUP_AUTH_HASH_PARALLELIZATION`, `LIMS_BACKUP_AUTH_HASH_BLOCK_SIZE`, `LIMS_BACKUP_AUTH_HASH_DERIVED_KEY_LENGTH` khi thuật toán yêu cầu). Thiếu hash configuration sẽ làm restore dừng trước khi import phần Auth để không tạo tài khoản không đăng nhập được.
+
+Mặc định `LIMS_BACKUP_ALLOW_UNKNOWN_COLLECTIONS` không bật. Nếu audit phát hiện collection Firestore mới ngoài catalog 32 collection, backup sẽ được tạo với trạng thái thất bại để không tuyên bố coverage toàn diện giả. Chỉ bật biến này sau khi đã review schema và cập nhật catalog.
+
+### Vận hành bắt buộc
+
+1. Trong Config → Hệ thống & Dữ liệu, cấp quyền Drive backup và bấm **Tạo backup mới**.
+2. Chờ trạng thái hoàn tất; manifest phải ghi đủ Firestore, Auth, Drive assets, folder và cả live project/deployment Apps Script. Nếu thiếu Apps Script scope hoặc live API trả lỗi, backup phải ở trạng thái thất bại và không được coi là bản backup toàn diện.
+3. Bấm **Kiểm tra integrity**; thao tác này tải và giải mã thử từng part và từng encrypted Drive asset, so checksum plaintext/ciphertext và record count.
+4. Bấm **Dry-run đối chiếu** trước mỗi restore; dry-run không ghi Firestore, không sửa Auth và không sửa Drive.
+5. Restore thông thường dùng **Restore an toàn — chỉ bổ sung phần bị thiếu**. Dữ liệu hiện có không bị ghi đè; file Drive bị Trash được khôi phục giữ nguyên ID, file đã mất hẳn được tạo lại và mapping URL trong Firestore được thay theo ID mới.
+6. Full replace chỉ gọi được với confirmation riêng, một backup dự phòng khác đã verify và scope phù hợp. Không dùng cho thao tác thường ngày.
+7. Định kỳ ít nhất mỗi tháng phải chạy một dry-run trên bản backup gần nhất và ghi nhận kết quả. Ít nhất mỗi quý phải diễn tập restore vào folder/project kiểm thử nếu có thể.
+
+Không xóa bản backup cũ ngay sau khi tạo bản mới. Giữ tối thiểu ba bản hoàn tất và một bản ngoài tài khoản Drive chính nếu yêu cầu disaster recovery bao gồm mất tài khoản Google.
+
 ## Chính sách lưu giữ thông báo
 
 Notification inbox chỉ lưu dữ liệu trong 7 ngày kể từ `createdAt`. Cleanup chính

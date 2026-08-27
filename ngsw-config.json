@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.27-b03",
-    "title": "Dashboard cập nhật đúng theo từng lần truy cập và hộp thông báo gọn nhẹ",
+    "version": "v26.08.28-b01",
+    "title": "Backup và restore toàn diện LIMS trên Firebase Spark không phát sinh billing",
     "features": [
-      "Mục “Mới kể từ lần truy cập trước” trên Dashboard được ghi nhận theo từng lần mở lại, phản ánh đúng các hoạt động phát sinh sau lần xem gần nhất.",
-      "Hộp thông báo áp dụng vòng đời 7 ngày và tự dọn hằng ngày, giảm dữ liệu dư thừa nhưng không ảnh hưởng nhật ký nghiệp vụ.",
-      "Bổ sung cleanup backend có xác thực CRON_SECRET, xử lý theo batch 400 bản ghi và giới hạn 2.000 bản ghi mỗi lần chạy để phù hợp quota Spark.",
-      "Giữ Activity Feed, audit log và mốc lần xem cuối độc lập với retention của hộp thông báo.",
-      "Ẩn ngay thông báo quá hạn khỏi giao diện và badge, đồng thời dọn bù an toàn các bản ghi cũ đã được listener tải về trước lịch chạy nền."
+      "Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.",
+      "Mỗi backup được kiểm tra đọc ngược, checksum, cấu trúc catalog và quyền truy cập trước khi được công nhận hoàn tất; không sử dụng Firestore managed export cần gói thanh toán.",
+      "Có dry-run, khôi phục an toàn phần còn thiếu, restore chọn lọc, full replace có xác nhận riêng và checkpoint mã hóa để tiếp tục khi restore bị gián đoạn.",
+      "Thu thập đệ quy toàn bộ catalog Firestore hiện tại, các subcollection/collection group, hồ sơ người dùng và đối soát UID giữa Auth với hồ sơ Firestore.",
+      "Quét cây Drive nguồn, các ID tệp được tham chiếu trong dữ liệu, toàn bộ template cấu hình và native copy cho tệp Workspace để phục hồi tốt hơn."
     ]
   },
   "assetGroups": [

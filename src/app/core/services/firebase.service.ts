@@ -365,53 +365,6 @@ export class FirebaseService {
     return totalRestored;
   }
 
-  // --- Backup & Restore ---
-  async exportData(): Promise<any> {
-    const sopsSnap = await getDocs(collection(this.db, `artifacts/${this.APP_ID}/sops`));
-    this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/sops`, sopsSnap.size);
-    const invSnap = await getDocs(collection(this.db, `artifacts/${this.APP_ID}/inventory`));
-    this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/inventory`, invSnap.size);
-
-    const sops = sopsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const inventory = invSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    return { 
-      meta: { appId: this.APP_ID, date: new Date().toISOString() },
-      sops, 
-      inventory 
-    };
-  }
-
-  async importData(jsonData: any) {
-    if (!jsonData.sops || !jsonData.inventory) throw new Error('Invalid Backup File');
-
-    const batch = writeBatch(this.db);
-    let opCount = 0;
-    const MAX_BATCH = 450; 
-
-    const checkBatch = async () => {
-        opCount++;
-        if (opCount >= MAX_BATCH) {
-            await batch.commit();
-            opCount = 0;
-        }
-    };
-
-    for (const item of jsonData.inventory) {
-        const ref = doc(this.db, `artifacts/${this.APP_ID}/inventory`, item.id);
-        batch.set(ref, item);
-        await checkBatch();
-    }
-
-    for (const item of jsonData.sops) {
-        const ref = doc(this.db, `artifacts/${this.APP_ID}/sops`, item.id);
-        batch.set(ref, item);
-        await checkBatch();
-    }
-
-    if (opCount > 0) await batch.commit();
-  }
-
   // --- Sample Data Loader (GC-NAFIQPM 6) ---
   async loadSampleData() {
     const inventory = [

@@ -393,6 +393,18 @@ export const ACTIVITY_ACTION_REGISTRY = {
     module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'IMPORTANT', activityVisible: true,
     label: 'đã tắt hiển thị tính năng khóa', iconKey: 'eye-slash', defaultActionUrl: configUrl, notification: none()
   }),
+  BACKUP_CREATE: define('BACKUP_CREATE', {
+    module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'IMPORTANT', activityVisible: true,
+    label: 'đã tạo backup toàn diện', iconKey: 'cloud-arrow-up', defaultActionUrl: configUrl, notification: none()
+  }),
+  BACKUP_VERIFY: define('BACKUP_VERIFY', {
+    module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'IMPORTANT', activityVisible: true,
+    label: 'đã kiểm tra integrity backup', iconKey: 'shield-check', defaultActionUrl: configUrl, notification: none()
+  }),
+  BACKUP_RESTORE: define('BACKUP_RESTORE', {
+    module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'WARNING', activityVisible: true,
+    label: 'đã restore từ backup', iconKey: 'cloud-arrow-down', defaultActionUrl: configUrl, notification: none()
+  }),
 
   PRINT: define('PRINT', {
     module: 'RESULT', audience: 'RESULT_VIEW', importance: 'NORMAL', activityVisible: false,

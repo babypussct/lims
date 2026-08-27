@@ -82,6 +82,17 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
                   Quyền này <strong>KHÔNG</strong> cho phép ứng dụng đọc hoặc xem toàn bộ Google Drive của bạn, mà <strong>chỉ giới hạn</strong> đọc, ghi và cập nhật các tệp tin được tạo bởi chính ứng dụng này.
                 </li>
                 <li>
+                  <strong>Backup quản trị (tùy chọn):</strong> Chỉ khi quản trị viên chủ động chọn chức năng Backup Toàn Diện, hệ thống mới yêu cầu OAuth scope
+                  <code class="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-mono font-bold border border-amber-200 dark:border-amber-800">https://www.googleapis.com/auth/drive</code>
+                  để kiểm kê và sao lưu cả các tệp CoA, PDF, Google Docs, Google Sheets/Excel và thư mục mẫu đã có sẵn trên Drive. Quyền mở rộng này chỉ dùng cho tài khoản quản trị backup, payload được mã hóa trước khi tải lên thư mục backup riêng và không được cấp cho người dùng nghiệp vụ thông thường.
+                </li>
+                <li>
+                  Luồng backup quản trị cũng yêu cầu hai quyền Apps Script chỉ đọc
+                  <code class="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-mono font-bold border border-amber-200 dark:border-amber-800">script.projects.readonly</code>
+                  và <code class="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-mono font-bold border border-amber-200 dark:border-amber-800">script.deployments.readonly</code>
+                  để kiểm tra source/project và deployment đang sống; hệ thống không dùng quyền Apps Script để sửa hoặc redeploy project.
+                </li>
+                <li>
                   <strong>Loại tệp tin tương tác:</strong> Ứng dụng chỉ tạo và làm việc với các tệp tin báo cáo kết quả thí nghiệm, chứng chỉ chất lượng (CoA) hoặc biểu mẫu SOP dưới dạng tệp Excel/PDF do người dùng chọn xuất.
                 </li>
               </ul>

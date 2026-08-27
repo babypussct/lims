@@ -54,7 +54,10 @@ export const PERMISSIONS = {
   REPORT_VIEW: 'report_view',
   USER_MANAGE: 'user_manage',
   STANDARD_REQUEST: 'standard_request', // Đăng ký mượn chuẩn
-  BYPASS_MAINTENANCE: 'bypass_maintenance' // Quyền truy cập khi bảo trì (Whitelist)
+  BYPASS_MAINTENANCE: 'bypass_maintenance', // Quyền truy cập khi bảo trì (Whitelist)
+  BACKUP_CREATE: 'backup_create',
+  BACKUP_VERIFY: 'backup_verify',
+  BACKUP_RESTORE: 'backup_restore'
 };
 
 export const PERMISSION_NAMES: Record<string, string> = {
@@ -74,7 +77,10 @@ export const PERMISSION_NAMES: Record<string, string> = {
   [PERMISSIONS.REPORT_VIEW]: 'Xem Báo Cáo',
   [PERMISSIONS.USER_MANAGE]: 'Quản Lý Hệ Thống',
   [PERMISSIONS.STANDARD_REQUEST]: 'Mượn Chuẩn',
-  [PERMISSIONS.BYPASS_MAINTENANCE]: 'Vượt Bảo Trì'
+  [PERMISSIONS.BYPASS_MAINTENANCE]: 'Vượt Bảo Trì',
+  [PERMISSIONS.BACKUP_CREATE]: 'Tạo Backup Toàn Diện',
+  [PERMISSIONS.BACKUP_VERIFY]: 'Kiểm Tra Backup',
+  [PERMISSIONS.BACKUP_RESTORE]: 'Restore Backup'
 };
 
 export const DEFAULT_ROLES = {

@@ -1,20 +1,24 @@
 {
-  "title": "Dashboard cập nhật đúng theo từng lần truy cập và hộp thông báo gọn nhẹ",
+  "title": "Backup và restore toàn diện LIMS trên Firebase Spark không phát sinh billing",
   "highlights": [
-    "Mục “Mới kể từ lần truy cập trước” trên Dashboard được ghi nhận theo từng lần mở lại, phản ánh đúng các hoạt động phát sinh sau lần xem gần nhất.",
-    "Hộp thông báo áp dụng vòng đời 7 ngày và tự dọn hằng ngày, giảm dữ liệu dư thừa nhưng không ảnh hưởng nhật ký nghiệp vụ."
+    "Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.",
+    "Mỗi backup được kiểm tra đọc ngược, checksum, cấu trúc catalog và quyền truy cập trước khi được công nhận hoàn tất; không sử dụng Firestore managed export cần gói thanh toán.",
+    "Có dry-run, khôi phục an toàn phần còn thiếu, restore chọn lọc, full replace có xác nhận riêng và checkpoint mã hóa để tiếp tục khi restore bị gián đoạn."
   ],
   "features": [
-    "Bổ sung cleanup backend có xác thực CRON_SECRET, xử lý theo batch 400 bản ghi và giới hạn 2.000 bản ghi mỗi lần chạy để phù hợp quota Spark.",
-    "Giữ Activity Feed, audit log và mốc lần xem cuối độc lập với retention của hộp thông báo."
+    "Thu thập đệ quy toàn bộ catalog Firestore hiện tại, các subcollection/collection group, hồ sơ người dùng và đối soát UID giữa Auth với hồ sơ Firestore.",
+    "Quét cây Drive nguồn, các ID tệp được tham chiếu trong dữ liệu, toàn bộ template cấu hình và native copy cho tệp Workspace để phục hồi tốt hơn.",
+    "Chụp source/config Apps Script trong repository và kiểm chứng thêm project, content, deployments đang sống qua Apps Script API với quyền chỉ đọc.",
+    "Thêm màn hình quản trị, quyền BACKUP_CREATE/BACKUP_VERIFY/BACKUP_RESTORE, audit log token-free và hướng dẫn cấu hình OAuth/quota/restore."
   ],
   "improvements": [
-    "Ẩn ngay thông báo quá hạn khỏi giao diện và badge, đồng thời dọn bù an toàn các bản ghi cũ đã được listener tải về trước lịch chạy nền.",
-    "Dùng một cơ chế khởi tạo Firebase Admin dùng chung cho API thông báo và tác vụ dọn định kỳ, giảm cấu hình trùng lặp."
+    "Bổ sung guard dung lượng Drive trước và sau backup, giới hạn đọc/ghi Firestore, manifest minh bạch về consistency boundary và cảnh báo khi dữ liệu nguồn có vấn đề.",
+    "Khôi phục Drive theo quan hệ parent trước, tự remap link Firestore khi tệp bị tạo lại bằng ID mới, đồng thời bảo vệ thay đổi nghiệp vụ hiện có trong RECOVER_MISSING.",
+    "Loại bỏ đường export/import JSON cũ có nguy cơ khôi phục không an toàn; mọi thao tác restore mới đều đi qua kiểm tra integrity và xác thực quyền quản trị."
   ],
   "fixes": [
-    "Sửa lỗi Dashboard đánh dấu trạng thái đã xem ở phạm vi dùng chung, khiến lần truy cập sau không hiển thị đúng hoạt động mới.",
-    "Sửa lỗi thông báo cũ hơn thời hạn vẫn có thể xuất hiện trong danh sách hoặc số đếm chưa đọc.",
-    "Bổ sung kiểm tra không xóa các bản ghi thông báo thiếu hoặc có timestamp không hợp lệ để tránh dọn nhầm dữ liệu."
+    "Không còn coi backup chỉ gồm hai collection sops và inventory là backup toàn hệ thống.",
+    "Sửa các trường hợp restore batch/JSON cũ có thể gây lỗi hoặc ghi đè không kiểm soát; bổ sung kiểm tra kiểu dữ liệu Firestore, catalog và Drive ACL.",
+    "Ngăn việc công nhận backup hoàn tất nếu thiếu live Apps Script snapshot, thiếu payload/tệp, checksum sai, quyền chia sẻ không an toàn hoặc không đọc lại được manifest."
   ]
 }
