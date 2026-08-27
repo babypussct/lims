@@ -414,7 +414,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   connectBackupDrive() {
     const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.assign(`/api/oauth/google/backup-start?returnTo=${encodeURIComponent(returnTo)}`);
+    window.location.assign(`/api/oauth/google/start?mode=backup&returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   async createComprehensiveBackup() {

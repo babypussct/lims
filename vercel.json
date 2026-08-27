@@ -5,10 +5,7 @@
   "outputDirectory": "dist/lims-cloud-pro/browser",
   "framework": "angular",
   "functions": {
-    "api/backup/create.ts": {
-      "includeFiles": "{gas/**,.clasp.json}"
-    },
-    "api/backup/status.ts": {
+    "api/backup.ts": {
       "includeFiles": "{gas/**,.clasp.json}"
     }
   },
@@ -26,6 +23,9 @@
   "rewrites": [
     { "source": "/__/auth/(.*)", "destination": "https://lims-cloud-by-otada.firebaseapp.com/__/auth/$1" },
     { "source": "/__/firebase/(.*)", "destination": "https://lims-cloud-by-otada.firebaseapp.com/__/firebase/$1" },
+    { "source": "/api/backup/:operation", "destination": "/api/backup?operation=:operation" },
+    { "source": "/api/oauth/google/status", "destination": "/api/oauth/google/start?action=status" },
+    { "source": "/api/oauth/google/backup-start", "destination": "/api/oauth/google/start?mode=backup" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

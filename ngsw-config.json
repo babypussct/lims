@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.28-b02",
+    "version": "v26.08.28-b03",
     "title": "Backup và restore toàn diện LIMS trên Firebase Spark không phát sinh billing",
     "features": [
       "Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.",

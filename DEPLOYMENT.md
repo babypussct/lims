@@ -64,7 +64,7 @@ Thiết lập ở Vercel Production, Preview (nếu cần kiểm thử) và môi
 
 ### Quyền Drive dùng cho backup
 
-Luồng upload báo cáo thông thường tiếp tục dùng scope hạn chế `drive.file`. Backup toàn diện có luồng riêng `/api/oauth/google/backup-start`, yêu cầu quản trị viên cấp `https://www.googleapis.com/auth/drive` để có thể đọc **cả tệp đã tồn tại trên Drive**, bao gồm CoA, PDF, Docs mẫu và Excel/Sheets do Apps Script hoặc người dùng tạo trước đó. Luồng này đồng thời yêu cầu hai scope chỉ đọc của Apps Script là `https://www.googleapis.com/auth/script.projects.readonly` và `https://www.googleapis.com/auth/script.deployments.readonly` để chụp nội dung project/deployment đang chạy, không chỉ bản `.gs` trong source bundle. Nếu không muốn giữ refresh token trong cookie quản trị, có thể cấu hình:
+Luồng upload báo cáo thông thường tiếp tục dùng scope hạn chế `drive.file`. Backup toàn diện dùng `/api/oauth/google/start?mode=backup`, yêu cầu quản trị viên cấp `https://www.googleapis.com/auth/drive` để có thể đọc **cả tệp đã tồn tại trên Drive**, bao gồm CoA, PDF, Docs mẫu và Excel/Sheets do Apps Script hoặc người dùng tạo trước đó. Luồng này đồng thời yêu cầu hai scope chỉ đọc của Apps Script là `https://www.googleapis.com/auth/script.projects.readonly` và `https://www.googleapis.com/auth/script.deployments.readonly` để chụp nội dung project/deployment đang chạy, không chỉ bản `.gs` trong source bundle. Nếu không muốn giữ refresh token trong cookie quản trị, có thể cấu hình:
 
 | Biến | Mục đích |
 |---|---|
@@ -78,6 +78,10 @@ Luồng upload báo cáo thông thường tiếp tục dùng scope hạn chế `
 | `LIMS_BACKUP_MIN_DRIVE_FREE_BYTES` | Tùy chọn; nếu Drive trả về storage limit, backup dừng trước khi tạo folder khi dung lượng trống thấp hơn ngưỡng này. Không đặt giá trị nếu tài khoản/Shared Drive không có quota hữu hạn. |
 
 Refresh token backup phải thuộc đúng tài khoản có quyền đọc folder nguồn và ghi folder backup. Không dán token vào Firestore, Google Docs, issue, log hoặc giao diện. Nếu source folder nằm trong Shared Drive, tài khoản phải được cấp quyền tương ứng và API cần được kiểm tra trên chính Shared Drive đó.
+
+### Giới hạn function trên Vercel Hobby
+
+Vercel Hobby giới hạn số Serverless Functions trong một deployment. Để không phát sinh billing, các thao tác `create`, `list`, `inspect`, `verify`, `restore` và `status` được định tuyến qua một function chung `api/backup.ts`; các URL `/api/backup/<operation>` cũ vẫn được giữ bằng rewrite. Luồng OAuth backup dùng chung function `/api/oauth/google/start` với `mode=backup`, còn `/api/oauth/google/status` được giữ bằng rewrite tương thích. Không xóa hoặc đổi các rewrite này nếu chưa kiểm tra lại tổng số function production.
 
 ### Giới hạn quota và Auth restore
 

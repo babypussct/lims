@@ -1,12 +1,22 @@
 import { randomBytes } from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
-  callbackUrl, codeChallenge, cookieHeader, DRIVE_SCOPES, encryptCookie,
-  GOOGLE_STATE_COOKIE, OAuthState, oauthClientId, safeReturnTo
+  BACKUP_OAUTH_SCOPES, callbackUrl, codeChallenge, cookieHeader, DRIVE_SCOPES, encryptCookie,
+  getValidGoogleSession, GOOGLE_STATE_COOKIE, OAuthState, oauthClientId, safeReturnTo
 } from '../../_lib/google-oauth.js';
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.query['action'] === 'status') {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const session = await getValidGoogleSession(req, res);
+      return res.status(200).json({ authenticated: !!session });
+    } catch (error) {
+      console.error('[OAuth] Status check failed:', error);
+      return res.status(200).json({ authenticated: false });
+    }
+  }
   try {
     const state: OAuthState = {
       nonce: randomBytes(24).toString('base64url'),
@@ -17,11 +27,12 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Set-Cookie', cookieHeader(GOOGLE_STATE_COOKIE, encryptCookie(state), 10 * 60));
     res.setHeader('Cache-Control', 'no-store');
 
+    const scope = req.query['mode'] === 'backup' ? BACKUP_OAUTH_SCOPES : DRIVE_SCOPES;
     const params = new URLSearchParams({
       client_id: oauthClientId(),
       redirect_uri: callbackUrl(req),
       response_type: 'code',
-      scope: DRIVE_SCOPES,
+      scope,
       state: state.nonce,
       code_challenge: codeChallenge(state.verifier),
       code_challenge_method: 'S256',
