@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.27-b01",
-    "title": "Báo cáo đầy đủ, chính xác và có kiểm soát phát hành chặt chẽ hơn",
+    "version": "v26.08.27-b02",
+    "title": "Báo cáo quản trị hiển thị đầy đủ nhật ký và số liệu kho lịch sử",
     "features": [
-      "Báo cáo thống kê tải đầy đủ dữ liệu lịch sử theo từng trang và chỉ kết luận khi đã xác minh nguồn dữ liệu hoàn tất.",
-      "Production chỉ được gán domain sau khi Release Gate thành công, đồng thời tự chặn thay đổi ứng dụng không có version và changelog mới.",
-      "Bổ sung bộ kiểm tra release discipline cho code, API, GAS, Firestore và cấu hình production trước khi push hoặc promote deployment.",
-      "Bổ sung dữ liệu biến động tồn kho trong lịch sử audit để báo cáo có thể tái dựng nhập, xuất và hoàn trả theo thời gian.",
-      "Phân trang toàn bộ yêu cầu chất chuẩn, chuẩn đối chiếu và yêu cầu đã duyệt thay vì dùng cache hoặc giới hạn bản ghi gần nhất cho báo cáo."
+      "Nhật ký hoạt động không còn bị ẩn chỉ vì một số phiếu lịch sử thiếu dữ liệu phục vụ riêng cho báo cáo kho.",
+      "Báo cáo nhập - xuất - tồn khôi phục được các biến động lịch sử khi phiếu gốc vẫn còn thông tin đầy đủ.",
+      "Bổ sung khả năng đối chiếu phiếu gốc và lịch sử chỉnh sửa để tính lại số liệu kho trong các kỳ báo cáo cũ.",
+      "Giữ nguyên trạng thái cảnh báo đối với những biến động không đủ căn cứ xác minh, tránh hiển thị số liệu phỏng đoán.",
+      "Tách điều kiện đầy đủ dữ liệu của Nhật ký hoạt động khỏi điều kiện tái dựng báo cáo nhập - xuất - tồn."
     ]
   },
   "assetGroups": [

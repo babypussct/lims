@@ -12,6 +12,7 @@ export type FirestoreReadPhase =
   | 'batch'
   | 'report-page'
   | 'report-print-data'
+  | 'report-legacy-request-fallback'
   | 'report-inventory';
 
 export interface FirestoreReadMetric {

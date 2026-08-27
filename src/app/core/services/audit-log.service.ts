@@ -15,6 +15,7 @@ import {
   type Unsubscribe
 } from 'firebase/firestore';
 import type { Log, PrintData } from '../models/log.model';
+import type { Request } from '../models/request.model';
 import { timestampToMillis } from '../../shared/utils/timestamp';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
@@ -166,6 +167,42 @@ export class AuditLogService {
         for (const logId of logIdsByJobId.get(document.id) || []) {
           resolved.set(logId, printData);
         }
+      });
+    }
+
+    return resolved;
+  }
+
+  /**
+   * Load request projections only for legacy audit rows whose immutable print
+   * snapshot is no longer available. The caller decides whether a projection
+   * is safe to use as an N-X-T compatibility fallback.
+   */
+  async getRequestsForLogs(logs: readonly Log[]): Promise<Map<string, Request>> {
+    if (!this.auth.canViewReports()) throw new Error('Bạn không có quyền xem dữ liệu báo cáo.');
+
+    const requestIds = Array.from(new Set(
+      logs
+        .map(log => log.requestId)
+        .filter((requestId): requestId is string => typeof requestId === 'string' && requestId.length > 0)
+    ));
+    const resolved = new Map<string, Request>();
+    if (requestIds.length === 0) return resolved;
+
+    const path = `artifacts/${this.fb.APP_ID}/requests`;
+    const chunkSize = 30;
+    for (let i = 0; i < requestIds.length; i += chunkSize) {
+      const chunk = requestIds.slice(i, i + chunkSize);
+      const snapshot = await getDocs(query(
+        collection(this.fb.db, path),
+        where(documentId(), 'in', chunk)
+      ));
+      this.readMonitor.record('getDocs', path, snapshot.size, {
+        phase: 'report-legacy-request-fallback',
+        fromCache: snapshot.metadata.fromCache
+      });
+      snapshot.forEach(document => {
+        resolved.set(document.id, { id: document.id, ...document.data() } as Request);
       });
     }
 

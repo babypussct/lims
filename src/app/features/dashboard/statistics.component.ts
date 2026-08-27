@@ -30,6 +30,7 @@ import {
   getMonthKeysForStatisticsRange,
   matchesReportSop,
   needsLegacyNxtPrintData,
+  recoverLegacyNxtApprovalLogsFromRequests,
   resolveStatisticsDateRange,
   type ReportSopOption
 } from './statistics-report.utils';
@@ -361,7 +362,7 @@ export class StatisticsComponent {
           // bắt buộc của mọi export, không phụ thuộc checkbox sheet Standards.
           const coverStandardsLoad = this.ensureExportCoverStandardsLoaded();
           const reportLogsLoad = exportLogs || exportStandards
-              ? this.fetchCompleteReportLogs(reportStart, reportEnd)
+              ? this.fetchReportLogs(reportStart, reportEnd)
                   .then(logs => {
                       this.reportLogs.set(logs);
                       this.reportLogsReady.set(true);
@@ -968,18 +969,12 @@ export class StatisticsComponent {
     return load;
   }
 
-  private async fetchCompleteReportLogs(start: Date, end: Date): Promise<Log[]> {
+  private async fetchReportLogs(start: Date, end: Date): Promise<Log[]> {
     const logs = await this.audit.getLogsByDateRange(start, end);
     const printDataByLog = await this.audit.getPrintDataForLogs(logs);
-    // A print job is optional metadata for most audit events. Only legacy
-    // approval events need their immutable print snapshot to reconstruct the
-    // inventory movement used by N-X-T. Treating every dangling printJobId as
-    // a report-wide failure made the activity tab show "Dữ liệu báo cáo chưa
-    // đầy đủ" even when the log rows themselves were complete and usable.
-    const unresolved = findUnresolvedLegacyNxtApprovalLogs(logs, printDataByLog);
-    if (unresolved.length > 0) {
-      throw new Error(`Thiếu ${unresolved.length} snapshot phê duyệt lịch sử cần để tái dựng biến động kho.`);
-    }
+    // Missing legacy print snapshots affect stock reconstruction only. Audit
+    // rows remain complete business events and must still be shown/exported.
+    // generateNxtReport() owns the stricter recovery and completeness check.
     return enrichReportLogsWithPrintData(logs, printDataByLog);
   }
 
@@ -1189,7 +1184,7 @@ export class StatisticsComponent {
         const generation = ++this.reportLogsLoadGeneration;
         this.reportLogsReady.set(false);
         this.setReportDatasetError('Nhật ký nghiệp vụ', null);
-        this.fetchCompleteReportLogs(range.start, range.end).then(logs => {
+        this.fetchReportLogs(range.start, range.end).then(logs => {
             if (generation === this.reportLogsLoadGeneration) {
               this.reportLogs.set(logs);
               this.reportLogsReady.set(true);
@@ -1297,13 +1292,25 @@ export class StatisticsComponent {
           if (generation !== this.nxtReportGeneration) {
               throw new Error('Bộ lọc Báo Cáo đã thay đổi trong lúc đang tính N-X-T.');
           }
-          const unresolvedLegacyApprovals = findUnresolvedLegacyNxtApprovalLogs(logs, legacyPrintData);
+          const unresolvedBeforeRequestFallback = findUnresolvedLegacyNxtApprovalLogs(logs, legacyPrintData);
+          const legacyRequests = unresolvedBeforeRequestFallback.length > 0
+              ? await this.audit.getRequestsForLogs(unresolvedBeforeRequestFallback)
+              : new Map();
+          if (generation !== this.nxtReportGeneration) {
+              throw new Error('Bộ lọc Báo Cáo đã thay đổi trong lúc đang tính N-X-T.');
+          }
+          const recoverableLogs = recoverLegacyNxtApprovalLogsFromRequests(
+              logs,
+              legacyPrintData,
+              legacyRequests
+          );
+          const unresolvedLegacyApprovals = findUnresolvedLegacyNxtApprovalLogs(recoverableLogs, legacyPrintData);
           if (unresolvedLegacyApprovals.length > 0) {
               throw new Error(
                   `N-X-T thiếu ${unresolvedLegacyApprovals.length} snapshot phê duyệt lịch sử cần để tái dựng biến động kho.`
               );
           }
-          const movements = aggregateNxtMovements(logs, legacyPrintData, startTime, endTime, sopId);
+          const movements = aggregateNxtMovements(recoverableLogs, legacyPrintData, startTime, endTime, sopId);
           
           if (sopId === 'all') {
               const report: NxtReportItem[] = [];

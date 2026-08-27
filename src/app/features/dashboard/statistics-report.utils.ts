@@ -253,6 +253,125 @@ export function findUnresolvedLegacyNxtApprovalLogs(
   );
 }
 
+/**
+ * Recover old approval rows whose print_jobs document was removed before print
+ * snapshots became immutable. Legacy edit logs carry old/new inventory
+ * summaries, so the first inventory-changing edit restores the original
+ * approval amounts and each edit restores its own stock delta. If an edit does
+ * not have an auditable diff, the approval remains unresolved and N-X-T fails
+ * closed instead of guessing from the mutable current request projection.
+ */
+export function recoverLegacyNxtApprovalLogsFromRequests(
+  logs: readonly Log[],
+  printDataByLog: ReadonlyMap<string, PrintData>,
+  requestsById: ReadonlyMap<string, Request>
+): Log[] {
+  type LegacyEditRecovery = {
+    logId: string;
+    time: number | null;
+    valid: boolean;
+    oldAmounts?: Record<string, number>;
+    deltas?: Record<string, number>;
+  };
+
+  const parseInventorySummary = (value: unknown): Record<string, number> | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const amounts: Record<string, number> = {};
+    for (const [id, rawItem] of Object.entries(value as Record<string, unknown>)) {
+      if (!id || !rawItem || typeof rawItem !== 'object' || Array.isArray(rawItem)) return null;
+      const amount = (rawItem as { amount?: unknown }).amount;
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) return null;
+      amounts[id] = amount;
+    }
+    return amounts;
+  };
+
+  const buildEditRecovery = (log: Log): LegacyEditRecovery => {
+    if (!Array.isArray(log.diff)) return { logId: log.id, time: timestampToMillis(log.timestamp), valid: false };
+    const inventoryDiff = log.diff.find(entry => entry.field === 'inventoryItems');
+    if (!inventoryDiff) return { logId: log.id, time: timestampToMillis(log.timestamp), valid: true };
+
+    const oldAmounts = parseInventorySummary(inventoryDiff.oldValue);
+    const newAmounts = parseInventorySummary(inventoryDiff.newValue);
+    if (!oldAmounts || !newAmounts) {
+      return { logId: log.id, time: timestampToMillis(log.timestamp), valid: false };
+    }
+
+    const deltas: Record<string, number> = {};
+    for (const id of new Set([...Object.keys(oldAmounts), ...Object.keys(newAmounts)])) {
+      const delta = (oldAmounts[id] || 0) - (newAmounts[id] || 0);
+      if (delta !== 0) deltas[id] = delta;
+    }
+    return { logId: log.id, time: timestampToMillis(log.timestamp), valid: true, oldAmounts, deltas };
+  };
+
+  const editsByRequest = new Map<string, LegacyEditRecovery[]>();
+  const recoveredEditDeltas = new Map<string, Record<string, number>>();
+  for (const log of logs) {
+    if (log.action !== 'EDIT_REQUEST' || !log.requestId) continue;
+    const recovery = buildEditRecovery(log);
+    const edits = editsByRequest.get(log.requestId) || [];
+    edits.push(recovery);
+    editsByRequest.set(log.requestId, edits);
+    if (recovery.valid && recovery.deltas && Object.keys(recovery.deltas).length > 0) {
+      recoveredEditDeltas.set(log.id, recovery.deltas);
+    }
+  }
+
+  return logs.map(log => {
+    const recoveredEditDelta = recoveredEditDeltas.get(log.id);
+    if (recoveredEditDelta && Object.keys(normalizedInventoryDeltas(log.inventoryDeltas)).length === 0) {
+      return { ...log, inventoryDeltas: recoveredEditDelta };
+    }
+
+    if (
+      !needsLegacyNxtPrintData(log)
+      || log.printData
+      || printDataByLog.has(log.id)
+      || !log.requestId
+    ) {
+      return log;
+    }
+
+    const approvalTime = timestampToMillis(log.timestamp);
+    if (approvalTime === null) return log;
+    const laterEdits = (editsByRequest.get(log.requestId) || [])
+      .filter(edit => edit.time === null || edit.time > approvalTime)
+      .sort((a, b) => (a.time ?? Number.POSITIVE_INFINITY) - (b.time ?? Number.POSITIVE_INFINITY));
+    if (laterEdits.some(edit => !edit.valid || edit.time === null)) return log;
+
+    const firstInventoryEdit = laterEdits.find(edit => edit.oldAmounts);
+    const approvalAmounts: Record<string, number> = {};
+    if (firstInventoryEdit?.oldAmounts) {
+      Object.assign(approvalAmounts, firstInventoryEdit.oldAmounts);
+    } else {
+      const request = requestsById.get(log.requestId);
+      if (!request || !Array.isArray(request.items) || request.items.length === 0) return log;
+      for (const item of request.items) {
+        if (
+          typeof item.name !== 'string'
+          || item.name.length === 0
+          || typeof item.amount !== 'number'
+          || !Number.isFinite(item.amount)
+          || item.amount < 0
+        ) {
+          return log;
+        }
+        approvalAmounts[item.name] = (approvalAmounts[item.name] || 0) + item.amount;
+      }
+    }
+
+    const inventoryDeltas = Object.fromEntries(
+      Object.entries(approvalAmounts)
+        .filter(([, amount]) => amount !== 0)
+        .map(([id, amount]) => [id, -amount])
+    );
+    return Object.keys(inventoryDeltas).length > 0
+      ? { ...log, inventoryDeltas }
+      : log;
+  });
+}
+
 export function resolveNxtSopId(log: Log, printData?: PrintData): string {
   const metadataSopId = log.metadata?.['sopId'];
   if (typeof metadataSopId === 'string' && metadataSopId) return metadataSopId;

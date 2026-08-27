@@ -100,15 +100,22 @@ describe('dashboard shared UI primitive integration', () => {
     assert.ok(nxtSheet > workbookCreation, 'N-X-T sheet must reuse the prevalidated rows');
   });
 
-  it('does not make unrelated dangling print jobs invalidate the audit report', () => {
+  it('keeps audit rows available when legacy N-X-T snapshots are missing', () => {
     const component = read('./statistics.component.ts');
-    const loaderStart = component.indexOf('private async fetchCompleteReportLogs');
+    const loaderStart = component.indexOf('private async fetchReportLogs');
     const loaderEnd = component.indexOf('getDateRangeDisplayText()', loaderStart);
     const loader = component.slice(loaderStart, loaderEnd);
 
     assert.ok(loaderStart >= 0);
-    assert.match(loader, /findUnresolvedLegacyNxtApprovalLogs\(logs, printDataByLog\)/);
-    assert.doesNotMatch(loader, /!!log\.printJobId && !log\.printData/);
+    assert.match(loader, /enrichReportLogsWithPrintData\(logs, printDataByLog\)/);
+    assert.doesNotMatch(loader, /findUnresolvedLegacyNxtApprovalLogs/);
+
+    const nxtStart = component.indexOf('async generateNxtReport(');
+    const nxtEnd = component.indexOf('filteredLogs = computed', nxtStart);
+    const nxtLoader = component.slice(nxtStart, nxtEnd);
+    assert.match(nxtLoader, /getRequestsForLogs\(unresolvedBeforeRequestFallback\)/);
+    assert.match(nxtLoader, /recoverLegacyNxtApprovalLogsFromRequests/);
+    assert.match(nxtLoader, /findUnresolvedLegacyNxtApprovalLogs\(recoverableLogs, legacyPrintData\)/);
   });
 
   it('freezes one canonical report snapshot before building the Excel workbook', () => {

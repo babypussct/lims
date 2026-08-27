@@ -15,6 +15,7 @@ import {
   getMonthKeysForStatisticsRange,
   matchesReportSop,
   needsLegacyNxtPrintData,
+  recoverLegacyNxtApprovalLogsFromRequests,
   resolveNxtInventoryDeltas,
   resolveStatisticsDateRange
 } from './statistics-report.utils';
@@ -338,6 +339,83 @@ test('N-X-T fails completeness for every legacy approval that has no recoverable
     findUnresolvedLegacyNxtApprovalLogs([splitStorage, preSplitStorage], new Map()).map(item => item.id),
     ['split', 'pre-split']
   );
+});
+
+test('N-X-T recovers a missing legacy approval snapshot from unchanged request items', () => {
+  const approval = log({
+    id: 'approval-1',
+    action: 'DIRECT_APPROVE_PLAN',
+    requestId: 'request-1',
+    printJobId: 'deleted-job'
+  });
+  const recovered = recoverLegacyNxtApprovalLogsFromRequests(
+    [approval],
+    new Map(),
+    new Map([['request-1', request({
+      id: 'request-1',
+      items: [
+        { name: 'chem-a', amount: 1.25, displayAmount: 1.25, unit: 'g', stockUnit: 'g' },
+        { name: 'chem-a', amount: 0.75, displayAmount: 0.75, unit: 'g', stockUnit: 'g' },
+        { name: 'chem-b', amount: 2, displayAmount: 2, unit: 'mL', stockUnit: 'mL' }
+      ]
+    })]])
+  );
+
+  assert.deepEqual(recovered[0].inventoryDeltas, { 'chem-a': -2, 'chem-b': -2 });
+  assert.deepEqual(findUnresolvedLegacyNxtApprovalLogs(recovered, new Map()), []);
+});
+
+test('N-X-T recovers approval and edit deltas from the legacy inventory diff chain', () => {
+  const approval = log({
+    id: 'approval-1',
+    action: 'APPROVE_REQUEST',
+    requestId: 'request-1',
+    timestamp: new Date('2026-08-10T10:00:00+07:00')
+  });
+  const edit = log({
+    id: 'edit-1',
+    action: 'EDIT_REQUEST',
+    requestId: 'request-1',
+    timestamp: new Date('2026-08-11T10:00:00+07:00'),
+    diff: [{
+      field: 'inventoryItems',
+      oldValue: { 'chem-a': { amount: 3, unit: 'g' }, 'chem-b': { amount: 1, unit: 'mL' } },
+      newValue: { 'chem-a': { amount: 2, unit: 'g' }, 'chem-b': { amount: 2, unit: 'mL' } }
+    }]
+  });
+  const recovered = recoverLegacyNxtApprovalLogsFromRequests(
+    [approval, edit],
+    new Map(),
+    new Map([['request-1', request({
+      id: 'request-1',
+      items: [{ name: 'chem-a', amount: 1, displayAmount: 1, unit: 'g', stockUnit: 'g' }]
+    })]])
+  );
+
+  assert.deepEqual(recovered[0].inventoryDeltas, { 'chem-a': -3, 'chem-b': -1 });
+  assert.deepEqual(recovered[1].inventoryDeltas, { 'chem-a': 1, 'chem-b': -1 });
+  assert.deepEqual(findUnresolvedLegacyNxtApprovalLogs(recovered, new Map()), []);
+});
+
+test('N-X-T refuses request fallback when a later legacy edit has no auditable diff', () => {
+  const approval = log({ id: 'approval-1', action: 'APPROVE_REQUEST', requestId: 'request-1' });
+  const unknownEdit = log({
+    id: 'edit-1',
+    action: 'EDIT_REQUEST',
+    requestId: 'request-1',
+    timestamp: new Date('2026-08-11T10:00:00+07:00')
+  });
+  const recovered = recoverLegacyNxtApprovalLogsFromRequests(
+    [approval, unknownEdit],
+    new Map(),
+    new Map([['request-1', request({
+      id: 'request-1',
+      items: [{ name: 'chem-a', amount: 1, displayAmount: 1, unit: 'g', stockUnit: 'g' }]
+    })]])
+  );
+
+  assert.equal(recovered[0], approval);
+  assert.deepEqual(findUnresolvedLegacyNxtApprovalLogs(recovered, new Map()).map(item => item.id), ['approval-1']);
 });
 
 test('N-X-T all-SOP aggregation separates imports, exports and future net change', () => {

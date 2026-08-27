@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.27-b01
+## Phiên bản hiện tại: v26.08.27-b02
+
+### v26.08.27-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nhật ký hoạt động không còn bị ẩn chỉ vì một số phiếu lịch sử thiếu dữ liệu phục vụ riêng cho báo cáo kho.
+- Báo cáo nhập - xuất - tồn khôi phục được các biến động lịch sử khi phiếu gốc vẫn còn thông tin đầy đủ.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung khả năng đối chiếu phiếu gốc và lịch sử chỉnh sửa để tính lại số liệu kho trong các kỳ báo cáo cũ.
+- Giữ nguyên trạng thái cảnh báo đối với những biến động không đủ căn cứ xác minh, tránh hiển thị số liệu phỏng đoán.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tách điều kiện đầy đủ dữ liệu của Nhật ký hoạt động khỏi điều kiện tái dựng báo cáo nhập - xuất - tồn.
+- Tiếp tục tải đầy đủ lịch sử báo cáo theo khoảng ngày, không phụ thuộc danh sách hoạt động gần đây.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi toàn bộ nhật ký nghiệp vụ bị biến mất khi dữ liệu phiếu in lịch sử không còn đầy đủ.
+- Sửa lỗi báo cáo nhập - xuất - tồn bỏ sót lượng dùng và các lần điều chỉnh của một số phiếu SmartBatch cũ.
+- Bổ sung kiểm tra an toàn để chỉ phục hồi số liệu khi lịch sử phiếu có đủ căn cứ đối chiếu.
 
 ### v26.08.27-b01
 
