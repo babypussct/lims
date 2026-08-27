@@ -100,6 +100,17 @@ describe('dashboard shared UI primitive integration', () => {
     assert.ok(nxtSheet > workbookCreation, 'N-X-T sheet must reuse the prevalidated rows');
   });
 
+  it('does not make unrelated dangling print jobs invalidate the audit report', () => {
+    const component = read('./statistics.component.ts');
+    const loaderStart = component.indexOf('private async fetchCompleteReportLogs');
+    const loaderEnd = component.indexOf('getDateRangeDisplayText()', loaderStart);
+    const loader = component.slice(loaderStart, loaderEnd);
+
+    assert.ok(loaderStart >= 0);
+    assert.match(loader, /findUnresolvedLegacyNxtApprovalLogs\(logs, printDataByLog\)/);
+    assert.doesNotMatch(loader, /!!log\.printJobId && !log\.printData/);
+  });
+
   it('freezes one canonical report snapshot before building the Excel workbook', () => {
     const component = read('./statistics.component.ts');
     const exportStart = component.indexOf('async runGlobalExport()');

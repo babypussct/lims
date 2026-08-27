@@ -971,11 +971,14 @@ export class StatisticsComponent {
   private async fetchCompleteReportLogs(start: Date, end: Date): Promise<Log[]> {
     const logs = await this.audit.getLogsByDateRange(start, end);
     const printDataByLog = await this.audit.getPrintDataForLogs(logs);
-    const unresolved = logs.filter(log =>
-      !!log.printJobId && !log.printData && !printDataByLog.has(log.id)
-    );
+    // A print job is optional metadata for most audit events. Only legacy
+    // approval events need their immutable print snapshot to reconstruct the
+    // inventory movement used by N-X-T. Treating every dangling printJobId as
+    // a report-wide failure made the activity tab show "Dữ liệu báo cáo chưa
+    // đầy đủ" even when the log rows themselves were complete and usable.
+    const unresolved = findUnresolvedLegacyNxtApprovalLogs(logs, printDataByLog);
     if (unresolved.length > 0) {
-      throw new Error(`Thiếu ${unresolved.length} snapshot print_jobs được tham chiếu bởi nhật ký.`);
+      throw new Error(`Thiếu ${unresolved.length} snapshot phê duyệt lịch sử cần để tái dựng biến động kho.`);
     }
     return enrichReportLogsWithPrintData(logs, printDataByLog);
   }
