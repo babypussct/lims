@@ -101,7 +101,7 @@ Mặc định `LIMS_BACKUP_ALLOW_UNKNOWN_COLLECTIONS` không bật. Nếu audit 
 ### Vận hành bắt buộc
 
 1. Trong Config → Hệ thống & Dữ liệu, cấp quyền Drive backup và bấm **Tạo backup mới**.
-2. Chờ trạng thái hoàn tất; manifest phải ghi đủ Firestore, Auth, Drive assets, folder và cả live project/deployment Apps Script. Nếu thiếu Apps Script scope hoặc live API trả lỗi, backup phải ở trạng thái thất bại và không được coi là bản backup toàn diện.
+2. Chờ trạng thái hoàn tất; manifest phải ghi đủ Firestore, Auth, Drive assets, folder và cả live project/deployment Apps Script. Nếu backup đã có checkpoint nhưng dừng/thất bại do lỗi Drive tạm thời, chọn đúng backup đó và dùng **Tiếp tục backup dở dang** để retry/repair tại chỗ; không tạo snapshot mới chỉ để thử lại. Nếu thiếu Apps Script scope, có asset 404/không hỗ trợ hoặc live API vẫn trả lỗi, backup phải ở trạng thái thất bại và không được coi là bản backup toàn diện.
 3. Bấm **Kiểm tra integrity**; thao tác này tải và giải mã thử từng part và từng encrypted Drive asset, so checksum plaintext/ciphertext và record count.
 4. Bấm **Dry-run đối chiếu** trước mỗi restore; dry-run không ghi Firestore, không sửa Auth và không sửa Drive.
 5. Restore thông thường dùng **Restore an toàn — chỉ bổ sung phần bị thiếu**. Dữ liệu hiện có không bị ghi đè; file Drive bị Trash được khôi phục giữ nguyên ID, file đã mất hẳn được tạo lại và mapping URL trong Firestore được thay theo ID mới.

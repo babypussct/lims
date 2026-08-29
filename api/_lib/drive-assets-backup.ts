@@ -35,6 +35,38 @@ export interface DriveAssetBackupOutcome {
   errors: string[];
 }
 
+const DRIVE_READ_RETRY_LIMIT = 3;
+
+function driveReadRetryBaseMs(): number {
+  const raw = process.env['LIMS_BACKUP_DRIVE_RETRY_BASE_MS'];
+  if (!raw) return 250;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 0 || value > 5_000) {
+    throw new Error('LIMS_BACKUP_DRIVE_RETRY_BASE_MS phải là số nguyên từ 0 đến 5000.');
+  }
+  return value;
+}
+
+function isTransientDriveReadError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return /Google Drive (?:API|download|export) (?:429|5\d\d)\b/.test(error.message);
+}
+
+async function withDriveReadRetry<T>(operation: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= DRIVE_READ_RETRY_LIMIT; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isTransientDriveReadError(error) || attempt === DRIVE_READ_RETRY_LIMIT) throw error;
+      const delayMs = driveReadRetryBaseMs() * (2 ** (attempt - 1));
+      if (delayMs > 0) await new Promise<void>(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 function extensionForMime(mimeType: string): string {
   if (mimeType === 'application/pdf') return 'pdf';
   if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
@@ -146,13 +178,14 @@ export async function backupSingleDriveAsset(
   const errors: string[] = [];
   let source: DriveFileMetadata | undefined;
   try {
-    source = await client.getMetadata(reference.fileId);
+    source = await withDriveReadRetry(() => client.getMetadata(reference.fileId));
     if (source.mimeType === 'application/vnd.google-apps.folder') {
       throw new Error('Drive folder was included in the asset plan unexpectedly.');
     }
     let plaintext: Buffer;
     let exportMimeType = source.mimeType;
     let exportExtension = extensionForMime(source.mimeType);
+    const sourceFileId = source.id;
     const exportSpec = DriveBackupClient.exportSpec(source.mimeType);
     const isAppsScriptProject = source.mimeType === 'application/vnd.google-apps.script' || appsScriptIds.includes(source.id);
     if (isAppsScriptProject) {
@@ -162,11 +195,11 @@ export async function backupSingleDriveAsset(
     } else if (exportSpec) {
       exportMimeType = exportSpec.mimeType;
       exportExtension = exportSpec.extension;
-      plaintext = await client.exportFile(source.id, exportMimeType);
+      plaintext = await withDriveReadRetry(() => client.exportFile(sourceFileId, exportMimeType));
     } else if (DriveBackupClient.isWorkspaceFile(source.mimeType)) {
       throw new Error(`Unsupported Google Workspace MIME type ${source.mimeType}.`);
     } else {
-      plaintext = await client.download(source.id);
+      plaintext = await withDriveReadRetry(() => client.download(sourceFileId));
     }
     const encrypted = encryptBackupPayload(plaintext, key);
     const payloadName = `asset-${String(index).padStart(5, '0')}-${safeBackupName(source.name)}.${exportExtension}.enc`;

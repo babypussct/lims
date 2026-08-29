@@ -2,12 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.28-b03",
-    "title": "Backup và restore toàn diện LIMS trên Firebase Spark không phát sinh billing",
+    "version": "v26.08.29-b01",
+    "title": "Backup LIMS có thể tiếp tục và tự sửa lỗi Drive tạm thời",
     "features": [
       "Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.",
       "Mỗi backup được kiểm tra đọc ngược, checksum, cấu trúc catalog và quyền truy cập trước khi được công nhận hoàn tất; không sử dụng Firestore managed export cần gói thanh toán.",
-      "Có dry-run, khôi phục an toàn phần còn thiếu, restore chọn lọc, full replace có xác nhận riêng và checkpoint mã hóa để tiếp tục khi restore bị gián đoạn.",
+      "Có thể tiếp tục đúng backup đã chọn và sửa lại riêng các tệp Drive lỗi mà không chạy lại snapshot Firestore/Auth đã hoàn tất.",
       "Thu thập đệ quy toàn bộ catalog Firestore hiện tại, các subcollection/collection group, hồ sơ người dùng và đối soát UID giữa Auth với hồ sơ Firestore.",
       "Quét cây Drive nguồn, các ID tệp được tham chiếu trong dữ liệu, toàn bộ template cấu hình và native copy cho tệp Workspace để phục hồi tốt hơn."
     ]

@@ -1,9 +1,9 @@
 {
-  "title": "Backup và restore toàn diện LIMS trên Firebase Spark không phát sinh billing",
+  "title": "Backup LIMS có thể tiếp tục và tự sửa lỗi Drive tạm thời",
   "highlights": [
     "Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.",
     "Mỗi backup được kiểm tra đọc ngược, checksum, cấu trúc catalog và quyền truy cập trước khi được công nhận hoàn tất; không sử dụng Firestore managed export cần gói thanh toán.",
-    "Có dry-run, khôi phục an toàn phần còn thiếu, restore chọn lọc, full replace có xác nhận riêng và checkpoint mã hóa để tiếp tục khi restore bị gián đoạn."
+    "Có thể tiếp tục đúng backup đã chọn và sửa lại riêng các tệp Drive lỗi mà không chạy lại snapshot Firestore/Auth đã hoàn tất."
   ],
   "features": [
     "Thu thập đệ quy toàn bộ catalog Firestore hiện tại, các subcollection/collection group, hồ sơ người dùng và đối soát UID giữa Auth với hồ sơ Firestore.",
@@ -14,13 +14,14 @@
   "improvements": [
     "Bổ sung guard dung lượng Drive trước và sau backup, giới hạn đọc/ghi Firestore, manifest minh bạch về consistency boundary và cảnh báo khi dữ liệu nguồn có vấn đề.",
     "Khôi phục Drive theo quan hệ parent trước, tự remap link Firestore khi tệp bị tạo lại bằng ID mới, đồng thời bảo vệ thay đổi nghiệp vụ hiện có trong RECOVER_MISSING.",
-    "Loại bỏ đường export/import JSON cũ có nguy cơ khôi phục không an toàn; mọi thao tác restore mới đều đi qua kiểm tra integrity và xác thực quyền quản trị."
+    "Thêm retry/backoff có giới hạn cho lỗi đọc/export Drive 429 và 5xx, đồng thời giữ lỗi 404/không hỗ trợ ở trạng thái chặn để không chứng nhận backup thiếu dữ liệu."
   ],
   "fixes": [
     "Không còn coi backup chỉ gồm hai collection sops và inventory là backup toàn hệ thống.",
     "Sửa các trường hợp restore batch/JSON cũ có thể gây lỗi hoặc ghi đè không kiểm soát; bổ sung kiểm tra kiểu dữ liệu Firestore, catalog và Drive ACL.",
     "Ngăn việc công nhận backup hoàn tất nếu thiếu live Apps Script snapshot, thiếu payload/tệp, checksum sai, quyền chia sẻ không an toàn hoặc không đọc lại được manifest.",
     "Sửa cấu hình đóng gói function Vercel để deployment production có thể trace source Apps Script và khởi chạy đúng schema.",
-    "Gom router backup và OAuth vào các function dùng chung, giữ tổng số Serverless Functions trong giới hạn Hobby miễn phí mà không đổi các URL API hiện hữu."
+    "Gom router backup và OAuth vào các function dùng chung, giữ tổng số Serverless Functions trong giới hạn Hobby miễn phí mà không đổi các URL API hiện hữu.",
+    "Sửa trường hợp backup đã đi hết Drive nhưng fail ở finalize: session FAILED có thể repair các asset chưa BACKED_UP và cập nhật manifest cũ tại chỗ thay vì tạo manifest hoặc snapshot mới."
   ]
 }

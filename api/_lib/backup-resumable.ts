@@ -58,6 +58,7 @@ export type BackupSessionPhase =
   | 'APPS_SCRIPT'
   | 'DRIVE_PLAN'
   | 'DRIVE_ASSETS'
+  | 'DRIVE_REPAIR'
   | 'FINALIZE'
   | 'VERIFY'
   | 'COMPLETED'
@@ -126,6 +127,10 @@ export interface BackupSession {
     assets: BackupManifest['drive']['assets'];
     warnings: string[];
     errors: string[];
+    repair?: {
+      assetIndexes: number[];
+      nextIndex: number;
+    };
   };
   quota: {
     firestoreReads: number;
@@ -172,7 +177,7 @@ function parseSession(value: unknown, folderId: string): BackupSession {
     || !validDriveId(folderId) || !validDriveId(String(value['backupParentFolderId'] || ''))) {
     throw new Error('Backup session thiếu trường định danh bắt buộc.');
   }
-  if (!['FIRESTORE', 'AUTH', 'APPS_SCRIPT', 'DRIVE_PLAN', 'DRIVE_ASSETS', 'FINALIZE', 'VERIFY', 'COMPLETED', 'FAILED'].includes(value['phase'] as string)) {
+  if (!['FIRESTORE', 'AUTH', 'APPS_SCRIPT', 'DRIVE_PLAN', 'DRIVE_ASSETS', 'DRIVE_REPAIR', 'FINALIZE', 'VERIFY', 'COMPLETED', 'FAILED'].includes(value['phase'] as string)) {
     throw new Error('Backup session có phase không hợp lệ.');
   }
   const session = value as unknown as BackupSession;
@@ -798,6 +803,79 @@ async function runDriveAssetsPhase(
   await store.save(session);
 }
 
+function failedDriveAssetIndexes(session: BackupSession): number[] {
+  return session.drive.assets.flatMap((asset, index) => asset.status === 'BACKED_UP' ? [] : [index]);
+}
+
+function rebuildDriveAssetErrors(session: BackupSession, previousAssetErrors: Set<string>): void {
+  const nonAssetErrors = session.drive.errors.filter(error => !previousAssetErrors.has(error));
+  const currentAssetErrors = session.drive.assets.flatMap(asset => asset.status === 'BACKED_UP' || !asset.error ? [] : [asset.error]);
+  session.drive.errors = uniqueStrings(nonAssetErrors, currentAssetErrors);
+}
+
+async function beginDriveRepairPhase(session: BackupSession, store: BackupSessionStore): Promise<boolean> {
+  const assetIndexes = failedDriveAssetIndexes(session);
+  if (!assetIndexes.length) return false;
+  session.drive.repair = { assetIndexes, nextIndex: 0 };
+  session.verification = undefined;
+  session.completedAt = undefined;
+  session.error = undefined;
+  session.phase = 'DRIVE_REPAIR';
+  await store.save(session);
+  return true;
+}
+
+async function runDriveRepairPhase(
+  session: BackupSession,
+  store: BackupSessionStore,
+  client: DriveBackupClient,
+  key: BackupKey,
+): Promise<void> {
+  const repair = session.drive.repair;
+  if (!repair || repair.nextIndex >= repair.assetIndexes.length) {
+    session.drive.repair = undefined;
+    session.phase = 'FINALIZE';
+    await store.save(session);
+    return;
+  }
+  const start = repair.nextIndex;
+  const end = Math.min(repair.assetIndexes.length, start + driveAssetsPerRequest());
+  const templateIds = [...new Set([...resolvedBackupTemplateIds(), ...readAppsScriptSourceSnapshot().templateIds])];
+  const appsScriptIds = session.appsScript.scriptId ? [session.appsScript.scriptId] : [];
+  const previousAssetErrors = new Set(session.drive.assets.flatMap(asset => asset.error ? [asset.error] : []));
+  const repairIndexes = repair.assetIndexes.slice(start, end);
+  const outcomes: Array<{ assetIndex: number; outcome: Awaited<ReturnType<typeof backupSingleDriveAsset>> }> = [];
+  for (let batchStart = 0; batchStart < repairIndexes.length; batchStart += driveAssetsConcurrency()) {
+    const batchIndexes = repairIndexes.slice(batchStart, batchStart + driveAssetsConcurrency());
+    const batch = await Promise.all(batchIndexes.map(async assetIndex => ({
+      assetIndex,
+      outcome: await backupSingleDriveAsset(
+        client,
+        key,
+        session.folders.encryptedAssets,
+        session.folders.nativeCopies,
+        session.drive.files[assetIndex],
+        assetIndex,
+        templateIds,
+        appsScriptIds,
+      ),
+    })));
+    outcomes.push(...batch);
+  }
+  for (const { assetIndex, outcome } of outcomes) {
+    session.drive.assets[assetIndex] = outcome.asset;
+    session.drive.warnings.push(...outcome.warnings);
+  }
+  rebuildDriveAssetErrors(session, previousAssetErrors);
+  repair.nextIndex = end;
+  if (repair.nextIndex >= repair.assetIndexes.length) {
+    session.drive.repair = undefined;
+    session.phase = 'FINALIZE';
+  }
+  accountForClientStats(session, client);
+  await store.save(session);
+}
+
 function buildManifest(session: BackupSession, key: BackupKey): BackupManifest {
   const source = readAppsScriptSourceSnapshot();
   const sourceFolderIds = resolvedBackupSourceFolderIds();
@@ -901,13 +979,6 @@ async function runFinalizePhase(
   client: DriveBackupClient,
   key: BackupKey,
 ): Promise<BackupManifest> {
-  if (session.manifestFileId) {
-    session.phase = 'VERIFY';
-    await store.save(session);
-    const loaded = await import('./backup-restore.js').then(({ loadBackupManifest }) =>
-      loadBackupManifest(client, session.folders.backup, key));
-    return loaded.manifest;
-  }
   try {
     session.quota.driveStorageAfter = await client.getStorageQuota();
   } catch (error) {
@@ -916,8 +987,12 @@ async function runFinalizePhase(
   const manifest = buildManifest(session, key);
   const plaintext = Buffer.from(JSON.stringify(manifest), 'utf8');
   const ciphertext = encryptBackupPayload(plaintext, key);
-  const uploaded = await client.uploadBytes('manifest.json.enc', 'application/octet-stream', session.folders.backup, ciphertext);
-  session.manifestFileId = uploaded.id;
+  if (session.manifestFileId) {
+    await client.updateBytes(session.manifestFileId, 'application/octet-stream', ciphertext);
+  } else {
+    const uploaded = await client.uploadBytes('manifest.json.enc', 'application/octet-stream', session.folders.backup, ciphertext);
+    session.manifestFileId = uploaded.id;
+  }
   session.phase = manifest.status === 'FAILED' ? 'FAILED' : 'VERIFY';
   session.error = manifest.status === 'FAILED' ? manifest.errors.join(' | ').slice(0, 800) : undefined;
   accountForClientStats(session, client);
@@ -999,6 +1074,9 @@ export async function advanceBackupSession(
     case 'DRIVE_ASSETS':
       await runDriveAssetsPhase(session, store, client, key);
       return { session, done: false };
+    case 'DRIVE_REPAIR':
+      await runDriveRepairPhase(session, store, client, key);
+      return { session, done: false };
     case 'FINALIZE':
       {
         const manifest = await runFinalizePhase(session, store, client, key);
@@ -1011,6 +1089,7 @@ export async function advanceBackupSession(
     case 'COMPLETED':
       throw new Error('Backup session đã hoàn tất.');
     case 'FAILED':
+      if (await beginDriveRepairPhase(session, store)) return { session, done: false };
       throw new Error(session.error || 'Backup session thất bại.');
     }
   });

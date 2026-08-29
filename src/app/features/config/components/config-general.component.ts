@@ -436,6 +436,30 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     }
   }
 
+  async resumeSelectedBackup() {
+    const backupFolderId = this.backupSelectedId();
+    if (!backupFolderId) {
+      this.toast.show('Chưa chọn backup dở dang để tiếp tục.', 'info');
+      return;
+    }
+    if (!await this.confirmationService.confirm({
+      message: 'Tiếp tục đúng backup đang chọn từ checkpoint đã lưu. Thao tác này không tạo backup mới nếu session đã chọn không thể resume. Tiếp tục?',
+      confirmText: 'Tiếp tục backup dở dang'
+    })) return;
+    this.backupBusy.set('create');
+    try {
+      const result = await this.backupService.createBackup(this.state.systemVersion(), backupFolderId);
+      this.backupLastCreate.set(result);
+      await this.refreshBackupList(false);
+      const label = result.status === 'COMPLETED' ? 'Backup dở dang đã hoàn tất.' : `Backup tiếp tục xong với trạng thái ${result.status}.`;
+      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.`, result.status === 'COMPLETED' ? 'success' : 'info');
+    } catch (error) {
+      this.toast.show(this.backupErrorMessage(error), 'error');
+    } finally {
+      this.backupBusy.set('idle');
+    }
+  }
+
   private selectedBackupFolderId(): string {
     return this.backupSelectedId() || this.backupList().find(item => item.status === 'COMPLETED' || item.status === 'COMPLETED_WITH_WARNINGS')?.backupFolderId || '';
   }

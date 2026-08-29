@@ -226,8 +226,8 @@ export class BackupService {
     return this.request<BackupListResponse>('/api/backup/list');
   }
 
-  async createBackup(releaseVersion?: string): Promise<BackupCreateResponse> {
-    let backupFolderId = '';
+  async createBackup(releaseVersion?: string, initialBackupFolderId?: string): Promise<BackupCreateResponse> {
+    let backupFolderId = initialBackupFolderId?.trim() || '';
     let transientRetries = 0;
 
     // The server advances one resumable phase per request so a complete backup
