@@ -10,6 +10,7 @@ export interface PartWriterOptions {
   category: BackupPartManifest['category'];
   partPrefix: string;
   maxPlaintextBytes?: number;
+  initialPartIndex?: number;
   onPart?: (part: BackupPartManifest) => void;
 }
 export class EncryptedNdjsonPartWriter {
@@ -17,10 +18,11 @@ export class EncryptedNdjsonPartWriter {
   private lines: string[] = [];
   private plaintextBytes = 0;
   private recordCount = 0;
-  private partIndex = 0;
+  private partIndex: number;
 
   constructor(private readonly options: PartWriterOptions) {
     this.maxPlaintextBytes = options.maxPlaintextBytes || 900_000;
+    this.partIndex = options.initialPartIndex || 0;
   }
 
   async append(value: unknown): Promise<void> {

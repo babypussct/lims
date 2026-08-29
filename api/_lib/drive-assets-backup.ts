@@ -23,6 +23,18 @@ export interface DriveBackupResult {
   errors: string[];
 }
 
+export interface DriveBackupPlan {
+  folders: DriveFolderManifest[];
+  files: Array<{ fileId: string; referencedBy: string[] }>;
+  errors: string[];
+}
+
+export interface DriveAssetBackupOutcome {
+  asset: DriveAssetManifest;
+  warnings: string[];
+  errors: string[];
+}
+
 function extensionForMime(mimeType: string): string {
   if (mimeType === 'application/pdf') return 'pdf';
   if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
@@ -93,64 +105,83 @@ function uniqueFileMap(
   return result;
 }
 
-export async function backupDriveAssets(
+/** Enumerate the complete configured Drive surface before any asset upload. */
+export async function collectDriveBackupPlan(
   client: DriveBackupClient,
-  key: BackupKey,
-  encryptedPayloadFolderId: string,
-  nativeCopyFolderId: string,
   references: Map<string, DriveReference>,
   sourceFolderIds: string[],
   templateIds: string[],
   appsScriptIds: string[] = [],
-  appsScriptContentById: Map<string, Buffer> = new Map(),
-): Promise<DriveBackupResult> {
+): Promise<DriveBackupPlan> {
   const folders = new Map<string, DriveFileMetadata>();
   const folderManifest: DriveFolderManifest[] = [];
   const errors: string[] = [];
-  const warnings: string[] = [];
   const visitedFolders = new Set<string>();
   for (const folderId of sourceFolderIds) {
     await descendants(client, folderId, folders, visitedFolders, folderManifest, errors);
   }
   const files = uniqueFileMap(references, folders, templateIds, appsScriptIds);
-  const assets: DriveAssetManifest[] = [];
-  let index = 0;
-  for (const reference of files.values()) {
-    let source: DriveFileMetadata | undefined;
-    try {
-      source = await client.getMetadata(reference.fileId);
-      if (source.mimeType === 'application/vnd.google-apps.folder') continue;
-      let plaintext: Buffer;
-      let exportMimeType = source.mimeType;
-      let exportExtension = extensionForMime(source.mimeType);
-      const exportSpec = DriveBackupClient.exportSpec(source.mimeType);
-      const isAppsScriptProject = source.mimeType === 'application/vnd.google-apps.script' || appsScriptIds.includes(source.id);
-      if (isAppsScriptProject) {
-        exportMimeType = 'application/json';
-        exportExtension = 'json';
-        plaintext = appsScriptContentById.get(source.id) || Buffer.from(JSON.stringify(await client.getAppsScriptProjectContent(source.id)), 'utf8');
-      } else if (exportSpec) {
-        exportMimeType = exportSpec.mimeType;
-        exportExtension = exportSpec.extension;
-        plaintext = await client.exportFile(source.id, exportMimeType);
-      } else if (DriveBackupClient.isWorkspaceFile(source.mimeType)) {
-        throw new Error(`Unsupported Google Workspace MIME type ${source.mimeType}.`);
-      } else {
-        plaintext = await client.download(source.id);
+  return {
+    folders: folderManifest,
+    files: [...files.values()].map(reference => ({
+      fileId: reference.fileId,
+      referencedBy: [...reference.referencedBy].sort(),
+    })),
+    errors,
+  };
+}
+
+export async function backupSingleDriveAsset(
+  client: DriveBackupClient,
+  key: BackupKey,
+  encryptedPayloadFolderId: string,
+  nativeCopyFolderId: string,
+  reference: { fileId: string; referencedBy: string[] },
+  index: number,
+  templateIds: string[],
+  appsScriptIds: string[] = [],
+  appsScriptContentById: Map<string, Buffer> = new Map(),
+): Promise<DriveAssetBackupOutcome> {
+  const warnings: string[] = [];
+  const errors: string[] = [];
+  let source: DriveFileMetadata | undefined;
+  try {
+    source = await client.getMetadata(reference.fileId);
+    if (source.mimeType === 'application/vnd.google-apps.folder') {
+      throw new Error('Drive folder was included in the asset plan unexpectedly.');
+    }
+    let plaintext: Buffer;
+    let exportMimeType = source.mimeType;
+    let exportExtension = extensionForMime(source.mimeType);
+    const exportSpec = DriveBackupClient.exportSpec(source.mimeType);
+    const isAppsScriptProject = source.mimeType === 'application/vnd.google-apps.script' || appsScriptIds.includes(source.id);
+    if (isAppsScriptProject) {
+      exportMimeType = 'application/json';
+      exportExtension = 'json';
+      plaintext = appsScriptContentById.get(source.id) || Buffer.from(JSON.stringify(await client.getAppsScriptProjectContent(source.id)), 'utf8');
+    } else if (exportSpec) {
+      exportMimeType = exportSpec.mimeType;
+      exportExtension = exportSpec.extension;
+      plaintext = await client.exportFile(source.id, exportMimeType);
+    } else if (DriveBackupClient.isWorkspaceFile(source.mimeType)) {
+      throw new Error(`Unsupported Google Workspace MIME type ${source.mimeType}.`);
+    } else {
+      plaintext = await client.download(source.id);
+    }
+    const encrypted = encryptBackupPayload(plaintext, key);
+    const payloadName = `asset-${String(index).padStart(5, '0')}-${safeBackupName(source.name)}.${exportExtension}.enc`;
+    const uploaded = await client.uploadBytes(payloadName, 'application/octet-stream', encryptedPayloadFolderId, encrypted);
+    let nativeCopyFileId: string | undefined;
+    if (DriveBackupClient.isWorkspaceFile(source.mimeType)) {
+      try {
+        const nativeCopy = await client.copyFile(source.id, nativeCopyFolderId, `native-${safeBackupName(source.name)}`);
+        nativeCopyFileId = nativeCopy.id;
+      } catch (error) {
+        warnings.push(`Native copy unavailable for ${source.name}: ${error instanceof Error ? error.message : String(error)}`);
       }
-      const encrypted = encryptBackupPayload(plaintext, key);
-      const payloadName = `asset-${String(index++).padStart(5, '0')}-${safeBackupName(source.name)}.${exportExtension}.enc`;
-      const uploaded = await client.uploadBytes(payloadName, 'application/octet-stream', encryptedPayloadFolderId, encrypted);
-      let nativeCopyFileId: string | undefined;
-      if (DriveBackupClient.isWorkspaceFile(source.mimeType)) {
-        try {
-          const nativeCopy = await client.copyFile(source.id, nativeCopyFolderId, `native-${safeBackupName(source.name)}`);
-          nativeCopyFileId = nativeCopy.id;
-        } catch (error) {
-          warnings.push(`Native copy unavailable for ${source.name}: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
-      assets.push({
+    }
+    return {
+      asset: {
         sourceFileId: source.id,
         sourceName: source.name,
         sourceMimeType: source.mimeType,
@@ -168,15 +199,19 @@ export async function backupDriveAssets(
         referencedBy: [...reference.referencedBy].sort(),
         isTemplate: templateIds.includes(source.id),
         status: 'BACKED_UP',
-      });
-    } catch (error) {
-      const message = `Cannot backup Drive file ${source?.name || reference.fileId}: ${error instanceof Error ? error.message : String(error)}`;
-      errors.push(message);
-      const unsupported = Boolean(source
-        && DriveBackupClient.isWorkspaceFile(source.mimeType)
-        && source.mimeType !== 'application/vnd.google-apps.script'
-        && !DriveBackupClient.exportSpec(source.mimeType));
-      assets.push({
+      },
+      warnings,
+      errors,
+    };
+  } catch (error) {
+    const message = `Cannot backup Drive file ${source?.name || reference.fileId}: ${error instanceof Error ? error.message : String(error)}`;
+    errors.push(message);
+    const unsupported = Boolean(source
+      && DriveBackupClient.isWorkspaceFile(source.mimeType)
+      && source.mimeType !== 'application/vnd.google-apps.script'
+      && !DriveBackupClient.exportSpec(source.mimeType));
+    return {
+      asset: {
         sourceFileId: reference.fileId,
         sourceName: source?.name || reference.fileId,
         sourceMimeType: source?.mimeType || 'unknown',
@@ -192,8 +227,43 @@ export async function backupDriveAssets(
         isTemplate: templateIds.includes(reference.fileId),
         status: unsupported ? 'UNSUPPORTED' : 'INACCESSIBLE',
         error: message,
-      });
-    }
+      },
+      warnings,
+      errors,
+    };
   }
-  return { assets, folders: folderManifest, warnings, errors };
+}
+
+export async function backupDriveAssets(
+  client: DriveBackupClient,
+  key: BackupKey,
+  encryptedPayloadFolderId: string,
+  nativeCopyFolderId: string,
+  references: Map<string, DriveReference>,
+  sourceFolderIds: string[],
+  templateIds: string[],
+  appsScriptIds: string[] = [],
+  appsScriptContentById: Map<string, Buffer> = new Map(),
+): Promise<DriveBackupResult> {
+  const plan = await collectDriveBackupPlan(client, references, sourceFolderIds, templateIds, appsScriptIds);
+  const assets: DriveAssetManifest[] = [];
+  const errors: string[] = [...plan.errors];
+  const warnings: string[] = [];
+  for (let index = 0; index < plan.files.length; index++) {
+    const outcome = await backupSingleDriveAsset(
+      client,
+      key,
+      encryptedPayloadFolderId,
+      nativeCopyFolderId,
+      plan.files[index],
+      index,
+      templateIds,
+      appsScriptIds,
+      appsScriptContentById,
+    );
+    assets.push(outcome.asset);
+    warnings.push(...outcome.warnings);
+    errors.push(...outcome.errors);
+  }
+  return { assets, folders: plan.folders, warnings, errors };
 }

@@ -102,6 +102,14 @@ export interface BackupCreateResponse {
   auditLogged?: boolean;
 }
 
+interface BackupCreateStepResponse extends Partial<BackupCreateResponse> {
+  done?: boolean;
+  phase?: string;
+  progress?: Record<string, unknown>;
+  backupId?: string;
+  backupFolderId?: string;
+}
+
 export interface BackupVerificationResponse {
   success: boolean;
   verified: boolean;
@@ -184,6 +192,10 @@ export interface BackupRequestError extends Error {
 export class BackupService {
   private readonly auth = inject(AuthService);
 
+  private async waitBeforeRetry(milliseconds: number): Promise<void> {
+    await new Promise<void>(resolve => setTimeout(resolve, milliseconds));
+  }
+
   private async request<T>(url: string, init: RequestInit = {}): Promise<T> {
     const token = await this.auth.getIdToken(false);
     if (!token) throw new Error('Phiên Firebase đã hết hạn. Hãy đăng nhập lại.');
@@ -214,11 +226,45 @@ export class BackupService {
     return this.request<BackupListResponse>('/api/backup/list');
   }
 
-  createBackup(releaseVersion?: string): Promise<BackupCreateResponse> {
-    return this.request<BackupCreateResponse>('/api/backup/create', {
-      method: 'POST',
-      body: JSON.stringify({ releaseVersion: releaseVersion || undefined }),
-    });
+  async createBackup(releaseVersion?: string): Promise<BackupCreateResponse> {
+    let backupFolderId = '';
+    let transientRetries = 0;
+
+    // The server advances one resumable phase per request so a complete backup
+    // does not depend on a single serverless invocation staying alive for the
+    // whole Firestore/Auth/Drive workload.
+    for (let iteration = 0; iteration < 10_000; iteration++) {
+      try {
+        const payload = {
+          releaseVersion: releaseVersion || undefined,
+          ...(backupFolderId ? { backupFolderId } : {}),
+        };
+        const step = await this.request<BackupCreateStepResponse>('/api/backup/create', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        if (step.done === true) return step as BackupCreateResponse;
+        if (!step.backupFolderId) throw new Error('Backup session không trả về thư mục để tiếp tục.');
+        backupFolderId = step.backupFolderId;
+        transientRetries = 0;
+      } catch (error) {
+        // A dropped response can happen after the server has committed a
+        // phase. Replaying the same session is safe because the API loads the
+        // encrypted session state from Drive before advancing it.
+        const requestError = error as BackupRequestError;
+        if (backupFolderId && requestError.status === 409) {
+          await this.waitBeforeRetry(Number(requestError.payload?.retryAfterMs) || 3000);
+          continue;
+        }
+        if (backupFolderId && transientRetries < 2) {
+          transientRetries++;
+          await this.waitBeforeRetry(1500 * transientRetries);
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Backup vượt quá số pha an toàn cho phép.');
   }
 
   verifyBackup(backupFolderId: string): Promise<BackupVerificationResponse> {

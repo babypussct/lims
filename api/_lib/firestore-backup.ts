@@ -1,5 +1,6 @@
 import {
   DocumentReference,
+  FieldPath,
   GeoPoint,
   Timestamp,
   type CollectionReference,
@@ -41,6 +42,36 @@ export interface FirestoreBackupOptions {
   includeEphemeralRecords?: boolean;
   /** Stop before a single backup can consume the whole daily Spark read quota. */
   maxFirestoreReads?: number;
+  /** Reads already committed by earlier resumable chunks. */
+  initialFirestoreReads?: number;
+}
+
+export interface FirestoreCollectionQueueItem {
+  path: string;
+  collectionLabel: string;
+  cursor?: string;
+}
+
+export interface FirestoreBackupQueueState {
+  phase: 'COLLECTIONS' | 'GROUPS' | 'COMPLETE';
+  queue: FirestoreCollectionQueueItem[];
+  groupIndex: number;
+  groupCursor?: string;
+  seenCollectionPaths: string[];
+  unknownCollections: string[];
+}
+
+export interface FirestoreBackupChunkOptions extends FirestoreBackupOptions {
+  queue: FirestoreBackupQueueState;
+  /** Maximum document reads in this invocation, including group-query rows. */
+  maxDocumentsPerChunk?: number;
+  /** Query page size; keeping it bounded also bounds listCollections work. */
+  pageSize?: number;
+}
+
+export interface FirestoreBackupChunkResult {
+  queue: FirestoreBackupQueueState;
+  stats: FirestoreBackupStats;
 }
 
 export interface FirestoreRestoreRecord {
@@ -257,7 +288,8 @@ function registerFirestoreReads(
   count: number,
 ): void {
   stats.firestoreReads += count;
-  if (options.maxFirestoreReads !== undefined && stats.firestoreReads > options.maxFirestoreReads) {
+  const initialReads = options.initialFirestoreReads || 0;
+  if (options.maxFirestoreReads !== undefined && initialReads + stats.firestoreReads > options.maxFirestoreReads) {
     throw new Error(`Firestore backup vượt ngưỡng ${options.maxFirestoreReads} document reads; dừng để bảo vệ quota Spark.`);
   }
 }
@@ -339,8 +371,13 @@ async function walkKnownCollectionGroup(
   }
 }
 
-export async function collectFirestoreBackup(options: FirestoreBackupOptions): Promise<FirestoreBackupStats> {
-  const stats: FirestoreBackupStats = {
+function collectionLabelFromCollectionPath(path: string): string {
+  const segments = path.split('/').filter(Boolean);
+  return segments[0] === 'artifacts' ? segments.slice(2).join('/') : segments.join('/');
+}
+
+function createChunkStats(): FirestoreBackupStats {
+  return {
     pathCounts: new Map(),
     excludedCounts: new Map(),
     unknownCollections: new Set(),
@@ -348,6 +385,186 @@ export async function collectFirestoreBackup(options: FirestoreBackupOptions): P
     scrubbedFieldCount: 0,
     firestoreReads: 0,
   };
+}
+
+function addInitialCollection(
+  queue: FirestoreCollectionQueueItem[],
+  seen: Set<string>,
+  path: string,
+  unknownCollections: Set<string>,
+  isUnknown: boolean,
+): void {
+  if (isUnknown) unknownCollections.add(path);
+  if (seen.has(path)) return;
+  seen.add(path);
+  queue.push({ path, collectionLabel: collectionLabelFromCollectionPath(path) });
+}
+
+/**
+ * Discover only collection paths and leave document reads to the resumable
+ * chunk worker. The discovery calls enumerate collection metadata, not the
+ * documents themselves, so it is safe to repeat after an interrupted request.
+ */
+export async function createFirestoreBackupQueue(
+  db: Firestore,
+  appId: string,
+): Promise<FirestoreBackupQueueState> {
+  const queue: FirestoreCollectionQueueItem[] = [];
+  const seen = new Set<string>();
+  const unknownCollections = new Set<string>();
+  const appRoot = appPath(appId);
+  const appCollections = new Map<string, CollectionReference>();
+  for (const collection of await db.doc(appRoot).listCollections()) appCollections.set(collection.id, collection);
+  for (const collection of FIRESTORE_COLLECTION_CATALOG) {
+    const actual = appCollections.get(collection);
+    addInitialCollection(
+      queue,
+      seen,
+      actual?.path || `${appRoot}/${collection}`,
+      unknownCollections,
+      false,
+    );
+  }
+  for (const [name, collection] of appCollections) {
+    if (!FIRESTORE_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_COLLECTION_CATALOG[number])) {
+      addInitialCollection(queue, seen, collection.path, unknownCollections, true);
+    }
+  }
+
+  const rootCollections = new Map<string, CollectionReference>();
+  for (const collection of await db.listCollections()) rootCollections.set(collection.id, collection);
+  for (const collection of FIRESTORE_ROOT_COLLECTION_CATALOG) {
+    const actual = rootCollections.get(collection);
+    addInitialCollection(queue, seen, actual?.path || collection, unknownCollections, false);
+  }
+  for (const [name, collection] of rootCollections) {
+    if (name === 'artifacts' || FIRESTORE_ROOT_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_ROOT_COLLECTION_CATALOG[number])) continue;
+    addInitialCollection(queue, seen, collection.path, unknownCollections, true);
+  }
+  return {
+    phase: 'COLLECTIONS',
+    queue,
+    groupIndex: 0,
+    seenCollectionPaths: [...seen],
+    unknownCollections: [...unknownCollections].sort(),
+  };
+}
+
+/**
+ * Process a bounded number of Firestore document reads and persistable
+ * collection/group cursors. This keeps the custom Spark-compatible backup
+ * independent of a single serverless invocation timeout while retaining the
+ * same serializer and coverage rules as the original collector.
+ */
+export async function collectFirestoreBackupChunk(
+  options: FirestoreBackupChunkOptions,
+): Promise<FirestoreBackupChunkResult> {
+  const state: FirestoreBackupQueueState = {
+    phase: options.queue.phase,
+    queue: options.queue.queue.map(item => ({ ...item })),
+    groupIndex: options.queue.groupIndex,
+    groupCursor: options.queue.groupCursor,
+    seenCollectionPaths: [...new Set(options.queue.seenCollectionPaths)],
+    unknownCollections: [...new Set(options.queue.unknownCollections)],
+  };
+  const stats = createChunkStats();
+  for (const path of state.unknownCollections) stats.unknownCollections.add(path);
+  const maxDocuments = options.maxDocumentsPerChunk ?? 100;
+  const pageSize = options.pageSize ?? Math.min(100, maxDocuments);
+  if (!Number.isSafeInteger(maxDocuments) || maxDocuments < 1 || !Number.isSafeInteger(pageSize) || pageSize < 1) {
+    throw new Error('Firestore backup chunk size không hợp lệ.');
+  }
+  let remaining = maxDocuments;
+  const seenCollectionPaths = new Set(state.seenCollectionPaths);
+
+  while (remaining > 0 && state.phase === 'COLLECTIONS') {
+    const task = state.queue[0];
+    if (!task) {
+      state.phase = 'GROUPS';
+      continue;
+    }
+    const limit = Math.min(pageSize, remaining);
+    let query = options.db.collection(task.path).orderBy(FieldPath.documentId()).limit(limit);
+    if (task.cursor) query = query.startAfter(task.cursor);
+    const snapshot = await query.get();
+    registerFirestoreReads(options, stats, snapshot.size);
+    remaining -= snapshot.size;
+    if (snapshot.empty) {
+      state.queue.shift();
+      continue;
+    }
+    const isEphemeral = task.path.split('/').filter(Boolean).at(-1) === 'auth_sessions';
+    for (const document of snapshot.docs) {
+      await emitDocument(
+        document,
+        options,
+        stats,
+        task.collectionLabel,
+        isEphemeral,
+      );
+      for (const child of await document.ref.listCollections()) {
+        const parentCollectionId = document.ref.parent.id;
+        const expected = FIRESTORE_SUBCOLLECTION_CATALOG.some(item =>
+          item.collection === child.id && item.parentCollection === parentCollectionId);
+        if (!expected) stats.unknownCollections.add(child.path);
+        if (!seenCollectionPaths.has(child.path)) {
+          seenCollectionPaths.add(child.path);
+          state.queue.push({ path: child.path, collectionLabel: collectionLabelFromCollectionPath(child.path) });
+        }
+      }
+    }
+    if (snapshot.size < limit) state.queue.shift();
+    else task.cursor = snapshot.docs[snapshot.docs.length - 1].id;
+  }
+
+  while (remaining > 0 && state.phase === 'GROUPS') {
+    if (state.groupIndex >= FIRESTORE_SUBCOLLECTION_CATALOG.length) {
+      state.phase = 'COMPLETE';
+      break;
+    }
+    const collectionId = FIRESTORE_SUBCOLLECTION_CATALOG[state.groupIndex].collection;
+    const limit = Math.min(pageSize, remaining);
+    let query = options.db.collectionGroup(collectionId).orderBy(FieldPath.documentId()).limit(limit);
+    if (state.groupCursor) query = query.startAfter(state.groupCursor);
+    const snapshot = await query.get();
+    registerFirestoreReads(options, stats, snapshot.size);
+    remaining -= snapshot.size;
+    if (snapshot.empty) {
+      state.groupIndex++;
+      state.groupCursor = undefined;
+      continue;
+    }
+    for (const document of snapshot.docs) {
+      const segments = document.ref.path.split('/');
+      if (!pathBelongsToApp(document.ref.path, options.appId) || segments.length < 6 || segments[4] !== collectionId) continue;
+      const parentCollection = segments[2];
+      const expected = FIRESTORE_SUBCOLLECTION_CATALOG.some(item =>
+        item.collection === collectionId && item.parentCollection === parentCollection);
+      if (!expected) continue;
+      const nestedCollectionPath = segments.slice(0, 5).join('/');
+      // Direct collection walking has already emitted every child below a
+      // readable parent document. Collection-group scanning is reserved for
+      // orphaned nested documents whose parent path was not discoverable.
+      if (seenCollectionPaths.has(nestedCollectionPath)) continue;
+      stats.orphanSubcollectionCount++;
+      await emitDocument(document, options, stats, `${parentCollection}/${collectionId}`, false);
+    }
+    if (snapshot.size < limit) {
+      state.groupIndex++;
+      state.groupCursor = undefined;
+    } else {
+      state.groupCursor = snapshot.docs[snapshot.docs.length - 1].ref.path;
+    }
+  }
+
+  if (state.phase === 'GROUPS' && state.groupIndex >= FIRESTORE_SUBCOLLECTION_CATALOG.length) state.phase = 'COMPLETE';
+  state.seenCollectionPaths = [...seenCollectionPaths];
+  state.unknownCollections = [...new Set([...state.unknownCollections, ...stats.unknownCollections])].sort();
+  return { queue: state, stats };
+}
+
+export async function collectFirestoreBackup(options: FirestoreBackupOptions): Promise<FirestoreBackupStats> {
+  const stats = createChunkStats();
   const visitedPaths = new Set<string>();
   const appDocument = options.db.doc(appPath(options.appId));
   const discovered = new Map<string, CollectionReference>();

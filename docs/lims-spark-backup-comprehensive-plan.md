@@ -1,8 +1,8 @@
 # Kế hoạch backup toàn diện LIMS trên Firebase Spark
 
-**Trạng thái:** Đã triển khai phần mềm; còn yêu cầu canary/restore rehearsal để chứng nhận production
+**Trạng thái:** Đã triển khai production; backup toàn diện đang tiếp tục theo checkpoint, chỉ chứng nhận hoàn tất sau khi manifest và integrity verify đạt
 
-**Ngày rà soát:** 2026-08-28
+**Ngày rà soát:** 2026-08-29
 
 **Phạm vi:** LIMS Cloud hiện tại, Firebase project `lims-cloud-by-otada`, namespace nghiệp vụ production `artifacts/lims-cloud-fixed`, Firebase Authentication, Google Drive và Google Apps Script.
 
@@ -25,6 +25,17 @@
 - Giao diện Manager có status, coverage, danh sách backup, verify, dry-run, recover và tiếp tục restore dở dang; mọi thao tác có permission riêng và audit log.
 
 Chưa được phép tuyên bố `BACKUP_COMPLETE` chỉ bằng kiểm thử mã nguồn. Cần chạy backup production với credential thật, kiểm tra manifest, rồi diễn tập restore ở môi trường kiểm thử; các bước này không thể giả lập trung thực trong repository.
+
+### Nhật ký thực thi production ngày 2026-08-29
+
+- Backup ID đang được tiếp tục: `bkp_20260828092036_01711f019e`.
+- Checkpoint đã xác nhận trước khi tiếp tục: Firestore `12.889` document trong `124` encrypted part; Firebase Auth `165` user; Drive plan `2.737` asset.
+- Sau khi cấp lại quyền Google Drive bằng Chrome, checkpoint Drive đã chạy tiếp từ `406` lên `1.156/2.737` asset; log production gần nhất vẫn ở pha `DRIVE_ASSETS`, chưa phát hiện lỗi mới.
+- Đã thử tăng đồng thời lên 10 để rút ngắn thời gian nhưng quan sát thấy Google Drive throttling làm lô kéo dài hơn; cấu hình đã được gỡ và hệ thống trở về mức mặc định 5 ổn định. Checkpoint dữ liệu không bị ảnh hưởng.
+- Production canonical đang chạy tại `https://nafiqpm6.vercel.app`; deployment tối ưu resumable đã ở trạng thái Ready.
+- Backup Drive được xử lý theo các lượt tối đa 25 asset, với concurrency giới hạn 5 bên trong mỗi lượt; mỗi lượt ghi checkpoint sau khi hoàn tất và có Firestore lock chống request trùng.
+- `npm run typecheck:api`, `npm run test:backup` (11/11 test), `npm run build` và `git diff --check` đã đạt tại local.
+- Chưa ghi `COMPLETED` vào tài liệu cho đến khi Drive asset count đạt plan, manifest được mã hóa upload, verify đọc/checksum toàn bộ part và asset đạt `PASSED`, sau đó mới chạy dry-run đối chiếu restore.
 
 ---
 

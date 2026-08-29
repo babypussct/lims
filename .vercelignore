@@ -12,12 +12,11 @@ out-tsc/
 .env
 .env.*
 
-# Ignore massive static files and Google Apps Script directory
+# Ignore massive static files that are not required by the serverless backup bundle
 FILEBIEUMAUGOC/
 temp_inspect_filebieumau3_docx/
 template_extracted/
 scratch/
-gas/
 
 # Ignore large documents
 Report_ISTD_PARAMETER_NEW.pdf

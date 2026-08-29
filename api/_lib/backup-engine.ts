@@ -74,6 +74,23 @@ function maxFirestoreReads(): number {
   return value;
 }
 
+/**
+ * Keep Firebase Auth enumeration calls short enough for the serverless
+ * runtime. A smaller page does not reduce coverage: the page token loop still
+ * walks every Auth user, but a slow/large Identity Toolkit response cannot
+ * consume the entire Vercel request window before any encrypted part is
+ * written to Drive.
+ */
+export function maxAuthUsersPerPage(): number {
+  const raw = process.env['LIMS_BACKUP_AUTH_PAGE_SIZE'];
+  if (!raw) return 100;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1 || value > 1000) {
+    throw new Error('LIMS_BACKUP_AUTH_PAGE_SIZE phải là số nguyên từ 1 đến 1000.');
+  }
+  return value;
+}
+
 export function resolvedBackupSourceFolderIds(): string[] {
   const configured = driveSourceFolderIds();
   const coaFolderId = process.env['LIMS_DRIVE_COA_FOLDER_ID']?.trim() || DEFAULT_DRIVE_COA_FOLDER_ID;
@@ -141,8 +158,11 @@ async function uploadAuthRecords(
     onPart: part => parts.push(part),
   });
   let pageToken: string | undefined;
+  let pageNumber = 0;
   do {
-    const page = await getAuth().listUsers(1000, pageToken);
+    const page = await getAuth().listUsers(maxAuthUsersPerPage(), pageToken);
+    pageNumber++;
+    console.info(`[BackupAuth] Read Auth page ${pageNumber}: ${page.users.length} user(s).`);
     for (const user of page.users) {
       const raw = user.toJSON() as Record<string, unknown>;
       // UserRecord does not contain live access/session tokens. Keep provider,

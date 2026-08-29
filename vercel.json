@@ -6,7 +6,7 @@
   "framework": "angular",
   "functions": {
     "api/backup.ts": {
-      "includeFiles": "{gas/**,.clasp.json}"
+      "includeFiles": "gas/**"
     }
   },
   "crons": [

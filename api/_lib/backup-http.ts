@@ -12,10 +12,17 @@ import {
   DriveBackupClient,
   getBackupDriveAccess,
 } from './backup-drive.js';
-import { runBackup, resolvedBackupSourceFolderIds, resolvedBackupTemplateIds } from './backup-engine.js';
+import { resolvedBackupSourceFolderIds, resolvedBackupTemplateIds } from './backup-engine.js';
 import { configuredAppsScriptId, readAppsScriptSourceSnapshot } from './apps-script-backup.js';
 import { listRestoreCheckpoints, loadBackupManifest, runRestore, verifyBackup } from './backup-restore.js';
 import type { RestoreMode } from './backup-contract.js';
+import {
+  advanceBackupSession,
+  createBackupSession,
+  loadBackupSessionWithStore,
+  type BackupSessionStore,
+  type BackupSession,
+} from './backup-resumable.js';
 
 export type BackupHttpHandler = (req: VercelRequest, res: VercelResponse) => Promise<unknown>;
 
@@ -24,6 +31,19 @@ const REQUIRED_APPS_SCRIPT_SCOPES = [
   'https://www.googleapis.com/auth/script.deployments.readonly',
 ];
 const RESTORE_MODES = new Set<RestoreMode>(['DRY_RUN', 'RECOVER_MISSING', 'RESTORE_SELECTED', 'FULL_REPLACE']);
+
+function backupProgress(session: BackupSession): Record<string, unknown> {
+  return {
+    phase: session.phase,
+    firestoreDocuments: session.firestore.pathCounts.reduce((sum, item) => sum + item.documentCount, 0),
+    firestoreParts: session.firestore.parts.length,
+    authUsers: session.auth.userCount,
+    authParts: session.auth.parts.length,
+    driveAssets: session.drive.assets.length,
+    driveAssetsPlanned: session.drive.files.length,
+    driveFolders: session.drive.folders.length,
+  };
+}
 
 function bodyObject(req: VercelRequest): Record<string, unknown> {
   if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) return req.body as Record<string, unknown>;
@@ -210,6 +230,8 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
 
   const authorization = await requireBackupAuthorization(req, res, 'backup_create');
   if (!authorization) return;
+  let session: BackupSession | undefined;
+  let sessionStore: BackupSessionStore | undefined;
   try {
     const access = await getBackupDriveAccess(req, res);
     if (!access) return res.status(503).json({ error: 'Chưa kết nối Google Drive backup. Hãy đăng nhập Google hoặc cấu hình refresh token dành riêng cho backup.' });
@@ -218,14 +240,56 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
       ? body['releaseVersion'].trim().slice(0, 120)
       : undefined;
     const client = new DriveBackupClient(access.accessToken);
-    const result = await runBackup({
-      db: authorization.db,
-      client,
-      actor: authorization.actor,
-      projectId: typeof authorization.decoded.aud === 'string' ? authorization.decoded.aud : String(authorization.decoded.aud || ''),
-      releaseVersion: releaseVersion || undefined,
-      backupParentFolderId: backupDriveFolderId(),
+    const key = backupEncryptionKey();
+    const projectId = typeof authorization.decoded.aud === 'string' ? authorization.decoded.aud : String(authorization.decoded.aud || '');
+    const requestedFolderId = typeof body['backupFolderId'] === 'string' ? body['backupFolderId'].trim() : '';
+    if (requestedFolderId) {
+      const loaded = await loadBackupSessionWithStore(client, requestedFolderId, key);
+      session = loaded.session;
+      sessionStore = loaded.store;
+      if (session.actor.uid !== authorization.actor.uid) {
+        return res.status(403).json({ error: 'Backup session thuộc tài khoản quản trị khác.' });
+      }
+    } else {
+      const started = await createBackupSession(client, authorization.actor, projectId, releaseVersion, key);
+      session = started.session;
+      sessionStore = started.store;
+    }
+    console.info('[BackupCreate] Session progress before phase:', {
+      backupId: session.backupId,
+      phase: session.phase,
+      firestoreDocuments: session.firestore.pathCounts.reduce((sum, item) => sum + item.documentCount, 0),
+      firestoreParts: session.firestore.parts.length,
+      authUsers: session.auth.userCount,
+      driveAssets: session.drive.assets.length,
+      driveAssetsPlanned: session.drive.files.length,
+      nextAssetIndex: session.drive.nextAssetIndex,
     });
+    const step = await advanceBackupSession(session, client, authorization.db, key, sessionStore);
+    console.info('[BackupCreate] Session progress after phase:', {
+      backupId: step.session.backupId,
+      phase: step.session.phase,
+      done: step.done,
+      firestoreDocuments: step.session.firestore.pathCounts.reduce((sum, item) => sum + item.documentCount, 0),
+      firestoreParts: step.session.firestore.parts.length,
+      authUsers: step.session.auth.userCount,
+      driveAssets: step.session.drive.assets.length,
+      driveAssetsPlanned: step.session.drive.files.length,
+      nextAssetIndex: step.session.drive.nextAssetIndex,
+    });
+    if (!step.done) {
+      return res.status(202).json({
+        success: false,
+        done: false,
+        status: 'RUNNING',
+        backupId: step.session.backupId,
+        backupFolderId: step.session.folders.backup,
+        phase: step.session.phase,
+        progress: backupProgress(step.session),
+      });
+    }
+    const result = step.result;
+    if (!result) throw new Error('Backup session hoàn tất nhưng thiếu manifest kết quả.');
     const manifest = result.manifest;
     let auditLogged = true;
     try {
@@ -244,8 +308,9 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
     const warnings = auditLogged ? manifest.warnings : [...manifest.warnings, 'Không ghi được audit log backup; cần kiểm tra quyền ghi Firestore logs.'];
     return res.status(result.manifest.status === 'FAILED' ? 422 : 200).json({
       success: manifest.status !== 'FAILED',
+      done: true,
       backupId: manifest.backupId,
-      backupFolderId: result.backupFolderId,
+      backupFolderId: result.manifest.driveBackupFolderId,
       manifestFileId: result.manifestFileId,
       status: manifest.status,
       verified: manifest.verification?.status === 'PASSED',
@@ -265,6 +330,9 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
     });
   } catch (error) {
     console.error('[BackupCreate] Failed:', error instanceof Error ? error.message : error);
+    if (error instanceof Error && error.message === 'BACKUP_SESSION_BUSY') {
+      return res.status(409).json({ error: 'Backup session đang được một request khác xử lý; hãy tiếp tục sau ít giây.', retryAfterMs: 3000 });
+    }
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Không thể tạo backup.' });
   }
 }
