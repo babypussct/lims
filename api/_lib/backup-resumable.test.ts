@@ -1,10 +1,24 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { type BackupPartManifest } from './backup-contract.js';
 import { type BackupKey } from './backup-crypto.js';
 import { DriveBackupClient } from './backup-drive.js';
 import { advanceBackupSession, type BackupSession } from './backup-resumable.js';
 
 const key: BackupKey = { keyId: 'test-key', key: Buffer.alloc(32, 3) };
+
+function deploymentPart(fileId = 'deployment-existing'): BackupPartManifest {
+  return {
+    name: 'apps-script-deployment.json.enc',
+    driveFileId: fileId,
+    category: 'deployment',
+    recordCount: 1,
+    plaintextBytes: 10,
+    ciphertextBytes: 20,
+    plaintextSha256: 'a'.repeat(64),
+    ciphertextSha256: 'b'.repeat(64),
+  };
+}
 
 function fakeDatabase(): any {
   return {
@@ -108,6 +122,80 @@ function failedSession(): BackupSession {
 }
 
 describe('resumable backup Drive repair', () => {
+  it('reopens Apps Script capture before Drive repair when both failed', async () => {
+    const session = failedSession();
+    session.completedAt = new Date().toISOString();
+    session.appsScript = {
+      complete: true,
+      scriptId: 'script-test-123',
+      liveCapture: 'FAILED',
+      liveError: 'Apps Script API 403',
+      part: deploymentPart(),
+    };
+    const savedPhases: string[] = [];
+    const store = { save: async (value: BackupSession) => { savedPhases.push(value.phase); } } as any;
+    const client = new DriveBackupClient('test-token') as any;
+
+    const reopened = await advanceBackupSession(session, client, fakeDatabase(), key, store);
+
+    assert.equal(reopened.done, false);
+    assert.equal(session.phase, 'APPS_SCRIPT');
+    assert.equal(session.appsScript.complete, false);
+    assert.equal(session.appsScript.liveCapture, 'NOT_ATTEMPTED');
+    assert.equal(session.appsScript.liveError, undefined);
+    assert.equal(session.appsScript.part?.driveFileId, 'deployment-existing');
+    assert.equal(session.verification, undefined);
+    assert.equal(session.completedAt, undefined);
+    assert.equal(session.error, undefined);
+    assert.deepEqual(savedPhases, ['APPS_SCRIPT']);
+  });
+
+  it('updates the Apps Script deployment part in place and then enters Drive repair', async () => {
+    const session = failedSession();
+    session.phase = 'APPS_SCRIPT';
+    session.appsScript = {
+      complete: false,
+      scriptId: 'script-test-123',
+      liveCapture: 'NOT_ATTEMPTED',
+      part: deploymentPart(),
+    };
+    const store = { save: async () => undefined } as any;
+    const client = new DriveBackupClient('test-token') as any;
+    client.getAppsScriptProject = async () => ({ title: 'LIMS' });
+    client.getAppsScriptProjectContent = async () => ({ files: [] });
+    client.listAppsScriptDeployments = async () => [];
+    let updateCalls = 0;
+    let uploadCalls = 0;
+    client.updateBytes = async (fileId: string) => {
+      updateCalls++;
+      assert.equal(fileId, 'deployment-existing');
+      return { id: fileId, name: 'apps-script-deployment.json.enc', mimeType: 'application/octet-stream' };
+    };
+    client.uploadBytes = async () => {
+      uploadCalls++;
+      return { id: 'deployment-duplicate', name: 'apps-script-deployment.json.enc', mimeType: 'application/octet-stream' };
+    };
+    const previousScriptId = process.env['LIMS_APPS_SCRIPT_ID'];
+    process.env['LIMS_APPS_SCRIPT_ID'] = 'script-test-123';
+
+    try {
+      const retried = await advanceBackupSession(session, client, fakeDatabase(), key, store);
+
+      assert.equal(retried.done, false);
+      assert.equal(session.appsScript.complete, true);
+      assert.equal(session.appsScript.liveCapture, 'PASSED');
+      assert.equal(session.appsScript.liveError, undefined);
+      assert.equal(session.appsScript.part?.driveFileId, 'deployment-existing');
+      assert.equal(session.phase, 'DRIVE_REPAIR');
+      assert.deepEqual(session.drive.repair?.assetIndexes, [0]);
+      assert.equal(updateCalls, 1);
+      assert.equal(uploadCalls, 0);
+    } finally {
+      if (previousScriptId === undefined) delete process.env['LIMS_APPS_SCRIPT_ID'];
+      else process.env['LIMS_APPS_SCRIPT_ID'] = previousScriptId;
+    }
+  });
+
   it('reopens a failed session and replaces only the failed Drive asset in place', async () => {
     const session = failedSession();
     const savedPhases: string[] = [];
@@ -143,6 +231,11 @@ describe('resumable backup Drive repair', () => {
     session.error = undefined;
     session.verification = undefined;
     session.drive.errors = [];
+    session.firestore.unknownCollections = [
+      'artifacts/lims-cloud-fixed/daily_checks',
+      'artifacts/lims-cloud-fixed/public',
+      'artifacts/lims-cloud-fixed/stats_aggregates',
+    ];
     session.drive.assets[0] = {
       ...session.drive.assets[0],
       encryptedPayloadFileId: 'payload-repaired',
@@ -175,5 +268,47 @@ describe('resumable backup Drive repair', () => {
     assert.equal(session.manifestFileId, 'manifest-existing');
     assert.equal(updateCalls, 1);
     assert.equal(uploadCalls, 0);
+  });
+
+  it('keeps unrelated and nested legacy collection drift fail-closed during finalize', async () => {
+    const session = failedSession();
+    session.phase = 'FINALIZE';
+    session.error = undefined;
+    session.verification = undefined;
+    session.drive.errors = [];
+    session.firestore.unknownCollections = [
+      'artifacts/lims-cloud-fixed/uncatalogued',
+      'artifacts/lims-cloud-fixed/daily_checks/day-1/history',
+      'artifacts/lims-cloud-fixed/public/data/history',
+    ];
+    session.drive.assets[0] = {
+      ...session.drive.assets[0],
+      encryptedPayloadFileId: 'payload-repaired',
+      encryptedPayloadFileName: 'asset-00000-report.pdf.enc',
+      payloadPlaintextBytes: 15,
+      payloadPlaintextSha256: 'a'.repeat(64),
+      payloadCiphertextSha256: 'b'.repeat(64),
+      status: 'BACKED_UP',
+      error: undefined,
+    };
+    const store = { save: async () => undefined } as any;
+    const client = new DriveBackupClient('test-token') as any;
+    client.getStorageQuota = async () => ({ usage: '123' });
+    client.updateBytes = async (fileId: string) => ({
+      id: fileId,
+      name: 'manifest.json.enc',
+      mimeType: 'application/octet-stream',
+    });
+
+    const result = await advanceBackupSession(session, client, fakeDatabase(), key, store);
+
+    assert.equal(result.done, true);
+    assert.equal(result.result?.manifest.status, 'FAILED');
+    assert.deepEqual(result.result?.manifest.firestore.unknownCollections, [
+      'artifacts/lims-cloud-fixed/uncatalogued',
+      'artifacts/lims-cloud-fixed/daily_checks/day-1/history',
+      'artifacts/lims-cloud-fixed/public/data/history',
+    ]);
+    assert.equal(result.result?.manifest.errors.some(error => error.includes('Unknown Firestore collections found')), true);
   });
 });

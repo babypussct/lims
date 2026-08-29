@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.29-b02",
-    "title": "Dừng retry vô hạn khi backup kết thúc FAILED và hiển thị rõ lỗi manifest",
+    "version": "v26.08.29-b03",
+    "title": "Hoàn thiện resume backup Apps Script và bảo toàn Firestore legacy đã audit",
     "features": [
-      "Khi tiếp tục một backup đã kết thúc FAILED, client nhận đúng trạng thái cuối từ API và dừng vòng retry thay vì lặp lại DRIVE_REPAIR/FINALIZE vô hạn.",
-      "Màn hình cấu hình hiển thị trạng thái backup gần nhất cùng lỗi manifest để quản trị viên có thể chẩn đoán nguyên nhân thất bại ngay tại UI.",
-      "Toast sau khi tạo hoặc tiếp tục backup dùng mức error cho trạng thái FAILED và kèm lỗi đầu tiên nếu manifest trả về chi tiết chẩn đoán.",
-      "Card backup gần nhất phân biệt trực quan FAILED với trạng thái hợp lệ và hiển thị tối đa ba lỗi manifest để tránh phải suy đoán từ trạng thái tổng quát.",
-      "HTTP 422 kèm done=true từ /api/backup/create được coi là kết quả terminal của session đang resume thay vì lỗi transient cần retry."
+      "Backup FAILED do live Apps Script giờ có thể tiếp tục tại chỗ: hệ thống retry Apps Script trước, cập nhật deployment part hiện có và sau đó quay lại đúng checkpoint Drive/repair thay vì tạo snapshot trùng.",
+      "Ba collection lịch sử daily_checks, public và stats_aggregates được backup/restore như retained legacy nhưng vẫn tách khỏi catalog 32 collection active; collection drift khác tiếp tục fail-closed.",
+      "Trạng thái backup hiển thị riêng số collection active và retained legacy để quản trị viên thấy rõ phạm vi coverage mà không làm thay đổi contract schema active của manifest.",
+      "Tài liệu vận hành ghi rõ cơ chế resume Apps Script/Drive in-place và policy retained legacy sau audit production ngày 29/08/2026.",
+      "Session FAILED có liveCapture Apps Script lỗi được reopen về APPS_SCRIPT, xóa trạng thái lỗi/verification cũ nhưng giữ deployment part để retry update in-place."
     ]
   },
   "assetGroups": [

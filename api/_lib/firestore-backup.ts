@@ -7,7 +7,7 @@ import {
   type Firestore,
 } from 'firebase-admin/firestore';
 import {
-  FIRESTORE_COLLECTION_CATALOG,
+  FIRESTORE_BACKUP_COLLECTION_CATALOG,
   FIRESTORE_ROOT_COLLECTION_CATALOG,
   FIRESTORE_SUBCOLLECTION_CATALOG,
   NEVER_RESTORE_COLLECTIONS,
@@ -415,7 +415,7 @@ export async function createFirestoreBackupQueue(
   const appRoot = appPath(appId);
   const appCollections = new Map<string, CollectionReference>();
   for (const collection of await db.doc(appRoot).listCollections()) appCollections.set(collection.id, collection);
-  for (const collection of FIRESTORE_COLLECTION_CATALOG) {
+  for (const collection of FIRESTORE_BACKUP_COLLECTION_CATALOG) {
     const actual = appCollections.get(collection);
     addInitialCollection(
       queue,
@@ -426,7 +426,7 @@ export async function createFirestoreBackupQueue(
     );
   }
   for (const [name, collection] of appCollections) {
-    if (!FIRESTORE_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_COLLECTION_CATALOG[number])) {
+    if (!FIRESTORE_BACKUP_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_BACKUP_COLLECTION_CATALOG[number])) {
       addInitialCollection(queue, seen, collection.path, unknownCollections, true);
     }
   }
@@ -569,12 +569,12 @@ export async function collectFirestoreBackup(options: FirestoreBackupOptions): P
   const appDocument = options.db.doc(appPath(options.appId));
   const discovered = new Map<string, CollectionReference>();
   for (const collection of await appDocument.listCollections()) discovered.set(collection.id, collection);
-  for (const name of FIRESTORE_COLLECTION_CATALOG) {
+  for (const name of FIRESTORE_BACKUP_COLLECTION_CATALOG) {
     const collection = discovered.get(name) || options.db.collection(`${appPath(options.appId)}/${name}`);
     discovered.set(name, collection);
   }
   for (const [name, collection] of discovered) {
-    if (!FIRESTORE_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_COLLECTION_CATALOG[number])) {
+    if (!FIRESTORE_BACKUP_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_BACKUP_COLLECTION_CATALOG[number])) {
       stats.unknownCollections.add(collection.path);
     }
     await walkCollection(collection, options, stats, visitedPaths);

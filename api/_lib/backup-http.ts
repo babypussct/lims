@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   configuredBackupAppId,
   FIRESTORE_COLLECTION_CATALOG,
+  FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG,
   FIRESTORE_ROOT_COLLECTION_CATALOG,
   FIRESTORE_SUBCOLLECTION_CATALOG,
 } from './backup-contract.js';
@@ -138,6 +139,7 @@ export async function backupStatusHandler(req: VercelRequest, res: VercelRespons
       },
       firestore: {
         topLevelCollectionCount: FIRESTORE_COLLECTION_CATALOG.length,
+        retainedLegacyCollectionCount: FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG.length,
         rootCollectionCount: FIRESTORE_ROOT_COLLECTION_CATALOG.length,
         nestedPatternCount: FIRESTORE_SUBCOLLECTION_CATALOG.length,
       },

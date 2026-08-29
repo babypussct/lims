@@ -22,6 +22,7 @@ export interface BackupStatusResponse {
   };
   firestore: {
     topLevelCollectionCount: number;
+    retainedLegacyCollectionCount: number;
     rootCollectionCount: number;
     nestedPatternCount: number;
   };

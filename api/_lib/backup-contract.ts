@@ -43,6 +43,24 @@ export const FIRESTORE_COLLECTION_CATALOG = [
   'users',
 ] as const;
 
+/**
+ * Historical collections that are no longer part of the active application
+ * schema but are intentionally retained for audit/disaster-recovery coverage.
+ * Keep these separate from FIRESTORE_COLLECTION_CATALOG so manifests remain
+ * compatible with the audited active-schema contract used by restore.
+ */
+export const FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG = [
+  'daily_checks',
+  'public',
+  'stats_aggregates',
+] as const;
+
+/** Every app-scoped top-level collection that backup must walk. */
+export const FIRESTORE_BACKUP_COLLECTION_CATALOG = [
+  ...FIRESTORE_COLLECTION_CATALOG,
+  ...FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG,
+] as const;
+
 export const FIRESTORE_ROOT_COLLECTION_CATALOG = ['releases'] as const;
 
 export const FIRESTORE_SUBCOLLECTION_CATALOG = [

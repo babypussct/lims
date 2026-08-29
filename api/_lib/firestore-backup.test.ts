@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import {
+  createFirestoreBackupQueue,
   deserializeFirestoreValue,
   extractDriveFileIds,
   sanitizeFirestoreDataForBackup,
@@ -52,5 +53,35 @@ describe('Firestore backup serializer', () => {
     assert.equal('fcmTokens' in scrubbed, false);
     assert.deepEqual(extractDriveFileIds(value).map(item => item.fileId).sort(), ['drive-file-1', 'drive-file-3', 'legacy-drive-file-4', 'sheet-file-2']);
     assert.equal(stableJson({ b: 1, a: 2 }), stableJson({ a: 2, b: 1 }));
+  });
+});
+
+describe('Firestore backup discovery catalog', () => {
+  it('retains audited legacy top-level data without allowing unrelated collection drift', async () => {
+    const appRoot = 'artifacts/lims-cloud-fixed';
+    const db = {
+      doc: (path: string) => ({
+        listCollections: async () => path === appRoot ? [
+          { id: 'daily_checks', path: `${appRoot}/daily_checks` },
+          { id: 'public', path: `${appRoot}/public` },
+          { id: 'stats_aggregates', path: `${appRoot}/stats_aggregates` },
+          { id: 'uncatalogued', path: `${appRoot}/uncatalogued` },
+        ] : [],
+      }),
+      listCollections: async () => [
+        { id: 'artifacts', path: 'artifacts' },
+        { id: 'releases', path: 'releases' },
+      ],
+    } as any;
+
+    const queue = await createFirestoreBackupQueue(db, 'lims-cloud-fixed');
+
+    assert.equal(queue.queue.some(item => item.path === `${appRoot}/daily_checks`), true);
+    assert.equal(queue.unknownCollections.includes(`${appRoot}/daily_checks`), false);
+    assert.equal(queue.queue.some(item => item.path === `${appRoot}/public`), true);
+    assert.equal(queue.unknownCollections.includes(`${appRoot}/public`), false);
+    assert.equal(queue.queue.some(item => item.path === `${appRoot}/stats_aggregates`), true);
+    assert.equal(queue.unknownCollections.includes(`${appRoot}/stats_aggregates`), false);
+    assert.deepEqual(queue.unknownCollections, [`${appRoot}/uncatalogued`]);
   });
 });

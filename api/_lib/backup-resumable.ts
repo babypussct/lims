@@ -12,6 +12,7 @@ import {
   BACKUP_SERIALIZER_VERSION,
   appPath,
   FIRESTORE_COLLECTION_CATALOG,
+  FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG,
   FIRESTORE_ROOT_COLLECTION_CATALOG,
   FIRESTORE_SUBCOLLECTION_CATALOG,
   NEVER_RESTORE_COLLECTIONS,
@@ -287,27 +288,35 @@ function driveFreeBytes(quota: DriveStorageQuota): number | undefined {
   return Math.max(0, limit - usage);
 }
 
-function partFromEncryptedJson(
+async function partFromEncryptedJson(
   client: DriveBackupClient,
   key: BackupKey,
   parentId: string,
   name: string,
   category: BackupPartManifest['category'],
   value: unknown,
+  existingPart?: BackupPartManifest,
 ): Promise<BackupPartManifest> {
   const plaintext = Buffer.from(JSON.stringify(value), 'utf8');
   const ciphertext = encryptBackupPayload(plaintext, key);
-  return client.uploadBytes(`${safeBackupName(name)}.json.enc`, 'application/octet-stream', parentId, ciphertext)
-    .then(uploaded => ({
-      name: `${safeBackupName(name)}.json.enc`,
-      driveFileId: uploaded.id,
-      category,
-      recordCount: 1,
-      plaintextBytes: plaintext.byteLength,
-      ciphertextBytes: ciphertext.byteLength,
-      plaintextSha256: sha256(plaintext),
-      ciphertextSha256: sha256(ciphertext),
-    }));
+  const fileName = `${safeBackupName(name)}.json.enc`;
+  let driveFileId: string;
+  if (existingPart) {
+    await client.updateBytes(existingPart.driveFileId, 'application/octet-stream', ciphertext);
+    driveFileId = existingPart.driveFileId;
+  } else {
+    driveFileId = (await client.uploadBytes(fileName, 'application/octet-stream', parentId, ciphertext)).id;
+  }
+  return {
+    name: fileName,
+    driveFileId,
+    category,
+    recordCount: 1,
+    plaintextBytes: plaintext.byteLength,
+    ciphertextBytes: ciphertext.byteLength,
+    plaintextSha256: sha256(plaintext),
+    ciphertextSha256: sha256(ciphertext),
+  };
 }
 
 function mergePathCounts(
@@ -708,7 +717,15 @@ async function runAppsScriptPhase(
       'Apps Script live content and deployment metadata are encrypted in this part; redeployment after disaster recovery remains a controlled operator action.',
     ],
   };
-  const part = await partFromEncryptedJson(client, key, session.folders.deployment, 'apps-script-deployment', 'deployment', deploymentManifest);
+  const part = await partFromEncryptedJson(
+    client,
+    key,
+    session.folders.deployment,
+    'apps-script-deployment',
+    'deployment',
+    deploymentManifest,
+    session.appsScript.part,
+  );
   session.appsScript = {
     complete: true,
     scriptId,
@@ -716,7 +733,7 @@ async function runAppsScriptPhase(
     liveError,
     part,
   };
-  session.phase = 'DRIVE_PLAN';
+  session.phase = phaseAfterAppsScript(session);
   session.quota.driveApiRequests += client.stats.apiRequests;
   session.quota.driveBytesUploaded += client.stats.bytesUploaded;
   await store.save(session);
@@ -807,6 +824,31 @@ function failedDriveAssetIndexes(session: BackupSession): number[] {
   return session.drive.assets.flatMap((asset, index) => asset.status === 'BACKED_UP' ? [] : [index]);
 }
 
+function phaseAfterAppsScript(session: BackupSession): BackupSessionPhase {
+  if (!session.drive.planned) return 'DRIVE_PLAN';
+  if (session.drive.nextAssetIndex < session.drive.files.length) return 'DRIVE_ASSETS';
+  const assetIndexes = failedDriveAssetIndexes(session);
+  if (assetIndexes.length) {
+    session.drive.repair = { assetIndexes, nextIndex: 0 };
+    return 'DRIVE_REPAIR';
+  }
+  session.drive.repair = undefined;
+  return 'FINALIZE';
+}
+
+async function beginAppsScriptRepairPhase(session: BackupSession, store: BackupSessionStore): Promise<boolean> {
+  if (session.appsScript.liveCapture !== 'FAILED') return false;
+  session.verification = undefined;
+  session.completedAt = undefined;
+  session.error = undefined;
+  session.appsScript.complete = false;
+  session.appsScript.liveCapture = 'NOT_ATTEMPTED';
+  session.appsScript.liveError = undefined;
+  session.phase = 'APPS_SCRIPT';
+  await store.save(session);
+  return true;
+}
+
 function rebuildDriveAssetErrors(session: BackupSession, previousAssetErrors: Set<string>): void {
   const nonAssetErrors = session.drive.errors.filter(error => !previousAssetErrors.has(error));
   const currentAssetErrors = session.drive.assets.flatMap(asset => asset.status === 'BACKED_UP' || !asset.error ? [] : [asset.error]);
@@ -882,17 +924,22 @@ function buildManifest(session: BackupSession, key: BackupKey): BackupManifest {
   const templateIds = [...new Set([...resolvedBackupTemplateIds(), ...source.templateIds])];
   const authWithoutProfileCount = session.auth.uids.filter(uid => !session.firestore.profileIds.includes(uid)).length;
   const profileWithoutAuthCount = session.firestore.profileIds.filter(uid => !session.auth.uids.includes(uid)).length;
+  const retainedLegacyTopLevelPaths = new Set(
+    FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG.map(collection => `${appPath(session.appId)}/${collection}`),
+  );
+  const unknownCollections = uniqueStrings(session.firestore.unknownCollections)
+    .filter(path => !retainedLegacyTopLevelPaths.has(path));
   const warnings = uniqueStrings(
     session.drive.warnings,
     session.firestore.orphanSubcollectionCount > 0 ? [`Detected ${session.firestore.orphanSubcollectionCount} orphan nested document(s); they were included by collection-group scan.`] : [],
     authWithoutProfileCount > 0 ? [`Detected ${authWithoutProfileCount} Firebase Auth user(s) without a Firestore users profile.`] : [],
     profileWithoutAuthCount > 0 ? [`Detected ${profileWithoutAuthCount} Firestore users profile(s) without a Firebase Auth user.`] : [],
-    session.firestore.unknownCollections.map(path => `Collection outside the catalog was included but needs schema review: ${path}`),
+    unknownCollections.map(path => `Collection outside the catalog was included but needs schema review: ${path}`),
   );
   const errors = [...session.drive.errors];
   if (session.appsScript.liveError) errors.push(session.appsScript.liveError);
-  if (session.firestore.unknownCollections.length && process.env['LIMS_BACKUP_ALLOW_UNKNOWN_COLLECTIONS'] !== 'true') {
-    errors.push(`Unknown Firestore collections found: ${session.firestore.unknownCollections.join(', ')}`);
+  if (unknownCollections.length && process.env['LIMS_BACKUP_ALLOW_UNKNOWN_COLLECTIONS'] !== 'true') {
+    errors.push(`Unknown Firestore collections found: ${unknownCollections.join(', ')}`);
   }
   if (!sourceFolderIds.length || !templateIds.length) {
     errors.push('Drive source folder/template catalog is empty; Drive coverage cannot be certified.');
@@ -924,7 +971,7 @@ function buildManifest(session: BackupSession, key: BackupKey): BackupManifest {
       pathCounts: session.firestore.pathCounts,
       totalDocuments: session.firestore.pathCounts.reduce((sum, item) => sum + item.documentCount, 0),
       excludedCollections: session.firestore.excludedCounts.map(item => ({ collection: item.collection, reason: 'ephemeral session data; never restored', documentCount: item.documentCount })),
-      unknownCollections: session.firestore.unknownCollections,
+      unknownCollections,
       orphanSubcollectionCount: session.firestore.orphanSubcollectionCount,
       scrubbedFieldCount: session.firestore.scrubbedFieldCount,
     },
@@ -1089,6 +1136,7 @@ export async function advanceBackupSession(
     case 'COMPLETED':
       throw new Error('Backup session đã hoàn tất.');
     case 'FAILED':
+      if (await beginAppsScriptRepairPhase(session, store)) return { session, done: false };
       if (await beginDriveRepairPhase(session, store)) return { session, done: false };
       throw new Error(session.error || 'Backup session thất bại.');
     }

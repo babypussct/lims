@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.29-b02
+## Phiên bản hiện tại: v26.08.29-b03
+
+### v26.08.29-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Backup FAILED do live Apps Script giờ có thể tiếp tục tại chỗ: hệ thống retry Apps Script trước, cập nhật deployment part hiện có và sau đó quay lại đúng checkpoint Drive/repair thay vì tạo snapshot trùng.
+- Ba collection lịch sử daily_checks, public và stats_aggregates được backup/restore như retained legacy nhưng vẫn tách khỏi catalog 32 collection active; collection drift khác tiếp tục fail-closed.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Trạng thái backup hiển thị riêng số collection active và retained legacy để quản trị viên thấy rõ phạm vi coverage mà không làm thay đổi contract schema active của manifest.
+- Tài liệu vận hành ghi rõ cơ chế resume Apps Script/Drive in-place và policy retained legacy sau audit production ngày 29/08/2026.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Session FAILED có liveCapture Apps Script lỗi được reopen về APPS_SCRIPT, xóa trạng thái lỗi/verification cũ nhưng giữ deployment part để retry update in-place.
+- Sau retry Apps Script, phase transition tôn trọng Drive plan/progress hiện có và tự chuyển sang DRIVE_REPAIR nếu còn asset lỗi.
+- Loại stale unknownCollections ở đúng top-level path của retained legacy khỏi manifest failure; nested drift hoặc collection chưa audit vẫn tiếp tục làm backup FAILED.
 
 ### v26.08.29-b02
 
