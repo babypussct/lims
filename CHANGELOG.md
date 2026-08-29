@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.29-b03
+## Phiên bản hiện tại: v26.08.29-b04
+
+### v26.08.29-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khi một tệp Drive không thể backup, thông báo lỗi giờ cho biết các đường dẫn dữ liệu đang tham chiếu tới tệp đó để quản trị viên xác định đúng nguồn cần xử lý.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Danh sách đường dẫn tham chiếu được sắp xếp ổn định và giữ đồng nhất giữa manifest backup và thông báo lỗi.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Giữ nguyên cơ chế fail-closed cho tài nguyên Drive không truy cập được; hệ thống chỉ bổ sung thông tin chẩn đoán, không tự bỏ qua hoặc sửa tham chiếu dữ liệu.
 
 ### v26.08.29-b03
 

@@ -237,7 +237,11 @@ export async function backupSingleDriveAsset(
       errors,
     };
   } catch (error) {
-    const message = `Cannot backup Drive file ${source?.name || reference.fileId}: ${error instanceof Error ? error.message : String(error)}`;
+    const referencedBy = [...reference.referencedBy].sort();
+    const referenceSuffix = referencedBy.length
+      ? ` Referenced by: ${referencedBy.join(', ')}.`
+      : '';
+    const message = `Cannot backup Drive file ${source?.name || reference.fileId}: ${error instanceof Error ? error.message : String(error)}${referenceSuffix}`;
     errors.push(message);
     const unsupported = Boolean(source
       && DriveBackupClient.isWorkspaceFile(source.mimeType)
@@ -256,7 +260,7 @@ export async function backupSingleDriveAsset(
         payloadPlaintextBytes: 0,
         payloadPlaintextSha256: '',
         payloadCiphertextSha256: '',
-        referencedBy: [...reference.referencedBy].sort(),
+        referencedBy,
         isTemplate: templateIds.includes(reference.fileId),
         status: unsupported ? 'UNSUPPORTED' : 'INACCESSIBLE',
         error: message,

@@ -69,5 +69,7 @@ describe('Drive asset backup retry policy', () => {
     assert.equal(metadataAttempts, 1);
     assert.equal(result.asset.status, 'INACCESSIBLE');
     assert.match(result.errors[0], /404/);
+    assert.match(result.errors[0], /results\/result-1/);
+    assert.deepEqual(result.asset.referencedBy, ['results/result-1']);
   });
 });
