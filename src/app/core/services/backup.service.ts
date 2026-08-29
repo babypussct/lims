@@ -252,6 +252,14 @@ export class BackupService {
         // phase. Replaying the same session is safe because the API loads the
         // encrypted session state from Drive before advancing it.
         const requestError = error as BackupRequestError;
+        // The create endpoint intentionally returns HTTP 422 for a terminal
+        // FAILED manifest. That is a completed backup step, not a transient
+        // transport error. Returning the payload lets the UI surface the
+        // manifest errors and, critically, prevents FAILED -> DRIVE_REPAIR ->
+        // FINALIZE from being retried forever.
+        if (backupFolderId && requestError.status === 422 && requestError.payload?.done === true) {
+          return requestError.payload as BackupCreateResponse;
+        }
         if (backupFolderId && requestError.status === 409) {
           await this.waitBeforeRetry(Number(requestError.payload?.retryAfterMs) || 3000);
           continue;

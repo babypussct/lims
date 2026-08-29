@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.29-b01
+## Phiên bản hiện tại: v26.08.29-b02
+
+### v26.08.29-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khi tiếp tục một backup đã kết thúc FAILED, client nhận đúng trạng thái cuối từ API và dừng vòng retry thay vì lặp lại DRIVE_REPAIR/FINALIZE vô hạn.
+- Màn hình cấu hình hiển thị trạng thái backup gần nhất cùng lỗi manifest để quản trị viên có thể chẩn đoán nguyên nhân thất bại ngay tại UI.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Toast sau khi tạo hoặc tiếp tục backup dùng mức error cho trạng thái FAILED và kèm lỗi đầu tiên nếu manifest trả về chi tiết chẩn đoán.
+- Card backup gần nhất phân biệt trực quan FAILED với trạng thái hợp lệ và hiển thị tối đa ba lỗi manifest để tránh phải suy đoán từ trạng thái tổng quát.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- HTTP 422 kèm done=true từ /api/backup/create được coi là kết quả terminal của session đang resume thay vì lỗi transient cần retry.
+- Ngăn vòng lặp FAILED → DRIVE_REPAIR → FINALIZE → FAILED khi backup không thể được hoàn tất sau bước repair.
 
 ### v26.08.29-b01
 

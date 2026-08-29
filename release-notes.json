@@ -1,27 +1,16 @@
 {
-  "title": "Backup LIMS có thể tiếp tục và tự sửa lỗi Drive tạm thời",
+  "title": "Dừng retry vô hạn khi backup kết thúc FAILED và hiển thị rõ lỗi manifest",
   "highlights": [
-    "Bổ sung cơ chế backup tùy chỉnh mã hóa lên Google Drive cho Firestore, Firebase Auth, tệp CoA/PDF/Google Docs/Excel, mẫu báo cáo và cấu hình Apps Script.",
-    "Mỗi backup được kiểm tra đọc ngược, checksum, cấu trúc catalog và quyền truy cập trước khi được công nhận hoàn tất; không sử dụng Firestore managed export cần gói thanh toán.",
-    "Có thể tiếp tục đúng backup đã chọn và sửa lại riêng các tệp Drive lỗi mà không chạy lại snapshot Firestore/Auth đã hoàn tất."
+    "Khi tiếp tục một backup đã kết thúc FAILED, client nhận đúng trạng thái cuối từ API và dừng vòng retry thay vì lặp lại DRIVE_REPAIR/FINALIZE vô hạn.",
+    "Màn hình cấu hình hiển thị trạng thái backup gần nhất cùng lỗi manifest để quản trị viên có thể chẩn đoán nguyên nhân thất bại ngay tại UI."
   ],
-  "features": [
-    "Thu thập đệ quy toàn bộ catalog Firestore hiện tại, các subcollection/collection group, hồ sơ người dùng và đối soát UID giữa Auth với hồ sơ Firestore.",
-    "Quét cây Drive nguồn, các ID tệp được tham chiếu trong dữ liệu, toàn bộ template cấu hình và native copy cho tệp Workspace để phục hồi tốt hơn.",
-    "Chụp source/config Apps Script trong repository và kiểm chứng thêm project, content, deployments đang sống qua Apps Script API với quyền chỉ đọc.",
-    "Thêm màn hình quản trị, quyền BACKUP_CREATE/BACKUP_VERIFY/BACKUP_RESTORE, audit log token-free và hướng dẫn cấu hình OAuth/quota/restore."
-  ],
+  "features": [],
   "improvements": [
-    "Bổ sung guard dung lượng Drive trước và sau backup, giới hạn đọc/ghi Firestore, manifest minh bạch về consistency boundary và cảnh báo khi dữ liệu nguồn có vấn đề.",
-    "Khôi phục Drive theo quan hệ parent trước, tự remap link Firestore khi tệp bị tạo lại bằng ID mới, đồng thời bảo vệ thay đổi nghiệp vụ hiện có trong RECOVER_MISSING.",
-    "Thêm retry/backoff có giới hạn cho lỗi đọc/export Drive 429 và 5xx, đồng thời giữ lỗi 404/không hỗ trợ ở trạng thái chặn để không chứng nhận backup thiếu dữ liệu."
+    "Toast sau khi tạo hoặc tiếp tục backup dùng mức error cho trạng thái FAILED và kèm lỗi đầu tiên nếu manifest trả về chi tiết chẩn đoán.",
+    "Card backup gần nhất phân biệt trực quan FAILED với trạng thái hợp lệ và hiển thị tối đa ba lỗi manifest để tránh phải suy đoán từ trạng thái tổng quát."
   ],
   "fixes": [
-    "Không còn coi backup chỉ gồm hai collection sops và inventory là backup toàn hệ thống.",
-    "Sửa các trường hợp restore batch/JSON cũ có thể gây lỗi hoặc ghi đè không kiểm soát; bổ sung kiểm tra kiểu dữ liệu Firestore, catalog và Drive ACL.",
-    "Ngăn việc công nhận backup hoàn tất nếu thiếu live Apps Script snapshot, thiếu payload/tệp, checksum sai, quyền chia sẻ không an toàn hoặc không đọc lại được manifest.",
-    "Sửa cấu hình đóng gói function Vercel để deployment production có thể trace source Apps Script và khởi chạy đúng schema.",
-    "Gom router backup và OAuth vào các function dùng chung, giữ tổng số Serverless Functions trong giới hạn Hobby miễn phí mà không đổi các URL API hiện hữu.",
-    "Sửa trường hợp backup đã đi hết Drive nhưng fail ở finalize: session FAILED có thể repair các asset chưa BACKED_UP và cập nhật manifest cũ tại chỗ thay vì tạo manifest hoặc snapshot mới."
+    "HTTP 422 kèm done=true từ /api/backup/create được coi là kết quả terminal của session đang resume thay vì lỗi transient cần retry.",
+    "Ngăn vòng lặp FAILED → DRIVE_REPAIR → FINALIZE → FAILED khi backup không thể được hoàn tất sau bước repair."
   ]
 }

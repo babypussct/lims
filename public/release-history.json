@@ -1,5 +1,24 @@
 [
   {
+    "version": "v26.08.29-b02",
+    "date": "29/8/2026",
+    "title": "Dừng retry vô hạn khi backup kết thúc FAILED và hiển thị rõ lỗi manifest",
+    "highlights": [
+      "Khi tiếp tục một backup đã kết thúc FAILED, client nhận đúng trạng thái cuối từ API và dừng vòng retry thay vì lặp lại DRIVE_REPAIR/FINALIZE vô hạn.",
+      "Màn hình cấu hình hiển thị trạng thái backup gần nhất cùng lỗi manifest để quản trị viên có thể chẩn đoán nguyên nhân thất bại ngay tại UI."
+    ],
+    "features": [],
+    "improvements": [
+      "Toast sau khi tạo hoặc tiếp tục backup dùng mức error cho trạng thái FAILED và kèm lỗi đầu tiên nếu manifest trả về chi tiết chẩn đoán.",
+      "Card backup gần nhất phân biệt trực quan FAILED với trạng thái hợp lệ và hiển thị tối đa ba lỗi manifest để tránh phải suy đoán từ trạng thái tổng quát."
+    ],
+    "fixes": [
+      "HTTP 422 kèm done=true từ /api/backup/create được coi là kết quả terminal của session đang resume thay vì lỗi transient cần retry.",
+      "Ngăn vòng lặp FAILED → DRIVE_REPAIR → FINALIZE → FAILED khi backup không thể được hoàn tất sau bước repair."
+    ],
+    "releaseOrder": 26082900002
+  },
+  {
     "version": "v26.08.29-b01",
     "date": "29/8/2026",
     "title": "Backup LIMS có thể tiếp tục và tự sửa lỗi Drive tạm thời",

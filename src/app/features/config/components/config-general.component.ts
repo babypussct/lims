@@ -428,7 +428,8 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.backupLastCreate.set(result);
       await this.refreshBackupList(false);
       const label = result.status === 'COMPLETED' ? 'Backup toàn diện đã hoàn tất.' : `Backup hoàn tất với trạng thái ${result.status}.`;
-      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.`, result.status === 'COMPLETED' ? 'success' : 'info');
+      const detail = result.errors?.[0] ? ` Lỗi: ${result.errors[0]}` : '';
+      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.${detail}`, result.status === 'COMPLETED' ? 'success' : result.status === 'FAILED' ? 'error' : 'info');
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
     } finally {
@@ -452,7 +453,8 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.backupLastCreate.set(result);
       await this.refreshBackupList(false);
       const label = result.status === 'COMPLETED' ? 'Backup dở dang đã hoàn tất.' : `Backup tiếp tục xong với trạng thái ${result.status}.`;
-      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.`, result.status === 'COMPLETED' ? 'success' : 'info');
+      const detail = result.errors?.[0] ? ` Lỗi: ${result.errors[0]}` : '';
+      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.${detail}`, result.status === 'COMPLETED' ? 'success' : result.status === 'FAILED' ? 'error' : 'info');
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
     } finally {
