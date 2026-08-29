@@ -30,7 +30,7 @@ Chưa được phép tuyên bố `BACKUP_COMPLETE` chỉ bằng kiểm thử mã
 
 - Backup ID đang được tiếp tục: `bkp_20260828092036_01711f019e`.
 - Checkpoint đã xác nhận trước khi tiếp tục: Firestore `12.889` document trong `124` encrypted part; Firebase Auth `165` user; Drive plan `2.737` asset.
-- Sau khi cấp lại quyền Google Drive bằng Chrome, checkpoint Drive đã chạy tiếp từ `406` lên `1.156/2.737` asset; log production gần nhất vẫn ở pha `DRIVE_ASSETS`, chưa phát hiện lỗi mới.
+- Sau khi cấp lại quyền Google Drive bằng Chrome, checkpoint Drive đã chạy tiếp từ `406` lên `1.206/2.737` asset; log production gần nhất vẫn ở pha `DRIVE_ASSETS`, chưa phát hiện lỗi mới.
 - Đã thử tăng đồng thời lên 10 để rút ngắn thời gian nhưng quan sát thấy Google Drive throttling làm lô kéo dài hơn; cấu hình đã được gỡ và hệ thống trở về mức mặc định 5 ổn định. Checkpoint dữ liệu không bị ảnh hưởng.
 - Production canonical đang chạy tại `https://nafiqpm6.vercel.app`; deployment tối ưu resumable đã ở trạng thái Ready.
 - Backup Drive được xử lý theo các lượt tối đa 25 asset, với concurrency giới hạn 5 bên trong mỗi lượt; mỗi lượt ghi checkpoint sau khi hoàn tất và có Firestore lock chống request trùng.
