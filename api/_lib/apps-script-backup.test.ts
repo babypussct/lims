@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { readAppsScriptLiveSnapshot, readAppsScriptSourceSnapshot } from './apps-script-backup.js';
 
 describe('Apps Script backup snapshot', () => {
-  it('includes the deployment manifest and every checked-in .gs source file', () => {
+  it('includes the deployment manifest, every checked-in .gs source file, and optional local deployment identity', () => {
     const snapshot = readAppsScriptSourceSnapshot();
     assert.equal(snapshot.files.some(file => file.path === 'gas/appsscript.json'), true);
     assert.equal(snapshot.files.some(file => file.path === 'gas/LIMS_ReportGenerator.gs'), true);
     assert.equal(snapshot.files.some(file => file.path === 'gas/SOP_Configs.gs'), true);
-    assert.equal(snapshot.files.some(file => file.path === '.clasp.json'), true);
-    assert.match(snapshot.deployment.scriptId || '', /^[A-Za-z0-9_-]+$/);
+    assert.equal(snapshot.files.some(file => file.path === '.clasp.json'), existsSync(resolve(process.cwd(), '.clasp.json')));
+    if (snapshot.deployment.scriptId) assert.match(snapshot.deployment.scriptId, /^[A-Za-z0-9_-]+$/);
     assert.equal(snapshot.templateIds.length >= 16, true);
     assert.equal(snapshot.templateIds.every(id => /^[A-Za-z0-9_-]+$/.test(id)), true);
     assert.equal(snapshot.files.every(file => file.bytes > 0 && /^[a-f0-9]{64}$/.test(file.sha256) && file.content.length > 0), true);
