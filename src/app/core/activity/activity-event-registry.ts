@@ -48,12 +48,12 @@ const inventoryUrl = (): string => '/inventory';
 const standardUrl = (event: ActivityEvent): string =>
   event.targetId ? `/standards/${encodeURIComponent(event.targetId)}` : '/standards';
 
-const configUrl = (): string => '/config';
+const configUrl = (): string => '/settings/system';
 
 const systemUpdateUrl = (event: ActivityEvent): string =>
   typeof event.actionUrl === 'string' && event.actionUrl.startsWith('/') && !event.actionUrl.startsWith('//')
     ? event.actionUrl
-    : '/config';
+    : '/settings/system';
 
 const printingUrl = (): string => '/printing';
 

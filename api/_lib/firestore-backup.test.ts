@@ -65,6 +65,7 @@ describe('Firestore backup discovery catalog', () => {
           { id: 'daily_checks', path: `${appRoot}/daily_checks` },
           { id: 'public', path: `${appRoot}/public` },
           { id: 'stats_aggregates', path: `${appRoot}/stats_aggregates` },
+          { id: 'backup_locks', path: `${appRoot}/backup_locks` },
           { id: 'uncatalogued', path: `${appRoot}/uncatalogued` },
         ] : [],
       }),
@@ -82,6 +83,8 @@ describe('Firestore backup discovery catalog', () => {
     assert.equal(queue.unknownCollections.includes(`${appRoot}/public`), false);
     assert.equal(queue.queue.some(item => item.path === `${appRoot}/stats_aggregates`), true);
     assert.equal(queue.unknownCollections.includes(`${appRoot}/stats_aggregates`), false);
+    assert.equal(queue.queue.some(item => item.path === `${appRoot}/backup_locks`), false);
+    assert.equal(queue.unknownCollections.includes(`${appRoot}/backup_locks`), false);
     assert.deepEqual(queue.unknownCollections, [`${appRoot}/uncatalogued`]);
   });
 });

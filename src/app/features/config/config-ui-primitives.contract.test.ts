@@ -30,14 +30,42 @@ function assertInlineModalMigration(source: string): void {
 }
 
 describe('config shared UI primitive integration', () => {
-  it('uses the shared page header for the administrator configuration shell', () => {
-    const source = read('./config.component.ts');
+  it('uses the route-based Settings Center instead of the legacy tab shell', () => {
+    const shell = read('../settings/settings-shell.component.ts');
+    const routes = read('../../app.routes.ts');
+    const navigation = read('../../core/layout/navigation.config.ts');
 
-    assert.match(source, /AppPageHeaderComponent/);
-    assert.match(source, /AppButtonComponent/);
-    assert.match(source, /<app-page-header\b/);
-    assert.match(source, /title="Cấu hình hệ thống"/);
-    assert.match(source, /Bật thông báo/);
+    assert.match(shell, /AppPageHeaderComponent/);
+    assert.match(shell, /<app-page-header\b/);
+    assert.match(shell, /<router-outlet\s*\/>/);
+    assert.match(shell, /Tìm cài đặt/);
+    assert.match(shell, /\/settings\/account\/profile/);
+    assert.match(shell, /\/settings\/data\/backups/);
+    assert.match(routes, /path: 'settings'/);
+    assert.match(routes, /path: 'account\/security'/);
+    assert.match(routes, /path: 'data\/master'/);
+    assert.match(routes, /path: 'data\/backups'/);
+    assert.match(routes, /path: 'access\/users'/);
+    assert.match(routes, /path: 'access\/roles'/);
+    assert.match(routes, /path: 'policies\/consumption'/);
+    assert.match(routes, /path: 'config',[\s\S]*redirectTo: 'settings\/account\/profile'/);
+    assert.match(navigation, /'settings': 'Cài Đặt'/);
+    assert.doesNotMatch(navigation, /'config': 'Cài Đặt'/);
+  });
+
+  it('partitions the general settings surface by domain while preserving backup workflows', () => {
+    const source = read('./components/config-general.component.ts');
+    const template = read('./components/config-general.component.html');
+
+    assert.match(source, /input\.required<'system' \| 'master' \| 'backup' \| 'data' \| 'diagnostics'>\(\)/);
+    assert.doesNotMatch(source, /'all'/);
+    assert.doesNotMatch(template, /view\(\) === 'all'/);
+    assert.match(template, /view\(\) === 'master'/);
+    assert.match(template, /view\(\) === 'backup'/);
+    assert.match(template, /view\(\) === 'diagnostics'/);
+    assert.match(template, /createComprehensiveBackup\(\)/);
+    assert.match(template, /verifySelectedBackup\(\)/);
+    assert.match(template, /recoverMissingFromSelectedBackup\(\)/);
   });
 
   it('migrates master-device generic chrome without changing modal close semantics', () => {

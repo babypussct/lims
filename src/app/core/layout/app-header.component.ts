@@ -451,7 +451,7 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
   openAccountSettings() {
     this.profileMenuOpen.set(false);
-    this.router.navigate(['/config']);
+    this.router.navigate(['/settings/account/profile']);
   }
 
   openChangelog() {

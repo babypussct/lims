@@ -13,7 +13,7 @@ export interface BackupAuthorization {
   db: Firestore;
 }
 
-export type BackupAuditAction = 'BACKUP_CREATE' | 'BACKUP_VERIFY' | 'BACKUP_RESTORE';
+export type BackupAuditAction = 'BACKUP_CREATE' | 'BACKUP_VERIFY' | 'BACKUP_RESTORE' | 'BACKUP_RETENTION';
 
 function scrubAuditValue(value: unknown, key = '', depth = 0): unknown {
   if (depth > 4) return '[truncated]';

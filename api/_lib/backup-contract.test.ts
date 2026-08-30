@@ -40,6 +40,7 @@ describe('LIMS backup coverage contract', () => {
     assert.equal(isRestoreablePath('releases/v1', 'lims-cloud-fixed'), true);
     assert.equal(isRestoreablePath('artifacts/other-app/sops/sop-1', 'lims-cloud-fixed'), false);
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/auth_sessions/session-1', 'lims-cloud-fixed'), false);
+    assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/backup_locks/lock-1', 'lims-cloud-fixed'), false);
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/sops/../users/admin', 'lims-cloud-fixed'), false);
     assert.equal(safeBackupName('LIMS / backup: 2026'), 'LIMS_backup_2026');
   });

@@ -260,6 +260,19 @@ export class DriveBackupClient {
     });
   }
 
+  /**
+   * Move a backup folder to Drive trash. Retention uses trash instead of a
+   * permanent delete so an administrator can recover a backup during Drive's
+   * retention window if a rotation was triggered by mistake.
+   */
+  async trashFile(fileId: string): Promise<DriveFileMetadata> {
+    return this.request<DriveFileMetadata>(`/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trashed: true }),
+    });
+  }
+
   async download(fileId: string): Promise<Buffer> {
     this.stats.apiRequests++;
     const response = await fetch(`${DRIVE_API}/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`, {

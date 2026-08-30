@@ -112,7 +112,7 @@ test('default action URLs are deterministic and encode identifiers', () => {
   assert.equal(resolveDefaultActivityActionUrl(event('PUBLISH_RESULT_REPORT', { requestId: 'REQ/01' })), '/results/REQ%2F01');
   assert.equal(resolveDefaultActivityActionUrl(event('CREATE_STANDARD', { targetId: 'STD 01' })), '/standards/STD%2001');
   assert.equal(resolveDefaultActivityActionUrl(event('CREATE_ITEM', { targetId: 'CHEM-1' })), '/inventory');
-  assert.equal(resolveDefaultActivityActionUrl(event('MAINTENANCE_ON')), '/config');
+  assert.equal(resolveDefaultActivityActionUrl(event('MAINTENANCE_ON')), '/settings/system');
 });
 
 test('public traceability is an explicit action allowlist, not a printable side effect', () => {

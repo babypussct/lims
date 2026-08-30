@@ -70,6 +70,9 @@ export const FIRESTORE_SUBCOLLECTION_CATALOG = [
   { parentCollection: 'requests', collection: 'history' },
 ] as const;
 
+/** Runtime-only collections that must never enter a user-data backup. */
+export const FIRESTORE_BACKUP_IGNORED_COLLECTIONS = new Set(['backup_locks']);
+
 /** Ephemeral session records are counted for visibility but never restored. */
 export const NEVER_RESTORE_COLLECTIONS = new Set(['auth_sessions']);
 

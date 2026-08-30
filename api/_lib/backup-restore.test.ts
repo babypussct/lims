@@ -3,7 +3,12 @@ import { describe, it } from 'node:test';
 import { FIRESTORE_COLLECTION_CATALOG, FIRESTORE_ROOT_COLLECTION_CATALOG, FIRESTORE_SUBCOLLECTION_CATALOG, type BackupManifest, type BackupPartManifest } from './backup-contract.js';
 import { encryptBackupPayload, sha256, type BackupKey } from './backup-crypto.js';
 import { DriveBackupClient } from './backup-drive.js';
-import { isDriveOnlyRecoveryDifference, listRestoreCheckpoints, verifyBackup } from './backup-restore.js';
+import {
+  advanceBackupVerification,
+  isDriveOnlyRecoveryDifference,
+  listRestoreCheckpoints,
+  verifyBackup,
+} from './backup-restore.js';
 
 const key: BackupKey = { keyId: 'test-key', key: Buffer.alloc(32, 9) };
 
@@ -129,5 +134,71 @@ describe('LIMS backup integrity verification', () => {
     assert.equal(checkpoints.length, 1);
     assert.equal(checkpoints[0].restoreId, 'rst_test');
     assert.equal(checkpoints[0].phase, 'FAILED');
+  });
+
+  it('resumes verification from a persisted checkpoint and finalises after ACL batches', async () => {
+    const deployment = encryptedPart('apps-script-deployment.json.enc', 'deployment', '{}');
+    const manifest: BackupManifest = {
+      backupId: 'bkp_checkpoint',
+      formatVersion: 1,
+      schemaVersion: 1,
+      serializerVersion: 1,
+      status: 'COMPLETED',
+      projectId: 'demo-project',
+      appId: 'lims-cloud-fixed',
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      driveBackupFolderId: 'checkpoint-folder',
+      firestore: {
+        topLevelCollections: [...FIRESTORE_COLLECTION_CATALOG],
+        rootCollections: [...FIRESTORE_ROOT_COLLECTION_CATALOG],
+        nestedPatterns: FIRESTORE_SUBCOLLECTION_CATALOG.map(item => `${item.parentCollection}/{id}/${item.collection}`),
+        pathCounts: [],
+        totalDocuments: 0,
+        excludedCollections: [],
+        unknownCollections: [],
+        orphanSubcollectionCount: 0,
+        scrubbedFieldCount: 0,
+      },
+      auth: { userCount: 0, passwordHashesIncluded: false },
+      drive: { assetCount: 0, templateCount: 0, folderCount: 0, inaccessibleCount: 0, unsupportedCount: 0, folders: [], assets: [] },
+      parts: [deployment.part],
+      warnings: [],
+      errors: [],
+      quotaUsage: { firestoreReads: 0, firestoreWrites: 0, driveApiRequests: 0, driveBytesUploaded: 0 },
+      restorePolicies: { defaultMode: 'RECOVER_MISSING', neverRestoreCollections: ['auth_sessions'], neverRestoreFields: [] },
+      encryption: { algorithm: 'aes-256-gcm', keyId: key.keyId, perPartIv: true },
+    };
+    const manifestPayload = encryptBackupPayload(Buffer.from(JSON.stringify(manifest), 'utf8'), key);
+    const payloads = new Map<string, Buffer>([
+      [deployment.part.driveFileId, deployment.payload],
+      ['checkpoint-manifest', manifestPayload],
+    ]);
+    const client = new DriveBackupClient('test-token') as any;
+    client.getMetadata = async (id: string) => ({
+      id,
+      name: id === 'checkpoint-folder' ? 'LIMS_BACKUP_checkpoint' : id,
+      mimeType: id === 'checkpoint-folder' ? 'application/vnd.google-apps.folder' : 'application/octet-stream',
+    });
+    client.listChildren = async (id: string) => id === 'checkpoint-folder'
+      ? [{ id: 'checkpoint-manifest', name: 'manifest.json.enc', mimeType: 'application/octet-stream' }]
+      : [];
+    client.download = async (id: string) => payloads.get(id);
+    client.listPermissions = async () => [];
+
+    const first = await advanceBackupVerification(client, 'checkpoint-folder', key, undefined, { partsPerChunk: 1, assetsPerChunk: 1, aclPerChunk: 1, concurrency: 1 });
+    assert.equal(first.done, false);
+    assert.equal(first.state.stage, 'ASSETS');
+    const second = await advanceBackupVerification(client, 'checkpoint-folder', key, first.state, { partsPerChunk: 1, assetsPerChunk: 1, aclPerChunk: 1, concurrency: 1 });
+    assert.equal(second.done, false);
+    assert.equal(second.state.stage, 'ACL');
+    const final = await advanceBackupVerification(client, 'checkpoint-folder', key, second.state, { partsPerChunk: 1, assetsPerChunk: 1, aclPerChunk: 1, concurrency: 1 });
+    assert.equal(final.done, false);
+    assert.equal(final.state.aclFileIds.length, 3);
+    const completed = await advanceBackupVerification(client, 'checkpoint-folder', key, final.state, { partsPerChunk: 1, assetsPerChunk: 1, aclPerChunk: 10, concurrency: 1 });
+    assert.equal(completed.done, true);
+    assert.equal(completed.result?.verified, true);
+    assert.equal(completed.state.status, 'PASSED');
+    assert.equal(completed.state.checkedParts, 1);
   });
 });

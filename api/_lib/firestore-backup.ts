@@ -8,6 +8,7 @@ import {
 } from 'firebase-admin/firestore';
 import {
   FIRESTORE_BACKUP_COLLECTION_CATALOG,
+  FIRESTORE_BACKUP_IGNORED_COLLECTIONS,
   FIRESTORE_ROOT_COLLECTION_CATALOG,
   FIRESTORE_SUBCOLLECTION_CATALOG,
   NEVER_RESTORE_COLLECTIONS,
@@ -341,6 +342,7 @@ async function walkCollection(
     const children = await document.ref.listCollections();
     for (const child of children) {
       const childPath = child.path;
+      if (FIRESTORE_BACKUP_IGNORED_COLLECTIONS.has(child.id)) continue;
       const expected = FIRESTORE_SUBCOLLECTION_CATALOG.some(item => child.id === item.collection && collectionRef.id === item.parentCollection);
       if (!expected) stats.unknownCollections.add(childPath);
       await walkCollection(child, options, stats, visitedPaths);
@@ -394,6 +396,8 @@ function addInitialCollection(
   unknownCollections: Set<string>,
   isUnknown: boolean,
 ): void {
+  const collectionId = path.split('/').filter(Boolean).at(-1) || '';
+  if (FIRESTORE_BACKUP_IGNORED_COLLECTIONS.has(collectionId)) return;
   if (isUnknown) unknownCollections.add(path);
   if (seen.has(path)) return;
   seen.add(path);
@@ -426,6 +430,7 @@ export async function createFirestoreBackupQueue(
     );
   }
   for (const [name, collection] of appCollections) {
+    if (FIRESTORE_BACKUP_IGNORED_COLLECTIONS.has(name)) continue;
     if (!FIRESTORE_BACKUP_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_BACKUP_COLLECTION_CATALOG[number])) {
       addInitialCollection(queue, seen, collection.path, unknownCollections, true);
     }
@@ -503,6 +508,7 @@ export async function collectFirestoreBackupChunk(
         isEphemeral,
       );
       for (const child of await document.ref.listCollections()) {
+        if (FIRESTORE_BACKUP_IGNORED_COLLECTIONS.has(child.id)) continue;
         const parentCollectionId = document.ref.parent.id;
         const expected = FIRESTORE_SUBCOLLECTION_CATALOG.some(item =>
           item.collection === child.id && item.parentCollection === parentCollectionId);
@@ -574,6 +580,7 @@ export async function collectFirestoreBackup(options: FirestoreBackupOptions): P
     discovered.set(name, collection);
   }
   for (const [name, collection] of discovered) {
+    if (FIRESTORE_BACKUP_IGNORED_COLLECTIONS.has(name)) continue;
     if (!FIRESTORE_BACKUP_COLLECTION_CATALOG.includes(name as typeof FIRESTORE_BACKUP_COLLECTION_CATALOG[number])) {
       stats.unknownCollections.add(collection.path);
     }
@@ -617,6 +624,7 @@ export function isRestoreablePath(path: string, appId: string): boolean {
   const segments = path.split('/');
   if (segments.some(segment => !segment || segment === '.' || segment === '..')) return false;
   if (segments.includes('auth_sessions')) return false;
+  if (segments.some(segment => FIRESTORE_BACKUP_IGNORED_COLLECTIONS.has(segment))) return false;
   if (path.startsWith('releases/')) return segments.length === 2;
   return pathBelongsToApp(path, appId) && segments.length >= 4 && segments.length % 2 === 0;
 }

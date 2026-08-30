@@ -490,7 +490,7 @@ export class MasterTargetManagerComponent implements OnInit {
   }
 
   goBack() {
-      this.router.navigate(['/config']);
+      this.router.navigate(['/settings/data/master']);
   }
 
   openModal(item?: MasterAnalyte) {

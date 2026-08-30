@@ -1,8 +1,10 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start animate-fade-in">
 
+        @if (view() === 'system' || view() === 'master') {
         <!-- LEFT COLUMN -->
         <div class="space-y-6">
 
+            @if (view() === 'master') {
             <!-- 1. MASTER DATA -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
@@ -63,7 +65,9 @@
                     </div>
                 </div>
             </div>
+            }
 
+            @if (view() === 'system') {
             <!-- 2. PRINT CONFIG -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-center">
@@ -147,12 +151,15 @@
                     }
                 </div>
             </div>
+            }
 
         </div>
+        }
 
         <!-- RIGHT COLUMN -->
-        <div class="space-y-6">
+        <div class="space-y-6" [ngClass]="view() === 'backup' || view() === 'data' || view() === 'diagnostics' ? 'md:col-span-2' : ''">
 
+            @if (view() === 'system') {
             <!-- 3. SYSTEM & AVATAR -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
@@ -247,7 +254,9 @@
                     <div class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic">Hệ thống sẽ hiện banner cảnh báo đếm ngược trước 30 phút và tự động khóa màn hình của nhân viên khi đến giờ.</div>
                 </div>
             </div>
+            }
 
+            @if (view() === 'backup') {
             <!-- 4. SECURITY & BACKUP (Includes Rules) -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
@@ -262,7 +271,7 @@
                                 <i class="fa-solid fa-cloud-arrow-up"></i> Backup toàn diện qua Google Drive
                             </div>
                             <p class="text-[10px] leading-relaxed text-indigo-700/80 dark:text-indigo-300/80 mt-1">
-                                Gồm toàn bộ Firestore trong namespace LIMS, Firebase Auth, tệp CoA, PDF, Google Docs, Google Sheets/Excel, thư mục nguồn và cấu hình triển khai Apps Script. Payload được nén, mã hóa AES-256-GCM và kiểm tra checksum trước restore.
+                                Gồm toàn bộ Firestore trong namespace LIMS, Firebase Auth, tệp CoA, PDF, Google Docs, Google Sheets/Excel, thư mục nguồn và cấu hình triển khai Apps Script. Payload được nén, mã hóa AES-256-GCM và kiểm tra checksum trước restore. Sau khi bản mới verify đạt, hệ thống tự giữ lại bản đó và đưa các backup cũ vào Thùng rác Drive.
                             </p>
                         </div>
                         <button type="button" (click)="loadBackupStatus(true)" [disabled]="backupBusy() !== 'idle'" class="shrink-0 text-[10px] bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 rounded-lg px-3 py-1.5 font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:opacity-50">
@@ -337,6 +346,9 @@
                                 ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40 text-rose-700 dark:text-rose-300'
                                 : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300'">
                             Backup gần nhất: {{created.backupId}} · {{created.status}} · {{created.summary.firestoreDocuments}} Firestore docs · {{created.summary.authUsers}} Auth · {{created.summary.driveAssets}} Drive assets.
+                            @if (created.retention; as retention) {
+                                <div class="mt-1">Retention: giữ bản hiện tại · đã dọn {{retention.trashed.length}} bản cũ@if (retention.failed.length) { · {{retention.failed.length}} bản chưa dọn được }.</div>
+                            }
                             @if (created.errors.length) {
                                 <div class="mt-1 break-words">Lỗi: {{created.errors.slice(0, 3).join(' | ')}}</div>
                             }
@@ -374,7 +386,9 @@
                     </div>
                 </div>
             </div>
+            }
 
+            @if (view() === 'diagnostics') {
             <!-- 5. RESOURCES (Compact) -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-center">
@@ -391,7 +405,9 @@
                     </div>
                 }
             </div>
+            }
 
+            @if (view() === 'data') {
             <!-- 6. DATA ARCHIVER -->
             <div class="bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-900/30 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-start">
@@ -454,11 +470,13 @@
                 }
 
             </div>
+            }
 
         </div>
 
     </div>
 
+    @if (view() === 'data') {
     <!-- MIGRATION PANEL -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-amber-200 dark:border-amber-900/40 p-6 flex flex-col gap-4 mt-6">
         <div class="flex items-center justify-between">
@@ -487,9 +505,10 @@
             <button (click)="migrationLog.set([])" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition self-end">Xóa log</button>
         }
     </div>
+    }
 
     <!-- RECYCLE BIN MODAL -->
-    @if (showRecycleBin()) {
+    @if (view() === 'backup' && showRecycleBin()) {
         <app-modal-shell
             title="Thùng rác dữ liệu"
             description="Khôi phục thao tác lỗi hoặc xóa vĩnh viễn để làm sạch hệ thống."

@@ -178,9 +178,84 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.SOP_EDIT }
   },
   {
+    path: 'settings',
+    loadComponent: () => import('./features/settings/settings-shell.component').then(m => m.SettingsShellComponent),
+    canActivate: [permissionGuard],
+    children: [
+      { path: '', redirectTo: 'account/profile', pathMatch: 'full' },
+      { path: 'account', redirectTo: 'account/profile', pathMatch: 'full' },
+      {
+        path: 'account/profile',
+        loadComponent: () => import('./features/settings/pages/account-profile-settings.component').then(m => m.AccountProfileSettingsComponent)
+      },
+      {
+        path: 'account/security',
+        loadComponent: () => import('./features/settings/pages/account-security-settings.component').then(m => m.AccountSecuritySettingsComponent)
+      },
+      {
+        path: 'account/notifications',
+        loadComponent: () => import('./features/settings/pages/account-notifications-settings.component').then(m => m.AccountNotificationsSettingsComponent)
+      },
+      {
+        path: 'account/privacy',
+        loadComponent: () => import('./features/settings/pages/account-privacy-settings.component').then(m => m.AccountPrivacySettingsComponent)
+      },
+      {
+        path: 'system',
+        loadComponent: () => import('./features/settings/pages/system-settings.component').then(m => m.SystemSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      { path: 'data', redirectTo: 'data/master', pathMatch: 'full' },
+      {
+        path: 'data/master',
+        loadComponent: () => import('./features/settings/pages/master-data-settings.component').then(m => m.MasterDataSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      {
+        path: 'data/backups',
+        loadComponent: () => import('./features/settings/pages/backup-settings.component').then(m => m.BackupSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      {
+        path: 'data/lifecycle',
+        loadComponent: () => import('./features/settings/pages/data-lifecycle-settings.component').then(m => m.DataLifecycleSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      { path: 'access', redirectTo: 'access/users', pathMatch: 'full' },
+      {
+        path: 'access/users',
+        loadComponent: () => import('./features/settings/pages/access-users-settings.component').then(m => m.AccessUsersSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      {
+        path: 'access/roles',
+        loadComponent: () => import('./features/settings/pages/access-roles-settings.component').then(m => m.AccessRolesSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      {
+        path: 'policies/consumption',
+        loadComponent: () => import('./features/settings/pages/consumption-settings.component').then(m => m.ConsumptionSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      {
+        path: 'diagnostics',
+        loadComponent: () => import('./features/settings/pages/diagnostics-settings.component').then(m => m.DiagnosticsSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      }
+    ]
+  },
+  {
     path: 'config',
-    loadComponent: () => import('./features/config/config.component').then(m => m.ConfigComponent)
-    // Config page handles its own inner-security, allows users to see their profile
+    redirectTo: 'settings/account/profile',
+    pathMatch: 'full'
   },
   {
     path: 'traceability',

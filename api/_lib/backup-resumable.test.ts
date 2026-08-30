@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { type BackupPartManifest } from './backup-contract.js';
-import { type BackupKey } from './backup-crypto.js';
+import { decryptBackupPayload, encryptBackupPayload, sha256, type BackupKey } from './backup-crypto.js';
 import { DriveBackupClient } from './backup-drive.js';
 import { advanceBackupSession, type BackupSession } from './backup-resumable.js';
 
@@ -270,6 +270,42 @@ describe('resumable backup Drive repair', () => {
     assert.equal(uploadCalls, 0);
   });
 
+  it('re-finalizes a failed manifest after a stale policy error is corrected', async () => {
+    const session = failedSession();
+    session.error = 'Unknown Firestore collections found: artifacts/lims-cloud-fixed/backup_locks';
+    session.firestore.unknownCollections = ['artifacts/lims-cloud-fixed/backup_locks'];
+    session.drive.errors = [];
+    session.drive.assets[0] = {
+      ...session.drive.assets[0],
+      encryptedPayloadFileId: 'payload-repaired',
+      encryptedPayloadFileName: 'asset-00000-report.pdf.enc',
+      payloadPlaintextBytes: 15,
+      payloadPlaintextSha256: 'a'.repeat(64),
+      payloadCiphertextSha256: 'b'.repeat(64),
+      status: 'BACKED_UP',
+      error: undefined,
+    };
+    const store = { save: async () => undefined } as any;
+    const client = new DriveBackupClient('test-token') as any;
+    client.getStorageQuota = async () => ({ usage: '123' });
+    let updateCalls = 0;
+    client.updateBytes = async (fileId: string) => {
+      updateCalls++;
+      assert.equal(fileId, 'manifest-existing');
+      return { id: fileId, name: 'manifest.json.enc', mimeType: 'application/octet-stream' };
+    };
+
+    const reopened = await advanceBackupSession(session, client, fakeDatabase(), key, store);
+    assert.equal(reopened.done, false);
+    assert.equal(session.phase, 'FINALIZE');
+    assert.equal(session.error, undefined);
+
+    const finalized = await advanceBackupSession(session, client, fakeDatabase(), key, store);
+    assert.equal(finalized.done, false);
+    assert.equal(session.phase, 'VERIFY');
+    assert.equal(updateCalls, 1);
+  });
+
   it('keeps unrelated and nested legacy collection drift fail-closed during finalize', async () => {
     const session = failedSession();
     session.phase = 'FINALIZE';
@@ -310,5 +346,73 @@ describe('resumable backup Drive repair', () => {
       'artifacts/lims-cloud-fixed/public/data/history',
     ]);
     assert.equal(result.result?.manifest.errors.some(error => error.includes('Unknown Firestore collections found')), true);
+  });
+
+  it('strips runtime-only Firestore lock records and rewrites the existing part in place', async () => {
+    const session = failedSession();
+    session.phase = 'FIRESTORE_REPAIR';
+    session.error = undefined;
+    session.firestore.pathCounts = [
+      { path: 'backup_locks', collection: 'backup_locks', documentCount: 1, bytes: 80 },
+      // Deliberately stale metadata: the rewritten payloads are the source of
+      // truth when a legacy session's collection labels/counts drifted.
+      { path: 'sops', collection: 'sops', documentCount: 999, bytes: 999 },
+    ];
+    session.firestore.unknownCollections = ['artifacts/lims-cloud-fixed/backup_locks'];
+    const plaintext = Buffer.from([
+      JSON.stringify({
+        path: 'artifacts/lims-cloud-fixed/backup_locks/bkp_test_repair',
+        collection: 'backup_locks',
+        documentId: 'bkp_test_repair',
+        data: { owner: 'temporary', expiresAt: 123 },
+      }),
+      JSON.stringify({
+        path: 'artifacts/lims-cloud-fixed/sops/sop-1',
+        collection: 'sops/history',
+        documentId: 'sop-1',
+        parentPath: 'artifacts/lims-cloud-fixed/sops',
+        data: { title: 'Keep me' },
+      }),
+      JSON.stringify({
+        path: 'artifacts/lims-cloud-fixed/sops/sop-1',
+        collection: 'sops',
+        documentId: 'sop-1',
+        data: { title: 'Keep me' },
+      }),
+      '',
+    ].join('\n'), 'utf8');
+    let storedBytes = encryptBackupPayload(plaintext, key);
+    const part: BackupPartManifest = {
+      name: 'firestore-00000.ndjson.enc',
+      driveFileId: 'firestore-part-existing',
+      category: 'firestore',
+      recordCount: 3,
+      plaintextBytes: plaintext.byteLength,
+      ciphertextBytes: storedBytes.byteLength,
+      plaintextSha256: sha256(plaintext),
+      ciphertextSha256: sha256(storedBytes),
+    };
+    session.firestore.parts = [part];
+    session.firestore.repair = { nextPartIndex: 0, removedRecords: 0 };
+    const store = { save: async () => undefined } as any;
+    const client = new DriveBackupClient('test-token') as any;
+    client.download = async () => storedBytes;
+    client.updateBytes = async (fileId: string, _mimeType: string, bytes: Buffer) => {
+      assert.equal(fileId, 'firestore-part-existing');
+      storedBytes = Buffer.from(bytes);
+      return { id: fileId, name: part.name, mimeType: 'application/octet-stream' };
+    };
+
+    const repaired = await advanceBackupSession(session, client, fakeDatabase(), key, store);
+
+    assert.equal(repaired.done, false);
+    assert.equal(session.phase, 'FINALIZE');
+    assert.equal(session.firestore.repair, undefined);
+    assert.equal(session.firestore.parts[0].recordCount, 1);
+    assert.deepEqual(session.firestore.unknownCollections, []);
+    assert.deepEqual(session.firestore.pathCounts.map(item => item.collection), ['sops']);
+    const remaining = decryptBackupPayload(storedBytes, key).toString('utf8').trim().split('\n');
+    assert.equal(remaining.length, 1);
+    assert.equal(JSON.parse(remaining[0]).path, 'artifacts/lims-cloud-fixed/sops/sop-1');
   });
 });

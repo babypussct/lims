@@ -766,8 +766,6 @@ export class ConfigUsersComponent implements OnInit {
       return distinct.size;
   }
 
-  hasPerm(u: UserProfile, p: string) { return u.permissions?.includes(p); }
-  
   togglePerm(u: UserProfile, p: string) {
       if (this.isPermInherited(u, p)) return;
       this.userList.update(currentUsers => 

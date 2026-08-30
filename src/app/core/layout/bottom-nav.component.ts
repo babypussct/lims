@@ -96,7 +96,7 @@ interface VisitedPage {
           type="button"
           class="w-full px-5 pb-3 pt-1 flex items-center gap-3 text-left active:scale-[0.98] transition-transform shrink-0"
           aria-label="Mở cấu hình tài khoản"
-          (click)="navTo('/config')">
+          (click)="navTo('/settings/account/profile')">
           <img
             [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
             class="w-11 h-11 rounded-full border-2 border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 object-cover"
@@ -335,7 +335,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
           { id: 'scan', name: 'Quét QR', icon: 'fa-qrcode', action: () => this.startScan(), isLocked: false },
           { id: 'dark-mode', name: 'Giao Diện', icon: this.state.darkMode() ? 'fa-sun' : 'fa-moon', action: () => this.toggleDarkMode(), isLocked: false },
           { id: 'install-pwa', name: 'Cài Ứng Dụng', icon: 'fa-download', kind: 'install' as const, isLocked: false },
-          { id: 'config', name: 'Cấu Hình', icon: 'fa-gear', path: '/config', activeMatch: ['/config'], isLocked: false },
+          { id: 'config', name: 'Cài Đặt', icon: 'fa-gear', path: '/settings/account/profile', activeMatch: ['/settings'], isLocked: false },
           { id: 'logout', name: 'Đăng Xuất', icon: 'fa-right-from-bracket', action: () => this.auth.logout(), isLocked: false }
         ]
       }

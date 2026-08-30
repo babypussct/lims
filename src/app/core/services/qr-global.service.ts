@@ -117,7 +117,7 @@ export class QrGlobalService {
 
     // CASE G: User Config
     if (cleanCode.startsWith('USR-')) {
-        this.router.navigate(['/config']);
+        this.router.navigate(['/settings/account/profile']);
         return;
     }
 

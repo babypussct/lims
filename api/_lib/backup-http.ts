@@ -7,7 +7,7 @@ import {
   FIRESTORE_SUBCOLLECTION_CATALOG,
 } from './backup-contract.js';
 import { requireBackupAuthorization, writeBackupAuditLog } from './backup-auth.js';
-import { backupEncryptionKey } from './backup-crypto.js';
+import { backupEncryptionKey, encryptBackupPayload } from './backup-crypto.js';
 import {
   backupDriveFolderId,
   DriveBackupClient,
@@ -15,7 +15,14 @@ import {
 } from './backup-drive.js';
 import { resolvedBackupSourceFolderIds, resolvedBackupTemplateIds } from './backup-engine.js';
 import { configuredAppsScriptId, readAppsScriptSourceSnapshot } from './apps-script-backup.js';
-import { listRestoreCheckpoints, loadBackupManifest, runRestore, verifyBackup } from './backup-restore.js';
+import { retainOnlyVerifiedBackup, type BackupRetentionResult } from './backup-retention.js';
+import {
+  advanceBackupVerification,
+  listRestoreCheckpoints,
+  loadBackupManifest,
+  runRestore,
+  verifyBackup,
+} from './backup-restore.js';
 import type { RestoreMode } from './backup-contract.js';
 import {
   advanceBackupSession,
@@ -43,6 +50,15 @@ function backupProgress(session: BackupSession): Record<string, unknown> {
     driveAssets: session.drive.assets.length,
     driveAssetsPlanned: session.drive.files.length,
     driveFolders: session.drive.folders.length,
+    verification: session.verification?.status === 'RUNNING'
+      ? {
+          stage: session.verification.stage,
+          checkedParts: session.verification.checkedParts,
+          checkedAssets: session.verification.checkedAssets,
+          aclChecked: session.verification.aclIndex,
+          aclTotal: session.verification.aclFileIds.length,
+        }
+      : undefined,
   };
 }
 
@@ -245,6 +261,8 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
     const key = backupEncryptionKey();
     const projectId = typeof authorization.decoded.aud === 'string' ? authorization.decoded.aud : String(authorization.decoded.aud || '');
     const requestedFolderId = typeof body['backupFolderId'] === 'string' ? body['backupFolderId'].trim() : '';
+    const forceNewSession = body['forceNewSession'] === true;
+    const rebuildFirestorePayload = body['rebuildFirestorePayload'] === true;
     if (requestedFolderId) {
       const loaded = await loadBackupSessionWithStore(client, requestedFolderId, key);
       session = loaded.session;
@@ -253,9 +271,22 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
         return res.status(403).json({ error: 'Backup session thuộc tài khoản quản trị khác.' });
       }
     } else {
-      const started = await createBackupSession(client, authorization.actor, projectId, releaseVersion, key);
+      const started = await createBackupSession(client, authorization.actor, projectId, releaseVersion, key, forceNewSession);
       session = started.session;
       sessionStore = started.store;
+    }
+    if (rebuildFirestorePayload && requestedFolderId && sessionStore && session.manifestFileId) {
+      session.firestore.repair = {
+        nextPartIndex: 0,
+        removedRecords: 0,
+        removedByCollection: [],
+        seenRecordHashes: [],
+      };
+      session.verification = undefined;
+      session.completedAt = undefined;
+      session.error = undefined;
+      session.phase = 'FIRESTORE_REPAIR';
+      await sessionStore.save(session);
     }
     console.info('[BackupCreate] Session progress before phase:', {
       backupId: session.backupId,
@@ -266,6 +297,11 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
       driveAssets: session.drive.assets.length,
       driveAssetsPlanned: session.drive.files.length,
       nextAssetIndex: session.drive.nextAssetIndex,
+      verificationStage: session.verification?.status === 'RUNNING' ? session.verification.stage : undefined,
+      verificationCheckedParts: session.verification?.status === 'RUNNING' ? session.verification.checkedParts : undefined,
+      verificationCheckedAssets: session.verification?.status === 'RUNNING' ? session.verification.checkedAssets : undefined,
+      verificationAclIndex: session.verification?.status === 'RUNNING' ? session.verification.aclIndex : undefined,
+      verificationAclTotal: session.verification?.status === 'RUNNING' ? session.verification.aclFileIds.length : undefined,
     });
     const step = await advanceBackupSession(session, client, authorization.db, key, sessionStore);
     console.info('[BackupCreate] Session progress after phase:', {
@@ -278,6 +314,11 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
       driveAssets: step.session.drive.assets.length,
       driveAssetsPlanned: step.session.drive.files.length,
       nextAssetIndex: step.session.drive.nextAssetIndex,
+      verificationStage: step.session.verification?.status === 'RUNNING' ? step.session.verification.stage : undefined,
+      verificationCheckedParts: step.session.verification?.status === 'RUNNING' ? step.session.verification.checkedParts : undefined,
+      verificationCheckedAssets: step.session.verification?.status === 'RUNNING' ? step.session.verification.checkedAssets : undefined,
+      verificationAclIndex: step.session.verification?.status === 'RUNNING' ? step.session.verification.aclIndex : undefined,
+      verificationAclTotal: step.session.verification?.status === 'RUNNING' ? step.session.verification.aclFileIds.length : undefined,
     });
     if (!step.done) {
       return res.status(202).json({
@@ -293,6 +334,42 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
     const result = step.result;
     if (!result) throw new Error('Backup session hoàn tất nhưng thiếu manifest kết quả.');
     const manifest = result.manifest;
+    let retention: BackupRetentionResult = {
+      applied: false,
+      keepBackupFolderId: manifest.driveBackupFolderId,
+      scanned: 0,
+      trashed: [],
+      failed: [],
+      warnings: [],
+    };
+    if (manifest.status !== 'FAILED' && manifest.verification?.status === 'PASSED') {
+      try {
+        retention = await retainOnlyVerifiedBackup(client, manifest.driveBackupFolderId);
+      } catch (error) {
+        retention.warnings.push(`Không áp dụng được retention backup: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      if (retention.warnings.length) {
+        console.warn('[BackupCreate] Backup retention warning:', retention.warnings);
+      }
+      try {
+        await writeBackupAuditLog(
+          authorization,
+          'BACKUP_RETENTION',
+          `Retention backup ${manifest.backupId}: giữ bản vừa verify, đưa ${retention.trashed.length} bản cũ vào Thùng rác.`,
+          {
+            backupId: manifest.backupId,
+            keepBackupFolderId: retention.keepBackupFolderId,
+            scanned: retention.scanned,
+            trashed: retention.trashed,
+            failed: retention.failed,
+            applied: retention.applied,
+          },
+        );
+      } catch (error) {
+        retention.warnings.push(`Không ghi được audit log retention backup: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn('[BackupCreate] Retention audit log failed:', error instanceof Error ? error.message : error);
+      }
+    }
     let auditLogged = true;
     try {
       await writeBackupAuditLog(authorization, 'BACKUP_CREATE', `Tạo backup ${manifest.backupId} với trạng thái ${manifest.status}.`, {
@@ -307,7 +384,11 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
       auditLogged = false;
       console.warn('[BackupCreate] Audit log failed:', error instanceof Error ? error.message : error);
     }
-    const warnings = auditLogged ? manifest.warnings : [...manifest.warnings, 'Không ghi được audit log backup; cần kiểm tra quyền ghi Firestore logs.'];
+    const warnings = [
+      ...manifest.warnings,
+      ...retention.warnings,
+      ...(auditLogged ? [] : ['Không ghi được audit log backup; cần kiểm tra quyền ghi Firestore logs.']),
+    ];
     return res.status(result.manifest.status === 'FAILED' ? 422 : 200).json({
       success: manifest.status !== 'FAILED',
       done: true,
@@ -322,11 +403,12 @@ export async function backupCreateHandler(req: VercelRequest, res: VercelRespons
         authUsers: manifest.auth.userCount,
         driveAssets: manifest.drive.assetCount,
         driveFolders: manifest.drive.folderCount,
-        warnings: manifest.warnings.length,
+        warnings: warnings.length,
         errors: manifest.errors.length,
       },
       quotaUsage: manifest.quotaUsage,
       auditLogged,
+      retention,
       warnings,
       errors: manifest.errors,
     });
@@ -370,7 +452,76 @@ export async function backupVerifyHandler(req: VercelRequest, res: VercelRespons
   try {
     const access = await getBackupDriveAccess(req, res);
     if (!access) return res.status(503).json({ error: 'Chưa kết nối Google Drive backup.' });
-    const result = await verifyBackup(new DriveBackupClient(access.accessToken), backupFolderId, backupEncryptionKey());
+    const key = backupEncryptionKey();
+    const client = new DriveBackupClient(access.accessToken);
+    let result;
+    let resumableSession: Awaited<ReturnType<typeof loadBackupSessionWithStore>> | undefined;
+    try {
+      // Current backup sessions carry the verification cursor in the same
+      // encrypted state file as the creation cursor. Older/manual backups may
+      // not have that file; those continue through the compatibility path
+      // below.
+      resumableSession = await loadBackupSessionWithStore(client, backupFolderId, key);
+    } catch {
+      resumableSession = undefined;
+    }
+    if (resumableSession) {
+      const currentCheckpoint = resumableSession.session.verification?.status === 'RUNNING'
+        ? resumableSession.session.verification
+        : undefined;
+      const advanced = await advanceBackupVerification(client, backupFolderId, key, currentCheckpoint);
+      resumableSession.session.quota.driveApiRequests += client.stats.apiRequests;
+      resumableSession.session.quota.driveBytesUploaded += client.stats.bytesUploaded;
+      if (!advanced.done) {
+        resumableSession.session.verification = advanced.state;
+        await resumableSession.store.save(resumableSession.session);
+        return res.status(202).json({
+          success: false,
+          done: false,
+          verified: false,
+          backupFolderId: advanced.backupFolderId,
+          phase: advanced.state.stage,
+          checkedParts: advanced.state.checkedParts,
+          checkedAssets: advanced.state.checkedAssets,
+          checkedBytes: advanced.state.checkedBytes,
+          errors: advanced.state.errors,
+          warnings: advanced.state.warnings,
+        });
+      }
+      result = advanced.result;
+      if (!result) throw new Error('Backup verify hoàn tất nhưng thiếu kết quả.');
+      const finalManifest = {
+        ...result.manifest,
+        status: result.verified ? result.manifest.status : 'FAILED',
+        warnings: [...new Set([...result.manifest.warnings, ...result.warnings])],
+        errors: [...new Set([...result.manifest.errors, ...result.errors])],
+        verification: {
+          status: result.verified ? 'PASSED' as const : 'FAILED' as const,
+          checkedAt: advanced.state.checkedAt || new Date().toISOString(),
+          checkedParts: result.checkedParts,
+          checkedAssets: result.checkedAssets,
+          checkedBytes: result.checkedBytes,
+          errors: result.verified ? undefined : result.errors,
+        },
+      };
+      await client.updateBytes(
+        advanced.manifestFileId,
+        'application/octet-stream',
+        encryptBackupPayload(Buffer.from(JSON.stringify(finalManifest), 'utf8'), key),
+      );
+      resumableSession.session.manifestFileId = advanced.manifestFileId;
+      resumableSession.session.verification = advanced.state;
+      resumableSession.session.phase = result.verified ? 'COMPLETED' : 'FAILED';
+      resumableSession.session.completedAt = advanced.state.checkedAt || new Date().toISOString();
+      resumableSession.session.error = result.verified ? undefined : result.errors.join(' | ').slice(0, 800);
+      await resumableSession.store.save(resumableSession.session);
+      result = { ...result, manifest: finalManifest };
+    } else {
+      // Compatibility for a manually uploaded/legacy backup that has no
+      // resumable session file. The normal production path always persists a
+      // cursor so it remains safe across serverless timeouts.
+      result = await verifyBackup(client, backupFolderId, key);
+    }
     let auditLogged = true;
     try {
       await writeBackupAuditLog(authorization, 'BACKUP_VERIFY', `Kiểm tra integrity backup ${backupFolderId}: ${result.verified ? 'đạt' : 'không đạt'}.`, {
@@ -386,7 +537,7 @@ export async function backupVerifyHandler(req: VercelRequest, res: VercelRespons
       console.warn('[BackupVerify] Audit log failed:', error instanceof Error ? error.message : error);
     }
     const warnings = auditLogged ? result.warnings : [...result.warnings, 'Không ghi được audit log kiểm tra backup; cần kiểm tra quyền ghi Firestore logs.'];
-    return res.status(result.verified ? 200 : 422).json({ success: result.verified, auditLogged, ...result, warnings });
+    return res.status(result.verified ? 200 : 422).json({ success: result.verified, done: true, auditLogged, ...result, warnings });
   } catch (error) {
     console.error('[BackupVerify] Failed:', error instanceof Error ? error.message : error);
     return res.status(422).json({ success: false, error: error instanceof Error ? error.message : 'Backup không hợp lệ.' });

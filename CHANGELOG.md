@@ -2,7 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.29-b04
+## Phiên bản hiện tại: v26.08.31-b01
+
+### v26.08.31-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thay trang Config dạng tab bằng Settings Center theo route, tách Hồ sơ, Bảo mật, Thông báo, Hệ thống, Dữ liệu, Phân quyền, Chính sách và Chẩn đoán thành các khu vực rõ ràng.
+- Backup/restore nay có checkpoint resumable cho bước verify và restore lớn, có thể tiếp tục an toàn qua nhiều lượt xử lý thay vì phụ thuộc một invocation dài.
+- Sau khi backup mới verify đạt, hệ thống tự giữ bản hợp lệ mới nhất và đưa các backup cũ vào Thùng rác Google Drive để vẫn có khả năng phục hồi khi cần.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung Settings Center responsive với tìm kiếm cài đặt, deep-link theo từng domain và route guard cho các khu vực quản trị.
+- Bổ sung cơ chế retention cho backup đã verify cùng thông tin retention trong giao diện Backup & Recovery.
+- Bổ sung khả năng repair payload Firestore và tiếp tục verify/restore từ checkpoint đã lưu khi phiên serverless bị ngắt.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Các luồng từ header, bottom navigation, QR, activity, notification và master-data đều điều hướng trực tiếp tới route Settings phù hợp; /config chỉ còn redirect tương thích ngược.
+- Loại bỏ state, method và nhánh giao diện Config cũ không còn consumer, đồng thời bỏ chế độ monolithic view=all của ConfigGeneralComponent.
+- Backup bỏ qua collection runtime backup_locks, theo dõi tiến độ verify chi tiết hơn và xử lý các backup cũ có lỗi policy/catalog theo hướng resumable repair.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn command palette tạo mục Config legacy trùng với Settings mới và loại các direct navigation còn sót về /config.
+- Sửa các trường hợp backup bị kẹt ở trạng thái FAILED do collection runtime hoặc manifest cũ dù dữ liệu chính vẫn có thể repair và verify lại.
+- Giữ fail-closed cho integrity/restore thật sự lỗi, đồng thời phân biệt lỗi transport tạm thời với kết quả verify thất bại cuối cùng.
 
 ### v26.08.29-b04
 

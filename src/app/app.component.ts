@@ -572,24 +572,6 @@ export class AppComponent implements OnDestroy {
     return url.includes('/mobile-login') || url.includes('/labels') || url.includes('/traceability');
   });
 
-  pageTitle = computed(() => {
-    const url = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
-    const titles: Record<string, string> = {
-        'dashboard': 'Trang Chủ',
-        'inventory': 'Kho Hóa Chất',
-        'calculator': 'Vận Hành SOP',
-        'requests': 'Quản Lý Yêu Cầu',
-        'stats': 'Báo Cáo',
-        'config': 'Cấu Hình',
-        'standards': 'Chất Chuẩn Đối Chiếu',
-        'recipes': 'Thư Viện Công Thức',
-        'prep': 'Chuẩn bị dung dịch',
-        'smart-batch': 'Lập Mẻ Phân Tích',
-        'traceability': 'Truy xuất nguồn gốc'
-    };
-    return titles[url] || 'LIMS Cloud';
-  });
-
   // --- PULL TO REFRESH & UPDATE LOGIC ---
   private touchStartY = 0;
   isPulling = signal(false);

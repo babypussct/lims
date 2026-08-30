@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -22,6 +22,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
   templateUrl: './config-general.component.html'
 })
 export class ConfigGeneralComponent implements OnInit, OnDestroy {
+  readonly view = input.required<'system' | 'master' | 'backup' | 'data' | 'diagnostics'>();
   fb = inject(FirebaseService);
   state = inject(StateService);
 
@@ -98,12 +99,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   showLockedFeaturesLocal = signal(false);
   categoriesLocal = signal<CategoryItem[]>([]);
 
-  editingCategory = signal<CategoryItem | null>(null);
-  showCategoryModal = signal(false);
-  newCategoryName = '';
-  newCategoryCode = '';
-  newCategoryDescription = '';
-
   archiverData = signal<any>(null);
   archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
   archiverDays = signal(180);
@@ -147,8 +142,12 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       showSignature: true,
       footerText: ''
     });
-    this.listenSystemUpdates();
-    void this.loadBackupStatus();
+    if (this.view() === 'system') {
+      this.listenSystemUpdates();
+    }
+    if (this.view() === 'backup') {
+      void this.loadBackupStatus();
+    }
   }
 
   ngOnDestroy() {
@@ -424,7 +423,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     })) return;
     this.backupBusy.set('create');
     try {
-      const result = await this.backupService.createBackup(this.state.systemVersion());
+      const result = await this.backupService.createBackup(this.state.systemVersion(), undefined, true);
       this.backupLastCreate.set(result);
       await this.refreshBackupList(false);
       const label = result.status === 'COMPLETED' ? 'Backup toàn diện đã hoàn tất.' : `Backup hoàn tất với trạng thái ${result.status}.`;
@@ -443,13 +442,21 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.toast.show('Chưa chọn backup dở dang để tiếp tục.', 'info');
       return;
     }
+    const selectedBackup = this.backupList().find(item => item.backupFolderId === backupFolderId);
+    const rebuildFirestorePayload = Boolean(selectedBackup?.manifestFileId && (
+      selectedBackup.status === 'COMPLETED'
+      || selectedBackup.status === 'COMPLETED_WITH_WARNINGS'
+      || selectedBackup.status === 'FAILED'
+    ));
     if (!await this.confirmationService.confirm({
-      message: 'Tiếp tục đúng backup đang chọn từ checkpoint đã lưu. Thao tác này không tạo backup mới nếu session đã chọn không thể resume. Tiếp tục?',
+      message: rebuildFirestorePayload
+        ? 'Backup đang chọn đã có manifest. Hệ thống sẽ tái dựng payload Firestore ngay trên thư mục hiện có, chỉ loại bản sao hoàn toàn giống nhau và dữ liệu runtime tạm, giữ nguyên dữ liệu nghiệp vụ; sau đó sẽ chốt manifest và kiểm tra integrity lại. Tiếp tục?'
+        : 'Tiếp tục đúng backup đang chọn từ checkpoint đã lưu. Thao tác này không tạo backup mới nếu session đã chọn không thể resume. Tiếp tục?',
       confirmText: 'Tiếp tục backup dở dang'
     })) return;
     this.backupBusy.set('create');
     try {
-      const result = await this.backupService.createBackup(this.state.systemVersion(), backupFolderId);
+      const result = await this.backupService.createBackup(this.state.systemVersion(), backupFolderId, false, rebuildFirestorePayload);
       this.backupLastCreate.set(result);
       await this.refreshBackupList(false);
       const label = result.status === 'COMPLETED' ? 'Backup dở dang đã hoàn tất.' : `Backup tiếp tục xong với trạng thái ${result.status}.`;

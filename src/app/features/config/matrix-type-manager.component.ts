@@ -36,7 +36,6 @@ export class MatrixTypeManagerComponent implements OnInit {
   isSaving = signal(false);
 
   showModal = signal(false);
-  editingItem = signal<MatrixType | null>(null);
   
   formData = {
     id: '',

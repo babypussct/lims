@@ -305,7 +305,7 @@ export class TargetGroupManagerComponent implements OnInit {
   }
 
   goBack() {
-      this.router.navigate(['/config']);
+      this.router.navigate(['/settings/data/master']);
   }
 
   selectGroup(g: TargetGroup) {

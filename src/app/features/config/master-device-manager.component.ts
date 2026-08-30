@@ -36,7 +36,6 @@ export class MasterDeviceManagerComponent implements OnInit {
   isSaving = signal(false);
 
   showModal = signal(false);
-  editingItem = signal<MasterDevice | null>(null);
   
   formData = {
     id: '',

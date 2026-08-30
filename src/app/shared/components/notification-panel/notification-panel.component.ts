@@ -989,7 +989,7 @@ export class NotificationPanelComponent {
 
   goToSettings() {
     this.panel.close();
-    this.router.navigateByUrl('/config');
+    this.router.navigateByUrl('/settings/account/notifications');
   }
 
   // ── Icon & Color Accent maps ─────────────────────────────────────────────

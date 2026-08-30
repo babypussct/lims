@@ -98,6 +98,14 @@ export interface BackupCreateResponse {
     driveStorageBefore?: { limit?: string; usage?: string; usageInDrive?: string; usageInDriveTrash?: string };
     driveStorageAfter?: { limit?: string; usage?: string; usageInDrive?: string; usageInDriveTrash?: string };
   };
+  retention?: {
+    applied: boolean;
+    keepBackupFolderId: string;
+    scanned: number;
+    trashed: Array<{ id: string; name: string }>;
+    failed: Array<{ id: string; name: string; error: string }>;
+    warnings: string[];
+  };
   warnings: string[];
   errors: string[];
   auditLogged?: boolean;
@@ -115,6 +123,8 @@ export interface BackupVerificationResponse {
   success: boolean;
   verified: boolean;
   backupFolderId: string;
+  done?: boolean;
+  phase?: string;
   checkedParts: number;
   checkedAssets: number;
   checkedBytes: number;
@@ -227,9 +237,15 @@ export class BackupService {
     return this.request<BackupListResponse>('/api/backup/list');
   }
 
-  async createBackup(releaseVersion?: string, initialBackupFolderId?: string): Promise<BackupCreateResponse> {
+  async createBackup(
+    releaseVersion?: string,
+    initialBackupFolderId?: string,
+    forceNewSession = false,
+    rebuildFirestorePayload = false,
+  ): Promise<BackupCreateResponse> {
     let backupFolderId = initialBackupFolderId?.trim() || '';
     let transientRetries = 0;
+    let requestRebuild = rebuildFirestorePayload;
 
     // The server advances one resumable phase per request so a complete backup
     // does not depend on a single serverless invocation staying alive for the
@@ -239,6 +255,8 @@ export class BackupService {
         const payload = {
           releaseVersion: releaseVersion || undefined,
           ...(backupFolderId ? { backupFolderId } : {}),
+          ...(forceNewSession && !backupFolderId ? { forceNewSession: true } : {}),
+          ...(requestRebuild && backupFolderId ? { rebuildFirestorePayload: true } : {}),
         };
         const step = await this.request<BackupCreateStepResponse>('/api/backup/create', {
           method: 'POST',
@@ -247,6 +265,7 @@ export class BackupService {
         if (step.done === true) return step as BackupCreateResponse;
         if (!step.backupFolderId) throw new Error('Backup session không trả về thư mục để tiếp tục.');
         backupFolderId = step.backupFolderId;
+        requestRebuild = false;
         transientRetries = 0;
       } catch (error) {
         // A dropped response can happen after the server has committed a
@@ -276,11 +295,42 @@ export class BackupService {
     throw new Error('Backup vượt quá số pha an toàn cho phép.');
   }
 
-  verifyBackup(backupFolderId: string): Promise<BackupVerificationResponse> {
-    return this.request<BackupVerificationResponse>('/api/backup/verify', {
-      method: 'POST',
-      body: JSON.stringify({ backupFolderId }),
-    });
+  async verifyBackup(backupFolderId: string): Promise<BackupVerificationResponse> {
+    let transientRetries = 0;
+    // Integrity verification is resumable on the server. Keep advancing one
+    // bounded chunk per request until the server returns the final result;
+    // this prevents a large Drive tree from being trapped in one serverless
+    // invocation.
+    for (let iteration = 0; iteration < 10_000; iteration++) {
+      try {
+        const step = await this.request<BackupVerificationResponse>('/api/backup/verify', {
+          method: 'POST',
+          body: JSON.stringify({ backupFolderId }),
+        });
+        if (step.done !== false) return step;
+        transientRetries = 0;
+      } catch (error) {
+        const requestError = error as BackupRequestError;
+        // A final failed integrity result is intentionally HTTP 422 so the UI
+        // can show the complete diagnostics instead of treating it as a
+        // transport failure.
+        if (requestError.status === 422 && requestError.payload?.done === true) {
+          return requestError.payload as BackupVerificationResponse;
+        }
+        if (requestError.status === 409 && transientRetries < 3) {
+          transientRetries++;
+          await this.waitBeforeRetry(Number(requestError.payload?.retryAfterMs) || 3000);
+          continue;
+        }
+        if (transientRetries < 2) {
+          transientRetries++;
+          await this.waitBeforeRetry(1500 * transientRetries);
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Kiểm tra integrity vượt quá số đợt an toàn cho phép.');
   }
 
   restoreBackup(options: {

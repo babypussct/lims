@@ -50,6 +50,7 @@ import {
 } from './firestore-backup.js';
 
 const FIRESTORE_BATCH_SIZE = 400;
+const FIRESTORE_READ_BATCH_SIZE = 400;
 const DEFAULT_MAX_FIRESTORE_WRITES = 18_000;
 const DEFAULT_MAX_FIRESTORE_READS = 40_000;
 const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -71,6 +72,49 @@ export interface BackupVerificationResult {
   checkedBytes: number;
   errors: string[];
   warnings: string[];
+}
+
+export type BackupVerificationStage = 'PARTS' | 'ASSETS' | 'ACL' | 'DONE';
+
+/**
+ * Persisted cursor for integrity verification. The cursor deliberately keeps
+ * only IDs, counters, and diagnostic strings; encrypted payload bytes are
+ * never copied into the session file. A timed-out invocation can therefore
+ * resume at the last committed batch without weakening checksum validation.
+ */
+export interface BackupVerificationCheckpoint {
+  status: 'RUNNING' | 'PASSED' | 'FAILED';
+  stage: BackupVerificationStage;
+  fingerprint: string;
+  partIndex: number;
+  assetIndex: number;
+  aclIndex: number;
+  aclFileIds: string[];
+  aclDiscoveryComplete: boolean;
+  checkedParts: number;
+  checkedAssets: number;
+  checkedBytes: number;
+  firestoreRecordCount: number;
+  authRecordCount: number;
+  errors: string[];
+  warnings: string[];
+  checkedAt?: string;
+}
+
+export interface BackupVerificationAdvanceResult {
+  done: boolean;
+  backupFolderId: string;
+  manifestFileId: string;
+  manifest: BackupManifest;
+  state: BackupVerificationCheckpoint;
+  result?: BackupVerificationResult;
+}
+
+export interface BackupVerificationChunkOptions {
+  partsPerChunk?: number;
+  assetsPerChunk?: number;
+  aclPerChunk?: number;
+  concurrency?: number;
 }
 
 export interface RestoreInput {
@@ -587,6 +631,355 @@ function assertDriveFolderShape(folder: unknown): asserts folder is BackupManife
   }
 }
 
+const DEFAULT_VERIFICATION_PARTS_PER_CHUNK = 10;
+const DEFAULT_VERIFICATION_ASSETS_PER_CHUNK = 50;
+const DEFAULT_VERIFICATION_ACL_PER_CHUNK = 200;
+const DEFAULT_VERIFICATION_CONCURRENCY = 10;
+
+function positiveVerificationOption(value: number | undefined, fallback: number, maximum: number): number {
+  if (value === undefined) return fallback;
+  if (!Number.isSafeInteger(value) || value < 1 || value > maximum) {
+    throw new Error('Tuỳ chọn verify backup không hợp lệ.');
+  }
+  return value;
+}
+
+async function mapConcurrent<T, R>(
+  values: readonly T[],
+  concurrency: number,
+  worker: (value: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+  const runWorker = async (): Promise<void> => {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= values.length) return;
+      results[index] = await worker(values[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, () => runWorker()));
+  return results;
+}
+
+function verificationFingerprint(manifest: BackupManifest): string {
+  return sha256(Buffer.from(JSON.stringify({
+    backupId: manifest.backupId,
+    status: manifest.status,
+    firestore: {
+      totalDocuments: manifest.firestore.totalDocuments,
+      pathCounts: manifest.firestore.pathCounts.map(item => [item.path, item.documentCount, item.bytes]),
+    },
+    auth: { userCount: manifest.auth.userCount },
+    parts: manifest.parts.map(part => [
+      part.driveFileId,
+      part.category,
+      part.recordCount,
+      part.plaintextBytes,
+      part.ciphertextBytes,
+      part.plaintextSha256,
+      part.ciphertextSha256,
+    ]),
+    drive: {
+      assetCount: manifest.drive.assetCount,
+      folderCount: manifest.drive.folderCount,
+      assets: manifest.drive.assets.map(asset => [
+        asset.sourceFileId,
+        asset.encryptedPayloadFileId,
+        asset.nativeCopyFileId || '',
+        asset.status,
+        asset.payloadPlaintextBytes,
+        asset.payloadPlaintextSha256,
+        asset.payloadCiphertextSha256,
+      ]),
+      folders: manifest.drive.folders.map(folder => [folder.sourceFolderId, folder.status]),
+    },
+    errors: manifest.errors,
+    warnings: manifest.warnings,
+  }), 'utf8'));
+}
+
+function uniqueVerificationStrings(...groups: string[][]): string[] {
+  return [...new Set(groups.flat().filter(Boolean))];
+}
+
+function initialVerificationState(manifest: BackupManifest): {
+  errors: string[];
+  warnings: string[];
+} {
+  const errors: string[] = [...(manifest.errors || [])];
+  const warnings: string[] = [...(manifest.warnings || [])];
+  if (manifest.drive.assetCount !== manifest.drive.assets.length) errors.push('drive.assetCount không khớp danh sách assets.');
+  if (manifest.drive.folderCount !== manifest.drive.folders.length) errors.push('drive.folderCount không khớp danh sách folders.');
+  if (manifest.drive.templateCount !== manifest.drive.assets.filter(asset => asset.isTemplate).length) errors.push('drive.templateCount không khớp assets.');
+  if (manifest.drive.inaccessibleCount !== manifest.drive.assets.filter(asset => asset.status === 'INACCESSIBLE').length + manifest.drive.folders.filter(folder => folder.status === 'INACCESSIBLE').length) {
+    errors.push('drive.inaccessibleCount không khớp assets/folders.');
+  }
+  if (manifest.drive.unsupportedCount !== manifest.drive.assets.filter(asset => asset.status === 'UNSUPPORTED').length) errors.push('drive.unsupportedCount không khớp assets.');
+  if (manifest.firestore.totalDocuments !== manifest.firestore.pathCounts.reduce((sum, item) => sum + item.documentCount, 0)) {
+    errors.push('firestore.totalDocuments không khớp pathCounts.');
+  }
+
+  const seenPartIds = new Set<string>();
+  for (const part of manifest.parts) {
+    if (seenPartIds.has(part.driveFileId)) errors.push(`${partLabel(part)}: Drive file ID bị lặp trong manifest.`);
+    seenPartIds.add(part.driveFileId);
+  }
+  const seenAssetPayloadIds = new Set<string>();
+  for (const asset of manifest.drive.assets) {
+    if (asset.status === 'BACKED_UP') {
+      if (seenAssetPayloadIds.has(asset.encryptedPayloadFileId)) {
+        errors.push(`Drive asset ${asset.sourceName || asset.sourceFileId}: Encrypted payload ID bị lặp.`);
+      }
+      seenAssetPayloadIds.add(asset.encryptedPayloadFileId);
+    } else {
+      errors.push(`Drive asset ${asset.sourceName || asset.sourceFileId} có trạng thái ${asset.status}.`);
+    }
+  }
+  for (const folder of manifest.drive.folders) {
+    if (folder.status !== 'BACKED_UP') errors.push(`Drive folder ${folder.name || folder.sourceFolderId} không truy cập được.`);
+  }
+  if (manifest.status === 'FAILED') errors.push('Manifest có trạng thái FAILED; không được restore.');
+  if (manifest.status === 'RUNNING') errors.push('Manifest chưa được chốt; backup vẫn ở trạng thái RUNNING.');
+  if (manifest.verification?.status === 'FAILED') errors.push('Manifest đã ghi nhận verification FAILED; không được restore.');
+  return {
+    errors: uniqueVerificationStrings(errors),
+    warnings: uniqueVerificationStrings(warnings),
+  };
+}
+
+function isVerificationCheckpoint(value: unknown): value is BackupVerificationCheckpoint {
+  if (!isRecord(value)
+    || !['RUNNING', 'PASSED', 'FAILED'].includes(String(value['status']))
+    || !['PARTS', 'ASSETS', 'ACL', 'DONE'].includes(String(value['stage']))
+    || typeof value['fingerprint'] !== 'string'
+    || !Array.isArray(value['aclFileIds'])
+    || value['aclFileIds'].some(item => typeof item !== 'string')
+    || typeof value['aclDiscoveryComplete'] !== 'boolean'
+    || !Array.isArray(value['errors'])
+    || value['errors'].some(item => typeof item !== 'string')
+    || !Array.isArray(value['warnings'])
+    || value['warnings'].some(item => typeof item !== 'string')) {
+    return false;
+  }
+  for (const key of ['partIndex', 'assetIndex', 'aclIndex', 'checkedParts', 'checkedAssets', 'checkedBytes', 'firestoreRecordCount', 'authRecordCount']) {
+    if (!Number.isSafeInteger(value[key]) || (value[key] as number) < 0) return false;
+  }
+  return value['checkedAt'] === undefined
+    || (typeof value['checkedAt'] === 'string' && !Number.isNaN(Date.parse(value['checkedAt'])));
+}
+
+function newVerificationCheckpoint(manifest: BackupManifest): BackupVerificationCheckpoint {
+  const initial = initialVerificationState(manifest);
+  return {
+    status: 'RUNNING',
+    stage: 'PARTS',
+    fingerprint: verificationFingerprint(manifest),
+    partIndex: 0,
+    assetIndex: 0,
+    aclIndex: 0,
+    aclFileIds: [],
+    aclDiscoveryComplete: false,
+    checkedParts: 0,
+    checkedAssets: 0,
+    checkedBytes: 0,
+    firestoreRecordCount: 0,
+    authRecordCount: 0,
+    errors: initial.errors,
+    warnings: initial.warnings,
+  };
+}
+
+function copyVerificationCheckpoint(value: BackupVerificationCheckpoint): BackupVerificationCheckpoint {
+  return {
+    ...value,
+    aclFileIds: [...value.aclFileIds],
+    errors: [...value.errors],
+    warnings: [...value.warnings],
+  };
+}
+
+function finishVerification(
+  loaded: LoadedBackupManifest,
+  state: BackupVerificationCheckpoint,
+): BackupVerificationAdvanceResult {
+  state.errors = uniqueVerificationStrings(state.errors);
+  state.warnings = uniqueVerificationStrings(state.warnings);
+  state.status = state.errors.length ? 'FAILED' : 'PASSED';
+  state.stage = 'DONE';
+  state.checkedAt = new Date().toISOString();
+  const result: BackupVerificationResult = {
+    verified: state.status === 'PASSED',
+    backupFolderId: loaded.backupFolderId,
+    manifestFileId: loaded.manifestFileId,
+    manifest: loaded.manifest,
+    checkedParts: state.checkedParts,
+    checkedAssets: state.checkedAssets,
+    checkedBytes: state.checkedBytes,
+    errors: state.errors,
+    warnings: state.warnings,
+  };
+  return {
+    done: true,
+    backupFolderId: loaded.backupFolderId,
+    manifestFileId: loaded.manifestFileId,
+    manifest: loaded.manifest,
+    state,
+    result,
+  };
+}
+
+/**
+ * Advances integrity verification by one bounded batch. Every completed
+ * batch is returned to the caller so the caller can persist the checkpoint in
+ * Drive before the next serverless invocation.
+ */
+export async function advanceBackupVerification(
+  client: DriveBackupClient,
+  backupFolderId: string,
+  key = backupEncryptionKey(),
+  checkpoint?: BackupVerificationCheckpoint,
+  options: BackupVerificationChunkOptions = {},
+): Promise<BackupVerificationAdvanceResult> {
+  const loaded = await loadBackupManifest(client, backupFolderId, key);
+  const partsPerChunk = positiveVerificationOption(options.partsPerChunk, DEFAULT_VERIFICATION_PARTS_PER_CHUNK, 100);
+  const assetsPerChunk = positiveVerificationOption(options.assetsPerChunk, DEFAULT_VERIFICATION_ASSETS_PER_CHUNK, 100);
+  const aclPerChunk = positiveVerificationOption(options.aclPerChunk, DEFAULT_VERIFICATION_ACL_PER_CHUNK, 500);
+  const concurrency = positiveVerificationOption(options.concurrency, DEFAULT_VERIFICATION_CONCURRENCY, 20);
+  const fingerprint = verificationFingerprint(loaded.manifest);
+  const state = checkpoint
+    && isVerificationCheckpoint(checkpoint)
+    && checkpoint.status === 'RUNNING'
+    && checkpoint.stage !== 'DONE'
+    && checkpoint.fingerprint === fingerprint
+    ? copyVerificationCheckpoint(checkpoint)
+    : newVerificationCheckpoint(loaded.manifest);
+
+  if (state.stage === 'PARTS') {
+    const start = Math.min(state.partIndex, loaded.manifest.parts.length);
+    const end = Math.min(loaded.manifest.parts.length, start + partsPerChunk);
+    for (let index = start; index < end; index++) {
+      const part = loaded.manifest.parts[index];
+      try {
+        assertPartShape(part);
+        const payload = await readEncryptedPayload(
+          client,
+          part.driveFileId,
+          key,
+          part.ciphertextSha256,
+          part.plaintextSha256,
+          `Phân đoạn ${partLabel(part)}`,
+        );
+        if (payload.plaintext.byteLength !== part.plaintextBytes) throw new Error('Plaintext size không khớp manifest.');
+        if (payload.ciphertext.byteLength !== part.ciphertextBytes) throw new Error('Ciphertext size không khớp manifest.');
+        const parsed = part.name.endsWith('.ndjson.enc')
+          ? parseNdjson(payload.plaintext, `Phân đoạn ${partLabel(part)}`)
+          : [parseJsonBuffer(payload.plaintext, `Phân đoạn ${partLabel(part)}`)];
+        if (parsed.length !== part.recordCount) throw new Error(`Số record thực tế ${parsed.length} khác manifest ${part.recordCount}.`);
+        validateParsedPartRecords(part, parsed, loaded.manifest.appId);
+        if (part.category === 'firestore') state.firestoreRecordCount += parsed.length;
+        if (part.category === 'auth') state.authRecordCount += parsed.length;
+        state.checkedParts++;
+        state.checkedBytes += payload.ciphertext.byteLength;
+      } catch (error) {
+        state.errors.push(`${partLabel(part)}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    state.partIndex = end;
+    if (state.partIndex >= loaded.manifest.parts.length) state.stage = 'ASSETS';
+    return { done: false, backupFolderId: loaded.backupFolderId, manifestFileId: loaded.manifestFileId, manifest: loaded.manifest, state };
+  }
+
+  if (state.stage === 'ASSETS') {
+    const start = Math.min(state.assetIndex, loaded.manifest.drive.assets.length);
+    const end = Math.min(loaded.manifest.drive.assets.length, start + assetsPerChunk);
+    const assets = loaded.manifest.drive.assets.slice(start, end);
+    const outcomes = await mapConcurrent(assets, concurrency, async asset => {
+      if (asset.status !== 'BACKED_UP') return { checked: false, bytes: 0, error: undefined };
+      try {
+        const payload = await readEncryptedPayload(
+          client,
+          asset.encryptedPayloadFileId,
+          key,
+          asset.payloadCiphertextSha256,
+          asset.payloadPlaintextSha256,
+          `Drive asset ${asset.sourceName || asset.sourceFileId}`,
+        );
+        if (payload.plaintext.byteLength !== asset.payloadPlaintextBytes) throw new Error('Kích thước plaintext không khớp manifest.');
+        return { checked: true, bytes: payload.ciphertext.byteLength, error: undefined };
+      } catch (error) {
+        return {
+          checked: false,
+          bytes: 0,
+          error: `Drive asset ${asset.sourceName || asset.sourceFileId}: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    });
+    for (const outcome of outcomes) {
+      if (outcome.checked) state.checkedAssets++;
+      state.checkedBytes += outcome.bytes;
+      if (outcome.error) state.errors.push(outcome.error);
+    }
+    state.assetIndex = end;
+    if (state.assetIndex >= loaded.manifest.drive.assets.length) state.stage = 'ACL';
+    return { done: false, backupFolderId: loaded.backupFolderId, manifestFileId: loaded.manifestFileId, manifest: loaded.manifest, state };
+  }
+
+  if (!state.aclDiscoveryComplete) {
+    let backupObjectIds: string[] = [];
+    try {
+      // Check every object below the backup root, including internal folders.
+      // A child can receive an explicit `anyone` ACL while the root stays private.
+      backupObjectIds = await listBackupObjectIds(client, loaded.backupFolderId);
+    } catch (error) {
+      state.errors.push(`Không thể kiểm tra đầy đủ cây object của backup: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    state.aclFileIds = [...new Set([
+      ...backupObjectIds,
+      loaded.backupFolderId,
+      loaded.manifestFileId,
+      ...loaded.manifest.parts.map(part => part.driveFileId),
+      ...loaded.manifest.drive.assets.filter(asset => asset.status === 'BACKED_UP').flatMap(asset => [
+        asset.encryptedPayloadFileId,
+        ...(asset.nativeCopyFileId ? [asset.nativeCopyFileId] : []),
+      ]),
+    ].filter(Boolean))];
+    state.aclDiscoveryComplete = true;
+  }
+
+  const start = Math.min(state.aclIndex, state.aclFileIds.length);
+  const end = Math.min(state.aclFileIds.length, start + aclPerChunk);
+  const aclOutcomes = await mapConcurrent(state.aclFileIds.slice(start, end), concurrency, async fileId => {
+    try {
+      const permissions = await client.listPermissions(fileId);
+      return {
+        errors: permissions.some(permission => permission.type === 'anyone')
+          ? [`Backup Drive object ${fileId} đang có ACL anyone; backup không private.`]
+          : [],
+        warnings: permissions.some(permission => permission.type === 'domain')
+          ? [`Backup Drive object ${fileId} có ACL domain; cần review phạm vi chia sẻ.`]
+          : [],
+      };
+    } catch (error) {
+      return {
+        errors: [`Không thể kiểm tra ACL Drive object ${fileId}: ${error instanceof Error ? error.message : String(error)}`],
+        warnings: [],
+      };
+    }
+  });
+  for (const outcome of aclOutcomes) {
+    state.errors.push(...outcome.errors);
+    state.warnings.push(...outcome.warnings);
+  }
+  state.aclIndex = end;
+  if (state.aclIndex < state.aclFileIds.length) {
+    return { done: false, backupFolderId: loaded.backupFolderId, manifestFileId: loaded.manifestFileId, manifest: loaded.manifest, state };
+  }
+  if (state.firestoreRecordCount !== loaded.manifest.firestore.totalDocuments) state.errors.push('Tổng Firestore record trong part không khớp manifest.');
+  if (state.authRecordCount !== loaded.manifest.auth.userCount) state.errors.push('Tổng Auth record trong part không khớp manifest.');
+  return finishVerification(loaded, state);
+}
+
 export async function verifyBackup(
   client: DriveBackupClient,
   backupFolderId: string,
@@ -883,6 +1276,11 @@ async function restoreFirestore(
   const backupPaths = new Set<string>();
   const seenPaths = new Set<string>();
   const maxFirestoreReads = configuredMaxFirestoreReads();
+  const eligibleRecords: Array<{
+    record: ParsedBackupRecord;
+    desiredSerialised: unknown;
+    desired: DocumentData;
+  }> = [];
   for (const record of records) {
     if (record.excluded || record.data === undefined) continue;
     if (!isRestoreablePath(record.path, manifest.appId) || protectedCollection(record.path)) {
@@ -893,45 +1291,67 @@ async function restoreFirestore(
     if (!matchesSelection(record.path, selectedPaths)) continue;
     backupPaths.add(record.path);
     summary.scanned++;
-    const current = await input.db.doc(record.path).get();
-    summary.firestoreReads++;
-    if (summary.firestoreReads > maxFirestoreReads) {
-      throw new Error(`Restore vượt ngưỡng ${maxFirestoreReads} Firestore document reads; dừng để bảo vệ quota Spark.`);
-    }
     const desiredSerialised = replaceDriveIds(record.data, idMap);
     const desired = asDocumentData(desiredSerialised, input.db, record.path);
-    if (!current.exists) {
-      summary.missing++;
-      if (input.mode !== 'DRY_RUN') {
-        operations.push({ kind: 'set', path: record.path, data: desired });
-        summary.created++;
+    eligibleRecords.push({ record, desiredSerialised, desired });
+  }
+
+  // Admin Firestore supports getAll() for a bounded set of document refs.
+  // Reading the live side in batches is important for a large DRY_RUN: the
+  // previous one-document RPC loop could keep a serverless request open for
+  // several minutes even though it performed no writes. Keep the sequential
+  // fallback for the small test doubles and older compatible clients.
+  for (let start = 0; start < eligibleRecords.length;) {
+    const remainingReads = maxFirestoreReads - summary.firestoreReads;
+    if (remainingReads <= 0) {
+      throw new Error(`Restore vượt ngưỡng ${maxFirestoreReads} Firestore document reads; dừng để bảo vệ quota Spark.`);
+    }
+    const batch = eligibleRecords.slice(start, start + Math.min(FIRESTORE_READ_BATCH_SIZE, remainingReads));
+    const refs = batch.map(item => input.db.doc(item.record.path));
+    const currentDocuments = typeof input.db.getAll === 'function'
+      ? await input.db.getAll(...refs)
+      : await Promise.all(refs.map(ref => ref.get()));
+    if (currentDocuments.length !== batch.length) {
+      throw new Error(`Firestore getAll trả về ${currentDocuments.length} document snapshots, cần ${batch.length}.`);
+    }
+    summary.firestoreReads += currentDocuments.length;
+    for (let index = 0; index < batch.length; index++) {
+      const { record, desiredSerialised, desired } = batch[index];
+      const current = currentDocuments[index];
+      if (!current.exists) {
+        summary.missing++;
+        if (input.mode !== 'DRY_RUN') {
+          operations.push({ kind: 'set', path: record.path, data: desired });
+          summary.created++;
+        }
+        continue;
       }
-      continue;
-    }
-    const currentSerialised = serializeFirestoreValue(sanitizeFirestoreDataForBackup(current.data()), input.db);
-    const same = stableJson(currentSerialised) === stableJson(desiredSerialised);
-    if (same) {
-      summary.unchanged++;
-      if (input.mode === 'RECOVER_MISSING') summary.skippedExisting++;
-      continue;
-    }
-    summary.different++;
-    if (input.mode === 'RECOVER_MISSING' || input.mode === 'DRY_RUN') {
-      // A missing Drive object may be recreated with a new ID. In that case
-      // the existing Firestore document must receive the URL/ID remap even in
-      // the otherwise non-overwriting recovery mode. Only permit this update
-      // when replacing IDs makes the live document byte-for-byte equal to the
-      // backup; unrelated edits remain protected and are skipped.
-      if (input.mode === 'RECOVER_MISSING' && isDriveOnlyRecoveryDifference(currentSerialised, desiredSerialised, idMap)) {
-        operations.push({ kind: 'set', path: record.path, data: desired });
-        summary.updated++;
-      } else {
-        summary.skippedExisting++;
+      const currentSerialised = serializeFirestoreValue(sanitizeFirestoreDataForBackup(current.data()), input.db);
+      const same = stableJson(currentSerialised) === stableJson(desiredSerialised);
+      if (same) {
+        summary.unchanged++;
+        if (input.mode === 'RECOVER_MISSING') summary.skippedExisting++;
+        continue;
       }
-      continue;
+      summary.different++;
+      if (input.mode === 'RECOVER_MISSING' || input.mode === 'DRY_RUN') {
+        // A missing Drive object may be recreated with a new ID. In that case
+        // the existing Firestore document must receive the URL/ID remap even in
+        // the otherwise non-overwriting recovery mode. Only permit this update
+        // when replacing IDs makes the live document byte-for-byte equal to the
+        // backup; unrelated edits remain protected and are skipped.
+        if (input.mode === 'RECOVER_MISSING' && isDriveOnlyRecoveryDifference(currentSerialised, desiredSerialised, idMap)) {
+          operations.push({ kind: 'set', path: record.path, data: desired });
+          summary.updated++;
+        } else {
+          summary.skippedExisting++;
+        }
+        continue;
+      }
+      operations.push({ kind: 'set', path: record.path, data: desired });
+      summary.updated++;
     }
-    operations.push({ kind: 'set', path: record.path, data: desired });
-    summary.updated++;
+    start += batch.length;
   }
 
   if (input.mode === 'FULL_REPLACE') {
@@ -1415,6 +1835,27 @@ function projectIdFromAdmin(): string | undefined {
   return typeof projectId === 'string' && projectId ? projectId : undefined;
 }
 
+const DRY_RUN_VERIFICATION_PROOF_MAX_AGE_MS = 30 * 60 * 1000;
+
+function cachedDryRunVerification(loaded: LoadedBackupManifest): BackupVerificationResult | undefined {
+  const proof = loaded.manifest.verification;
+  if (!proof || proof.status !== 'PASSED') return undefined;
+  const checkedAt = Date.parse(proof.checkedAt);
+  const age = Date.now() - checkedAt;
+  if (!Number.isFinite(age) || age < 0 || age > DRY_RUN_VERIFICATION_PROOF_MAX_AGE_MS) return undefined;
+  return {
+    verified: true,
+    backupFolderId: loaded.backupFolderId,
+    manifestFileId: loaded.manifestFileId,
+    manifest: loaded.manifest,
+    checkedParts: proof.checkedParts,
+    checkedAssets: proof.checkedAssets,
+    checkedBytes: proof.checkedBytes,
+    errors: [],
+    warnings: [...loaded.manifest.warnings],
+  };
+}
+
 export async function runRestore(input: RestoreInput): Promise<RestoreReport> {
   const key = input.key || backupEncryptionKey();
   if (input.mode === 'RESTORE_SELECTED' && !(input.selectedPaths || []).length) {
@@ -1425,7 +1866,10 @@ export async function runRestore(input: RestoreInput): Promise<RestoreReport> {
   }
   if (input.replaceAuth && input.mode !== 'FULL_REPLACE') throw new Error('replaceAuth chỉ được dùng với FULL_REPLACE.');
   const selectedPaths = [...new Set((input.selectedPaths || []).map(value => normaliseSelection(value, configuredBackupAppId())))];
-  const verification = await verifyBackup(input.client, input.backupFolderId, key);
+  const cachedProof = input.mode === 'DRY_RUN'
+    ? cachedDryRunVerification(await loadBackupManifest(input.client, input.backupFolderId, key))
+    : undefined;
+  const verification = cachedProof || await verifyBackup(input.client, input.backupFolderId, key);
   if (!verification.verified) throw new Error(`Backup không đạt kiểm tra integrity: ${verification.errors.join(' | ')}`);
   const manifest = verification.manifest;
   if (manifest.appId !== configuredBackupAppId()) {
