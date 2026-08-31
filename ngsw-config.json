@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.01-b01",
-    "title": "Nâng cấp trải nghiệm Cài đặt",
+    "version": "v26.09.01-b02",
+    "title": "Gia cố an toàn Cài đặt & phân quyền",
     "features": [
-      "Làm mới toàn diện khu vực Cài đặt với điều hướng responsive, nhãn vai trò rõ ràng và bố cục cấu hình nhất quán trên desktop lẫn mobile.",
-      "Chuẩn hóa giao diện các trang Cài đặt, loại bỏ header trùng lặp và bổ sung các biến thể hiển thị theo ngữ cảnh.",
-      "Tối ưu bảng quy tắc hao hụt trên màn hình nhỏ bằng thẻ xếp chồng và chuẩn hóa các utility class Tailwind.",
-      "Hiển thị chính xác nhãn cho đầy đủ các vai trò quản trị, nhân viên, chỉ xem và chờ phê duyệt.",
-      "Sửa auto-scroll điều hướng Cài đặt để tính theo geometry thực của container, tránh cuộn lệch khi deep-link trên desktop và mobile."
+      "Gia cố các luồng quản trị nhạy cảm trong Cài đặt để tránh ghi đè vai trò, mất quyền âm thầm và trạng thái lưu thành công giả khi backend gặp lỗi.",
+      "Phân biệt rõ trạng thái tải lỗi và danh sách người dùng thực sự trống, đồng thời giữ các tài khoản lưu batch thất bại ở trạng thái được chọn để quản trị viên thử lại.",
+      "Bổ sung validation danh mục dữ liệu và định mức hao hụt: không bỏ qua dòng nhập dở, chặn mã trùng và giới hạn phần trăm trong khoảng 0–100%.",
+      "Bổ sung loading/error feedback cho vai trò, tài nguyên chẩn đoán và các thao tác lưu cấu hình hệ thống.",
+      "Chặn tạo vai trò có ID hoặc tên trùng để không ghi đè cấu hình hiện có; chặn xóa vai trò còn nhân viên đang sử dụng."
     ]
   },
   "assetGroups": [

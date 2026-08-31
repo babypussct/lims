@@ -115,7 +115,7 @@ describe('config shared UI primitive integration', () => {
     assert.equal(source.match(/<app-modal-shell\b/g)?.length, 1);
     assert.match(source, /id="role-config-form" appFormLabelA11y \[formGroup\]="roleForm"/);
     assert.match(source, /\(change\)="togglePermSelected\(perm\.val\)"/);
-    assert.match(source, /\(click\)="saveRole\(\)" \[disabled\]="roleForm\.invalid"/);
+    assert.match(source, /\(click\)="saveRole\(\)" \[disabled\]="roleForm\.invalid \|\| savingRole\(\)" \[loading\]="savingRole\(\)"/);
     assert.match(source, /\(closed\)="closeModal\(\)"/);
   });
 
@@ -129,7 +129,8 @@ describe('config shared UI primitive integration', () => {
     assert.match(source, /roleFilter\.set\('pending'\)/);
     assert.match(source, /permStatusFilter\.set\(\$event\)/);
     assert.match(source, /\(change\)="togglePerm\(user, perm\.val\)"/);
-    assert.match(source, /\(click\)="saveUser\(user\); closePermModal\(\)"/);
+    assert.match(source, /\(click\)="saveUserFromModal\(user\)"/);
+    assert.match(source, /if \(await this\.saveUser\(u\)\) this\.closePermModal\(\)/);
     assert.match(source, /\(closed\)="closePermModal\(\)"/);
   });
 

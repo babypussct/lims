@@ -1,5 +1,25 @@
 [
   {
+    "version": "v26.09.01-b02",
+    "date": "1/9/2026",
+    "title": "Gia cố an toàn Cài đặt & phân quyền",
+    "highlights": [
+      "Gia cố các luồng quản trị nhạy cảm trong Cài đặt để tránh ghi đè vai trò, mất quyền âm thầm và trạng thái lưu thành công giả khi backend gặp lỗi."
+    ],
+    "features": [],
+    "improvements": [
+      "Phân biệt rõ trạng thái tải lỗi và danh sách người dùng thực sự trống, đồng thời giữ các tài khoản lưu batch thất bại ở trạng thái được chọn để quản trị viên thử lại.",
+      "Bổ sung validation danh mục dữ liệu và định mức hao hụt: không bỏ qua dòng nhập dở, chặn mã trùng và giới hạn phần trăm trong khoảng 0–100%.",
+      "Bổ sung loading/error feedback cho vai trò, tài nguyên chẩn đoán và các thao tác lưu cấu hình hệ thống."
+    ],
+    "fixes": [
+      "Chặn tạo vai trò có ID hoặc tên trùng để không ghi đè cấu hình hiện có; chặn xóa vai trò còn nhân viên đang sử dụng.",
+      "Sửa lưu phân quyền để tài khoản Manager/Viewer/Pending không bị gán nhầm roleId mặc định của Staff.",
+      "Sửa modal phân quyền chỉ đóng sau khi lưu thành công và bổ sung xử lý lỗi cho avatar, maintenance, locked features, broadcast và clipboard."
+    ],
+    "releaseOrder": 26090100002
+  },
+  {
     "version": "v26.09.01-b01",
     "date": "1/9/2026",
     "title": "Nâng cấp trải nghiệm Cài đặt",

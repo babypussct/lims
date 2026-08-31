@@ -205,7 +205,7 @@ export class FirebaseService {
       this.invalidateUsersCache();
   }
 
-  async getRolesConfig(): Promise<any[]> {
+  async getRolesConfig(throwOnError = false): Promise<any[]> {
       try {
           const colRef = collection(this.db, `artifacts/${this.APP_ID}/roles_config`);
           const snapshot = await getDocs(colRef);
@@ -216,6 +216,7 @@ export class FirebaseService {
           }));
       } catch (e) {
           console.warn("Could not fetch roles_config:", e);
+          if (throwOnError) throw e;
           return [];
       }
   }

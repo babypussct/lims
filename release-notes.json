@@ -1,16 +1,17 @@
 {
-  "title": "Nâng cấp trải nghiệm Cài đặt",
+  "title": "Gia cố an toàn Cài đặt & phân quyền",
   "highlights": [
-    "Làm mới toàn diện khu vực Cài đặt với điều hướng responsive, nhãn vai trò rõ ràng và bố cục cấu hình nhất quán trên desktop lẫn mobile."
+    "Gia cố các luồng quản trị nhạy cảm trong Cài đặt để tránh ghi đè vai trò, mất quyền âm thầm và trạng thái lưu thành công giả khi backend gặp lỗi."
   ],
   "features": [],
   "improvements": [
-    "Chuẩn hóa giao diện các trang Cài đặt, loại bỏ header trùng lặp và bổ sung các biến thể hiển thị theo ngữ cảnh.",
-    "Tối ưu bảng quy tắc hao hụt trên màn hình nhỏ bằng thẻ xếp chồng và chuẩn hóa các utility class Tailwind.",
-    "Hiển thị chính xác nhãn cho đầy đủ các vai trò quản trị, nhân viên, chỉ xem và chờ phê duyệt."
+    "Phân biệt rõ trạng thái tải lỗi và danh sách người dùng thực sự trống, đồng thời giữ các tài khoản lưu batch thất bại ở trạng thái được chọn để quản trị viên thử lại.",
+    "Bổ sung validation danh mục dữ liệu và định mức hao hụt: không bỏ qua dòng nhập dở, chặn mã trùng và giới hạn phần trăm trong khoảng 0–100%.",
+    "Bổ sung loading/error feedback cho vai trò, tài nguyên chẩn đoán và các thao tác lưu cấu hình hệ thống."
   ],
   "fixes": [
-    "Sửa auto-scroll điều hướng Cài đặt để tính theo geometry thực của container, tránh cuộn lệch khi deep-link trên desktop và mobile.",
-    "Bổ sung kiểm thử hành vi cho phép tính auto-scroll và giới hạn cuộn ở hai đầu container."
+    "Chặn tạo vai trò có ID hoặc tên trùng để không ghi đè cấu hình hiện có; chặn xóa vai trò còn nhân viên đang sử dụng.",
+    "Sửa lưu phân quyền để tài khoản Manager/Viewer/Pending không bị gán nhầm roleId mặc định của Staff.",
+    "Sửa modal phân quyền chỉ đóng sau khi lưu thành công và bổ sung xử lý lỗi cho avatar, maintenance, locked features, broadcast và clipboard."
   ]
 }

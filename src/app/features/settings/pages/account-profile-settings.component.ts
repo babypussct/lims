@@ -156,7 +156,11 @@ export class AccountProfileSettingsComponent {
   }
 
   async saveAvatarStyle(style: string): Promise<void> {
-    await this.state.saveMyAvatarStyle(style);
-    this.toast.show('Đã cập nhật ảnh đại diện.', 'success');
+    try {
+      await this.state.saveMyAvatarStyle(style);
+      this.toast.show('Đã cập nhật ảnh đại diện.', 'success');
+    } catch (error: any) {
+      this.toast.show(`Không thể cập nhật ảnh đại diện: ${error?.message || error}`, 'error');
+    }
   }
 }

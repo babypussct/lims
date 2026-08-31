@@ -466,7 +466,7 @@
                         <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-hard-drive"></i></div>
                         Tài Nguyên
                     </h3>
-                    <button (click)="loadUsage()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-2 py-1 rounded text-slate-600 dark:text-slate-300"><i class="fa-solid fa-rotate"></i> Check</button>
+                    <button (click)="loadUsage()" [disabled]="usageBusy()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-2 py-1 rounded text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-wait"><i class="fa-solid fa-rotate" [class.fa-spin]="usageBusy()"></i> {{usageBusy() ? 'Đang kiểm tra...' : 'Check'}}</button>
                 </div>
                 @if(storageEstimate(); as stat) {
                     <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">

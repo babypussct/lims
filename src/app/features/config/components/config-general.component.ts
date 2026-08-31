@@ -14,6 +14,7 @@ import { NotificationCenterService } from '../../../core/services/notification-c
 import { BackupService, type BackupListItem, type BackupStatusResponse, type BackupCreateResponse, type BackupVerificationResponse, type RestoreResponse, type RestoreCheckpointListItem } from '../../../core/services/backup.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { validateCategoriesDraft } from '../../settings/settings-validation.utils';
 
 @Component({
   selector: 'app-config-general',
@@ -103,6 +104,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
   archiverDays = signal(180);
   storageEstimate = signal<{ totalDocs: number; estimatedSizeKB: number; details: any } | null>(null);
+  usageBusy = signal(false);
   printConfig = signal<PrintConfig>({
     showSignature: true,
     footerText: ''
@@ -175,11 +177,14 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       if (!this.newUpdateContent.trim()) return;
       const content = this.newUpdateContent.trim();
       const actionUrl = this.newUpdateActionUrl.trim();
-      await this.state.postSystemUpdate(content, this.newUpdateType, actionUrl);
-
-      this.newUpdateContent = '';
-      this.newUpdateActionUrl = '';
-      this.toast.show('Đã đăng thông báo hệ thống!');
+      try {
+        await this.state.postSystemUpdate(content, this.newUpdateType, actionUrl);
+        this.newUpdateContent = '';
+        this.newUpdateActionUrl = '';
+        this.toast.show('Đã đăng thông báo hệ thống!', 'success');
+      } catch (e: any) {
+        this.toast.show(`Không thể đăng thông báo hệ thống: ${e?.message || e}`, 'error');
+      }
   }
 
   async deleteSystemUpdate(id: string) {
@@ -206,11 +211,15 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       }
   }
 
-  saveAvatarStyle(event: any) {
+  async saveAvatarStyle(event: any) {
       const style = typeof event === 'string' ? event : event?.target?.value;
       if (style) {
-          this.state.saveAvatarStyle(style);
-          this.toast.show('Đã cập nhật kiểu avatar.', 'success');
+          try {
+            await this.state.saveAvatarStyle(style);
+            this.toast.show('Đã cập nhật kiểu avatar.', 'success');
+          } catch (e: any) {
+            this.toast.show(`Không thể cập nhật kiểu avatar: ${e?.message || e}`, 'error');
+          }
       }
   }
 
@@ -229,14 +238,19 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.isPrintConfigDirty.set(true);
   }
   async saveCategories() {
-      const validCategories = this.categoriesLocal().filter(c => c.id && c.id.trim() && c.name && c.name.trim());
-      if (validCategories.length === 0) {
-          this.toast.show('Phân loại không được để trống hoàn toàn.', 'error');
-          return;
+      const validation = validateCategoriesDraft(this.categoriesLocal());
+      if (!validation.ok) {
+        this.toast.show(validation.message, 'error');
+        return;
       }
-      await this.state.saveCategoriesConfig(validCategories);
-      this.isCategoriesDirty.set(false);
-      this.toast.show('Đã cập nhật danh mục phân loại.', 'success');
+      try {
+        await this.state.saveCategoriesConfig(validation.value);
+        this.categoriesLocal.set(validation.value);
+        this.isCategoriesDirty.set(false);
+        this.toast.show('Đã cập nhật danh mục phân loại.', 'success');
+      } catch (e: any) {
+        this.toast.show(`Không thể lưu danh mục phân loại: ${e?.message || e}`, 'error');
+      }
   }
 
   async fetchArchiverData() {
@@ -369,10 +383,16 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async loadUsage() {
+      if (this.usageBusy()) return;
+      this.usageBusy.set(true);
       try {
           const estimate = await this.fb.getFirestoreDataEstimate();
           this.storageEstimate.set(estimate);
-      } catch (e) { this.toast.show('Lỗi tính dung lượng.', 'error'); }
+      } catch (e) {
+          this.toast.show('Lỗi tính dung lượng.', 'error');
+      } finally {
+          this.usageBusy.set(false);
+      }
   }
 
   private backupErrorMessage(error: any): string {
@@ -598,18 +618,22 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   async saveMaintenanceConfig() {
       const msg = this.maintenanceMessageLocal.value || 'Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.';
       const scheduledVal = this.maintenanceScheduledTimeLocal.value || null;
-      await this.state.saveMaintenanceConfig(this.maintenanceModeLocal(), msg, scheduledVal);
-      this.isMaintenanceModeDirty.set(false);
-      this.maintenanceMessageLocal.markAsPristine();
-      this.maintenanceScheduledTimeLocal.markAsPristine();
+      try {
+        await this.state.saveMaintenanceConfig(this.maintenanceModeLocal(), msg, scheduledVal);
+        this.isMaintenanceModeDirty.set(false);
+        this.maintenanceMessageLocal.markAsPristine();
+        this.maintenanceScheduledTimeLocal.markAsPristine();
 
-      if (this.maintenanceModeLocal()) {
-          this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'info', true);
-      } else if (scheduledVal) {
-          const formatted = new Date(scheduledVal).toLocaleString('vi-VN');
-          this.toast.show(`Đã hẹn giờ bảo trì vào lúc ${formatted}`, 'info');
-      } else {
-          this.toast.show('Đã cập nhật cấu hình bảo trì thành công!', 'success');
+        if (this.maintenanceModeLocal()) {
+            this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'info', true);
+        } else if (scheduledVal) {
+            const formatted = new Date(scheduledVal).toLocaleString('vi-VN');
+            this.toast.show(`Đã hẹn giờ bảo trì vào lúc ${formatted}`, 'info');
+        } else {
+            this.toast.show('Đã cập nhật cấu hình bảo trì thành công!', 'success');
+        }
+      } catch (e: any) {
+        this.toast.show(`Không thể lưu cấu hình bảo trì: ${e?.message || e}`, 'error');
       }
   }
 
@@ -647,14 +671,18 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async saveShowLockedFeaturesConfig() {
-      await this.state.saveShowLockedFeaturesConfig(this.showLockedFeaturesLocal());
-      this.isShowLockedFeaturesDirty.set(false);
-      this.toast.show(
-        this.showLockedFeaturesLocal()
-          ? 'Đã BẬT chế độ hiển thị tính năng bị khóa (🔒) cho toàn hệ thống!'
-          : 'Đã TẮT chế độ hiển thị tính năng bị khóa (quay lại chế độ ẩn mặc định).',
-        'info'
-      );
+      try {
+        await this.state.saveShowLockedFeaturesConfig(this.showLockedFeaturesLocal());
+        this.isShowLockedFeaturesDirty.set(false);
+        this.toast.show(
+          this.showLockedFeaturesLocal()
+            ? 'Đã BẬT chế độ hiển thị tính năng bị khóa (🔒) cho toàn hệ thống!'
+            : 'Đã TẮT chế độ hiển thị tính năng bị khóa (quay lại chế độ ẩn mặc định).',
+          'info'
+        );
+      } catch (e: any) {
+        this.toast.show(`Không thể lưu cấu hình hiển thị tính năng khóa: ${e?.message || e}`, 'error');
+      }
   }
 
   clearScheduledTime() {

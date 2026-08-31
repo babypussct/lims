@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.09.01-b01",
+  "version": "26.09.01-b02",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -45,7 +45,7 @@
     "test:ui-checklist": "tsx --test src/app/features/checklist/daily-checklist-ui-primitives.contract.test.ts",
     "test:ui-labels": "tsx --test src/app/features/labels/label-print-ui-primitives.contract.test.ts",
     "test:ui-config": "tsx --test src/app/features/config/config-ui-primitives.contract.test.ts",
-    "test:settings": "tsx --test src/app/features/settings/settings-routing.test.ts src/app/features/settings/delete-request.contract.test.ts",
+    "test:settings": "tsx --test src/app/features/settings/settings-routing.test.ts src/app/features/settings/settings-validation.test.ts src/app/features/settings/settings-hardening.contract.test.ts src/app/features/settings/delete-request.contract.test.ts",
     "test:ui-traceability": "tsx --test src/app/features/traceability/traceability-ui-primitives.contract.test.ts",
     "test:ui-sop": "tsx --test src/app/features/sop/sop-ui-primitives.contract.test.ts",
     "test:ui-auth-public": "tsx --test src/app/features/auth/auth-public-ui-primitives.contract.test.ts",

@@ -53,11 +53,25 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                     </button>
                 }
 
-                <button (click)="loadUsers()" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-rotate"></i> Tải Lại
+                <button (click)="loadUsers()" [disabled]="usersLoading()" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+                    <i class="fa-solid fa-rotate" [class.fa-spin]="usersLoading()"></i> {{usersLoading() ? 'Đang tải...' : 'Tải Lại'}}
                 </button>
             </div>
         </div>
+
+        @if (usersLoadError() || rolesLoadError()) {
+            <div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <span><i class="fa-solid fa-circle-exclamation mr-2"></i>{{usersLoadError() || rolesLoadError()}}</span>
+                <div class="flex gap-2">
+                    @if (usersLoadError()) {
+                        <app-button variant="secondary" size="sm" (click)="loadUsers()">Tải lại người dùng</app-button>
+                    }
+                    @if (rolesLoadError()) {
+                        <app-button variant="secondary" size="sm" (click)="loadRoles()">Tải lại vai trò</app-button>
+                    }
+                </div>
+            </div>
+        }
 
         <!-- SMART FILTER & SEARCH TOOLBAR -->
         <div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-4">
@@ -195,8 +209,8 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                     </div>
 
                     <!-- Batch Save Button -->
-                    <button (click)="saveBatchUsers()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 active:scale-95">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu Tất Cả Đã Chọn
+                    <button (click)="saveBatchUsers()" [disabled]="batchSaving()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-wait">
+                        <i class="fa-solid" [class.fa-spinner]="batchSaving()" [class.fa-spin]="batchSaving()" [class.fa-floppy-disk]="!batchSaving()"></i> {{batchSaving() ? 'Đang lưu...' : 'Lưu Tất Cả Đã Chọn'}}
                     </button>
 
                     <!-- Clear Selection -->
@@ -346,12 +360,19 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 } @empty {
                     <app-empty-state
                         icon="fa-users-slash"
-                        title="Không tìm thấy người dùng"
-                        message="Thử thay đổi từ khóa hoặc bộ lọc để xem thêm tài khoản.">
-                        <app-button emptyStateActions variant="secondary" size="sm" (click)="resetFilters()">
-                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                            Đặt lại bộ lọc
-                        </app-button>
+                        [title]="usersLoadError() ? 'Không thể tải người dùng' : (hasActiveFilters() ? 'Không tìm thấy người dùng' : 'Chưa có người dùng')"
+                        [message]="usersLoadError() ? 'Dữ liệu người dùng chưa tải được. Hãy thử lại để phân biệt lỗi kết nối với danh sách trống.' : (hasActiveFilters() ? 'Thử thay đổi từ khóa hoặc bộ lọc để xem thêm tài khoản.' : 'Chưa có tài khoản nào trong hệ thống.')">
+                        @if (usersLoadError()) {
+                            <app-button emptyStateActions variant="secondary" size="sm" (click)="loadUsers()">
+                                <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                                Thử tải lại
+                            </app-button>
+                        } @else if (hasActiveFilters()) {
+                            <app-button emptyStateActions variant="secondary" size="sm" (click)="resetFilters()">
+                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                Đặt lại bộ lọc
+                            </app-button>
+                        }
                     </app-empty-state>
                 }
             </div>
@@ -404,7 +425,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
                 <div modalFooter class="contents">
                     <app-button variant="secondary" (click)="closePermModal()">Đóng</app-button>
-                    <app-button (click)="saveUser(user); closePermModal()">
+                    <app-button (click)="saveUserFromModal(user)">
                         <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
                     </app-button>
                 </div>
@@ -422,6 +443,10 @@ export class ConfigUsersComponent implements OnInit {
   
   userList = signal<UserProfile[]>([]);
   selectedUserForPerms = signal<UserProfile | null>(null);
+  usersLoading = signal(false);
+  usersLoadError = signal('');
+  rolesLoadError = signal('');
+  batchSaving = signal(false);
 
   // SEARCH & FILTER SIGNALS
   searchQuery = signal<string>('');
@@ -563,16 +588,34 @@ export class ConfigUsersComponent implements OnInit {
   rolesList = signal<any[]>([]);
 
   ngOnInit() {
-      this.loadUsers();
+      this.loadUsers(false);
       this.loadRoles();
   }
 
-  async loadUsers() {
-      try { const users = await this.fb.getAllUsers(); this.userList.set(users); } catch (e) { this.userList.set([]); }
+  async loadUsers(forceRefresh = true) {
+      if (this.usersLoading()) return;
+      this.usersLoading.set(true);
+      this.usersLoadError.set('');
+      try {
+          const users = await this.fb.getAllUsers(forceRefresh);
+          this.userList.set(users);
+      } catch (e: any) {
+          this.userList.set([]);
+          this.usersLoadError.set(`Không thể tải danh sách người dùng: ${e?.message || e}`);
+      } finally {
+          this.usersLoading.set(false);
+      }
   }
 
   async loadRoles() {
-      try { const roles = await this.fb.getRolesConfig(); this.rolesList.set(roles); } catch (e) { this.rolesList.set([]); }
+      this.rolesLoadError.set('');
+      try {
+          const roles = await this.fb.getRolesConfig(true);
+          this.rolesList.set(roles);
+      } catch (e: any) {
+          this.rolesList.set([]);
+          this.rolesLoadError.set(`Không thể tải nhóm vai trò: ${e?.message || e}`);
+      }
   }
 
   resetFilters() {
@@ -687,39 +730,33 @@ export class ConfigUsersComponent implements OnInit {
       const selected = this.selectedUids();
       const targets = this.userList().filter(u => selected.has(u.uid));
 
-      if (targets.length === 0) return;
+      if (targets.length === 0 || this.batchSaving()) return;
 
+      this.batchSaving.set(true);
+      const failedUids = new Set<string>();
+      const failedNames: string[] = [];
+      let successCount = 0;
       try {
-          let count = 0;
           for (const u of targets) {
-              let resolvedPerms: string[] = [];
-              if (u.role === 'manager') {
-                  resolvedPerms = Object.values(PERMISSIONS);
-              } else if (u.role === 'viewer' || u.role === 'pending') {
-                  resolvedPerms = [];
-              } else if (u.role === 'staff') {
-                  const roleId = u.roleId || 'role_staff_default';
-                  const role = this.rolesList().find(r => r.id === roleId);
-                  const custom = u.customPermissions || [];
-                  resolvedPerms = Array.from(new Set([
-                      ...(role?.permissions || []),
-                      ...custom
-                  ]));
+              try {
+                  await this.persistUser(u);
+                  successCount++;
+              } catch (e) {
+                  failedUids.add(u.uid);
+                  failedNames.push(u.displayName || u.email || u.uid);
               }
-
-              await this.fb.updateUserPermissions(
-                  u.uid, 
-                  u.role, 
-                  resolvedPerms, 
-                  u.roleId || 'role_staff_default', 
-                  u.customPermissions || []
-              );
-              count++;
           }
-          this.toast.show(`Đã lưu thành công ${count} người dùng!`, 'success');
-          this.clearSelection();
-      } catch (e) {
-          this.toast.show('Lỗi khi lưu danh sách người dùng.', 'error');
+
+          this.selectedUids.set(failedUids);
+          if (failedNames.length === 0) {
+              this.toast.show(`Đã lưu thành công ${successCount} người dùng!`, 'success');
+          } else if (successCount > 0) {
+              this.toast.show(`Đã lưu ${successCount}/${targets.length} người dùng. ${failedNames.length} tài khoản chưa lưu (${failedNames.slice(0, 3).join(', ')}${failedNames.length > 3 ? ', …' : ''}) và vẫn được giữ chọn để thử lại.`, 'error');
+          } else {
+              this.toast.show(`Không thể lưu ${failedNames.length} người dùng đã chọn. Các tài khoản vẫn được giữ chọn để thử lại.`, 'error');
+          }
+      } finally {
+          this.batchSaving.set(false);
       }
   }
 
@@ -828,38 +865,55 @@ export class ConfigUsersComponent implements OnInit {
       );
   }
 
-  async saveUser(u: UserProfile) {
-      try { 
-          let resolvedPerms: string[] = [];
-          if (u.role === 'manager') {
-              resolvedPerms = Object.values(PERMISSIONS);
-          } else if (u.role === 'viewer' || u.role === 'pending') {
-              resolvedPerms = [];
-          } else if (u.role === 'staff') {
-              const roleId = u.roleId || 'role_staff_default';
-              const role = this.rolesList().find(r => r.id === roleId);
-              const custom = u.customPermissions || [];
-              resolvedPerms = Array.from(new Set([
-                  ...(role?.permissions || []),
-                  ...custom
-              ]));
-          }
+  private async persistUser(u: UserProfile): Promise<void> {
+      let resolvedPerms: string[] = [];
+      let roleId = '';
+      let customPermissions: string[] = [];
 
-          await this.fb.updateUserPermissions(
-              u.uid, 
-              u.role, 
-              resolvedPerms, 
-              u.roleId || 'role_staff_default', 
-              u.customPermissions || []
-          ); 
-          this.toast.show(`Đã cập nhật ${u.displayName}`, 'success'); 
-      } 
-      catch (e) { this.toast.show('Lỗi cập nhật.', 'error'); }
+      if (u.role === 'manager') {
+          resolvedPerms = Object.values(PERMISSIONS);
+      } else if (u.role === 'staff') {
+          roleId = u.roleId || 'role_staff_default';
+          const role = this.rolesList().find(r => r.id === roleId);
+          if (!role) throw new Error(`Không tìm thấy nhóm vai trò “${roleId}”.`);
+          customPermissions = u.customPermissions || [];
+          resolvedPerms = Array.from(new Set([
+              ...(role.permissions || []),
+              ...customPermissions
+          ]));
+      }
+
+      await this.fb.updateUserPermissions(
+          u.uid,
+          u.role,
+          resolvedPerms,
+          roleId,
+          customPermissions
+      );
+  }
+
+  async saveUser(u: UserProfile): Promise<boolean> {
+      try {
+          await this.persistUser(u);
+          this.toast.show(`Đã cập nhật ${u.displayName}`, 'success');
+          return true;
+      } catch (e: any) {
+          this.toast.show(`Lỗi cập nhật ${u.displayName}: ${e?.message || e}`, 'error');
+          return false;
+      }
+  }
+
+  async saveUserFromModal(u: UserProfile) {
+      if (await this.saveUser(u)) this.closePermModal();
   }
 
   closePermModal() {
       this.selectedUserForPerms.set(null);
   }
 
-  copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã sao chép UID.')); }
+  copyUid(uid: string) {
+      navigator.clipboard.writeText(uid)
+          .then(() => this.toast.show('Đã sao chép UID.'))
+          .catch(() => this.toast.show('Không thể sao chép UID.', 'error'));
+  }
 }

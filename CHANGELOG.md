@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.01-b01
+## Phiên bản hiện tại: v26.09.01-b02
+
+### v26.09.01-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Gia cố các luồng quản trị nhạy cảm trong Cài đặt để tránh ghi đè vai trò, mất quyền âm thầm và trạng thái lưu thành công giả khi backend gặp lỗi.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Phân biệt rõ trạng thái tải lỗi và danh sách người dùng thực sự trống, đồng thời giữ các tài khoản lưu batch thất bại ở trạng thái được chọn để quản trị viên thử lại.
+- Bổ sung validation danh mục dữ liệu và định mức hao hụt: không bỏ qua dòng nhập dở, chặn mã trùng và giới hạn phần trăm trong khoảng 0–100%.
+- Bổ sung loading/error feedback cho vai trò, tài nguyên chẩn đoán và các thao tác lưu cấu hình hệ thống.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Chặn tạo vai trò có ID hoặc tên trùng để không ghi đè cấu hình hiện có; chặn xóa vai trò còn nhân viên đang sử dụng.
+- Sửa lưu phân quyền để tài khoản Manager/Viewer/Pending không bị gán nhầm roleId mặc định của Staff.
+- Sửa modal phân quyền chỉ đóng sau khi lưu thành công và bổ sung xử lý lỗi cho avatar, maintenance, locked features, broadcast và clipboard.
 
 ### v26.09.01-b01
 

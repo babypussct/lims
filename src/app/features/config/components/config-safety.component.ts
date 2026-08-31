@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { validateSafetyConfigDraft } from '../../settings/settings-validation.utils';
 
 @Component({
   selector: 'app-config-safety',
@@ -36,7 +37,7 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Áp dụng cho mọi hóa chất không có quy tắc thiết lập riêng bên dưới.</p>
                 </div>
                 <div class="relative w-28 shrink-0">
-                    <input type="number" [(ngModel)]="safetyConfigLocal.defaultMargin" class="w-full pl-3 pr-8 py-2 border border-orange-200 dark:border-orange-800/60 bg-white dark:bg-slate-800 rounded-xl font-black text-slate-800 dark:text-slate-100 text-center outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition text-sm">
+                    <input type="number" min="0" max="100" step="0.1" [(ngModel)]="safetyConfigLocal.defaultMargin" class="w-full pl-3 pr-8 py-2 border border-orange-200 dark:border-orange-800/60 bg-white dark:bg-slate-800 rounded-xl font-black text-slate-800 dark:text-slate-100 text-center outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition text-sm">
                     <span class="absolute right-3 top-2.5 text-xs font-bold text-orange-500">%</span>
                 </div>
             </div>
@@ -69,7 +70,7 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Tỷ lệ hao hụt:</span>
                                     <div class="relative w-24">
-                                        <input type="number" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                        <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                         <span class="absolute right-2.5 top-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">%</span>
                                     </div>
                                 </div>
@@ -110,7 +111,7 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
                                         </td>
                                         <td class="px-4 py-2.5 text-center">
                                             <div class="relative mx-auto w-24">
-                                                <input type="number" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                                <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                                 <span class="absolute right-2.5 top-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">%</span>
                                             </div>
                                         </td>
@@ -178,11 +179,26 @@ export class ConfigSafetyComponent implements OnInit {
 
   addSafetyRule() { this.safetyRulesLocal.update(r => [...r, { category: '', margin: 10 }]); }
   removeSafetyRule(index: number) { this.safetyRulesLocal.update(r => r.filter((_, i) => i !== index)); }
-  saveSafety() {
-      const rulesObj: Record<string, number> = {};
-      this.safetyRulesLocal().forEach(item => { if (item.category && item.category.trim()) rulesObj[item.category.trim()] = item.margin; });
-      const config = { defaultMargin: this.safetyConfigLocal.defaultMargin, rules: rulesObj };
-      this.state.saveSafetyConfig(config);
-      this.toast.show('Đã lưu cấu hình định mức.', 'success');
+  async saveSafety() {
+      const validation = validateSafetyConfigDraft(
+        this.safetyConfigLocal.defaultMargin,
+        this.safetyRulesLocal(),
+      );
+      if (!validation.ok) {
+        this.toast.show(validation.message, 'error');
+        return;
+      }
+
+      try {
+        await this.state.saveSafetyConfig(validation.value);
+        this.safetyConfigLocal = {
+          defaultMargin: validation.value.defaultMargin,
+          rules: { ...validation.value.rules },
+        };
+        this.safetyRulesLocal.set(Object.entries(validation.value.rules).map(([category, margin]) => ({ category, margin })));
+        this.toast.show('Đã lưu cấu hình định mức.', 'success');
+      } catch (e: any) {
+        this.toast.show(`Không thể lưu cấu hình định mức: ${e?.message || e}`, 'error');
+      }
   }
 }

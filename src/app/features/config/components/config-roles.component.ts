@@ -10,6 +10,7 @@ import { FormLabelA11yDirective } from '../../../shared/directives/form-label-a1
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { findUsersReferencingRole } from '../../settings/settings-validation.utils';
 
 @Component({
   selector: 'app-config-roles',
@@ -37,7 +38,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cấu hình các nhóm vai trò nghiệp vụ động để gán hàng loạt cho nhân viên.</p>
             </div>
             <div class="flex gap-2">
-                <app-button variant="secondary" size="sm" (click)="loadRoles()">
+                <app-button variant="secondary" size="sm" (click)="loadRoles()" [loading]="isLoading()" [disabled]="isLoading()">
                     <i class="fa-solid fa-rotate"></i> Tải Lại
                 </app-button>
                 <app-button size="sm" (click)="openAddModal()">
@@ -45,6 +46,13 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 </app-button>
             </div>
         </div>
+
+        @if (loadError()) {
+            <div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300 flex items-center justify-between gap-3">
+                <span><i class="fa-solid fa-circle-exclamation mr-2"></i>{{loadError()}}</span>
+                <app-button variant="secondary" size="sm" (click)="loadRoles()">Thử lại</app-button>
+            </div>
+        }
 
         <!-- Role Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -90,8 +98,8 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                             <i class="fa-solid fa-sliders"></i> Cấu Hình
                         </button>
                         @if (!role.isSystemRole) {
-                            <button (click)="deleteRole(role)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
-                                <i class="fa-solid fa-trash-can"></i> Xóa
+                            <button (click)="deleteRole(role)" [disabled]="deletingRoleId() === role.id" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-wait">
+                                <i class="fa-solid" [class.fa-spinner]="deletingRoleId() === role.id" [class.fa-spin]="deletingRoleId() === role.id" [class.fa-trash-can]="deletingRoleId() !== role.id"></i> Xóa
                             </button>
                         }
                     </div>
@@ -175,7 +183,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
                 <div modalFooter class="contents">
                     <app-button variant="secondary" (click)="closeModal()">Đóng</app-button>
-                    <app-button (click)="saveRole()" [disabled]="roleForm.invalid">
+                    <app-button (click)="saveRole()" [disabled]="roleForm.invalid || savingRole()" [loading]="savingRole()">
                         <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
                     </app-button>
                 </div>
@@ -193,6 +201,10 @@ export class ConfigRolesComponent implements OnInit {
   modalOpen = signal(false);
   editingRole = signal<any | null>(null);
   selectedPermissions = signal<string[]>([]);
+  isLoading = signal(false);
+  loadError = signal('');
+  savingRole = signal(false);
+  deletingRoleId = signal('');
   
   roleForm!: FormGroup;
 
@@ -295,8 +307,17 @@ export class ConfigRolesComponent implements OnInit {
   }
 
   async loadRoles() {
-      const list = await this.fb.getRolesConfig();
-      this.rolesList.set(list);
+      if (this.isLoading()) return;
+      this.isLoading.set(true);
+      this.loadError.set('');
+      try {
+          const list = await this.fb.getRolesConfig(true);
+          this.rolesList.set(list);
+      } catch (e: any) {
+          this.loadError.set(`Không thể tải danh sách vai trò: ${e?.message || e}`);
+      } finally {
+          this.isLoading.set(false);
+      }
   }
 
   getFriendlyPermissionLabel(val: string): string {
@@ -358,21 +379,40 @@ export class ConfigRolesComponent implements OnInit {
       if (this.roleForm.invalid) return;
       
       const formValue = this.roleForm.getRawValue(); // Get raw value including disabled ID
-      const roleId = formValue.id;
+      const roleId = String(formValue.id || '').trim();
+      const roleName = String(formValue.name || '').trim();
+      if (!roleId || roleId === 'role_' || !roleName) {
+          this.toast.show('Tên vai trò không được để trống.', 'error');
+          return;
+      }
+
+      const editingId = this.editingRole()?.id || '';
+      if (!editingId && this.rolesList().some(role => role.id === roleId)) {
+          this.toast.show(`Mã vai trò “${roleId}” đã tồn tại. Vui lòng chọn tên khác.`, 'error');
+          return;
+      }
+      if (this.rolesList().some(role => role.id !== editingId && String(role.name || '').trim().toLocaleLowerCase('vi') === roleName.toLocaleLowerCase('vi'))) {
+          this.toast.show(`Tên vai trò “${roleName}” đã tồn tại.`, 'error');
+          return;
+      }
+
       const roleData = {
-          name: formValue.name,
-          description: formValue.description || '',
+          name: roleName,
+          description: String(formValue.description || '').trim(),
           isSystemRole: formValue.isSystemRole || false,
           permissions: this.selectedPermissions()
       };
 
+      this.savingRole.set(true);
       try {
           await this.fb.saveRoleConfig(roleId, roleData);
-          this.toast.show(`Đã lưu cấu hình vai trò "${formValue.name}" thành công.`, 'success');
-          this.loadRoles();
+          this.toast.show(`Đã lưu cấu hình vai trò "${roleName}" thành công.`, 'success');
+          await this.loadRoles();
           this.closeModal();
-      } catch (e) {
-          this.toast.show('Lỗi khi lưu cấu hình vai trò.', 'error');
+      } catch (e: any) {
+          this.toast.show(`Lỗi khi lưu cấu hình vai trò: ${e?.message || e}`, 'error');
+      } finally {
+          this.savingRole.set(false);
       }
   }
 
@@ -381,18 +421,39 @@ export class ConfigRolesComponent implements OnInit {
           this.toast.show('Không thể xóa vai trò hệ thống mặc định.', 'error');
           return;
       }
+
+      this.deletingRoleId.set(role.id);
+      let referencedUsers: any[];
+      try {
+          const users = await this.fb.getAllUsers(true);
+          referencedUsers = findUsersReferencingRole(users, role.id);
+      } catch (e: any) {
+          this.deletingRoleId.set('');
+          this.toast.show(`Không thể xác minh người dùng đang sử dụng vai trò này: ${e?.message || e}`, 'error');
+          return;
+      }
+
+      if (referencedUsers.length > 0) {
+          this.deletingRoleId.set('');
+          const sample = referencedUsers.slice(0, 3).map(user => user.displayName || user.email || user.uid).join(', ');
+          const suffix = referencedUsers.length > 3 ? ', …' : '';
+          this.toast.show(`Không thể xóa “${role.name}”: còn ${referencedUsers.length} người dùng đang tham chiếu (${sample}${suffix}). Hãy gán họ sang vai trò khác trước.`, 'error');
+          return;
+      }
+
       if (await this.confirmation.confirm({
-          message: `Bạn có chắc chắn muốn xóa vai trò "${role.name}"? Quyền truy cập của nhân viên thuộc nhóm này sẽ bị ảnh hưởng.`,
+          message: `Vai trò "${role.name}" hiện không còn người dùng tham chiếu. Bạn có chắc chắn muốn xóa?`,
           confirmText: 'Xóa vai trò',
           isDangerous: true
       })) {
           try {
               await this.fb.deleteRoleConfig(role.id);
               this.toast.show(`Đã xóa vai trò "${role.name}".`, 'success');
-              this.loadRoles();
-          } catch (e) {
-              this.toast.show('Lỗi khi xóa vai trò.', 'error');
+              await this.loadRoles();
+          } catch (e: any) {
+              this.toast.show(`Lỗi khi xóa vai trò: ${e?.message || e}`, 'error');
           }
       }
+      this.deletingRoleId.set('');
   }
 }
