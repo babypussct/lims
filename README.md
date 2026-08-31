@@ -1,24 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# LIMS Cloud — NAFIQPM6
 
-# Run and deploy your AI Studio app
+Ứng dụng quản lý phòng thí nghiệm xây dựng bằng Angular, Firebase và Vercel. Repository bao gồm frontend, API serverless, Firestore Rules, Google Apps Script và các bộ kiểm thử nghiệp vụ.
 
-This contains everything you need to run your app locally.
+## Chạy cục bộ
 
-View your app in AI Studio: https://ai.studio/apps/b4fa19c1-214f-4e5d-baa2-1ec4d9b4f8ee
+Yêu cầu Node.js và npm phải khớp chính sách trong `.nvmrc` và `package.json`.
 
-## Run Locally
+```bash
+npm ci
+npm start
+```
 
-**Prerequisites:**  Node.js
+Ứng dụng development mặc định chạy tại `http://localhost:4200`.
 
+## Kiểm tra thay đổi
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Chạy gate đầy đủ trước khi phát hành:
 
-## Deployment
+```bash
+npm run release:verify
+```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for the production deployment procedure.
+Các lệnh kiểm tra theo từng module được mô tả trong [TESTING_GUIDE.md](TESTING_GUIDE.md).
+
+## Tài liệu chính
+
+- [DEPLOYMENT.md](DEPLOYMENT.md) — quy trình release, deploy, backup và vận hành production.
+- [UI_CONVENTIONS.md](UI_CONVENTIONS.md) — quy ước giao diện và shared primitives.
+- [NAMING_CONVENTIONS.md](NAMING_CONVENTIONS.md) — quy tắc mã mẫu, prefix và tách báo cáo.
+- [DESIGN.md](DESIGN.md) — design system của sản phẩm.
+
+Không commit credential, token, file `.env` hoặc dữ liệu production vào repository.

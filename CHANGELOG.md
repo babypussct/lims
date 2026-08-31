@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.31-b03
+## Phiên bản hiện tại: v26.08.31-b04
+
+### v26.08.31-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nền tảng ứng dụng được tinh gọn để giảm rủi ro xung đột từ các thành phần cũ không còn sử dụng.
+- Quy trình kiểm tra và vận hành được thống nhất để các bản cập nhật tiếp theo dễ xác minh và an toàn hơn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Loại bỏ các thành phần cũ không còn tham gia vào các màn hình và nghiệp vụ hiện tại.
+- Cập nhật hướng dẫn cài đặt, kiểm tra và phát hành để người phụ trách hệ thống thao tác theo một quy trình duy nhất.
+- Giữ nguyên các chức năng nghiệp vụ hiện có trong khi giảm phần dư thừa cần bảo trì.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa hướng dẫn chạy thử cũ không còn phù hợp, tránh người phụ trách hệ thống sử dụng nhầm lệnh hoặc cấu hình không cần thiết.
 
 ### v26.08.31-b03
 

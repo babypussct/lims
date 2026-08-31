@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.31-b03",
-    "title": "Hoàn thiện Settings, thông báo thiết bị và an toàn dữ liệu tài khoản",
+    "version": "v26.08.31-b04",
+    "title": "Tinh gọn nền tảng và thống nhất quy trình vận hành",
     "features": [
-      "Settings Center được hoàn thiện cho các luồng tài khoản, hệ thống, dữ liệu, phân quyền, chính sách và chẩn đoán theo từng route rõ ràng.",
-      "Luồng ẩn danh hóa tài khoản nay bảo đảm tính nhất quán giữa Firebase Auth và hồ sơ Firestore, có rollback khi cập nhật một phía thất bại.",
-      "Người dùng có thể quản lý đăng ký thông báo đẩy của thiết bị hiện tại và chủ động tắt đăng ký mà không bị tự bật lại ngoài ý muốn.",
-      "Bổ sung trạng thái bật/tắt và nút gỡ đăng ký FCM cho thiết bị hiện tại trong Cài đặt → Thông báo.",
-      "Bổ sung opt-out push theo từng tài khoản trên trình duyệt để lần mở lại ứng dụng không tự đăng ký lại thiết bị đã tắt."
+      "Nền tảng ứng dụng được tinh gọn để giảm rủi ro xung đột từ các thành phần cũ không còn sử dụng.",
+      "Quy trình kiểm tra và vận hành được thống nhất để các bản cập nhật tiếp theo dễ xác minh và an toàn hơn.",
+      "Loại bỏ các thành phần cũ không còn tham gia vào các màn hình và nghiệp vụ hiện tại.",
+      "Cập nhật hướng dẫn cài đặt, kiểm tra và phát hành để người phụ trách hệ thống thao tác theo một quy trình duy nhất.",
+      "Giữ nguyên các chức năng nghiệp vụ hiện có trong khi giảm phần dư thừa cần bảo trì."
     ]
   },
   "assetGroups": [

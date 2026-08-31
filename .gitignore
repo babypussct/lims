@@ -10,7 +10,12 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+out-tsc
 *.local
+
+# Local package-manager and agent test caches
+.pnpm-store/
+.codex-tmp/
 
 # Editor directories and files
 .vscode/*

@@ -29,24 +29,8 @@ This document records the global LIMS sample coding convention and report genera
 
 ---
 
-## 5. Quy Tắc Cập Nhật Changelog Khi Push Commit / Ra Bản Mới
-Mỗi khi ra phiên bản mới (Release/Push Commit/Bump Version), người phát triển **BẮT BUỘC** thực hiện đồng thời 2 vị trí sau:
+## 5. Quy trình changelog và release
 
-1. **Ghi tệp Markdown gốc (`CHANGELOG.md`):** Cập nhật chi tiết lịch sử bản phát hành theo định dạng Markdown tiêu chuẩn.
-2. **Ghi mảng dữ liệu Frontend (`src/app/core/services/changelog.service.ts`):** 
-   - Thêm block thông tin mới nhất vào **đầu mảng `CHANGELOG_DATA`**.
-   - Cấu trúc bản ghi:
-     ```typescript
-     {
-       version: 'v26.07.24-b03', // Khớp với systemVersion
-       date: '24/07/2026',
-       title: 'Tên tiêu đề phiên bản ngắn gọn',
-       highlights: ['Điểm nổi bật 1', 'Điểm nổi bật 2'],
-       features: ['Tính năng mới 1'],
-       improvements: ['Cải tiến 1'],
-       fixes: ['Sửa lỗi 1']
-     }
-     ```
-3. **Cơ chế hiển thị trên Giao diện:**
-   - **Modal Popup:** Tự động cắt hiển thị **Top 3 phiên bản mới nhất** để giao diện gọn gàng, có nút *"Xem Toàn Bộ Lịch Sử"* dẫn tới trang `/changelog`.
-   - **Trang Công Khai (`/changelog`):** Hiển thị toàn bộ lịch sử không giới hạn kèm công cụ tìm kiếm.
+`release-notes.json` là nguồn nội dung duy nhất của một release mới. Không sửa trực tiếp `CHANGELOG.md`, `public/release-history.json`, `ngsw-config.json`, `metadata.json` hoặc version trong source; pipeline đồng bộ sẽ sinh và kiểm tra các file này.
+
+Quy trình bắt buộc, lệnh kiểm tra và cơ chế Vercel Deployment Check được duy trì tại [DEPLOYMENT.md](DEPLOYMENT.md). Quy tắc ngôn ngữ changelog dành cho người dùng được duy trì tại [.agents/AGENTS.md](.agents/AGENTS.md).
