@@ -58,7 +58,17 @@
               "jsbarcode",
               "qrcode",
               "dijkstrajs",
-              "core-js"
+              "core-js",
+              "async-lock",
+              "ot-json1",
+              "fast-diff",
+              "react",
+              "react/jsx-runtime",
+              "react-dom",
+              "react-dom/client",
+              "opentype.js",
+              "localforage",
+              "prop-types"
             ]
           },
           "configurations": {

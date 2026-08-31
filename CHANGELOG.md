@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.31-b04
+## Phiên bản hiện tại: v26.08.31-b05
+
+### v26.08.31-b05
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Quy trình kiểm tra trước khi phát hành nay hoàn tất rõ ràng hơn, không còn các cảnh báo lặp lại từ những thành phần đã được xác minh.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa cách hệ thống nhận diện các thành phần hỗ trợ xem tài liệu và bảng tính.
+- Giữ nguyên chức năng hiện có trong khi giúp việc kiểm tra bản cập nhật dễ theo dõi hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ các cảnh báo không cần thiết từng xuất hiện trong bước chuẩn bị bản cập nhật.
 
 ### v26.08.31-b04
 

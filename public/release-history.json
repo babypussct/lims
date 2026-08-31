@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.08.31-b05",
+    "date": "31/8/2026",
+    "title": "Hoàn thiện kiểm tra trước khi phát hành",
+    "highlights": [
+      "Quy trình kiểm tra trước khi phát hành nay hoàn tất rõ ràng hơn, không còn các cảnh báo lặp lại từ những thành phần đã được xác minh."
+    ],
+    "features": [],
+    "improvements": [
+      "Chuẩn hóa cách hệ thống nhận diện các thành phần hỗ trợ xem tài liệu và bảng tính.",
+      "Giữ nguyên chức năng hiện có trong khi giúp việc kiểm tra bản cập nhật dễ theo dõi hơn."
+    ],
+    "fixes": [
+      "Loại bỏ các cảnh báo không cần thiết từng xuất hiện trong bước chuẩn bị bản cập nhật."
+    ],
+    "releaseOrder": 26083100005
+  },
+  {
     "version": "v26.08.31-b04",
     "date": "31/8/2026",
     "title": "Tinh gọn nền tảng và thống nhất quy trình vận hành",

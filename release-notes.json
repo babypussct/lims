@@ -1,16 +1,14 @@
 {
-  "title": "Tinh gọn nền tảng và thống nhất quy trình vận hành",
+  "title": "Hoàn thiện kiểm tra trước khi phát hành",
   "highlights": [
-    "Nền tảng ứng dụng được tinh gọn để giảm rủi ro xung đột từ các thành phần cũ không còn sử dụng.",
-    "Quy trình kiểm tra và vận hành được thống nhất để các bản cập nhật tiếp theo dễ xác minh và an toàn hơn."
+    "Quy trình kiểm tra trước khi phát hành nay hoàn tất rõ ràng hơn, không còn các cảnh báo lặp lại từ những thành phần đã được xác minh."
   ],
   "features": [],
   "improvements": [
-    "Loại bỏ các thành phần cũ không còn tham gia vào các màn hình và nghiệp vụ hiện tại.",
-    "Cập nhật hướng dẫn cài đặt, kiểm tra và phát hành để người phụ trách hệ thống thao tác theo một quy trình duy nhất.",
-    "Giữ nguyên các chức năng nghiệp vụ hiện có trong khi giảm phần dư thừa cần bảo trì."
+    "Chuẩn hóa cách hệ thống nhận diện các thành phần hỗ trợ xem tài liệu và bảng tính.",
+    "Giữ nguyên chức năng hiện có trong khi giúp việc kiểm tra bản cập nhật dễ theo dõi hơn."
   ],
   "fixes": [
-    "Sửa hướng dẫn chạy thử cũ không còn phù hợp, tránh người phụ trách hệ thống sử dụng nhầm lệnh hoặc cấu hình không cần thiết."
+    "Loại bỏ các cảnh báo không cần thiết từng xuất hiện trong bước chuẩn bị bản cập nhật."
   ]
 }

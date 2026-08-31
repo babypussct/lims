@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.31-b04",
-    "title": "Tinh gọn nền tảng và thống nhất quy trình vận hành",
+    "version": "v26.08.31-b05",
+    "title": "Hoàn thiện kiểm tra trước khi phát hành",
     "features": [
-      "Nền tảng ứng dụng được tinh gọn để giảm rủi ro xung đột từ các thành phần cũ không còn sử dụng.",
-      "Quy trình kiểm tra và vận hành được thống nhất để các bản cập nhật tiếp theo dễ xác minh và an toàn hơn.",
-      "Loại bỏ các thành phần cũ không còn tham gia vào các màn hình và nghiệp vụ hiện tại.",
-      "Cập nhật hướng dẫn cài đặt, kiểm tra và phát hành để người phụ trách hệ thống thao tác theo một quy trình duy nhất.",
-      "Giữ nguyên các chức năng nghiệp vụ hiện có trong khi giảm phần dư thừa cần bảo trì."
+      "Quy trình kiểm tra trước khi phát hành nay hoàn tất rõ ràng hơn, không còn các cảnh báo lặp lại từ những thành phần đã được xác minh.",
+      "Chuẩn hóa cách hệ thống nhận diện các thành phần hỗ trợ xem tài liệu và bảng tính.",
+      "Giữ nguyên chức năng hiện có trong khi giúp việc kiểm tra bản cập nhật dễ theo dõi hơn.",
+      "Loại bỏ các cảnh báo không cần thiết từng xuất hiện trong bước chuẩn bị bản cập nhật."
     ]
   },
   "assetGroups": [
