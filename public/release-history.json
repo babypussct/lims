@@ -1,5 +1,31 @@
 [
   {
+    "version": "v26.08.31-b03",
+    "date": "31/8/2026",
+    "title": "Hoàn thiện Settings, thông báo thiết bị và an toàn dữ liệu tài khoản",
+    "highlights": [
+      "Settings Center được hoàn thiện cho các luồng tài khoản, hệ thống, dữ liệu, phân quyền, chính sách và chẩn đoán theo từng route rõ ràng.",
+      "Luồng ẩn danh hóa tài khoản nay bảo đảm tính nhất quán giữa Firebase Auth và hồ sơ Firestore, có rollback khi cập nhật một phía thất bại.",
+      "Người dùng có thể quản lý đăng ký thông báo đẩy của thiết bị hiện tại và chủ động tắt đăng ký mà không bị tự bật lại ngoài ý muốn."
+    ],
+    "features": [
+      "Bổ sung trạng thái bật/tắt và nút gỡ đăng ký FCM cho thiết bị hiện tại trong Cài đặt → Thông báo.",
+      "Bổ sung opt-out push theo từng tài khoản trên trình duyệt để lần mở lại ứng dụng không tự đăng ký lại thiết bị đã tắt.",
+      "Bổ sung kiểm thử route Settings, manager guard, redirect tương thích /config và các contract kiểm tra lỗi một phần của ẩn danh hóa; giữ contract test ngoài thư mục API để không phát sinh Serverless Function ngoài hạn mức."
+    ],
+    "improvements": [
+      "Giữ các workflow backup/restore hiện hành và bổ sung release verification cho thay đổi Settings mà không thay đổi chính sách dữ liệu backup.",
+      "Chuẩn hóa namespace mặc định của endpoint ẩn danh hóa về artifacts/lims-cloud-fixed, đồng bộ với client và các API khác.",
+      "Cải thiện thông báo trạng thái và lỗi trên giao diện Thông báo để phân biệt thiết bị đã đăng ký, chưa đăng ký và thao tác thất bại."
+    ],
+    "fixes": [
+      "Sửa lỗi mở trực tiếp deep-link Settings trong môi trường phát triển gây resolve sai đường dẫn bundle và màn hình trắng bằng cách khai báo base path chuẩn.",
+      "Ngăn endpoint privacy trả thành công khi Firebase Auth hoặc Firestore chưa được cập nhật nhất quán.",
+      "Ngăn thiết bị đã tắt thông báo bị tự động đăng ký FCM lại trong lần khởi động hoặc đăng nhập tiếp theo."
+    ],
+    "releaseOrder": 26083100003
+  },
+  {
     "version": "v26.08.31-b02",
     "date": "31/8/2026",
     "title": "Hoàn thiện Settings, thông báo thiết bị và an toàn dữ liệu tài khoản",

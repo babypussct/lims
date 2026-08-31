@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-const source = readFileSync(new URL('./delete-request.ts', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../../../api/account/delete-request.ts', import.meta.url), 'utf8');
 
 describe('account anonymization contract', () => {
   it('does not modify Firestore when Firebase Auth anonymization fails', () => {

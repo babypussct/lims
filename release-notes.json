@@ -8,7 +8,7 @@
   "features": [
     "Bổ sung trạng thái bật/tắt và nút gỡ đăng ký FCM cho thiết bị hiện tại trong Cài đặt → Thông báo.",
     "Bổ sung opt-out push theo từng tài khoản trên trình duyệt để lần mở lại ứng dụng không tự đăng ký lại thiết bị đã tắt.",
-    "Bổ sung kiểm thử route Settings, manager guard, redirect tương thích /config và các contract kiểm tra lỗi một phần của ẩn danh hóa."
+    "Bổ sung kiểm thử route Settings, manager guard, redirect tương thích /config và các contract kiểm tra lỗi một phần của ẩn danh hóa; giữ contract test ngoài thư mục API để không phát sinh Serverless Function ngoài hạn mức."
   ],
   "improvements": [
     "Giữ các workflow backup/restore hiện hành và bổ sung release verification cho thay đổi Settings mà không thay đổi chính sách dữ liệu backup.",

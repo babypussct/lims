@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.31-b02",
+    "version": "v26.08.31-b03",
     "title": "Hoàn thiện Settings, thông báo thiết bị và an toàn dữ liệu tài khoản",
     "features": [
       "Settings Center được hoàn thiện cho các luồng tài khoản, hệ thống, dữ liệu, phân quyền, chính sách và chẩn đoán theo từng route rõ ràng.",
