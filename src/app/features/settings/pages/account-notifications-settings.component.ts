@@ -11,32 +11,45 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
   template: `
     <div class="space-y-5 fade-in">
       <app-settings-section
-        title="Thông báo đẩy"
-        description="Cho phép thiết bị hiện tại nhận cảnh báo và cập nhật từ LIMS."
+        title="Thông báo đẩy (Push Notifications)"
+        description="Cho phép thiết bị và trình duyệt hiện tại nhận cảnh báo tức thời từ các sự kiện trong hệ thống LIMS."
         icon="fa-bell">
-        <div class="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900">
-          <div>
-            <div class="text-sm font-black text-slate-800 dark:text-slate-100">Thiết bị hiện tại</div>
-            @if (pushEnabled()) {
-              <p class="mt-1 text-sm leading-relaxed text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1" aria-hidden="true"></i>Đang nhận thông báo đẩy trên thiết bị này.</p>
-            } @else {
-              <p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Trình duyệt sẽ yêu cầu quyền thông báo nếu thiết bị chưa được đăng ký.</p>
-            }
+        <div class="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700/60 dark:bg-slate-900/40">
+          <div class="flex items-start gap-3.5">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700">
+              <i class="fa-solid" [class]="pushEnabled() ? 'fa-mobile-screen-button' : 'fa-bell-slash'" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="text-sm font-black text-slate-800 dark:text-slate-100">Thiết bị & trình duyệt này</div>
+              @if (pushEnabled()) {
+                <p class="mt-0.5 text-xs leading-relaxed text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-check text-[11px]" aria-hidden="true"></i>Đang nhận thông báo đẩy trên thiết bị này.
+                </p>
+              } @else {
+                <p class="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  Thiết bị chưa được kích hoạt nhận thông báo từ hệ thống.
+                </p>
+              }
+            </div>
           </div>
           @if (pushEnabled()) {
             <app-button
               variant="secondary"
+              size="sm"
               [loading]="disabling()"
               (click)="disableNotifications()">
               <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>Tắt trên thiết bị này
             </app-button>
           } @else {
-            <app-button [loading]="enabling()" (click)="enableNotifications()">
+            <app-button size="sm" [loading]="enabling()" (click)="enableNotifications()">
               <i class="fa-regular fa-bell" aria-hidden="true"></i>Bật thông báo
             </app-button>
           }
         </div>
-        <p class="mt-3 text-xs leading-relaxed text-slate-400 dark:text-slate-500">Tắt tại đây sẽ gỡ đăng ký thiết bị khỏi LIMS. Quyền thông báo của trình duyệt vẫn giữ nguyên và có thể được thay đổi trong cài đặt trình duyệt.</p>
+        <div class="mt-3 flex items-start gap-2 text-xs leading-relaxed text-slate-400 dark:text-slate-500">
+          <i class="fa-solid fa-circle-info mt-0.5 shrink-0 text-slate-400" aria-hidden="true"></i>
+          <span>Khi tắt tại đây, LIMS sẽ gỡ mã định danh thiết bị này khỏi danh sách gửi. Quyền hệ thống của trình duyệt vẫn giữ nguyên và có thể tùy chỉnh trong phần cài đặt trang của trình duyệt.</span>
+        </div>
       </app-settings-section>
     </div>
   `,

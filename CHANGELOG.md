@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.08.31-b05
+## Phiên bản hiện tại: v26.09.01-b01
+
+### v26.09.01-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Làm mới toàn diện khu vực Cài đặt với điều hướng responsive, nhãn vai trò rõ ràng và bố cục cấu hình nhất quán trên desktop lẫn mobile.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa giao diện các trang Cài đặt, loại bỏ header trùng lặp và bổ sung các biến thể hiển thị theo ngữ cảnh.
+- Tối ưu bảng quy tắc hao hụt trên màn hình nhỏ bằng thẻ xếp chồng và chuẩn hóa các utility class Tailwind.
+- Hiển thị chính xác nhãn cho đầy đủ các vai trò quản trị, nhân viên, chỉ xem và chờ phê duyệt.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa auto-scroll điều hướng Cài đặt để tính theo geometry thực của container, tránh cuộn lệch khi deep-link trên desktop và mobile.
+- Bổ sung kiểm thử hành vi cho phép tính auto-scroll và giới hạn cuộn ở hai đầu container.
 
 ### v26.08.31-b05
 

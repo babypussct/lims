@@ -12,22 +12,25 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
     <div class="space-y-5 fade-in">
       <app-settings-section
         title="Phương thức đăng nhập"
-        description="Quản lý các phương thức có thể dùng để truy cập cùng một tài khoản LIMS."
+        description="Quản lý các phương thức dùng để xác thực và truy cập vào tài khoản LIMS của bạn."
         icon="fa-shield-halved">
-        <div class="divide-y divide-slate-100 dark:divide-slate-700">
-          <div class="flex flex-col gap-3 py-3 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-3">
-              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-900">
-                <i class="fa-brands fa-google text-red-500" aria-hidden="true"></i>
+        <div class="space-y-3">
+          <!-- Google Account Row -->
+          <div class="flex flex-col gap-3.5 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3.5">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
+                <i class="fa-brands fa-google text-red-500 text-lg" aria-hidden="true"></i>
               </span>
               <div>
                 <div class="text-sm font-black text-slate-800 dark:text-slate-100">Tài khoản Google</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Đăng nhập một chạm bằng tài khoản Google đã liên kết.</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Đăng nhập một chạm tiện lợi và bảo mật bằng tài khoản Google đã liên kết.</div>
               </div>
             </div>
             @if (auth.hasGoogleProvider()) {
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1" aria-hidden="true"></i>Đã liên kết</span>
+              <div class="flex items-center gap-3 sm:shrink-0">
+                <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400">
+                  <i class="fa-solid fa-circle-check text-[10px]" aria-hidden="true"></i>Đã liên kết
+                </span>
                 <app-button
                   variant="secondary"
                   size="sm"
@@ -38,26 +41,33 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
                 </app-button>
               </div>
             } @else {
-              <app-button size="sm" (click)="linkGoogle()">Liên kết Google</app-button>
+              <div class="sm:shrink-0">
+                <app-button size="sm" (click)="linkGoogle()">Liên kết Google</app-button>
+              </div>
             }
           </div>
 
-          <div class="flex flex-col gap-3 py-3 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-3">
-              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-fuchsia-500 dark:bg-slate-900">
-                <i class="fa-solid fa-key" aria-hidden="true"></i>
+          <!-- LIMS Password Row -->
+          <div class="flex flex-col gap-3.5 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3.5">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-indigo-600 dark:text-indigo-400">
+                <i class="fa-solid fa-key text-base" aria-hidden="true"></i>
               </span>
               <div>
-                <div class="text-sm font-black text-slate-800 dark:text-slate-100">Mật khẩu LIMS</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Mật khẩu dự phòng riêng của LIMS, không phải mật khẩu Google.</div>
+                <div class="text-sm font-black text-slate-800 dark:text-slate-100">Mật khẩu LIMS dự phòng</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Mật khẩu dự phòng riêng của hệ thống LIMS khi không dùng Google.</div>
               </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 sm:shrink-0">
               @if (auth.needsPasswordSetup()) {
-                <span class="text-xs font-bold text-amber-600 dark:text-amber-400">Cần thiết lập</span>
-                <app-button size="sm" (click)="auth.openPasswordSetup()">Thiết lập</app-button>
+                <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">
+                  <i class="fa-solid fa-triangle-exclamation text-[10px]" aria-hidden="true"></i>Cần thiết lập
+                </span>
+                <app-button size="sm" (click)="auth.openPasswordSetup()">Thiết lập ngay</app-button>
               } @else if (auth.hasPasswordProvider()) {
-                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1" aria-hidden="true"></i>Đã bật</span>
+                <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400">
+                  <i class="fa-solid fa-circle-check text-[10px]" aria-hidden="true"></i>Đã bật
+                </span>
                 <app-button variant="secondary" size="sm" (click)="auth.openPasswordSetup()">Đổi mật khẩu</app-button>
                 <app-button
                   variant="secondary"
@@ -75,7 +85,10 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
         </div>
 
         @if (auth.googleRedirectError()) {
-          <div class="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">{{ auth.googleRedirectError() }}</div>
+          <div class="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-bold text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation text-sm"></i>
+            <span>{{ auth.googleRedirectError() }}</span>
+          </div>
         }
       </app-settings-section>
 
@@ -83,9 +96,9 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
         title="Nhật ký bảo mật"
         description="Các mốc bảo mật quan trọng gần nhất của tài khoản."
         icon="fa-clock-rotate-left">
-        <div class="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900">
-          <span class="text-sm text-slate-500 dark:text-slate-400">Mật khẩu LIMS cập nhật lần cuối</span>
-          <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ formatAuditDate(auth.currentUser()?.lastPasswordChangedAt) }}</span>
+        <div class="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700/60 dark:bg-slate-900/40">
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Mật khẩu LIMS cập nhật lần cuối:</span>
+          <span class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">{{ formatAuditDate(auth.currentUser()?.lastPasswordChangedAt) }}</span>
         </div>
       </app-settings-section>
     </div>

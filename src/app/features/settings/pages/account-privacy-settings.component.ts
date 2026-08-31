@@ -15,24 +15,33 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
     <div class="space-y-5 fade-in">
       <app-settings-section
         title="Quyền riêng tư"
-        description="Xem chính sách và cách LIMS lưu thông tin nhận dạng tài khoản."
+        description="Xem chính sách và cách thức hệ thống LIMS lưu trữ thông tin nhận dạng tài khoản."
         icon="fa-user-shield">
-        <a routerLink="/privacy-policy" class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-indigo-600 transition hover:bg-white dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-slate-800">
-          <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>Xem Chính sách Bảo mật
-        </a>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50">
+          <div>
+            <div class="text-sm font-bold text-slate-800 dark:text-slate-200">Chính sách bảo mật dữ liệu</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tìm hiểu chi tiết về cam kết bảo vệ dữ liệu và quyền cá nhân của bạn.</div>
+          </div>
+          <a routerLink="/privacy-policy" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-indigo-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-300 dark:hover:bg-slate-700">
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>Xem Chính sách
+          </a>
+        </div>
       </app-settings-section>
 
-      <section class="rounded-2xl border border-red-200 bg-red-50/60 p-5 dark:border-red-900/50 dark:bg-red-950/20">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="max-w-2xl">
-            <h2 class="text-base font-black text-red-700 dark:text-red-300">Danger zone</h2>
-            <p class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">Ẩn danh hóa email và avatar khỏi hệ thống. Tên hiển thị và UID vẫn được giữ để bảo toàn audit trail.</p>
+      <app-settings-section
+        title="Vùng thao tác nhạy cảm (Danger zone)"
+        description="Ẩn danh hóa email và ảnh đại diện khỏi hệ thống. Tên hiển thị và UID được bảo toàn cho nhật ký kiểm toán (audit trail)."
+        icon="fa-triangle-exclamation"
+        variant="danger">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-2">
+          <div class="max-w-xl text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            Hành động này sẽ xóa vĩnh viễn email và avatar đã liên kết với tài khoản. Sau khi hoàn tất, bạn sẽ được đăng xuất khỏi hệ thống.
           </div>
           <app-button variant="danger" [loading]="anonymizing()" (click)="anonymizeAccount()">
-            <i class="fa-solid fa-user-slash" aria-hidden="true"></i>Ẩn danh hóa
+            <i class="fa-solid fa-user-slash" aria-hidden="true"></i>Ẩn danh hóa tài khoản
           </app-button>
         </div>
-      </section>
+      </app-settings-section>
     </div>
   `,
 })

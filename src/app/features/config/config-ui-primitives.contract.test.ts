@@ -147,4 +147,19 @@ describe('config shared UI primitive integration', () => {
     assert.match(template, /@if\(isRecycling\(\)\)/);
     assert.doesNotMatch(template, /class=\"[^\"]*fixed inset-0/);
   });
+
+  it('renders responsive safety rules with mobile stacked cards and valid utility classes', () => {
+    const safetySource = read('./components/config-safety.component.ts');
+    const generalTemplate = read('./components/config-general.component.html');
+
+    // Mobile stacked cards and desktop table
+    assert.match(safetySource, /block sm:hidden space-y-3/);
+    assert.match(safetySource, /hidden sm:block/);
+    assert.match(safetySource, /min-w-\[420px\]/);
+
+    // CSS cleanliness
+    assert.doesNotMatch(safetySource, /list-circle/);
+    assert.doesNotMatch(safetySource, /\b[hw]-8\.5\b/);
+    assert.doesNotMatch(generalTemplate, /active:scale-98(?![-\[])/);
+  });
 });

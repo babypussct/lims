@@ -133,6 +133,18 @@ export const DEFAULT_ROLES = {
   }
 };
 
+export const ROLE_LABELS: Record<UserProfile['role'], string> = {
+  manager: 'Quản trị viên',
+  staff: 'Nhân viên',
+  viewer: 'Chỉ xem',
+  pending: 'Chờ phê duyệt',
+};
+
+export function getUserRoleLabel(role?: UserProfile['role'] | null): string {
+  if (!role) return 'Chưa phân quyền';
+  return ROLE_LABELS[role] ?? role;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;

@@ -2,13 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.08.31-b05",
-    "title": "Hoàn thiện kiểm tra trước khi phát hành",
+    "version": "v26.09.01-b01",
+    "title": "Nâng cấp trải nghiệm Cài đặt",
     "features": [
-      "Quy trình kiểm tra trước khi phát hành nay hoàn tất rõ ràng hơn, không còn các cảnh báo lặp lại từ những thành phần đã được xác minh.",
-      "Chuẩn hóa cách hệ thống nhận diện các thành phần hỗ trợ xem tài liệu và bảng tính.",
-      "Giữ nguyên chức năng hiện có trong khi giúp việc kiểm tra bản cập nhật dễ theo dõi hơn.",
-      "Loại bỏ các cảnh báo không cần thiết từng xuất hiện trong bước chuẩn bị bản cập nhật."
+      "Làm mới toàn diện khu vực Cài đặt với điều hướng responsive, nhãn vai trò rõ ràng và bố cục cấu hình nhất quán trên desktop lẫn mobile.",
+      "Chuẩn hóa giao diện các trang Cài đặt, loại bỏ header trùng lặp và bổ sung các biến thể hiển thị theo ngữ cảnh.",
+      "Tối ưu bảng quy tắc hao hụt trên màn hình nhỏ bằng thẻ xếp chồng và chuẩn hóa các utility class Tailwind.",
+      "Hiển thị chính xác nhãn cho đầy đủ các vai trò quản trị, nhân viên, chỉ xem và chờ phê duyệt.",
+      "Sửa auto-scroll điều hướng Cài đặt để tính theo geometry thực của container, tránh cuộn lệch khi deep-link trên desktop và mobile."
     ]
   },
   "assetGroups": [

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { routes } from '../../app.routes';
+import { calculateCenteredScrollLeft, calculateVisibleScrollTop } from './settings-scroll.utils';
 
 const notificationServiceSource = readFileSync(new URL('../../core/services/notification.service.ts', import.meta.url), 'utf8');
 const notificationSettingsSource = readFileSync(new URL('./pages/account-notifications-settings.component.ts', import.meta.url), 'utf8');
@@ -77,5 +78,90 @@ describe('Settings routing contract', () => {
     assert.match(notificationServiceSource, /if \(!force && localStorage\.getItem\(this\.pushOptOutStorageKey\(user\.uid\)\) === '1'\)/);
     assert.match(notificationSettingsSource, /Tắt trên thiết bị này/);
     assert.match(notificationSettingsSource, /disableNotifications\(\)/);
+  });
+
+  it('exhaustively maps all user roles to friendly labels across Settings and Auth', () => {
+    const authServiceSource = readFileSync(new URL('../../core/services/auth.service.ts', import.meta.url), 'utf8');
+    const settingsShellSource = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
+    const profileSettingsSource = readFileSync(new URL('./pages/account-profile-settings.component.ts', import.meta.url), 'utf8');
+
+    assert.match(authServiceSource, /ROLE_LABELS: Record<UserProfile\['role'\], string>/);
+    assert.match(authServiceSource, /manager: 'Quản trị viên'/);
+    assert.match(authServiceSource, /staff: 'Nhân viên'/);
+    assert.match(authServiceSource, /viewer: 'Chỉ xem'/);
+    assert.match(authServiceSource, /pending: 'Chờ phê duyệt'/);
+
+    // Both settings views must use the unified role mapping
+    assert.match(settingsShellSource, /getUserRoleLabel/);
+    assert.match(profileSettingsSource, /getUserRoleLabel/);
+    assert.doesNotMatch(settingsShellSource, /role === 'manager' \? 'Quản trị viên' : 'Nhân viên'/);
+    assert.doesNotMatch(profileSettingsSource, /role === 'manager' \? 'Quản trị viên' : 'Nhân viên'/);
+  });
+
+  it('tracks and automatically scrolls active navigation items into view on mobile and desktop', () => {
+    const settingsShellSource = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
+
+    assert.match(settingsShellSource, /#mobileNavContainer/);
+    assert.match(settingsShellSource, /#desktopNavContainer/);
+    assert.match(settingsShellSource, /mobileNavContainer = viewChild/);
+    assert.match(settingsShellSource, /desktopNavContainer = viewChild/);
+    assert.match(settingsShellSource, /scrollActiveIntoView/);
+    assert.match(settingsShellSource, /NavigationEnd/);
+    assert.match(settingsShellSource, /ngAfterViewInit/);
+    assert.match(settingsShellSource, /getBoundingClientRect/);
+    assert.match(settingsShellSource, /calculateCenteredScrollLeft/);
+    assert.match(settingsShellSource, /calculateVisibleScrollTop/);
+    assert.doesNotMatch(settingsShellSource, /activeMob\.offsetLeft/);
+    assert.doesNotMatch(settingsShellSource, /activeDesk\.offsetTop/);
+  });
+
+  it('calculates mobile centering from container-relative viewport geometry and clamps to bounds', () => {
+    assert.equal(calculateCenteredScrollLeft({
+      scrollLeft: 200,
+      scrollWidth: 1000,
+      containerLeft: 100,
+      containerWidth: 320,
+      itemLeft: 390,
+      itemWidth: 100,
+    }), 380);
+
+    assert.equal(calculateCenteredScrollLeft({
+      scrollLeft: 0,
+      scrollWidth: 1000,
+      containerLeft: 100,
+      containerWidth: 320,
+      itemLeft: 90,
+      itemWidth: 80,
+    }), 0);
+
+    assert.equal(calculateCenteredScrollLeft({
+      scrollLeft: 650,
+      scrollWidth: 1000,
+      containerLeft: 100,
+      containerWidth: 320,
+      itemLeft: 430,
+      itemWidth: 120,
+    }), 680);
+  });
+
+  it('scrolls the desktop nav only when the active item is outside the container viewport', () => {
+    const base = {
+      scrollTop: 300,
+      scrollHeight: 1200,
+      containerTop: 200,
+      containerHeight: 400,
+      padding: 16,
+    };
+
+    assert.equal(calculateVisibleScrollTop({ ...base, itemTop: 300, itemHeight: 44 }), null);
+    assert.equal(calculateVisibleScrollTop({ ...base, itemTop: 150, itemHeight: 44 }), 234);
+    assert.equal(calculateVisibleScrollTop({ ...base, itemTop: 590, itemHeight: 50 }), 356);
+
+    assert.equal(calculateVisibleScrollTop({
+      ...base,
+      scrollTop: 20,
+      itemTop: 100,
+      itemHeight: 44,
+    }), 0);
   });
 });
