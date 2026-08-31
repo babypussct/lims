@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
 import {
-    collection, doc, updateDoc, writeBatch,
+    arrayRemove, collection, doc, updateDoc, writeBatch,
     query, where, limit, onSnapshot, Unsubscribe, deleteDoc
 } from 'firebase/firestore';
 import { AppNotification, NotificationLevel } from '../models/notification.model';
@@ -51,6 +51,10 @@ export class NotificationService {
     private pushTokenFailureUserId?: string;
     private pushTokenFailureAt = 0;
     private readonly pushTokenFailureCooldownMs = 5 * 60 * 1000;
+    private readonly pushOptOutStorageKey = (userId: string) => `lims_fcm_disabled_${userId}`;
+
+    /** Trạng thái đăng ký push của đúng thiết bị/trình duyệt hiện tại. */
+    readonly currentDevicePushEnabled = signal(false);
 
     private readonly _onSwMessage = (event: MessageEvent) => {
         if (event.data?.type === 'SW_NAVIGATE' && typeof event.data.url === 'string') {
@@ -206,6 +210,7 @@ export class NotificationService {
             this.registeredPushToken = null;
             this.pushTokenFailureUserId = undefined;
             this.pushTokenFailureAt = 0;
+            this.currentDevicePushEnabled.set(false);
         }
     }
 
@@ -355,6 +360,11 @@ export class NotificationService {
         if (!user) throw new Error('Phiên đăng nhập không hợp lệ.');
         const force = options.force === true;
 
+        if (!force && localStorage.getItem(this.pushOptOutStorageKey(user.uid)) === '1') {
+            this.currentDevicePushEnabled.set(false);
+            return null;
+        }
+
         if (!force && this.registeredPushToken?.userId === user.uid) {
             return this.registeredPushToken.token;
         }
@@ -376,8 +386,11 @@ export class NotificationService {
                 const token = await this.registerCurrentDevicePushTokenInternal(userId);
                 if (token) {
                     this.registeredPushToken = { userId, token };
+                    this.currentDevicePushEnabled.set(true);
                     this.pushTokenFailureUserId = undefined;
                     this.pushTokenFailureAt = 0;
+                } else {
+                    this.currentDevicePushEnabled.set(false);
                 }
                 return token;
             } catch (error) {
@@ -412,7 +425,41 @@ export class NotificationService {
             previousToken: previousToken && previousToken !== token ? previousToken : undefined
         });
         localStorage.setItem('lims_fcm_token', token);
+        localStorage.removeItem(this.pushOptOutStorageKey(userId));
         return token;
+    }
+
+    /**
+     * Hủy đăng ký push của thiết bị hiện tại trong hồ sơ người dùng.
+     * Quyền thông báo của trình duyệt không thể bị thu hồi bằng JavaScript;
+     * thao tác này chỉ ngăn LIMS gửi push tới token hiện tại.
+     */
+    async disableCurrentDevicePushNotifications(): Promise<boolean> {
+        const user = this.auth.currentUser();
+        if (!user) throw new Error('Phiên đăng nhập không hợp lệ.');
+
+        const token = localStorage.getItem('lims_fcm_token')
+            || (this.registeredPushToken?.userId === user.uid ? this.registeredPushToken.token : '');
+        if (!token) {
+            localStorage.setItem(this.pushOptOutStorageKey(user.uid), '1');
+            this.currentDevicePushEnabled.set(false);
+            return false;
+        }
+
+        const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${user.uid}`);
+        await updateDoc(userRef, { fcmTokens: arrayRemove(token) });
+
+        localStorage.removeItem('lims_fcm_token');
+        localStorage.setItem(this.pushOptOutStorageKey(user.uid), '1');
+        if (this.registeredPushToken?.userId === user.uid && this.registeredPushToken.token === token) {
+            this.registeredPushToken = null;
+        }
+        this.currentDevicePushEnabled.set(false);
+        if (this.fcmUnsub) {
+            this.fcmUnsub();
+            this.fcmUnsub = undefined;
+        }
+        return true;
     }
 
     private async callNotificationApi(payload: Record<string, unknown>): Promise<Record<string, unknown>> {

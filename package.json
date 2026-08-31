@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.08.31-b01",
+  "version": "26.08.31-b02",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -32,7 +32,7 @@
     "test:backup": "tsx --test api/_lib/backup-crypto.test.ts api/_lib/backup-contract.test.ts api/_lib/firestore-backup.test.ts api/_lib/backup-restore.test.ts api/_lib/apps-script-backup.test.ts api/_lib/drive-assets-backup.test.ts api/_lib/backup-retention.test.ts api/_lib/backup-resumable.test.ts",
     "test:notification-workflow": "node scripts/run-notification-workflow-emulator.js",
     "test:ui-primitives": "tsx --test src/app/shared/components/ui/ui-primitives.contract.test.ts src/app/shared/components/confirmation-modal/confirmation-modal.component.test.ts",
-    "test:ui-contracts": "npm run test:ui-primitives && npm run test:ui-dashboard && npm run test:ui-inventory && npm run test:ui-results && npm run test:ui-recipes && npm run test:ui-preparation && npm run test:ui-standards && npm run test:ui-targets && npm run test:ui-documents && npm run test:ui-checklist && npm run test:ui-labels && npm run test:ui-config && npm run test:ui-traceability && npm run test:ui-sop && npm run test:ui-auth-public",
+    "test:ui-contracts": "npm run test:ui-primitives && npm run test:ui-dashboard && npm run test:ui-inventory && npm run test:ui-results && npm run test:ui-recipes && npm run test:ui-preparation && npm run test:ui-standards && npm run test:ui-targets && npm run test:ui-documents && npm run test:ui-checklist && npm run test:ui-labels && npm run test:ui-config && npm run test:settings && npm run test:ui-traceability && npm run test:ui-sop && npm run test:ui-auth-public",
     "test:ui-guardrails": "node scripts/ui-guardrails.js",
     "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts",
     "test:ui-inventory": "tsx --test src/app/features/inventory/inventory-ui-primitives.contract.test.ts",
@@ -45,6 +45,7 @@
     "test:ui-checklist": "tsx --test src/app/features/checklist/daily-checklist-ui-primitives.contract.test.ts",
     "test:ui-labels": "tsx --test src/app/features/labels/label-print-ui-primitives.contract.test.ts",
     "test:ui-config": "tsx --test src/app/features/config/config-ui-primitives.contract.test.ts",
+    "test:settings": "tsx --test src/app/features/settings/settings-routing.test.ts api/account/delete-request.contract.test.ts",
     "test:ui-traceability": "tsx --test src/app/features/traceability/traceability-ui-primitives.contract.test.ts",
     "test:ui-sop": "tsx --test src/app/features/sop/sop-ui-primitives.contract.test.ts",
     "test:ui-auth-public": "tsx --test src/app/features/auth/auth-public-ui-primitives.contract.test.ts",

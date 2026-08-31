@@ -34,7 +34,7 @@ function initAdmin() {
   initializeApp({ credential: cert(serviceAccount) });
 }
 
-const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'default';
+const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
@@ -67,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const uid = decoded.uid;
     const anonymizedEmail = `deleted_${uid}@anonymized.lims`;
 
-    // Cập nhật Firestore user document
+    // Đọc hồ sơ trước khi thay đổi để có thể rollback nếu một bên cập nhật thất bại.
     const userRef = db.collection(`artifacts/${APP_ID}/users`).doc(uid);
     const userSnap = await userRef.get();
 
@@ -75,23 +75,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Không tìm thấy hồ sơ người dùng.' });
     }
 
-    await userRef.update({
-      email: anonymizedEmail,
-      photoURL: null,
-      avatarStyle: null,
-      accountAnonymizedAt: new Date().toISOString(),
-    });
+    const authUser = await auth.getUser(uid);
+    const originalAuthProfile = {
+      email: authUser.email,
+      photoURL: authUser.photoURL,
+      displayName: authUser.displayName,
+    };
 
-    // Cập nhật Firebase Auth profile
+    // Cập nhật Firebase Auth trước. Nếu bước này thất bại, Firestore vẫn giữ
+    // nguyên PII và API không được phép báo thành công.
     try {
       await auth.updateUser(uid, {
         email: anonymizedEmail,
         photoURL: null,
-        displayName: userSnap.data()?.['displayName'] || undefined,
+        displayName: originalAuthProfile.displayName || undefined,
       });
     } catch (authErr: any) {
-      // Nếu email đã bị dùng hoặc lỗi Auth, vẫn tiếp tục — Firestore đã được cập nhật
-      console.warn('[delete-request] Firebase Auth update warning:', authErr.message);
+      console.error('[delete-request] Firebase Auth update failed:', authErr?.message || authErr);
+      return res.status(502).json({
+        error: 'Không thể ẩn danh hóa tài khoản trong Firebase Auth. Dữ liệu chưa được thay đổi.',
+        code: 'AUTH_UPDATE_FAILED',
+      });
+    }
+
+    try {
+      await userRef.update({
+        email: anonymizedEmail,
+        photoURL: null,
+        avatarStyle: null,
+        accountAnonymizedAt: new Date().toISOString(),
+      });
+    } catch (firestoreErr: any) {
+      // Không để Auth và Firestore lệch nhau nếu bước thứ hai thất bại.
+      try {
+        await auth.updateUser(uid, {
+          ...(originalAuthProfile.email ? { email: originalAuthProfile.email } : {}),
+          photoURL: originalAuthProfile.photoURL || null,
+          displayName: originalAuthProfile.displayName || undefined,
+        });
+      } catch (rollbackErr: any) {
+        console.error('[delete-request] Auth rollback failed after Firestore error:', rollbackErr?.message || rollbackErr);
+        return res.status(500).json({
+          error: 'Không thể hoàn tất hoặc hoàn tác thao tác ẩn danh hóa. Vui lòng liên hệ quản trị viên.',
+          code: 'ANONYMIZATION_INCONSISTENT',
+        });
+      }
+
+      console.error('[delete-request] Firestore update failed; Auth was rolled back:', firestoreErr?.message || firestoreErr);
+      return res.status(502).json({
+        error: 'Không thể cập nhật hồ sơ LIMS. Thao tác đã được hoàn tác, dữ liệu chưa được thay đổi.',
+        code: 'FIRESTORE_UPDATE_FAILED',
+      });
     }
 
     console.log(`[account/delete-request] Anonymized UID: ${uid}`);

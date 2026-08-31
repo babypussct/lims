@@ -17,12 +17,26 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
         <div class="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900">
           <div>
             <div class="text-sm font-black text-slate-800 dark:text-slate-100">Thiết bị hiện tại</div>
-            <p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Trình duyệt sẽ yêu cầu quyền thông báo nếu thiết bị chưa được đăng ký.</p>
+            @if (pushEnabled()) {
+              <p class="mt-1 text-sm leading-relaxed text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1" aria-hidden="true"></i>Đang nhận thông báo đẩy trên thiết bị này.</p>
+            } @else {
+              <p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Trình duyệt sẽ yêu cầu quyền thông báo nếu thiết bị chưa được đăng ký.</p>
+            }
           </div>
-          <app-button [loading]="enabling()" (click)="enableNotifications()">
-            <i class="fa-regular fa-bell" aria-hidden="true"></i>Bật thông báo
-          </app-button>
+          @if (pushEnabled()) {
+            <app-button
+              variant="secondary"
+              [loading]="disabling()"
+              (click)="disableNotifications()">
+              <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>Tắt trên thiết bị này
+            </app-button>
+          } @else {
+            <app-button [loading]="enabling()" (click)="enableNotifications()">
+              <i class="fa-regular fa-bell" aria-hidden="true"></i>Bật thông báo
+            </app-button>
+          }
         </div>
+        <p class="mt-3 text-xs leading-relaxed text-slate-400 dark:text-slate-500">Tắt tại đây sẽ gỡ đăng ký thiết bị khỏi LIMS. Quyền thông báo của trình duyệt vẫn giữ nguyên và có thể được thay đổi trong cài đặt trình duyệt.</p>
       </app-settings-section>
     </div>
   `,
@@ -31,6 +45,8 @@ export class AccountNotificationsSettingsComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly toast = inject(ToastService);
   readonly enabling = signal(false);
+  readonly disabling = signal(false);
+  readonly pushEnabled = this.notificationService.currentDevicePushEnabled;
 
   async enableNotifications(): Promise<void> {
     if (this.enabling()) return;
@@ -45,6 +61,22 @@ export class AccountNotificationsSettingsComponent {
       this.toast.show(`Lỗi: ${error?.message || error}`, 'error');
     } finally {
       this.enabling.set(false);
+    }
+  }
+
+  async disableNotifications(): Promise<void> {
+    if (this.disabling()) return;
+    this.disabling.set(true);
+    try {
+      const removed = await this.notificationService.disableCurrentDevicePushNotifications();
+      this.toast.show(
+        removed ? 'Đã tắt thông báo đẩy trên thiết bị này.' : 'Thiết bị này chưa được đăng ký nhận thông báo.',
+        'success',
+      );
+    } catch (error: any) {
+      this.toast.show(`Không thể tắt thông báo: ${error?.message || error}`, 'error');
+    } finally {
+      this.disabling.set(false);
     }
   }
 }
