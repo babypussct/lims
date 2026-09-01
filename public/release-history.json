@@ -1,5 +1,20 @@
 [
   {
+    "version": "v26.09.02-b02",
+    "date": "2/9/2026",
+    "title": "Chuẩn hóa quy trình triển khai Vercel",
+    "highlights": [
+      "Vercel CLI được khóa theo phiên bản của dự án để các lần triển khai dùng cùng một công cụ ổn định."
+    ],
+    "features": [],
+    "improvements": [
+      "Bổ sung các lệnh kiểm tra trạng thái Vercel, đồng bộ cấu hình, kéo biến môi trường và deploy preview trực tiếp từ npm scripts.",
+      "Luồng deploy production tiếp tục đi qua release gate và dùng Vercel CLI cài trong dự án thay vì tải CLI phát sinh trong lúc triển khai."
+    ],
+    "fixes": [],
+    "releaseOrder": 26090200002
+  },
+  {
     "version": "v26.09.02-b01",
     "date": "2/9/2026",
     "title": "Tối ưu luồng cập nhật an toàn",

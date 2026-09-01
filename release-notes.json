@@ -1,15 +1,12 @@
 {
-  "title": "Tối ưu luồng cập nhật an toàn",
+  "title": "Chuẩn hóa quy trình triển khai Vercel",
   "highlights": [
-    "Bản cập nhật hệ thống nay đếm liên tục đến khi áp dụng, loại bỏ trạng thái dừng cố định ở mốc 10 giây."
+    "Vercel CLI được khóa theo phiên bản của dự án để các lần triển khai dùng cùng một công cụ ổn định."
   ],
   "features": [],
   "improvements": [
-    "Bổ sung cơ chế Reload Safety dùng chung để chỉ tải lại ứng dụng khi các tác vụ lưu dữ liệu quan trọng đã hoàn tất.",
-    "Màn hình nhập kết quả tự báo trạng thái modified, saving và error cho luồng cập nhật để tránh tải lại khi autosave chưa an toàn."
+    "Bổ sung các lệnh kiểm tra trạng thái Vercel, đồng bộ cấu hình, kéo biến môi trường và deploy preview trực tiếp từ npm scripts.",
+    "Luồng deploy production tiếp tục đi qua release gate và dùng Vercel CLI cài trong dự án thay vì tải CLI phát sinh trong lúc triển khai."
   ],
-  "fixes": [
-    "Loại bỏ yêu cầu di chuột, nhấn phím hoặc chạm màn hình để tiếp tục countdown cập nhật ở mốc 10 giây.",
-    "Khi countdown về 0 trong lúc dữ liệu đang lưu, hệ thống chờ đến trạng thái synced rồi áp dụng phiên bản mới ngay thay vì ép reload hoặc thêm delay cố định."
-  ]
+  "fixes": []
 }

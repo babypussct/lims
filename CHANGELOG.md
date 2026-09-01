@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.02-b01
+## Phiên bản hiện tại: v26.09.02-b02
+
+### v26.09.02-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Vercel CLI được khóa theo phiên bản của dự án để các lần triển khai dùng cùng một công cụ ổn định.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung các lệnh kiểm tra trạng thái Vercel, đồng bộ cấu hình, kéo biến môi trường và deploy preview trực tiếp từ npm scripts.
+- Luồng deploy production tiếp tục đi qua release gate và dùng Vercel CLI cài trong dự án thay vì tải CLI phát sinh trong lúc triển khai.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.09.02-b01
 
