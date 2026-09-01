@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.01-b04
+## Phiên bản hiện tại: v26.09.02-b01
+
+### v26.09.02-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bản cập nhật hệ thống nay đếm liên tục đến khi áp dụng, loại bỏ trạng thái dừng cố định ở mốc 10 giây.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung cơ chế Reload Safety dùng chung để chỉ tải lại ứng dụng khi các tác vụ lưu dữ liệu quan trọng đã hoàn tất.
+- Màn hình nhập kết quả tự báo trạng thái modified, saving và error cho luồng cập nhật để tránh tải lại khi autosave chưa an toàn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ yêu cầu di chuột, nhấn phím hoặc chạm màn hình để tiếp tục countdown cập nhật ở mốc 10 giây.
+- Khi countdown về 0 trong lúc dữ liệu đang lưu, hệ thống chờ đến trạng thái synced rồi áp dụng phiên bản mới ngay thay vì ép reload hoặc thêm delay cố định.
 
 ### v26.09.01-b04
 

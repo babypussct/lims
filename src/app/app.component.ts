@@ -37,6 +37,7 @@ import { ProgressService } from './core/services/progress.service';
 import { QrGlobalService } from './core/services/qr-global.service';
 import { ChangelogService } from './core/services/changelog.service';
 import { ReleaseService } from './core/services/release.service';
+import { ReloadSafetyService } from './core/services/reload-safety.service';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { environment } from '../environments/environment';
@@ -156,15 +157,15 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
                 <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="47" class="fill-slate-50 dark:fill-slate-800/50 stroke-slate-200 dark:stroke-slate-700/50" stroke-width="2"></circle>
                   <circle cx="50" cy="50" r="47" class="fill-none transition-all duration-1000 ease-linear" stroke-width="3" stroke-linecap="round"
-                          [class]="isCountdownPaused() ? 'stroke-amber-400' : 'stroke-blue-600'"
+                          [class]="isUpdateWaitingForSafety() ? 'stroke-amber-400' : 'stroke-blue-600'"
                           [style.stroke-dasharray]="'296'" 
                           [style.stroke-dashoffset]="296 - (updateCountdown() / 30) * 296"></circle>
                 </svg>
                 <!-- Icon inside -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-700 dark:text-slate-300 z-10">
-                  @if (isCountdownPaused()) {
-                    <i class="fa-solid fa-pause text-2xl md:text-3xl text-amber-400"></i>
-                    <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 text-amber-400">{{ updateCountdown() }}s</span>
+                  @if (isUpdateWaitingForSafety()) {
+                    <i class="fa-solid fa-shield-halved text-2xl md:text-3xl text-amber-400"></i>
+                    <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 text-amber-400">SAFE</span>
                   } @else {
                     <i class="fa-solid fa-cloud-arrow-down text-2xl md:text-3xl"></i>
                     <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 opacity-60">{{ updateCountdown() }}s</span>
@@ -200,8 +201,9 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
               }
               
               <!-- Primary CTA -->
-              <button (click)="window_reload()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-                <i class="fa-solid fa-arrows-rotate"></i> Áp Dụng Cập Nhật
+              <button (click)="requestUpdateApply()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                {{ isUpdateWaitingForSafety() ? 'Cập nhật ngay khi lưu xong' : 'Áp Dụng Cập Nhật' }}
               </button>
 
               <!-- Secondary: Dismiss -->
@@ -210,10 +212,10 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
               </button>
 
               <div class="mt-3 text-center">
-                 @if (isCountdownPaused()) {
+                 @if (isUpdateWaitingForSafety()) {
                    <span class="text-[11px] text-amber-500 dark:text-amber-400 font-medium flex items-center justify-center gap-2">
-                     <i class="fa-solid fa-hand-pointer opacity-70"></i>
-                     Đang tạm dừng · Di chuột hoặc chạm để tiếp tục đếm
+                     <i class="fa-solid fa-floppy-disk fa-beat-fade opacity-80"></i>
+                     {{ updateSafetyReason() }}
                    </span>
                  } @else {
                    <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
@@ -234,7 +236,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
               <i class="fa-solid fa-cloud-arrow-down text-blue-400 text-sm"></i>
             </div>
             <span class="flex-1 leading-snug text-slate-200">Có phiên bản mới đang chờ được cài đặt</span>
-            <button (click)="window_reload()" class="shrink-0 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+            <button (click)="requestUpdateApply()" class="shrink-0 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
               Cập nhật
             </button>
           </div>
@@ -339,6 +341,7 @@ export class AppComponent implements OnDestroy {
   qrService = inject(QrGlobalService);
   changelogService = inject(ChangelogService);
   private releaseService = inject(ReleaseService);
+  reloadSafety = inject(ReloadSafetyService);
   swUpdate = inject(SwUpdate);
   private ngZone = inject(NgZone);
 
@@ -368,6 +371,15 @@ export class AppComponent implements OnDestroy {
     effect((onCleanup) => {
       this.startMaintenanceClock(this.state.maintenanceScheduledTime());
       onCleanup(() => clearTimeout(this._maintenanceTimer));
+    });
+
+    // Countdown may reach zero while a feature is still saving. In that case
+    // wait on the real save state and apply immediately when the last blocker
+    // clears instead of introducing another fixed delay.
+    effect(() => {
+      if (this.isUpdateWaitingForSafety() && this.reloadSafety.isSafe()) {
+        void this.applyPendingUpdateWhenSafe();
+      }
     });
 
     // Initialize currentUrl
@@ -577,7 +589,7 @@ export class AppComponent implements OnDestroy {
   isPulling = signal(false);
   hasNewVersion = signal(false);
   isUpdateModalDismissed = signal(false);
-  isCountdownPaused = signal(false);
+  isUpdateWaitingForSafety = signal(false);
   updateCountdown = signal(30);
   updateVersion = signal<string | null>(null);
   updateTitle = signal<string | null>(null);
@@ -585,7 +597,11 @@ export class AppComponent implements OnDestroy {
   private _updateTimer: any;
   private _swCheckInterval: any;
   private _maintenanceTimer: ReturnType<typeof setTimeout> | undefined;
-  private _boundInteractionHandler: (() => void) | null = null;
+  private _updateReloadInFlight = false;
+
+  updateSafetyReason = computed(() =>
+    this.reloadSafety.reasons()[0] || 'Đang chờ các tác vụ lưu dữ liệu hoàn tất.'
+  );
 
   currentTime = signal<number>(Date.now());
 
@@ -626,7 +642,6 @@ export class AppComponent implements OnDestroy {
     clearTimeout(this._maintenanceTimer);
     if (this._navigationFeedbackTimer) clearTimeout(this._navigationFeedbackTimer);
     clearInterval(this._updateTimer);
-    this._removeInteractionHandler();
   }
 
   private startNavigationFeedback() {
@@ -736,63 +751,48 @@ export class AppComponent implements OnDestroy {
 
   startUpdateCountdown() {
     this.updateCountdown.set(30);
-    this.isCountdownPaused.set(false);
+    this.isUpdateWaitingForSafety.set(false);
     clearInterval(this._updateTimer);
-    this._removeInteractionHandler();
 
     this.ngZone.runOutsideAngular(() => {
       this._updateTimer = setInterval(() => {
         this.ngZone.run(() => {
-          // Nếu đang tạm dừng thì bỏ qua tick này
-          if (this.isCountdownPaused()) return;
-
           const current = this.updateCountdown() - 1;
           this.updateCountdown.set(current);
 
-          // Khi đếm xuống 10s: kiểm tra có tương tác không, nếu không thì tạm dừng
-          if (current === 10) {
-            this.isCountdownPaused.set(true);
-            this._setupInteractionHandler();
-          }
-
           if (current <= 0) {
             clearInterval(this._updateTimer);
-            this._removeInteractionHandler();
-            this.window_reload();
+            this.requestUpdateApply();
           }
         });
       }, 1000);
     });
   }
 
-  private _setupInteractionHandler() {
-    this._removeInteractionHandler(); // Tránh đăng ký 2 lần
-    this._boundInteractionHandler = () => {
-      this.ngZone.run(() => {
-        if (this.isCountdownPaused()) {
-          this.isCountdownPaused.set(false);
-          this._removeInteractionHandler();
-        }
-      });
-    };
-    document.addEventListener('mousemove', this._boundInteractionHandler, { once: true });
-    document.addEventListener('keydown', this._boundInteractionHandler, { once: true });
-    document.addEventListener('touchstart', this._boundInteractionHandler, { once: true });
-  }
-
-  private _removeInteractionHandler() {
-    if (this._boundInteractionHandler) {
-      document.removeEventListener('mousemove', this._boundInteractionHandler);
-      document.removeEventListener('keydown', this._boundInteractionHandler);
-      document.removeEventListener('touchstart', this._boundInteractionHandler);
-      this._boundInteractionHandler = null;
-    }
-  }
-
   dismissUpdate() {
     clearInterval(this._updateTimer);
-    this._removeInteractionHandler();
+    this.isUpdateWaitingForSafety.set(false);
     this.isUpdateModalDismissed.set(true);
+  }
+
+  requestUpdateApply() {
+    clearInterval(this._updateTimer);
+    this.updateCountdown.set(0);
+
+    if (!this.reloadSafety.isSafe()) {
+      this.isUpdateWaitingForSafety.set(true);
+      return;
+    }
+
+    void this.applyPendingUpdateWhenSafe();
+  }
+
+  private async applyPendingUpdateWhenSafe(): Promise<void> {
+    if (this._updateReloadInFlight || !this.reloadSafety.isSafe()) return;
+
+    this._updateReloadInFlight = true;
+    this.isUpdateWaitingForSafety.set(false);
+    await this.window_reload();
   }
 
   // Dùng trong template cho nút "Tải lại ngay" trong Toast

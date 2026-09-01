@@ -2,12 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.01-b04",
-    "title": "Gia cố cơ chế cập nhật phiên bản hệ thống",
+    "version": "v26.09.02-b01",
+    "title": "Tối ưu luồng cập nhật an toàn",
     "features": [
-      "Cơ chế cập nhật PWA nay version hóa đồng bộ index.html cùng JavaScript và CSS, giảm nguy cơ lệch phiên bản trong lúc deploy.",
-      "Bổ sung regression test cho manifest Service Worker và hợp đồng VERSION_READY để các release sau tiếp tục phát hiện, hiển thị và kích hoạt bản cập nhật đúng luồng.",
-      "Stale-chunk recovery nay fail-closed khi sessionStorage không khả dụng, tránh nguy cơ tạo vòng lặp tải lại khi trình duyệt chặn storage."
+      "Bản cập nhật hệ thống nay đếm liên tục đến khi áp dụng, loại bỏ trạng thái dừng cố định ở mốc 10 giây.",
+      "Bổ sung cơ chế Reload Safety dùng chung để chỉ tải lại ứng dụng khi các tác vụ lưu dữ liệu quan trọng đã hoàn tất.",
+      "Màn hình nhập kết quả tự báo trạng thái modified, saving và error cho luồng cập nhật để tránh tải lại khi autosave chưa an toàn.",
+      "Loại bỏ yêu cầu di chuột, nhấn phím hoặc chạm màn hình để tiếp tục countdown cập nhật ở mốc 10 giây.",
+      "Khi countdown về 0 trong lúc dữ liệu đang lưu, hệ thống chờ đến trạng thái synced rồi áp dụng phiên bản mới ngay thay vì ép reload hoặc thêm delay cố định."
     ]
   },
   "assetGroups": [

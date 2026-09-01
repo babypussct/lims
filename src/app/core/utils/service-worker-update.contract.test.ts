@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { Generator, type Config, type Filesystem } from '@angular/service-worker/config';
+import { ReloadSafetyService } from '../services/reload-safety.service';
 
 const root = new URL('../../../../', import.meta.url);
 const ngswConfig = JSON.parse(
@@ -62,4 +63,38 @@ test('VERSION_READY contract still exposes the modal and activates the pending v
   assert.match(versionReadyBlock, /this\.startUpdateCountdown\(\)/);
   assert.match(source, /await this\.swUpdate\.activateUpdate\(\)/);
   assert.match(source, /window\.location\.reload\(\)/);
+});
+
+test('update countdown runs continuously through 10 seconds without an interaction pause gate', () => {
+  const source = readFileSync(new URL('src/app/app.component.ts', root), 'utf8');
+
+  assert.doesNotMatch(source, /isCountdownPaused/);
+  assert.doesNotMatch(source, /current\s*===\s*10/);
+  assert.doesNotMatch(source, /_setupInteractionHandler/);
+});
+
+test('reload safety registry stays blocked until every feature is safe', () => {
+  const safety = new ReloadSafetyService();
+
+  assert.equal(safety.isSafe(), true);
+
+  safety.setBlocker('result-entry', true, 'saving');
+  safety.setBlocker('other-form', true, 'dirty');
+  assert.equal(safety.isSafe(), false);
+  assert.deepEqual(safety.reasons().sort(), ['dirty', 'saving']);
+
+  safety.clearBlocker('result-entry');
+  assert.equal(safety.isSafe(), false);
+
+  safety.clearBlocker('other-form');
+  assert.equal(safety.isSafe(), true);
+});
+
+test('update apply path waits for reload safety instead of forcing another timed delay', () => {
+  const source = readFileSync(new URL('src/app/app.component.ts', root), 'utf8');
+
+  assert.match(source, /if \(!this\.reloadSafety\.isSafe\(\)\)/);
+  assert.match(source, /this\.isUpdateWaitingForSafety\.set\(true\)/);
+  assert.match(source, /applyPendingUpdateWhenSafe/);
+  assert.doesNotMatch(source, /setTimeout\([^)]*requestUpdateApply/);
 });

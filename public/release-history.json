@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.09.02-b01",
+    "date": "2/9/2026",
+    "title": "Tối ưu luồng cập nhật an toàn",
+    "highlights": [
+      "Bản cập nhật hệ thống nay đếm liên tục đến khi áp dụng, loại bỏ trạng thái dừng cố định ở mốc 10 giây."
+    ],
+    "features": [],
+    "improvements": [
+      "Bổ sung cơ chế Reload Safety dùng chung để chỉ tải lại ứng dụng khi các tác vụ lưu dữ liệu quan trọng đã hoàn tất.",
+      "Màn hình nhập kết quả tự báo trạng thái modified, saving và error cho luồng cập nhật để tránh tải lại khi autosave chưa an toàn."
+    ],
+    "fixes": [
+      "Loại bỏ yêu cầu di chuột, nhấn phím hoặc chạm màn hình để tiếp tục countdown cập nhật ở mốc 10 giây.",
+      "Khi countdown về 0 trong lúc dữ liệu đang lưu, hệ thống chờ đến trạng thái synced rồi áp dụng phiên bản mới ngay thay vì ép reload hoặc thêm delay cố định."
+    ],
+    "releaseOrder": 26090200001
+  },
+  {
     "version": "v26.09.01-b04",
     "date": "1/9/2026",
     "title": "Gia cố cơ chế cập nhật phiên bản hệ thống",

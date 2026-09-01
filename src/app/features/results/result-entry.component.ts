@@ -18,6 +18,7 @@ import {
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { PrintService } from '../../core/services/print.service';
+import { ReloadSafetyService } from '../../core/services/reload-safety.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -83,6 +84,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private masterService = inject(MasterTargetService);
   private auth = inject(AuthService);
   private draftFactory = inject(SopDraftFactoryService);
+  private reloadSafety = inject(ReloadSafetyService);
   printService = inject(PrintService);
 
   // Locking mechanism variables
@@ -325,6 +327,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private previousDraftStatus: string | null = null;
 
   constructor() {
+    effect(() => {
+      const status = this.autoSaveStatus();
+      const isBlocked = status !== 'synced';
+      const reason = status === 'error'
+        ? 'Không thể tự động lưu kết quả. Hãy kiểm tra trạng thái lưu trước khi cập nhật.'
+        : 'Dữ liệu kết quả đang được lưu. Hệ thống sẽ cập nhật ngay khi lưu xong.';
+
+      this.reloadSafety.setBlocker('result-entry-autosave', isBlocked, reason);
+    });
+
     // getAll() có timeout để UI không bị treo, nhưng DeltaSync có thể trả dữ liệu
     // sau timeout đó. Luôn đồng bộ signal sống để import Excel không giữ mãi
     // danh mục Master Analyte rỗng của lần tải đầu.
@@ -489,6 +501,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.reloadSafety.clearBlocker('result-entry-autosave');
     if (this.unsubscribeFromDraft) {
       this.unsubscribeFromDraft();
     }
