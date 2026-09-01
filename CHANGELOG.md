@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.01-b03
+## Phiên bản hiện tại: v26.09.01-b04
+
+### v26.09.01-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Cơ chế cập nhật PWA nay version hóa đồng bộ index.html cùng JavaScript và CSS, giảm nguy cơ lệch phiên bản trong lúc deploy.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung regression test cho manifest Service Worker và hợp đồng VERSION_READY để các release sau tiếp tục phát hiện, hiển thị và kích hoạt bản cập nhật đúng luồng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Stale-chunk recovery nay fail-closed khi sessionStorage không khả dụng, tránh nguy cơ tạo vòng lặp tải lại khi trình duyệt chặn storage.
 
 ### v26.09.01-b03
 

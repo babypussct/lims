@@ -10,6 +10,7 @@ import { routes } from './app.routes';
 import { AdaptivePreloadingStrategy } from './core/routing/adaptive-preloading.strategy';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideHttpClient } from '@angular/common/http';
+import { claimChunkRecoveryReload } from './core/utils/chunk-reload-recovery';
 
 /**
  * Global Error Handler: Tự động reload khi gặp lỗi "stale chunk" sau deploy mới.
@@ -20,8 +21,6 @@ import { provideHttpClient } from '@angular/common/http';
  */
 @Injectable()
 class GlobalErrorHandler implements ErrorHandler {
-  private static readonly RELOAD_KEY = 'lims_chunk_reload';
-
   handleError(error: any): void {
     const message = error?.message || error?.toString() || '';
     
@@ -32,13 +31,10 @@ class GlobalErrorHandler implements ErrorHandler {
       message.includes('ChunkLoadError');
 
     if (isChunkError) {
-      const lastReload = Number(sessionStorage.getItem(GlobalErrorHandler.RELOAD_KEY) || '0');
-      const now = Date.now();
-      
-      // Chỉ auto-reload 1 lần mỗi 30 giây để tránh loop vô hạn
-      if (now - lastReload > 30_000) {
+      // Chỉ auto-reload 1 lần mỗi 30 giây để tránh loop vô hạn. Nếu storage
+      // không khả dụng, helper fail-closed để không biến stale chunk thành reload loop.
+      if (claimChunkRecoveryReload(sessionStorage, Date.now())) {
         console.warn('[LIMS] Phát hiện chunk cũ sau deploy mới. Đang tải lại...');
-        sessionStorage.setItem(GlobalErrorHandler.RELOAD_KEY, now.toString());
         window.location.reload();
         return;
       }

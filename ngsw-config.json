@@ -2,11 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.01-b03",
-    "title": "Sửa nhận diện khi import Chất chuẩn đối chiếu",
+    "version": "v26.09.01-b04",
+    "title": "Gia cố cơ chế cập nhật phiên bản hệ thống",
     "features": [
-      "Import Chất chuẩn đối chiếu nay nhận diện đúng từng hồ sơ theo Mã quản lý nội bộ, tránh cập nhật nhầm chuẩn cũ khi tên hoặc số lô trùng nhau.",
-      "Khi một dòng import có Mã quản lý khác hồ sơ đang có, hệ thống tạo hồ sơ chất chuẩn mới thay vì fallback theo Tên chuẩn + Số lô và ghi đè hồ sơ cũ."
+      "Cơ chế cập nhật PWA nay version hóa đồng bộ index.html cùng JavaScript và CSS, giảm nguy cơ lệch phiên bản trong lúc deploy.",
+      "Bổ sung regression test cho manifest Service Worker và hợp đồng VERSION_READY để các release sau tiếp tục phát hiện, hiển thị và kích hoạt bản cập nhật đúng luồng.",
+      "Stale-chunk recovery nay fail-closed khi sessionStorage không khả dụng, tránh nguy cơ tạo vòng lặp tải lại khi trình duyệt chặn storage."
     ]
   },
   "assetGroups": [
@@ -15,6 +16,7 @@
       "installMode": "prefetch",
       "resources": {
         "files": [
+          "/index.html",
           "/favicon.ico",
           "/manifest.webmanifest",
           "/main-*.js",

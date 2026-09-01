@@ -1,11 +1,13 @@
 {
-  "title": "Sửa nhận diện khi import Chất chuẩn đối chiếu",
+  "title": "Gia cố cơ chế cập nhật phiên bản hệ thống",
   "highlights": [
-    "Import Chất chuẩn đối chiếu nay nhận diện đúng từng hồ sơ theo Mã quản lý nội bộ, tránh cập nhật nhầm chuẩn cũ khi tên hoặc số lô trùng nhau."
+    "Cơ chế cập nhật PWA nay version hóa đồng bộ index.html cùng JavaScript và CSS, giảm nguy cơ lệch phiên bản trong lúc deploy."
   ],
   "features": [],
-  "improvements": [],
+  "improvements": [
+    "Bổ sung regression test cho manifest Service Worker và hợp đồng VERSION_READY để các release sau tiếp tục phát hiện, hiển thị và kích hoạt bản cập nhật đúng luồng."
+  ],
   "fixes": [
-    "Khi một dòng import có Mã quản lý khác hồ sơ đang có, hệ thống tạo hồ sơ chất chuẩn mới thay vì fallback theo Tên chuẩn + Số lô và ghi đè hồ sơ cũ."
+    "Stale-chunk recovery nay fail-closed khi sessionStorage không khả dụng, tránh nguy cơ tạo vòng lặp tải lại khi trình duyệt chặn storage."
   ]
 }

@@ -1,5 +1,21 @@
 [
   {
+    "version": "v26.09.01-b04",
+    "date": "1/9/2026",
+    "title": "Gia cố cơ chế cập nhật phiên bản hệ thống",
+    "highlights": [
+      "Cơ chế cập nhật PWA nay version hóa đồng bộ index.html cùng JavaScript và CSS, giảm nguy cơ lệch phiên bản trong lúc deploy."
+    ],
+    "features": [],
+    "improvements": [
+      "Bổ sung regression test cho manifest Service Worker và hợp đồng VERSION_READY để các release sau tiếp tục phát hiện, hiển thị và kích hoạt bản cập nhật đúng luồng."
+    ],
+    "fixes": [
+      "Stale-chunk recovery nay fail-closed khi sessionStorage không khả dụng, tránh nguy cơ tạo vòng lặp tải lại khi trình duyệt chặn storage."
+    ],
+    "releaseOrder": 26090100004
+  },
+  {
     "version": "v26.09.01-b03",
     "date": "1/9/2026",
     "title": "Sửa nhận diện khi import Chất chuẩn đối chiếu",
