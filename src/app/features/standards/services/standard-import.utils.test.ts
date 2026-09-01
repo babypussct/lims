@@ -125,6 +125,32 @@ test('uses internal id to resolve a legacy document id and exposes field diffs',
   assert.equal(item.changes?.some(change => change.field === 'product_code' && change.after === 'AB61701'), true);
 });
 
+test('creates a new standard when name and lot match but management code is different', () => {
+  const existing: ReferenceStandard = {
+    id: 'existing-physical-standard',
+    name: 'Caffeine',
+    internal_id: 'AA01',
+    lot_number: 'LOT-01',
+    initial_amount: 10,
+    current_amount: 10,
+    unit: 'mg',
+    status: 'AVAILABLE'
+  };
+  const [item] = parse([{
+    'Tên chuẩn': 'Caffeine',
+    'Khối lượng chai': '10 mg',
+    'Số nhận diện': 'BB02',
+    'Số lô': 'LOT-01'
+  }], [existing]);
+
+  assert.equal(item.mode, 'CREATE');
+  assert.equal(item.isValid, true);
+  assert.equal(item.parsed.internal_id, 'BB02');
+  assert.notEqual(item.parsed.id, existing.id);
+  assert.match(item.parsed.id, /^std_bb02_/);
+  assert.deepEqual(item.changes, []);
+});
+
 test('treats a soft-deleted identity as released and creates a new immutable document', () => {
   const existing: ReferenceStandard = {
     id: 'deleted-id',

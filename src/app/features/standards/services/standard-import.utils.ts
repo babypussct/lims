@@ -332,10 +332,9 @@ function existingCandidates(
 ): ReferenceStandard[] {
   const activeStandards = existingStandards.filter(isActiveStandardIdentity);
   if (internalId) {
-    const byInternalId = activeStandards.filter(
+    return activeStandards.filter(
       standard => normalizeIdentity(standard.internal_id) === normalizeIdentity(internalId)
     );
-    if (byInternalId.length) return byInternalId;
   }
   if (name && lot) {
     return activeStandards.filter(

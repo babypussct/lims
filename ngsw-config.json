@@ -2,14 +2,11 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.01-b02",
-    "title": "Gia cố an toàn Cài đặt & phân quyền",
+    "version": "v26.09.01-b03",
+    "title": "Sửa nhận diện khi import Chất chuẩn đối chiếu",
     "features": [
-      "Gia cố các luồng quản trị nhạy cảm trong Cài đặt để tránh ghi đè vai trò, mất quyền âm thầm và trạng thái lưu thành công giả khi backend gặp lỗi.",
-      "Phân biệt rõ trạng thái tải lỗi và danh sách người dùng thực sự trống, đồng thời giữ các tài khoản lưu batch thất bại ở trạng thái được chọn để quản trị viên thử lại.",
-      "Bổ sung validation danh mục dữ liệu và định mức hao hụt: không bỏ qua dòng nhập dở, chặn mã trùng và giới hạn phần trăm trong khoảng 0–100%.",
-      "Bổ sung loading/error feedback cho vai trò, tài nguyên chẩn đoán và các thao tác lưu cấu hình hệ thống.",
-      "Chặn tạo vai trò có ID hoặc tên trùng để không ghi đè cấu hình hiện có; chặn xóa vai trò còn nhân viên đang sử dụng."
+      "Import Chất chuẩn đối chiếu nay nhận diện đúng từng hồ sơ theo Mã quản lý nội bộ, tránh cập nhật nhầm chuẩn cũ khi tên hoặc số lô trùng nhau.",
+      "Khi một dòng import có Mã quản lý khác hồ sơ đang có, hệ thống tạo hồ sơ chất chuẩn mới thay vì fallback theo Tên chuẩn + Số lô và ghi đè hồ sơ cũ."
     ]
   },
   "assetGroups": [

@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.01-b02
+## Phiên bản hiện tại: v26.09.01-b03
+
+### v26.09.01-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Import Chất chuẩn đối chiếu nay nhận diện đúng từng hồ sơ theo Mã quản lý nội bộ, tránh cập nhật nhầm chuẩn cũ khi tên hoặc số lô trùng nhau.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Không có thay đổi trong nhóm này.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khi một dòng import có Mã quản lý khác hồ sơ đang có, hệ thống tạo hồ sơ chất chuẩn mới thay vì fallback theo Tên chuẩn + Số lô và ghi đè hồ sơ cũ.
 
 ### v26.09.01-b02
 

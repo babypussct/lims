@@ -1,5 +1,19 @@
 [
   {
+    "version": "v26.09.01-b03",
+    "date": "1/9/2026",
+    "title": "Sửa nhận diện khi import Chất chuẩn đối chiếu",
+    "highlights": [
+      "Import Chất chuẩn đối chiếu nay nhận diện đúng từng hồ sơ theo Mã quản lý nội bộ, tránh cập nhật nhầm chuẩn cũ khi tên hoặc số lô trùng nhau."
+    ],
+    "features": [],
+    "improvements": [],
+    "fixes": [
+      "Khi một dòng import có Mã quản lý khác hồ sơ đang có, hệ thống tạo hồ sơ chất chuẩn mới thay vì fallback theo Tên chuẩn + Số lô và ghi đè hồ sơ cũ."
+    ],
+    "releaseOrder": 26090100003
+  },
+  {
     "version": "v26.09.01-b02",
     "date": "1/9/2026",
     "title": "Gia cố an toàn Cài đặt & phân quyền",
