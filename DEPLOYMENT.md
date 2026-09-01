@@ -43,6 +43,69 @@ Không deploy production trực tiếp từ working tree chưa commit hoặc com
 
 Project Vercel duy nhất của ứng dụng là `nafiqpm6`, dùng Git Integration để build `main` và Deployment Checks để chặn promotion trước CI. `npm run deploy:prod` được giữ lại như lệnh fallback/manual khi có yêu cầu break-glass rõ ràng; thao tác này vẫn phải qua `release:predeploy`, kiểm tra release metadata của commit cuối và phải được ghi nhận bằng SHA/deployment ID.
 
+### Runbook Vercel chuẩn
+
+Đây là quy trình mặc định cho mọi frontend release từ ngày 02/09/2026. Đường production chuẩn là **Git Integration + Deployment Check**; Vercel CLI được cài trong `devDependencies` để kiểm tra, đồng bộ cấu hình và dùng cho tình huống manual/fallback, không thay thế đường Git mặc định.
+
+```bash
+# 1. Cập nhật release-notes.json, sau đó phát sinh/sync version
+npm run release:prepare
+
+# 2. Chạy toàn bộ test, typecheck và production build
+npm run release:verify
+
+# 3. Review thay đổi, commit release, rồi kiểm tra trước push
+git status
+git diff --check
+npm run release:prepush
+
+# 4. Push main; Vercel Git Integration tự tạo production deployment
+git push origin main
+
+# 5. Kiểm tra tài khoản/project Vercel đang liên kết
+npm run vercel:status
+```
+
+Sau khi push, chỉ chấp nhận release khi GitHub Release Gate và Deployment Check của đúng Git SHA đều thành công, deployment Vercel ở trạng thái `READY`, alias production trả HTTP `200` và `/ngsw.json` chứa đúng version vừa phát hành.
+
+Các lệnh Vercel CLI đã chuẩn hóa trong `package.json`:
+
+```bash
+# Kiểm tra login + project đang link
+npm run vercel:status
+
+# Đồng bộ project settings về máy local
+npm run vercel:pull
+
+# Kéo environment variables về .env.local; file này không được commit
+npm run vercel:env:pull
+
+# Tạo preview deployment có release gate
+npm run deploy:preview
+
+# Manual/break-glass production deployment; KHÔNG dùng cho release Git bình thường
+npm run deploy:prod
+```
+
+`deploy:prod` chỉ được dùng khi có yêu cầu manual/fallback rõ ràng. Trước khi chạy, commit phải ở `main`, working tree sạch, commit đã được push và `HEAD` phải trùng `origin/main`; script sẽ tự chạy `release:predeploy` để chặn các trường hợp không đạt. Không chạy thêm `deploy:prod` cho cùng commit nếu Git Integration đã tạo production deployment bình thường.
+
+Checklist xác minh production tối thiểu:
+
+```bash
+# Git phải đồng bộ
+git status --short
+git rev-parse HEAD
+git rev-parse origin/main
+
+# Alias chính phải phục vụ thành công
+curl -I https://nafiqpm6.vercel.app/
+
+# Service-worker manifest phải mang đúng version release
+curl -fsSL https://nafiqpm6.vercel.app/ngsw.json
+```
+
+Khi cần bằng chứng audit, lưu Git SHA, deployment ID/URL, trạng thái `READY`, kết quả Deployment Check và version đọc từ `/ngsw.json`. Không ghi token, secret hoặc nội dung `.env.local` vào tài liệu, changelog hay log chia sẻ.
+
 ## Backup toàn diện LIMS trên Spark
 
 Backup/restore toàn diện được triển khai bằng API serverless của Vercel và Google Drive API. Thiết kế này **không dùng Firestore managed export/import, Cloud Storage hoặc Cloud Functions**, vì vậy không cần chuyển Firebase sang Blaze chỉ để chạy backup. Tất cả payload được nén và mã hóa AES-256-GCM trước khi upload Drive.
