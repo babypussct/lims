@@ -770,13 +770,13 @@ export class StatisticsComponent {
   });
 
   getLogActionIcon(action: string): string {
-    if (!isRegisteredActivityAction(action)) return 'fa-solid fa-bolt text-indigo-500';
+    if (!isRegisteredActivityAction(action)) return 'fa-solid fa-bolt text-fuchsia-500';
     const definition = getActivityActionDefinition(action);
     const tone = definition.importance === 'WARNING'
         ? 'text-red-500'
         : definition.importance === 'IMPORTANT'
             ? 'text-blue-500'
-            : 'text-indigo-500';
+            : 'text-fuchsia-500';
     return `fa-solid fa-${definition.iconKey} ${tone}`;
   }
 

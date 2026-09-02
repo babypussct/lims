@@ -247,10 +247,10 @@ export class ConfigRolesComponent implements OnInit {
     {
       name: 'Chất chuẩn đối chiếu',
       icon: 'fa-vial-circle-check',
-      color: 'text-indigo-500',
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      border: 'border-indigo-100 dark:border-indigo-800/30',
-      ring: 'var(--tw-colors-indigo-500, #6366f1)',
+      color: 'text-fuchsia-500',
+      bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20',
+      border: 'border-fuchsia-100 dark:border-fuchsia-800/30',
+      ring: 'var(--tw-colors-fuchsia-500, #6366f1)',
       perms: [
         { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem chất chuẩn' },
         { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn chất chuẩn' },

@@ -59,7 +59,7 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                 <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                                     Phân loại hóa chất
                                 </label>
-                                <select [(ngModel)]="rule.category" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                <select [(ngModel)]="rule.category" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                     <option value="" disabled selected>-- Chọn phân loại áp dụng --</option>
                                     @for(cat of state.categories(); track cat.id) {
                                         <option [value]="cat.id">{{cat.name}} ({{cat.id}})</option>
@@ -70,7 +70,7 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Tỷ lệ hao hụt:</span>
                                     <div class="relative w-24">
-                                        <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                        <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                         <span class="absolute right-2.5 top-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">%</span>
                                     </div>
                                 </div>
@@ -102,7 +102,7 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                 @for (rule of safetyRulesLocal(); track $index) {
                                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition">
                                         <td class="px-4 py-2.5">
-                                            <select [(ngModel)]="rule.category" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-1.5 outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                            <select [(ngModel)]="rule.category" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-1.5 outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                                 <option value="" disabled selected>-- Chọn phân loại áp dụng --</option>
                                                 @for(cat of state.categories(); track cat.id) {
                                                     <option [value]="cat.id">{{cat.name}} ({{cat.id}})</option>
@@ -111,7 +111,7 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                         </td>
                                         <td class="px-4 py-2.5 text-center">
                                             <div class="relative mx-auto w-24">
-                                                <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                                <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                                 <span class="absolute right-2.5 top-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">%</span>
                                             </div>
                                         </td>
@@ -137,8 +137,8 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
         </div>
 
         <!-- Helper / Info Panel -->
-        <div class="bg-indigo-50/60 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 p-6">
-            <h4 class="font-black text-indigo-800 dark:text-indigo-300 text-sm mb-3 flex items-center gap-2">
+        <div class="bg-fuchsia-50/60 dark:bg-fuchsia-950/20 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-900/40 p-6">
+            <h4 class="font-black text-fuchsia-800 dark:text-fuchsia-300 text-sm mb-3 flex items-center gap-2">
                 <i class="fa-solid fa-circle-info" aria-hidden="true"></i> Hướng Dẫn Vận Hành
             </h4>
             <ul class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 space-y-3 list-disc pl-4">

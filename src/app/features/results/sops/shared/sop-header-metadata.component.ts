@@ -10,7 +10,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
   template: `
     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
       <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-        <i class="fa-solid fa-file-invoice mr-2 text-indigo-500 text-sm"></i> {{ title }}
+        <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> {{ title }}
       </h4>
 
       <!-- Signature Dates -->
@@ -21,7 +21,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
             [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']"
             (ngModelChange)="onDataChanged()"
             [disabled]="isReadOnly"
-            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none disabled:opacity-75 disabled:cursor-not-allowed">
+            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none disabled:opacity-75 disabled:cursor-not-allowed">
           </div>
           <div>
             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký/ Người thẩm tra</label>
@@ -29,7 +29,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
               [(ngModel)]="draft.page1Data['ngayNguoiThamTra']"
               (ngModelChange)="onDataChanged()"
               [disabled]="isReadOnly"
-              class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none disabled:opacity-75 disabled:cursor-not-allowed">
+              class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none disabled:opacity-75 disabled:cursor-not-allowed">
             </div>
           </div>
 
@@ -50,7 +50,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                       [(ngModel)]="draft.page1Data[checkbox.key]"
                       (ngModelChange)="onCheckboxChange(checkbox.key)"
                       [disabled]="isReadOnly"
-                      class="mt-0.5 w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700 disabled:opacity-75">
+                      class="mt-0.5 w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700 disabled:opacity-75">
                       <div>
                         <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                       </div>

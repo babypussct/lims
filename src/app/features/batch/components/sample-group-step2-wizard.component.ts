@@ -55,10 +55,10 @@ interface WizardSopSuggestion {
   standalone: true,
   imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent],
   template: `
-    <section class="smartbatch-group-wizard w-full h-full min-h-0 rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm overflow-hidden flex flex-col">
+    <section class="smartbatch-group-wizard w-full h-full min-h-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm overflow-hidden flex flex-col">
       <header class="shrink-0 min-h-[40px] px-3 sm:px-5 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between gap-3">
         <div class="flex items-center gap-2 min-w-0">
-          <span class="text-[9px] uppercase tracking-[0.14em] font-black text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+          <span class="text-[9px] uppercase tracking-[0.14em] font-black text-fuchsia-600 dark:text-fuchsia-400 whitespace-nowrap">
             <i class="fa-solid fa-list-check mr-1"></i>SmartBatch · Nhóm mẻ
           </span>
           <span class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[9px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -82,9 +82,9 @@ interface WizardSopSuggestion {
 
           @for (group of drafts(); track group.id; let i = $index) {
             <article class="rounded-2xl border bg-white dark:bg-slate-800 transition shadow-sm"
-                     [class.border-indigo-400]="activeGroupId() === group.id"
+                     [class.border-fuchsia-400]="activeGroupId() === group.id"
                      [class.ring-2]="activeGroupId() === group.id"
-                     [class.ring-indigo-100]="activeGroupId() === group.id"
+                     [class.ring-fuchsia-100]="activeGroupId() === group.id"
                      [class.border-emerald-300]="isGroupCompleted(group.id) && activeGroupId() !== group.id"
                      [class.border-slate-200]="!isGroupCompleted(group.id) && activeGroupId() !== group.id"
                      [class.dark:border-slate-700]="!isGroupCompleted(group.id) && activeGroupId() !== group.id">
@@ -93,8 +93,8 @@ interface WizardSopSuggestion {
                   <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0"
                         [class.bg-emerald-100]="isGroupCompleted(group.id)"
                         [class.text-emerald-700]="isGroupCompleted(group.id)"
-                        [class.bg-indigo-100]="!isGroupCompleted(group.id)"
-                        [class.text-indigo-700]="!isGroupCompleted(group.id)">
+                        [class.bg-fuchsia-100]="!isGroupCompleted(group.id)"
+                        [class.text-fuchsia-700]="!isGroupCompleted(group.id)">
                     @if (isGroupCompleted(group.id)) { <i class="fa-solid fa-check"></i> } @else { {{i + 1}} }
                   </span>
                   <span class="min-w-0 flex-1">
@@ -127,21 +127,21 @@ interface WizardSopSuggestion {
 
         <main class="min-w-0 min-h-0">
           @if (activeGroup(); as group) {
-            <div class="h-full min-h-0 rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm flex flex-col">
+            <div class="h-full min-h-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm flex flex-col">
               <div class="shrink-0 px-4 sm:px-5 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
                 <h3 class="text-sm font-black text-slate-900 dark:text-slate-100 truncate">{{group.name}}</h3>
-                <div class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-black shadow-sm whitespace-nowrap">Bước {{activeStep()}}/2</div>
+                <div class="px-2.5 py-1 rounded-lg bg-fuchsia-600 text-white text-[10px] font-black shadow-sm whitespace-nowrap">Bước {{activeStep()}}/2</div>
               </div>
 
               <div class="shrink-0 px-3 sm:px-5 py-1.5 border-b border-slate-200 dark:border-slate-700">
                 <div class="grid grid-cols-2 gap-2">
                   @for (label of stepLabels; track label; let i = $index) {
                     <button type="button" (click)="goToStep((i + 1) === 1 ? 1 : 2)" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black transition text-left"
-                            [class.bg-indigo-50]="activeStep() >= i + 1" [class.dark:bg-indigo-950]="activeStep() >= i + 1"
-                            [class.text-indigo-700]="activeStep() >= i + 1" [class.dark:text-indigo-300]="activeStep() >= i + 1"
+                            [class.bg-fuchsia-50]="activeStep() >= i + 1" [class.dark:bg-fuchsia-950]="activeStep() >= i + 1"
+                            [class.text-fuchsia-700]="activeStep() >= i + 1" [class.dark:text-fuchsia-300]="activeStep() >= i + 1"
                             [class.text-slate-400]="activeStep() < i + 1">
                       <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                            [class.bg-indigo-600]="activeStep() >= i + 1" [class.text-white]="activeStep() >= i + 1"
+                            [class.bg-fuchsia-600]="activeStep() >= i + 1" [class.text-white]="activeStep() >= i + 1"
                             [class.bg-slate-100]="activeStep() < i + 1" [class.dark:bg-slate-700]="activeStep() < i + 1">{{i + 1}}</span>
                       <span>{{label}}</span>
                     </button>
@@ -152,20 +152,20 @@ interface WizardSopSuggestion {
               <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20">
                 @if (activeStep() === 1) {
                   <section class="max-w-5xl mx-auto space-y-4 animate-fade-in">
-                    <div class="rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 px-3 py-2.5">
-                      <h4 class="text-xs font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-2"><i class="fa-solid fa-vials"></i> 1. Thông tin mẫu</h4>
-                      <p class="mt-0.5 text-[10px] text-indigo-800/80 dark:text-indigo-300/80">Nhập mã mẫu · xác nhận nền mẫu · kiểm tra mô tả từ <b>mã[TAB]mô tả</b>.</p>
+                    <div class="rounded-xl border border-fuchsia-100 dark:border-fuchsia-900/50 bg-fuchsia-50/70 dark:bg-fuchsia-950/20 px-3 py-2.5">
+                      <h4 class="text-xs font-black text-fuchsia-900 dark:text-fuchsia-200 flex items-center gap-2"><i class="fa-solid fa-vials"></i> 1. Thông tin mẫu</h4>
+                      <p class="mt-0.5 text-[10px] text-fuchsia-800/80 dark:text-fuchsia-300/80">Nhập mã mẫu · xác nhận nền mẫu · kiểm tra mô tả từ <b>mã[TAB]mô tả</b>.</p>
                     </div>
 
                     <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(260px,0.7fr)] gap-4 items-start">
                       <label class="block">
                         <span class="block text-[10px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400 mb-1.5">Danh sách mã số mẫu <span class="text-red-500">*</span></span>
                         <textarea rows="5" [ngModel]="group.rawSamples" (ngModelChange)="updateSamples($event)" aria-label="Danh sách mã số mẫu *"
-                                  class="w-full min-h-[132px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50 focus:border-indigo-500"
+                                  class="w-full min-h-[132px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 dark:focus:ring-fuchsia-900/50 focus:border-fuchsia-500"
                                   placeholder="VD:&#10;0311&#9;Cá tra&#10;0411&#9;Cá tra"></textarea>
                         <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                           <span><i class="fa-solid fa-circle-info mr-1"></i>{{sampleCodes(group).length}} mã mẫu hợp lệ</span>
-                          @if (singleMode) { <span class="font-bold text-indigo-600 dark:text-indigo-400">Chế độ một mẫu</span> }
+                          @if (singleMode) { <span class="font-bold text-fuchsia-600 dark:text-fuchsia-400">Chế độ một mẫu</span> }
                         </div>
                       </label>
 
@@ -248,7 +248,7 @@ interface WizardSopSuggestion {
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
                             <input [ngModel]="targetSearch()" (ngModelChange)="targetSearch.set($event)" class="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none focus:border-emerald-500" placeholder="Tìm chỉ tiêu...">
                           </div>
-                          <button type="button" (click)="toggleTargetGroupPicker()" class="px-3 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900 text-[10px] font-black">
+                          <button type="button" (click)="toggleTargetGroupPicker()" class="px-3 py-2.5 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-900 text-[10px] font-black">
                             <i class="fa-solid fa-layer-group mr-1"></i> Chọn Nhóm Chỉ Tiêu
                           </button>
                           <button type="button" (click)="selectAllTargets()" class="px-3 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-black">Chọn hết</button>
@@ -256,15 +256,15 @@ interface WizardSopSuggestion {
                         </div>
 
                         @if (showTargetGroupPicker()) {
-                          <div class="rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/20 p-3 space-y-2">
+                          <div class="rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900 bg-fuchsia-50/60 dark:bg-fuchsia-950/20 p-3 space-y-2">
                             <div class="flex items-center justify-between gap-2">
-                              <div class="text-xs font-black text-indigo-800 dark:text-indigo-300">Chọn Nhóm Chỉ Tiêu</div>
+                              <div class="text-xs font-black text-fuchsia-800 dark:text-fuchsia-300">Chọn Nhóm Chỉ Tiêu</div>
                               <button type="button" (click)="showTargetGroupPicker.set(false)" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <input [ngModel]="targetGroupSearch()" (ngModelChange)="targetGroupSearch.set($event)" class="w-full px-3 py-2 rounded-xl border border-indigo-100 dark:border-indigo-900 bg-white dark:bg-slate-900 text-xs font-bold outline-none" placeholder="Tìm nhóm chỉ tiêu...">
+                            <input [ngModel]="targetGroupSearch()" (ngModelChange)="targetGroupSearch.set($event)" class="w-full px-3 py-2 rounded-xl border border-fuchsia-100 dark:border-fuchsia-900 bg-white dark:bg-slate-900 text-xs font-bold outline-none" placeholder="Tìm nhóm chỉ tiêu...">
                             <div class="max-h-[210px] overflow-y-auto custom-scrollbar space-y-1">
                               @for (targetGroup of filteredTargetGroups(); track targetGroup.id) {
-                                <button type="button" (click)="importTargetGroup(targetGroup)" class="w-full text-left rounded-xl border border-indigo-100 dark:border-indigo-900 bg-white dark:bg-slate-900 px-3 py-2 hover:border-indigo-400 transition">
+                                <button type="button" (click)="importTargetGroup(targetGroup)" class="w-full text-left rounded-xl border border-fuchsia-100 dark:border-fuchsia-900 bg-white dark:bg-slate-900 px-3 py-2 hover:border-fuchsia-400 transition">
                                   <div class="text-xs font-black text-slate-800 dark:text-slate-100">{{targetGroup.name}}</div>
                                   <div class="mt-0.5 text-[9px] text-slate-400">{{targetGroup.targets.length}} chỉ tiêu{{targetGroup.description ? ' · ' + targetGroup.description : ''}}</div>
                                 </button>
@@ -288,14 +288,14 @@ interface WizardSopSuggestion {
                         </div>
                         <div class="flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-400">
                           <span>Đã chọn {{group.selectedTargets.size}} chỉ tiêu cho toàn bộ nhóm</span>
-                          @if (selectedTargetGroupName(group)) { <span class="text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-layer-group mr-1"></i>{{selectedTargetGroupName(group)}}</span> }
+                          @if (selectedTargetGroupName(group)) { <span class="text-fuchsia-600 dark:text-fuchsia-400"><i class="fa-solid fa-layer-group mr-1"></i>{{selectedTargetGroupName(group)}}</span> }
                         </div>
                       </div>
 
                       <div class="space-y-3">
-                        <div class="rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 p-3">
+                        <div class="rounded-2xl border border-fuchsia-100 dark:border-fuchsia-900/50 bg-fuchsia-50/70 dark:bg-fuchsia-950/20 p-3">
                           <div class="flex items-center justify-between gap-3">
-                            <div class="text-[10px] uppercase tracking-wide font-black text-indigo-700 dark:text-indigo-300"><i class="fa-solid fa-code-branch mr-1"></i>Gợi ý Quy trình (SOP)</div>
+                            <div class="text-[10px] uppercase tracking-wide font-black text-fuchsia-700 dark:text-fuchsia-300"><i class="fa-solid fa-code-branch mr-1"></i>Gợi ý Quy trình (SOP)</div>
                             <span class="text-[9px] font-bold text-slate-400">Tối đa 5 SOP phù hợp nhất</span>
                           </div>
 
@@ -311,15 +311,15 @@ interface WizardSopSuggestion {
                               @for (suggestion of sopSuggestions(group); track suggestion.sop.id) {
                                 <article class="relative rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden transition-all duration-150"
                                          [class.cursor-pointer]="!suggestion.isPartial"
-                                         [class.hover:border-indigo-400]="!suggestion.isPartial && group.forcedSopId !== suggestion.sop.id"
-                                         [class.hover:bg-indigo-50]="!suggestion.isPartial && group.forcedSopId !== suggestion.sop.id"
+                                         [class.hover:border-fuchsia-400]="!suggestion.isPartial && group.forcedSopId !== suggestion.sop.id"
+                                         [class.hover:bg-fuchsia-50]="!suggestion.isPartial && group.forcedSopId !== suggestion.sop.id"
                                          [class.hover:shadow-md]="!suggestion.isPartial && group.forcedSopId !== suggestion.sop.id"
-                                         [class.border-indigo-600]="group.forcedSopId === suggestion.sop.id"
-                                         [class.bg-indigo-50]="group.forcedSopId === suggestion.sop.id"
-                                         [class.dark:bg-indigo-950]="group.forcedSopId === suggestion.sop.id"
+                                         [class.border-fuchsia-600]="group.forcedSopId === suggestion.sop.id"
+                                         [class.bg-fuchsia-50]="group.forcedSopId === suggestion.sop.id"
+                                         [class.dark:bg-fuchsia-950]="group.forcedSopId === suggestion.sop.id"
                                          [class.shadow-lg]="group.forcedSopId === suggestion.sop.id"
                                          [class.ring-2]="group.forcedSopId === suggestion.sop.id"
-                                         [class.ring-indigo-500]="group.forcedSopId === suggestion.sop.id"
+                                         [class.ring-fuchsia-500]="group.forcedSopId === suggestion.sop.id"
                                          [class.ring-offset-2]="group.forcedSopId === suggestion.sop.id"
                                          [attr.tabindex]="suggestion.isPartial ? null : 0"
                                          [attr.aria-pressed]="suggestion.isPartial ? null : group.forcedSopId === suggestion.sop.id"
@@ -332,7 +332,7 @@ interface WizardSopSuggestion {
                                       <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-center gap-1.5">
                                           @if (suggestion.isBest && !suggestion.isPartial) { <span class="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 text-[8px] font-black uppercase"><i class="fa-solid fa-star mr-0.5"></i>Tốt nhất</span> }
-                                          @if (group.forcedSopId === suggestion.sop.id) { <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-600 text-white text-[8px] font-black uppercase"><i class="fa-solid fa-check mr-0.5"></i>Đang chọn</span> }
+                                          @if (group.forcedSopId === suggestion.sop.id) { <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-fuchsia-600 text-white text-[8px] font-black uppercase"><i class="fa-solid fa-check mr-0.5"></i>Đang chọn</span> }
                                           <span class="text-xs font-black text-slate-800 dark:text-slate-100">{{suggestion.sop.name}}</span>
                                         </div>
                                         <div class="mt-1.5 flex flex-wrap gap-2 text-[9px] font-bold text-slate-500 dark:text-slate-400">
@@ -342,7 +342,7 @@ interface WizardSopSuggestion {
                                         </div>
                                       </div>
                                     </div>
-                                    <button type="button" (click)="toggleSopPreview(suggestion.sop.id); $event.stopPropagation()" class="mt-2 text-[9px] font-black text-indigo-600 dark:text-indigo-400 hover:underline"><i class="fa-regular fa-eye mr-1"></i>Xem chi tiết</button>
+                                    <button type="button" (click)="toggleSopPreview(suggestion.sop.id); $event.stopPropagation()" class="mt-2 text-[9px] font-black text-fuchsia-600 dark:text-fuchsia-400 hover:underline"><i class="fa-regular fa-eye mr-1"></i>Xem chi tiết</button>
                                     @if (previewSopId() === suggestion.sop.id) {
                                       <div class="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800 p-2 text-[9px] text-slate-600 dark:text-slate-300 space-y-1">
                                         <div><b>Đã phủ:</b> {{suggestion.coveredTargets.join(', ') || '—'}}</div>
@@ -365,7 +365,7 @@ interface WizardSopSuggestion {
                           <label class="block">
                             <span class="sr-only">SOP áp dụng cho nhóm</span>
                             <select [ngModel]="group.forcedSopId || ''" (ngModelChange)="updateForcedSop($event === '' ? undefined : $event)" aria-label="SOP hiện tại"
-                                    class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500">
+                                    class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500">
                               <option value="">Tự phân phối bởi SmartBatch</option>
                               @for (sop of assignableSops(group); track sop.id) { <option [value]="sop.id">{{sop.isManualOnly ? 'Thủ công: ' : 'Chỉ định: '}}{{sop.name}}</option> }
                             </select>
@@ -414,7 +414,7 @@ interface WizardSopSuggestion {
               </footer>
             </div>
           } @else {
-            <div class="h-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/50 flex items-center justify-center">
+            <div class="h-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/50 flex items-center justify-center">
               <app-empty-state
                 icon="fa-check-double"
                 title="Các nhóm mẻ đã được lưu trong bước 2"

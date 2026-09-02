@@ -73,9 +73,9 @@
         @if (searchTerm() || fromDate() || toDate() || userFilter() || actionFilter()) {
           <div class="flex flex-wrap gap-2 mx-2 -mt-1">
             @if (searchTerm()) {
-              <div class="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-indigo-100 dark:border-indigo-800/50">
+              <div class="px-3 py-1 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-fuchsia-100 dark:border-fuchsia-800/50">
                 <i class="fa-solid fa-search text-[10px]"></i> "{{searchTerm()}}"
-                <button (click)="searchTerm.set('')" class="hover:text-indigo-800 dark:hover:text-indigo-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+                <button (click)="searchTerm.set('')" class="hover:text-fuchsia-800 dark:hover:text-fuchsia-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
               </div>
             }
             @if (userFilter()) {
@@ -103,7 +103,7 @@
         <!-- Summary Stats Bar -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mx-2">
           <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 flex items-center justify-center text-xl">
+            <div class="w-12 h-12 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center text-xl">
               <i class="fa-solid fa-list"></i>
             </div>
             <div>
@@ -149,25 +149,31 @@
         }
 
         <!-- Data Table -->
-        <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden flex-1">
+        <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex-1">
           <div class="flex-1 overflow-x-auto custom-scrollbar">
             <table class="w-full text-left border-separate border-spacing-0">
               <thead class="bg-slate-50/50 dark:bg-slate-800/80 sticky top-0 z-30">
                 <tr>
-                  <th (click)="toggleSort('timestamp')" class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-                    Ngày lưu / NV dùng
-                    @if (sortColumn() === 'timestamp') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
-                    @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                  <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                    <button type="button" (click)="toggleSort('timestamp')" class="-m-2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" aria-label="Sắp xếp theo ngày lưu hoặc nhân viên dùng">
+                      Ngày lưu / NV dùng
+                      @if (sortColumn() === 'timestamp') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
+                      @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                    </button>
                   </th>
-                  <th (click)="toggleSort('standardName')" class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-                    Thông tin chuẩn
-                    @if (sortColumn() === 'standardName') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
-                    @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                  <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                    <button type="button" (click)="toggleSort('standardName')" class="-m-2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" aria-label="Sắp xếp theo thông tin chuẩn">
+                      Thông tin chuẩn
+                      @if (sortColumn() === 'standardName') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
+                      @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                    </button>
                   </th>
-                  <th (click)="toggleSort('amount_used')" class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-                    Lượng tiêu hao
-                    @if (sortColumn() === 'amount_used') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
-                    @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                  <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 text-right">
+                    <button type="button" (click)="toggleSort('amount_used')" class="-m-2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" aria-label="Sắp xếp theo lượng tiêu hao">
+                      Lượng tiêu hao
+                      @if (sortColumn() === 'amount_used') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
+                      @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                    </button>
                   </th>
                   <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">Mục đích</th>
                   <th class="px-6 py-4 text-center w-16 border-b border-slate-100 dark:border-slate-700"></th>
@@ -185,14 +191,14 @@
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
                       <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
-                          <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 flex items-center justify-center font-black text-xs border border-indigo-100/50 dark:border-indigo-800/30">
+                          <div class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center font-black text-xs border border-fuchsia-100/50 dark:border-fuchsia-800/30">
                             {{(log.user || '?').charAt(0).toUpperCase()}}
                           </div>
                           <div>
                             <div class="flex items-center gap-2">
                               <div class="text-[13px] font-black text-slate-800 dark:text-slate-200">{{log.user || 'N/A'}}</div>
                               @if(log.isBackfill) {
-                                <span class="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-[8px] font-black uppercase tracking-wider">Nhập bù</span>
+                                <span class="px-1.5 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 text-[8px] font-black uppercase tracking-wider">Nhập bù</span>
                               }
                             </div>
                             <div class="text-[10px] font-bold text-slate-400">{{log.timestamp | date:'dd/MM/yyyy HH:mm'}}</div>
@@ -201,9 +207,9 @@
                       </td>
                       <td class="px-6 py-4">
                         <div class="flex flex-col gap-0.5 max-w-[300px]">
-                          <span class="text-sm font-black text-slate-700 dark:text-slate-300 truncate transition" [ngClass]="log.standardId ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline' : ''" [title]="log.standardName || 'Không có tên'" (click)="log.standardId && router.navigate(['/standards', log.standardId])">
+                          <button type="button" [disabled]="!log.standardId" class="text-left text-sm font-black text-slate-700 dark:text-slate-300 truncate transition" [ngClass]="log.standardId ? 'cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:underline' : 'cursor-default'" [title]="log.standardName || 'Không có tên'" (click)="log.standardId && router.navigate(['/standards', log.standardId])">
                             {{log.standardName || '(Nhật ký cũ)'}}
-                          </span>
+                          </button>
                           <div class="flex flex-wrap gap-1.5 mt-1">
                             @if(log.lotNumber) {
                               <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold text-slate-500">Lot: {{log.lotNumber}}</span>
@@ -281,15 +287,15 @@
             <div class="px-5 pb-5 space-y-2 mt-4">
               <!-- 1. Dữ liệu gốc -->
               <div class="border rounded-2xl overflow-hidden transition-all"
-                [class]="exportType() === 'raw' ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-900/20' : 'border-slate-100 dark:border-slate-700'">
+                [class]="exportType() === 'raw' ? 'border-fuchsia-200 bg-fuchsia-50/30 dark:border-fuchsia-800 dark:bg-fuchsia-900/20' : 'border-slate-100 dark:border-slate-700'">
                 <button (click)="!isExporting() && exportType.set('raw'); exportCompleted.set(false)" [disabled]="isExporting()"
                   class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition">
                   <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
-                    [class]="exportType() === 'raw' ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                    [class]="exportType() === 'raw' ? 'bg-fuchsia-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
                     <i class="fa-solid fa-list"></i>
                   </div>
                   <div class="flex-1 text-left">
-                    <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'raw'">1. Nhật ký chi tiết</div>
+                    <div class="text-sm font-black dark:text-slate-200" [class.text-fuchsia-700]="exportType() === 'raw'">1. Nhật ký chi tiết</div>
                     <div class="text-[11px] text-slate-500">Toàn bộ lịch sử thao tác theo dòng thời gian</div>
                   </div>
                 </button>

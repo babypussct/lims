@@ -2,12 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.02-b02",
-    "title": "Chuẩn hóa quy trình triển khai Vercel",
+    "version": "v26.09.02-b03",
+    "title": "Hoàn thiện Soft UI PRO trên toàn bộ LIMS",
     "features": [
-      "Vercel CLI được khóa theo phiên bản của dự án để các lần triển khai dùng cùng một công cụ ổn định.",
-      "Bổ sung các lệnh kiểm tra trạng thái Vercel, đồng bộ cấu hình, kéo biến môi trường và deploy preview trực tiếp từ npm scripts.",
-      "Luồng deploy production tiếp tục đi qua release gate và dùng Vercel CLI cài trong dự án thay vì tải CLI phát sinh trong lúc triển khai."
+      "Đồng bộ ngôn ngữ thiết kế Soft UI PRO trên toàn bộ các khu vực nghiệp vụ hiện có của LIMS, giữ nguyên luồng xử lý và phân quyền.",
+      "Tăng khả năng sử dụng trên desktop, tablet và mobile với vùng bấm rõ hơn, thao tác bàn phím tốt hơn và hành động không còn phụ thuộc vào hover.",
+      "Chuẩn hóa shell, sidebar, header, trang cài đặt, bảng dữ liệu, modal và các primitive dùng chung theo hệ thống màu, bo góc, bóng đổ và khoảng cách Soft UI.",
+      "Cải thiện độ dễ đọc và kích thước control tại Results, Standards, SOP, Recipes, Targets, Config, Inventory, Documents và các màn hình xác thực.",
+      "Tối ưu trạng thái focus, selected, responsive action và các control sao chép, in nhãn, chọn dữ liệu, lịch sử phiên bản để thao tác nhất quán hơn."
     ]
   },
   "assetGroups": [

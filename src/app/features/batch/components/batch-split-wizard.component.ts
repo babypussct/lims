@@ -60,11 +60,11 @@ export interface SplitWizardState {
                         <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                             <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                 @for(sample of state().availableSamples; track sample) {
-                                    <div (click)="toggleSample(sample)" 
+                                    <button type="button" (click)="toggleSample(sample)" [attr.aria-pressed]="state().selectedSamples.has(sample)"
                                          class="p-3 md:p-2 rounded-lg border cursor-pointer text-center transition select-none"
                                          [class]="state().selectedSamples.has(sample) ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-105' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'">
                                         <span class="text-sm md:text-xs font-mono font-bold">{{sample}}</span>
-                                    </div>
+                                    </button>
                                 }
                             </div>
                         </div>
@@ -105,7 +105,7 @@ export interface SplitWizardState {
                         <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">Đề Xuất Quy Trình (SOP) Phù Hợp</h4>
                         <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
                             @for(sop of filteredSops(); track sop.id) {
-                                <div (click)="selectSop(sop.id)" 
+                                <button type="button" (click)="selectSop(sop.id)" [attr.aria-pressed]="state().selectedSopId === sop.id"
                                      class="p-4 rounded-xl border cursor-pointer transition flex justify-between items-center group relative overflow-hidden"
                                      [class]="state().selectedSopId === sop.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-2 ring-blue-500 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500'">
                                     
@@ -121,7 +121,7 @@ export interface SplitWizardState {
                                         <div class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Độ phủ</div>
                                         <div class="text-lg font-black text-emerald-600 dark:text-emerald-400">100%</div>
                                     </div>
-                                </div>
+                                </button>
                             }
                             @if(filteredSops().length === 0) {
                                 <div class="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">

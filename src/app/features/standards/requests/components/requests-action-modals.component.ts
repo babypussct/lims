@@ -30,7 +30,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
               <i class="fa-solid fa-vial" aria-hidden="true"></i>
             </div>
             <h3 class="mb-1 line-clamp-2 text-lg font-black leading-tight text-slate-800 dark:text-slate-100">{{request.standardName}}</h3>
-            <div class="mb-5 text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Thông tin chuẩn bàn giao</div>
+            <div class="mb-5 text-xs font-bold uppercase tracking-widest text-fuchsia-600 dark:text-fuchsia-400">Thông tin chuẩn bàn giao</div>
 
             <div class="space-y-4">
               <div class="flex flex-col">
@@ -50,7 +50,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
               @if(request.standardDetails?.internal_id) {
                 <div class="flex flex-col">
                   <span class="text-xs font-bold uppercase text-slate-400">Mã quản lý</span>
-                  <span class="text-lg font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-400">{{request.standardDetails?.internal_id}}</span>
+                  <span class="text-lg font-black uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">{{request.standardDetails?.internal_id}}</span>
                 </div>
               }
             </div>
@@ -69,14 +69,14 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
             <div>
               <label class="mb-2 block text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Lượng dự kiến dùng</label>
               <div class="relative">
-                <input type="number" min="0" step="any" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-bold text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" placeholder="VD: 5">
+                <input type="number" min="0" step="any" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-bold text-slate-700 outline-none focus:border-fuchsia-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" placeholder="VD: 5">
                 <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
               </div>
             </div>
 
             <div>
               <label class="mb-2 block text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mục đích sử dụng <span class="text-red-500">*</span></label>
-              <textarea [ngModel]="approvePurpose()" (ngModelChange)="approvePurpose.set($event)" rows="4" class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-bold text-slate-700 outline-none transition-all placeholder-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" placeholder="Nhập mục đích bàn giao..."></textarea>
+              <textarea [ngModel]="approvePurpose()" (ngModelChange)="approvePurpose.set($event)" rows="4" class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-bold text-slate-700 outline-none transition-all placeholder-slate-300 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" placeholder="Nhập mục đích bàn giao..."></textarea>
             </div>
           </section>
         </div>
@@ -127,11 +127,11 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
         (closed)="onClose()"
       >
         <div modalBody class="space-y-6">
-                  <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30">
+                  <div class="bg-fuchsia-50/50 dark:bg-fuchsia-900/10 p-4 rounded-2xl border border-fuchsia-100/50 dark:border-fuchsia-800/30">
                       <h4 class="font-black text-slate-800 dark:text-slate-100 leading-tight mb-2">{{request.standardName}}</h4>
                       <div class="flex justify-between items-center">
                           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tồn kho hiện tại</span>
-                          <span class="font-black text-indigo-600">{{formatNum(standard?.current_amount || request.standardDetails?.current_amount || 0)}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
+                          <span class="font-black text-fuchsia-600">{{formatNum(standard?.current_amount || request.standardDetails?.current_amount || 0)}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                       </div>
                   </div>
 
@@ -156,7 +156,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <div>
                           <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số lượng báo cáo (ghi sổ)</label>
                           <div class="relative">
-                              <input type="number" [min]="minimumLoggedAmount()" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
+                              <input type="number" [min]="minimumLoggedAmount()" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none pr-12" placeholder="Số lượng...">
                               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                       </div>
@@ -164,7 +164,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <div>
                           <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
                           <div class="relative">
-                              <input type="number" min="0" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
+                              <input type="number" min="0" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none pr-12" placeholder="Nhập số lượng...">
                               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                           @if (returnAmount() !== null && returnAmount()! > (standard?.current_amount || request.standardDetails?.current_amount || 0)) {
@@ -178,22 +178,22 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       <label for="isDepleted" class="text-sm font-bold text-amber-700 dark:amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
                   </div>
 
-                  <div class="space-y-2 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
+                  <div class="space-y-2 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-800/30 bg-fuchsia-50/40 dark:bg-fuchsia-900/10 p-4">
                       <div class="flex items-center justify-between">
-                           <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Nhãn phương pháp thử <span class="font-medium text-indigo-500">(chọn nhiều, {{returnSopTags().length}}/{{maxReturnTags}})</span></label>
+                           <label class="text-sm font-black text-fuchsia-700 dark:text-fuchsia-300">Nhãn phương pháp thử <span class="font-medium text-fuchsia-500">(chọn nhiều, {{returnSopTags().length}}/{{maxReturnTags}})</span></label>
                           <button type="button" (click)="returnSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
                       </div>
-                       <p class="text-[11px] text-indigo-600/80 dark:text-indigo-300/80">Một báo cáo có thể gắn nhiều phương pháp hóa học cùng lúc.</p>
+                       <p class="text-[11px] text-fuchsia-600/80 dark:text-fuchsia-300/80">Một báo cáo có thể gắn nhiều phương pháp hóa học cùng lúc.</p>
                        <div class="flex gap-2">
-                          <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
+                          <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
                               <option value="">Chọn nhãn trong danh mục...</option>
                                @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                           </select>
-                          <button type="button" (click)="addReturnTag()" [disabled]="!returnTagToAdd() || returnSopTags().length >= maxReturnTags" class="rounded-xl bg-indigo-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
+                          <button type="button" (click)="addReturnTag()" [disabled]="!returnTagToAdd() || returnSopTags().length >= maxReturnTags" class="rounded-xl bg-fuchsia-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                           @for (key of returnSopTags(); track key) {
-                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeReturnTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-700 px-2.5 py-1 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeReturnTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
                           }
                       </div>
                   </div>
@@ -252,10 +252,10 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
         (closed)="onClose()"
       >
         <div modalBody class="space-y-6">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
                       <div class="flex flex-col">
                           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">NV báo cáo dùng</span>
-                          <span class="text-xl font-black text-indigo-600">{{request.totalAmountUsed}} {{request.standardDetails?.unit}}</span>
+                          <span class="text-xl font-black text-fuchsia-600">{{request.totalAmountUsed}} {{request.standardDetails?.unit}}</span>
                       </div>
                       <div class="flex flex-col">
                           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</span>
@@ -268,7 +268,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <div>
                       <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế trừ kho <span class="text-red-500">*</span></label>
                       <div class="relative">
-                          <input type="number" [min]="minimumLoggedAmount()" step="any" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
+                          <input type="number" [min]="minimumLoggedAmount()" step="any" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
                           <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                       </div>
                   </div>
@@ -285,22 +285,22 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       </div>
                   }
 
-                  <div class="space-y-2 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 bg-indigo-50/40 dark:bg-indigo-900/10 p-4">
+                  <div class="space-y-2 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-800/30 bg-fuchsia-50/40 dark:bg-fuchsia-900/10 p-4">
                       <div class="flex items-center justify-between">
-                           <label class="text-sm font-black text-indigo-700 dark:text-indigo-300">Phương pháp quyết định cuối của Admin <span class="font-medium text-indigo-500">(chọn nhiều, {{adminFinalSopTags().length}}/{{maxReturnTags}})</span></label>
+                           <label class="text-sm font-black text-fuchsia-700 dark:text-fuchsia-300">Phương pháp quyết định cuối của Admin <span class="font-medium text-fuchsia-500">(chọn nhiều, {{adminFinalSopTags().length}}/{{maxReturnTags}})</span></label>
                           <button type="button" (click)="adminFinalSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
                       </div>
-                       <p class="text-[11px] text-indigo-600/80 dark:text-indigo-300/80">Có thể xác nhận nhiều phương pháp áp dụng cho cùng một chuẩn.</p>
+                       <p class="text-[11px] text-fuchsia-600/80 dark:text-fuchsia-300/80">Có thể xác nhận nhiều phương pháp áp dụng cho cùng một chuẩn.</p>
                        <div class="flex gap-2">
-                          <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
+                          <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
                               <option value="">Chọn nhãn trong danh mục...</option>
                                @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                           </select>
-                          <button type="button" (click)="addAdminTag()" [disabled]="!adminTagToAdd() || adminFinalSopTags().length >= maxReturnTags" class="rounded-xl bg-indigo-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
+                          <button type="button" (click)="addAdminTag()" [disabled]="!adminTagToAdd() || adminFinalSopTags().length >= maxReturnTags" class="rounded-xl bg-fuchsia-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                           @for (key of adminFinalSopTags(); track key) {
-                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeAdminTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-700 px-2.5 py-1 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeAdminTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
                           }
                       </div>
                   </div>

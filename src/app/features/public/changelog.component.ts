@@ -34,7 +34,7 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
         </app-page-header>
 
         <!-- Main Card -->
-        <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-10 transition-all duration-300 overflow-hidden">
+        <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-2xl sm:rounded-2xl p-4 sm:p-8 lg:p-10 transition-all duration-300 overflow-hidden">
           
           <div class="border-b border-slate-100 dark:border-slate-700/80 pb-5 sm:pb-6 mb-6 sm:mb-8">
             <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight">Lịch sử nâng cấp hệ thống</h2>
@@ -46,7 +46,7 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
                   <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
                   <input type="search" [(ngModel)]="searchQuery"
                          placeholder="Tìm phiên bản, tính năng..."
-                         class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-semibold text-slate-700 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                         class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-semibold text-slate-700 transition focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 </label>
                 @if (searchQuery()) {
                   <div toolbarActions>
@@ -91,7 +91,7 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
 
                 <h3 class="text-xl font-extrabold text-slate-850 dark:text-white mb-3 tracking-tight">{{ item.title }}</h3>
 
-                <div class="bg-gradient-to-r from-blue-50/70 to-indigo-50/50 dark:from-slate-900/70 dark:to-slate-900/40 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 mb-4">
+                <div class="bg-gradient-to-r from-blue-50/70 to-fuchsia-50/50 dark:from-slate-900/70 dark:to-slate-900/40 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 mb-4">
                   <h4 class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <i class="fa-solid fa-sparkles text-amber-500"></i> Điểm Nổi Bật Bản Này
                   </h4>

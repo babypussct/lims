@@ -5,7 +5,7 @@ import { Component, input } from '@angular/core';
   standalone: true,
   template: `
     <div
-      class="border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 sm:px-6"
+      class="soft-ui-toolbar mx-0 mb-4 bg-white px-4 py-3 dark:bg-slate-900 sm:px-5"
       [class.sticky]="sticky()"
       [class.top-0]="sticky()"
       [class.z-20]="sticky()"

@@ -103,7 +103,7 @@ export class SopCalibrationPointsComponent {
   @Output() pointsChanged = new EventEmitter<any[]>();
 
   get dotColor(): string {
-    return this.isFuchsiaRing ? 'bg-fuchsia-400' : 'bg-violet-400';
+    return this.isFuchsiaRing ? 'bg-fuchsia-400' : 'bg-fuchsia-400';
   }
 
   get gridCols(): string {
@@ -117,7 +117,7 @@ export class SopCalibrationPointsComponent {
   get inputClass(): string {
     const ring = this.isFuchsiaRing
       ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500'
-      : 'focus:ring-violet-500/10 focus:border-violet-500';
+      : 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500';
     return `w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60
             rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 font-semibold
             focus:ring-2 outline-none text-center transition ${ring}`;
@@ -137,8 +137,8 @@ export class SopCalibrationPointsComponent {
       'border-t-slate-400/80',
       'border-t-emerald-500',
       'border-t-teal-500',
-      'border-t-indigo-500',
-      'border-t-purple-500',
+      'border-t-fuchsia-500',
+      'border-t-fuchsia-500',
       'border-t-fuchsia-500',
     ];
     const color = borderColors[idx] ?? 'border-t-slate-400/80';
@@ -151,8 +151,8 @@ export class SopCalibrationPointsComponent {
       'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
       'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400',
       'bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400',
-      'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400',
-      'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400',
+      'bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-400',
+      'bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-400',
       'bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-400',
     ];
     const cls = configs[idx] ?? configs[0];

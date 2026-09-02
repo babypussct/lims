@@ -106,7 +106,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                       </td>
                       <td class="p-2 border-b border-slate-100 dark:border-slate-800">
                         <div class="font-mono">{{item.parsed.lot_number || '—'}}</div>
-                        <div class="font-mono text-indigo-600 dark:text-indigo-400 mt-1">{{item.parsed.product_code || '—'}}</div>
+                        <div class="font-mono text-fuchsia-600 dark:text-fuchsia-400 mt-1">{{item.parsed.product_code || '—'}}</div>
                       </td>
                       <td class="p-2 border-b border-slate-100 dark:border-slate-800 font-mono">
                         <div>Ban đầu: <strong>{{item.parsed.initial_amount}} {{item.parsed.unit}}</strong></div>
@@ -159,7 +159,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
             @if (data().length > rowLimit()) {
               <div class="text-center mt-3">
-                <button type="button" (click)="rowLimit.set(data().length)" class="text-xs font-bold text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                <button type="button" (click)="rowLimit.set(data().length)" class="text-xs font-bold text-fuchsia-600 px-4 py-2 rounded-lg hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20">
                   Hiển thị toàn bộ {{data().length}} dòng
                 </button>
               </div>

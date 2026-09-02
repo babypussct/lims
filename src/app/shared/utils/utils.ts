@@ -439,7 +439,7 @@ export function getExpiryClass(dateStr: string | undefined): string {
     if (exp < today) return 'text-red-600 line-through decoration-2';
     const diffMonths = (exp - today) / (1000 * 3600 * 24 * 30);
     if (diffMonths < 6) return 'text-orange-600'; 
-    return 'text-indigo-600'; 
+    return 'text-fuchsia-600';
 }
 
 export function getExpiryTimeClass(dateStr: string | undefined): string {

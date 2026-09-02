@@ -10,7 +10,7 @@ module.exports = {
     extend: { 
       fontFamily: { 
         sans: ['"Open Sans"', 'sans-serif'],
-        display: ['"Inter"', 'sans-serif'],
+        display: ['"Open Sans"', 'sans-serif'],
       }, 
       colors: { 
         gray: {
@@ -106,10 +106,15 @@ module.exports = {
         fuchsia: {
           ...colors.fuchsia,
           150: '#f5d0ec',
+          350: '#e879d7',
+          405: '#dc5bc5',
           450: '#d63aad',
+          455: '#d437ad',
           500: '#cb0c9f', // Purple (Soft UI Brand)
+          505: '#c60d9c',
           600: '#830051',
           650: '#72004a',
+          655: '#6b0046',
           850: '#3d0028',
           955: '#16000e',
         },
@@ -117,6 +122,10 @@ module.exports = {
         pink: { ...colors.pink, 500: '#d63384' },
       },
       boxShadow: {
+        'sm': '0 2px 4px rgba(0,0,0,0.04)',
+        'md': '0 4px 8px rgba(0,0,0,0.05)',
+        'lg': '0 8px 20px rgba(0,0,0,0.08)',
+        'xl': '0 15px 35px rgba(0,0,0,0.10)',
         'soft-xl': '0 20px 27px 0 rgba(0,0,0,0.05)', // Card Shadow
         'soft-md': '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)', // Input/Button
         'soft-sm': '0 2px 4px 0 rgba(0,0,0,0.02)',
@@ -126,11 +135,13 @@ module.exports = {
         '3xs': '0 0.5px 1px 0 rgba(0,0,0,0.02)',
       },
       borderRadius: {
-        'xl': '1rem',   // 16px
-        '2xl': '1.25rem' // 20px
+        'xl': '0.75rem',
+        '2xl': '1rem'
       },
       backgroundImage: {
-        'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // The Signature Gradient
+        'gradient-soft': 'linear-gradient(310deg, #7928ca 0%, #ff0080 100%)',
+        'gradient-soft-info': 'linear-gradient(310deg, #2152ff 0%, #21d4fd 100%)',
+        'gradient-soft-success': 'linear-gradient(310deg, #17ad37 0%, #98ec2d 100%)',
         'gradient-dark': 'linear-gradient(310deg, #141727, #3a416f)',
       }
     } 

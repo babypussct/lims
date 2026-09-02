@@ -186,7 +186,7 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
               }
               @case ('audio') {
                 <div class="w-full h-full p-5 flex flex-col items-center justify-center">
-                  <div class="w-24 h-24 rounded-3xl bg-fuchsia-100 dark:bg-fuchsia-950 text-fuchsia-600 flex items-center justify-center shadow-inner">
+                  <div class="w-24 h-24 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-950 text-fuchsia-600 flex items-center justify-center shadow-inner">
                     <i class="fa-solid fa-wave-square text-4xl"></i>
                   </div>
                   <audio [src]="objectUrl()" controls (loadedmetadata)="onViewerReady()" class="mt-6 w-full max-w-xl"></audio>

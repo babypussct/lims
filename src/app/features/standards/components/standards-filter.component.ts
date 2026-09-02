@@ -12,9 +12,9 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
     <div class="p-2 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-2 bg-slate-50/30 dark:bg-slate-800/50">
        <div class="flex flex-col md:flex-row gap-2">
            <div class="relative flex-1 group">
-              <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors"></i>
+              <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-fuchsia-500 dark:group-focus-within:text-fuchsia-400 transition-colors"></i>
               <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
-                     class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
+                     class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
                      placeholder="Tìm kiếm chuẩn, mã số, số lô... (Real-time)">
            </div>
            
@@ -46,10 +46,10 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
            </div>
 
            <div class="flex bg-slate-200/50 dark:bg-slate-700/50 p-0.5 rounded-lg shrink-0 h-[30px] self-start md:self-auto">
-              <button (click)="onViewModeChange('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Danh sách">
+              <button (click)="onViewModeChange('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Danh sách">
                   <i class="fa-solid fa-list text-[11px]"></i>
               </button>
-              <button (click)="onViewModeChange('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Lưới (Thẻ)">
+              <button (click)="onViewModeChange('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Lưới (Thẻ)">
                   <i class="fa-solid fa-border-all text-[11px]"></i>
               </button>
            </div>
@@ -63,9 +63,9 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                    (click)="toggleMethodPicker($event)"
                    [attr.aria-expanded]="methodPickerOpen()"
                    aria-haspopup="dialog"
-                   class="flex h-[34px] w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-left shadow-sm dark:shadow-none transition hover:border-indigo-300 dark:hover:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                   class="flex h-[34px] w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-left shadow-sm dark:shadow-none transition hover:border-fuchsia-300 dark:hover:border-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
                >
-                   <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                   <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400">
                        <i class="fa-solid fa-flask-vial text-[10px]"></i>
                    </span>
                    <span class="min-w-0 flex-1">
@@ -99,21 +99,21 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                            <div class="mb-1.5 flex items-center justify-between gap-2">
                                <span class="text-[9px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">Kỹ thuật / nhóm phương pháp</span>
                                @if (deviceFilter() !== 'all') {
-                                   <span class="text-[9px] font-bold text-indigo-500 dark:text-indigo-400">{{filteredMethodOptions().length}} phương pháp phù hợp</span>
+                                   <span class="text-[9px] font-bold text-fuchsia-500 dark:text-fuchsia-400">{{filteredMethodOptions().length}} phương pháp phù hợp</span>
                                }
                            </div>
                            <div class="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar sm:flex-wrap sm:overflow-visible sm:pb-0">
                                <button
                                    type="button"
                                    (click)="selectDeviceFacet('all')"
-                                   [ngClass]="deviceFilter() === 'all' ? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-slate-600'"
+                                   [ngClass]="deviceFilter() === 'all' ? 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-slate-600'"
                                    class="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black transition"
                                >Tất cả <span class="ml-1 opacity-60">{{tagOptions().length}}</span></button>
                                @for (device of visibleDeviceOptions(); track device.code) {
                                    <button
                                        type="button"
                                        (click)="selectDeviceFacet(device.code)"
-                                       [ngClass]="deviceFilter() === device.code ? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-slate-600'"
+                                       [ngClass]="deviceFilter() === device.code ? 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-slate-600'"
                                        class="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black transition"
                                    >{{device.label}} <span class="ml-1 opacity-60">{{deviceMethodCount(device.code)}}</span></button>
                                }
@@ -127,7 +127,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                                    type="text"
                                    [ngModel]="methodSearch()"
                                    (ngModelChange)="methodSearch.set($event)"
-                                   class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+                                   class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/20"
                                    placeholder="Tìm mã, tên phương pháp hoặc kỹ thuật..."
                                >
                            </div>
@@ -138,11 +138,11 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                                <button
                                    type="button"
                                    (click)="selectMethod(option.key)"
-                                   [ngClass]="methodTagFilter() === option.key ? 'bg-indigo-50 dark:bg-indigo-900/25' : ''"
+                                   [ngClass]="methodTagFilter() === option.key ? 'bg-fuchsia-50 dark:bg-fuchsia-900/25' : ''"
                                    class="flex w-full min-w-0 items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
                                >
                                    <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-[9px] text-slate-400">
-                                       @if (methodTagFilter() === option.key) { <i class="fa-solid fa-check text-indigo-500"></i> }
+                                       @if (methodTagFilter() === option.key) { <i class="fa-solid fa-check text-fuchsia-500"></i> }
                                        @else { <i class="fa-solid fa-flask text-[8px]"></i> }
                                    </span>
                                    <span class="min-w-0 flex-1">
@@ -161,7 +161,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                                <div class="px-3 py-8 text-center">
                                    <i class="fa-solid fa-filter-circle-xmark mb-2 text-lg text-slate-300 dark:text-slate-600"></i>
                                    <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Không có phương pháp phù hợp.</div>
-                                   <button type="button" (click)="resetMethodDiscovery()" class="mt-2 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:underline">Xóa tìm kiếm và kỹ thuật</button>
+                                   <button type="button" (click)="resetMethodDiscovery()" class="mt-2 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-400 hover:underline">Xóa tìm kiếm và kỹ thuật</button>
                                </div>
                            }
                        </div>
@@ -170,10 +170,10 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
            </div>
 
            @if (methodTagFilter()) {
-               <span class="inline-flex min-w-0 max-w-full items-center gap-1.5 self-start rounded-full border border-indigo-100 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/25 px-2.5 py-1 text-[10px] font-black text-indigo-700 dark:text-indigo-300 sm:self-auto" [title]="selectedMethodTitle()">
+               <span class="inline-flex min-w-0 max-w-full items-center gap-1.5 self-start rounded-full border border-fuchsia-100 dark:border-fuchsia-800 bg-fuchsia-50 dark:bg-fuchsia-900/25 px-2.5 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300 sm:self-auto" [title]="selectedMethodTitle()">
                    <i class="fa-solid fa-flask-vial text-[9px]"></i>
                    <span class="max-w-[320px] truncate">{{selectedMethodChipText()}}</span>
-                   <button type="button" (click)="clearMethodFilter()" class="ml-0.5 text-indigo-400 hover:text-rose-500" aria-label="Bỏ lọc phương pháp"><i class="fa-solid fa-xmark"></i></button>
+                   <button type="button" (click)="clearMethodFilter()" class="ml-0.5 text-fuchsia-400 hover:text-rose-500" aria-label="Bỏ lọc phương pháp"><i class="fa-solid fa-xmark"></i></button>
                </span>
            } @else if (deviceFilter() !== 'all') {
                <span class="inline-flex items-center gap-1.5 self-start rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-800 px-2.5 py-1 text-[10px] font-black text-slate-600 dark:text-slate-300 sm:self-auto">
@@ -194,9 +194,9 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
        <div class="flex justify-between items-center px-1">
            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">
                Hiển thị: {{visibleCount()}} / {{filteredCount()}} kết quả 
-               @if(searchTerm()) { <span class="text-indigo-500 dark:text-indigo-400">(Lọc theo "{{searchTerm()}}")</span> }
+               @if(searchTerm()) { <span class="text-fuchsia-500 dark:text-fuchsia-400">(Lọc theo "{{searchTerm()}}")</span> }
            </span>
-           <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-300 text-right" title="Tồn kho được cộng riêng theo từng đơn vị, không quy đổi chéo">
+           <span class="text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300 text-right" title="Tồn kho được cộng riêng theo từng đơn vị, không quy đổi chéo">
                Tồn: {{stockSummaryText()}}
            </span>
            @if(isLoading()) { <span class="text-[9px] text-blue-500 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }

@@ -7,7 +7,7 @@
       <i class="fa-solid fa-arrow-left text-sm"></i>
     </button>
     <div>
-      <span class="text-[10px] font-black uppercase text-fuchsia-600 dark:text-fuchsia-450 tracking-wider mb-0.5 flex items-center gap-2">
+      <span class="text-[10px] font-black uppercase text-fuchsia-600 dark:text-fuchsia-400 tracking-wider mb-0.5 flex items-center gap-2">
         {{ run ? run.sopName : 'Đang tải...' }}
         @if (run?.parentMasterId) {
           <a [routerLink]="['/results', run.parentMasterId]"
@@ -82,15 +82,16 @@
               <!-- Bản hiện tại -->
               @if (draft?.version) {
                 <div class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 flex items-center justify-between gap-2 border-b border-slate-100/60 dark:border-slate-800/50">
-                  <div (click)="restoreVersion.emit({ version: draft.version })"
-                       class="flex-1 min-w-0 cursor-pointer group/item">
-                    <span class="font-black text-indigo-600 dark:text-indigo-400 text-xs block group-hover/item:underline">Bản hiện tại (v{{ draft?.version }})</span>
+                  <button type="button" (click)="restoreVersion.emit({ version: draft.version })"
+                       class="flex-1 min-w-0 cursor-pointer group/item text-left">
+                    <span class="font-black text-fuchsia-600 dark:text-fuchsia-400 text-xs block group-hover/item:underline">Bản hiện tại (v{{ draft?.version }})</span>
                     <span class="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Người in gần nhất: {{ draft?.updatedBy }}</span>
-                  </div>
+                  </button>
                   <div class="flex items-center gap-1 shrink-0">
                     @if (draft?.pdfViewUrl || draft?.pdfUrl) {
-                      <button (click)="openPdf.emit({ pdfUrl: draft?.pdfViewUrl || draft?.pdfUrl, docsUrl: draft?.docsUrl })"
-                              class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90 no-underline cursor-pointer"
+                      <button type="button" (click)="openPdf.emit({ pdfUrl: draft?.pdfViewUrl || draft?.pdfUrl, docsUrl: draft?.docsUrl })"
+                              aria-label="Mở PDF bản hiện tại"
+                              class="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90 no-underline cursor-pointer"
                               title="Mở PDF bản này">
                         <i class="fa-solid fa-file-pdf text-[10px]"></i>
                       </button>
@@ -103,8 +104,8 @@
               @for (hist of historyList; track hist.version + '_' + (hist.prefix || '')) {
                 @if (hist.version !== draft?.version || (hist.prefix && hist.prefix !== 'ALL')) {
                   <div class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 flex items-center justify-between gap-2 border-b border-slate-100/60 dark:border-slate-800/50 last:border-b-0">
-                    <div (click)="restoreVersion.emit({ version: hist.version, prefix: hist.prefix, reportId: hist.reportId || hist._id })"
-                         class="flex-1 min-w-0 cursor-pointer group/item">
+                    <button type="button" (click)="restoreVersion.emit({ version: hist.version, prefix: hist.prefix, reportId: hist.reportId || hist._id })"
+                         class="flex-1 min-w-0 cursor-pointer group/item text-left">
                       <span class="font-bold text-slate-700 dark:text-slate-200 text-xs block group-hover/item:underline">
                         Bản v{{ hist.version }} {{ hist.prefix && hist.prefix !== 'ALL' ? (hist.prefix === '_NO_PREFIX_' ? '(Không tiền tố)' : '(' + hist.prefix + ')') : '' }}
                         @if (hist.status === 'archived') {
@@ -112,11 +113,12 @@
                         }
                       </span>
                       <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Người in: {{ hist.publishedBy }}</span>
-                    </div>
+                    </button>
                     <div class="flex items-center gap-1 shrink-0">
                       @if (hist.pdfViewUrl || hist.pdfUrl) {
-                        <button (click)="openPdf.emit({ pdfUrl: hist.pdfViewUrl || hist.pdfUrl, docsUrl: hist.docsUrl })"
-                                class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-450 flex items-center justify-center transition active:scale-90 no-underline cursor-pointer"
+                        <button type="button" (click)="openPdf.emit({ pdfUrl: hist.pdfViewUrl || hist.pdfUrl, docsUrl: hist.docsUrl })"
+                                aria-label="Mở PDF bản lịch sử"
+                                class="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-450 flex items-center justify-center transition active:scale-90 no-underline cursor-pointer"
                                 title="Mở PDF bản này">
                           <i class="fa-solid fa-file-pdf text-[10px]"></i>
                         </button>
@@ -137,12 +139,12 @@
               [ngClass]="{
                 'bg-emerald-50/40 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/30 dark:border-emerald-800/30 cursor-default': autoSaveStatus === 'synced',
                 'bg-amber-50/50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 hover:shadow': autoSaveStatus === 'modified',
-                'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus === 'saving',
+                'bg-fuchsia-50/70 text-fuchsia-650 dark:bg-fuchsia-950/30 dark:text-fuchsia-400 border-fuchsia-200/50 dark:border-fuchsia-900/30': autoSaveStatus === 'saving',
                 'bg-red-50/70 text-red-650 dark:bg-red-950/30 dark:text-red-400 border-red-200/50 dark:border-red-900/30 hover:bg-red-100/70': autoSaveStatus === 'error'
               }"
               [title]="autoSaveStatus === 'synced' ? 'Dữ liệu phân tích đã được tự động đồng bộ thời gian thực' : 'Lưu nháp số liệu hiện tại lên đám mây'">
         @if (autoSaveStatus === 'saving') {
-          <i class="fa-solid fa-spinner fa-spin text-indigo-500 text-sm"></i>
+          <i class="fa-solid fa-spinner fa-spin text-fuchsia-500 text-sm"></i>
           <span class="text-[10px] uppercase tracking-wider font-black">Đang Lưu...</span>
         } @else if (autoSaveStatus === 'synced') {
           <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
@@ -186,7 +188,7 @@
       <!-- Publish / Generate PDF -->
       <button (click)="publishReport.emit()"
               [disabled]="isProcessing || isReadOnly"
-              class="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-95 transition-all duration-150 flex items-center gap-2 disabled:opacity-50"
+              class="px-5 py-2.5 text-xs font-black text-white bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 rounded-xl shadow-sm active:scale-95 transition-all duration-150 flex items-center gap-2 disabled:opacity-50"
               [title]="printButtonLabel">
         <i class="fa-solid" [class.fa-circle-check]="!isPublishing" [class.fa-spinner]="isPublishing" [class.fa-spin]="isPublishing"></i>
         <span>{{ printButtonLabel }}</span>

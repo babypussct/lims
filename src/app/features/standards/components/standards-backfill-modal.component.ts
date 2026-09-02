@@ -33,12 +33,12 @@ export interface BackfillData {
 
           <!-- Left: Standard Info Summary -->
           <div class="hidden md:flex bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
-            <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
               <i class="fa-solid fa-pen-to-square"></i>
             </div>
 
             <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-2 line-clamp-3">{{std()?.name}}</h3>
-            <div class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-6">Nhập bù nhật ký sử dụng</div>
+            <div class="text-[10px] font-bold text-fuchsia-600 dark:text-fuchsia-400 uppercase tracking-widest mb-6">Nhập bù nhật ký sử dụng</div>
 
             <div class="space-y-4">
               <div class="flex flex-col">
@@ -73,8 +73,8 @@ export interface BackfillData {
             </div>
 
             <div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-700">
-              <div class="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-2xl border border-purple-100 dark:border-purple-800/30">
-                <p class="text-[10px] text-purple-700 dark:text-purple-400 leading-relaxed font-medium">
+              <div class="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-3 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-800/30">
+                <p class="text-[10px] text-fuchsia-700 dark:text-fuchsia-400 leading-relaxed font-medium">
                   <i class="fa-solid fa-circle-info mr-1"></i>
                   Thao tác sẽ ghi nhật ký và trừ tồn kho tương ứng với ngày được nhập. Dữ liệu có thể rollback từ màn hình Lịch sử.
                 </p>
@@ -90,7 +90,7 @@ export interface BackfillData {
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Người sử dụng <span class="text-red-500">*</span></label>
                 <select [ngModel]="userId()" (ngModelChange)="onUserChange($event)"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all outline-none appearance-none">
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none appearance-none">
                   <option value="">-- Chọn người sử dụng --</option>
                   @for (user of userList(); track user.uid) {
                     <option [value]="user.uid">{{user.displayName}} ({{user.email}})</option>
@@ -105,7 +105,7 @@ export interface BackfillData {
                   [ngModel]="usageDate()"
                   (ngModelChange)="usageDate.set($event)"
                   [max]="todayStr"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all outline-none">
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none">
                 <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-1">
                   <i class="fa-solid fa-calendar-days mr-1"></i>
                   Ngày có thể nhập ngược (không được sau hôm nay)
@@ -132,7 +132,7 @@ export interface BackfillData {
                     min="0.001"
                     [max]="std()?.current_amount ?? null"
                     step="any"
-                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all outline-none pr-16"
+                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none pr-16"
                     placeholder="VD: 5">
                   <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{std()?.unit}}</span>
                 </div>
@@ -157,15 +157,15 @@ export interface BackfillData {
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
                 <textarea [ngModel]="purpose()" (ngModelChange)="purpose.set($event)" rows="3"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all outline-none resize-none placeholder-slate-300"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none resize-none placeholder-slate-300"
                   placeholder="Nhập mục đích sử dụng..."></textarea>
                 <!-- Quick select chips giống modal gán/mượn chuẩn -->
                 <div class="flex flex-wrap gap-2 mt-2">
-                  <button type="button" (click)="purpose.set('Pha chuẩn mới')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-purple-600 rounded-lg transition border border-transparent hover:border-purple-200"># Pha Chuẩn Mới</button>
-                  <button type="button" (click)="purpose.set('Kiểm tra định kỳ')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-purple-600 rounded-lg transition border border-transparent hover:border-purple-200"># Kiểm Tra Định Kỳ</button>
-                  <button type="button" (click)="purpose.set('Ngoại kiểm')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-purple-600 rounded-lg transition border border-transparent hover:border-purple-200"># Ngoại Kiểm</button>
-                  <button type="button" (click)="purpose.set('Nghiên cứu phát triển')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-purple-600 rounded-lg transition border border-transparent hover:border-purple-200"># Nghiên Cứu Phát Triển</button>
-                  <button type="button" (click)="purpose.set('Kiểm nghiệm mẫu')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-purple-600 rounded-lg transition border border-transparent hover:border-purple-200"># Kiểm Nghiệm Mẫu</button>
+                  <button type="button" (click)="purpose.set('Pha chuẩn mới')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Pha Chuẩn Mới</button>
+                  <button type="button" (click)="purpose.set('Kiểm tra định kỳ')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Tra Định Kỳ</button>
+                  <button type="button" (click)="purpose.set('Ngoại kiểm')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Ngoại Kiểm</button>
+                  <button type="button" (click)="purpose.set('Nghiên cứu phát triển')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Nghiên Cứu Phát Triển</button>
+                  <button type="button" (click)="purpose.set('Kiểm nghiệm mẫu')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Nghiệm Mẫu</button>
                 </div>
               </div>
 
@@ -174,10 +174,10 @@ export interface BackfillData {
         </div>
 
         <div modalFooter class="flex flex-wrap justify-end gap-3">
-          <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy Bỏ</button>
+          <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
           <button (click)="onConfirm()"
             [disabled]="!canConfirm() || isProcessing()"
-            class="px-8 py-3 bg-purple-600 dark:bg-purple-500 text-white font-bold text-sm rounded-2xl hover:bg-purple-700 dark:hover:bg-purple-600 shadow-xl shadow-purple-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
+            class="px-8 py-3 bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold text-sm rounded-xl hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm transition disabled:opacity-50 flex items-center gap-2">
             @if(isProcessing()) {
               <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...
             } @else {

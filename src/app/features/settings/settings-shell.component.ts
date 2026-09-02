@@ -33,7 +33,7 @@ type SettingsNavGroup = {
         icon="fa-sliders">
         <div pageHeaderActions class="flex items-center gap-2">
           <span class="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-            <i class="fa-solid fa-user-shield mr-1.5 text-indigo-500" aria-hidden="true"></i>
+            <i class="fa-solid fa-user-shield mr-1.5 text-fuchsia-500" aria-hidden="true"></i>
             {{ getUserRoleLabel(auth.currentUser()?.role) }}
           </span>
           <span class="hidden h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 sm:inline-flex">
@@ -49,7 +49,7 @@ type SettingsNavGroup = {
             @for (item of group.items; track item.path) {
               <a
                 [routerLink]="item.path"
-                routerLinkActive="bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
+                routerLinkActive="bg-fuchsia-600 text-white shadow-sm ring-2 ring-fuchsia-500/20"
                 #rlaMob="routerLinkActive"
                 [attr.aria-current]="rlaMob.isActive ? 'page' : null"
                 class="flex shrink-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -74,7 +74,7 @@ type SettingsNavGroup = {
                 [value]="searchQuery()"
                 (input)="setSearch($event)"
                 placeholder="Tìm cài đặt..."
-                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-indigo-500"
+                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 text-sm font-medium text-slate-700 outline-none transition focus:border-fuchsia-500 focus:bg-white focus:ring-2 focus:ring-fuchsia-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-fuchsia-500"
               >
               @if (searchQuery()) {
                 <button
@@ -95,14 +95,14 @@ type SettingsNavGroup = {
                     @for (item of group.items; track item.path) {
                       <a
                         [routerLink]="item.path"
-                        routerLinkActive="bg-indigo-50/80 text-indigo-700 ring-1 ring-indigo-500/20 dark:bg-indigo-500/15 dark:text-indigo-300 dark:ring-indigo-500/30"
+                        routerLinkActive="bg-fuchsia-50/80 text-fuchsia-700 ring-1 ring-fuchsia-500/20 dark:bg-fuchsia-500/15 dark:text-fuchsia-300 dark:ring-fuchsia-500/30"
                         #rla="routerLinkActive"
                         [attr.aria-current]="rla.isActive ? 'page' : null"
                         class="group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
                         <span
                           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:scale-105 group-hover:bg-white group-hover:shadow-2xs dark:bg-slate-900 dark:text-slate-400 dark:group-hover:bg-slate-800"
-                          [class.text-indigo-600]="rla.isActive"
-                          [class.dark:text-indigo-300]="rla.isActive">
+                          [class.text-fuchsia-600]="rla.isActive"
+                          [class.dark:text-fuchsia-300]="rla.isActive">
                           <i class="fa-solid" [class]="item.icon" aria-hidden="true"></i>
                         </span>
                         <span class="min-w-0">

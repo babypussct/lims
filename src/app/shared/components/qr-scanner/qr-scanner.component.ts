@@ -10,7 +10,7 @@ import { ensureHtml5Qrcode } from '../../utils/external-script-loader';
     <div class="flex flex-col h-full bg-black relative rounded-2xl overflow-hidden">
         <!-- Viewfinder Overlay -->
         <div class="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center">
-            <div class="w-64 h-64 border-2 border-white/50 rounded-3xl relative shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]">
+            <div class="w-64 h-64 border-2 border-white/50 rounded-2xl relative shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]">
                 <!-- Corners -->
                 <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-xl -mt-1 -ml-1"></div>
                 <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-xl -mt-1 -mr-1"></div>

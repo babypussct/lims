@@ -28,7 +28,7 @@ interface ReportCardVm {
   template: `
     @if (isOpen && run) {
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/70 backdrop-blur-sm animate-fade-in">
-        <div class="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+        <div class="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
 
           <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <div class="flex items-start justify-between gap-4">
@@ -77,20 +77,20 @@ interface ReportCardVm {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 @for (card of reportCards(); track card.id) {
                   <div class="bg-white dark:bg-slate-900 border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col gap-3"
-                       [class.border-indigo-200]="card.kind === 'all'"
-                       [class.dark:border-indigo-900]="card.kind === 'all'"
+                       [class.border-fuchsia-200]="card.kind === 'all'"
+                       [class.dark:border-fuchsia-900]="card.kind === 'all'"
                        [class.border-fuchsia-200]="card.kind === 'group'"
                        [class.dark:border-fuchsia-900]="card.kind === 'group'">
                     <div class="flex items-start justify-between gap-3">
                       <div class="min-w-0">
                         <div class="flex items-center gap-1.5 mb-2">
                           <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase border"
-                                [class.bg-indigo-50]="card.kind === 'all'"
-                                [class.text-indigo-700]="card.kind === 'all'"
-                                [class.border-indigo-200]="card.kind === 'all'"
-                                [class.dark:bg-indigo-950]="card.kind === 'all'"
-                                [class.dark:text-indigo-300]="card.kind === 'all'"
-                                [class.dark:border-indigo-900]="card.kind === 'all'"
+                                [class.bg-fuchsia-50]="card.kind === 'all'"
+                                [class.text-fuchsia-700]="card.kind === 'all'"
+                                [class.border-fuchsia-200]="card.kind === 'all'"
+                                [class.dark:bg-fuchsia-950]="card.kind === 'all'"
+                                [class.dark:text-fuchsia-300]="card.kind === 'all'"
+                                [class.dark:border-fuchsia-900]="card.kind === 'all'"
                                 [class.bg-fuchsia-50]="card.kind === 'group'"
                                 [class.text-fuchsia-700]="card.kind === 'group'"
                                 [class.border-fuchsia-200]="card.kind === 'group'"
@@ -251,7 +251,7 @@ interface ReportCardVm {
 
           <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-slate-50/50 dark:bg-slate-950/20">
             <button (click)="triggerCreateReport(undefined)"
-                    class="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-xl transition active:scale-95 cursor-pointer border-0 bg-transparent">
+                    class="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 rounded-xl transition active:scale-95 cursor-pointer border-0 bg-transparent">
               <i class="fa-solid fa-pen-to-square text-[11px]"></i> Mở nhập kết quả
             </button>
             <button (click)="closeModal()"

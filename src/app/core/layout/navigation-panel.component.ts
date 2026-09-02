@@ -24,94 +24,114 @@ interface ResolvedNavigationGroup {
   imports: [CommonModule, LogoComponent],
   template: `
     <div
-      class="fixed top-0 left-0 z-[46] h-14 w-64 px-3 flex items-center gap-3
-             bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl
-             border-r border-b border-slate-200/70 dark:border-slate-800">
-      <div class="w-9 h-9 shrink-0 overflow-hidden rounded-lg flex items-center justify-center bg-white dark:bg-slate-900">
+      class="fixed top-4 z-[46] h-14 flex items-center rounded-t-2xl border-b border-slate-100 bg-white/95 shadow-soft-xl backdrop-blur-xl transition-all duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-900/95"
+      [ngClass]="state.sidebarCollapsed() ? 'left-1 w-14 justify-center px-0' : 'left-4 w-60 gap-3 px-4'">
+      <div class="w-9 h-9 shrink-0 overflow-hidden rounded-xl flex items-center justify-center bg-white shadow-soft-md dark:bg-slate-800">
         <app-logo size="40px" class="scale-105"></app-logo>
       </div>
-      <div class="min-w-0">
-        <div class="text-[13px] font-black text-gray-700 dark:text-slate-200 truncate">
-          LIMS <span class="font-light text-gray-500 dark:text-slate-400">NAFIQPM6</span>
+      @if (!state.sidebarCollapsed()) {
+        <div class="min-w-0">
+          <div class="text-[13px] font-bold text-gray-700 dark:text-white truncate">
+            LIMS <span class="font-normal text-slate-400">NAFIQPM6</span>
+          </div>
+          <div
+            class="mt-0.5 text-[8px] font-medium leading-tight whitespace-nowrap text-slate-400"
+            title="Hệ thống quản lý thông tin phòng thí nghiệm">
+            Hệ thống quản lý thông tin phòng thí nghiệm
+          </div>
         </div>
-        <div
-          class="mt-0.5 text-[8px] font-medium leading-tight whitespace-nowrap text-gray-500 dark:text-slate-400"
-          title="Hệ thống quản lý thông tin phòng thí nghiệm">
-          Hệ thống quản lý thông tin phòng thí nghiệm
-        </div>
-      </div>
+      }
     </div>
 
     <aside
       data-navigation-panel
-      class="fixed top-14 bottom-0 left-0 z-40 w-64 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-soft-xl transition-transform duration-300 ease-in-out">
+      class="fixed top-[4.5rem] bottom-4 z-40 flex flex-col rounded-b-2xl bg-white/95 shadow-soft-xl backdrop-blur-xl transition-all duration-300 ease-in-out dark:bg-slate-900/95"
+      [ngClass]="state.sidebarCollapsed() ? 'left-1 w-14' : 'left-4 w-60'">
 
-      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2.5 py-2.5">
+      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 py-2.5">
         @for (group of menuGroups(); track group.id) {
           <section class="mb-2">
-            <button
-              type="button"
-              (click)="toggleGroup(group.id)"
-              [attr.aria-expanded]="expandedGroups()[group.id]"
-              [attr.aria-controls]="'nav-group-' + group.id"
-              class="w-full px-2.5 pt-3 pb-1.5 flex items-center justify-between rounded-lg text-left group/header hover:bg-slate-100/80 dark:hover:bg-slate-800/70 transition-colors">
-              <div class="min-w-0 flex items-center gap-2">
-                <i class="fa-solid {{group.icon}} text-[10px] text-slate-400 dark:text-slate-500 group-hover/header:text-fuchsia-500"></i>
-                <span class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 truncate group-hover/header:text-fuchsia-600 dark:group-hover/header:text-fuchsia-400">
-                  {{ group.title }}
-                </span>
-              </div>
-              <i
-                class="fa-solid fa-chevron-down text-[9px] text-slate-300 dark:text-slate-600 transition-transform duration-200"
-                [class.-rotate-90]="!expandedGroups()[group.id]"></i>
-            </button>
+            @if (!state.sidebarCollapsed()) {
+              <button
+                type="button"
+                (click)="toggleGroup(group.id)"
+                [attr.aria-expanded]="expandedGroups()[group.id]"
+                [attr.aria-controls]="'nav-group-' + group.id"
+                class="w-full px-2.5 pt-3 pb-1.5 flex items-center justify-between rounded-lg text-left group/header hover:bg-gray-50 dark:hover:bg-slate-800/70 transition-colors">
+                <div class="min-w-0 flex items-center gap-2">
+                  <i class="fa-solid {{group.icon}} text-[10px] text-slate-400 group-hover/header:text-fuchsia-500"></i>
+                  <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 truncate group-hover/header:text-gray-700 dark:group-hover/header:text-slate-200">
+                    {{ group.title }}
+                  </span>
+                </div>
+                <i
+                  class="fa-solid fa-chevron-down text-[9px] text-slate-300 dark:text-slate-600 transition-transform duration-200"
+                  [class.-rotate-90]="!expandedGroups()[group.id]"></i>
+              </button>
+            } @else {
+              <div class="mx-2 my-2 h-px bg-slate-100 dark:bg-slate-800" [title]="group.title" aria-hidden="true"></div>
+            }
 
             <div
               [id]="'nav-group-' + group.id"
               class="space-y-1 overflow-hidden transition-all duration-300"
-              [ngClass]="expandedGroups()[group.id] ? 'max-h-[640px] opacity-100 mt-1' : 'max-h-0 opacity-0 mt-0'">
+              [ngClass]="state.sidebarCollapsed()
+                ? 'max-h-[640px] opacity-100 mt-1'
+                : (expandedGroups()[group.id] ? 'max-h-[640px] opacity-100 mt-1' : 'max-h-0 opacity-0 mt-0')">
               @for (item of group.items; track item.id) {
                 <button
                   type="button"
                   (click)="item.isLocked ? handleLockedClick(item) : navigateTo(item.path)"
                   [attr.aria-current]="!item.isLocked && isActive(item.activeMatch) ? 'page' : null"
                   [attr.aria-disabled]="item.isLocked ? 'true' : null"
-                  class="group/item w-full min-h-11 px-2.5 py-2.5 rounded-xl flex items-center gap-2.5 text-left border transition-all duration-200 relative"
+                  [attr.title]="state.sidebarCollapsed() ? item.name : null"
+                  class="group/item w-full min-h-11 py-2.5 rounded-xl flex items-center gap-2.5 text-left border transition-all duration-200 relative"
                   [ngClass]="[
-                    item.isLocked ? 'cursor-not-allowed opacity-55 bg-slate-50/70 dark:bg-slate-800/30 border-transparent' : 'active:scale-[0.98]',
+                    state.sidebarCollapsed() ? 'justify-center px-1.5' : 'px-2.5',
+                    item.isLocked ? 'cursor-not-allowed opacity-55 bg-slate-50 dark:bg-slate-800/30 border-transparent' : 'active:scale-[0.98]',
                     !item.isLocked && isActive(item.activeMatch)
-                      ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200/70 dark:border-fuchsia-800/40 shadow-sm'
-                      : 'border-transparent hover:bg-slate-100/80 dark:hover:bg-slate-800/50 hover:border-slate-200/60 dark:hover:border-slate-700/50'
+                      ? 'bg-white dark:bg-slate-800 border-transparent shadow-soft-md'
+                      : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-800/80'
                   ]">
 
                   @if (!item.isLocked && isActive(item.activeMatch)) {
-                    <span class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-fuchsia-500 dark:bg-fuchsia-400 shadow-sm shadow-fuchsia-500/50"></span>
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-fuchsia-500 shadow-sm shadow-fuchsia-500/20"></span>
                   }
 
                   <span
                     class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
                     [ngClass]="!item.isLocked && isActive(item.activeMatch)
-                      ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-300'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover/item:bg-white dark:group-hover/item:bg-slate-700 group-hover/item:text-fuchsia-600 dark:group-hover/item:text-fuchsia-400'">
+                      ? 'bg-gradient-soft text-white shadow-soft-md'
+                      : 'bg-white text-slate-500 shadow-soft-md dark:bg-slate-800 dark:text-slate-400 group-hover/item:text-fuchsia-500'">
                     <i class="fa-solid {{item.icon}} text-[11px]"></i>
                   </span>
 
-                  <span
-                    class="flex-1 min-w-0 text-[13px] font-semibold leading-snug truncate"
-                    [ngClass]="!item.isLocked && isActive(item.activeMatch)
-                      ? 'text-fuchsia-700 dark:text-fuchsia-300'
-                      : 'text-slate-600 dark:text-slate-400 group-hover/item:text-slate-900 dark:group-hover/item:text-slate-100'">
-                    {{ item.name }}
-                  </span>
+                  @if (!state.sidebarCollapsed()) {
+                    <span
+                      class="flex-1 min-w-0 text-[13px] font-semibold leading-snug truncate"
+                      [ngClass]="!item.isLocked && isActive(item.activeMatch)
+                        ? 'text-gray-700 dark:text-white'
+                        : 'text-slate-500 group-hover/item:text-gray-700 dark:text-slate-400 dark:group-hover/item:text-white'">
+                      {{ item.name }}
+                    </span>
+                  }
 
                   @if (!item.isLocked && item.badgeKey === 'requests' && requestsCount() > 0) {
-                    <span class="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm">
-                      {{ requestsCount() > 99 ? '99+' : requestsCount() }}
+                    <span
+                      class="shrink-0 rounded-full bg-red-500 text-[9px] font-black text-white shadow-sm"
+                      [ngClass]="state.sidebarCollapsed() ? 'absolute right-1 top-1 h-2.5 w-2.5 ring-2 ring-white dark:ring-slate-900' : 'px-1.5 py-0.5'">
+                      @if (!state.sidebarCollapsed()) {
+                        {{ requestsCount() > 99 ? '99+' : requestsCount() }}
+                      }
                     </span>
                   }
 
                   @if (item.isLocked) {
-                    <i class="fa-solid fa-lock text-[9px] text-amber-500 dark:text-amber-400"></i>
+                    <i
+                      class="fa-solid fa-lock text-[9px] text-amber-400"
+                      [class.absolute]="state.sidebarCollapsed()"
+                      [class.right-1]="state.sidebarCollapsed()"
+                      [class.bottom-1]="state.sidebarCollapsed()"></i>
                   }
                 </button>
               }
@@ -119,13 +139,29 @@ interface ResolvedNavigationGroup {
           </section>
         }
       </div>
+
+      <div class="shrink-0 border-t border-slate-100 p-2 dark:border-slate-800">
+        <button
+          type="button"
+          (click)="state.toggleSidebarCollapse()"
+          class="flex h-10 w-full items-center rounded-xl text-slate-400 transition-colors hover:bg-gray-50 hover:text-fuchsia-500 dark:hover:bg-slate-800 dark:hover:text-white"
+          [ngClass]="state.sidebarCollapsed() ? 'justify-center' : 'gap-2.5 px-2.5'"
+          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'"
+          [title]="state.sidebarCollapsed() ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'">
+          <i class="fa-solid text-[11px]" [class.fa-angles-right]="state.sidebarCollapsed()" [class.fa-angles-left]="!state.sidebarCollapsed()"></i>
+          @if (!state.sidebarCollapsed()) {
+            <span class="flex-1 text-left text-xs font-semibold">Thu gọn</span>
+            <span class="text-[9px] font-medium text-slate-600">{{ state.systemVersion() }}</span>
+          }
+        </button>
+      </div>
     </aside>
   `
 })
 export class NavigationPanelComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
-  private state = inject(StateService);
+  readonly state = inject(StateService);
   private toast = inject(ToastService);
 
   expandedGroups = signal<Record<string, boolean>>({

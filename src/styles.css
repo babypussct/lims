@@ -11,6 +11,108 @@
   --z-toast: 210;
   --z-confirmation: 1000;
   --z-system-lock: 9999;
+  --soft-ui-app-bg: #f8f9fa;
+  --soft-ui-panel: #ffffff;
+  --soft-ui-panel-subtle: #f8f9fa;
+  --soft-ui-border: #e9ecef;
+  --soft-ui-text: #344767;
+  --soft-ui-muted: #67748e;
+  --soft-ui-accent: #cb0c9f;
+  --soft-ui-accent-strong: #7928ca;
+  --soft-ui-shadow: 0 20px 27px rgba(0, 0, 0, 0.05);
+  --soft-ui-shadow-control: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --soft-ui-gradient: linear-gradient(310deg, #7928ca 0%, #ff0080 100%);
+}
+
+.dark {
+  --soft-ui-app-bg: #111322;
+  --soft-ui-panel: #1a1f32;
+  --soft-ui-panel-subtle: #20263a;
+  --soft-ui-border: #2b3248;
+  --soft-ui-text: #f5f7fb;
+  --soft-ui-muted: #a8b1c5;
+  --soft-ui-accent: #e879f9;
+  --soft-ui-accent-strong: #f0abfc;
+  --soft-ui-shadow: 0 20px 27px rgba(0, 0, 0, 0.18);
+  --soft-ui-shadow-control: 0 4px 10px rgba(0, 0, 0, 0.16);
+}
+
+/* Soft UI-inspired application language. These classes deliberately skin
+   generic chrome while feature templates remain the source of truth for
+   laboratory workflows and semantic status colors. */
+.soft-ui-app-shell {
+  color: var(--soft-ui-text);
+  background: var(--soft-ui-app-bg);
+  font-family: 'Open Sans', sans-serif;
+}
+
+.soft-ui-page-header-host {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.soft-ui-page-header {
+  border-color: transparent !important;
+  background: transparent !important;
+  padding: 0.25rem 0 0.75rem !important;
+}
+
+.soft-ui-toolbar {
+  background: var(--soft-ui-panel);
+  border: 0 !important;
+  border-radius: 1rem;
+  box-shadow: var(--soft-ui-shadow);
+}
+
+.soft-ui-button {
+  letter-spacing: -0.01em;
+  box-shadow: var(--soft-ui-shadow-control);
+}
+
+.soft-ui-panel {
+  border: 0;
+  border-radius: 1rem;
+  background: var(--soft-ui-panel);
+  box-shadow: var(--soft-ui-shadow);
+}
+
+.soft-ui-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--soft-ui-border);
+}
+
+.soft-ui-kpi {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--soft-ui-panel);
+  box-shadow: var(--soft-ui-shadow);
+}
+
+.soft-ui-control {
+  border: 1px solid var(--soft-ui-border);
+  border-radius: 0.75rem;
+  background: var(--soft-ui-panel);
+  color: var(--soft-ui-text);
+  box-shadow: var(--soft-ui-shadow-control);
+}
+
+.soft-ui-app-shell :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):focus {
+  border-color: #cb0c9f;
+  box-shadow: 0 0 0 2px rgba(203, 12, 159, 0.14);
+}
+
+.soft-ui-app-shell :is(button, a, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Centralized Z-Index Utility Classes */
@@ -154,8 +256,8 @@ router-outlet + * {
   width: 42%;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #6366f1, #d946ef, #6366f1);
-  box-shadow: 0 0 14px rgba(217, 70, 239, 0.42);
+  background: linear-gradient(90deg, #4f46e5, #3b82f6, #4f46e5);
+  box-shadow: 0 0 14px rgba(79, 70, 229, 0.28);
   animation: route-progress-move 900ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
@@ -260,7 +362,7 @@ router-outlet + * {
   width: 0.3rem;
   height: 0.3rem;
   border-radius: 50%;
-  background: #a855f7;
+  background: #6366f1;
   animation: route-dot 900ms ease-in-out infinite alternate;
 }
 

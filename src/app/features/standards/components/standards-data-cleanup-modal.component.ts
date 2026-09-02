@@ -76,8 +76,8 @@ interface CasIssueRecord {
       >
         <div modalBody class="-mx-6 -my-5 relative flex min-h-[65vh] flex-col overflow-hidden md:h-[calc(100vh-12rem)] md:min-h-0">
 
-          <section class="px-5 sm:px-6 py-2.5 bg-indigo-50/60 dark:bg-indigo-950/30 border-b border-indigo-100/60 dark:border-indigo-900/30 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold shrink-0">
-            <span class="text-slate-700 dark:text-slate-200"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-1"></i>{{totalStandardsCount()}} hồ sơ</span>
+          <section class="px-5 sm:px-6 py-2.5 bg-fuchsia-50/60 dark:bg-fuchsia-950/30 border-b border-fuchsia-100/60 dark:border-fuchsia-900/30 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold shrink-0">
+            <span class="text-slate-700 dark:text-slate-200"><i class="fa-solid fa-boxes-stacked text-fuchsia-500 mr-1"></i>{{totalStandardsCount()}} hồ sơ</span>
             <button (click)="setWorkspace('valid')" class="text-emerald-700 dark:text-emerald-400 hover:underline"><i class="fa-solid fa-object-group mr-1"></i>{{groups().length}} CAS hợp lệ</button>
             @if (placeholderCasCount() > 0) {
               <button (click)="setWorkspace('placeholder')" class="text-amber-700 dark:text-amber-400 hover:underline" title="Mở danh sách NA, N/A, CAS inside và nhãn giữ chỗ"><i class="fa-solid fa-ban mr-1"></i>{{placeholderCasCount()}} nhãn CAS giữ chỗ</button>
@@ -97,7 +97,7 @@ interface CasIssueRecord {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="relative flex-1 min-w-[240px] max-w-md">
                 <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" [ngModel]="searchQuery()" (ngModelChange)="setSearchQuery($event)" placeholder="Tìm CAS, tên, mã quản lý hoặc catalog..." class="w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/40">
+                <input type="text" [ngModel]="searchQuery()" (ngModelChange)="setSearchQuery($event)" placeholder="Tìm CAS, tên, mã quản lý hoặc catalog..." class="w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/40">
                 @if (searchQuery()) {
                   <button (click)="setSearchQuery('')" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1" aria-label="Xóa tìm kiếm"><i class="fa-solid fa-xmark"></i></button>
                 }
@@ -149,7 +149,7 @@ interface CasIssueRecord {
                         <div class="flex flex-wrap items-start justify-between gap-3">
                           <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                              <span class="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">CAS {{batch.cas}}</span>
+                              <span class="font-mono text-xs font-black text-fuchsia-600 dark:text-fuchsia-400">CAS {{batch.cas}}</span>
                               <span class="px-2 py-0.5 rounded-full text-[10px] font-black" [ngClass]="batch.status === 'APPLIED' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'">{{batch.status === 'APPLIED' ? 'Có thể hoàn tác' : 'Đã hoàn tác'}}</span>
                             </div>
                             <p class="text-xs font-bold text-slate-700 dark:text-slate-200">{{batch.recordCount}} hồ sơ · {{batch.createdByName || 'Người dùng'}} · {{formatBatchDate(batch.createdAt)}}</p>
@@ -193,7 +193,7 @@ interface CasIssueRecord {
                 <div class="py-20 text-center text-slate-400">
                   <i class="fa-solid fa-clipboard-check text-5xl mb-3 text-emerald-400"></i>
                   <p class="font-bold text-sm">Không còn hồ sơ trong nhóm {{workspaceLabel()}}.</p>
-                  <button (click)="setWorkspace('valid')" class="mt-3 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg">Quay lại CAS hợp lệ</button>
+                  <button (click)="setWorkspace('valid')" class="mt-3 px-3 py-1.5 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-xs font-bold rounded-lg">Quay lại CAS hợp lệ</button>
                 </div>
               } @else {
                 @let issue = currentCasIssue()!;
@@ -205,14 +205,14 @@ interface CasIssueRecord {
                     </button>
                     <div class="text-center min-w-0">
                       <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{{workspaceLabel()}} · {{currentPageIndex() + 1}} / {{filteredCasIssues().length}}</div>
-                      <div class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{issue.standard.internal_id || issue.standard.id}}</div>
+                      <div class="text-sm font-black text-fuchsia-600 dark:text-fuchsia-400 truncate">{{issue.standard.internal_id || issue.standard.id}}</div>
                     </div>
                     <button (click)="nextPage()" [disabled]="currentPageIndex() >= filteredCasIssues().length - 1 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
                       Hồ sơ sau<i class="fa-solid fa-chevron-right ml-1"></i>
                     </button>
                   </nav>
                   <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                    <div class="h-full bg-indigo-500 transition-all" [style.width.%]="pageProgress()"></div>
+                    <div class="h-full bg-fuchsia-500 transition-all" [style.width.%]="pageProgress()"></div>
                   </div>
 
                   <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
@@ -235,7 +235,7 @@ interface CasIssueRecord {
                       <div>
                         <label class="block text-[11px] font-black text-slate-600 dark:text-slate-300 mb-1.5">CAS điều chỉnh</label>
                         <div class="flex gap-2">
-                          <input type="text" [ngModel]="issue.suggestedCas" (ngModelChange)="updateCasSuggestion($event)" placeholder="Ví dụ: 108-95-2" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border rounded-lg p-2.5 font-mono text-sm font-black text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50" [ngClass]="assessment.quality === 'valid' ? 'border-emerald-400 dark:border-emerald-700' : 'border-slate-300 dark:border-slate-700'">
+                          <input type="text" [ngModel]="issue.suggestedCas" (ngModelChange)="updateCasSuggestion($event)" placeholder="Ví dụ: 108-95-2" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border rounded-lg p-2.5 font-mono text-sm font-black text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-500/50" [ngClass]="assessment.quality === 'valid' ? 'border-emerald-400 dark:border-emerald-700' : 'border-slate-300 dark:border-slate-700'">
                           <button (click)="fetchCurrentCasInfo()" [disabled]="assessment.quality !== 'valid' || issue.lookupStatus === 'loading' || isProcessing()" class="px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-40" title="Đối chiếu CAS với PubChem">
                             @if (issue.lookupStatus === 'loading') { <i class="fa-solid fa-spinner fa-spin"></i> }
                             @else { <i class="fa-solid fa-magnifying-glass"></i> }
@@ -246,7 +246,7 @@ interface CasIssueRecord {
                             <i class="fa-solid mr-1" [ngClass]="assessment.quality === 'valid' ? 'fa-circle-check' : 'fa-circle-info'"></i>{{assessment.reason}}
                           </p>
                           @if (assessment.normalizedCas && assessment.normalizedCas !== issue.suggestedCas.trim()) {
-                            <button (click)="useNormalizedCas()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">Dùng {{assessment.normalizedCas}}</button>
+                            <button (click)="useNormalizedCas()" class="text-[10px] font-bold text-fuchsia-600 dark:text-fuchsia-400 whitespace-nowrap">Dùng {{assessment.normalizedCas}}</button>
                           }
                         </div>
                       </div>
@@ -277,7 +277,7 @@ interface CasIssueRecord {
               <div class="py-16 text-center text-slate-400">
                 <i class="fa-solid fa-filter text-4xl mb-2 text-slate-300 dark:text-slate-700"></i>
                 <p class="font-bold text-sm">Không có nhóm CAS phù hợp bộ lọc.</p>
-                <button (click)="clearFilters()" class="mt-3 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg">Xóa bộ lọc</button>
+                <button (click)="clearFilters()" class="mt-3 px-3 py-1.5 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-xs font-bold rounded-lg">Xóa bộ lọc</button>
               </div>
             } @else {
               @let group = currentGroup()!;
@@ -288,21 +288,21 @@ interface CasIssueRecord {
                   </button>
                   <div class="text-center min-w-0">
                     <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Nhóm {{currentPageIndex() + 1}} / {{filteredGroups().length}}</div>
-                    <div class="text-sm font-black text-indigo-600 dark:text-indigo-400 font-mono truncate">CAS {{group.cas}}</div>
+                    <div class="text-sm font-black text-fuchsia-600 dark:text-fuchsia-400 font-mono truncate">CAS {{group.cas}}</div>
                   </div>
                   <button (click)="nextPage()" [disabled]="currentPageIndex() >= filteredGroups().length - 1 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
                     Nhóm sau<i class="fa-solid fa-chevron-right ml-1"></i>
                   </button>
                 </nav>
                 <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                  <div class="h-full bg-indigo-500 transition-all" [style.width.%]="pageProgress()"></div>
+                  <div class="h-full bg-fuchsia-500 transition-all" [style.width.%]="pageProgress()"></div>
                 </div>
 
                 <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
                   <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-start justify-between gap-4">
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-center gap-2 mb-2">
-                        <span class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-mono text-xs font-black">{{group.cas}}</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-950 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800 font-mono text-xs font-black">{{group.cas}}</span>
                         <span class="px-2 py-1 rounded-full text-[10px] font-black" [ngClass]="riskBadgeClass(group.risk.level)">{{riskLabel(group.risk.level)}}</span>
                         <span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold">{{group.records.length}} hồ sơ</span>
                         @if (group.status === 'success') {
@@ -324,11 +324,11 @@ interface CasIssueRecord {
                   <div class="p-4 sm:p-5 grid lg:grid-cols-2 gap-4 bg-slate-50/60 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800">
                     <div>
                       <label class="block text-[11px] font-black text-slate-600 dark:text-slate-300 mb-1.5">Tên hóa chất chuẩn hóa</label>
-                      <input type="text" [ngModel]="group.canonicalName" (ngModelChange)="updateCanonicalName(group.id, $event)" placeholder="PubChem hoặc tên đã được chuyên gia duyệt" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                      <input type="text" [ngModel]="group.canonicalName" (ngModelChange)="updateCanonicalName(group.id, $event)" placeholder="PubChem hoặc tên đã được chuyên gia duyệt" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-500/50">
                       <p class="text-[10px] text-slate-400 mt-1">Trường này mô tả hóa chất; không thay thế nồng độ, dung môi hay dạng sản phẩm.</p>
                     </div>
                     <div class="flex flex-col justify-end gap-2">
-                      <button (click)="applyCanonicalToCurrentGroup()" [disabled]="!group.risk.canApplyCanonicalToAll || !group.canonicalName.trim() || isProcessing()" class="w-full px-3 py-2.5 rounded-lg text-xs font-bold border transition disabled:opacity-45 disabled:cursor-not-allowed bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100">
+                      <button (click)="applyCanonicalToCurrentGroup()" [disabled]="!group.risk.canApplyCanonicalToAll || !group.canonicalName.trim() || isProcessing()" class="w-full px-3 py-2.5 rounded-lg text-xs font-bold border transition disabled:opacity-45 disabled:cursor-not-allowed bg-fuchsia-50 dark:bg-fuchsia-950/40 border-fuchsia-200 dark:border-fuchsia-800 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100">
                         <i class="fa-solid fa-arrow-down-wide-short mr-1"></i>Áp dụng tên chuẩn cho toàn nhóm an toàn
                       </button>
                       @if (!group.risk.canApplyCanonicalToAll) {
@@ -339,10 +339,10 @@ interface CasIssueRecord {
 
                   <details class="border-b border-slate-100 dark:border-slate-800">
                     <summary class="px-4 sm:px-5 py-3 cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <i class="fa-solid fa-tags mr-1.5 text-indigo-500"></i>Tên đồng nghĩa và tên tìm kiếm
+                      <i class="fa-solid fa-tags mr-1.5 text-fuchsia-500"></i>Tên đồng nghĩa và tên tìm kiếm
                     </summary>
                     <div class="px-4 sm:px-5 pb-4">
-                      <textarea [ngModel]="group.suggestedSynonyms" (ngModelChange)="updateSuggestedSynonyms(group.id, $event)" rows="3" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" placeholder="Mỗi tên một dòng; không tách dấu phẩy trong danh pháp."></textarea>
+                      <textarea [ngModel]="group.suggestedSynonyms" (ngModelChange)="updateSuggestedSynonyms(group.id, $event)" rows="3" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-fuchsia-500/50 resize-none" placeholder="Mỗi tên một dòng; không tách dấu phẩy trong danh pháp."></textarea>
                     </div>
                   </details>
 
@@ -360,9 +360,9 @@ interface CasIssueRecord {
 
                     <div class="space-y-3">
                       @for (record of group.records; track record.standard.id) {
-                        <article class="rounded-xl border p-3 sm:p-4 transition" [ngClass]="record.selected ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/40 dark:bg-indigo-950/15' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
+                        <article class="rounded-xl border p-3 sm:p-4 transition" [ngClass]="record.selected ? 'border-fuchsia-300 dark:border-fuchsia-700 bg-fuchsia-50/40 dark:bg-fuchsia-950/15' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
                           <div class="flex items-start gap-3">
-                            <input type="checkbox" [ngModel]="record.selected" (ngModelChange)="toggleRecord(group.id, record.standard.id, $event)" class="w-4 h-4 accent-indigo-600 mt-1 shrink-0" [attr.aria-label]="'Chọn ' + record.originalName">
+                            <input type="checkbox" [ngModel]="record.selected" (ngModelChange)="toggleRecord(group.id, record.standard.id, $event)" class="w-4 h-4 accent-fuchsia-600 mt-1 shrink-0" [attr.aria-label]="'Chọn ' + record.originalName">
                             <div class="flex-1 min-w-0 grid lg:grid-cols-[minmax(190px,0.8fr)_minmax(260px,1.2fr)] gap-3">
                               <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
@@ -380,9 +380,9 @@ interface CasIssueRecord {
                               </div>
                               <div>
                                 <label class="block text-[11px] font-black text-slate-600 dark:text-slate-300 mb-1.5">Tên sản phẩm sau chuẩn hóa</label>
-                                <input type="text" [ngModel]="record.suggestedName" (ngModelChange)="updateRecordName(group.id, record.standard.id, $event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50" [class.border-amber-400]="!record.suggestedName.trim()">
+                                <input type="text" [ngModel]="record.suggestedName" (ngModelChange)="updateRecordName(group.id, record.standard.id, $event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-500/50" [class.border-amber-400]="!record.suggestedName.trim()">
                                 @if (record.suggestedName.trim() !== record.originalName.trim()) {
-                                  <p class="text-[10px] mt-1 text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-arrow-right mr-1"></i>Có thay đổi; kiểm tra nồng độ, dung môi và dạng chất trước khi chọn.</p>
+                                  <p class="text-[10px] mt-1 text-fuchsia-600 dark:text-fuchsia-400"><i class="fa-solid fa-arrow-right mr-1"></i>Có thay đổi; kiểm tra nồng độ, dung môi và dạng chất trước khi chọn.</p>
                                 }
                               </div>
                             </div>
@@ -406,11 +406,11 @@ interface CasIssueRecord {
             <button (click)="showHistory.set(false)" [disabled]="undoingBatchId() !== null" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold disabled:opacity-50">Quay lại chuẩn hóa</button>
           } @else if (workspace() === 'valid') {
               <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu nhóm CAS đang hiển thị · Đã chọn <strong class="text-indigo-600 dark:text-indigo-400">{{currentSelectedCount()}}</strong> hồ sơ
+                <i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>Chỉ lưu nhóm CAS đang hiển thị · Đã chọn <strong class="text-fuchsia-600 dark:text-fuchsia-400">{{currentSelectedCount()}}</strong> hồ sơ
               </div>
               <div class="flex items-center gap-2">
                 <button (click)="onClose()" [disabled]="isProcessing()" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-bold text-xs disabled:opacity-50">Đóng</button>
-                <button (click)="applyCurrentGroup(false)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
+                <button (click)="applyCurrentGroup(false)" [disabled]="currentSelectedCount() === 0 || isProcessing()" class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
                   @if (isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i>Đang lưu }
                   @else { <i class="fa-solid fa-floppy-disk"></i>Lưu nhóm hiện tại }
                 </button>
@@ -424,7 +424,7 @@ interface CasIssueRecord {
               </div>
               <div class="flex items-center gap-2">
                 <button (click)="onClose()" [disabled]="isProcessing()" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-bold text-xs disabled:opacity-50">Đóng</button>
-                <button (click)="applyCurrentCas(false)" [disabled]="!canSaveCurrentCas() || isProcessing()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
+                <button (click)="applyCurrentCas(false)" [disabled]="!canSaveCurrentCas() || isProcessing()" class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg font-bold text-xs shadow-sm disabled:opacity-45 flex items-center gap-1.5">
                   @if (isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i>Đang lưu }
                   @else { <i class="fa-solid fa-floppy-disk"></i>Lưu CAS điều chỉnh }
                 </button>
@@ -696,14 +696,14 @@ export class StandardsDataCleanupModalComponent {
   filterClass(filter: CleanupFilter): string {
     const active = this.statusFilter() === filter;
     return `px-3 py-1.5 rounded-lg whitespace-nowrap transition ${active
-      ? 'bg-indigo-600 text-white shadow-sm'
+      ? 'bg-fuchsia-600 text-white shadow-sm'
       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`;
   }
 
   workspaceClass(workspace: CleanupWorkspace): string {
     const active = this.workspace() === workspace;
     return `px-3 py-1.5 rounded-lg whitespace-nowrap border transition ${active
-      ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+      ? 'bg-fuchsia-600 border-fuchsia-600 text-white shadow-sm'
       : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`;
   }
 

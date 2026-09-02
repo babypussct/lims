@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.02-b02
+## Phiên bản hiện tại: v26.09.02-b03
+
+### v26.09.02-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đồng bộ ngôn ngữ thiết kế Soft UI PRO trên toàn bộ các khu vực nghiệp vụ hiện có của LIMS, giữ nguyên luồng xử lý và phân quyền.
+- Tăng khả năng sử dụng trên desktop, tablet và mobile với vùng bấm rõ hơn, thao tác bàn phím tốt hơn và hành động không còn phụ thuộc vào hover.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa shell, sidebar, header, trang cài đặt, bảng dữ liệu, modal và các primitive dùng chung theo hệ thống màu, bo góc, bóng đổ và khoảng cách Soft UI.
+- Cải thiện độ dễ đọc và kích thước control tại Results, Standards, SOP, Recipes, Targets, Config, Inventory, Documents và các màn hình xác thực.
+- Tối ưu trạng thái focus, selected, responsive action và các control sao chép, in nhãn, chọn dữ liệu, lịch sử phiên bản để thao tác nhất quán hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục nhiều vùng tương tác chỉ dùng div/span hoặc chỉ hiện khi hover bằng control semantic, trạng thái ARIA và hỗ trợ bàn phím phù hợp.
+- Loại bỏ các token màu giao diện cũ còn sót và thống nhất các trạng thái tương tác chính về palette Soft UI của hệ thống.
 
 ### v26.09.02-b02
 

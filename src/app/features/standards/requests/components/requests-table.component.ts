@@ -34,18 +34,18 @@ import { formatNum } from '../../../../shared/utils/utils';
                             <td class="px-6 py-5">
                                     <div class="flex flex-col gap-3">
                                         <div class="flex items-start gap-3">
-                                            <div class="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800 shadow-sm">
+                                            <div class="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-900/50 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800 shadow-sm">
                                                 <i class="fa-solid fa-vial-circle-check text-base font-bold"></i>
                                             </div>
                                             <div>
                                                 <div class="flex items-center gap-2 mb-1">
-                                                    <div class="font-black text-slate-800 dark:text-slate-100 text-base leading-tight cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
+                                                    <button type="button" class="text-left font-black text-slate-800 dark:text-slate-100 text-base leading-tight cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</button>
                                                     @if(req.isBackfill) {
-                                                        <span class="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">Nhập bù</span>
+                                                        <span class="px-2 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">Nhập bù</span>
                                                     }
                                                 </div>
                                                 <div class="flex items-center gap-2">
-                                                    <span class="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-black rounded-lg border border-indigo-200 dark:border-indigo-700/50 shadow-sm uppercase tracking-wide">
+                                                    <span class="px-2.5 py-1 bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 text-sm font-black rounded-lg border border-fuchsia-200 dark:border-fuchsia-700/50 shadow-sm uppercase tracking-wide">
                                                         {{req.standardDetails?.internal_id}}
                                                     </span>
                                                     <span class="text-xs font-bold text-slate-400 dark:text-slate-500 line-clamp-1 italic max-w-[150px]">
@@ -163,7 +163,7 @@ import { formatNum } from '../../../../shared/utils/utils';
                                         }
                                         @if(canApproveRequest(req)) {
                                             <button (click)="actionAdminReceive.emit(req)" 
-                                                    class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-xs font-black" 
+                                                    class="px-3 py-1.5 bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition shadow-lg shadow-fuchsia-500/20 active:scale-90 text-xs font-black"
                                                     title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
                                         }
                                     }
@@ -182,7 +182,7 @@ import { formatNum } from '../../../../shared/utils/utils';
                     @if (requests.length === 0) {
                         <tr>
                             <td colspan="6" class="px-6 py-24 text-center">
-                                <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-slate-200 dark:text-slate-800 border-2 border-dashed border-slate-100 dark:border-slate-800">
+                                <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-200 dark:text-slate-800 border-2 border-dashed border-slate-100 dark:border-slate-800">
                                     <i class="fa-solid fa-box-open text-3xl"></i>
                                 </div>
                                 <p class="text-slate-400 dark:text-slate-500 font-black uppercase text-sm tracking-[0.2em]">Không tìm thấy yêu cầu nào</p>
@@ -199,7 +199,7 @@ import { formatNum } from '../../../../shared/utils/utils';
                 Đang hiển thị <strong class="text-slate-700 dark:text-slate-200">{{visibleRequests().length}}</strong>/<strong class="text-slate-700 dark:text-slate-200">{{requests.length}}</strong> yêu cầu
             </span>
             @if (requests.length > visibleRequests().length) {
-                <button type="button" (click)="loadMore()" class="px-4 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition" data-testid="request-table-more">
+                <button type="button" (click)="loadMore()" class="px-4 py-2 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-fuchsia-50 dark:bg-fuchsia-900/20 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition" data-testid="request-table-more">
                     <i class="fa-solid fa-angles-down mr-1"></i>
                     Xem thêm {{Math.min(tableLimitStep, requests.length - visibleRequests().length)}} dòng
                     <span class="font-bold opacity-70">(còn {{requests.length - visibleRequests().length}})</span>
@@ -274,7 +274,7 @@ export class RequestsTableComponent {
     switch (status) {
         case 'PENDING_APPROVAL': return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30';
         case 'IN_PROGRESS': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/30';
-        case 'PENDING_RETURN': return 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800/30';
+        case 'PENDING_RETURN': return 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200 dark:bg-fuchsia-900/20 dark:border-fuchsia-800/30';
         case 'COMPLETED': return 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300';
         case 'REJECTED': return 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800/30';
         default: return 'bg-slate-100 text-slate-600';

@@ -9,7 +9,7 @@
                 <i class="fa-solid fa-file-excel text-emerald-500"></i> Xuất Excel
              </app-button>
              @if(canOperateStandards()) {
-                  <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
+                  <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                       <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu mua sắm
                       @if (pendingPurchaseRequestsCount() > 0) {
                          <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
@@ -22,14 +22,14 @@
          </div>
       </app-page-header>
 
-      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-0">
+      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-0">
           
           <!-- Modern Tab Filters & Search -->
           <app-toolbar [sticky]="true">
                   <!-- Segmented Tabs -->
                   <div toolbarSearch class="flex items-center gap-1 p-1 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
                       <button (click)="statusFilter.set('ALL')" 
-                              [class]="statusFilter() === 'ALL' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              [class]="statusFilter() === 'ALL' ? 'bg-white dark:bg-slate-800 shadow-sm text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
                           Tất cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().ALL}}</span>
                       </button>
@@ -44,9 +44,9 @@
                           Đang dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-xs opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_RETURN')" 
-                              [class]="statusFilter() === 'PENDING_RETURN' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              [class]="statusFilter() === 'PENDING_RETURN' ? 'bg-white dark:bg-slate-800 shadow-sm text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
                               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
-                          Chờ trả <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-xs opacity-70 text-indigo-600">{{statusCounts().PENDING_RETURN}}</span>
+                          Chờ trả <span class="px-1.5 py-0.5 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-md text-xs opacity-70 text-fuchsia-600">{{statusCounts().PENDING_RETURN}}</span>
                       </button>
                       <button (click)="statusFilter.set('COMPLETED')" 
                               [class]="statusFilter() === 'COMPLETED' ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
@@ -58,29 +58,29 @@
                    <!-- Search & View Toggle -->
                    <div toolbarActions class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
                         <div class="flex items-center justify-between gap-2 min-w-0">
-                            <div class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/40 text-xs font-black text-indigo-700 dark:text-indigo-300 whitespace-nowrap" data-testid="request-count" aria-live="polite">
+                            <div class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-fuchsia-50/70 dark:bg-fuchsia-900/20 border border-fuchsia-100 dark:border-fuchsia-800/40 text-xs font-black text-fuchsia-700 dark:text-fuchsia-300 whitespace-nowrap" data-testid="request-count" aria-live="polite">
                                 <i class="fa-solid fa-list-check text-[10px]"></i>
                                 <span>{{filteredRequests().length}} yêu cầu</span>
                             </div>
                             @if (searchTerm() || statusFilter() !== 'ALL') {
-                                <button type="button" (click)="clearFilters()" class="px-2.5 py-2 rounded-xl text-xs font-black text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" title="Xóa bộ lọc">
+                                <button type="button" (click)="clearFilters()" class="px-2.5 py-2 rounded-xl text-xs font-black text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" title="Xóa bộ lọc">
                                     <i class="fa-solid fa-filter-circle-xmark mr-1"></i> Xóa lọc
                                 </button>
                             }
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <div class="flex items-center bg-slate-100/50 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-100 dark:border-slate-800">
-                            <button (click)="viewMode.set('kanban')" [class]="viewMode() === 'kanban' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện thẻ (Kanban)" aria-label="Giao diện thẻ (Kanban)">
+                            <button (click)="viewMode.set('kanban')" [class]="viewMode() === 'kanban' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện thẻ (Kanban)" aria-label="Giao diện thẻ (Kanban)">
                                 <i class="fa-solid fa-columns"></i>
                             </button>
-                            <button (click)="viewMode.set('table')" [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện bảng (Table)" aria-label="Giao diện bảng (Table)">
+                            <button (click)="viewMode.set('table')" [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện bảng (Table)" aria-label="Giao diện bảng (Table)">
                                 <i class="fa-solid fa-list"></i>
                             </button>
                             </div>
                             <div class="relative min-w-0 flex-1 sm:w-[250px] sm:flex-none">
                                 <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                 <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-                                       class="w-full pl-11 pr-4 py-2 bg-slate-100/50 dark:bg-slate-900/50 border border-transparent rounded-xl text-base font-bold text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all placeholder-slate-400"
+                                       class="w-full pl-11 pr-4 py-2 bg-slate-100/50 dark:bg-slate-900/50 border border-transparent rounded-xl text-base font-bold text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition-all placeholder-slate-400"
                                        placeholder="Tìm tên chuẩn, người mượn, số lô..." aria-label="Tìm yêu cầu chất chuẩn" data-testid="request-search">
                             </div>
                         </div>
@@ -174,7 +174,7 @@
              (closed)="closeAdminPurchaseRequests()">
              <div modalBody class="bg-slate-50 dark:bg-slate-900">
                      @if(loadingAdminRequests()) {
-                         <div class="py-12 flex justify-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500"></i></div>
+                         <div class="py-12 flex justify-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-fuchsia-500"></i></div>
                      } @else {
                          @if(adminPurchaseRequests().length === 0) {
                              <div class="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">Không có yêu cầu mua sắm nào chờ xử lý.</div>
@@ -195,7 +195,7 @@
                                              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                                                  <td class="px-4 py-3 align-top">
                                                      <div class="font-bold text-slate-800 dark:text-slate-200 whitespace-normal line-clamp-2 max-w-[200px]" [title]="r.standardName">{{r.standardName}}</div>
-                                                     <div class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-1"><i class="fa-solid fa-barcode mr-1"></i> {{r.product_code}}</div>
+                                                     <div class="text-sm font-bold text-fuchsia-600 dark:text-fuchsia-400 mt-1"><i class="fa-solid fa-barcode mr-1"></i> {{r.product_code}}</div>
                                                  </td>
                                                  <td class="px-4 py-3 align-top">
                                                      <div class="flex flex-col gap-1.5 text-sm">
@@ -227,7 +227,7 @@
                                                          @if(r.expectedAmount) { 
                                                             <div class="flex gap-2">
                                                                 <span class="w-16 text-slate-400 font-medium">Lượng cần:</span>
-                                                                <span class="font-bold text-indigo-600 dark:text-indigo-400">{{r.expectedAmount}}</span>
+                                                                <span class="font-bold text-fuchsia-600 dark:text-fuchsia-400">{{r.expectedAmount}}</span>
                                                             </div>
                                                          }
                                                      </div>
@@ -318,10 +318,10 @@
                       </div>
                       <div class="flex items-center gap-3">
                           <input type="date" [ngModel]="dateRangeFilter().from" (ngModelChange)="dateRangeFilter.set({from: $event, to: dateRangeFilter().to})"
-                                 class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none transition [color-scheme:light] dark:[color-scheme:dark]">
+                                 class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none transition [color-scheme:light] dark:[color-scheme:dark]">
                           <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 text-xs"></i>
                           <input type="date" [ngModel]="dateRangeFilter().to" (ngModelChange)="dateRangeFilter.set({from: dateRangeFilter().from, to: $event})"
-                                 class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none transition [color-scheme:light] dark:[color-scheme:dark]">
+                                 class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none transition [color-scheme:light] dark:[color-scheme:dark]">
                           @if (dateRangeFilter().from || dateRangeFilter().to) {
                               <button (click)="dateRangeFilter.set({from:'', to:''})" class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-xs">
                                   <i class="fa-solid fa-xmark"></i>
@@ -337,19 +337,19 @@
 
                   <!-- 1. Dữ liệu gốc -->
                   <div class="border rounded-2xl overflow-hidden transition-all"
-                       [class]="exportType() === 'raw' ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-900/20 ring-1 ring-indigo-300/50 dark:ring-indigo-700/30' : 'border-slate-100 dark:border-slate-700'">
+                       [class]="exportType() === 'raw' ? 'border-fuchsia-200 bg-fuchsia-50/30 dark:border-fuchsia-800 dark:bg-fuchsia-900/20 ring-1 ring-fuchsia-300/50 dark:ring-fuchsia-700/30' : 'border-slate-100 dark:border-slate-700'">
                       <button (click)="!isExporting() && exportType.set('raw'); exportCompleted.set(false)" [disabled]="isExporting()"
                               class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition">
                           <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm transition-all"
-                               [class]="exportType() === 'raw' ? 'bg-indigo-500 text-white shadow-indigo-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                               [class]="exportType() === 'raw' ? 'bg-fuchsia-500 text-white shadow-fuchsia-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
                               <i class="fa-solid fa-list"></i>
                           </div>
                           <div class="flex-1 text-left">
-                              <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'raw'">1. Chi Tiết Từng Yêu Cầu</div>
+                              <div class="text-sm font-black dark:text-slate-200" [class.text-fuchsia-700]="exportType() === 'raw'">1. Chi Tiết Từng Yêu Cầu</div>
                               <div class="text-[11px] text-slate-500">Toàn bộ thông tin: chuẩn, người mượn, trạng thái, duyệt, trả, lượng dùng...</div>
                           </div>
                           @if (exportType() === 'raw') {
-                              <div class="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0">
+                              <div class="w-5 h-5 rounded-full bg-fuchsia-500 text-white flex items-center justify-center shrink-0">
                                   <i class="fa-solid fa-check text-[10px]"></i>
                               </div>
                           }

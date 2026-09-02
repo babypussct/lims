@@ -41,13 +41,13 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
                @if(isUploading) {
                    <!-- Upload Progress -->
-                   <div class="mb-4 bg-white dark:bg-slate-800 rounded-xl p-6 border border-indigo-100 dark:border-indigo-800">
+                   <div class="mb-4 bg-white dark:bg-slate-800 rounded-xl p-6 border border-fuchsia-100 dark:border-fuchsia-800">
                        <div class="flex justify-between items-center mb-2">
                            <span class="font-bold text-slate-700 dark:text-slate-300">Đang tải lên Drive...</span>
-                           <span class="font-black text-indigo-600 dark:text-indigo-400">{{successCount()}} / {{itemsToUpload()}}</span>
+                           <span class="font-black text-fuchsia-600 dark:text-fuchsia-400">{{successCount()}} / {{itemsToUpload()}}</span>
                        </div>
                        <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
-                           <div class="bg-indigo-500 h-full rounded-full transition-all duration-300 relative overflow-hidden" [style.width.%]="(successCount() / (itemsToUpload() || 1)) * 100">
+                           <div class="bg-fuchsia-500 h-full rounded-full transition-all duration-300 relative overflow-hidden" [style.width.%]="(successCount() / (itemsToUpload() || 1)) * 100">
                                <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
                            </div>
                        </div>
@@ -94,7 +94,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                            <select 
                                                [ngModel]="item.matchedStandard?.id || ''" 
                                                (ngModelChange)="onManualMatchChange(item, $event)"
-                                               class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border appearance-none outline-none focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-xs font-medium transition"
+                                               class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border appearance-none outline-none focus:ring-2 focus:ring-fuchsia-500/20 rounded-lg text-xs font-medium transition"
                                                [ngClass]="item.matchedStandard ? 'border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 focus:border-emerald-500' : 'border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-400 focus:border-amber-500'">
                                                <option value="">-- [Bỏ qua] Không nhận diện được --</option>
                                                @if (item.suggestedStandards) {
@@ -178,7 +178,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                        <button (click)="cancel.emit()" [disabled]="isUploading" class="px-6 py-2.5 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition disabled:opacity-50">
                            Hủy bỏ thao tác
                        </button>
-                       <button (click)="onConfirm()" [disabled]="isUploading || itemsToUpload() === 0" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50">
+                       <button (click)="onConfirm()" [disabled]="isUploading || itemsToUpload() === 0" class="px-6 py-2.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold text-sm rounded-xl hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-lg shadow-fuchsia-200 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50">
                            <i class="fa-solid fa-cloud-arrow-up"></i> Bắt đầu tải lên ({{itemsToUpload()}})
                        </button>
                    }

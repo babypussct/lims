@@ -20,7 +20,7 @@ import { timestampToDate } from '../../utils/timestamp';
                 <!-- HEADER (Hidden when printing) -->
                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 print-hidden-ui">
                     <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-print text-indigo-600"></i> Xem Trước khi In (A4 Preview)
+                        <i class="fa-solid fa-print text-fuchsia-600"></i> Xem Trước khi In (A4 Preview)
                     </h3>
                     <div class="flex gap-2">
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 border border-slate-200">
@@ -42,36 +42,36 @@ import { timestampToDate } from '../../utils/timestamp';
                         <div class="space-y-3">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tùy Chọn Hiển Thị</h4>
                             
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 transition">
+                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
                                 <span class="text-sm font-bold text-slate-700">Tiêu đề (Header)</span>
-                                <input type="checkbox" [(ngModel)]="options.showHeader" class="w-5 h-5 accent-indigo-600 rounded">
+                                <input type="checkbox" [(ngModel)]="options.showHeader" class="w-5 h-5 accent-fuchsia-600 rounded">
                             </label>
 
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 transition">
+                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
                                 <span class="text-sm font-bold text-slate-700">Chân trang (Footer)</span>
-                                <input type="checkbox" [(ngModel)]="options.showFooter" class="w-5 h-5 accent-indigo-600 rounded">
+                                <input type="checkbox" [(ngModel)]="options.showFooter" class="w-5 h-5 accent-fuchsia-600 rounded">
                             </label>
 
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 transition">
+                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
                                 <span class="text-sm font-bold text-slate-700">Ký tên điện tử</span>
-                                <input type="checkbox" [(ngModel)]="options.showSignature" class="w-5 h-5 accent-indigo-600 rounded">
+                                <input type="checkbox" [(ngModel)]="options.showSignature" class="w-5 h-5 accent-fuchsia-600 rounded">
                             </label>
 
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 transition">
+                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
                                 <span class="text-sm font-bold text-slate-700">Đường cắt (Cut line)</span>
-                                <input type="checkbox" [(ngModel)]="options.showCutLine" class="w-5 h-5 accent-indigo-600 rounded">
+                                <input type="checkbox" [(ngModel)]="options.showCutLine" class="w-5 h-5 accent-fuchsia-600 rounded">
                             </label>
                         </div>
 
                         <div class="mt-auto pt-6 border-t border-slate-200 flex flex-col gap-3">
                             <button (click)="doPrint()" 
-                                    class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                                    class="w-full py-4 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-print text-lg"></i>
                                 <span>IN NGAY (Direct)</span>
                             </button>
                             
                             <button (click)="doPdf()" [disabled]="isGeneratingPdf()"
-                                    class="w-full py-3 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
+                                    class="w-full py-3 bg-white border border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-50 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
                                 @if(isGeneratingPdf()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                                 @else { <i class="fa-solid fa-file-pdf"></i> }
                                 <span>Tải PDF (High-Res)</span>
@@ -100,14 +100,14 @@ import { timestampToDate } from '../../utils/timestamp';
                 (click)="$event.stopPropagation()">
                 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between shrink-0 border-b border-indigo-500/20 shadow-md gap-3">
+                <div class="bg-gradient-to-r from-slate-900 via-fuchsia-950 to-slate-900 text-white px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between shrink-0 border-b border-fuchsia-500/20 shadow-md gap-3">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
                             <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i>
                         </div>
                         <div class="min-w-0 flex flex-col gap-0.5">
                             <div class="flex items-center gap-2 flex-wrap min-w-0">
-                                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider shrink-0">
+                                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 uppercase tracking-wider shrink-0">
                                     {{ printService.pdfVersion() === 0 ? 'CoA' : 'Báo cáo' }}
                                 </span>
                                 <h4 class="text-xs sm:text-sm font-extrabold m-0 tracking-tight text-white truncate max-w-[200px] sm:max-w-[300px] md:max-w-[450px]" [title]="printService.pdfTitle()">
@@ -123,7 +123,7 @@ import { timestampToDate } from '../../utils/timestamp';
                                     </span>
                                     <span class="text-slate-650 font-bold hidden sm:inline">•</span>
                                     <span class="flex items-center gap-1">
-                                        <i class="fa-solid fa-user text-indigo-350"></i>
+                                        <i class="fa-solid fa-user text-fuchsia-350"></i>
                                         <span class="text-slate-300 font-semibold">{{ printService.pdfAnalyst() }}</span>
                                     </span>
                                     @if (printService.pdfPublishDate()) {
@@ -156,7 +156,7 @@ import { timestampToDate } from '../../utils/timestamp';
                                 class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
                                 title="In tài liệu">
                             @if (printService.isPrinting()) {
-                                <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+                                <i class="fa-solid fa-circle-notch fa-spin text-fuchsia-400"></i>
                                 <span>ĐANG IN...</span>
                             } @else {
                                 <i class="fa-solid fa-print"></i>
@@ -170,7 +170,7 @@ import { timestampToDate } from '../../utils/timestamp';
                                 class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
                                 title="Tải PDF xuống">
                             @if (printService.isDownloading()) {
-                                <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+                                <i class="fa-solid fa-circle-notch fa-spin text-fuchsia-400"></i>
                                 <span>ĐANG TẢI...</span>
                             } @else {
                                 <i class="fa-solid fa-download"></i>
@@ -211,15 +211,15 @@ import { timestampToDate } from '../../utils/timestamp';
                     <!-- Inline loading overlay when recreating a report from inside the modal -->
                     @if (isPublishing()) {
                         <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center text-white gap-3 z-50 animate-in fade-in duration-200">
-                            <i class="fa-solid fa-arrows-rotate fa-spin text-4xl text-indigo-400"></i>
-                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-200">Đang tạo lại bản báo cáo v{{ printService.pdfVersion() + 1 }}...</span>
+                            <i class="fa-solid fa-arrows-rotate fa-spin text-4xl text-fuchsia-400"></i>
+                            <span class="text-xs font-bold uppercase tracking-widest text-fuchsia-200">Đang tạo lại bản báo cáo v{{ printService.pdfVersion() + 1 }}...</span>
                             <span class="text-[10px] text-slate-400">Vui lòng đợi trong giây lát, bảng xem trước sẽ tự cập nhật.</span>
                         </div>
                     }
 
                     @if (printService.isPdfBlobLoading()) {
                         <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
-                            <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-500"></i>
+                            <i class="fa-solid fa-spinner fa-spin text-4xl text-fuchsia-500"></i>
                             <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải tài liệu từ Drive...</span>
                         </div>
                     } @else if (pdfModalSafeUrl()) {
@@ -242,12 +242,12 @@ import { timestampToDate } from '../../utils/timestamp';
                                 </p>
                             </div>
                             <button (click)="retryLoadBlob()"
-                                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 active:scale-95">
+                                    class="px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 active:scale-95">
                                 <i class="fa-solid fa-rotate-right"></i>
                                 <span>Xác Thực & Tải Lại</span>
                             </button>
                             <p class="text-[11px] text-slate-400">
-                                Hoặc nhấn <strong class="text-indigo-500">TẢI TÀI LIỆU</strong> / <strong class="text-indigo-500">GOOGLE DOCS</strong> ở trên.
+                                Hoặc nhấn <strong class="text-fuchsia-500">TẢI TÀI LIỆU</strong> / <strong class="text-fuchsia-500">GOOGLE DOCS</strong> ở trên.
                             </p>
                         </div>
                     }

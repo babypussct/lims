@@ -21,8 +21,8 @@ interface QrPayload {
     <div class="h-full flex flex-col bg-black relative">
         <!-- Header -->
         <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
-            <button (click)="cancel()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition">
-                <i class="fa-solid fa-arrow-left"></i>
+            <button type="button" (click)="cancel()" aria-label="Quay lại" class="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
             </button>
             <span class="text-white font-bold text-sm">Quét mã đăng nhập</span>
             <div class="w-10"></div>

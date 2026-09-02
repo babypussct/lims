@@ -18,19 +18,17 @@ import { NavigationPanelComponent } from './navigation-panel.component';
     BottomNavComponent
   ],
   template: `
-    <div class="min-h-screen h-[100dvh] bg-gray-50 dark:bg-slate-900 flex overflow-hidden relative">
+    <div class="soft-ui-app-shell min-h-screen h-[100dvh] flex overflow-hidden relative">
 
       @if (!state.focusMode()) {
         <div class="hidden md:block">
           @defer (when !!state.currentUser()) {
-            @if (!state.sidebarCollapsed()) {
-              <app-navigation-panel></app-navigation-panel>
-            }
+            <app-navigation-panel></app-navigation-panel>
           }
         </div>
       }
 
-      <!-- Desktop Top Header -->
+      <!-- Soft UI-style application header (desktop + mobile) -->
       @if (!state.focusMode()) {
         @defer (when !!state.currentUser()) {
           <app-header></app-header>
@@ -39,15 +37,18 @@ import { NavigationPanelComponent } from './navigation-panel.component';
 
       <main
         class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out overflow-hidden"
-        [class.md:ml-64]="!state.sidebarCollapsed() && !state.focusMode()"
-        [class.md:pt-14]="!state.focusMode()"
+        [class.md:ml-[17rem]]="!state.sidebarCollapsed() && !state.focusMode()"
+        [class.md:ml-16]="state.sidebarCollapsed() && !state.focusMode()"
+        [class.pt-16]="!state.focusMode()"
         [class.p-0]="state.focusMode()">
 
         <div
           class="flex-1 min-h-0 flex flex-col overflow-hidden"
           [class.px-3]="!state.focusMode()"
-          [class.pt-4]="!state.focusMode()"
-          [class.md:p-6]="!state.focusMode()"
+          [class.pt-2]="!state.focusMode()"
+          [class.md:px-6]="!state.focusMode()"
+          [class.md:pt-5]="!state.focusMode()"
+          [class.xl:px-8]="!state.focusMode()"
           [class.p-0]="state.focusMode()">
 
           @if (state.permissionError()) {

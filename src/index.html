@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="LIMS Cloud - Hệ thống quản lý phòng thí nghiệm">
   <meta name="author" content="Otada Technology">
-  <meta name="theme-color" content="#f8f9fa"> 
+  <meta name="theme-color" content="#f8f9fa">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -19,7 +19,7 @@
         if (localStorage.getItem('darkMode') === 'true') {
           document.documentElement.classList.add('dark');
           document.documentElement.style.colorScheme = 'dark';
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f172a');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#111322');
         }
       } catch (_) {}
     })();
@@ -32,7 +32,7 @@
   <link rel="icon" type="image/png" href="icons/icon-72x72.png">
 
   <!-- 2. Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- 5. Global CSS -->
@@ -99,7 +99,7 @@
   </style>
   <link rel="manifest" href="manifest.webmanifest">
 </head>
-<body class="antialiased text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-900 h-full overflow-hidden transition-colors duration-300">
+<body class="antialiased text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 h-full overflow-hidden transition-colors duration-300">
   <script>
     // Handle the legacy client-side Drive OAuth response BEFORE Angular bootstraps.
     // Firebase Google login now uses signInWithRedirect/getRedirectResult and

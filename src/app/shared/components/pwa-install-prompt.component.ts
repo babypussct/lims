@@ -15,7 +15,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
           (click)="triggerInstall()"
           class="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform relative"
           aria-label="Cài ứng dụng LIMS">
-          <span class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-xl transition-all border bg-gradient-to-tr shadow-sm from-teal-500/15 to-cyan-500/15 text-teal-600 dark:text-teal-400 border-teal-200/50 dark:border-teal-800/30">
+          <span class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all border bg-gradient-to-tr shadow-sm from-teal-500/15 to-cyan-500/15 text-teal-600 dark:text-teal-400 border-teal-200/50 dark:border-teal-800/30">
             <i class="fa-solid fa-download" aria-hidden="true"></i>
           </span>
           <span class="text-[10px] font-bold text-center leading-tight px-0.5 text-slate-500 dark:text-slate-400">Cài Ứng Dụng</span>
@@ -97,7 +97,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
               <!-- 3. Mac Safari & PC Desktop: Hộp thoại ở giữa -->
               @if (osType() === 'mac_safari' || osType() === 'pc_other') {
                   <div class="fixed inset-0 flex items-center justify-center pointer-events-none" (click)="$event.stopPropagation()">
-                      <div class="bg-white px-6 py-5 rounded-3xl shadow-2xl max-w-[320px] pointer-events-auto border border-gray-100">
+                      <div class="bg-white px-6 py-5 rounded-2xl shadow-2xl max-w-[320px] pointer-events-auto border border-gray-100">
                           <div class="flex items-start gap-4">
                               <div class="w-12 h-12 rounded-full bg-fuchsia-50 text-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
                                   <i class="fa-solid fa-display text-xl"></i>

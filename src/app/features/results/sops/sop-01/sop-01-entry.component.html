@@ -9,15 +9,15 @@
     (draftChanged)="onDataChanged()">
 
     <!-- Fipronil specific inputs (Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu) -->
-    <div sop-metadata-extra class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 mt-4">
+    <div sop-metadata-extra class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 mt-4">
       <!-- Mã hồ sơ -->
       <div>
-        <label class="flex items-center justify-between text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">
+        <label class="flex items-center justify-between text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">
           <span>1. Mã hồ sơ</span>
           <button type="button"
             (click)="autoFillMaHoSo()"
             [disabled]="isReadOnly"
-            class="text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            class="text-fuchsia-500 hover:text-fuchsia-700 dark:hover:text-fuchsia-300 transition-colors"
             title="Tự động điền bằng các mẫu đang chọn">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
           </button>
@@ -32,13 +32,13 @@
 
         <!-- Hệ số pha loãng -->
         <div>
-          <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">3. Hệ số pha loãng (f)</label>
+          <label class="block text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">3. Hệ số pha loãng (f)</label>
           <div class="flex items-center gap-1.5">
             <button type="button"
               (click)="draft.page1Data['heSoPhaLoang'] = '1'; onDataChanged()"
               [disabled]="isReadOnly"
-                  [class]="draft.page1Data['heSoPhaLoang'] === '1' 
-                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
+                  [class]="draft.page1Data['heSoPhaLoang'] === '1'
+                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
               title="Chọn f=1">
               f=1
@@ -54,13 +54,13 @@
 
           <!-- Loại mẫu -->
           <div>
-            <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">4. Loại mẫu</label>
+            <label class="block text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">4. Loại mẫu</label>
             <div class="flex items-center gap-1.5">
               <button type="button"
                 (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
                 [disabled]="isReadOnly"
                   [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
-                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
+                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                 title="Chọn Thủy sản">
                 Thủy Sản
@@ -76,13 +76,13 @@
 
             <!-- Tình trạng mẫu -->
             <div>
-              <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">5. Tình trạng mẫu</label>
+              <label class="block text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">5. Tình trạng mẫu</label>
               <div class="flex items-center gap-1.5">
                 <button type="button"
                   (click)="draft.page1Data['tinhTrangMau'] = 'Bình thường'; onDataChanged()"
                   [disabled]="isReadOnly"
                   [class]="draft.page1Data['tinhTrangMau'] === 'Bình thường'
-                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
+                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                     : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                   title="Chọn Bình thường">
                   Bình Thường
@@ -106,8 +106,8 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div class="lg:col-span-5 space-y-3">
-                <div class="p-4 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl space-y-3 shadow-xs">
-                  <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <div class="p-4 bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl space-y-3 shadow-xs">
+                  <h5 class="text-xs font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-wider flex items-center gap-1.5">
                     <i class="fa-solid fa-flask-vial"></i> Cấu Hình Mẫu QC & Tên Tuỳ Chỉnh
                   </h5>
 
@@ -225,8 +225,8 @@
                           </button>
 
                           <!-- Quick Vial Rack Input for Fipronil -->
-                          <div class="flex items-center gap-2 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
-                            <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập nhanh số lọ:</span>
+                          <div class="flex items-center gap-2 bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
+                            <span class="font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-widest">Nhập nhanh số lọ:</span>
                             <div class="flex items-center gap-1.5">
                               <span class="text-slate-450 dark:text-slate-500 font-bold">Rack:</span>
                               <input type="number"
@@ -256,7 +256,7 @@
                                   </div>
                                    <button (click)="applyBulkVials()"
                                      [disabled]="isReadOnly"
-                                    class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
+                                    class="px-3 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
                                     title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
                                     <i class="fa-solid fa-magic text-[10px]"></i>
                                     <span>Điền Nhanh</span>
@@ -295,8 +295,8 @@
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
                                   @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
                                     @if (draft.resultData[row.key]) {
-              <tr [class]="row.isQC 
-                    ? 'bg-amber-50/15 dark:bg-amber-955/5 border-l-4 border-l-amber-500/80 hover:bg-amber-50/25 dark:hover:bg-amber-955/10 transition-colors' 
+              <tr [class]="row.isQC
+                    ? 'bg-amber-50/15 dark:bg-amber-955/5 border-l-4 border-l-amber-500/80 hover:bg-amber-50/25 dark:hover:bg-amber-955/10 transition-colors'
                     : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150 ' + (draft.resultData[row.key]['selected'] === false ? 'opacity-60' : '')">
 
                                         <!-- Select Checkbox -->

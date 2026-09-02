@@ -22,7 +22,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
         </app-page-header>
 
         <!-- Privacy Card -->
-        <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-3xl p-6 sm:p-10 transition-all duration-300">
+        <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-2xl p-6 sm:p-10 transition-all duration-300">
           <div class="border-b border-slate-100 dark:border-slate-700/80 pb-6 mb-8">
             <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Chính sách bảo mật và quyền riêng tư</h2>
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-semibold">
@@ -38,7 +38,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
             </p>
 
             <!-- HIGHLIGHT SUMMARY BOX FOR USERS & GOOGLE VERIFICATION TEAM -->
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-blue-950/40 p-6 rounded-3xl border-2 border-blue-200 dark:border-blue-800/60 shadow-sm my-6">
+            <div class="bg-gradient-to-br from-blue-50 to-fuchsia-50 dark:from-slate-900 dark:to-blue-950/40 p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800/60 shadow-sm my-6">
               <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md">
                   <i class="fa-solid fa-circle-check text-xl"></i>

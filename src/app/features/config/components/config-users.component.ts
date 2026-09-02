@@ -21,7 +21,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700/60 pb-5">
             <div>
                 <div class="flex items-center gap-2">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-base shadow-sm">
+                    <div class="w-9 h-9 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center font-bold text-base shadow-sm">
                         <i class="fa-solid fa-users-gear"></i>
                     </div>
                     <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg tracking-tight">
@@ -37,7 +37,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             <div class="flex flex-wrap items-center gap-2">
                 <div class="flex items-center bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300">
                     <span class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 shadow-xs text-slate-700 dark:text-slate-200">
-                        Tổng: <strong class="text-indigo-600 dark:text-indigo-400">{{totalCount()}}</strong>
+                        Tổng: <strong class="text-fuchsia-600 dark:text-fuchsia-400">{{totalCount()}}</strong>
                     </span>
                     @if (pendingCount() > 0) {
                         <span class="px-2 py-1 text-orange-600 dark:text-orange-400 flex items-center gap-1">
@@ -85,7 +85,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                            [ngModel]="searchQuery()" 
                            (ngModelChange)="searchQuery.set($event)"
                            placeholder="Tìm tên, email hoặc UID..." 
-                           class="w-full pl-9 pr-9 py-2.5 text-xs md:text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs">
+                           class="w-full pl-9 pr-9 py-2.5 text-xs md:text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition shadow-xs">
                     @if (searchQuery()) {
                         <button (click)="searchQuery.set('')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
                             <i class="fa-solid fa-xmark"></i>
@@ -97,7 +97,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 <div class="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1 lg:pb-0 shrink-0">
                     <button (click)="roleFilter.set('all')" 
                             class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
-                            [class]="roleFilter() === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
+                            [class]="roleFilter() === 'all' ? 'bg-fuchsia-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
                         Tất cả ({{totalCount()}})
                     </button>
 
@@ -136,7 +136,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 <div class="flex items-center gap-2">
                     <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">Nhóm vai trò:</label>
                     <select [ngModel]="roleIdFilter()" (ngModelChange)="roleIdFilter.set($event)"
-                            class="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            class="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-fuchsia-500 cursor-pointer">
                         <option value="all">⚡ Tất cả nhóm vai trò</option>
                         @for (r of rolesList(); track r.id) {
                             <option [value]="r.id">{{r.name}}</option>
@@ -148,7 +148,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 <div class="flex items-center gap-2">
                     <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">Quyền hạn:</label>
                     <select [ngModel]="permStatusFilter()" (ngModelChange)="permStatusFilter.set($event)"
-                            class="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            class="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-fuchsia-500 cursor-pointer">
                         <option value="all">🌐 Tất cả trạng thái quyền</option>
                         <option value="has_custom">⚡ Có quyền riêng / tùy chỉnh (Custom)</option>
                         <option value="inherited_only">📋 Chỉ quyền theo Nhóm vai trò</option>
@@ -157,21 +157,21 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
                 <!-- Visible Results Counter -->
                 <div class="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-                    <span>Đang hiển thị: <strong class="text-indigo-600 dark:text-indigo-400">{{filteredUsers().length}}</strong> / {{totalCount()}} người dùng</span>
+                    <span>Đang hiển thị: <strong class="text-fuchsia-600 dark:text-fuchsia-400">{{filteredUsers().length}}</strong> / {{totalCount()}} người dùng</span>
                 </div>
             </div>
         </div>
 
         <!-- STICKY BATCH ACTIONS TOOLBAR (Appears when >= 1 user selected) -->
         @if (selectedCount() > 0) {
-            <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-4 rounded-2xl shadow-xl border border-indigo-700/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in sticky top-4 z-30">
+            <div class="bg-gradient-to-r from-fuchsia-900 to-slate-900 text-white p-4 rounded-2xl shadow-xl border border-fuchsia-700/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in sticky top-4 z-30">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold">
+                    <div class="w-8 h-8 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center font-bold">
                         <i class="fa-solid fa-check-double"></i>
                     </div>
                     <div>
                         <div class="font-black text-sm text-white">Đã chọn {{selectedCount()}} người dùng</div>
-                        <p class="text-[11px] text-indigo-200">Áp dụng tác vụ phân quyền hàng loạt cho các tài khoản được chọn</p>
+                        <p class="text-[11px] text-fuchsia-200">Áp dụng tác vụ phân quyền hàng loạt cho các tài khoản được chọn</p>
                     </div>
                 </div>
 
@@ -203,7 +203,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                             </select>
                         }
 
-                        <button (click)="applyBatchRole()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
+                        <button (click)="applyBatchRole()" class="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-xs font-bold transition">
                             Áp Dụng
                         </button>
                     </div>
@@ -230,7 +230,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                     <input type="checkbox" 
                            [checked]="isAllSelected()" 
                            (change)="toggleSelectAll()" 
-                           class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600">
+                           class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer accent-fuchsia-600">
                     <span>Người dùng</span>
                 </div>
                 <div class="col-span-3">Vai trò (Role) & Nhóm</div>
@@ -242,14 +242,14 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             <div class="flex flex-col md:divide-y md:divide-slate-200 dark:md:divide-slate-700/50 bg-slate-50/50 md:bg-transparent dark:bg-slate-900/20 md:dark:bg-transparent p-3 md:p-0 gap-3 md:gap-0">
                 @for (u of filteredUsers(); track u.uid) {
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-4 p-4 md:px-6 md:py-4 hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition items-start bg-white md:bg-transparent shadow-sm md:shadow-none rounded-xl md:rounded-none border border-slate-200 dark:border-slate-700 md:border-none"
-                         [ngClass]="{ 'bg-indigo-50/40 dark:bg-indigo-950/30': selectedUids().has(u.uid) }">
+                         [ngClass]="{ 'bg-fuchsia-50/40 dark:bg-fuchsia-950/30': selectedUids().has(u.uid) }">
                         
                         <!-- Col 1: Checkbox & User Info -->
                         <div class="col-span-1 md:col-span-4 flex items-center gap-3.5">
                             <input type="checkbox" 
                                    [checked]="selectedUids().has(u.uid)" 
                                    (change)="toggleSelectUser(u.uid)" 
-                                   class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600 shrink-0">
+                                   class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer accent-fuchsia-600 shrink-0">
                             
                             <img [src]="getAvatarUrl(u.displayName, state.avatarStyle(), u.photoURL)" class="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 object-cover" alt="Avatar">
                             
@@ -277,9 +277,9 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                 </div>
 
                                 <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">{{u.email}}</div>
-                                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 w-fit" (click)="copyUid(u.uid)" title="Nhấn để sao chép UID">
+                                <button type="button" class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 w-fit" (click)="copyUid(u.uid)" title="Nhấn để sao chép UID" aria-label="Sao chép UID">
                                     <i class="fa-regular fa-copy"></i> {{u.uid.substring(0,8)}}...
-                                </div>
+                                </button>
                             </div>
                         </div>
                         
@@ -289,7 +289,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                             
                             <div class="flex items-center gap-2">
                                 <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
-                                        class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-indigo-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
+                                        class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-fuchsia-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
                                         [class.text-orange-600]="u.role === 'pending'"
                                         [class.dark:text-orange-400]="u.role === 'pending'">
                                     <option value="manager">Manager (Toàn quyền)</option>
@@ -301,7 +301,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                 <!-- 1-Click Quick Approve for Pending Rows -->
                                 @if (u.role === 'pending') {
                                     <button (click)="quickApprovePending(u)" 
-                                            class="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0 flex items-center gap-1.5 active:scale-95"
+                                            class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0 flex items-center gap-1.5 active:scale-95"
                                             title="Duyệt nhanh tài khoản này thành Staff">
                                         <i class="fa-solid fa-user-check"></i> Duyệt Nhanh
                                     </button>
@@ -337,12 +337,12 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                     <i class="fa-solid fa-hourglass-half shrink-0 text-orange-500"></i> <span>Đang chờ Quản trị viên duyệt & cấp quyền.</span>
                                 </div>
                             } @else {
-                                <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-2.5 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-xs transition rounded-xl flex items-center justify-between group">
+                                <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-2.5 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-fuchsia-400 dark:hover:border-fuchsia-500 hover:shadow-xs transition rounded-xl flex items-center justify-between group">
                                     <div class="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-                                        <i class="fa-solid fa-sliders text-indigo-500 shrink-0"></i> 
+                                        <i class="fa-solid fa-sliders text-fuchsia-500 shrink-0"></i>
                                         <span class="truncate">Cấu hình quyền ({{getUserPermissionsCount(u)}})</span>
                                     </div>
-                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:text-indigo-500 transition-colors"></i>
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:text-fuchsia-500 transition-colors"></i>
                                 </button>
                             }
                         </div>
@@ -350,7 +350,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <!-- Col 4: Save Single User -->
                         <div class="col-span-1 md:col-span-1 flex md:justify-center mt-2 md:mt-0">
                             <button (click)="saveUser(u)" 
-                                    class="w-full md:w-10 h-10 md:h-10 rounded-xl bg-indigo-50 md:bg-indigo-50/60 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-indigo-200 md:border-transparent dark:border-indigo-800/40 font-bold gap-2 text-sm shadow-xs" 
+                                    class="w-full md:w-10 h-10 md:h-10 rounded-xl bg-fuchsia-50 md:bg-fuchsia-50/60 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-600 dark:hover:bg-fuchsia-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-fuchsia-200 md:border-transparent dark:border-fuchsia-800/40 font-bold gap-2 text-sm shadow-xs"
                                     title="Lưu thay đổi cho người dùng này">
                                 <i class="fa-solid fa-floppy-disk text-base md:text-sm"></i> <span class="md:hidden">Lưu Thay Đổi</span>
                             </button>
@@ -540,10 +540,10 @@ export class ConfigUsersComponent implements OnInit {
     {
       name: 'Chất chuẩn đối chiếu',
       icon: 'fa-vial-circle-check',
-      color: 'text-indigo-500',
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      border: 'border-indigo-100 dark:border-indigo-800/30',
-      ring: 'var(--tw-colors-indigo-500, #6366f1)',
+      color: 'text-fuchsia-500',
+      bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20',
+      border: 'border-fuchsia-100 dark:border-fuchsia-800/30',
+      ring: 'var(--tw-colors-fuchsia-500, #6366f1)',
       perms: [
         { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem chất chuẩn' },
         { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn chất chuẩn' },

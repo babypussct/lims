@@ -34,12 +34,12 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                   <option value="">Chọn nhãn...</option>
                   @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                 </select>
-                <button (click)="addTag()" [disabled]="!tagToAdd()" class="rounded-xl bg-indigo-600 px-4 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
+                <button (click)="addTag()" [disabled]="!tagToAdd()" class="rounded-xl bg-fuchsia-600 px-4 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
               </div>
             </div>
             <div class="min-h-10 flex flex-wrap gap-2">
               @for (key of tags(); track key) {
-                <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-xs font-bold" [title]="resolveLabel(key)">{{resolveLabel(key)}}<button (click)="removeTag(key)" class="text-indigo-400 hover:text-red-500">×</button></span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-800 px-3 py-1 text-xs font-bold" [title]="resolveLabel(key)">{{resolveLabel(key)}}<button (click)="removeTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
               }
               @if (tags().length === 0) { <span class="text-xs text-slate-400 italic">Chưa chọn nhãn (REPLACE rỗng = xóa toàn bộ).</span> }
             </div>

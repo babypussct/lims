@@ -65,7 +65,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
                 <input type="checkbox" 
                        [(ngModel)]="draft.page1Data[checkbox.key]" 
                        (ngModelChange)="onCheckboxChange(checkbox.key)"
-                       class="mt-0.5 w-4 h-4 rounded text-indigo-650 border-slate-350 dark:border-slate-700 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                       class="mt-0.5 w-4 h-4 rounded text-fuchsia-650 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
                 <div>
                   <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                 </div>
@@ -118,12 +118,12 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
       </div>
 
       <!-- 2. Sample Navigation Tabs -->
-      <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar py-2.5 px-3 shrink-0 bg-indigo-50/15 dark:bg-indigo-955/15 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl shadow-2xs">
-        <span class="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mr-1">Danh sách mẫu:</span>
+      <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar py-2.5 px-3 shrink-0 bg-fuchsia-50/15 dark:bg-fuchsia-955/15 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl shadow-2xs">
+        <span class="text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-widest mr-1">Danh sách mẫu:</span>
         @for (sampleCode of run.sampleList; track sampleCode; let idx = $index) {
           <button (click)="selectSample(sampleCode)"
                   [class]="activeSampleCode() === sampleCode 
-                    ? 'bg-fuchsia-600 text-white font-extrabold shadow-sm border border-fuchsia-650 transition shrink-0 active:scale-95' 
+                    ? 'bg-fuchsia-600 text-white font-extrabold shadow-sm border border-fuchsia-650 transition shrink-0 active:scale-95'
                     : 'bg-white dark:bg-slate-900 text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800/80 transition shrink-0 active:scale-95 shadow-2xs'"
                   class="px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
             <span [class]="activeSampleCode() === sampleCode
@@ -167,7 +167,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
             </button>
 
             <button (click)="copyActiveSampleToAll()" 
-                    class="px-3.5 py-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
+                    class="px-3.5 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
                     title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này">
               <i class="fa-solid fa-copy"></i>
               <span>Sao Chép Mẫu cho Cả Mẻ</span>
@@ -195,7 +195,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
               @for (compound of config.compounds; track compound; let idx = $index) {
                 @let isAssigned = isTargetAssigned(activeSampleCode(), compound);
                 <tr [class]="isAssigned 
-                      ? 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150' 
+                      ? 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150'
                       : 'bg-slate-50/50 dark:bg-slate-955/20 opacity-60 text-slate-400 select-none border-l-4 border-l-slate-200 dark:border-l-slate-800'"
                     class="transition-all duration-155">
                   <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">

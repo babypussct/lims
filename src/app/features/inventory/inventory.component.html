@@ -11,7 +11,7 @@
       @if (activeTab() !== 'labels') {
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 shrink-0 pt-4 px-4 md:pt-0 md:px-0">
               <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none p-4 flex items-center gap-4 relative overflow-hidden group border border-slate-200 dark:border-slate-700 active:scale-95 transition-all duration-200 h-20 md:h-24">
-                  <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-indigo-200 dark:shadow-none group-hover:scale-110 transition-transform">
+                  <div class="w-12 h-12 rounded-xl bg-fuchsia-600 dark:bg-fuchsia-500 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
                       <i class="fa-solid fa-boxes-stacked"></i>
                   </div>
                   <div>
@@ -136,7 +136,7 @@
                                     <div [appLockPermission]="'inventory_edit'" class="flex items-center justify-end" (click)="$event.stopPropagation()">
                                         <div class="flex items-center gap-2">
                                             <input #quickInputMobile type="text" inputmode="text" [disabled]="isProcessing()" class="w-24 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 rounded-lg text-center focus:border-fuchsia-500 dark:focus:border-fuchsia-500 outline-none font-bold text-slate-700 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-900/50" [placeholder]="'+/- (' + item.unit + ')'" (keyup.enter)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''">
-                                            <button type="button" aria-label="Cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''" class="h-8 px-3 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none text-[11px] font-bold gap-1.5"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Nhanh</button>
+                                            <button type="button" aria-label="Cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''" class="h-8 px-3 flex items-center justify-center rounded-lg bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 transition shadow-sm dark:shadow-none text-[11px] font-bold gap-1.5"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Nhanh</button>
                                         </div>
                                     </div>
                                 </div>
@@ -200,12 +200,12 @@
                                     </div>
                                 </td>
                                     <td *appHasPermission="'inventory_edit'" class="px-4 py-2 text-right border-l border-slate-50 dark:border-slate-700/50" (click)="$event.stopPropagation()">
-                                        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
+                                        <div class="flex items-center justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition duration-200">
                                             <input #quickInput type="text" [disabled]="isProcessing()" class="w-20 px-1 py-0.5 text-[10px] border border-slate-200 dark:border-slate-600 rounded text-center focus:border-fuchsia-500 dark:focus:border-fuchsia-500 outline-none font-bold text-slate-700 dark:text-slate-300 font-mono bg-white dark:bg-slate-800" [placeholder]="'+/- (' + item.unit + ')'" (keyup.enter)="quickUpdate(item, quickInput.value); quickInput.value=''">
-                                            <button type="button" aria-label="Lưu cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInput.value); quickInput.value=''" class="w-6 h-6 flex items-center justify-center rounded bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 transition shadow-sm dark:shadow-none"><i class="fa-solid fa-check text-[10px]" aria-hidden="true"></i></button>
+                                            <button type="button" aria-label="Lưu cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInput.value); quickInput.value=''" class="w-9 h-9 flex items-center justify-center rounded-lg bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 transition shadow-sm dark:shadow-none"><i class="fa-solid fa-check text-xs" aria-hidden="true"></i></button>
                                         </div>
                                     </td>
-                                <td class="px-4 py-2 text-center border-l border-slate-50"><button type="button" aria-label="Chỉnh sửa vật tư" (click)="openModal(item)" class="text-blue-600 hover:text-blue-800 transition px-1"><i class="fa-solid fa-pen text-xs" aria-hidden="true"></i></button></td>
+                                <td class="px-4 py-2 text-center border-l border-slate-50"><button type="button" aria-label="Chỉnh sửa vật tư" (click)="openModal(item)" class="w-9 h-9 inline-flex items-center justify-center rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"><i class="fa-solid fa-pen text-xs" aria-hidden="true"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -375,12 +375,12 @@
                                
                                <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                    @for(code of ghsKeys; track code) {
-                                       <div (click)="toggleGhs(code)" 
+                                       <button type="button" (click)="toggleGhs(code)" [attr.aria-pressed]="form.get('ghsWarnings')?.value?.includes(code)" [attr.aria-label]="'Cảnh báo GHS: ' + GHS_DICT[code].label"
                                             class="cursor-pointer border rounded-lg p-1.5 flex flex-col items-center text-center transition active:scale-95 bg-white dark:bg-slate-800 opacity-60 hover:opacity-100"
                                             [class]="form.get('ghsWarnings')?.value?.includes(code) ? '!border-red-500 ring-1 ring-red-200 dark:ring-red-900/50 !opacity-100 shadow-sm bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'">
                                            <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="GHS_DICT[code].label" />
                                            <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code].label">{{GHS_DICT[code].label}}</span>
-                                       </div>
+                                       </button>
                                    }
                                </div>
                                

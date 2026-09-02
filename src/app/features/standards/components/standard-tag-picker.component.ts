@@ -22,8 +22,8 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
       </div>
 
       @if (!disabled() && !limitReached()) {
-        <div class="rounded-xl border border-indigo-200 dark:border-indigo-800/70 bg-indigo-50/60 dark:bg-indigo-900/15 p-2.5">
-          <div class="mb-2 flex items-start gap-2 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+        <div class="rounded-xl border border-fuchsia-200 dark:border-fuchsia-800/70 bg-fuchsia-50/60 dark:bg-fuchsia-900/15 p-2.5">
+          <div class="mb-2 flex items-start gap-2 text-[11px] font-bold text-fuchsia-700 dark:text-fuchsia-300">
             <i class="fa-solid fa-layer-group mt-0.5 shrink-0"></i>
             <span>Bạn có thể chọn nhiều nhãn liên tiếp trong cùng một lần mở danh sách.</span>
           </div>
@@ -33,9 +33,9 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
               type="button"
               (click)="toggleDropdown()"
               [attr.aria-expanded]="dropdownOpen()"
-              class="flex w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-left text-sm text-slate-700 dark:text-slate-200 shadow-sm outline-none transition hover:border-indigo-300 dark:hover:border-indigo-700 focus:ring-2 focus:ring-indigo-500/30"
+              class="flex w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-left text-sm text-slate-700 dark:text-slate-200 shadow-sm outline-none transition hover:border-fuchsia-300 dark:hover:border-fuchsia-700 focus:ring-2 focus:ring-fuchsia-500/30"
             >
-              <i class="fa-solid fa-tags shrink-0 text-indigo-500"></i>
+              <i class="fa-solid fa-tags shrink-0 text-fuchsia-500"></i>
               <span class="min-w-0 flex-1 font-bold">Chọn nhiều nhãn trong danh mục...</span>
               <span class="shrink-0 text-[10px] font-bold text-slate-400">{{ availableOptions().length }} còn lại</span>
               <i class="fa-solid fa-chevron-down shrink-0 text-[10px] text-slate-400 transition-transform" [class.rotate-180]="dropdownOpen()"></i>
@@ -51,7 +51,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
                       [ngModel]="searchTerm()"
                       (ngModelChange)="searchTerm.set($event)"
                       (click)="$event.stopPropagation()"
-                      class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+                      class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/20"
                       placeholder="Tìm nhanh nhãn..."
                     >
                   </div>
@@ -62,9 +62,9 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
                     <button
                       type="button"
                       (click)="addTag(option.key)"
-                      class="flex w-full min-w-0 items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/25"
+                      class="flex w-full min-w-0 items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/25"
                     >
-                      <span class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 text-[9px] text-indigo-600 dark:text-indigo-300">
+                      <span class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-fuchsia-200 dark:border-fuchsia-700 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-[9px] text-fuchsia-600 dark:text-fuchsia-300">
                         <i class="fa-solid fa-plus"></i>
                       </span>
                       <span class="min-w-0 flex-1 text-xs font-bold leading-snug text-slate-700 dark:text-slate-200 break-words">{{ formatOptionLabel(option) }}</span>
@@ -76,7 +76,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
 
                 <div class="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 px-3 py-2">
                   <span class="text-[10px] font-bold text-slate-400">Đã chọn {{ selectedKeys().length }} nhãn</span>
-                  <button type="button" (click)="closeDropdown()" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700">Xong</button>
+                  <button type="button" (click)="closeDropdown()" class="rounded-lg bg-fuchsia-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-fuchsia-700">Xong</button>
                 </div>
               </div>
             }
@@ -86,10 +86,10 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact } from '../serv
 
       <div class="min-h-8 flex flex-wrap gap-1.5">
         @for (key of selectedKeys(); track key) {
-          <span class="inline-flex max-w-full items-start gap-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 px-2.5 py-1 text-[11px] font-bold" [title]="resolveLabel(key)">
+          <span class="inline-flex max-w-full items-start gap-1 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-800 px-2.5 py-1 text-[11px] font-bold" [title]="resolveLabel(key)">
             <span class="min-w-0 line-clamp-2 break-words">{{ resolveCompactLabel(key) }}</span>
             @if (!disabled()) {
-              <button type="button" (click)="removeTag(key)" class="shrink-0 text-indigo-400 hover:text-red-500" aria-label="Gỡ nhãn">×</button>
+              <button type="button" (click)="removeTag(key)" class="shrink-0 text-fuchsia-400 hover:text-red-500" aria-label="Gỡ nhãn">×</button>
             }
           </span>
         }

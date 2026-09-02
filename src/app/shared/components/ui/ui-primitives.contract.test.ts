@@ -14,7 +14,7 @@ describe('shared UI primitive contracts', () => {
     assert.match(source, /export type AppButtonSize = 'sm' \| 'md'/);
     assert.match(source, /\[disabled\]="disabled\(\) \|\| loading\(\)"/);
     assert.match(source, /\[attr\.aria-busy\]="loading\(\) \? 'true' : null"/);
-    assert.match(source, /primary: 'bg-indigo-600/);
+    assert.match(source, /primary: 'bg-gradient-soft/);
     assert.match(source, /danger: 'bg-red-600/);
     assert.match(source, /rounded-xl/);
   });
@@ -25,7 +25,7 @@ describe('shared UI primitive contracts', () => {
     assert.match(source, /<h1\b/);
     assert.equal((source.match(/<h1\b/g) ?? []).length, 1);
     assert.match(source, /select="\[pageHeaderActions\]"/);
-    assert.match(source, /dark:border-slate-800/);
+    assert.match(source, /soft-ui-page-header/);
     assert.match(source, /sticky = input\(false\)/);
   });
 
@@ -44,7 +44,7 @@ describe('shared UI primitive contracts', () => {
     assert.match(source, /fa-xmark/);
     assert.match(source, /select="\[modalBody\]"/);
     assert.match(source, /select="\[modalFooter\]"/);
-    assert.match(source, /shadow-2xl/);
+    assert.match(source, /shadow-soft-xl/);
   });
 
   it('keeps empty state and toolbar slots aligned with the shared layout contract', () => {

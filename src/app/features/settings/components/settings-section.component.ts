@@ -46,7 +46,7 @@ export class SettingsSectionComponent {
       case 'warning':
         return 'rounded-2xl border border-amber-200 bg-amber-50/40 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:shadow-none';
       case 'info':
-        return 'rounded-2xl border border-indigo-200 bg-indigo-50/40 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/20 dark:shadow-none';
+        return 'rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 shadow-sm dark:border-fuchsia-900/50 dark:bg-fuchsia-950/20 dark:shadow-none';
       default:
         return 'rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none';
     }
@@ -59,7 +59,7 @@ export class SettingsSectionComponent {
       case 'warning':
         return 'border-amber-100 dark:border-amber-900/40';
       case 'info':
-        return 'border-indigo-100 dark:border-indigo-900/40';
+        return 'border-fuchsia-100 dark:border-fuchsia-900/40';
       default:
         return 'border-slate-100 dark:border-slate-700/70';
     }
@@ -74,7 +74,7 @@ export class SettingsSectionComponent {
       case 'info':
         return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300';
       default:
-        return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300';
+        return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-500/10 dark:text-fuchsia-300';
     }
   });
 

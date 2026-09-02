@@ -123,8 +123,8 @@ export type { CorrectionValidationResult };
                   <span class="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-300">{{current.safeChanges.length}} thay đổi an toàn</span>
                   @if (manualIssues().length > 0) { <span class="rounded-full bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 text-amber-700 dark:text-amber-300">{{manualIssues().length}} cần nhập mã</span> }
                   <span class="rounded-full bg-red-50 dark:bg-red-950/30 px-2.5 py-1 text-red-700 dark:text-red-300">{{nonManualConflicts().length}} xung đột/lỗi</span>
-                  <span class="rounded-full bg-indigo-50 dark:bg-indigo-950/30 px-2.5 py-1 text-indigo-700 dark:text-indigo-300">{{current.usageCount + (current.nestedUsageCount || 0)}} nhật ký</span>
-                  <span class="rounded-full bg-violet-50 dark:bg-violet-950/30 px-2.5 py-1 text-violet-700 dark:text-violet-300">{{current.purchaseRequestsCount || 0}} yêu cầu mua</span>
+                  <span class="rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2.5 py-1 text-fuchsia-700 dark:text-fuchsia-300">{{current.usageCount + (current.nestedUsageCount || 0)}} nhật ký</span>
+                  <span class="rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2.5 py-1 text-fuchsia-700 dark:text-fuchsia-300">{{current.purchaseRequestsCount || 0}} yêu cầu mua</span>
                 } @else {
                   <span class="text-slate-500 dark:text-slate-400">Chưa có kết quả quét.</span>
                 }
@@ -193,12 +193,12 @@ export type { CorrectionValidationResult };
                   class="rounded-2xl border bg-white dark:bg-slate-900 p-4 shadow-sm space-y-2.5"
                   [ngClass]="progress.phase === 'ALL_COMPLETED'
                     ? 'border-emerald-200 dark:border-emerald-900/60'
-                    : 'border-indigo-200 dark:border-indigo-900/60'"
+                    : 'border-fuchsia-200 dark:border-fuchsia-900/60'"
                 >
                   <div class="flex items-center justify-between gap-2 text-xs font-black">
                     <span [ngClass]="progress.phase === 'ALL_COMPLETED'
                       ? 'text-emerald-700 dark:text-emerald-300'
-                      : 'text-indigo-700 dark:text-indigo-300'">
+                      : 'text-fuchsia-700 dark:text-fuchsia-300'">
                       @if (progress.phase === 'ALL_COMPLETED') {
                         <i class="fa-solid fa-circle-check mr-1.5" aria-hidden="true"></i>
                       } @else {
@@ -210,7 +210,7 @@ export type { CorrectionValidationResult };
                   </div>
                   <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300 rounded-full"
+                      class="h-full bg-gradient-to-r from-fuchsia-500 to-emerald-500 transition-all duration-300 rounded-full"
                       [style.width.%]="progress.percent"
                     ></div>
                   </div>
@@ -228,11 +228,11 @@ export type { CorrectionValidationResult };
               }
 
               @if (report(); as current) {
-                <section class="rounded-2xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 px-4 py-3 space-y-3">
+                <section class="rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900/50 bg-fuchsia-50/70 dark:bg-fuchsia-950/20 px-4 py-3 space-y-3">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h4 class="text-sm font-black text-indigo-900 dark:text-indigo-100"><i class="fa-solid fa-list-check mr-2" aria-hidden="true"></i>Phạm vi sẽ đồng bộ</h4>
-                      <p class="text-[11px] text-indigo-800/80 dark:text-indigo-200/80 mt-1">Chọn theo tài liệu nghiệp vụ. Các trường của cùng một tài liệu luôn được giữ cùng batch; bộ lọc phía trên chỉ thay đổi phần hiển thị.</p>
+                      <h4 class="text-sm font-black text-fuchsia-900 dark:text-fuchsia-100"><i class="fa-solid fa-list-check mr-2" aria-hidden="true"></i>Phạm vi sẽ đồng bộ</h4>
+                      <p class="text-[11px] text-fuchsia-800/80 dark:text-fuchsia-200/80 mt-1">Chọn theo tài liệu nghiệp vụ. Các trường của cùng một tài liệu luôn được giữ cùng batch; bộ lọc phía trên chỉ thay đổi phần hiển thị.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                       @if (quickBatchTarget(); as batch) {
@@ -240,21 +240,21 @@ export type { CorrectionValidationResult };
                           type="button"
                           (click)="selectQuickBatch()"
                           [disabled]="isBusy()"
-                          class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-sm disabled:opacity-40 transition-colors"
+                          class="px-2.5 py-1.5 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-[11px] font-black shadow-sm disabled:opacity-40 transition-colors"
                           [title]="'Chọn batch ' + batch.batchIndex + ' gồm ' + batch.changeCount + ' thay đổi hợp lệ; không tách cluster Standard–Registry'"
                         >
                           <i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Chọn nhanh batch {{batch.batchIndex}} ({{batch.changeCount}})
                         </button>
                       }
-                      <button type="button" (click)="toggleAllSafeChanges(true)" [disabled]="isBusy() || safeChanges().length === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-[11px] font-black text-indigo-700 dark:text-indigo-300 disabled:opacity-40">Chọn tất cả</button>
+                      <button type="button" (click)="toggleAllSafeChanges(true)" [disabled]="isBusy() || safeChanges().length === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-fuchsia-200 dark:border-fuchsia-800 text-[11px] font-black text-fuchsia-700 dark:text-fuchsia-300 disabled:opacity-40">Chọn tất cả</button>
                       <button type="button" (click)="toggleAllSafeChanges(false)" [disabled]="isBusy() || selectedSafeChangeCount() === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300 disabled:opacity-40">Bỏ chọn tất cả</button>
                     </div>
                   </div>
                   <div aria-live="polite" class="flex flex-wrap items-center gap-2 text-[11px] font-black">
-                    <span class="rounded-full bg-indigo-100 dark:bg-indigo-900/50 px-2.5 py-1 text-indigo-800 dark:text-indigo-200">Đã chọn {{selectedSafeChangeCount()}}/{{safeChanges().length}} thay đổi</span>
+                    <span class="rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/50 px-2.5 py-1 text-fuchsia-800 dark:text-fuchsia-200">Đã chọn {{selectedSafeChangeCount()}}/{{safeChanges().length}} thay đổi</span>
                     <span class="rounded-full bg-white/80 dark:bg-slate-900/70 px-2.5 py-1 text-slate-600 dark:text-slate-300">{{selectedSafeDocumentCount()}} tài liệu</span>
                     @if (quickBatchTarget(); as batch) {
-                      <span class="text-indigo-700 dark:text-indigo-300">Batch kế tiếp {{batch.batchIndex}}/{{quickBatchPlan().totalBatches}} · {{batch.changeCount}} thay đổi hợp lệ</span>
+                      <span class="text-fuchsia-700 dark:text-fuchsia-300">Batch kế tiếp {{batch.batchIndex}}/{{quickBatchPlan().totalBatches}} · {{batch.changeCount}} thay đổi hợp lệ</span>
                     }
                     @if (applySummary().estimatedBatches > 1) {
                       <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} batch theo giới hạn an toàn Firestore Security Rules</span>
@@ -335,7 +335,7 @@ export type { CorrectionValidationResult };
                       @for (group of visibleSafeChangeGroups(); track group.key) {
                         <div class="px-3 py-2.5 text-[11px]">
                           <label class="flex items-start gap-2.5 cursor-pointer">
-                            <input type="checkbox" [checked]="isSafeDocumentSelected(group.key)" (change)="toggleSafeDocument(group.key, $any($event.target).checked)" [disabled]="isBusy()" class="mt-0.5 w-4 h-4 accent-indigo-600 shrink-0" [attr.aria-label]="'Chọn thay đổi của ' + group.key">
+                            <input type="checkbox" [checked]="isSafeDocumentSelected(group.key)" (change)="toggleSafeDocument(group.key, $any($event.target).checked)" [disabled]="isBusy()" class="mt-0.5 w-4 h-4 accent-fuchsia-600 shrink-0" [attr.aria-label]="'Chọn thay đổi của ' + group.key">
                             <span class="min-w-0 flex-1">
                               <span class="flex flex-wrap items-center gap-2">
                                 <span class="font-mono font-black text-slate-600 dark:text-slate-300 truncate" [title]="group.key">{{group.key}}</span>
@@ -368,7 +368,7 @@ export type { CorrectionValidationResult };
                           <p class="text-slate-700 dark:text-slate-300 mt-1">{{issue.message}}</p>
                           @if (issue.detail) { <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1"><strong>Chi tiết:</strong> {{issue.detail}}</p> }
                           @if (issue.suggestion) { <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-1"><strong>Gợi ý xử lý:</strong> {{issue.suggestion}}</p> }
-                          @if (issue.suggestedInternalId) { <p class="text-[11px] text-indigo-700 dark:text-indigo-300 mt-1"><strong>Mã tham chiếu đề xuất:</strong> {{issue.suggestedInternalId}}</p> }
+                          @if (issue.suggestedInternalId) { <p class="text-[11px] text-fuchsia-700 dark:text-fuchsia-300 mt-1"><strong>Mã tham chiếu đề xuất:</strong> {{issue.suggestedInternalId}}</p> }
                         </div>
                       }
                     </div>

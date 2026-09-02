@@ -10,12 +10,12 @@ import { AuthService } from '../../core/services/auth.service';
   template: `
     @if (auth.forgotPasswordRequested()) {
       <div class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 animate-fade-in-up" role="dialog" aria-modal="true" aria-labelledby="forgot-pwd-title">
-        <div class="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 md:p-8 relative overflow-hidden">
+        <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 md:p-8 relative overflow-hidden">
           <!-- Decorative Top Glow -->
           <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none"></div>
 
-          <button type="button" (click)="close()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors z-10">
-            <i class="fa-solid fa-xmark"></i>
+          <button type="button" (click)="close()" aria-label="Đóng khôi phục mật khẩu" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors z-10">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
 
           <div class="flex items-start gap-4 mb-6 relative z-10">

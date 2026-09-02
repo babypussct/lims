@@ -15,11 +15,11 @@ import { StateService } from '../../../core/services/state.service';
            class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print cursor-pointer">
         
         <!-- Modal Card Container -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh] animate-bounce-in cursor-default"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh] animate-bounce-in cursor-default"
              (click)="$event.stopPropagation()">
           
           <!-- Modal Header -->
-          <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start sm:items-center gap-3 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-purple-50/50 dark:from-slate-850 dark:to-slate-900">
+          <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start sm:items-center gap-3 bg-fuchsia-50/60 dark:bg-slate-900">
             <div class="flex items-start sm:items-center gap-3 min-w-0">
               <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20 shrink-0">
                 <i class="fa-solid fa-scroll text-lg"></i>

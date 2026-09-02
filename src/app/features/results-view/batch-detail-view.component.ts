@@ -32,14 +32,14 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <button (click)="goBack()" 
-                    class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 group shrink-0">
+                    class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-fuchsia-600 dark:text-slate-400 dark:hover:text-fuchsia-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 group shrink-0">
               <i class="fa-solid fa-arrow-left group-hover:-translate-x-0.5 transition-transform text-base"></i>
             </button>
             <div>
               <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-0.5">
                 <span>Kết quả phân tích</span>
                 <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-650"></i>
-                <span class="text-indigo-650 dark:text-indigo-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
+                <span class="text-fuchsia-650 dark:text-fuchsia-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
               </div>
               <h3 class="text-xl font-black text-slate-850 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
                 Chi Tiết Kết Quả Mẻ Phân Tích
@@ -47,7 +47,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                   <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border shadow-xs">
                     <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
                       'bg-emerald-500': draft()?.status === 'completed',
-                      'bg-indigo-500': draft()?.status === 'draft',
+                      'bg-fuchsia-500': draft()?.status === 'draft',
                       'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
                     }"></span>
                     {{ getStatusText() }}
@@ -68,14 +68,14 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
             <div class="flex items-center gap-2 shrink-0">
               <button (click)="openQrModal()"
                       class="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition duration-200 active:scale-95 flex items-center gap-2">
-                <i class="fa-solid fa-qrcode text-indigo-500"></i>
+                <i class="fa-solid fa-qrcode text-fuchsia-500"></i>
                 <span>Mã QR</span>
               </button>
 
               <button (click)="goToEditMode()"
                       [class]="lockedByOthers() 
                         ? 'px-4 py-2 text-xs font-black text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'
-                        : 'px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'"
+                        : 'px-4 py-2 text-xs font-black text-white bg-fuchsia-650 hover:bg-fuchsia-700 dark:bg-fuchsia-600 dark:hover:bg-fuchsia-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'"
                       [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
                 <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()"></i>
                 <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
@@ -114,9 +114,9 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 
       <!-- MAIN SPLIT SCREEN LAYOUT -->
       @if (isLoading()) {
-        <div class="flex-1 flex items-center justify-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-12">
+        <div class="flex-1 flex items-center justify-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 p-12">
           <div class="text-center space-y-4">
-            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-indigo-600 dark:text-indigo-400"></i>
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-fuchsia-600 dark:text-fuchsia-400"></i>
             <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Đang tải chi tiết mẻ chạy...</p>
           </div>
         </div>
@@ -147,7 +147,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
         <div class="lg:hidden flex bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 shrink-0 mb-1">
           <button (click)="mobileActiveTab.set('grid')"
                   [class]="mobileActiveTab() === 'grid'
-                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/20 dark:border-slate-700/30'
+                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded-xl shadow-xs border border-slate-200/20 dark:border-slate-700/30'
                     : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-table-cells text-sm"></i>
@@ -155,7 +155,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
           </button>
           <button (click)="mobileActiveTab.set('pdf')"
                   [class]="mobileActiveTab() === 'pdf'
-                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/20 dark:border-slate-700/30'
+                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded-xl shadow-xs border border-slate-200/20 dark:border-slate-700/30'
                     : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-file-pdf text-sm text-red-500"></i>
@@ -166,13 +166,13 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
         <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[600px]">
           
           <!-- LEFT PANE: CHROMATOGRAPHY GRID (approx 55-60%) -->
-          <div [class.hidden]="mobileActiveTab() !== 'grid'" class="lg:!flex lg:flex-[6] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+          <div [class.hidden]="mobileActiveTab() !== 'grid'" class="lg:!flex lg:flex-[6] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
             
             <!-- Header of Grid -->
             <div class="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0">
               <div class="flex items-center gap-3 min-w-0">
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0 shrink-0">
-                  <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng Kết Quả Chạy
+                  <i class="fa-solid fa-table-cells mr-2.5 text-fuchsia-500"></i> Bảng Kết Quả Chạy
                 </h4>
                 
                 <!-- Prefix filter tabs -->
@@ -180,7 +180,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                   <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800/80 ml-2 overflow-x-auto max-w-[200px] sm:max-w-none custom-scrollbar shrink-0">
                     <button (click)="changeActiveFilter('ALL')"
                             [class]="activeFilter() === 'ALL'
-                              ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
+                              ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded shadow-xs'
                               : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                             class="transition duration-150 shrink-0">
                       Tất Cả
@@ -188,7 +188,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                     @for (prefix of detectedPrefixes(); track prefix) {
                       <button (click)="changeActiveFilter(prefix)"
                               [class]="activeFilter() === prefix
-                                ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
+                                ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded shadow-xs'
                                 : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                               class="transition duration-150 shrink-0">
                         {{ prefix === '' ? 'Không' : prefix }}
@@ -204,7 +204,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                   @for (sample of run()?.sampleList; track sample; let idx = $index) {
                     <button (click)="activeSampleCode.set(sample)"
                             [class]="activeSampleCode() === sample
-                              ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20 border-transparent'
+                              ? 'bg-fuchsia-600 text-white font-bold shadow-md shadow-fuchsia-500/20 border-transparent'
                               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                             class="px-2.5 py-1.5 rounded-lg text-[11px] flex items-center gap-1.5 shrink-0 transition-all duration-200">
                       <span class="font-mono">{{ sample }}</span>
@@ -266,7 +266,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                       <tr class="border-t-2 border-dashed border-slate-200 dark:border-slate-700">
                         <td [attr.colspan]="7" class="py-2.5 px-4 bg-slate-50/60 dark:bg-slate-900/40">
                           <button (click)="showAllTargets.set(!showAllTargets())"
-                                  class="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                  class="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors">
                             <i class="fa-solid text-[9px] transition-transform duration-200"
                                [class.fa-chevron-down]="!showAllTargets()"
                                [class.fa-chevron-up]="showAllTargets()"></i>
@@ -326,7 +326,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                       @if (hiddenColumns().length > 0) {
                         <th class="py-3.5 px-3 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">
                           <button (click)="showAllTargets.set(!showAllTargets())"
-                                  class="inline-flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition whitespace-nowrap">
+                                  class="inline-flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition whitespace-nowrap">
                             <i class="fa-solid"
                                [class.fa-plus-circle]="!showAllTargets()"
                                [class.fa-minus-circle]="showAllTargets()"></i>
@@ -341,7 +341,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     @for (row of getType2DisplayRows(); track row.key) {
                       <tr [ngClass]="{
-                        'bg-indigo-50/30 dark:bg-indigo-900/10 font-semibold text-slate-900 dark:text-slate-100': row.isQC,
+                        'bg-fuchsia-50/30 dark:bg-fuchsia-900/10 font-semibold text-slate-900 dark:text-slate-100': row.isQC,
                         'bg-white dark:bg-slate-900': !row.isQC
                       }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900">
                         
@@ -351,7 +351,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                         
                         <td class="py-3 px-5 sticky left-24 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">
                           @if (row.isQC) {
-                            <span class="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wide">
+                            <span class="inline-flex items-center gap-2 text-sm text-fuchsia-600 dark:text-fuchsia-400 font-bold uppercase tracking-wide">
                               <i class="fa-solid fa-flask text-xs"></i> {{ row.label }}
                             </span>
                           } @else {
@@ -398,7 +398,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
           </div>
 
           <!-- RIGHT PANE: PDF PREVIEW (approx 40-45%) -->
-          <div [class.hidden]="mobileActiveTab() !== 'pdf'" class="lg:!flex lg:flex-[4] flex flex-col min-h-[300px] lg:min-h-[600px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden relative">
+          <div [class.hidden]="mobileActiveTab() !== 'pdf'" class="lg:!flex lg:flex-[4] flex flex-col min-h-[300px] lg:min-h-[600px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden relative">
             
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
               <div class="flex items-center gap-3">
@@ -409,7 +409,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                 @if (availableReports().length > 1) {
                   <select [ngModel]="selectedPdfPrefix()" 
                           (ngModelChange)="selectReport($event)"
-                          class="bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm">
+                          class="bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-fuchsia-500 shadow-sm">
                     @for (report of availableReports(); track report.key) {
                       <option [value]="report.key">{{ report.label }}</option>
                     }
@@ -420,7 +420,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
               <div class="flex items-center gap-3">
                 @if (currentDocsUrl()) {
                   <a [href]="currentDocsUrl()" target="_blank" rel="noopener noreferrer"
-                     class="px-2.5 py-1 text-[10px] font-bold text-slate-650 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg border border-slate-200/60 dark:border-slate-700/80 transition flex items-center gap-1.5 no-underline shadow-xs cursor-pointer"
+                     class="px-2.5 py-1 text-[10px] font-bold text-slate-650 hover:text-fuchsia-600 dark:text-slate-300 dark:hover:text-fuchsia-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg border border-slate-200/60 dark:border-slate-700/80 transition flex items-center gap-1.5 no-underline shadow-xs cursor-pointer"
                      title="Mở Google Docs gốc để xem/chỉnh sửa ở cửa sổ mới">
                     <i class="fa-solid fa-file-word text-blue-500"></i>
                     <span>Google Docs</span>
@@ -429,7 +429,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 
                 @if (currentPdfUrl()) {
                   <button (click)="openPdfInModal(currentPdfUrl()!)" 
-                          class="p-2 -mr-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition active:scale-90" title="Mở PDF toàn màn hình (Modal hệ thống)">
+                          class="p-2 -mr-2 text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition active:scale-90" title="Mở PDF toàn màn hình (Modal hệ thống)">
                     <i class="fa-solid fa-expand text-sm lg:text-base"></i>
                   </button>
                 }
@@ -440,8 +440,8 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
               @if (currentPdfUrl()) {
                 @if (isInlinePdfLoading()) {
                   <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/40">
-                      <i class="fa-solid fa-circle-notch fa-spin text-xl text-indigo-500"></i>
+                    <div class="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-950/30 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-900/40">
+                      <i class="fa-solid fa-circle-notch fa-spin text-xl text-fuchsia-500"></i>
                     </div>
                     <div>
                       <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Đang tải PDF...</p>
@@ -459,7 +459,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                     </div>
                     <div class="flex items-center gap-2">
                       <button (click)="beginInlinePdfAuth()"
-                              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
+                              class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
                         <i class="fa-solid fa-rotate-right mr-1.5"></i>Xác thực & tải lại
                       </button>
                       <button (click)="openPdfInModal(currentPdfUrl()!)"
@@ -476,7 +476,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                       <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Bạn vẫn có thể mở bằng modal hệ thống.</p>
                     </div>
                     <button (click)="openPdfInModal(currentPdfUrl()!)"
-                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
+                            class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
                       <i class="fa-solid fa-expand mr-1.5"></i>Mở qua hệ thống
                     </button>
                   </div>
@@ -499,8 +499,8 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
         </div>
       } @else if (run() && !draft()) {
         <!-- PENDING STATE: No results entered yet -->
-        <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed p-12 animate-fade-in shadow-sm">
-          <div class="w-20 h-20 bg-indigo-50 dark:bg-indigo-955/30 border border-indigo-100 dark:border-indigo-900/50 rounded-full flex items-center justify-center text-indigo-500 text-3xl mb-5 shadow-inner">
+        <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed p-12 animate-fade-in shadow-sm">
+          <div class="w-20 h-20 bg-fuchsia-50 dark:bg-fuchsia-955/30 border border-fuchsia-100 dark:border-fuchsia-900/50 rounded-full flex items-center justify-center text-fuchsia-500 text-3xl mb-5 shadow-inner">
             <i class="fa-solid fa-file-pen"></i>
           </div>
           <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa Có Kết Quả Phân Tích</h4>
@@ -511,7 +511,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
             <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
               Quay Lại
             </button>
-            <button (click)="goToEditMode()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
+            <button (click)="goToEditMode()" class="px-6 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-fuchsia-500/20 active:scale-95 flex items-center gap-2">
               <i class="fa-solid fa-play text-xs"></i>
               Mở Màn Hình Nhập Kết Quả
             </button>
@@ -519,7 +519,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
         </div>
       } @else {
         <!-- ERROR STATE: Batch not found -->
-        <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed p-12">
+        <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed p-12">
           <div class="w-16 h-16 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-full flex items-center justify-center text-red-500 text-2xl mb-4">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
@@ -536,7 +536,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
       <!-- QR Interactive Modal -->
       @if (isQrModalOpen()) {
         <div class="fixed inset-0 z-[100] flex items-center justify-center fade-in backdrop-blur-md bg-slate-900/60" (click)="isQrModalOpen.set(false)">
-          <div class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-2xl scale-in border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-6 max-w-[calc(100vw-2rem)]" (click)="$event.stopPropagation()">
+          <div class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl shadow-2xl scale-in border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-6 max-w-[calc(100vw-2rem)]" (click)="$event.stopPropagation()">
             <div class="text-center space-y-2">
               <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Xác Minh Mẻ Chạy</h3>
               <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sử dụng điện thoại để quét hoặc truy cập vào liên kết đối chiếu độc lập của hệ thống LIMS.</p>
@@ -548,7 +548,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
             
             <div class="flex items-center gap-3 w-full justify-center">
               <button (click)="viewTraceability()" 
-                      class="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
+                      class="px-5 py-2.5 bg-fuchsia-650 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 <span>Mở Trang</span>
               </button>
@@ -1442,7 +1442,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-900/30';
     }
     if (status === 'draft') {
-      return 'bg-indigo-50 dark:bg-indigo-955/20 text-indigo-700 dark:text-indigo-400 border-indigo-200/40 dark:border-indigo-900/30';
+      return 'bg-fuchsia-50 dark:bg-fuchsia-955/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/40 dark:border-fuchsia-900/30';
     }
     return 'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30';
   }

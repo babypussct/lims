@@ -5,8 +5,8 @@
   <div class="inline-flex bg-slate-100/80 dark:bg-slate-800/80 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50">
     <button (click)="filterChange.emit('ALL')"
             class="relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 z-10 cursor-pointer border-0"
-            [class.text-indigo-700]="activeFilter === 'ALL'"
-            [class.dark:text-indigo-300]="activeFilter === 'ALL'"
+            [class.text-fuchsia-700]="activeFilter === 'ALL'"
+            [class.dark:text-fuchsia-300]="activeFilter === 'ALL'"
             [class.text-slate-500]="activeFilter !== 'ALL'"
             [class.dark:text-slate-400]="activeFilter !== 'ALL'"
             [class.hover:text-slate-700]="activeFilter !== 'ALL'"
@@ -20,8 +20,8 @@
     @for (prefix of prefixes; track prefix) {
       <button (click)="filterChange.emit(prefix)"
               class="relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 z-10 cursor-pointer border-0"
-              [class.text-indigo-700]="activeFilter === prefix"
-              [class.dark:text-indigo-300]="activeFilter === prefix"
+              [class.text-fuchsia-700]="activeFilter === prefix"
+              [class.dark:text-fuchsia-300]="activeFilter === prefix"
               [class.text-slate-500]="activeFilter !== prefix"
               [class.dark:text-slate-400]="activeFilter !== prefix"
               [class.hover:text-slate-700]="activeFilter !== prefix"

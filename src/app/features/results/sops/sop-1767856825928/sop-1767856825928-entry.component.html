@@ -8,14 +8,14 @@
         <button type="button"
           (click)="setPrintFormType('formCheck')"
                 [class]="draft.page1Data['printFormType'] === 'formCheck'
-                  ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
+                  ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-fuchsia-600 text-white shadow-xs transition duration-150 active:scale-95'
                   : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
           FORM CHECK
         </button>
         <button type="button"
           (click)="setPrintFormType('formDon')"
                 [class]="draft.page1Data['printFormType'] === 'formDon'
-                  ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
+                  ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-fuchsia-600 text-white shadow-xs transition duration-150 active:scale-95'
                   : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
           FORM ĐƠN
         </button>
@@ -42,7 +42,7 @@
                 <input type="checkbox"
                   [checked]="draft.page1Data['is10gChecked'] !== false"
                   (change)="on10gCheckChange($event)"
-                  class="w-4 h-4 text-violet-600 rounded border-slate-300 focus:ring-violet-500">
+                  class="w-4 h-4 text-fuchsia-600 rounded border-slate-300 focus:ring-fuchsia-500">
                   <span class="text-xs font-bold text-slate-700 dark:text-slate-300">10.0g</span>
                 </label>
                 <input type="text"
@@ -50,7 +50,7 @@
                   (ngModelChange)="onKhoiLuongKhacChange()"
                   placeholder="Khối lượng khác..."
                   [disabled]="draft.page1Data['is10gChecked'] !== false"
-                  class="w-full bg-white dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none disabled:opacity-50 disabled:bg-slate-50">
+                  class="w-full bg-white dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none disabled:opacity-50 disabled:bg-slate-50">
                 </div>
               </div>
               <!-- Loại mẫu -->
@@ -60,7 +60,7 @@
                   <button type="button"
                     (click)="draft.page1Data['loaiMau'] = 'Nông sản tươi'; onDataChanged()"
                     [class]="draft.page1Data['loaiMau'] === 'Nông sản tươi'
-                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                       : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                     title="Chọn Nông sản tươi">
                     Tươi
@@ -68,7 +68,7 @@
                   <button type="button"
                     (click)="draft.page1Data['loaiMau'] = 'Nông sản khô'; onDataChanged()"
                     [class]="draft.page1Data['loaiMau'] === 'Nông sản khô'
-                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                       : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                     title="Chọn Nông sản khô">
                     Khô
@@ -76,7 +76,7 @@
                   <button type="button"
                     (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
                     [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
-                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                       : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                     title="Chọn Thủy sản">
                     Thủy Sản
@@ -85,7 +85,7 @@
                     [ngModel]="['Nông sản tươi', 'Nông sản khô', 'Thủy sản', 'Thuỷ sản'].includes(draft.page1Data['loaiMau']) ? '' : draft.page1Data['loaiMau']"
                     (ngModelChange)="draft.page1Data['loaiMau'] = $event; onDataChanged()"
                     placeholder="Khác..."
-                    class="w-full min-w-[70px] bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
+                    class="w-full min-w-[70px] bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
                   </div>
                 </div>
                 <!-- Tình trạng mẫu -->
@@ -95,7 +95,7 @@
                     <button type="button"
                       (click)="draft.page1Data['tinhTrangMau'] = 'Bình thường'; onDataChanged()"
                     [class]="draft.page1Data['tinhTrangMau'] === 'Bình thường'
-                      ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                      ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
                       : 'px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                       title="Chọn Bình thường">
                       Bình Thường
@@ -104,7 +104,7 @@
                       [ngModel]="draft.page1Data['tinhTrangMau'] === 'Bình thường' ? '' : draft.page1Data['tinhTrangMau']"
                       (ngModelChange)="draft.page1Data['tinhTrangMau'] = $event; onDataChanged()"
                       placeholder="Khác..."
-                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
+                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
                     </div>
                   </div>
                 </div>
@@ -112,7 +112,7 @@
               <!-- 2. Sample Navigation Tabs & Print Configuration -->
               <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
                 <div class="flex flex-wrap items-center gap-3 overflow-x-auto custom-scrollbar flex-1 min-w-0">
-                  <span class="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mr-1 shrink-0">Danh sách mẫu:</span>
+                  <span class="text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-widest mr-1 shrink-0">Danh sách mẫu:</span>
                   <!-- Select All / None Toggle Button -->
                   <button (click)="toggleSelectAllSamples()"
                     type="button"
@@ -127,10 +127,10 @@
                         [ngModel]="draft.resultData[sampleCode]['selected'] !== false"
                         (ngModelChange)="toggleSampleSelected(sampleCode, $event)"
                         title="Bao gồm mẫu này trong báo cáo in PDF"
-                        class="ml-1.5 w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 cursor-pointer">
+                        class="ml-1.5 w-4 h-4 rounded text-fuchsia-650 border-slate-300 dark:border-slate-700 focus:ring-fuchsia-500 cursor-pointer">
                         <button (click)="selectSample(sampleCode)"
-                    [class]="activeSampleCode() === sampleCode 
-                      ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-650 transition shrink-0 active:scale-95'
+                    [class]="activeSampleCode() === sampleCode
+                      ? 'bg-fuchsia-600 text-white font-extrabold shadow-sm border border-fuchsia-650 transition shrink-0 active:scale-95'
                       : 'bg-transparent text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border-0 transition shrink-0 active:scale-95'"
                           class="px-3 py-2 rounded-lg text-xs flex items-center gap-2"
                           [class.opacity-50]="draft.resultData[sampleCode]['selected'] === false">
@@ -154,9 +154,9 @@
                       <input type="checkbox"
                         [ngModel]="draft.page1Data['checkGopInChung']"
                         disabled
-                        class="w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 disabled:opacity-70 disabled:cursor-not-allowed">
+                        class="w-4 h-4 rounded text-fuchsia-650 border-slate-300 dark:border-slate-700 focus:ring-fuchsia-500 disabled:opacity-70 disabled:cursor-not-allowed">
                         <div class="flex flex-col">
-                          <span class="text-xs font-black text-violet-700 dark:text-violet-400 tracking-wide">Gộp in chung các mẫu</span>
+                          <span class="text-xs font-black text-fuchsia-700 dark:text-fuchsia-400 tracking-wide">Gộp in chung các mẫu</span>
                           <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Tự động ({{ (getSelectedSampleCount() > 1) ? 'Bật vì chọn > 1 mẫu' : 'Tắt vì chọn 1 mẫu' }})</span>
                         </div>
                       </label>
@@ -168,15 +168,15 @@
                     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
                       <div class="flex-1 min-w-[200px]">
                         <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-                          <i class="fa-solid fa-flask-vial mr-2 text-violet-500 text-sm"></i>
-                          Bảng Kết Quả Mẫu: <span class="font-mono text-violet-600 dark:text-violet-400 font-extrabold ml-1 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-lg border border-violet-100 dark:border-violet-900/30">{{ activeSampleCode() }}</span>
+                          <i class="fa-solid fa-flask-vial mr-2 text-fuchsia-500 text-sm"></i>
+                          Bảng Kết Quả Mẫu: <span class="font-mono text-fuchsia-600 dark:text-fuchsia-400 font-extrabold ml-1 bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">{{ activeSampleCode() }}</span>
                           <!-- Per-sample Mass Input -->
                           <div class="ml-4 flex items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs normal-case">
                             <span class="bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[10px] font-bold text-slate-500 border-r border-slate-200 dark:border-slate-800">m =</span>
                             <input type="text"
                               [(ngModel)]="draft.resultData[activeSampleCode()]['khoiLuong']"
                               (ngModelChange)="onDataChanged()"
-                              class="w-14 px-1 py-1 text-xs font-black text-indigo-600 dark:text-indigo-400 bg-transparent outline-none text-center focus:bg-indigo-50/50">
+                              class="w-14 px-1 py-1 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 bg-transparent outline-none text-center focus:bg-fuchsia-50/50">
                               <span class="pr-2 pl-1 text-[10px] font-bold text-slate-400 border-l border-slate-100 dark:border-slate-800">G</span>
                             </div>
                           </h4>
@@ -190,7 +190,7 @@
                             [ngModel]="searchQuery()"
                             (ngModelChange)="searchQuery.set($event)"
                             placeholder="Tìm hoạt chất..."
-                            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 transition outline-none">
+                            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-500 transition outline-none">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                           </div>
                           <!-- Bulk Actions for the Selected Sample -->
@@ -222,7 +222,7 @@
                             }
                             <button (click)="copyActiveSampleToAll()"
                               type="button"
-                              class="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
+                              class="px-3.5 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
                               title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này">
                               <i class="fa-solid fa-copy"></i>
                               <span>Sao Chép Mẫu cho Cả Mẻ</span>
@@ -253,7 +253,7 @@
                               @for (compound of filteredCompounds(); track compound; let idx = $index) {
               <tr [class]="!isTargetAssigned(activeSampleCode(), compound)
                     ? 'bg-slate-50/50 dark:bg-slate-950/20 text-slate-400/80 dark:text-slate-600 transition-all border-l-4 border-l-transparent duration-150'
-                    : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-violet-50/10 dark:focus-within:bg-violet-500/5 border-l-4 border-l-transparent focus-within:border-l-violet-500 duration-150'">
+                    : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150'">
                                   <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">{{ idx + 1 }}</td>
                                   <td class="py-2.5 px-4 font-extrabold text-xs flex items-center">
                                     @if (!isTargetAssigned(activeSampleCode(), compound)) {
@@ -269,7 +269,7 @@
                                       [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
                                       [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_nd']"
                                       (ngModelChange)="onNdCheckboxChanged(compound)"
-                                      class="w-4 h-4 rounded text-violet-650 border-slate-350 dark:border-slate-700 focus:ring-violet-500 dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed">
+                                      class="w-4 h-4 rounded text-fuchsia-650 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed">
                                     </td>
                                     <!-- Result Input -->
                                     <td class="py-1.5 px-2">
@@ -278,7 +278,7 @@
                                         [(ngModel)]="draft.resultData[activeSampleCode()][compound]"
                                         (ngModelChange)="onResultInputChanged(compound)"
                                         placeholder="ND / Số lượng..."
-                                        class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-center shadow-inner disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
+                                        class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                                       </td>
                                       <!-- QC1 Toggle Button Group -->
                                       @if (draft.page1Data['printFormType'] === 'formCheck') {
@@ -289,7 +289,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc1', 'Đạt')"
                             [class]="draft.resultData[activeSampleCode()][compound + '_qc1'] === 'Đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95'
                               : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                                               class="min-w-[32px]">
                                               Đạt
@@ -297,7 +297,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc1', 'Không đạt')"
                             [class]="draft.resultData[activeSampleCode()][compound + '_qc1'] === 'Không đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95'
                               : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                                               class="min-w-[32px]">
                                               KĐ
@@ -305,7 +305,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc1', 'N/A')"
                             [class]="!draft.resultData[activeSampleCode()][compound + '_qc1'] || draft.resultData[activeSampleCode()][compound + '_qc1'] === 'N/A'
-                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95'
                               : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-455 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
                                               class="min-w-[24px]">
                                               N/A
@@ -322,7 +322,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc2', 'Đạt')"
                             [class]="draft.resultData[activeSampleCode()][compound + '_qc2'] === 'Đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95'
                               : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                                               class="min-w-[32px]">
                                               Đạt
@@ -330,7 +330,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc2', 'Không đạt')"
                             [class]="draft.resultData[activeSampleCode()][compound + '_qc2'] === 'Không đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95'
                               : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                                               class="min-w-[32px]">
                                               KĐ
@@ -338,7 +338,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc2', 'N/A')"
                             [class]="!draft.resultData[activeSampleCode()][compound + '_qc2'] || draft.resultData[activeSampleCode()][compound + '_qc2'] === 'N/A'
-                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95'
                               : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-455 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
                                               class="min-w-[24px]">
                                               N/A
@@ -355,7 +355,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc3', 'Đạt')"
                             [class]="draft.resultData[activeSampleCode()][compound + '_qc3'] === 'Đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95'
                               : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                                               class="min-w-[32px]">
                                               Đạt
@@ -363,7 +363,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc3', 'Không đạt')"
                             [class]="draft.resultData[activeSampleCode()][compound + '_qc3'] === 'Không đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95'
                               : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                                               class="min-w-[32px]">
                                               KĐ
@@ -371,7 +371,7 @@
                                             <button type="button"
                                               (click)="setCompoundQc(compound, 'qc3', 'N/A')"
                             [class]="!draft.resultData[activeSampleCode()][compound + '_qc3'] || draft.resultData[activeSampleCode()][compound + '_qc3'] === 'N/A'
-                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
+                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95'
                               : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-455 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
                                               class="min-w-[24px]">
                                               N/A
@@ -402,7 +402,7 @@
                           <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
                             <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-2.5">
                               <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-                                <i class="fa-solid fa-chart-line mr-2 text-violet-500 text-sm"></i>
+                                <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i>
                                 Khai Báo Đường Chuẩn & QC Sắc Ký
                               </h4>
                               <!-- Quick Vial input for Calibration -->
@@ -412,7 +412,7 @@
                                   [(ngModel)]="bulkCalibVialStart"
                                   (ngModelChange)="onBulkCalibVialStartChange()"
                                   placeholder="Bắt đầu"
-                                  class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
+                                  class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
                                   <span class="text-slate-400">-</span>
                                   <input type="number"
                                     [ngModel]="bulkCalibVialEnd"
@@ -420,7 +420,7 @@
                                     placeholder="Kết thúc"
                                     class="w-14 bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/40 rounded px-1.5 py-0.5 text-center text-slate-455 dark:text-slate-500 font-bold outline-none cursor-not-allowed">
                                     <button (click)="applyCalibVials()"
-                                      class="px-2.5 py-1 bg-violet-650 hover:bg-violet-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                                      class="px-2.5 py-1 bg-fuchsia-650 hover:bg-fuchsia-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
                                       <i class="fa-solid fa-check"></i>
                                       <span>Áp Dụng</span>
                                     </button>
@@ -436,7 +436,7 @@
                                         (ngModelChange)="onDataChanged()"
                                         (focus)="$any($event.target).select()"
                                         placeholder="BLANK"
-                                        class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition">
+                                        class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none transition">
                                       </div>
                                       <div>
                                         <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu thêm chuẩn</label>
@@ -445,7 +445,7 @@
                                           (ngModelChange)="onDataChanged()"
                                           (focus)="$any($event.target).select()"
                                           placeholder="SPIKE"
-                                          class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition">
+                                          class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none transition">
                                         </div>
                                         <div>
                                           <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Hệ số xác định R²</label>
@@ -454,7 +454,7 @@
                                             (ngModelChange)="onDataChanged()"
                                             (focus)="$any($event.target).select()"
                                             placeholder="0.999..."
-                                            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition">
+                                            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-fuchsia-655 dark:text-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none transition">
                                           </div>
                                           <div>
                                             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Mẫu QC cuối mẻ</label>
@@ -462,7 +462,7 @@
                                               <input type="checkbox"
                                                 [(ngModel)]="draft.page1Data['hasFinal']"
                                                 (ngModelChange)="onFinalToggled()"
-                                                class="w-4 h-4 rounded text-violet-650 border-slate-350 dark:border-slate-700 focus:ring-violet-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                                                class="w-4 h-4 rounded text-fuchsia-650 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
                                                 <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ</span>
                                               </label>
                                             </div>
@@ -485,14 +485,14 @@
                                       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
                                         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                                           <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-                                            <i class="fa-solid fa-table mr-2 text-violet-500 text-sm"></i>
+                                            <i class="fa-solid fa-table mr-2 text-fuchsia-500 text-sm"></i>
                                             Bảng Thông Số Chạy Mẫu & Kết Quả
                                           </h4>
                                           <div class="flex flex-wrap items-center gap-2">
                                             <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hoạt chất:</label>
                                             <select [(ngModel)]="draft.page1Data['activeCompound']"
                                                     (ngModelChange)="onActiveCompoundChanged()"
-                                              class="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold text-violet-600 dark:text-violet-400 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition cursor-pointer max-w-[200px]">
+                                              class="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none transition cursor-pointer max-w-[200px]">
                                               @for (c of assignedCompoundsForFormDon(); track c) {
                                                 <option [value]="c">{{ compoundDisplayNames()[c] || c }}</option>
                                               }
@@ -504,14 +504,14 @@
                                                 [(ngModel)]="bulkVialStart"
                                                 (ngModelChange)="onBulkVialStartChange()"
                                                 placeholder="Bắt đầu"
-                                                class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
+                                                class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
                                                 <span class="text-slate-450">-</span>
                                                 <input type="number"
                                                   [(ngModel)]="bulkVialEnd"
                                                   placeholder="Kết thúc"
-                                                  class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
+                                                  class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
                                                   <button (click)="applyBulkVials()"
-                                                    class="px-2.5 py-1 bg-violet-650 hover:bg-violet-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                                                    class="px-2.5 py-1 bg-fuchsia-650 hover:bg-fuchsia-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
                                                     <i class="fa-solid fa-check"></i>
                                                     <span>Áp Dụng</span>
                                                   </button>
@@ -543,14 +543,14 @@
                                                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10"
                                                       [class.opacity-60]="draft.resultData[row.key]['selected'] === false"
                   [ngClass]="{
-                    'bg-indigo-50/15 dark:bg-indigo-955/5 border-l-4 border-l-indigo-500/60': row.type === 'QC'
+                    'bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border-l-4 border-l-fuchsia-500/60': row.type === 'QC'
                   }">
                                                       <td class="py-2 px-3 font-mono text-slate-400 text-center font-bold">{{ idx + 1 }}</td>
                                                       <td class="py-2 px-3 font-bold text-slate-700 dark:text-slate-200 font-mono flex items-center gap-1.5">
                                                         <input type="checkbox"
                                                           [(ngModel)]="draft.resultData[row.key]['selected']"
                                                           (ngModelChange)="onDataChanged()"
-                                                          class="w-3.5 h-3.5 rounded text-violet-650 border-slate-350 dark:border-slate-700 focus:ring-violet-500">
+                                                          class="w-3.5 h-3.5 rounded text-fuchsia-650 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500">
                                                           <span>{{ row.label }}</span>
                                                         </td>
                                                         <!-- Weight (khoiLuong) -->
@@ -560,7 +560,7 @@
                                                             (ngModelChange)="onDataChanged()"
                                                             [disabled]="row.key === 'QC_FINAL'"
                                                             (focus)="$any($event.target).select()"
-                                                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
+                                                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
                                                           </td>
                                                           <!-- Dilution (heSoPhaLoang / hSoPhaLoang) -->
                                                           <td class="py-1 px-1.5">
@@ -569,7 +569,7 @@
                                                               (ngModelChange)="syncDilution(row.key)"
                                                               [disabled]="row.key === 'QC_FINAL'"
                                                               (focus)="$any($event.target).select()"
-                                                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
+                                                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
                                                             </td>
                                                             <!-- Vial Number (loSo) -->
                                                             <td class="py-1 px-1.5">
@@ -578,7 +578,7 @@
                                                                 (ngModelChange)="onDataChanged()"
                                                                 [disabled]="row.key === 'QC_FINAL'"
                                                                 (focus)="$any($event.target).select()"
-                                                                class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
+                                                                class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
                                                               </td>
                                                               <!-- Kết quả (ng/g) -->
                                                               <td class="py-1 px-1.5">
@@ -588,7 +588,7 @@
                                                                   (ngModelChange)="onChromResultChanged(row.key)"
                                                                   (focus)="$any($event.target).select()"
                                                                   placeholder="ND/Kết quả"
-                                                                  class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
+                                                                  class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none transition disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                                                                 </td>
                                                                 <!-- Ghi chú -->
                                                                 <td class="py-1 px-1.5">
@@ -597,7 +597,7 @@
                                                                     (ngModelChange)="onDataChanged()"
                                                                     (focus)="$any($event.target).select()"
                                                                     placeholder="Ghi chú..."
-                                                                    class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-left text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
+                                                                    class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-left text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none transition">
                                                                   </td>
                                                                 </tr>
                                                               }

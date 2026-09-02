@@ -173,9 +173,9 @@ test('SmartBatch Step 2 uses a bounded two-step group wizard without adding a di
   assert.match(sampleGroupWizardSource, /addGroup\(\)/);
   assert.match(sampleGroupWizardSource, /allGroupsCompleted/);
   assert.match(sampleGroupWizardSource, /selectSuggestedSop\(suggestion\.sop\.id, suggestion\.isPartial\)/);
-  assert.match(sampleGroupWizardSource, /hover:bg-indigo-50/);
-  assert.match(sampleGroupWizardSource, /border-indigo-600/);
-  assert.match(sampleGroupWizardSource, /ring-indigo-500/);
+  assert.match(sampleGroupWizardSource, /hover:bg-fuchsia-50/);
+  assert.match(sampleGroupWizardSource, /border-fuchsia-600/);
+  assert.match(sampleGroupWizardSource, /ring-fuchsia-500/);
   assert.match(sampleGroupWizardSource, /aria-pressed/);
   assert.match(sampleGroupWizardSource, /group\.forcedSopId !== suggestion\.sop\.id/);
   assert.match(sampleGroupWizardSource, /Đang chọn/);

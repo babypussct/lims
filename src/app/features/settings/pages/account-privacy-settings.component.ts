@@ -22,7 +22,7 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
             <div class="text-sm font-bold text-slate-800 dark:text-slate-200">Chính sách bảo mật dữ liệu</div>
             <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tìm hiểu chi tiết về cam kết bảo vệ dữ liệu và quyền cá nhân của bạn.</div>
           </div>
-          <a routerLink="/privacy-policy" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-indigo-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-300 dark:hover:bg-slate-700">
+          <a routerLink="/privacy-policy" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-fuchsia-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-fuchsia-300 dark:hover:bg-slate-700">
             <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>Xem Chính sách
           </a>
         </div>

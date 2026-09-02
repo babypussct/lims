@@ -8,8 +8,8 @@ import { FormsModule } from '@angular/forms';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-fuchsia-500"></div>
             
             <div class="flex justify-between items-start mb-6">
                 <div>
@@ -24,18 +24,18 @@ import { FormsModule } from '@angular/forms';
             <div class="space-y-4">
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Tiền tố (Prefix)</label>
-                    <input type="text" [ngModel]="prefix()" (ngModelChange)="prefix.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition" placeholder="VD: U">
+                    <input type="text" [ngModel]="prefix()" (ngModelChange)="prefix.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: U">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Từ số (Bắt đầu)</label>
-                        <input type="text" [ngModel]="fromStr()" (ngModelChange)="fromStr.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition" placeholder="VD: 01">
+                        <input type="text" [ngModel]="fromStr()" (ngModelChange)="fromStr.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: 01">
                         <p class="text-[9px] text-slate-400 mt-1 italic">Sẽ giữ nguyên số 0 ở đầu</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Đến số (Kết thúc)</label>
-                        <input type="text" [ngModel]="toStr()" (ngModelChange)="toStr.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition" placeholder="VD: 03">
+                        <input type="text" [ngModel]="toStr()" (ngModelChange)="toStr.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: 03">
                     </div>
                 </div>
 
@@ -43,16 +43,16 @@ import { FormsModule } from '@angular/forms';
                     <div class="flex items-center justify-between mb-1">
                         <label class="text-[10px] font-bold text-slate-400 uppercase">Hậu tố (Suffix)</label>
                         <label class="flex items-center gap-1.5 cursor-pointer group">
-                            <input type="checkbox" [ngModel]="autoSuffix()" (ngModelChange)="autoSuffix.set($event)" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 transition cursor-pointer">
-                            <span class="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 transition">Tự động lấy ngày (dd-1)</span>
+                            <input type="checkbox" [ngModel]="autoSuffix()" (ngModelChange)="autoSuffix.set($event)" class="w-3.5 h-3.5 text-fuchsia-600 rounded border-slate-300 focus:ring-fuchsia-500 transition cursor-pointer">
+                            <span class="text-[10px] font-bold text-slate-500 group-hover:text-fuchsia-600 transition">Tự động lấy ngày (dd-1)</span>
                         </label>
                     </div>
-                    <input type="text" [ngModel]="autoSuffix() ? currentDaySuffix : suffix()" (ngModelChange)="!autoSuffix() && suffix.set($event)" [disabled]="autoSuffix()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100" placeholder="VD: 24">
+                    <input type="text" [ngModel]="autoSuffix() ? currentDaySuffix : suffix()" (ngModelChange)="!autoSuffix() && suffix.set($event)" [disabled]="autoSuffix()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100" placeholder="VD: 24">
                 </div>
                 
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mt-4">
-                    <div class="text-[10px] font-bold text-indigo-400 uppercase mb-2">Xem trước kết quả</div>
-                    <div class="text-sm font-mono text-indigo-700 break-words max-h-24 overflow-y-auto custom-scrollbar">
+                <div class="bg-fuchsia-50 p-4 rounded-xl border border-fuchsia-100 mt-4">
+                    <div class="text-[10px] font-bold text-fuchsia-400 uppercase mb-2">Xem trước kết quả</div>
+                    <div class="text-sm font-mono text-fuchsia-700 break-words max-h-24 overflow-y-auto custom-scrollbar">
                         {{ previewResult() || 'Chưa có dữ liệu' }}
                     </div>
                 </div>
@@ -60,7 +60,7 @@ import { FormsModule } from '@angular/forms';
 
             <div class="flex gap-3 mt-8">
                 <button (click)="close.emit()" class="flex-1 py-3 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm transition">Hủy</button>
-                <button (click)="generate()" [disabled]="!canGenerate()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                <button (click)="generate()" [disabled]="!canGenerate()" class="flex-1 py-3 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold text-sm shadow-md shadow-fuchsia-200 transition disabled:opacity-50 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Chèn vào Danh Sách
                 </button>
             </div>

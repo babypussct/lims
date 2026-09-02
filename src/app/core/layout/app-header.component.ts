@@ -28,13 +28,13 @@ interface PaletteItem {
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
-      class="hidden md:grid fixed top-0 right-0 z-[45] h-14 items-center gap-3 px-5
+      class="hidden md:grid fixed top-3 right-4 z-[45] h-12 items-center gap-3 px-4
              grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)]
              lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22.5rem)_minmax(0,1fr)]
-             bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl
-             border-b border-slate-200/50 dark:border-slate-800/50
+             rounded-2xl bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl
+             border border-white/80 dark:border-slate-700/70 shadow-navbar
              transition-[left] duration-300 ease-in-out"
-      [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '0' : '16rem')">
+      [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '4rem' : '17rem')">
 
       <div class="flex items-center gap-2 min-w-0">
         <!-- ── Sidebar Toggle ── -->
@@ -44,7 +44,7 @@ interface PaletteItem {
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                  text-slate-400 dark:text-slate-500
                  hover:bg-slate-100 dark:hover:bg-slate-800
-                 hover:text-fuchsia-500 dark:hover:text-fuchsia-400
+                 hover:text-fuchsia-600 dark:hover:text-fuchsia-400
                  transition-all duration-200 active:scale-90"
           [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
           <i class="fa-solid text-[13px] transition-transform duration-300"
@@ -58,7 +58,7 @@ interface PaletteItem {
             type="button"
             (click)="goToDashboard()"
             class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                   text-fuchsia-500 dark:text-fuchsia-400
+                   text-fuchsia-600 dark:text-fuchsia-400
                    hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40
                    transition-all duration-200 active:scale-90"
             title="Về Trang Chủ"
@@ -77,11 +77,11 @@ interface PaletteItem {
         aria-label="Mở tìm kiếm chức năng"
         class="w-full h-9 px-0 lg:px-3 rounded-xl
                flex items-center justify-center lg:justify-start gap-2.5
-               bg-slate-50 dark:bg-slate-800/80
-               border border-slate-200/60 dark:border-slate-700/60
+               bg-white/80 dark:bg-slate-800/80
+               border border-slate-200/50 dark:border-slate-700/60 shadow-soft-md
                text-slate-400 dark:text-slate-500
                hover:border-fuchsia-300 dark:hover:border-fuchsia-700
-               hover:text-fuchsia-500 dark:hover:text-fuchsia-400
+               hover:text-fuchsia-600 dark:hover:text-fuchsia-400
                transition-all duration-200 group cursor-pointer"
         title="Tìm kiếm trang hoặc quét mã (Ctrl+K)">
         <i class="fa-solid fa-magnifying-glass text-[11px] group-hover:scale-110 transition-transform"></i>
@@ -94,6 +94,19 @@ interface PaletteItem {
       </button>
 
       <div class="flex items-center justify-end gap-2 min-w-0">
+        <!-- ── System Info (mirrors Soft UI utility affordance) ── -->
+        <button
+          type="button"
+          (click)="openChangelog()"
+          aria-label="Thông tin hệ thống"
+          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
+                 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/60 shadow-soft-md
+                 text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400
+                 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 transition-all duration-200 shadow-sm active:scale-95"
+          title="Thông tin hệ thống">
+          <i class="fa-solid fa-circle-info text-sm" aria-hidden="true"></i>
+        </button>
+
         <!-- ── Dark Mode Toggle ── -->
         <button
           (click)="state.toggleDarkMode()"
@@ -102,9 +115,9 @@ interface PaletteItem {
           [attr.aria-label]="state.darkMode() ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'"
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                  bg-white dark:bg-slate-800
-                 border border-slate-200/60 dark:border-slate-700/60
+                 border border-slate-200/50 dark:border-slate-700/60 shadow-soft-md
                  text-slate-500 dark:text-slate-400
-                 hover:text-fuchsia-500 dark:hover:text-fuchsia-400
+                 hover:text-fuchsia-600 dark:hover:text-fuchsia-400
                  hover:border-fuchsia-300 dark:hover:border-fuchsia-700
                  hover:shadow-md hover:shadow-fuchsia-500/5
                  transition-all duration-200 shadow-sm active:scale-95 disabled:pointer-events-none"
@@ -134,7 +147,7 @@ interface PaletteItem {
                  border transition-all duration-200 group active:scale-[0.97]"
           [ngClass]="profileMenuOpen()
             ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200 dark:border-fuchsia-800/50 shadow-md shadow-fuchsia-500/10'
-            : 'bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 shadow-sm'"
+            : 'bg-white dark:bg-slate-800 border-slate-200/50 dark:border-slate-700/60 shadow-soft-md hover:border-fuchsia-300 dark:hover:border-fuchsia-700 shadow-sm'"
           title="Tài khoản">
           <span class="relative w-8 h-8 shrink-0" [title]="isOnline() ? 'Đang trực tuyến' : 'Đang ngoại tuyến'">
             <img
@@ -158,7 +171,7 @@ interface PaletteItem {
 
         <!-- ── Profile Dropdown ── -->
         @if (profileMenuOpen()) {
-          <div id="profile-menu" role="menu" class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-2xl overflow-hidden z-[60] fade-in">
+          <div id="profile-menu" role="menu" class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-soft-xl overflow-hidden z-[60] fade-in">
             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
               <span class="relative w-10 h-10 shrink-0">
                 <img
@@ -202,6 +215,47 @@ interface PaletteItem {
         }
         </div>
       </div>
+    </header>
+
+    <!-- ═══════ MOBILE TOP HEADER BAR ═══════ -->
+    <header class="fixed inset-x-0 top-0 z-[45] flex h-14 items-center gap-2 border-b border-white/70 bg-white/90 px-3 shadow-navbar backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      <button
+        type="button"
+        (click)="goToDashboard()"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-soft text-white shadow-soft-md"
+        aria-label="Về Trang Chủ"
+        title="Về Trang Chủ">
+        <i class="fa-solid fa-flask-vial text-xs" aria-hidden="true"></i>
+      </button>
+      <div class="min-w-0 flex-1">
+        <div class="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">LIMS NAFIQPM6</div>
+        <div class="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{{ pageTitle() }}</div>
+      </div>
+      <button
+        type="button"
+        (click)="openPalette()"
+        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        aria-label="Tìm kiếm chức năng"
+        title="Tìm kiếm chức năng">
+        <i class="fa-solid fa-magnifying-glass text-xs" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        (click)="openChangelog()"
+        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        aria-label="Thông tin hệ thống"
+        title="Thông tin hệ thống">
+        <i class="fa-solid fa-circle-info text-xs" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        (click)="state.toggleDarkMode()"
+        [disabled]="state.themeTransitioning()"
+        [attr.aria-pressed]="state.darkMode()"
+        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm disabled:pointer-events-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        [attr.aria-label]="state.darkMode() ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'">
+        <i class="fa-solid text-xs" [class.fa-sun]="state.darkMode()" [class.fa-moon]="!state.darkMode()" aria-hidden="true"></i>
+      </button>
     </header>
 
     <!-- ═══════ COMMAND PALETTE OVERLAY ═══════ -->

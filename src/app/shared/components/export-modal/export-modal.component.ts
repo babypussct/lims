@@ -7,13 +7,13 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" (click)="onBackdropClick($event)">
-        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
             
             <!-- Header -->
-            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/10 dark:to-purple-900/10 shrink-0">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-fuchsia-50/60 dark:bg-fuchsia-950/20 shrink-0">
                 <div>
                     <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 text-lg">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-300/30">
+                        <div class="w-9 h-9 rounded-xl bg-fuchsia-600 dark:bg-fuchsia-500 flex items-center justify-center text-white shadow-sm">
                             <i [class]="iconClass + ' text-sm'"></i>
                         </div>
                         {{ title }}
@@ -60,17 +60,17 @@ import { CommonModule } from '@angular/common';
                     }
                 </div>
                 <div class="flex gap-3">
-                    <button (click)="onClose()" [disabled]="isExporting" class="px-5 py-2.5 rounded-2xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">Đóng</button>
+                    <button (click)="onClose()" [disabled]="isExporting" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">Đóng</button>
                     @if (!isExporting || isCompleted) {
                         <button (click)="onExecute()" 
                                 [disabled]="isExporting || isSubmitDisabled"
-                                class="px-8 py-2.5 rounded-2xl font-black text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-xl shadow-indigo-200/50 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
+                                class="px-8 py-2.5 rounded-xl font-black text-white bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 shadow-sm transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
                             <i class="fa-solid fa-cloud-arrow-down"></i>
                             {{ isCompleted ? 'Xuất lại' : submitButtonText }}
                         </button>
                     } @else {
                         <button disabled
-                                class="px-8 py-2.5 rounded-2xl font-black text-white bg-slate-400 dark:bg-slate-600 transition flex items-center gap-2 opacity-70 cursor-not-allowed">
+                                class="px-8 py-2.5 rounded-xl font-black text-white bg-slate-400 dark:bg-slate-600 transition flex items-center gap-2 opacity-70 cursor-not-allowed">
                             <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                             Đang Xử Lý...
                         </button>

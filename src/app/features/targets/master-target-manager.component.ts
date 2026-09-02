@@ -54,7 +54,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
             <div toolbarSearch class="relative">
                 <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm"></i>
                 <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-                       class="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
+                       class="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition shadow-sm"
                        placeholder="Tìm kiếm tên chất, CAS number, công thức hóa học...">
             </div>
         </app-toolbar>
@@ -77,12 +77,12 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                 @for (item of filteredItems(); track item.id) {
-                                    <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition group">
+                                    <tr class="hover:bg-fuchsia-50/30 dark:hover:bg-fuchsia-950/20 transition group">
                                         <td class="px-4 py-3">
                                             <div class="font-bold text-slate-800 dark:text-slate-100 text-sm">{{item.name}}</div>
                                             <div class="text-[10px] font-mono text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded w-fit mt-1 border border-slate-200 dark:border-slate-600">{{item.id}}</div>
                                             @if (item.aliases?.length) {
-                                                <div class="text-[10px] text-indigo-500 mt-1.5 line-clamp-2" [title]="item.aliases!.join(', ')">
+                                                <div class="text-[10px] text-fuchsia-500 mt-1.5 line-clamp-2" [title]="item.aliases!.join(', ')">
                                                     Alias: {{item.aliases!.join(', ')}}
                                                 </div>
                                             }
@@ -97,11 +97,11 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                             <span class="inline-block px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded text-xs font-bold">{{item.default_unit || '-'}}</span>
                                         </td>
                                         <td class="px-4 py-3 text-right">
-                                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button (click)="openModal(item)" aria-label="Sửa chỉ tiêu" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition shadow-sm flex items-center justify-center">
+                                            <div class="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
+                                                <button (click)="openModal(item)" aria-label="Sửa chỉ tiêu" class="w-9 h-9 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition shadow-sm flex items-center justify-center">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
-                                                <button (click)="deleteItem(item)" aria-label="Xóa chỉ tiêu" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition shadow-sm flex items-center justify-center">
+                                                <button (click)="deleteItem(item)" aria-label="Xóa chỉ tiêu" class="w-9 h-9 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition shadow-sm flex items-center justify-center">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
@@ -130,40 +130,40 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                     <form modalBody id="master-target-form" appFormLabelA11y [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên chỉ tiêu <span class="text-red-500">*</span></label>
-                                <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-indigo-500 transition" placeholder="VD: Chloramphenicol">
+                                <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-fuchsia-500 transition" placeholder="VD: Chloramphenicol">
                             </div>
                             
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã định danh (tự tạo)</label>
-                                <input formControlName="id" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-indigo-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Auto-generated hoặc tự điền...">
+                                <input formControlName="id" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-fuchsia-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Auto-generated hoặc tự điền...">
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Số CAS</label>
-                                <input formControlName="cas_number" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition" placeholder="56-75-7">
+                                <input formControlName="cas_number" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition" placeholder="56-75-7">
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Đơn vị mặc định</label>
-                                <input formControlName="default_unit" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition" placeholder="ppb, µg/kg">
+                                <input formControlName="default_unit" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition" placeholder="ppb, µg/kg">
                                 </div>
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Công thức hóa học</label>
-                                <input formControlName="chemical_formula" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs font-serif outline-none focus:border-indigo-500 transition" placeholder="C11H12Cl2N2O5">
+                                <input formControlName="chemical_formula" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs font-serif outline-none focus:border-fuchsia-500 transition" placeholder="C11H12Cl2N2O5">
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên khác / Alias khi import</label>
                                 <textarea formControlName="aliasesText" rows="3"
-                                          class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"
+                                          class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition resize-none"
                                           placeholder="Mỗi alias một dòng hoặc phân cách bằng dấu chấm phẩy"></textarea>
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mô tả / Ghi chú</label>
-                                <textarea formControlName="description" rows="2" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-indigo-500 transition resize-none"></textarea>
+                                <textarea formControlName="description" rows="2" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition resize-none"></textarea>
                             </div>
                     </form>
 
@@ -207,7 +207,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                         <td class="p-3 font-mono text-slate-500 dark:text-slate-400">{{item.id}}</td>
                                         <td class="p-3 text-slate-600 dark:text-slate-300">{{item.cas_number || '-'}}</td>
                                         <td class="p-3 font-serif text-slate-600 dark:text-slate-300">{{item.chemical_formula || '-'}}</td>
-                                        <td class="p-3 text-indigo-500">{{item.aliases?.join(', ') || '-'}}</td>
+                                        <td class="p-3 text-fuchsia-500">{{item.aliases?.join(', ') || '-'}}</td>
                                         <td class="p-3 text-center bg-slate-50/50 dark:bg-slate-900/40 text-slate-700 dark:text-slate-200">{{item.default_unit || '-'}}</td>
                                     </tr>
                                 }

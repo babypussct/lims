@@ -38,7 +38,7 @@
                 <!-- Tabs -->
                 <div class="flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 gap-6 shrink-0 overflow-x-auto no-scrollbar">
                    <button (click)="currentTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'general' ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Thông Tin</button>
-                   <button (click)="currentTab.set('logic')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'logic' ? 'border-purple-600 dark:border-purple-500 text-purple-700 dark:text-purple-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Logic</button>
+                   <button (click)="currentTab.set('logic')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'logic' ? 'border-fuchsia-600 dark:border-fuchsia-500 text-fuchsia-700 dark:text-fuchsia-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Logic</button>
                    <button (click)="currentTab.set('consumables')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'consumables' ? 'border-orange-600 dark:border-orange-500 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Vật Tư (Consumables)</button>
                    <button (click)="currentTab.set('targets')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'targets' ? 'border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                        <i class="fa-solid fa-bullseye"></i> Chỉ Tiêu
@@ -201,9 +201,9 @@
                           <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 fade-in">
                               <div class="flex justify-between items-center mb-4">
                                   <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
-                                      <i class="fa-solid fa-calculator text-purple-500 dark:text-purple-400"></i> Biến Trung Gian (Variables)
+                                      <i class="fa-solid fa-calculator text-fuchsia-500 dark:text-fuchsia-400"></i> Biến Trung Gian (Variables)
                                   </h3>
-                                  <button type="button" (click)="addVariable()" class="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Biến</button>
+                                  <button type="button" (click)="addVariable()" class="text-xs bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Biến</button>
                               </div>
                               <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                   <i class="fa-solid fa-circle-info mr-1"></i> Định nghĩa các công thức toán học dùng chung. 
@@ -212,20 +212,20 @@
 
                               <div formArrayName="variablesList" class="space-y-3">
                                   @for (v of variablesList.controls; track v; let i = $index) {
-                                      <div [formGroupName]="i" class="flex gap-2 items-center p-3 border border-purple-100 dark:border-purple-900/30 bg-purple-50/30 dark:bg-purple-900/10 rounded-xl relative group">
+                                      <div [formGroupName]="i" class="flex gap-2 items-center p-3 border border-fuchsia-100 dark:border-fuchsia-900/30 bg-fuchsia-50/30 dark:bg-fuchsia-900/10 rounded-xl relative group">
                                           <div class="w-1/3">
-                                              <label class="text-[9px] font-bold text-purple-400 dark:text-purple-500 uppercase mb-1 block">Tên biến</label>
-                                              <input formControlName="key" list="std_vars" placeholder="VD: total_vol" class="w-full border border-purple-200 dark:border-purple-800/50 bg-transparent rounded-lg px-3 py-2 text-xs font-mono font-bold text-purple-700 dark:text-purple-400 outline-none focus:bg-white dark:focus:bg-slate-800 transition">
+                                              <label class="text-[9px] font-bold text-fuchsia-400 dark:text-fuchsia-500 uppercase mb-1 block">Tên biến</label>
+                                              <input formControlName="key" list="std_vars" placeholder="VD: total_vol" class="w-full border border-fuchsia-200 dark:border-fuchsia-800/50 bg-transparent rounded-lg px-3 py-2 text-xs font-mono font-bold text-fuchsia-700 dark:text-fuchsia-400 outline-none focus:bg-white dark:focus:bg-slate-800 transition">
                                               <datalist id="std_vars">
                                                   @for(std of standardVars; track std.value) { <option [value]="std.value">{{std.label}}</option> }
                                               </datalist>
                                           </div>
-                                          <div class="flex items-center justify-center pt-4 text-purple-300 dark:text-purple-600"><i class="fa-solid fa-equals"></i></div>
+                                          <div class="flex items-center justify-center pt-4 text-fuchsia-300 dark:text-fuchsia-600"><i class="fa-solid fa-equals"></i></div>
                                           <div class="flex-1">
                                               <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Biểu thức tính toán (JavaScript)</label>
-                                              <input formControlName="formula" placeholder="VD: n_sample * 10" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 outline-none focus:border-purple-500 dark:focus:border-purple-400 focus:bg-white dark:focus:bg-slate-800 transition">
+                                              <input formControlName="formula" placeholder="VD: n_sample * 10" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-400 focus:bg-white dark:focus:bg-slate-800 transition">
                                           </div>
-                                          <button type="button" (click)="variablesList.removeAt(i)" class="mt-4 w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-800"><i class="fa-solid fa-trash"></i></button>
+                                          <button type="button" (click)="variablesList.removeAt(i)" aria-label="Xóa biến" class="mt-4 w-9 h-9 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-800"><i class="fa-solid fa-trash"></i></button>
                                       </div>
                                   }
                               </div>
@@ -332,7 +332,7 @@
                                                  <div class="relative">
                                                      <i class="fa-solid fa-code-branch absolute left-3 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
                                                      <input formControlName="condition" placeholder="VD: !use_b2 (chỉ hiện khi biến use_b2 = false)" 
-                                                            class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg font-mono text-slate-600 dark:text-slate-400 outline-none focus:border-purple-400 dark:focus:border-purple-500 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-900/30 transition">
+                                                            class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg font-mono text-slate-600 dark:text-slate-400 outline-none focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 dark:focus:ring-fuchsia-900/30 transition">
                                                  </div>
                                              </div>
                                          </div>
@@ -380,7 +380,7 @@
                                                         </div>
                                                         <input formControlName="amount" type="number" placeholder="Lượng" class="w-16 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-1 py-1.5 text-xs text-center outline-none font-bold">
                                                         <select formControlName="unit" class="w-16 border border-slate-300 dark:border-slate-600 rounded px-1 py-1.5 text-xs text-center outline-none bg-white dark:bg-slate-800">@for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }</select>
-                                                        <button type="button" (click)="getIngredients(i).removeAt(j)" class="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
+                                                        <button type="button" (click)="getIngredients(i).removeAt(j)" aria-label="Xóa thành phần" class="w-9 h-9 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
                                                      </div>
                                                   }
                                                </div>
@@ -463,7 +463,7 @@
                                                   </div>
                                               </div>
                                               
-                                              <button type="button" (click)="targets.removeAt(i)" class="mt-6 w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
+                                              <button type="button" (click)="targets.removeAt(i)" aria-label="Xóa chỉ tiêu" class="mt-6 w-9 h-9 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
                                           </div>
                                       }
                                       @if(targets.length === 0) {
@@ -521,13 +521,13 @@
                             </div>
                         } @else {
                             @for(g of availableGroups(); track g.id) {
-                                <div (click)="importGroup(g)" class="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer transition group">
+                                <button type="button" (click)="importGroup(g)" class="w-full p-4 text-left border-b border-slate-50 dark:border-slate-700/50 hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer transition group">
                                     <div class="font-bold text-slate-700 dark:text-slate-300 text-sm group-hover:text-teal-700 dark:group-hover:text-teal-400">{{g.name}}</div>
                                     <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex justify-between">
                                         <span>{{g.targets.length}} chỉ tiêu</span>
                                         @if(g.description) { <span class="italic max-w-[200px] truncate">{{g.description}}</span> }
                                     </div>
-                                </div>
+                                </button>
                             }
                         }
                 </div>
@@ -559,7 +559,7 @@
                         } @else {
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2 p-1">
                                 @for (m of filteredMasterTargets(); track m.id) {
-                                    <div (click)="toggleMasterTargetSelection(m.id)" 
+                                    <button type="button" (click)="toggleMasterTargetSelection(m.id)" [attr.aria-pressed]="selectedMasterTargets().has(m.id)"
                                          class="p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3 select-none"
                                          [ngClass]="{
                                             'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 dark:border-emerald-400': selectedMasterTargets().has(m.id),
@@ -578,7 +578,7 @@
                                             <div class="font-bold text-slate-700 dark:text-slate-200 text-sm truncate">{{m.name}}</div>
                                             <div class="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">{{m.id}}</div>
                                         </div>
-                                    </div>
+                                    </button>
                                 }
                             </div>
                         }
@@ -631,7 +631,7 @@
                         } @else {
                             <div class="grid grid-cols-1 gap-2">
                                 @for (item of filteredConsumables(); track item.id) {
-                                    <div (click)="selectConsumable(item)" class="px-4 py-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md cursor-pointer flex justify-between items-center group transition-all">
+                                    <button type="button" (click)="selectConsumable(item)" class="w-full px-4 py-3 text-left bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md cursor-pointer flex justify-between items-center group transition-all">
                                         <div class="flex-1 min-w-0 pr-4">
                                             <div class="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">{{item.name}}</div>
                                             <div class="flex flex-wrap gap-2 mt-1.5">
@@ -652,7 +652,7 @@
                                                 </div>
                                             }
                                         </div>
-                                    </div>
+                                    </button>
                                 }
                             </div>
                         }

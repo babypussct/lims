@@ -47,8 +47,8 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                     <div class="p-4 text-center text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
                 } @else {
                     @for (group of groups(); track group.id) {
-                        <div (click)="selectGroup(group)" 
-                             class="p-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition group relative"
+                        <div role="button" tabindex="0" (click)="selectGroup(group)" (keydown.enter)="selectGroup(group)" (keydown.space)="selectGroup(group)" [attr.aria-pressed]="selectedGroup()?.id === group.id"
+                             class="w-full p-4 text-left border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition group relative"
                              [class.bg-teal-50]="selectedGroup()?.id === group.id"
                              [class.border-l-4]="selectedGroup()?.id === group.id"
                              [class.border-l-teal-500]="selectedGroup()?.id === group.id"
@@ -57,7 +57,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             <div class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-1">{{group.name}}</div>
                             <div class="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
                                 <span>{{group.targets.length}} chỉ tiêu</span>
-                                <button (click)="deleteGroup(group, $event)" class="w-6 h-6 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition flex items-center justify-center">
+                                <button type="button" (click)="deleteGroup(group, $event)" aria-label="Xóa nhóm chỉ tiêu" class="w-9 h-9 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition flex items-center justify-center">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>

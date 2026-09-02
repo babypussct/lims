@@ -37,7 +37,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
 
         <div class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
              [class]="panel.isOpen()
-               ? 'bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-md shadow-fuchsia-500/25'
+               ? 'bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 shadow-md shadow-fuchsia-500/25'
                : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
           <i class="fa-solid fa-bell text-base transition-all duration-200"
              [class]="panel.isOpen() ? 'text-white -translate-y-0.5' : ''"
@@ -199,12 +199,12 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
 
     :host-context(.dark) .bell-btn--idle:hover {
       background: #283548;
-      border-color: #8b5cf6;
+      border-color: #cb0c9f;
     }
 
     /* ── Default button: active (panel open) ── */
     .bell-btn--active {
-      background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 100%);
+      background: linear-gradient(310deg, #7928ca 0%, #ff0080 100%);
       border: 1px solid transparent;
       box-shadow:
         0 4px 16px rgba(217, 70, 239, 0.4),

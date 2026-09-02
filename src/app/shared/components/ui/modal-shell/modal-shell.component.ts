@@ -11,7 +11,7 @@ let nextModalShellId = 0;
   imports: [ModalA11yDirective],
   template: `
     <div
-      class="fixed inset-0 z-layer-modal flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+      class="fixed inset-0 z-layer-modal flex items-center justify-center bg-slate-900/35 p-4 backdrop-blur-sm"
       (click)="onBackdropClick($event)"
     >
       <section
@@ -19,12 +19,12 @@ let nextModalShellId = 0;
         [modalLabelledBy]="titleId"
         [modalDescribedBy]="description() ? descriptionId : undefined"
         (modalEscape)="requestClose()"
-        class="ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+        class="ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900"
         [class]="panelClasses()"
       >
-        <header class="flex items-start gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+        <header class="flex items-start gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <div class="min-w-0 flex-1">
-            <h2 [id]="titleId" class="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100">
+            <h2 [id]="titleId" class="text-lg font-bold tracking-tight text-gray-700 dark:text-slate-100">
               {{ title() }}
             </h2>
             @if (description()) {
@@ -50,7 +50,7 @@ let nextModalShellId = 0;
         </div>
 
         @if (showFooter()) {
-          <footer class="flex flex-wrap justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <footer class="flex flex-wrap justify-end gap-3 border-t border-slate-100 bg-gray-50/70 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/40">
             <ng-content select="[modalFooter]" />
           </footer>
         }
@@ -100,7 +100,7 @@ export class AppModalShellComponent {
       xl: 'max-w-6xl',
       '2xl': 'max-w-[96rem]',
     };
-    return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 ${sizeClasses[this.size()]}`;
+    return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900 ${sizeClasses[this.size()]}`;
   });
 
   protected onBackdropClick(event: MouseEvent): void {

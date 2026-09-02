@@ -10,7 +10,7 @@ import { AuthService } from '../../core/services/auth.service';
   template: `
     @if (auth.isPasswordSetupOpen()) {
       <div class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 animate-fade-in-up" role="dialog" aria-modal="true" aria-labelledby="password-setup-title">
-        <div class="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 md:p-8 relative overflow-hidden">
+        <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 md:p-8 relative overflow-hidden">
 
           <!-- Decorative Top Glow -->
           <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-fuchsia-500/10 to-transparent pointer-events-none"></div>
@@ -60,8 +60,8 @@ import { AuthService } from '../../core/services/auth.service';
                   <input id="current-password" name="currentPassword" [type]="showCurrentPassword() ? 'text' : 'password'" [(ngModel)]="currentPassword" autocomplete="current-password"
                          class="w-full pl-4 pr-11 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
                          placeholder="Nhập mật khẩu cũ để xác thực" [disabled]="isSaving()" />
-                  <button type="button" (click)="toggleCurrentPassword()" tabindex="-1" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                    <i class="fa-solid" [class.fa-eye]="!showCurrentPassword()" [class.fa-eye-slash]="showCurrentPassword()"></i>
+                  <button type="button" (click)="toggleCurrentPassword()" [attr.aria-label]="showCurrentPassword() ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <i class="fa-solid" [class.fa-eye]="!showCurrentPassword()" [class.fa-eye-slash]="showCurrentPassword()" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
@@ -73,8 +73,8 @@ import { AuthService } from '../../core/services/auth.service';
                 <input id="new-login-password" name="newLoginPassword" [type]="showNewPassword() ? 'text' : 'password'" [(ngModel)]="password" (ngModelChange)="onPasswordInput()" autocomplete="new-password"
                        class="w-full pl-4 pr-11 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
                        placeholder="Ít nhất 8 ký tự" [disabled]="isSaving()" />
-                <button type="button" (click)="toggleNewPassword()" tabindex="-1" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                  <i class="fa-solid" [class.fa-eye]="!showNewPassword()" [class.fa-eye-slash]="showNewPassword()"></i>
+                <button type="button" (click)="toggleNewPassword()" [attr.aria-label]="showNewPassword() ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                  <i class="fa-solid" [class.fa-eye]="!showNewPassword()" [class.fa-eye-slash]="showNewPassword()" aria-hidden="true"></i>
                 </button>
               </div>
 
@@ -99,8 +99,8 @@ import { AuthService } from '../../core/services/auth.service';
                 <input id="confirm-login-password" name="confirmLoginPassword" [type]="showConfirmPassword() ? 'text' : 'password'" [(ngModel)]="confirmation" autocomplete="new-password"
                        class="w-full pl-4 pr-11 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
                        placeholder="Nhập lại chính xác" [disabled]="isSaving()" />
-                <button type="button" (click)="toggleConfirmPassword()" tabindex="-1" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                  <i class="fa-solid" [class.fa-eye]="!showConfirmPassword()" [class.fa-eye-slash]="showConfirmPassword()"></i>
+                <button type="button" (click)="toggleConfirmPassword()" [attr.aria-label]="showConfirmPassword() ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                  <i class="fa-solid" [class.fa-eye]="!showConfirmPassword()" [class.fa-eye-slash]="showConfirmPassword()" aria-hidden="true"></i>
                 </button>
               </div>
             </div>

@@ -245,7 +245,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
 
       @if (isMaintenanceActive() && auth.currentUser() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
         <div class="fixed inset-0 z-layer-system-lock flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md no-print p-4">
-           <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-rose-500/30 animate-bounce-in">
+           <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border border-rose-500/30 animate-bounce-in">
               <div class="w-20 h-20 bg-rose-100 dark:bg-rose-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-500 animate-pulse">
                 <i class="fa-solid fa-person-digging text-4xl"></i>
               </div>
@@ -274,7 +274,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
 
       @if (!auth.isAuthReady()) {
          <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
-            <div class="rounded-[3.75rem] overflow-hidden shadow-lg shadow-indigo-500/10 mb-4 animate-pulse">
+            <div class="rounded-2xl overflow-hidden shadow-lg shadow-fuchsia-500/10 mb-4 animate-pulse">
                <app-logo size="180px"></app-logo>
             </div>
             <div class="text-white font-bold tracking-widest animate-pulse mt-4">NAFIQPM6 | LIMS CLOUD</div>
@@ -290,7 +290,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
         @if (state.currentUser(); as user) {
           @if (user.role === 'pending') {
              <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 p-4">
-                <div class="bg-white rounded-3xl shadow-soft-xl p-8 max-w-md w-full text-center border border-slate-100">
+                <div class="bg-white rounded-2xl shadow-soft-xl p-8 max-w-md w-full text-center border border-slate-100">
                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 text-orange-500 animate-pulse"><i class="fa-solid fa-hourglass-half text-3xl"></i></div>
                    <h2 class="text-2xl font-black text-slate-800 mb-2">Đang Chờ Phê Duyệt</h2>
                    <p class="text-slate-500 mb-6 text-sm leading-relaxed">Xin chào <b>{{user.displayName}}</b>,<br>Tài khoản của bạn đã được tạo nhưng cần quản trị viên cấp quyền truy cập vào hệ thống.</p>

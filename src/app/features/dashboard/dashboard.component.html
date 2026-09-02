@@ -1,8 +1,8 @@
-    <div class="pb-20 fade-in font-sans">
+    <div class="pb-20 fade-in font-sans md:pb-4">
         
         <!-- HEADER: Welcome & Scan -->
         <app-page-header
-            class="mb-6 block overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700"
+            class="mb-4 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800"
             [title]="'Xin chào, ' + (auth.currentUser()?.displayName || '') + '!'"
             subtitle="Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng."
             icon="fa-house">
@@ -23,15 +23,42 @@
             </div>
         </app-page-header>
 
+        <!-- Soft UI-style dashboard controls: global time scope + quick action -->
+        <app-toolbar class="mb-4 block overflow-visible rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800">
+            <div toolbarSearch class="flex min-w-0 items-center gap-2">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
+                    <i class="fa-solid fa-chart-line text-xs" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Tổng quan vận hành</div>
+                    <div class="truncate text-[10px] font-medium text-slate-400 dark:text-slate-500">Phạm vi thời gian áp dụng cho phân tích và xu hướng</div>
+                </div>
+            </div>
+            <div toolbarFilters class="w-full sm:w-auto">
+                <app-date-range-filter
+                    [initStart]="startDate()"
+                    [initEnd]="endDate()"
+                    containerClass="bg-transparent p-0 border-0 shadow-none"
+                    (dateChange)="onDateRangeChange($event)">
+                </app-date-range-filter>
+            </div>
+            <div toolbarActions>
+                <app-button variant="secondary" size="sm" (click)="qrService.startScan()">
+                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                    <span>Quét mã</span>
+                </app-button>
+            </div>
+        </app-toolbar>
+
 
         <!-- SECTION 1: KPI CARDS -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
             <!-- Card 1: Pending Requests -->
             <div class="relative h-32">
             <button type="button" (click)="handlePendingRequestsClick()"
                  [disabled]="!auth.canViewSop() && !auth.canViewStandards()"
-                 class="relative w-full text-left bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewSop() || auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewSop() || auth.canViewStandards()" [class.hover:border-purple-100]="auth.canViewSop() || auth.canViewStandards()" [class.dark:hover:border-purple-500]="auth.canViewSop() || auth.canViewStandards()">
+                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-fuchsia-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewSop() || auth.canViewStandards()" [class.hover:shadow-md]="auth.canViewSop() || auth.canViewStandards()" [class.hover:border-fuchsia-200]="auth.canViewSop() || auth.canViewStandards()" [class.dark:hover:border-fuchsia-700]="auth.canViewSop() || auth.canViewStandards()">
                 
                 @if(!auth.canViewSop() && !auth.canViewStandards()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -49,14 +76,14 @@
                             @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{(auth.canViewSop() || auth.canViewStandards()) ? totalPendingRequests() : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewSop() && !auth.canViewStandards()">
+                    <div class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100 dark:border-fuchsia-500/20 flex items-center justify-center text-fuchsia-600 dark:text-fuchsia-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewSop() && !auth.canViewStandards()">
                         <i class="fa-solid fa-clipboard-list text-lg"></i>
                     </div>
                 </div>
                 <div class="z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
                     <span class="text-xs font-bold" 
                           [class.text-emerald-500]="totalPendingRequests() === 0" 
-                          [class.text-fuchsia-500]="totalPendingRequests() > 0">
+                          [class.text-fuchsia-600]="totalPendingRequests() > 0">
                         {{totalPendingRequests() > 0 ? ((auth.canApprove() || auth.canApproveStandards()) ? '+ Cần xử lý ngay' : '+ Đang chờ duyệt') : 'Không có yêu cầu'}}
                     </span>
                 </div>
@@ -67,9 +94,9 @@
                     <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md z-30 flex flex-col justify-center items-center p-3 gap-2 animate-fade-in rounded-2xl shadow-xl">
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 w-full text-center">Chọn loại yêu cầu</p>
                         <button type="button" (click)="$event.stopPropagation(); navTo('requests'); showPendingRequestsPopover.set(false)"
-                                class="w-full bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/50 text-indigo-700 dark:text-indigo-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors">
+                                class="w-full bg-fuchsia-50 hover:bg-fuchsia-100 dark:bg-fuchsia-900/30 dark:hover:bg-fuchsia-800/50 text-fuchsia-700 dark:text-fuchsia-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors">
                             <span>SOP</span>
-                            <span class="bg-indigo-200 dark:bg-indigo-700 px-2 py-0.5 rounded-full min-w-[20px] text-center">{{pendingCounts().sop}}</span>
+                            <span class="bg-fuchsia-200 dark:bg-fuchsia-700 px-2 py-0.5 rounded-full min-w-[20px] text-center">{{pendingCounts().sop}}</span>
                         </button>
                         <button type="button" (click)="$event.stopPropagation(); navTo('standard-requests'); showPendingRequestsPopover.set(false)"
                                 class="w-full bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors">
@@ -82,8 +109,8 @@
 
             <!-- Card 2: Low Stock -->
             <button type="button" (click)="navTo('inventory')" [disabled]="!auth.canViewInventory()"
-                 class="relative w-full text-left bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform focus:outline-none focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewInventory()" [class.hover:-translate-y-1]="auth.canViewInventory()" [class.hover:border-red-100]="auth.canViewInventory()" [class.dark:hover:border-red-500]="auth.canViewInventory()">
+                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewInventory()" [class.hover:shadow-md]="auth.canViewInventory()" [class.hover:border-red-200]="auth.canViewInventory()" [class.dark:hover:border-red-800]="auth.canViewInventory()">
                 
                 @if(!auth.canViewInventory()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -99,7 +126,7 @@
                             @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewInventory() ? lowStockItems().length : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-rose-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewInventory()">
+                    <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 flex items-center justify-center text-red-600 dark:text-red-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewInventory()">
                         <i class="fa-solid fa-box-open text-lg"></i>
                     </div>
                 </div>
@@ -114,8 +141,8 @@
 
             <!-- Card 3: Today's Activity -->
             <button type="button" (click)="navTo('stats')" [disabled]="!auth.canViewReports()"
-                 class="relative w-full text-left bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewReports()" [class.hover:-translate-y-1]="auth.canViewReports()" [class.hover:border-blue-100]="auth.canViewReports()" [class.dark:hover:border-blue-500]="auth.canViewReports()">
+                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewReports()" [class.hover:shadow-md]="auth.canViewReports()" [class.hover:border-blue-200]="auth.canViewReports()" [class.dark:hover:border-blue-800]="auth.canViewReports()">
                 
                 @if(!auth.canViewReports()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -131,7 +158,7 @@
                             @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewReports() ? todayActivityCount() : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewReports()">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewReports()">
                         <i class="fa-solid fa-bolt text-lg"></i>
                     </div>
                 </div>
@@ -142,8 +169,8 @@
 
             <!-- Card 4: Standards Priority -->
             <button type="button" (click)="navTo('standards')" [disabled]="!auth.canViewStandards()"
-                 class="relative w-full text-left bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewStandards()" [class.hover:border-orange-100]="auth.canViewStandards()" [class.dark:hover:border-orange-500]="auth.canViewStandards()">
+                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-orange-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewStandards()" [class.hover:shadow-md]="auth.canViewStandards()" [class.hover:border-orange-200]="auth.canViewStandards()" [class.dark:hover:border-orange-800]="auth.canViewStandards()">
                 
                 @if(!auth.canViewStandards()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -161,7 +188,7 @@
                             <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An Toàn</h4>
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewStandards()">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewStandards()">
                         <i class="fa-solid fa-clock text-lg"></i>
                     </div>
                 </div>
@@ -178,9 +205,9 @@
         </div>
 
         <!-- SECTION 2: ANALYTICS & FEED -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             <!-- Left: Analytics (2/3) -->
-            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700 lg:h-[560px] h-auto">
+            <div class="soft-ui-panel lg:col-span-2 relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-5 overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800 lg:h-[560px] h-auto">
                 @if(!auth.canViewReports()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
                         <i class="fa-solid fa-lock text-4xl mb-3"></i>
@@ -196,7 +223,7 @@
                             <!-- SOP Active Filter Badge -->
                             @if(selectedSopFilter(); as activeSop) {
                                 <button (click)="selectedSopFilter.set(null)" 
-                                     class="flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold rounded-full bg-indigo-500 text-white cursor-pointer hover:bg-indigo-600 active:scale-95 transition-all shadow-sm shrink-0 border border-indigo-400/30">
+                                     class="flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold rounded-full bg-fuchsia-500 text-white cursor-pointer hover:bg-fuchsia-600 active:scale-95 transition-all shadow-sm shrink-0 border border-fuchsia-400/30">
                                     <span>Lọc: {{activeSop}}</span>
                                     <i class="fa-solid fa-circle-xmark text-[10px] opacity-80 hover:opacity-100"></i>
                                 </button>
@@ -212,21 +239,13 @@
                                 (TB {{trendInfo().currentAvg}} mẫu/ngày so với {{trendInfo().historyMean}} trong {{trendInfo().historyDays}} ngày trước)
                             </span>
                         </div>
-                        <!-- Date Filter Component -->
-                        <div class="shrink-0 w-full sm:w-auto">
-                            <app-date-range-filter 
-                                [initStart]="startDate()" 
-                                [initEnd]="endDate()" 
-                                (dateChange)="onDateRangeChange($event)">
-                            </app-date-range-filter>
-                        </div>
                     </div>
 
                     <!-- KPIs Row -->
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
                             <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
-                            <h4 class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{chartKpis().totalSamples}}</h4>
+                            <h4 class="text-xl font-black text-fuchsia-600 dark:text-fuchsia-400">{{chartKpis().totalSamples}}</h4>
                         </div>
                         <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
                             <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẻ</p>
@@ -240,7 +259,7 @@
 
                     <!-- Charts Area -->
                     <div class="flex-1 lg:h-[320px] md:h-[280px] h-auto grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
-                        <div class="md:col-span-2 relative w-full min-h-[220px] md:h-full bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
+                        <div class="md:col-span-2 relative w-full min-h-[220px] md:h-full bg-slate-50/60 dark:bg-slate-950/30 rounded-xl border border-slate-100 dark:border-slate-800/70">
                             @if(isLoading()) {
                                 <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
                             } @else {
@@ -260,8 +279,8 @@
                                         <div class="flex flex-col gap-1.5">
                                             @for (item of sopDistribution(); track item.name) {
                                                 <button (click)="toggleSopFilter(item.name)"
-                                                     class="w-full flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1 px-1.5 rounded-lg border border-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer transition-all last:border-b-0 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                                                     [ngClass]="{ 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/40 text-indigo-600 dark:text-indigo-400': selectedSopFilter() === item.name }">
+                                                     class="w-full flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1 px-1.5 rounded-lg border border-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer transition-all last:border-b-0 focus:outline-none focus:ring-1 focus:ring-fuchsia-400"
+                                                     [ngClass]="{ 'bg-fuchsia-50/80 dark:bg-fuchsia-950/40 border-fuchsia-200 dark:border-fuchsia-800/40 text-fuchsia-600 dark:text-fuchsia-400': selectedSopFilter() === item.name }">
                                                     <div class="flex items-center gap-1.5 truncate mr-2">
                                                         <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" [style.backgroundColor]="item.color"></span>
                                                         <span class="truncate" [title]="item.name">{{item.name}}</span>
@@ -283,7 +302,7 @@
             <!-- Right Column -->
             <div class="flex flex-col gap-4 lg:h-[560px] h-[360px]">
                 <!-- Activity Feed -->
-                <div #activityFeedPanel class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col min-h-0 border border-slate-100 dark:border-slate-700">
+                <div #activityFeedPanel class="soft-ui-panel flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 overflow-hidden flex flex-col min-h-0 border border-slate-200 dark:border-slate-800">
                     <div class="flex flex-col gap-3 mb-4 shrink-0">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base">Hoạt Động Gần Đây</h6>
@@ -335,7 +354,7 @@
                         <div class="relative border-l border-gray-100 dark:border-slate-700/50 ml-4 space-y-6 pb-2">
                             @for (group of recentLogsGrouped(); track group.dateStr) {
                                 <div class="relative">
-                                    <div class="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm py-1 -ml-6 pl-6 mb-3">
+                                    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm py-1 -ml-6 pl-6 mb-3">
                                         <span class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-900/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm">{{group.dateStr}}</span>
                                     </div>
                                     <div class="space-y-5">
@@ -381,7 +400,7 @@
                                                                     </span>
                                                                 }
                                                                 @if (log.actionUrl) {
-                                                                    <button type="button" (click)="navToUrl(log.actionUrl)" [attr.aria-label]="'Mở chi tiết hoạt động ' + (getActivityTargetText(log) || log.action)" class="text-[9px] bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 px-2.5 py-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/55 font-bold transition shadow-xs active:scale-95 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                                                                    <button type="button" (click)="navToUrl(log.actionUrl)" [attr.aria-label]="'Mở chi tiết hoạt động ' + (getActivityTargetText(log) || log.action)" class="text-[9px] bg-fuchsia-50 dark:bg-fuchsia-900/30 border border-fuchsia-100 dark:border-fuchsia-800/50 px-2.5 py-1 rounded-md text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/55 font-bold transition shadow-xs active:scale-95 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500">
                                                                         <i class="fa-solid fa-arrow-up-right-from-square mr-1" aria-hidden="true"></i> Mở
                                                                     </button>
                                                                 }
@@ -413,7 +432,7 @@
         </div>
 
         <!-- SECTION 3: BẢNG THEO DÕI MẪU NGÀY -->
-        <div class="mb-6 relative">
+        <div class="mb-4 relative">
             @if(!auth.canViewSop()) {
                 <div class="absolute inset-0 bg-slate-50/60 dark:bg-slate-900/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 rounded-2xl">
                     <i class="fa-solid fa-lock text-4xl mb-3"></i>
@@ -427,7 +446,7 @@
                     @defer (on viewport) {
                         <app-daily-checklist [embedded]="true"></app-daily-checklist>
                     } @placeholder {
-                        <div class="min-h-48 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                        <div class="min-h-48 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-400 shadow-sm">
                             <div class="flex items-center gap-3 text-sm font-bold">
                                 <i class="fa-solid fa-list-check"></i>
                                 <span>Bảng theo dõi mẫu sẽ tải khi cuộn đến đây</span>
@@ -435,7 +454,7 @@
                         </div>
                     }
                 } @else {
-                    <div class="min-h-48 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
+                    <div class="min-h-48 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"></div>
                 }
             </div>
         </div>

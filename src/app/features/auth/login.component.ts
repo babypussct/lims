@@ -20,26 +20,20 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
     @if (!auth.currentUser()) {
       <div class="min-h-screen w-full flex items-center justify-center overflow-hidden relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc] dark:bg-slate-950">
         
-        <!-- Animated Light Gradient Background (Fluid Shapes) -->
+        <!-- Calm workstation background: Soft UI-inspired, no decorative motion. -->
         <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-fuchsia-400/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob"></div>
-            <div class="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-pink-400/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob animation-delay-2000"></div>
-            <div class="absolute bottom-[-20%] left-[20%] w-[60vw] h-[60vw] bg-purple-400/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob animation-delay-4000"></div>
-            <div class="absolute bottom-[30%] right-[10%] w-[35vw] h-[35vw] bg-blue-400/20 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob animation-delay-6000"></div>
+            <div class="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-fuchsia-50/80 to-transparent dark:from-fuchsia-950/20"></div>
             <!-- Subtle Grid Pattern Overlay for a "Lab" feel -->
             <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNCkiLz48L3N2Zz4=')] opacity-60 dark:opacity-20"></div>
         </div>
 
-        <!-- Centered Glass Card -->
+        <!-- Centered application panel -->
         <div class="relative z-10 w-full max-w-[420px] mx-4 sm:mx-auto">
             
-            <div class="bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 shadow-[0_20px_27px_0_rgba(0,0,0,0.05)] rounded-[2.5rem] p-8 sm:p-10 relative overflow-hidden">
-                
-                <!-- Subtle inner shine -->
-                <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-7 sm:p-8 relative overflow-hidden">
 
                 <div class="text-center mb-8 relative z-10">
-                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] overflow-hidden shadow-lg shadow-indigo-500/10 mb-6 transform hover:scale-105 transition-transform duration-300">
+                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-2xl overflow-hidden shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 mb-6">
                         <app-logo size="96px"></app-logo>
                     </div>
                     <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
@@ -103,8 +97,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                     <div class="animate-fade-in-up relative z-10 text-center">
                         <button type="button" (click)="loginGoogle()" [disabled]="isLoading()"
                                 class="w-full py-4 mt-2 bg-white dark:bg-slate-800 backdrop-blur-md border border-white dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-200 rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] group relative overflow-hidden">
-                            <!-- Subtle pink hover glow -->
-                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-50/50 to-transparent dark:via-pink-950/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-50/60 to-transparent dark:via-fuchsia-950/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             
                             @if (isGoogleLoading()) { <i class="fa-solid fa-spinner fa-spin text-gray-400"></i> }
                             @else { 
@@ -123,11 +116,11 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                             <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
                                    [class.opacity-40]="isSharedDevice()"
                                    [class.pointer-events-none]="isSharedDevice()">
-                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
+                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200"
                                      [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
                                     <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
                                     @if (rememberSession()) {
-                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-400 animate-fade-in"></i>
                                     }
                                 </div>
                                 <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
@@ -137,11 +130,11 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                             <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
                                    [class.opacity-40]="rememberSession()"
                                    [class.pointer-events-none]="rememberSession()">
-                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
+                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200"
                                      [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
                                     <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
                                     @if (isSharedDevice()) {
-                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-400 animate-fade-in"></i>
                                     }
                                 </div>
                                 <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
@@ -149,7 +142,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
 
                             <!-- Tooltip Help Info -->
                             <div class="relative group/tooltip shrink-0">
-                                <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-450 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
+                                <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
                                     <i class="fa-regular fa-circle-question text-[13px]" aria-hidden="true"></i>
                                 </button>
                                 <!-- Tooltip content -->
@@ -263,7 +256,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
 
                                 <!-- Tooltip Help Info -->
                                 <div class="relative group/tooltip shrink-0">
-                                    <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-450 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
+                                    <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
                                         <i class="fa-regular fa-circle-question text-[13px]" aria-hidden="true"></i>
                                     </button>
                                     <div id="session-help" role="note" [class.opacity-100]="showSessionHelp()" [class.scale-100]="showSessionHelp()" [class.pointer-events-auto]="showSessionHelp()" class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
@@ -307,31 +300,31 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                         <h2 class="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">Đăng Nhập Nhanh</h2>
                         <p class="text-gray-500 dark:text-slate-400 text-[13px] mb-8 px-4">Sử dụng ứng dụng LIMS trên điện thoại để quét mã này.</p>
 
-                        <div class="bg-white dark:bg-slate-800 p-3 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 relative group w-64 h-64 mx-auto flex items-center justify-center overflow-hidden">
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 relative group w-64 h-64 mx-auto flex items-center justify-center overflow-hidden">
                             <canvas #qrCanvas class="w-56 h-56 relative z-10"></canvas>
                             
-                            <!-- Scanner Line Overlay (Laser Pulse) -->
+                            <!-- Static scanner guide: preserves affordance without continuous motion. -->
                             @if (qrStatus() === 'waiting' || qrStatus() === 'scanned') {
-                                <div class="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-fuchsia-500 to-transparent shadow-[0_0_8px_#d946ef] z-20 animate-laser"></div>
+                                <div class="absolute left-4 right-4 top-1/2 h-px bg-gradient-to-r from-transparent via-fuchsia-500/60 to-transparent z-20" aria-hidden="true"></div>
                             }
                             
                             <!-- Overlay status -->
                             @if (qrStatus() === 'approved') {
-                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in z-30">
+                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl animate-fade-in z-30">
                                     <div class="w-16 h-16 bg-green-50 dark:bg-green-950/50 text-green-500 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner"><i class="fa-solid fa-check"></i></div>
                                     <span class="font-bold text-green-700 dark:text-green-400 text-lg">Thành công!</span>
                                     <span class="text-[13px] text-green-600/80 dark:text-green-400/80 font-medium mt-1">Đang chuyển hướng...</span>
                                 </div>
                             }
                             @if (qrStatus() === 'expired') {
-                                <button type="button" aria-label="Tạo lại mã QR đăng nhập" class="absolute inset-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in cursor-pointer group-hover:bg-gray-50 dark:group-hover:bg-slate-700/60 transition-colors z-30" (click)="generateSession()">
+                                <button type="button" aria-label="Tạo lại mã QR đăng nhập" class="absolute inset-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl animate-fade-in cursor-pointer group-hover:bg-gray-50 dark:group-hover:bg-slate-700/60 transition-colors z-30" (click)="generateSession()">
                                     <div class="w-16 h-16 bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner group-hover:scale-110 transition-transform"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></div>
                                     <span class="font-bold text-gray-700 dark:text-slate-300">Mã hết hạn</span>
                                     <span class="text-[13px] text-fuchsia-600 dark:text-fuchsia-400 font-bold mt-1">Nhấn để tải lại</span>
                                 </button>
                             }
                             @if (errorMsg() && mode() === 'qr') {
-                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in p-6 text-center z-30">
+                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl animate-fade-in p-6 text-center z-30">
                                     <div class="w-12 h-12 bg-red-50 dark:bg-red-950/50 text-red-500 rounded-full flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
                                     <span class="font-bold text-red-700 dark:text-red-400 text-sm">Lỗi kết nối</span>
                                     <span class="text-[11px] text-red-500/80 mt-1 mb-4">{{ errorMsg() }}</span>
@@ -366,7 +359,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
 
                             <!-- Tooltip Help Info -->
                             <div class="relative group/tooltip shrink-0">
-                                <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-450 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
+                                <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
                                     <i class="fa-regular fa-circle-question text-[13px]" aria-hidden="true"></i>
                                 </button>
                                 <!-- Tooltip content -->
@@ -422,24 +415,6 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
     
     @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
     .animate-shake { animation: shake 0.3s ease-in-out; }
-
-    @keyframes blob {
-      0% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(30px, -50px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
-      100% { transform: translate(0px, 0px) scale(1); }
-    }
-    .animate-blob { animation: blob 10s infinite; }
-    .animation-delay-2000 { animation-delay: 2s; }
-    .animation-delay-4000 { animation-delay: 4s; }
-    .animation-delay-6000 { animation-delay: 6s; }
-
-    @keyframes laser {
-      0% { top: 4%; }
-      50% { top: 96%; }
-      100% { top: 4%; }
-    }
-    .animate-laser { animation: laser 3s infinite ease-in-out; }
 
     @keyframes shimmer {
       0% { transform: skewX(-12deg) translateX(-100%); }

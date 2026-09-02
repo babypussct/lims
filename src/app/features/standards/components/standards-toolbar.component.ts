@@ -41,13 +41,13 @@ import { AppPageHeaderComponent } from '../../../shared/components/ui/page-heade
                     aria-controls="standards-function-menu"
                     [attr.aria-expanded]="functionMenuOpen()"
                     (click)="toggleFunctionMenu($event)"
-                    class="h-9 px-3 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-xl shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-sm flex items-center gap-2">
+                    class="h-9 px-3 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 rounded-xl shadow-sm shadow-fuchsia-200 dark:shadow-none transition font-bold text-sm flex items-center gap-2">
                     <i class="fa-solid fa-bars"></i> Chức năng <i class="fa-solid fa-caret-down"></i>
                 </button>
                 @if (functionMenuOpen()) {
                   <div id="standards-function-menu" role="menu" class="absolute right-0 top-full mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 z-30 overflow-hidden flex flex-col p-1 animate-slide-up">
-                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openAddModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-plus text-indigo-500 w-4"></i> Thêm mới
+                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openAddModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus text-fuchsia-500 w-4"></i> Thêm mới
                     </button>
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openInternalIdSync)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
@@ -59,8 +59,8 @@ import { AppPageHeaderComponent } from '../../../shared/components/ui/page-heade
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(usageLogFileInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import nhật ký
                     </button>
-                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openCleanupModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-broom text-purple-500 w-4"></i> Chuẩn hóa tên chất chuẩn
+                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openCleanupModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-broom text-fuchsia-500 w-4"></i> Chuẩn hóa tên chất chuẩn
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openTagManager)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-tags text-fuchsia-500 w-4"></i> Quản lý danh mục nhãn

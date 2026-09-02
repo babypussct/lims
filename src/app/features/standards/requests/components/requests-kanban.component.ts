@@ -71,7 +71,7 @@ import { formatNum } from '../../../../shared/utils/utils';
       
       <!-- COLUMN 1: PENDING_APPROVAL -->
       @if (currentFilter === 'ALL' || currentFilter === 'PENDING_APPROVAL') {
-      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
         <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-amber-50/50 dark:bg-amber-900/10 shrink-0">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
@@ -95,7 +95,7 @@ import { formatNum } from '../../../../shared/utils/utils';
 
       <!-- COLUMN 2: IN_PROGRESS -->
       @if (currentFilter === 'ALL' || currentFilter === 'IN_PROGRESS') {
-      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
         <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10 shrink-0">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -119,13 +119,13 @@ import { formatNum } from '../../../../shared/utils/utils';
 
       <!-- COLUMN 3: PENDING_RETURN -->
       @if (currentFilter === 'ALL' || currentFilter === 'PENDING_RETURN') {
-      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
-        <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-900/10 shrink-0">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
+        <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-fuchsia-50/50 dark:bg-fuchsia-900/10 shrink-0">
           <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-            <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-base">Chờ Nhận Trả</h3>
+            <div class="w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse"></div>
+            <h3 class="font-black text-fuchsia-700 dark:text-fuchsia-400 text-base">Chờ Nhận Trả</h3>
           </div>
-          <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-sm font-black">{{ pendingReturnReqs().length }}</span>
+          <span class="px-2 py-0.5 bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 rounded-lg text-sm font-black">{{ pendingReturnReqs().length }}</span>
         </div>
         <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
           @for (req of visiblePendingReturnReqs(); track req.id) {
@@ -143,7 +143,7 @@ import { formatNum } from '../../../../shared/utils/utils';
 
       <!-- COLUMN 4: COMPLETED / REJECTED -->
       @if (currentFilter === 'ALL' || currentFilter === 'COMPLETED') {
-      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/50 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
         <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-slate-100 dark:bg-slate-800/50 shrink-0">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-slate-400"></div>
@@ -175,7 +175,7 @@ import { formatNum } from '../../../../shared/utils/utils';
     <ng-template #showMoreTemplate let-hidden="hidden">
       <button type="button"
               (click)="showMoreCards()"
-              class="w-full rounded-2xl border border-dashed border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/20 px-3 py-3 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
+              class="w-full rounded-2xl border border-dashed border-fuchsia-200 dark:border-fuchsia-800 bg-fuchsia-50/60 dark:bg-fuchsia-900/20 px-3 py-3 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">
         <i class="fa-solid fa-angles-down mr-1"></i>
         Xem thêm — còn {{hidden}} thẻ
       </button>
@@ -183,7 +183,7 @@ import { formatNum } from '../../../../shared/utils/utils';
 
     <!-- REUSABLE CARD TEMPLATE -->
     <ng-template #cardTemplate let-req>
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 transition-all duration-300 flex flex-col gap-3 group relative cursor-default hover:-translate-y-1 hover:border-indigo-200 dark:hover:border-indigo-800/50">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 transition-all duration-300 flex flex-col gap-3 group relative cursor-default hover:-translate-y-1 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/50">
         
         <!-- Header: User & Time -->
         <div class="flex justify-between items-start gap-2">
@@ -197,13 +197,13 @@ import { formatNum } from '../../../../shared/utils/utils';
             </div>
           </div>
           @if(req.isBackfill) {
-            <span class="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">Nhập bù</span>
+            <span class="px-2 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">Nhập bù</span>
           }
         </div>
         
         <!-- Center: Standard Name -->
         <div>
-          <h4 class="font-black text-base text-slate-800 dark:text-slate-100 leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</h4>
+          <h4 class="font-black text-base text-slate-800 dark:text-slate-100 leading-tight mb-1 cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</h4>
           <p class="text-xs text-slate-500 dark:text-slate-400 font-medium italic line-clamp-2" [title]="req.purpose">{{req.purpose}}</p>
         </div>
 
@@ -221,7 +221,7 @@ import { formatNum } from '../../../../shared/utils/utils';
               <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kho / Vị trí</span>
               <div class="text-xs leading-snug flex items-center flex-wrap gap-x-1">
                   @if(req.standardDetails?.internal_id) {
-                    <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-md font-black text-xs border border-indigo-200 dark:border-indigo-700 shadow-sm shrink-0 uppercase">{{req.standardDetails.internal_id}}</span>
+                    <span class="px-2 py-0.5 bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 rounded-md font-black text-xs border border-fuchsia-200 dark:border-fuchsia-700 shadow-sm shrink-0 uppercase">{{req.standardDetails.internal_id}}</span>
                   }
                   <span class="font-black text-slate-700 dark:text-slate-300">{{formatNum(req.standardDetails?.current_amount ?? 0)}}{{req.standardDetails?.unit}}</span>
                   <span class="text-slate-400">•</span>
@@ -258,7 +258,7 @@ import { formatNum } from '../../../../shared/utils/utils';
                   <button (click)="actionUndoReturn.emit(req)" class="px-2 py-1 bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition shadow-sm active:scale-95 text-[11px] font-bold mr-1" title="Hủy báo cáo trả và nhập lại"><i class="fa-solid fa-rotate-left mr-1"></i> HỦY BÁO CÁO</button>
               }
               @if(canApproveRequest(req)) {
-                  <button (click)="actionAdminReceive.emit(req)" class="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm active:scale-95 text-[11px] font-bold"><i class="fa-solid fa-check-to-slot mr-1"></i> NHẬN TRẢ</button>
+                  <button (click)="actionAdminReceive.emit(req)" class="px-2 py-1 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition shadow-sm active:scale-95 text-[11px] font-bold"><i class="fa-solid fa-check-to-slot mr-1"></i> NHẬN TRẢ</button>
               }
           }
           @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {

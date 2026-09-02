@@ -85,21 +85,21 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
             <button (click)="setViewMode('list')"
                     class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
                     [class.bg-white]="viewMode() === 'list'" [class.dark:bg-slate-800]="viewMode() === 'list'"
-                    [class.text-indigo-600]="viewMode() === 'list'" [class.text-slate-400]="viewMode() !== 'list'"
+                    [class.text-fuchsia-600]="viewMode() === 'list'" [class.text-slate-400]="viewMode() !== 'list'"
                     title="Chế độ danh sách" aria-label="Chế độ danh sách">
               <i class="fa-solid fa-list"></i>
             </button>
             <button (click)="setViewMode('grid')"
                     class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
                     [class.bg-white]="viewMode() === 'grid'" [class.dark:bg-slate-800]="viewMode() === 'grid'"
-                    [class.text-indigo-600]="viewMode() === 'grid'" [class.text-slate-400]="viewMode() !== 'grid'"
+                    [class.text-fuchsia-600]="viewMode() === 'grid'" [class.text-slate-400]="viewMode() !== 'grid'"
                     title="Chế độ lưới" aria-label="Chế độ lưới">
               <i class="fa-solid fa-border-all"></i>
             </button>
           </div>
 
           <button (click)="toggleDensity()"
-                  class="hidden md:flex w-9 h-9 items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 rounded-lg hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+                  class="hidden md:flex w-9 h-9 items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 rounded-lg hover:text-fuchsia-600 dark:hover:text-fuchsia-300 transition-colors"
                   [title]="density() === 'compact' ? 'Chuyển sang hiển thị thoáng' : 'Chuyển sang hiển thị gọn'"
                   [attr.aria-label]="density() === 'compact' ? 'Chuyển sang hiển thị thoáng' : 'Chuyển sang hiển thị gọn'">
             <i class="fa-solid" [class.fa-compress]="density() === 'compact'" [class.fa-arrows-up-down]="density() !== 'compact'"></i>
@@ -159,7 +159,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                      [ngModel]="searchInputValue()" 
                      (ngModelChange)="onSearchChange($event)"
                      [placeholder]="isMobile() ? 'Tìm tài liệu...' : 'Tìm tài liệu trong thư mục hiện tại...'" 
-                     class="w-full h-9 pl-9 pr-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/40 dark:text-white transition-shadow">
+                     class="w-full h-9 pl-9 pr-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500/40 dark:text-white transition-shadow">
               @if (searchInputValue()) {
                 <button type="button"
                         aria-label="Xóa tìm kiếm"
@@ -344,8 +344,8 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                         }
                         
                         @if (!isFolder(item) && item.webContentLink) {
-                          <button (click)="downloadItem(item, $event)" 
-                                  class="hidden sm:flex absolute top-0 right-0 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-0 group-hover:opacity-100"
+                          <button type="button" (click)="downloadItem(item, $event)" aria-label="Tải tài liệu xuống"
+                                  class="flex absolute top-0 right-0 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100"
                                   title="Tải xuống">
                             <i class="fa-solid fa-download text-xs"></i>
                           </button>
@@ -353,7 +353,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                       </div>
                       
                       <div class="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-3">
-                        <div class="font-medium text-slate-800 dark:text-slate-200 text-sm line-clamp-2 text-center group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors" 
+                        <div class="font-medium text-slate-800 dark:text-slate-200 text-sm line-clamp-2 text-center group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors"
                              [class.text-fuchsia-600]="sortCol() === 'name'"
                              [class.dark:text-fuchsia-400]="sortCol() === 'name'"
                              [title]="item.name">

@@ -18,7 +18,7 @@ export type DateRangePreset = 'all' | 'today' | 'yesterday' | 'this_week' | 'las
             <button (click)="toggleDropdown($event)" 
                     class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition border border-slate-200 dark:border-slate-700 min-w-[140px] justify-between active:scale-95">
                 <span class="flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-day text-blue-500"></i>
+                    <i class="fa-solid fa-calendar-day text-fuchsia-500"></i>
                     {{ currentLabel() }}
                 </span>
                 <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200" [class.rotate-180]="isOpen()"></i>
@@ -29,53 +29,53 @@ export type DateRangePreset = 'all' | 'today' | 'yesterday' | 'this_week' | 'las
                 <div class="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in overflow-hidden">
                     <div class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/50 border-b border-slate-50 dark:border-slate-700">Chọn nhanh</div>
                     
-                    <button (click)="selectPreset('all')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center group">
+                    <button (click)="selectPreset('all')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center group">
                         <span>Tất Cả Thời Gian</span>
-                        @if(activePreset() === 'all') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'all') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
                     
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     
-                    <button (click)="selectPreset('today')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center group">
+                    <button (click)="selectPreset('today')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center group">
                         <span>Hôm Nay</span>
-                        @if(activePreset() === 'today') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'today') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('yesterday')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('yesterday')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Hôm qua</span>
-                        @if(activePreset() === 'yesterday') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'yesterday') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
                     
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                     
-                    <button (click)="selectPreset('this_week')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('this_week')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tuần Này</span>
-                        @if(activePreset() === 'this_week') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'this_week') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('last_week')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('last_week')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tuần Trước</span>
-                        @if(activePreset() === 'last_week') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'last_week') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
                     
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
  
-                    <button (click)="selectPreset('this_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('this_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tháng Này</span>
-                        @if(activePreset() === 'this_month') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'this_month') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('last_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('last_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tháng Trước</span>
-                        @if(activePreset() === 'last_month') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'last_month') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
                     
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
  
-                    <button (click)="selectPreset('this_quarter')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('this_quarter')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Quý Này</span>
-                        @if(activePreset() === 'this_quarter') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'this_quarter') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('this_year')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
+                    <button (click)="selectPreset('this_year')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Năm Nay</span>
-                        @if(activePreset() === 'this_year') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
+                        @if(activePreset() === 'this_year') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
                 </div>
                 
@@ -85,7 +85,7 @@ export type DateRangePreset = 'all' | 'today' | 'yesterday' | 'this_week' | 'las
         </div>
  
         <!-- Date Inputs -->
-        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
+        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700 focus-within:border-fuchsia-400 dark:focus-within:border-fuchsia-500 focus-within:ring-2 focus-within:ring-fuchsia-100 dark:focus-within:ring-fuchsia-900/30 transition-all">
             <div class="flex flex-col">
                 <label class="text-[8px] font-bold text-slate-400 uppercase leading-none">Từ ngày</label>
                 <input type="date" [ngModel]="startDate()" (ngModelChange)="onManualDateChange('start', $event)" 

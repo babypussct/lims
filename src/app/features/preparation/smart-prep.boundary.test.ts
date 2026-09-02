@@ -80,9 +80,9 @@ test('source references resolve to KNV labels and keep IDs tooltip-only', () => 
 test('prep step 2 and steps 3-4 share the desktop panel height and scroll independently', () => {
   assert.match(templateSource, /<div class="flex min-h-full flex-col/);
   assert.match(templateSource, /<main class="grid .*xl:min-h-0 xl:flex-1/);
-  assert.match(templateSource, /<section class="min-w-0 rounded-3xl xl:flex xl:min-h-0 xl:flex-col/);
+  assert.match(templateSource, /<section class="min-w-0 rounded-2xl xl:flex xl:min-h-0 xl:flex-col/);
   assert.match(templateSource, /<div class="space-y-5 xl:min-h-0 xl:flex-1 overflow-y-auto/);
-  assert.match(templateSource, /<aside class="min-w-0 rounded-3xl xl:flex xl:min-h-0 xl:flex-col/);
+  assert.match(templateSource, /<aside class="min-w-0 rounded-2xl xl:flex xl:min-h-0 xl:flex-col/);
   assert.match(templateSource, /<div class="space-y-4 xl:min-h-0 xl:flex-1 overflow-y-auto/);
   assert.doesNotMatch(templateSource, /max-h-\[calc\(100vh-310px\)\]|min-h-\[620px\]|min-h-\[680px\]/);
 });

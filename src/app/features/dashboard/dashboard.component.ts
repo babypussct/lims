@@ -12,7 +12,7 @@ import { QrGlobalService } from '../../core/services/qr-global.service'; // Impo
 import { formatNum, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
-import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent } from '../../shared/components/ui';
+import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { ActivityFeedService } from '../../core/services/activity-feed.service';
 import {
@@ -56,6 +56,7 @@ import { ChangelogService } from '../../core/services/changelog.service';
     AppButtonComponent,
     AppEmptyStateComponent,
     AppPageHeaderComponent,
+    AppToolbarComponent,
   ],
   templateUrl: './dashboard.component.html',
   styles: []

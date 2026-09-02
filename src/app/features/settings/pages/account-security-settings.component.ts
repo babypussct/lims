@@ -50,7 +50,7 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
           <!-- LIMS Password Row -->
           <div class="flex flex-col gap-3.5 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3.5">
-              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-indigo-600 dark:text-indigo-400">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-fuchsia-600 dark:text-fuchsia-400">
                 <i class="fa-solid fa-key text-base" aria-hidden="true"></i>
               </span>
               <div>

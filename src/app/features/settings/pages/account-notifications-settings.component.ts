@@ -16,7 +16,7 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
         icon="fa-bell">
         <div class="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700/60 dark:bg-slate-900/40">
           <div class="flex items-start gap-3.5">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 border border-slate-200/60 dark:border-slate-700">
               <i class="fa-solid" [class]="pushEnabled() ? 'fa-mobile-screen-button' : 'fa-bell-slash'" aria-hidden="true"></i>
             </div>
             <div>

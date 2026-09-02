@@ -3,9 +3,12 @@ import { Component, input } from '@angular/core';
 @Component({
   selector: 'app-page-header',
   standalone: true,
+  host: {
+    class: 'soft-ui-page-header-host block',
+  },
   template: `
     <header
-      class="border-b border-slate-200 bg-white/95 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/95 sm:px-6"
+      class="soft-ui-page-header px-1 py-2 sm:px-2"
       [class.sticky]="sticky()"
       [class.top-0]="sticky()"
       [class.z-30]="sticky()"
@@ -14,12 +17,12 @@ import { Component, input } from '@angular/core';
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
           @if (icon()) {
-            <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+            <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-soft text-white shadow-soft-md">
               <i class="fa-solid" [class]="'fa-solid ' + icon()" aria-hidden="true"></i>
             </div>
           }
           <div class="min-w-0">
-            <h1 class="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100 md:text-2xl">
+            <h1 class="font-display text-xl font-bold tracking-tight text-gray-700 dark:text-slate-100 md:text-2xl">
               {{ title() }}
             </h1>
             @if (subtitle()) {

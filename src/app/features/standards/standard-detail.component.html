@@ -25,14 +25,14 @@
 
         @if(isLoading()) {
             <!-- Loading Skeleton -->
-            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-4 animate-pulse">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-4 animate-pulse">
                 <div class="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg w-1/3"></div>
                 <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
                 <div class="flex gap-2 mt-4"><div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div><div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-20"></div></div>
             </div>
         } @else if(notFound() || !standard()) {
             <!-- Not Found State -->
-            <div class="flex-1 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
+            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
                 <app-empty-state
                     icon="fa-flask-vial"
                     title="Không tìm thấy chất chuẩn đối chiếu"
@@ -46,10 +46,10 @@
             @if (standard(); as std) {
                 
                 <!-- HERO CARD -->
-                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col md:flex-row gap-6 items-start md:items-center">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 md:p-8 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col md:flex-row gap-6 items-start md:items-center">
                     
                     <!-- Decorative Background -->
-                    <div class="absolute -right-10 -top-10 text-indigo-50 dark:text-slate-700/30 opacity-50 pointer-events-none">
+                    <div class="absolute -right-10 -top-10 text-fuchsia-50 dark:text-slate-700/30 opacity-50 pointer-events-none">
                         <i class="fa-solid fa-flask-vial text-[200px]"></i>
                     </div>
 
@@ -59,7 +59,7 @@
                                 <i class="fa-solid fa-circle text-[8px] mr-1.5" [class.animate-pulse]="std.status === 'IN_USE' || std.current_amount <= 0"></i>
                                 {{statusInfo().label}}
                             </span>
-                            @if(std.internal_id) { <span class="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-black border border-indigo-100 dark:border-indigo-800/50 shadow-sm"><i class="fa-solid fa-tag mr-1 opacity-70"></i> {{std.internal_id}}</span> }
+                            @if(std.internal_id) { <span class="px-3 py-1 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 text-xs font-black border border-fuchsia-100 dark:border-fuchsia-800/50 shadow-sm"><i class="fa-solid fa-tag mr-1 opacity-70"></i> {{std.internal_id}}</span> }
                         </div>
                         
                         <h2 class="text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight mb-1 break-words">
@@ -70,7 +70,7 @@
                         <div class="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4 text-sm bg-slate-50 dark:bg-slate-900/50 w-fit p-3 px-5 rounded-2xl border border-slate-100 dark:border-slate-800">
                             <div class="flex flex-col">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Lot Number</span>
-                                <span class="font-mono font-bold text-slate-700 dark:text-slate-300 text-base cursor-pointer hover:text-indigo-600 transition" (click)="copyText(std.lot_number)" title="Nhấn để sao chép">{{std.lot_number || 'N/A'}}</span>
+                                <button type="button" class="text-left font-mono font-bold text-slate-700 dark:text-slate-300 text-base cursor-pointer hover:text-fuchsia-600 transition" (click)="copyText(std.lot_number)" title="Nhấn để sao chép">{{std.lot_number || 'N/A'}}</button>
                             </div>
                             <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
                             <div class="flex flex-col">
@@ -80,16 +80,16 @@
                             <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
                             <div class="flex flex-col">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Product Code</span>
-                                <span class="font-mono font-bold text-slate-700 dark:text-slate-300 text-base cursor-pointer hover:text-indigo-600 transition" (click)="copyText(std.product_code)" title="Nhấn để sao chép">{{std.product_code || 'N/A'}}</span>
+                                <button type="button" class="text-left font-mono font-bold text-slate-700 dark:text-slate-300 text-base cursor-pointer hover:text-fuchsia-600 transition" (click)="copyText(std.product_code)" title="Nhấn để sao chép">{{std.product_code || 'N/A'}}</button>
                             </div>
                         </div>
                     </div>
                     
                     <div class="w-28 h-28 bg-white p-2 rounded-2xl shadow-md border border-slate-100 shrink-0 mx-auto md:mx-0 z-10 group relative">
                          <img [src]="qrCodeUrl()" class="w-full h-full object-contain mix-blend-multiply opacity-90 group-hover:opacity-100 transition" alt="QR Code">
-                         <div class="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer backdrop-blur-sm" (click)="openPrintModal()">
-                             <i class="fa-solid fa-print text-white text-2xl"></i>
-                         </div>
+                         <button type="button" aria-label="In nhãn chuẩn từ mã QR" class="absolute inset-0 bg-black/50 rounded-2xl opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 flex items-center justify-center transition-opacity cursor-pointer backdrop-blur-sm" (click)="openPrintModal()">
+                             <i class="fa-solid fa-print text-white text-2xl" aria-hidden="true"></i>
+                         </button>
                     </div>
                 </div>
 
@@ -97,7 +97,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     
                     <!-- COLUMN 1: TỒN KHO & BẢO QUẢN -->
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-full">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-full">
                         <div class="flex items-center gap-3 mb-6">
                             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shadow-inner">
                                 <i class="fa-solid fa-boxes-stacked text-lg"></i>
@@ -165,7 +165,7 @@
                     </div>
 
                     <!-- COLUMN 2: HẠN DÙNG & HỒ SƠ -->
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-full">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-full">
                         <div class="flex items-center justify-between mb-6">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center shadow-inner">
@@ -224,7 +224,7 @@
 
                 <!-- SECTION: CURRENT HOLDER (IF IN_USE) -->
                 @if(std.status === 'IN_USE' && std.current_holder) {
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-3xl p-5 flex items-center gap-4 animate-fade-in shadow-sm mt-2">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-5 flex items-center gap-4 animate-fade-in shadow-sm mt-2">
                         <div class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-blue-500 text-xl border border-blue-100 dark:border-blue-700 shrink-0">
                             <i class="fa-solid fa-user-lock"></i>
                         </div>
@@ -242,7 +242,7 @@
 
                 <!-- ACTION SHORTCUTS (BOTTOM PANEL) -->
                 @if((canAssign(std) && (canAssignStandards() || canRequestStandards())) || ((std.status === 'DEPLETED' || std.current_amount <= 0) && canRequestPurchase()) || canRequestCoa()) {
-                    <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
 
                         <!-- FEFO Warning: có lọ khác nên dùng trước -->
@@ -297,9 +297,9 @@
                 }
 
                 <!-- TABS: RELATED & HISTORY -->
-                <div class="mt-4 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
+                <div class="mt-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
                     <div class="flex border-b border-slate-100 dark:border-slate-700 px-6 pt-4 gap-8 bg-slate-50/50 dark:bg-slate-900/50">
-                        <button (click)="activeTab.set('usage')" class="pb-3 text-sm font-bold border-b-2 transition flex items-center gap-2 tracking-wide" [class]="activeTab() === 'usage' ? 'border-indigo-600 text-indigo-700 dark:text-indigo-400 dark:border-indigo-500' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'">
+                        <button (click)="activeTab.set('usage')" class="pb-3 text-sm font-bold border-b-2 transition flex items-center gap-2 tracking-wide" [class]="activeTab() === 'usage' ? 'border-fuchsia-600 text-fuchsia-700 dark:text-fuchsia-400 dark:border-fuchsia-500' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'">
                             <i class="fa-solid fa-clock-rotate-left"></i> Nhật ký sử dụng
                         </button>
                         <button (click)="activeTab.set('related')" class="pb-3 text-sm font-bold border-b-2 transition flex items-center gap-2 tracking-wide" [class]="activeTab() === 'related' ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 dark:border-emerald-500' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'">
@@ -337,7 +337,7 @@
                                                 </td>
                                                 <td class="px-6 py-4 text-center">
                                                         @if(canDeleteStandardLogs()) {
-                                                            <button (click)="deleteLog(log, std.id!)" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition opacity-0 group-hover:opacity-100" title="Rollback & Hoàn kho"><i class="fa-solid fa-trash-can"></i></button>
+                                                            <button (click)="deleteLog(log, std.id!)" aria-label="Rollback nhật ký và hoàn kho" class="w-9 h-9 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100" title="Rollback & Hoàn kho"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                                                         }
                                                 </td>
                                             </tr>
@@ -382,7 +382,7 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
                                     @for (rStd of relatedStandards(); track rStd.id) {
-                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer group" (click)="navigateToRelated(rStd.id!)">
+                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer group" role="link" tabindex="0" (click)="navigateToRelated(rStd.id!)" (keydown.enter)="navigateToRelated(rStd.id!)" (keydown.space)="navigateToRelated(rStd.id!); $event.preventDefault()">
                                             <td class="px-6 py-4">
                                                 <div class="flex items-center gap-2">
                                                     <span class="font-bold text-slate-700 dark:text-slate-200">{{rStd.internal_id || 'N/A'}}</span>
@@ -399,7 +399,7 @@
                                             <td class="px-6 py-4 text-center">
                                                 <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" [ngClass]="getStandardStatus(rStd).class">{{getStandardStatus(rStd).label}}</span>
                                             </td>
-                                            <td class="px-6 py-4 text-center text-slate-400 group-hover:text-indigo-500 transition"><i class="fa-solid fa-chevron-right"></i></td>
+                                            <td class="px-6 py-4 text-center text-slate-400 group-hover:text-fuchsia-500 transition"><i class="fa-solid fa-chevron-right"></i></td>
                                         </tr>
                                     } @empty {
                                         <tr><td colspan="6" class="p-16 text-center text-slate-400 italic">Không có lọ chuẩn nào khác cùng tên "{{std.name}}".</td></tr>

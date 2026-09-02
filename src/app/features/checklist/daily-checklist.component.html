@@ -142,9 +142,9 @@
               <span class="text-sm font-black tabular-nums text-blue-700 dark:text-blue-300">{{boardSummary().batches}}</span>
               <span class="text-[9px] font-bold uppercase tracking-wide text-blue-500 dark:text-blue-400">Mẻ</span>
             </div>
-            <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
-              <span class="text-sm font-black tabular-nums text-indigo-700 dark:text-indigo-300">{{boardSummary().samples}}</span>
-              <span class="text-[9px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">Mẫu</span>
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100 dark:border-fuchsia-500/20">
+              <span class="text-sm font-black tabular-nums text-fuchsia-700 dark:text-fuchsia-300">{{boardSummary().samples}}</span>
+              <span class="text-[9px] font-bold uppercase tracking-wide text-fuchsia-500 dark:text-fuchsia-400">Mẫu</span>
             </div>
             <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
               <span class="text-sm font-black tabular-nums text-sky-700 dark:text-sky-300">{{boardSummary().targets}}</span>
@@ -197,7 +197,7 @@
 
                   <div class="shrink-0 flex flex-wrap items-center gap-2">
                     @if (batch.statusCounts.completed > 0) { <span class="px-2 py-1 rounded-lg text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">{{batch.statusCounts.completed}} có KQ</span> }
-                    @if (batch.statusCounts.draft > 0) { <span class="px-2 py-1 rounded-lg text-[9px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30">{{batch.statusCounts.draft}} đang nhập</span> }
+                    @if (batch.statusCounts.draft > 0) { <span class="px-2 py-1 rounded-lg text-[9px] font-black bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 dark:bg-fuchsia-500/15 dark:text-fuchsia-400 dark:border-fuchsia-500/30">{{batch.statusCounts.draft}} đang nhập</span> }
                     @if (batch.statusCounts.approved > 0) { <span class="px-2 py-1 rounded-lg text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30">{{batch.statusCounts.approved}} chưa KQ</span> }
                     @if (state.isAdmin() && batch.physicalBatchCount === 1) {
                       <button type="button" (click)="editBatch(batch.sourceBatches[0].requestId)"

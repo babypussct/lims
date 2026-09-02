@@ -72,7 +72,7 @@ interface VisitedPage {
         (modalEscape)="closeMenu()"
         id="bottom-nav-menu"
         class="fixed bottom-0 right-0 left-0 z-[50] max-h-[calc(100dvh-env(safe-area-inset-top,0px)-0.5rem)] flex flex-col
-               bg-white dark:bg-slate-900 rounded-t-[32px]
+               bg-white dark:bg-slate-900 rounded-t-2xl
                shadow-[0_-10px_40px_rgba(0,0,0,0.2)] border-t border-slate-200 dark:border-slate-800
                overflow-hidden origin-bottom transition-transform duration-250 ease-out pb-safe"
         [class.animate-slide-up]="!isClosing()"
@@ -139,7 +139,7 @@ interface VisitedPage {
               <button
                 type="button"
                 (click)="navTo('/results', 'Nhập kết quả', 'fa-square-poll-vertical')"
-                class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 font-bold text-sm shadow-sm active:scale-95 transition-transform border border-fuchsia-200 dark:border-fuchsia-800/50">
+                class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300 font-bold text-sm shadow-sm active:scale-95 transition-transform border border-fuchsia-200 dark:border-fuchsia-500/20">
                 <i class="fa-solid fa-square-poll-vertical text-lg" aria-hidden="true"></i> Nhập Kết Quả
               </button>
             }
@@ -169,7 +169,7 @@ interface VisitedPage {
                         [class.cursor-not-allowed]="item.isLocked"
                         class="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform relative">
                         <span
-                          class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-xl transition-all border relative bg-gradient-to-tr shadow-sm"
+                          class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all border relative bg-gradient-to-tr shadow-sm"
                           [ngClass]="item.isLocked
                             ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-700/50'
                             : (isItemActive(item)
@@ -454,7 +454,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   accentDotClass(groupId: string): string {
     const classes: Record<string, string> = {
       overview: 'bg-emerald-500',
-      operation: 'bg-indigo-500',
+      operation: 'bg-fuchsia-500',
       storage: 'bg-amber-500',
       administration: 'bg-rose-500',
       system: 'bg-slate-500'
@@ -576,7 +576,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   private tabColor(id: string): string {
     const colors: Record<string, string> = {
       dashboard: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30',
-      inventory: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30',
+      inventory: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30',
       documents: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30',
       'smart-batch': 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30',
       stats: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30',
@@ -588,7 +588,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   private accentClass(groupId: string): string {
     const classes: Record<string, string> = {
       overview: 'from-emerald-500/15 to-teal-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/30',
-      operation: 'from-purple-500/15 to-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800/30',
+      operation: 'from-fuchsia-500/15 to-blue-500/15 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-200/50 dark:border-fuchsia-800/30',
       storage: 'from-amber-500/15 to-orange-500/15 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/30',
       administration: 'from-rose-500/15 to-fuchsia-500/15 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-800/30',
       system: 'from-slate-500/15 to-slate-700/15 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-800/30'

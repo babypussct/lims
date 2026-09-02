@@ -9,7 +9,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
   imports: [CommonModule, RouterLink, AppButtonComponent],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-      <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center border border-slate-100 dark:border-slate-700 animate-fade-in">
+      <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center border border-slate-100 dark:border-slate-700 animate-fade-in">
         <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-amber-200 dark:border-amber-800/50 shadow-inner">
           <i class="fa-solid fa-lock text-3xl"></i>
         </div>

@@ -24,10 +24,10 @@
 
                     <button type="button" (click)="setMode('tomy_a4')"
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
-                            [class]="printMode() === 'tomy_a4' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-800'">
+                            [class]="printMode() === 'tomy_a4' ? 'border-fuchsia-500 bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300' : 'border-slate-200 bg-white text-slate-500 hover:border-fuchsia-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-fuchsia-800'">
                         <i class="fa-solid fa-file-lines text-xl mb-1"></i>
                         <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">Decal A4<br>(Tomy)</span>
-                        @if(printMode() === 'tomy_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-bl-lg"></div> }
+                        @if(printMode() === 'tomy_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-fuchsia-500 rounded-bl-lg"></div> }
                     </button>
 
                     <button type="button" (click)="setMode('plain_a4')"
@@ -52,7 +52,7 @@
                     </div>
                     
                     <!-- Fetch from Requests -->
-                    <div class="flex gap-2 mb-2 bg-indigo-50 dark:bg-indigo-950/30 p-2 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                    <div class="flex gap-2 mb-2 bg-fuchsia-50 dark:bg-fuchsia-950/30 p-2 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900">
                         <input type="date" [ngModel]="fetchDate()" (ngModelChange)="fetchDate.set($event)" class="input-std py-1.5 text-xs flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
                         <app-button size="sm" (click)="fetchFromRequests()">
                             <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Lấy mẫu
@@ -66,7 +66,7 @@
                         <button type="button" (click)="removeDuplicates()" class="text-[10px] text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-filter"></i> Lọc trùng</button>
                         <button type="button" (click)="sortInput()" class="text-[10px] text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-arrow-down-a-z"></i> Sắp xếp</button>
                         <button type="button" (click)="clearInput()" class="text-[10px] text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
-                        <button type="button" (click)="addExample()" class="text-[10px] text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
+                        <button type="button" (click)="addExample()" class="text-[10px] text-fuchsia-600 dark:text-fuchsia-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/30 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
                     </div>
                 </div>
 
@@ -233,8 +233,8 @@
                                     <option [value]="tmpl.id">{{tmpl.name}}</option>
                                 }
                             </select>
-                            <div class="text-[10px] text-slate-500 bg-indigo-50 p-2 rounded border border-indigo-100 flex items-start gap-2">
-                                <i class="fa-solid fa-circle-info mt-0.5 text-indigo-400"></i>
+                            <div class="text-[10px] text-slate-500 bg-fuchsia-50 p-2 rounded border border-fuchsia-100 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-info mt-0.5 text-fuchsia-400"></i>
                                 <span>Hệ thống tự động căn lề theo mẫu giấy bế sẵn. Bạn chỉ cần nạp giấy vào máy in A4 thông thường.</span>
                             </div>
                         </div>
@@ -473,7 +473,7 @@
                 <span class="text-[10px] font-bold text-center text-slate-400">{{Math.round(zoomLevel() * 100)}}%</span>
                 <button type="button" (click)="adjustZoom(-0.1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300" title="Thu nhỏ" aria-label="Thu nhỏ bản xem trước"><i class="fa-solid fa-minus"></i></button>
                 <div class="h-px bg-slate-200 dark:bg-slate-700 w-full my-1"></div>
-                <button type="button" (click)="fitToScreen()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-300" title="Vừa màn hình" aria-label="Thu phóng bản xem trước vừa màn hình"><i class="fa-solid fa-expand"></i></button>
+                <button type="button" (click)="fitToScreen()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-300" title="Vừa màn hình" aria-label="Thu phóng bản xem trước vừa màn hình"><i class="fa-solid fa-expand"></i></button>
             </div>
 
             <!-- Preview Wrapper -->

@@ -198,11 +198,11 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
         @if(isVerifying() || isLoading()) {
             <div class="py-20 max-w-md mx-auto fade-in">
                 <div class="bg-white rounded-2xl p-6 shadow-xl border border-slate-200 text-left relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-indigo-100">
-                        <div class="h-full bg-indigo-600 transition-all duration-500 ease-out" [style.width]="(verifyStep() / 3 * 100) + '%'"></div>
+                    <div class="absolute top-0 left-0 w-full h-1 bg-fuchsia-100">
+                        <div class="h-full bg-fuchsia-600 transition-all duration-500 ease-out" [style.width]="(verifyStep() / 3 * 100) + '%'"></div>
                     </div>
                     <div class="flex items-center gap-3 mb-6 mt-2">
-                        <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-full bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center">
                             <i class="fa-solid fa-server text-sm"></i>
                         </div>
                         <span class="text-slate-800 font-black tracking-wider uppercase text-sm">Truy xuất hồ sơ LIMS</span>
@@ -211,7 +211,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                     <div class="space-y-4 text-xs font-medium">
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 0">
                             @if(verifyStep() >= 0) {
-                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <i class="fa-solid fa-circle-check text-fuchsia-500"></i>
                                 <span class="text-slate-600">Đã kết nối hệ thống máy chủ LIMS...</span>
                             } @else {
                                 <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
@@ -220,7 +220,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 1">
                             @if(verifyStep() >= 1) {
-                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <i class="fa-solid fa-circle-check text-fuchsia-500"></i>
                                 <span class="text-slate-600">Đã đồng bộ hồ sơ nhật ký mẻ phân tích...</span>
                             } @else {
                                 <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
@@ -229,7 +229,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 2">
                             @if(verifyStep() >= 2) {
-                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <i class="fa-solid fa-circle-check text-fuchsia-500"></i>
                                 <span class="text-slate-600">Kiểm tra tính toàn vẹn dữ liệu (Data Integrity)...</span>
                             } @else {
                                 <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
@@ -238,8 +238,8 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 3">
                             @if(verifyStep() >= 3) {
-                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
-                                <span class="text-indigo-700 font-black text-[13px]">Truy xuất hoàn tất!</span>
+                                <i class="fa-solid fa-circle-check text-fuchsia-500"></i>
+                                <span class="text-fuchsia-700 font-black text-[13px]">Truy xuất hoàn tất!</span>
                             } @else {
                                 <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
                                 <span class="text-slate-500">Đang trích xuất báo cáo...</span>
@@ -265,9 +265,9 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
             </div>
         } @else if(logData()) {
             <!-- DATA CARD -->
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 relative">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 relative">
                 <!-- Status Stripe -->
-                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-fuchsia-600 dark:bg-fuchsia-500"></div>
 
                 <div class="p-8">
                     <!-- Top Row: ID & QR -->
@@ -277,7 +277,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                                 <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider">
                                     Transaction ID
                                 </span>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
                                     <i class="fa-solid fa-database"></i> Hệ thống LIMS
                                 </span>
                             </div>
@@ -326,30 +326,30 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                             <div class="flex flex-col sm:flex-row items-stretch gap-2">
                                 <!-- Step 1: Request -->
                                 <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="status !== 'unknown' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
-                                    <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
+                                     [ngClass]="status !== 'unknown' ? 'border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                    <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-fuchsia-100 to-transparent dark:from-fuchsia-900/30 opacity-50"></div>
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm"
-                                         [ngClass]="status !== 'unknown' ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                         [ngClass]="status !== 'unknown' ? 'bg-fuchsia-500' : 'bg-slate-300 dark:bg-slate-700'">
                                         <i class="fa-solid fa-clipboard-list text-xs"></i>
                                     </div>
                                     <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="status !== 'unknown' ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 1</div>
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="status !== 'unknown' ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-400'">Bước 1</div>
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Tiếp nhận</div>
                                     </div>
                                 </div>
 
                                 <!-- Step 2: Approve -->
                                 <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                     [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
                                     @if(status === 'approved' || status === 'draft' || status === 'completed') {
-                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
+                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-fuchsia-100 to-transparent dark:from-fuchsia-900/30 opacity-50"></div>
                                     }
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
-                                         [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                         [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'bg-fuchsia-500' : 'bg-slate-300 dark:bg-slate-700'">
                                         <i class="fa-solid fa-check-double text-xs"></i>
                                     </div>
                                     <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 2</div>
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-400'">Bước 2</div>
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Phê duyệt</div>
                                     </div>
                                 </div>
@@ -379,12 +379,12 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Left: Actor & Action Unified Card -->
                         <div class="space-y-6">
-                            <div class="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm p-6 relative overflow-hidden group">
+                            <div class="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm p-6 relative overflow-hidden group">
                                 <!-- Status left border accent -->
                                 <div class="absolute left-0 top-0 bottom-0 w-2 transition-colors duration-300"
                                      [ngClass]="logData()?.status === 'completed' || logData()?.status === 'approved' ? 'bg-emerald-500' : 
                                                 (logData()?.status === 'pending' ? 'bg-amber-500' : 
-                                                (logData()?.status === 'draft' ? 'bg-indigo-500' : 
+                                                (logData()?.status === 'draft' ? 'bg-fuchsia-500' :
                                                 (logData()?.status === 'rejected' ? 'bg-rose-500' : 'bg-slate-400')))">
                                 </div>
                                 
@@ -407,7 +407,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                                                           status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/30' :
                                                           status === 'rejected' ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/30' :
                                                           status === 'completed' ? 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-900/30' :
-                                                          status === 'draft' ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/30' : 'bg-slate-50 text-slate-700 border-slate-200/60'"
+                                                          status === 'draft' ? 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-900/30' : 'bg-slate-50 text-slate-700 border-slate-200/60'"
                                                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm">
                                                @if(status === 'completed' || status === 'approved') {
                                                    <i class="fa-solid fa-check"></i>
@@ -496,12 +496,12 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                                                     <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ group.formattedSamples }}</span>
                                                     <div class="flex flex-wrap gap-1.5 justify-end">
                                                         @if(group.targetScope.compact) {
-                                                            <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                                                            <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/60 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
                                                                 {{ group.targetScope.headline }}
                                                             </span>
                                                         } @else {
                                                             @for(tName of group.targetNames; track tName) {
-                                                                <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                                                                <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/60 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
                                                                     {{ tName }}
                                                                 </span>
                                                             } @empty {

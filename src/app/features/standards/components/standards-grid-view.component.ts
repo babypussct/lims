@@ -29,7 +29,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                        <div class="bg-white dark:bg-slate-800 rounded-2xl border transition-all duration-200 flex flex-col relative group h-full hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-none overflow-hidden"
                             [ngClass]="{
                                 'border-slate-200 dark:border-slate-700': !selectedIds().has(std.id!),
-                                'border-indigo-400 dark:border-indigo-500 shadow-md bg-indigo-50 dark:bg-indigo-900/30': selectedIds().has(std.id!),
+                                'border-fuchsia-400 dark:border-fuchsia-500 shadow-md bg-fuchsia-50 dark:bg-fuchsia-900/30': selectedIds().has(std.id!),
                                 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0': std.status === 'DEPLETED' || std.current_amount <= 0
                             }">
                            
@@ -46,7 +46,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                            {{getStandardStatus(std).label}}
                                        </span>
                                        @if(std.internal_id) {
-                                           <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2.5 py-1 rounded-md text-sm font-black uppercase tracking-wider border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none whitespace-nowrap">
+                                           <span class="bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 px-2.5 py-1 rounded-md text-sm font-black uppercase tracking-wider border border-fuchsia-100 dark:border-fuchsia-800/50 shadow-sm dark:shadow-none whitespace-nowrap">
                                                {{std.internal_id}}
                                            </span>
                                        }
@@ -56,12 +56,12 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                            </span>
                                        }
                                        @for (method of (std.derivedMethodLabels || []).slice(0, 2); track method) {
-                                           <span class="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/70 dark:bg-indigo-900/20 px-2 py-1 text-[10px] font-black text-indigo-700 dark:text-indigo-300" [title]="method">
+                                           <span class="inline-flex max-w-[150px] items-center gap-1 rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/70 dark:bg-fuchsia-900/20 px-2 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300" [title]="method">
                                                <i class="fa-solid fa-flask-vial shrink-0 text-[9px]"></i><span class="truncate">{{method}}</span>
                                            </span>
                                        }
                                        @if ((std.derivedMethodLabels || []).length > 2) {
-                                           <span class="inline-flex items-center rounded-full border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-900/15 px-2 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300" [title]="(std.derivedMethodLabels || []).slice(2).join(', ')">+{{(std.derivedMethodLabels || []).length - 2}}</span>
+                                           <span class="inline-flex items-center rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/50 dark:bg-fuchsia-900/15 px-2 py-1 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300" [title]="(std.derivedMethodLabels || []).slice(2).join(', ')">+{{(std.derivedMethodLabels || []).length - 2}}</span>
                                        }
                                        @for (device of (std.derivedDeviceCodes || []).slice(0, 2); track device) {
                                            <span class="inline-flex max-w-[100px] items-center gap-1 rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50 dark:bg-fuchsia-900/20 px-2 py-1 text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300" [title]="device">
@@ -72,25 +72,25 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                            <span class="inline-flex items-center rounded-full border border-fuchsia-100 dark:border-fuchsia-800/40 bg-fuchsia-50/70 dark:bg-fuchsia-900/15 px-2 py-1 text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300" [title]="(std.derivedDeviceCodes || []).slice(2).join(', ')">+{{(std.derivedDeviceCodes || []).length - 2}}</span>
                                        }
                                    </div>
-                                   <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-indigo-600 dark:accent-indigo-500 cursor-pointer shrink-0 mt-0.5">
+                                   <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-fuchsia-600 dark:accent-fuchsia-500 cursor-pointer shrink-0 mt-0.5">
                                </div>
 
                                <!-- Identity -->
-                               <div class="mb-4 cursor-pointer" (click)="navigateToDetail.emit(std)">
-                                   <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition break-words">{{std.name}}</h3>
+                               <button type="button" class="mb-4 w-full cursor-pointer text-left group/identity" (click)="navigateToDetail.emit(std)">
+                                   <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base leading-snug mb-1 group-hover/identity:text-fuchsia-600 dark:group-hover/identity:text-fuchsia-400 transition break-words">{{std.name}}</h3>
                                    @if(std.chemical_name) { <p class="text-xs text-slate-500 dark:text-slate-400 italic font-medium break-words"><span class="font-bold mr-1 text-slate-400">Synonyms:</span>{{std.chemical_name}}</p> }
-                               </div>
+                               </button>
 
                                <!-- Data Grid (Click to copy) -->
                                <div class="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 mb-4 text-[11px]">
-                                   <div class="bg-white dark:bg-slate-800 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.lot_number || '', event: $event})" title="Copy Lot">
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.lot_number || '', event: $event})" [attr.aria-label]="'Sao chép Lot ' + (std.lot_number || 'trống')" title="Copy Lot">
                                        <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lot <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
                                        <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.lot_number || '-'}}</div>
-                                   </div>
-                                   <div class="bg-white dark:bg-slate-800 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.product_code || '', event: $event})" title="Copy Code">
+                                   </button>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.product_code || '', event: $event})" [attr.aria-label]="'Sao chép Code ' + (std.product_code || 'trống')" title="Copy Code">
                                        <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Code <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
                                        <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.product_code || '-'}}</div>
-                                   </div>
+                                   </button>
                                    <div class="bg-white dark:bg-slate-800 p-2">
                                        <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">Mfg</div>
                                        <div class="font-bold text-slate-700 dark:text-slate-300 truncate" [title]="std.manufacturer">{{std.manufacturer || '-'}}</div>
@@ -105,10 +105,10 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                <div class="mt-auto">
                                    <div class="flex justify-between items-end mb-1">
                                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tồn kho</span>
-                                       <span class="font-black text-indigo-600 dark:text-indigo-400 text-lg leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400 dark:text-slate-500">{{std.unit}}</small></span>
+                                       <span class="font-black text-fuchsia-600 dark:text-fuchsia-400 text-lg leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400 dark:text-slate-500">{{std.unit}}</small></span>
                                    </div>
                                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden mb-3">
-                                       <div class="bg-indigo-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
+                                       <div class="bg-fuchsia-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
                                    </div>
                                    
                                    <!-- Storage Badges -->
@@ -169,7 +169,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Gán
                                                </button>
                                            } @else if(canRequestStandards()) {
-                                               <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: false})" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Mượn chuẩn này">
+                                               <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: false})" class="w-auto px-3 h-8 rounded-lg bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-md shadow-fuchsia-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Mượn chuẩn này">
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Mượn
                                                </button>
                                            }

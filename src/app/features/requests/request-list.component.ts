@@ -11,28 +11,22 @@ import { PrintQueueComponent } from './print-queue.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { PrintQueueService } from '../../core/services/print-queue.service';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative">
-        <!-- Header Card -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
-                    <i class="fa-solid fa-list-check text-base"></i>
-                </div>
-                <div>
-                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản Lý Yêu Cầu</h2>
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Phê duyệt yêu cầu và in phiếu pha chế.</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto max-w-full scrollbar-none shrink-0 self-stretch sm:self-start">
+        <app-page-header
+            class="mb-4 shrink-0"
+            title="Quản lý yêu cầu"
+            subtitle="Phê duyệt yêu cầu, theo dõi lịch sử và quản lý hàng đợi in."
+            icon="fa-list-check">
+          <div pageHeaderActions class="flex max-w-full items-center overflow-x-auto rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
                <button (click)="setCurrentTab('pending')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'pending' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
@@ -48,12 +42,12 @@ import { Router } from '@angular/router';
 
                <button (click)="setCurrentTab('printing')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'printing' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
+                       [class]="currentTab() === 'printing' ? 'bg-white dark:bg-slate-700 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-print"></i> Hàng đợi In
-                   @if(printQueue.printableLogs().length > 0) { <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 rounded-md text-[10px]">{{printQueue.printableLogs().length}}</span> }
+                   @if(printQueue.printableLogs().length > 0) { <span class="bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 px-1.5 rounded-md text-[10px]">{{printQueue.printableLogs().length}}</span> }
                </button>
-            </div>
-        </div>
+          </div>
+        </app-page-header>
 
         <!-- DATE FILTER (Only for History Tab) -->
         @if (currentTab() === 'approved') {
@@ -217,7 +211,7 @@ import { Router } from '@angular/router';
                                     }
                                 </div>
                             } @empty {
-                                <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
+                                <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 border-dashed">
                                     <div class="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-500">
                                         <i class="fa-solid fa-inbox text-3xl"></i>
                                     </div>
@@ -239,7 +233,7 @@ import { Router } from '@angular/router';
                 <div class="absolute inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-md transition-opacity duration-300" (click)="closeRevokeModal()"></div>
                 
                 <!-- Modal Content -->
-                <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg border border-slate-100 dark:border-slate-700/80 shadow-2xl relative z-10 overflow-hidden flex flex-col scale-in transform transition-all duration-300 max-h-[90vh]">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg border border-slate-100 dark:border-slate-700/80 shadow-2xl relative z-10 overflow-hidden flex flex-col scale-in transform transition-all duration-300 max-h-[90vh]">
                     <!-- Top subtle accent bar -->
                     <div class="h-1.5 w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500"></div>
 
@@ -264,7 +258,7 @@ import { Router } from '@angular/router';
                         <div class="space-y-4">
                             <!-- Option A: Đưa về chờ duyệt -->
                             <button (click)="confirmRevoke('pending')" 
-                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-blue-950/20 dark:hover:to-indigo-950/20 border border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition group flex gap-4">
+                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-blue-50/50 hover:to-fuchsia-50/50 dark:hover:from-blue-950/20 dark:hover:to-fuchsia-950/20 border border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition group flex gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>

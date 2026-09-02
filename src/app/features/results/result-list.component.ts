@@ -57,7 +57,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                       : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
               Tất cả
               @if(filteredCount('all') > 0) {
-                <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('all')}}</span>
+                <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('all')}}</span>
               }
             </button>
             <button (click)="setStatusFilter('pending')"
@@ -67,17 +67,17 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                       : 'text-slate-455 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
               Chờ nhập
               @if(filteredCount('pending') > 0) {
-                <span class="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('pending')}}</span>
+                <span class="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('pending')}}</span>
               }
             </button>
             <button (click)="setStatusFilter('draft')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'draft'
-                      ? 'bg-indigo-50 dark:bg-indigo-955/20 text-indigo-700 dark:text-indigo-400 shadow-sm border border-indigo-100/60 dark:border-indigo-900/20'
-                      : 'text-slate-455 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'">
+                      ? 'bg-fuchsia-50 dark:bg-fuchsia-955/20 text-fuchsia-700 dark:text-fuchsia-400 shadow-sm border border-fuchsia-100/60 dark:border-fuchsia-900/20'
+                      : 'text-slate-455 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400'">
               Đang nháp
               @if(filteredCount('draft') > 0) {
-                <span class="bg-indigo-100 dark:bg-indigo-955/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('draft')}}</span>
+                <span class="bg-fuchsia-100 dark:bg-fuchsia-955/40 text-fuchsia-700 dark:text-fuchsia-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('draft')}}</span>
               }
             </button>
             <button (click)="setStatusFilter('completed')"
@@ -87,7 +87,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                       : 'text-slate-455 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
               Hoàn thành
               @if(filteredCount('completed') > 0) {
-                <span class="bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('completed')}}</span>
+                <span class="bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('completed')}}</span>
               }
             </button>
           </div>
@@ -108,7 +108,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ allApprovedRuns().length }}</div>
-              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ hoạt động</div>
+              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ hoạt động</div>
             </div>
           </button>
 
@@ -123,7 +123,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black leading-none tabular-nums" [class.text-amber-500]="pendingCount() > 0" [class.text-slate-800]="pendingCount() === 0" [class.dark:text-slate-100]="pendingCount() === 0">{{ pendingCount() }}</div>
-              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập</div>
+              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập</div>
             </div>
           </button>
 
@@ -139,7 +139,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <div class="text-left flex-1">
               <div class="flex items-baseline gap-1.5">
                 <span class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ averageCompletion() }}%</span>
-                <span class="text-[9px] font-bold text-emerald-500">Hoàn thành</span>
+                <span class="text-[10px] font-bold text-emerald-500">Hoàn thành</span>
               </div>
               <div class="w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden">
                 <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
@@ -149,17 +149,17 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
           <!-- SOP Distribution chips -->
           <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm min-w-[200px]">
-            <div class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Phân bổ phương pháp SOP</div>
+            <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Phân bổ phương pháp SOP</div>
             <div class="flex items-center gap-1.5 flex-wrap">
               @for (item of sopDistribution(); track item.id) {
-                <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-150 hover:scale-105 active:scale-95 {{ item.textClass }} {{ item.bgClass }}"
+                <button class="min-h-9 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-150 hover:scale-105 active:scale-95 {{ item.textClass }} {{ item.bgClass }}"
                         (click)="toggleSopFilter(item.id)"
                         [class.ring-2]="selectedSopId() === item.id"
-                        [class.ring-violet-500]="selectedSopId() === item.id">
+                        [class.ring-fuchsia-500]="selectedSopId() === item.id">
                   {{ item.name }}: <span class="font-black">{{ item.count }}</span>
                 </button>
               } @empty {
-                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Chưa có mẻ chạy</span>
+                <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Chưa có mẻ chạy</span>
               }
             </div>
           </div>
@@ -182,8 +182,8 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                      placeholder="Tìm theo Mã mẻ, SOP, Mã số mẫu, Analyst..."
                      class="w-full pl-8 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-400 dark:text-slate-200 font-semibold transition placeholder:text-slate-350 dark:placeholder:text-slate-600">
               @if (searchText()) {
-                <button (click)="clearSearch()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
-                  <i class="fa-solid fa-circle-xmark text-xs"></i>
+                <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm kết quả" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                  <i class="fa-solid fa-circle-xmark text-xs" aria-hidden="true"></i>
                 </button>
               }
             </div>
@@ -193,12 +193,12 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <div class="flex bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl shrink-0">
                 <button (click)="viewMode.set('grid')"
                         [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
-                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
+                        class="min-h-9 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150">
                   <i class="fa-solid fa-table-cells"></i> Lưới
                 </button>
                 <button (click)="viewMode.set('table')"
                         [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
-                        class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
+                        class="min-h-9 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150">
                   <i class="fa-solid fa-list"></i> Bảng
                 </button>
               </div>
@@ -345,7 +345,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                         <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide border">
                           <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
                             'bg-emerald-500': runStatusMap()[run.id] === 'completed',
-                            'bg-indigo-500': runStatusMap()[run.id] === 'draft',
+                            'bg-fuchsia-500': runStatusMap()[run.id] === 'draft',
                             'bg-amber-500': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
                           }"></span>
                           {{ getStatusText(run.id) }}
@@ -511,7 +511,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                           <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide border">
                             <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
                               'bg-emerald-500': runStatusMap()[run.id] === 'completed',
-                              'bg-indigo-500': runStatusMap()[run.id] === 'draft',
+                              'bg-fuchsia-500': runStatusMap()[run.id] === 'draft',
                               'bg-amber-500': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
                             }"></span>
                             {{ getStatusText(run.id) }}
@@ -559,9 +559,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                 / {{ displayedRuns().length }} mẻ
               </div>
               <div class="flex items-center gap-1.5">
-                <button (click)="previousPage()"
+                <button type="button" (click)="previousPage()" aria-label="Trang trước"
                         [disabled]="activePage() === 1"
-                        class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
+                        class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
                   <i class="fa-solid fa-chevron-left text-[10px]"></i>
                 </button>
                 @for (page of visiblePageNumbers(); track page) {
@@ -573,9 +573,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                     {{ page }}
                   </button>
                 }
-                <button (click)="nextPage()"
+                <button type="button" (click)="nextPage()" aria-label="Trang sau"
                         [disabled]="activePage() === totalPages()"
-                        class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
+                        class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
                   <i class="fa-solid fa-chevron-right text-[10px]"></i>
                 </button>
               </div>
@@ -867,7 +867,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     // Aesthetic dynamic color palette
     const colorPalette = [
       { bg: 'bg-violet-50/70 dark:bg-violet-950/20', text: 'text-violet-650 dark:text-violet-400 border-violet-200/40 dark:border-violet-900/30', bar: 'bg-violet-500' },
-      { bg: 'bg-indigo-50/70 dark:bg-indigo-950/20', text: 'text-indigo-650 dark:text-indigo-400 border-indigo-200/40 dark:border-indigo-900/30', bar: 'bg-indigo-500' },
+      { bg: 'bg-fuchsia-50/70 dark:bg-fuchsia-950/20', text: 'text-fuchsia-650 dark:text-fuchsia-400 border-fuchsia-200/40 dark:border-fuchsia-900/30', bar: 'bg-fuchsia-500' },
       { bg: 'bg-pink-50/70 dark:bg-pink-950/20', text: 'text-pink-600 dark:text-pink-400 border-pink-200/40 dark:border-pink-900/30', bar: 'bg-pink-500' },
       { bg: 'bg-cyan-50/70 dark:bg-cyan-950/20', text: 'text-cyan-650 dark:text-cyan-400 border-cyan-200/40 dark:border-cyan-900/30', bar: 'bg-cyan-500' },
       { bg: 'bg-amber-50/70 dark:bg-amber-950/20', text: 'text-amber-650 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30', bar: 'bg-amber-500' },
@@ -933,9 +933,9 @@ export class ResultListComponent implements OnInit, OnDestroy {
       return 'from-fuchsia-500 to-pink-500';
     }
     if (sopId === 'fipronil-chlorpyrifos') {
-      return 'from-indigo-500 to-sky-500';
+      return 'from-fuchsia-500 to-sky-500';
     }
-    return 'from-violet-500 to-indigo-500';
+    return 'from-violet-500 to-fuchsia-500';
   }
 
   getAnalystInitials(user: string | undefined): string {
@@ -948,7 +948,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   getAnalystAvatarClass(user: string | undefined): string {
     if (!user) return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
     const colors = [
-      'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30',
+      'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-900/30',
       'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-450 dark:border-emerald-900/30',
       'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30',
       'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/40 dark:text-rose-450 dark:border-rose-900/30',
@@ -1278,7 +1278,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       case 'completed': 
         return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30';
       case 'draft': 
-        return 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30';
+        return 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-900/30';
       default: 
         return 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30';
     }

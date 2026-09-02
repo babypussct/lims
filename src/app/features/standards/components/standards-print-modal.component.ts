@@ -49,8 +49,8 @@ interface RollPreset {
                                      [class.bg-white]="printLayoutMode() === 'roll'" 
                                      [class.dark:bg-slate-700]="printLayoutMode() === 'roll'" 
                                      [class.shadow-sm]="printLayoutMode() === 'roll'" 
-                                     [class.text-indigo-650]="printLayoutMode() === 'roll'"
-                                     [class.dark:text-indigo-400]="printLayoutMode() === 'roll'"
+                                     [class.text-fuchsia-650]="printLayoutMode() === 'roll'"
+                                     [class.dark:text-fuchsia-400]="printLayoutMode() === 'roll'"
                                      class="flex-1 py-2 text-center text-xs font-black rounded-xl transition-all duration-300 text-slate-600 dark:text-slate-400 hover:text-slate-800">
                                  <i class="fa-solid fa-scroll mr-1.5"></i> In Cuộn (Brother QL)
                              </button>
@@ -58,8 +58,8 @@ interface RollPreset {
                                      [class.bg-white]="printLayoutMode() === 'grid'" 
                                      [class.dark:bg-slate-700]="printLayoutMode() === 'grid'" 
                                      [class.shadow-sm]="printLayoutMode() === 'grid'" 
-                                     [class.text-indigo-650]="printLayoutMode() === 'grid'"
-                                     [class.dark:text-indigo-400]="printLayoutMode() === 'grid'"
+                                     [class.text-fuchsia-650]="printLayoutMode() === 'grid'"
+                                     [class.dark:text-fuchsia-400]="printLayoutMode() === 'grid'"
                                      class="flex-1 py-2 text-center text-xs font-black rounded-xl transition-all duration-300 text-slate-600 dark:text-slate-400 hover:text-slate-800">
                                  <i class="fa-solid fa-grip mr-1.5"></i> In Tấm A4 Decal
                              </button>
@@ -70,15 +70,15 @@ interface RollPreset {
                              <div>
                                  <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Mẫu hiển thị</label>
                                  <div class="grid grid-cols-3 gap-2">
-                                     <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-transparent': printTemplate() === 'standard', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'standard'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
+                                     <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'standard', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'standard'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
                                          <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Tiêu Chuẩn</div>
                                          <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Thông Tin Cơ Bản</div>
                                      </button>
-                                     <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-transparent': printTemplate() === 'detailed', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'detailed'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
+                                     <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'detailed', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'detailed'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
                                          <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Chi Tiết</div>
                                          <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Đầy Đủ Thông Tin</div>
                                      </button>
-                                     <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-transparent': printTemplate() === 'qr', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'qr'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
+                                     <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'qr', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'qr'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
                                          <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Kèm Mã QR</div>
                                          <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Quét Truy Xuất Nhanh</div>
                                      </button>
@@ -90,7 +90,7 @@ interface RollPreset {
                                  <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Kích thước nhãn</label>
                                  
                                  @if (printLayoutMode() === 'roll') {
-                                     <select [ngModel]="printPaperSize()" (ngModelChange)="onPaperSizeChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition mb-3">
+                                     <select [ngModel]="printPaperSize()" (ngModelChange)="onPaperSizeChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition mb-3">
                                          <option value="62x29_ql800">Brother QL-800 DK-22205 (62 x 29 mm - Khuyên dùng)</option>
                                          <option value="90x29_ql800">Brother QL-800 DK-11201 (90 x 29 mm dọc)</option>
                                          <option value="62x62_ql800">Brother QL-800 DK-11209 (62 x 62 mm vuông)</option>
@@ -105,15 +105,15 @@ interface RollPreset {
                                          <div class="grid grid-cols-3 gap-3 animate-fade-in">
                                              <div>
                                                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rộng (mm)</label>
-                                                 <input type="number" [ngModel]="printWidth()" (ngModelChange)="printWidth.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                                                 <input type="number" [ngModel]="printWidth()" (ngModelChange)="printWidth.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50">
                                              </div>
                                              <div>
                                                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cao (mm)</label>
-                                                 <input type="number" [ngModel]="printHeight()" (ngModelChange)="printHeight.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                                                 <input type="number" [ngModel]="printHeight()" (ngModelChange)="printHeight.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50">
                                              </div>
                                              <div>
                                                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Font (pt)</label>
-                                                 <input type="number" [ngModel]="printFontSize()" (ngModelChange)="printFontSize.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                                                 <input type="number" [ngModel]="printFontSize()" (ngModelChange)="printFontSize.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50">
                                              </div>
                                          </div>
                                      }
@@ -124,8 +124,8 @@ interface RollPreset {
                                                  [class.bg-white]="a4PaperType() === 'fullsheet'"
                                                  [class.dark:bg-slate-700]="a4PaperType() === 'fullsheet'"
                                                  [class.shadow-sm]="a4PaperType() === 'fullsheet'"
-                                                 [class.text-indigo-600]="a4PaperType() === 'fullsheet'"
-                                                 [class.dark:text-indigo-400]="a4PaperType() === 'fullsheet'"
+                                                 [class.text-fuchsia-600]="a4PaperType() === 'fullsheet'"
+                                                 [class.dark:text-fuchsia-400]="a4PaperType() === 'fullsheet'"
                                                  class="flex-1 py-1.5 text-center text-[10px] font-extrabold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
                                              Nguyên Tấm Tự Cắt (Khuyên Dùng)
                                          </button>
@@ -133,8 +133,8 @@ interface RollPreset {
                                                  [class.bg-white]="a4PaperType() === 'precut'"
                                                  [class.dark:bg-slate-700]="a4PaperType() === 'precut'"
                                                  [class.shadow-sm]="a4PaperType() === 'precut'"
-                                                 [class.text-indigo-600]="a4PaperType() === 'precut'"
-                                                 [class.dark:text-indigo-400]="a4PaperType() === 'precut'"
+                                                 [class.text-fuchsia-600]="a4PaperType() === 'precut'"
+                                                 [class.dark:text-fuchsia-400]="a4PaperType() === 'precut'"
                                                  class="flex-1 py-1.5 text-center text-[10px] font-extrabold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
                                              Chia Ô Sẵn (Tomy)
                                          </button>
@@ -142,7 +142,7 @@ interface RollPreset {
                                      
                                      @if (a4PaperType() === 'fullsheet') {
                                          <!-- Full sheet configurations -->
-                                         <select [ngModel]="fullSheetPreset()" (ngModelChange)="onFullSheetPresetChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition mb-3">
+                                         <select [ngModel]="fullSheetPreset()" (ngModelChange)="onFullSheetPresetChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition mb-3">
                                              <option value="medium">Lưới thông dụng 4x8 (32 nhãn - ~46x33 mm)</option>
                                              <option value="large">Lưới nhãn lớn 3x6 (18 nhãn - ~62x45 mm)</option>
                                              <option value="small">Lưới nhãn phụ 5x12 (60 nhãn - ~36x21 mm)</option>
@@ -153,22 +153,22 @@ interface RollPreset {
                                              <div class="grid grid-cols-2 gap-3 mb-3 animate-fade-in">
                                                  <div>
                                                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Số cột (Cols)</label>
-                                                     <input type="number" [ngModel]="fullSheetCols()" (ngModelChange)="fullSheetCols.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                                                     <input type="number" [ngModel]="fullSheetCols()" (ngModelChange)="fullSheetCols.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50">
                                                  </div>
                                                  <div>
                                                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Số dòng (Rows)</label>
-                                                     <input type="number" [ngModel]="fullSheetRows()" (ngModelChange)="fullSheetRows.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                                                     <input type="number" [ngModel]="fullSheetRows()" (ngModelChange)="fullSheetRows.set($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50">
                                                  </div>
                                              </div>
                                          }
                                          
                                          <!-- Crop mark checkbox -->
                                          <label class="flex items-center gap-2 cursor-pointer group mb-3">
-                                             <input type="checkbox" [ngModel]="printShowCropMarks()" (ngModelChange)="printShowCropMarks.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                             <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Hiển thị đường viền hướng dẫn cắt (Crop Marks)</span>
+                                             <input type="checkbox" [ngModel]="printShowCropMarks()" (ngModelChange)="printShowCropMarks.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                             <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Hiển thị đường viền hướng dẫn cắt (Crop Marks)</span>
                                          </label>
                                      } @else {
-                                         <select [ngModel]="gridPreset()" (ngModelChange)="onGridPresetChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
+                                         <select [ngModel]="gridPreset()" (ngModelChange)="onGridPresetChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition">
                                              <option value="tomy_145">Tomy 145 (65 nhãn - 5x13 | 38.1 x 21.2 mm - Phổ biến)</option>
                                              <option value="tomy_138">Tomy 138 (100 nhãn - 5x20 | 40 x 14 mm)</option>
                                              <option value="tomy_135">Tomy 135 (24 nhãn - 3x8 | 47 x 22 mm)</option>
@@ -181,19 +181,19 @@ interface RollPreset {
                                          <div>
                                              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bắt đầu từ ô nhãn số</label>
                                              <div class="flex items-center gap-1.5">
-                                                 <button (click)="gridStartIndex.set(Math.max(1, gridStartIndex() - 1))" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-minus"></i></button>
+                                                 <button type="button" (click)="gridStartIndex.set(Math.max(1, gridStartIndex() - 1))" aria-label="Giảm vị trí ô bắt đầu" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-minus"></i></button>
                                                  <input type="number" [ngModel]="gridStartIndex()" (ngModelChange)="onStartIndexInputChange($event)" min="1" [max]="getGridPreset().rows * getGridPreset().cols" class="w-12 text-center bg-transparent border-none font-bold text-xs p-0 text-slate-800 dark:text-slate-100 focus:ring-0">
-                                                 <button (click)="gridStartIndex.set(Math.min(getGridPreset().rows * getGridPreset().cols, gridStartIndex() + 1))" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-655 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-plus"></i></button>
+                                                 <button type="button" (click)="gridStartIndex.set(Math.min(getGridPreset().rows * getGridPreset().cols, gridStartIndex() + 1))" aria-label="Tăng vị trí ô bắt đầu" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-655 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-plus"></i></button>
                                              </div>
                                          </div>
                                          
                                          <!-- Estimated A4 sheets info badge -->
-                                         <div class="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 text-[10px] text-indigo-700 dark:text-indigo-300 flex flex-col justify-center animate-fade-in">
+                                         <div class="p-3 bg-fuchsia-50/50 dark:bg-fuchsia-950/20 rounded-xl border border-fuchsia-100/50 dark:border-fuchsia-900/30 text-[10px] text-fuchsia-700 dark:text-fuchsia-300 flex flex-col justify-center animate-fade-in">
                                              <div class="flex justify-between mb-0.5">
                                                  <span>Vị trí bắt đầu:</span>
-                                                 <span class="font-extrabold text-indigo-650 dark:text-indigo-400">Ô số {{ gridStartIndex() }}</span>
+                                                 <span class="font-extrabold text-fuchsia-650 dark:text-fuchsia-400">Ô số {{ gridStartIndex() }}</span>
                                              </div>
-                                             <div class="flex justify-between border-t border-indigo-100/55 dark:border-indigo-900/30 pt-1 font-bold">
+                                             <div class="flex justify-between border-t border-fuchsia-100/55 dark:border-fuchsia-900/30 pt-1 font-bold">
                                                  <span>Dự kiến cần dùng:</span>
                                                  <span>{{ getRequiredA4Sheets() }} trang A4</span>
                                              </div>
@@ -207,36 +207,36 @@ interface RollPreset {
                                  <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5">Thông tin hiển thị trên nhãn</label>
                                  <div class="grid grid-cols-2 gap-y-2.5 gap-x-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/50 border border-slate-100 dark:border-slate-800/80">
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeName()" (ngModelChange)="printIncludeName.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Tên chuẩn</span>
+                                         <input type="checkbox" [ngModel]="printIncludeName()" (ngModelChange)="printIncludeName.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Tên chuẩn</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeLot()" (ngModelChange)="printIncludeLot.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Số Lot</span>
+                                         <input type="checkbox" [ngModel]="printIncludeLot()" (ngModelChange)="printIncludeLot.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Số Lot</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludePurity()" (ngModelChange)="printIncludePurity.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Độ tinh khiết</span>
+                                         <input type="checkbox" [ngModel]="printIncludePurity()" (ngModelChange)="printIncludePurity.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Độ tinh khiết</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeOpened()" (ngModelChange)="printIncludeOpened.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Ngày mở nắp</span>
+                                         <input type="checkbox" [ngModel]="printIncludeOpened()" (ngModelChange)="printIncludeOpened.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Ngày mở nắp</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeExpiry()" (ngModelChange)="printIncludeExpiry.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Hạn sử dụng</span>
+                                         <input type="checkbox" [ngModel]="printIncludeExpiry()" (ngModelChange)="printIncludeExpiry.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Hạn sử dụng</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeStorage()" (ngModelChange)="printIncludeStorage.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Đk bảo quản</span>
+                                         <input type="checkbox" [ngModel]="printIncludeStorage()" (ngModelChange)="printIncludeStorage.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Đk bảo quản</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeManufacturer()" (ngModelChange)="printIncludeManufacturer.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Hãng sản xuất</span>
+                                         <input type="checkbox" [ngModel]="printIncludeManufacturer()" (ngModelChange)="printIncludeManufacturer.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Hãng sản xuất</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
-                                         <input type="checkbox" [ngModel]="printIncludeCas()" (ngModelChange)="printIncludeCas.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-350 dark:border-slate-700 focus:ring-indigo-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Chỉ số CAS</span>
+                                         <input type="checkbox" [ngModel]="printIncludeCas()" (ngModelChange)="printIncludeCas.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Chỉ số CAS</span>
                                      </label>
                                  </div>
                                  
@@ -268,7 +268,7 @@ interface RollPreset {
                  <!-- Right: Preview -->
                  <div class="relative flex min-h-[500px] w-full flex-col items-center justify-center bg-slate-50 p-6 dark:bg-slate-900/50 lg:w-1/2 lg:p-8" id="print-preview-container">
                      <div class="absolute top-4 left-4 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                         <i class="fa-solid fa-eye animate-pulse text-indigo-500"></i> Bản Xem Trước Trực Quan
+                         <i class="fa-solid fa-eye animate-pulse text-fuchsia-500"></i> Bản Xem Trước Trực Quan
                      </div>
                      
                      @if (printLayoutMode() === 'roll') {
@@ -285,7 +285,7 @@ interface RollPreset {
                          <div class="w-full flex flex-col items-center gap-2 animate-fade-in">
                              <!-- Single Label Zoomed (so user can read the text) -->
                              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider self-start flex items-center gap-1.5">
-                                 <i class="fa-solid fa-magnifying-glass-plus text-indigo-500"></i> Độ nét thực tế nhãn đơn mẫu
+                                 <i class="fa-solid fa-magnifying-glass-plus text-fuchsia-500"></i> Độ nét thực tế nhãn đơn mẫu
                              </div>
                              
                              <div class="bg-white shadow-xl border border-slate-350 overflow-hidden relative"
@@ -298,8 +298,8 @@ interface RollPreset {
                              
                              <!-- A4 Layout Sheet -->
                              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider self-start flex items-center gap-1.5 mt-3 w-full justify-between">
-                                 <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-lines text-indigo-500"></i> Mô phỏng tấm A4 Decal</span>
-                                 <span class="text-indigo-500 dark:text-indigo-400 font-bold normal-case text-[9px] cursor-pointer hover:underline">(Click để đổi điểm bắt đầu)</span>
+                                 <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-lines text-fuchsia-500"></i> Mô phỏng tấm A4 Decal</span>
+                                 <span class="text-fuchsia-500 dark:text-fuchsia-400 font-bold normal-case text-[9px] cursor-pointer hover:underline">(Click để đổi điểm bắt đầu)</span>
                              </div>
                              
                              <!-- Scaled A4 preview container -->
@@ -321,17 +321,17 @@ interface RollPreset {
                                            @for (slotIndex of getGridSlots(); track slotIndex) {
                                                @if (slotIndex < gridStartIndex()) {
                                                    <!-- Skipped cell -->
-                                                   <div (click)="gridStartIndex.set(slotIndex)"
+                                                   <button type="button" (click)="gridStartIndex.set(slotIndex)" [attr.aria-label]="'Chọn ô ' + slotIndex + ' làm ô bắt đầu'"
                                                         title="Click để chọn làm ô bắt đầu"
-                                                        class="border border-dashed border-slate-250 bg-slate-100 flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-300 transition-all"
+                                                        class="border border-dashed border-slate-250 bg-slate-100 flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-fuchsia-50/50 hover:border-fuchsia-300 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
-                                                   </div>
+                                                   </button>
                                                } @else if (slotIndex >= gridStartIndex() && slotIndex < gridStartIndex() + (standardsToPrint().length * printCopies())) {
                                                    <!-- Printed label cell -->
-                                                   <div (click)="gridStartIndex.set(slotIndex)"
+                                                   <button type="button" (click)="gridStartIndex.set(slotIndex)" [attr.aria-label]="'Chọn ô ' + slotIndex + ' làm ô bắt đầu'"
                                                         title="Đang chọn in ở đây"
-                                                        class="bg-indigo-50 border border-indigo-300 text-indigo-700 font-semibold cursor-pointer hover:bg-indigo-100 transition-all relative flex flex-col justify-between overflow-hidden"
+                                                        class="bg-fuchsia-50 border border-fuchsia-300 text-fuchsia-700 font-semibold cursor-pointer hover:bg-fuchsia-100 transition-all relative flex flex-col justify-between overflow-hidden"
                                                         style="box-sizing: border-box; padding: 1mm; line-height: 1.15;">
                                                         <div style="font-size: 7.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1e1b4b;">
                                                             {{ getStandardForSlot(slotIndex)?.name }}
@@ -340,18 +340,18 @@ interface RollPreset {
                                                             <span>L: {{ getStandardForSlot(slotIndex)?.lot_number || 'N/A' }}</span>
                                                             <span>E: {{ getStandardForSlot(slotIndex)?.expiry_date ? (getStandardForSlot(slotIndex)?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span>
                                                         </div>
-                                                        <div class="absolute right-0.5 bottom-0.5 bg-indigo-650 text-white rounded-[2px] text-[5px] font-bold px-0.5 flex items-center justify-center" style="transform: scale(0.85);">
+                                                        <div class="absolute right-0.5 bottom-0.5 bg-fuchsia-650 text-white rounded-[2px] text-[5px] font-bold px-0.5 flex items-center justify-center" style="transform: scale(0.85);">
                                                             {{ slotIndex }}
                                                         </div>
-                                                   </div>
+                                                   </button>
                                                } @else {
                                                    <!-- Unused label cell -->
-                                                   <div (click)="gridStartIndex.set(slotIndex)"
+                                                   <button type="button" (click)="gridStartIndex.set(slotIndex)" [attr.aria-label]="'Chọn ô ' + slotIndex + ' làm ô bắt đầu'"
                                                         title="Click để chọn làm ô bắt đầu"
-                                                        class="border border-dashed border-slate-200 bg-white flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                                                        class="border border-dashed border-slate-200 bg-white flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-fuchsia-50 hover:border-fuchsia-300 hover:text-fuchsia-600 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
-                                                   </div>
+                                                   </button>
                                                }
                                            }
                                       </div>
@@ -367,7 +367,7 @@ interface RollPreset {
              </div>
              <div modalFooter class="flex w-full items-center justify-between gap-3">
                  <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-                 <button (click)="printLabel()" class="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-violet-500 text-white font-extrabold text-xs rounded-xl hover:shadow-lg hover:opacity-95 shadow-md shadow-indigo-150 dark:shadow-none transition flex items-center gap-2">
+                 <button (click)="printLabel()" class="px-8 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
                      <i class="fa-solid fa-print"></i> Tiến hành in nhãn ({{ standardsToPrint().length * printCopies() }})
                  </button>
              </div>

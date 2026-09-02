@@ -39,7 +39,7 @@ import { formatNum } from '../../../shared/utils/utils';
                                     <td class="px-6 py-4">
                                         <div class="font-bold text-slate-700 dark:text-slate-300 text-xs">{{ log.user }}</div>
                                         @if(log.isBackfill) {
-                                            <div class="mt-1 text-[9px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400" [title]="'Nhập bởi ' + (log.backfilledByName || 'Quản lý')">
+                                            <div class="mt-1 text-[9px] font-black uppercase tracking-wider text-fuchsia-600 dark:text-fuchsia-400" [title]="'Nhập bởi ' + (log.backfilledByName || 'Quản lý')">
                                                 <i class="fa-solid fa-clock-rotate-left mr-1"></i>Nhập bù
                                             </div>
                                         }
@@ -57,7 +57,7 @@ import { formatNum } from '../../../shared/utils/utils';
                   </tbody></table>
                   @if(hasMoreHistory()) {
                     <div class="p-4 text-center border-t border-slate-100 dark:border-slate-800">
-                      <button (click)="loadMoreHistoryEvent.emit()" [disabled]="loadingMoreHistory()" class="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-50 transition">
+                      <button (click)="loadMoreHistoryEvent.emit()" [disabled]="loadingMoreHistory()" class="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 hover:border-fuchsia-300 disabled:opacity-50 transition">
                         @if(loadingMoreHistory()) { <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải... } @else { Tải thêm lịch sử }
                       </button>
                     </div>

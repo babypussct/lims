@@ -17,7 +17,7 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
     <div class="space-y-5 fade-in">
       <!-- Profile Hero Banner -->
       <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none">
-        <div class="h-28 bg-[linear-gradient(135deg,#4f46e5,#7c3aed,#ec4899)] opacity-90 relative">
+        <div class="h-28 bg-gradient-soft opacity-90 relative">
           <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_70%)]"></div>
         </div>
         <div class="flex flex-col gap-4 px-6 pb-6 sm:flex-row sm:items-end">
@@ -30,8 +30,8 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
           <div class="min-w-0 flex-1 sm:pb-1">
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="truncate text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">{{ auth.currentUser()?.displayName }}</h1>
-              <span class="inline-flex rounded-xl bg-indigo-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700 ring-1 ring-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
-                <i class="fa-solid fa-award mr-1.5 self-center text-indigo-500" aria-hidden="true"></i>{{ getUserRoleLabel(auth.currentUser()?.role) }}
+              <span class="inline-flex rounded-xl bg-fuchsia-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-fuchsia-700 ring-1 ring-fuchsia-500/20 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
+                <i class="fa-solid fa-award mr-1.5 self-center text-fuchsia-500" aria-hidden="true"></i>{{ getUserRoleLabel(auth.currentUser()?.role) }}
               </span>
             </div>
             <p class="mt-1 truncate text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -59,7 +59,7 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
           <div class="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-slate-700/60 dark:bg-slate-900/40">
             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Môi trường dữ liệu (App Context)</label>
             <div class="flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 py-1.5">
-              <i class="fa-solid fa-database mr-2 text-indigo-500" aria-hidden="true"></i>{{ fb.APP_ID }}
+              <i class="fa-solid fa-database mr-2 text-fuchsia-500" aria-hidden="true"></i>{{ fb.APP_ID }}
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
             id="account-avatar-style"
             [ngModel]="auth.currentUser()?.avatarStyle || ''"
             (ngModelChange)="saveAvatarStyle($event)"
-            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-indigo-500">
+            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-fuchsia-500 focus:bg-white focus:ring-2 focus:ring-fuchsia-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-fuchsia-500">
             <option value="">Mặc định hệ thống</option>
             <option value="google">📷 Ảnh Google cá nhân</option>
             <option value="bottts-neutral">🤖 Robot (Bottts)</option>
