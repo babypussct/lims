@@ -132,7 +132,7 @@ interface VisitedPage {
             <button
               type="button"
               (click)="startScan()"
-              class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white font-bold text-sm shadow-md active:scale-95 transition-transform">
+              class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-soft text-white font-bold text-sm shadow-soft-md active:scale-95 transition-transform">
               <i class="fa-solid fa-qrcode text-lg" aria-hidden="true"></i> Quét Mã
             </button>
             @if (canAccessPath('/results')) {
@@ -173,7 +173,7 @@ interface VisitedPage {
                           [ngClass]="item.isLocked
                             ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-700/50'
                             : (isItemActive(item)
-                              ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-md scale-105 border-transparent'
+                              ? 'bg-gradient-soft text-white shadow-soft-md scale-105 border-transparent'
                               : group.accentClass)">
                           <i class="fa-solid {{ item.icon }}" aria-hidden="true"></i>
                           @if (item.isLocked) {
@@ -206,7 +206,7 @@ interface VisitedPage {
     }
 
     <nav
-      class="fixed bottom-0 left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 shadow-[0_-8px_30px_-6px_rgba(0,0,0,0.1)] dark:shadow-none z-[40] md:hidden pb-safe"
+      class="fixed bottom-0 left-0 w-full rounded-t-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 shadow-soft-xl z-[40] md:hidden pb-safe"
       aria-label="Điều hướng chính trên di động">
 
       <div class="absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none fade-in" aria-hidden="true">
@@ -264,7 +264,7 @@ interface VisitedPage {
           class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform relative">
           <span
             class="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 relative"
-            [class]="showMenu() ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-md scale-105' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
+            [class]="showMenu() ? 'bg-gradient-soft text-white shadow-soft-md scale-105' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
             <i class="fa-solid text-[1.1rem] transition-transform duration-300" [class]="showMenu() ? 'fa-xmark rotate-90' : 'fa-bars'" aria-hidden="true"></i>
             @if (requestsCount() > 0 && !showMenu()) {
               <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>

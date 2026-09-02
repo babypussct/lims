@@ -47,8 +47,7 @@ import { NavigationPanelComponent } from './navigation-panel.component';
           [class.px-3]="!state.focusMode()"
           [class.pt-2]="!state.focusMode()"
           [class.md:px-6]="!state.focusMode()"
-          [class.md:pt-5]="!state.focusMode()"
-          [class.xl:px-8]="!state.focusMode()"
+          [class.md:pt-4]="!state.focusMode()"
           [class.p-0]="state.focusMode()">
 
           @if (state.permissionError()) {

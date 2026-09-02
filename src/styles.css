@@ -15,13 +15,21 @@
   --soft-ui-panel: #ffffff;
   --soft-ui-panel-subtle: #f8f9fa;
   --soft-ui-border: #e9ecef;
-  --soft-ui-text: #344767;
+  --soft-ui-text: #67748e;
   --soft-ui-muted: #67748e;
   --soft-ui-accent: #cb0c9f;
   --soft-ui-accent-strong: #7928ca;
+  --soft-ui-heading: #344767;
+  --soft-ui-table-heading: #8392ab;
+  --soft-ui-control-border: #d2d6da;
+  --soft-ui-row-hover: rgba(248, 249, 250, 0.72);
   --soft-ui-shadow: 0 20px 27px rgba(0, 0, 0, 0.05);
-  --soft-ui-shadow-control: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --soft-ui-shadow-control: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
   --soft-ui-gradient: linear-gradient(310deg, #7928ca 0%, #ff0080 100%);
+  --soft-ui-gradient-info: linear-gradient(310deg, #2152ff 0%, #21d4fd 100%);
+  --soft-ui-gradient-success: linear-gradient(310deg, #17ad37 0%, #98ec2d 100%);
+  --soft-ui-gradient-warning: linear-gradient(310deg, #f53939 0%, #fbcf33 100%);
+  --soft-ui-gradient-dark: linear-gradient(310deg, #141727 0%, #3a416f 100%);
 }
 
 .dark {
@@ -33,6 +41,10 @@
   --soft-ui-muted: #a8b1c5;
   --soft-ui-accent: #e879f9;
   --soft-ui-accent-strong: #f0abfc;
+  --soft-ui-heading: #f8fafc;
+  --soft-ui-table-heading: #a8b1c5;
+  --soft-ui-control-border: #3b435c;
+  --soft-ui-row-hover: rgba(32, 38, 58, 0.68);
   --soft-ui-shadow: 0 20px 27px rgba(0, 0, 0, 0.18);
   --soft-ui-shadow-control: 0 4px 10px rgba(0, 0, 0, 0.16);
 }
@@ -67,6 +79,14 @@
   box-shadow: var(--soft-ui-shadow);
 }
 
+.soft-ui-toolbar-host {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 .soft-ui-button {
   letter-spacing: -0.01em;
   box-shadow: var(--soft-ui-shadow-control);
@@ -96,6 +116,62 @@
   border-radius: 1rem;
   background: var(--soft-ui-panel);
   box-shadow: var(--soft-ui-shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.soft-ui-icon-tile {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 3rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.75rem;
+  color: #fff;
+  background: var(--soft-ui-gradient);
+  box-shadow: 0 8px 18px rgba(121, 40, 202, 0.18);
+}
+
+.soft-ui-icon-tile--info {
+  background: var(--soft-ui-gradient-info);
+  box-shadow: 0 8px 18px rgba(33, 82, 255, 0.18);
+}
+
+.soft-ui-icon-tile--success {
+  background: var(--soft-ui-gradient-success);
+  box-shadow: 0 8px 18px rgba(23, 173, 55, 0.16);
+}
+
+.soft-ui-icon-tile--warning {
+  background: var(--soft-ui-gradient-warning);
+  box-shadow: 0 8px 18px rgba(245, 57, 57, 0.14);
+}
+
+.soft-ui-icon-tile--dark {
+  background: var(--soft-ui-gradient-dark);
+  box-shadow: 0 8px 18px rgba(20, 23, 39, 0.16);
+}
+
+.soft-ui-dashboard-toolbar .soft-ui-toolbar {
+  margin-bottom: 0;
+  padding: 0.25rem 0 0.75rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+.soft-ui-dashboard-toolbar .soft-ui-toolbar > div {
+  gap: 0.75rem;
+}
+
+.soft-ui-dashboard-page .soft-ui-panel,
+.soft-ui-dashboard-page .soft-ui-kpi {
+  border-color: transparent !important;
+}
+
+.soft-ui-dashboard-page .soft-ui-kpi:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 27px rgba(0, 0, 0, 0.07);
 }
 
 .soft-ui-control {
@@ -113,6 +189,102 @@
 
 .soft-ui-app-shell :is(button, a, input, select, textarea) {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Route-wide Soft UI PRO normalization.
+   Feature templates keep ownership of semantic status colors; these rules only
+   normalize neutral surfaces and controls that are repeated across LIMS. */
+.soft-ui-app-shell .app-content-scroll > router-outlet + * {
+  color: var(--soft-ui-text);
+}
+
+.soft-ui-app-shell :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--soft-ui-heading);
+}
+
+.soft-ui-app-shell :where(
+  .bg-white.rounded-xl,
+  .bg-white.rounded-2xl,
+  .bg-white\/95.rounded-xl,
+  .bg-white\/95.rounded-2xl,
+  .bg-white\/90.rounded-xl,
+  .bg-white\/90.rounded-2xl
+) {
+  background-color: var(--soft-ui-panel) !important;
+}
+
+.soft-ui-app-shell :where(
+  .border-slate-200.rounded-xl,
+  .border-slate-200.rounded-2xl,
+  .border-gray-200.rounded-xl,
+  .border-gray-200.rounded-2xl
+) {
+  border-color: var(--soft-ui-border) !important;
+}
+
+.soft-ui-app-shell :where(
+  .shadow-sm.rounded-xl,
+  .shadow-sm.rounded-2xl,
+  .shadow-md.rounded-xl,
+  .shadow-md.rounded-2xl
+) {
+  box-shadow: var(--soft-ui-shadow-control) !important;
+}
+
+.soft-ui-app-shell :where(
+  .shadow-lg.rounded-xl,
+  .shadow-lg.rounded-2xl,
+  .shadow-xl.rounded-xl,
+  .shadow-xl.rounded-2xl,
+  .shadow-2xl.rounded-xl,
+  .shadow-2xl.rounded-2xl
+) {
+  box-shadow: var(--soft-ui-shadow) !important;
+}
+
+.soft-ui-app-shell :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) {
+  border-color: var(--soft-ui-control-border);
+  border-radius: 0.75rem;
+  background-color: var(--soft-ui-panel);
+  color: var(--soft-ui-text);
+  box-shadow: var(--soft-ui-shadow-control);
+}
+
+.soft-ui-app-shell :is(input, textarea)::placeholder {
+  color: var(--soft-ui-table-heading);
+  opacity: 0.78;
+}
+
+.soft-ui-app-shell table {
+  color: var(--soft-ui-text);
+}
+
+.soft-ui-app-shell table thead th {
+  color: var(--soft-ui-table-heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.soft-ui-app-shell table :is(th, td) {
+  border-color: var(--soft-ui-border);
+}
+
+.soft-ui-app-shell table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.soft-ui-app-shell table tbody tr:hover {
+  background: var(--soft-ui-row-hover);
+}
+
+.soft-ui-app-shell :is(label, legend) {
+  color: var(--soft-ui-heading);
+}
+
+.soft-ui-app-shell .custom-scrollbar {
+  scrollbar-color: rgba(131, 146, 171, 0.42) transparent;
 }
 
 /* Centralized Z-Index Utility Classes */

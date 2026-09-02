@@ -1,21 +1,11 @@
-    <div class="pb-20 fade-in font-sans md:pb-4">
+    <div class="soft-ui-dashboard-page pb-20 fade-in font-sans md:pb-4">
         
         <!-- HEADER: Welcome & Scan -->
         <app-page-header
-            class="mb-4 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800"
+            class="mb-3 block md:hidden"
             [title]="'Xin chào, ' + (auth.currentUser()?.displayName || '') + '!'"
-            subtitle="Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng."
-            icon="fa-house">
+            subtitle="Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng.">
             <div pageHeaderActions class="contents">
-                <app-button
-                    variant="secondary"
-                    size="sm"
-                    title="Xem nhật ký cập nhật phiên bản hệ thống"
-                    (click)="changelogService.open()">
-                    <i class="fa-solid fa-sparkles text-amber-500" aria-hidden="true"></i>
-                    <span>Nhật ký {{state.systemVersion()}}</span>
-                </app-button>
-
                 <app-button class="md:hidden" size="sm" (click)="qrService.startScan()">
                     <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                     Quét mã
@@ -24,15 +14,10 @@
         </app-page-header>
 
         <!-- Soft UI-style dashboard controls: global time scope + quick action -->
-        <app-toolbar class="mb-4 block overflow-visible rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800">
-            <div toolbarSearch class="flex min-w-0 items-center gap-2">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
-                    <i class="fa-solid fa-chart-line text-xs" aria-hidden="true"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Tổng quan vận hành</div>
-                    <div class="truncate text-[10px] font-medium text-slate-400 dark:text-slate-500">Phạm vi thời gian áp dụng cho phân tích và xu hướng</div>
-                </div>
+        <app-toolbar class="soft-ui-dashboard-toolbar mb-4 block">
+            <div toolbarSearch class="min-w-0">
+                <h2 class="text-lg font-bold leading-tight text-gray-700 dark:text-white">Tổng quan vận hành</h2>
+                <div class="mt-1 truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">Phạm vi thời gian áp dụng cho phân tích và xu hướng</div>
             </div>
             <div toolbarFilters class="w-full sm:w-auto">
                 <app-date-range-filter
@@ -52,13 +37,13 @@
 
 
         <!-- SECTION 1: KPI CARDS -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+        <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <!-- Card 1: Pending Requests -->
-            <div class="relative h-32">
+            <div class="relative min-h-24">
             <button type="button" (click)="handlePendingRequestsClick()"
                  [disabled]="!auth.canViewSop() && !auth.canViewStandards()"
-                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-fuchsia-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewSop() || auth.canViewStandards()" [class.hover:shadow-md]="auth.canViewSop() || auth.canViewStandards()" [class.hover:border-fuchsia-200]="auth.canViewSop() || auth.canViewStandards()" [class.dark:hover:border-fuchsia-700]="auth.canViewSop() || auth.canViewStandards()">
+                 class="soft-ui-kpi group relative flex min-h-24 w-full items-center overflow-hidden p-4 text-left focus:ring-2 focus:ring-fuchsia-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewSop() || auth.canViewStandards()">
                 
                 @if(!auth.canViewSop() && !auth.canViewStandards()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -67,25 +52,25 @@
                     </div>
                 }
 
-                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
-                    <div>
-                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <div class="z-10 flex w-full items-center justify-between gap-4" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
+                    <div class="min-w-0">
+                        <p class="mb-1 text-[11px] font-semibold leading-normal text-slate-500 dark:text-white/60">
                             {{(auth.canApprove() || auth.canApproveStandards()) ? 'Yêu cầu chờ duyệt' : 'Yêu cầu của tôi'}}
                         </p>
-                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{(auth.canViewSop() || auth.canViewStandards()) ? totalPendingRequests() : '--'}} }
-                        </h4>
+                        <div class="flex items-baseline gap-2">
+                            <h4 class="text-xl font-bold text-slate-700 dark:text-white">
+                                @if(isLoading()) { <app-skeleton width="40px" height="28px"></app-skeleton> } @else { {{(auth.canViewSop() || auth.canViewStandards()) ? totalPendingRequests() : '--'}} }
+                            </h4>
+                            <span class="truncate text-[11px] font-bold"
+                                  [class.text-emerald-500]="totalPendingRequests() === 0"
+                                  [class.text-fuchsia-600]="totalPendingRequests() > 0">
+                                {{totalPendingRequests() > 0 ? ((auth.canApprove() || auth.canApproveStandards()) ? '+ Cần xử lý' : '+ Đang chờ') : 'Không có yêu cầu'}}
+                            </span>
+                        </div>
                     </div>
-                    <div class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100 dark:border-fuchsia-500/20 flex items-center justify-center text-fuchsia-600 dark:text-fuchsia-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewSop() && !auth.canViewStandards()">
-                        <i class="fa-solid fa-clipboard-list text-lg"></i>
+                    <div class="soft-ui-icon-tile" [class.grayscale]="!auth.canViewSop() && !auth.canViewStandards()">
+                        <i class="fa-solid fa-clipboard-list text-base"></i>
                     </div>
-                </div>
-                <div class="z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
-                    <span class="text-xs font-bold" 
-                          [class.text-emerald-500]="totalPendingRequests() === 0" 
-                          [class.text-fuchsia-600]="totalPendingRequests() > 0">
-                        {{totalPendingRequests() > 0 ? ((auth.canApprove() || auth.canApproveStandards()) ? '+ Cần xử lý ngay' : '+ Đang chờ duyệt') : 'Không có yêu cầu'}}
-                    </span>
                 </div>
             </button>
 
@@ -109,8 +94,8 @@
 
             <!-- Card 2: Low Stock -->
             <button type="button" (click)="navTo('inventory')" [disabled]="!auth.canViewInventory()"
-                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewInventory()" [class.hover:shadow-md]="auth.canViewInventory()" [class.hover:border-red-200]="auth.canViewInventory()" [class.dark:hover:border-red-800]="auth.canViewInventory()">
+                 class="soft-ui-kpi group relative flex min-h-24 w-full items-center overflow-hidden p-4 text-left focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewInventory()">
                 
                 @if(!auth.canViewInventory()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -119,30 +104,30 @@
                     </div>
                 }
 
-                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
-                    <div>
-                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Cảnh báo Kho</p>
-                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewInventory() ? lowStockItems().length : '--'}} }
-                        </h4>
+                <div class="z-10 flex w-full items-center justify-between gap-4" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
+                    <div class="min-w-0">
+                        <p class="mb-1 text-[11px] font-semibold leading-normal text-slate-500 dark:text-white/60">Cảnh báo kho</p>
+                        <div class="flex items-baseline gap-2">
+                            <h4 class="text-xl font-bold text-slate-700 dark:text-white">
+                                @if(isLoading()) { <app-skeleton width="40px" height="28px"></app-skeleton> } @else { {{auth.canViewInventory() ? lowStockItems().length : '--'}} }
+                            </h4>
+                            @if(lowStockItems().length > 0) {
+                                <span class="truncate text-[11px] font-bold text-red-500 dark:text-red-400">Mục dưới định mức</span>
+                            } @else {
+                                <span class="truncate text-[11px] font-bold text-emerald-500 dark:text-emerald-400">Kho ổn định</span>
+                            }
+                        </div>
                     </div>
-                    <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 flex items-center justify-center text-red-600 dark:text-red-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewInventory()">
-                        <i class="fa-solid fa-box-open text-lg"></i>
+                    <div class="soft-ui-icon-tile soft-ui-icon-tile--warning" [class.grayscale]="!auth.canViewInventory()">
+                        <i class="fa-solid fa-box-open text-base"></i>
                     </div>
-                </div>
-                <div class="z-10" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
-                    @if(lowStockItems().length > 0) {
-                        <span class="text-xs font-bold text-red-500 dark:text-red-400">Mục dưới định mức</span>
-                    } @else {
-                        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400">Kho ổn định</span>
-                    }
                 </div>
             </button>
 
             <!-- Card 3: Today's Activity -->
             <button type="button" (click)="navTo('stats')" [disabled]="!auth.canViewReports()"
-                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewReports()" [class.hover:shadow-md]="auth.canViewReports()" [class.hover:border-blue-200]="auth.canViewReports()" [class.dark:hover:border-blue-800]="auth.canViewReports()">
+                 class="soft-ui-kpi group relative flex min-h-24 w-full items-center overflow-hidden p-4 text-left focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewReports()">
                 
                 @if(!auth.canViewReports()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -151,26 +136,26 @@
                     </div>
                 }
 
-                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
-                    <div>
-                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Hoạt động hôm nay</p>
-                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewReports() ? todayActivityCount() : '--'}} }
-                        </h4>
+                <div class="z-10 flex w-full items-center justify-between gap-4" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
+                    <div class="min-w-0">
+                        <p class="mb-1 text-[11px] font-semibold leading-normal text-slate-500 dark:text-white/60">Hoạt động hôm nay</p>
+                        <div class="flex items-baseline gap-2">
+                            <h4 class="text-xl font-bold text-slate-700 dark:text-white">
+                                @if(isLoading()) { <app-skeleton width="40px" height="28px"></app-skeleton> } @else { {{auth.canViewReports() ? todayActivityCount() : '--'}} }
+                            </h4>
+                            <span class="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">Log hệ thống</span>
+                        </div>
                     </div>
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewReports()">
-                        <i class="fa-solid fa-bolt text-lg"></i>
+                    <div class="soft-ui-icon-tile soft-ui-icon-tile--info" [class.grayscale]="!auth.canViewReports()">
+                        <i class="fa-solid fa-bolt text-base"></i>
                     </div>
-                </div>
-                <div class="z-10" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
-                    <span class="text-xs font-bold text-gray-400 dark:text-slate-500">Ghi nhận log hệ thống</span>
                 </div>
             </button>
 
             <!-- Card 4: Standards Priority -->
             <button type="button" (click)="navTo('standards')" [disabled]="!auth.canViewStandards()"
-                 class="soft-ui-kpi relative w-full text-left bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 flex flex-col justify-between h-32 overflow-hidden group border border-slate-200 dark:border-slate-800 transition-[border-color,box-shadow] focus:ring-2 focus:ring-orange-400 disabled:cursor-not-allowed"
-                 [class.cursor-pointer]="auth.canViewStandards()" [class.hover:shadow-md]="auth.canViewStandards()" [class.hover:border-orange-200]="auth.canViewStandards()" [class.dark:hover:border-orange-800]="auth.canViewStandards()">
+                 class="soft-ui-kpi group relative flex min-h-24 w-full items-center overflow-hidden p-4 text-left focus:ring-2 focus:ring-orange-400 disabled:cursor-not-allowed"
+                 [class.cursor-pointer]="auth.canViewStandards()">
                 
                 @if(!auth.canViewStandards()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
@@ -179,35 +164,34 @@
                     </div>
                 }
 
-                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
+                <div class="z-10 flex w-full items-center justify-between gap-4" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
                     <div class="min-w-0 pr-2">
-                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Chuẩn sắp hết hạn</p>
+                        <p class="mb-1 text-[11px] font-semibold leading-normal text-slate-500 dark:text-white/60">Chuẩn sắp hết hạn</p>
                         @if(priorityStandard(); as std) {
-                            <h4 class="text-sm font-bold text-gray-800 dark:text-slate-100 truncate leading-tight mt-1" [title]="std.name">{{std.name}}</h4>
+                            <div class="flex min-w-0 items-baseline gap-2">
+                                <h4 class="max-w-[11rem] truncate text-sm font-bold leading-tight text-slate-700 dark:text-white" [title]="std.name">{{std.name}}</h4>
+                                <span class="shrink-0 text-[11px] font-bold" [ngClass]="{'text-red-500 dark:text-red-400': std.status === 'expired' || std.status === 'error', 'text-orange-500 dark:text-orange-400': std.status === 'warning'}">
+                                    {{std.status === 'error' ? 'Lỗi dữ liệu' : (std.daysLeft < 0 ? 'Đã hết hạn' : 'Còn ' + std.daysLeft + ' ngày')}}
+                                </span>
+                            </div>
                         } @else {
-                            <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An Toàn</h4>
+                            <div class="flex items-baseline gap-2">
+                                <h4 class="text-xl font-bold text-slate-700 dark:text-white">An toàn</h4>
+                                <span class="text-[11px] font-bold text-emerald-500 dark:text-emerald-400">Tất cả còn hạn</span>
+                            </div>
                         }
                     </div>
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0 transition-colors" [class.grayscale]="!auth.canViewStandards()">
-                        <i class="fa-solid fa-clock text-lg"></i>
+                    <div class="soft-ui-icon-tile soft-ui-icon-tile--dark" [class.grayscale]="!auth.canViewStandards()">
+                        <i class="fa-solid fa-clock text-base"></i>
                     </div>
-                </div>
-                <div class="z-10" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
-                    @if(priorityStandard(); as std) {
-                        <span class="text-xs font-bold" [ngClass]="{'text-red-500 dark:text-red-400': std.status === 'expired' || std.status === 'error', 'text-orange-500 dark:text-orange-400': std.status === 'warning'}">
-                            {{std.status === 'error' ? 'Lỗi tải dữ liệu' : (std.daysLeft < 0 ? 'Đã hết hạn' : 'Còn ' + std.daysLeft + ' ngày')}}
-                        </span>
-                    } @else {
-                        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400">Tất cả còn hạn dùng</span>
-                    }
                 </div>
             </button>
         </div>
 
         <!-- SECTION 2: ANALYTICS & FEED -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
             <!-- Left: Analytics (2/3) -->
-            <div class="soft-ui-panel lg:col-span-2 relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-5 overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800 lg:h-[560px] h-auto">
+            <div class="soft-ui-panel relative flex h-auto flex-col overflow-hidden p-5 lg:col-span-2 lg:h-[500px]">
                 @if(!auth.canViewReports()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
                         <i class="fa-solid fa-lock text-4xl mb-3"></i>
@@ -217,9 +201,9 @@
                 }
 
                 <div class="flex-1 flex flex-col" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()" [class.pointer-events-none]="!auth.canViewReports()">
-                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4">
+                    <div class="mb-3 flex flex-col items-start justify-between gap-3 xl:flex-row xl:items-center">
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg shrink-0">Hiệu Suất Phân Tích</h6>
+                            <h6 class="shrink-0 text-base font-bold capitalize text-gray-700 dark:text-slate-200">Hiệu Suất Phân Tích</h6>
                             <!-- SOP Active Filter Badge -->
                             @if(selectedSopFilter(); as activeSop) {
                                 <button (click)="selectedSopFilter.set(null)" 
@@ -229,7 +213,7 @@
                                 </button>
                             }
                             <!-- Trend Badge -->
-                            <div class="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700/50 shrink-0" [ngClass]="trendInfo().colorClass">
+                            <div class="flex shrink-0 items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-bold dark:bg-slate-900" [ngClass]="trendInfo().colorClass">
                                 <i class="fa-solid" [class]="trendInfo().icon"></i>
                                 <span>{{trendInfo().statusText}}</span>
                                 <span class="font-mono text-[10px] ml-0.5 opacity-90">{{trendInfo().percentText}}</span>
@@ -242,24 +226,24 @@
                     </div>
 
                     <!-- KPIs Row -->
-                    <div class="grid grid-cols-3 gap-4 mb-4">
-                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
-                            <h4 class="text-xl font-black text-fuchsia-600 dark:text-fuchsia-400">{{chartKpis().totalSamples}}</h4>
+                    <div class="mb-3 grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-2.5 dark:divide-slate-800 dark:border-slate-800">
+                        <div class="flex flex-col justify-center px-3 first:pl-0">
+                            <p class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Tổng số mẫu</p>
+                            <h4 class="mt-0.5 text-lg font-bold text-fuchsia-600 dark:text-fuchsia-400">{{chartKpis().totalSamples}}</h4>
                         </div>
-                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẻ</p>
-                            <h4 class="text-xl font-black text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
+                        <div class="flex flex-col justify-center px-3">
+                            <p class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Tổng số mẻ</p>
+                            <h4 class="mt-0.5 text-lg font-bold text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
                         </div>
-                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                            <p class="text-[10px] font-bold text-slate-500 uppercase">Trung bình mẫu/mẻ</p>
-                            <h4 class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
+                        <div class="flex flex-col justify-center px-3 last:pr-0">
+                            <p class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Trung bình mẫu/mẻ</p>
+                            <h4 class="mt-0.5 text-lg font-bold text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
                         </div>
                     </div>
 
                     <!-- Charts Area -->
-                    <div class="flex-1 lg:h-[320px] md:h-[280px] h-auto grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
-                        <div class="md:col-span-2 relative w-full min-h-[220px] md:h-full bg-slate-50/60 dark:bg-slate-950/30 rounded-xl border border-slate-100 dark:border-slate-800/70">
+                    <div class="grid h-auto min-h-0 flex-1 grid-cols-1 gap-5 md:h-[270px] md:grid-cols-3 lg:h-[300px]">
+                        <div class="relative min-h-[210px] w-full md:col-span-2 md:h-full">
                             @if(isLoading()) {
                                 <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
                             } @else {
@@ -300,15 +284,15 @@
             </div>
 
             <!-- Right Column -->
-            <div class="flex flex-col gap-4 lg:h-[560px] h-[360px]">
+            <div class="flex h-[360px] flex-col gap-4 lg:h-[500px]">
                 <!-- Activity Feed -->
-                <div #activityFeedPanel class="soft-ui-panel flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 overflow-hidden flex flex-col min-h-0 border border-slate-200 dark:border-slate-800">
+                <div #activityFeedPanel class="soft-ui-panel flex min-h-0 flex-1 flex-col overflow-hidden p-4">
                     <div class="flex flex-col gap-3 mb-4 shrink-0">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base">Hoạt Động Gần Đây</h6>
                             <div class="relative w-full sm:w-1/2">
                                 <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                <input type="text" [ngModel]="logSearchTerm()" (ngModelChange)="logSearchTerm.set($event)" placeholder="Tìm kiếm..." aria-label="Tìm kiếm hoạt động" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs rounded-lg pl-8 pr-2 py-1.5 focus:outline-none focus:border-blue-500 transition text-slate-700 dark:text-slate-300">
+                                <input type="text" [ngModel]="logSearchTerm()" (ngModelChange)="logSearchTerm.set($event)" placeholder="Tìm kiếm..." aria-label="Tìm kiếm hoạt động" class="soft-ui-control w-full rounded-lg py-1.5 pl-8 pr-2 text-xs text-slate-700 transition focus:outline-none dark:text-slate-300">
                             </div>
                         </div>
                         <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">

@@ -28,46 +28,37 @@ interface PaletteItem {
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
-      class="hidden md:grid fixed top-3 right-4 z-[45] h-12 items-center gap-3 px-4
-             grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)]
-             lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22.5rem)_minmax(0,1fr)]
-             rounded-2xl bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl
-             border border-white/80 dark:border-slate-700/70 shadow-navbar
-             transition-[left] duration-300 ease-in-out"
+      class="fixed right-6 top-4 z-[45] hidden h-12 items-center justify-between gap-4 px-4 transition-[left] duration-300 ease-in-out md:flex"
       [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '4rem' : '17rem')">
 
-      <div class="flex items-center gap-2 min-w-0">
+      <div class="flex min-w-0 flex-1 items-center gap-2">
         <!-- ── Sidebar Toggle ── -->
         <button
           (click)="state.toggleSidebarCollapse()"
           [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
-          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                 text-slate-400 dark:text-slate-500
-                 hover:bg-slate-100 dark:hover:bg-slate-800
-                 hover:text-fuchsia-600 dark:hover:text-fuchsia-400
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg
+                 text-slate-500 dark:text-slate-300
+                 hover:bg-white dark:hover:bg-slate-900
+                 hover:text-slate-700 dark:hover:text-white
                  transition-all duration-200 active:scale-90"
           [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
-          <i class="fa-solid text-[13px] transition-transform duration-300"
-             [class.fa-bars]="state.sidebarCollapsed()"
-             [class.fa-chevron-left]="!state.sidebarCollapsed()"></i>
+          <span class="flex w-[18px] flex-col gap-[3px]" aria-hidden="true">
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+            <span class="block h-0.5 rounded-sm bg-current"></span>
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+          </span>
         </button>
 
         <!-- ── Breadcrumb / Page Title ── -->
-        <div class="flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            (click)="goToDashboard()"
-            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                   text-fuchsia-600 dark:text-fuchsia-400
-                   hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40
-                   transition-all duration-200 active:scale-90"
-            title="Về Trang Chủ"
-            aria-label="Về Trang Chủ">
-            <i class="fa-solid fa-house text-[12px]"></i>
-          </button>
-          <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-            {{ pageTitle() }}
-          </span>
+        <div class="min-w-0 leading-tight">
+          <div class="flex items-center gap-1.5 truncate text-[11px] text-slate-500 dark:text-white/60">
+            <button type="button" (click)="goToDashboard()" class="transition hover:text-slate-700 dark:hover:text-white" title="Về Trang Chủ" aria-label="Về Trang Chủ">
+              <i class="fa-solid fa-house text-[10px]" aria-hidden="true"></i>
+            </button>
+            <span>/</span>
+            <span class="truncate">{{ pageTitle() }}</span>
+          </div>
+          <div class="mt-0.5 truncate text-sm font-bold text-slate-700 dark:text-white">{{ pageTitle() }}</div>
         </div>
       </div>
 
@@ -75,17 +66,16 @@ interface PaletteItem {
       <button
         (click)="openPalette()"
         aria-label="Mở tìm kiếm chức năng"
-        class="w-full h-9 px-0 lg:px-3 rounded-xl
-               flex items-center justify-center lg:justify-start gap-2.5
-               bg-white/80 dark:bg-slate-800/80
-               border border-slate-200/50 dark:border-slate-700/60 shadow-soft-md
-               text-slate-400 dark:text-slate-500
+        class="hidden h-9 w-56 shrink-0 items-center gap-2.5 rounded-lg px-3 lg:flex xl:w-64
+               bg-white dark:bg-slate-950
+               border border-gray-300 dark:border-slate-700 shadow-none
+               text-slate-500 dark:text-slate-300
                hover:border-fuchsia-300 dark:hover:border-fuchsia-700
                hover:text-fuchsia-600 dark:hover:text-fuchsia-400
                transition-all duration-200 group cursor-pointer"
         title="Tìm kiếm trang hoặc quét mã (Ctrl+K)">
         <i class="fa-solid fa-magnifying-glass text-[11px] group-hover:scale-110 transition-transform"></i>
-        <span class="text-xs font-medium hidden lg:inline flex-1 text-left truncate">Tìm chức năng...</span>
+        <span class="flex-1 truncate text-left text-xs font-medium">Tìm chức năng...</span>
         <kbd class="hidden xl:inline-flex items-center gap-0.5 h-5 px-1.5 rounded-md
                     bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600
                     text-[10px] font-bold text-slate-400 dark:text-slate-500 shadow-sm">
@@ -93,16 +83,15 @@ interface PaletteItem {
         </kbd>
       </button>
 
-      <div class="flex items-center justify-end gap-2 min-w-0">
+      <div class="flex min-w-0 items-center justify-end gap-1.5">
         <!-- ── System Info (mirrors Soft UI utility affordance) ── -->
         <button
           type="button"
           (click)="openChangelog()"
           aria-label="Thông tin hệ thống"
-          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/60 shadow-soft-md
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg
                  text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400
-                 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 transition-all duration-200 shadow-sm active:scale-95"
+                 hover:bg-white dark:hover:bg-slate-900 transition-all duration-200 active:scale-95"
           title="Thông tin hệ thống">
           <i class="fa-solid fa-circle-info text-sm" aria-hidden="true"></i>
         </button>
@@ -113,14 +102,11 @@ interface PaletteItem {
           [disabled]="state.themeTransitioning()"
           [attr.aria-pressed]="state.darkMode()"
           [attr.aria-label]="state.darkMode() ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'"
-          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                 bg-white dark:bg-slate-800
-                 border border-slate-200/50 dark:border-slate-700/60 shadow-soft-md
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg
                  text-slate-500 dark:text-slate-400
                  hover:text-fuchsia-600 dark:hover:text-fuchsia-400
-                 hover:border-fuchsia-300 dark:hover:border-fuchsia-700
-                 hover:shadow-md hover:shadow-fuchsia-500/5
-                 transition-all duration-200 shadow-sm active:scale-95 disabled:pointer-events-none"
+                 hover:bg-white dark:hover:bg-slate-900
+                 transition-all duration-200 active:scale-95 disabled:pointer-events-none"
           [title]="state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối'">
           <i class="fa-solid text-sm transition-transform duration-300"
              [class.fa-sun]="state.darkMode()"
@@ -143,29 +129,26 @@ interface PaletteItem {
           [attr.aria-expanded]="profileMenuOpen()"
           aria-haspopup="menu"
           aria-label="Mở menu tài khoản"
-          class="flex items-center gap-2.5 h-10 pl-1 pr-3 rounded-xl
-                 border transition-all duration-200 group active:scale-[0.97]"
+          class="flex h-9 items-center gap-2 rounded-lg py-0.5 pl-1 pr-2
+                 border border-transparent transition-all duration-200 group active:scale-[0.97]"
           [ngClass]="profileMenuOpen()
-            ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200 dark:border-fuchsia-800/50 shadow-md shadow-fuchsia-500/10'
-            : 'bg-white dark:bg-slate-800 border-slate-200/50 dark:border-slate-700/60 shadow-soft-md hover:border-fuchsia-300 dark:hover:border-fuchsia-700 shadow-sm'"
+            ? 'bg-white dark:bg-slate-900 shadow-soft-md'
+            : 'bg-transparent hover:bg-white hover:shadow-soft-md dark:hover:bg-slate-900'"
           title="Tài khoản">
-          <span class="relative w-8 h-8 shrink-0" [title]="isOnline() ? 'Đang trực tuyến' : 'Đang ngoại tuyến'">
+          <span class="relative h-7 w-7 shrink-0" [title]="isOnline() ? 'Đang trực tuyến' : 'Đang ngoại tuyến'">
             <img
               [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
-              class="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 object-cover"
+              class="h-7 w-7 rounded-full border border-slate-200/50 bg-white object-cover dark:border-slate-700/50 dark:bg-slate-800"
               alt="User">
             <span class="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800"
                   [ngClass]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"></span>
           </span>
-          <div class="hidden xl:block text-left min-w-0">
-            <div class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-[100px]">
+          <div class="hidden min-w-0 text-left 2xl:block">
+            <div class="max-w-[90px] truncate text-[11px] font-bold text-slate-700 dark:text-slate-200">
               {{ auth.currentUser()?.displayName }}
             </div>
-            <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-              {{ auth.currentUser()?.role }}
-            </div>
           </div>
-          <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 transition-transform duration-200"
+          <i class="fa-solid fa-chevron-down text-[8px] text-slate-400 transition-transform duration-200"
              [class.rotate-180]="profileMenuOpen()"></i>
         </button>
 

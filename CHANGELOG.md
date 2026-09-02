@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.02-b03
+## Phiên bản hiện tại: v26.09.02-b04
+
+### v26.09.02-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tinh chỉnh Dashboard desktop sát hơn với bố cục, mật độ và bề mặt của Creative Tim Soft UI Dashboard PRO, đồng thời giữ nguyên dữ liệu và nghiệp vụ LIMS.
+- Chuẩn hóa sidebar, navbar, KPI, khối phân tích và bảng hoạt động theo cùng một ngôn ngữ Soft UI nhẹ, nổi khối và nhất quán hơn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đưa logo vào sidenav nổi, thu gọn header và utility controls, đồng thời loại bỏ phần chào desktop để Dashboard bắt đầu trực tiếp từ tổng quan vận hành.
+- Thu gọn bốn KPI card, đa dạng gradient icon và chuyển các chỉ số phụ sang bố cục divider nhẹ hơn theo tỷ lệ Soft UI.
+- Giảm chiều cao các panel phân tích/hoạt động, bỏ border cứng và nền lồng không cần thiết, đồng thời đồng bộ toolbar và ô tìm kiếm với shared Soft UI controls.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Cập nhật regression contracts để bảo vệ cấu trúc desktop chrome theo tham chiếu Soft UI và tránh lặp changelog trong Dashboard.
 
 ### v26.09.02-b03
 

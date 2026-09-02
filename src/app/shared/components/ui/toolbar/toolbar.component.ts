@@ -3,6 +3,9 @@ import { Component, input } from '@angular/core';
 @Component({
   selector: 'app-toolbar',
   standalone: true,
+  host: {
+    class: 'soft-ui-toolbar-host block',
+  },
   template: `
     <div
       class="soft-ui-toolbar mx-0 mb-4 bg-white px-4 py-3 dark:bg-slate-900 sm:px-5"

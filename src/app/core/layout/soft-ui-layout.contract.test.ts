@@ -40,9 +40,12 @@ describe('Soft UI application layout contract', () => {
     assert.match(shell, /\[class\.md:ml-16\]="state\.sidebarCollapsed\(\)/);
     assert.match(shell, /\[class\.md:ml-\[17rem\]\]="!state\.sidebarCollapsed\(\)/);
     assert.match(navigation, /state\.sidebarCollapsed\(\) \? 'left-1 w-14/);
-    assert.match(navigation, /: 'left-4 w-60/);
+    assert.match(navigation, /: 'left-4 w-64/);
+    assert.match(navigation, /rounded-2xl bg-white shadow-soft-xl/);
+    assert.match(navigation, /shadow-soft-xl/);
     assert.match(navigation, /Thu gọn thanh điều hướng/);
     assert.match(header, /state\.sidebarCollapsed\(\) \? '4rem' : '17rem'/);
+    assert.doesNotMatch(header, /bg-white\/75 dark:bg-slate-900\/80 backdrop-blur-xl/);
   });
 
   it('keeps Soft UI utility chrome and a dedicated responsive mobile header', () => {
@@ -65,7 +68,41 @@ describe('Soft UI application layout contract', () => {
     assert.match(template, /<app-date-range-filter\b/);
     assert.match(template, /containerClass="bg-transparent p-0 border-0 shadow-none"/);
     assert.match(template, /soft-ui-kpi/);
+    assert.match(template, /soft-ui-icon-tile/);
     assert.match(template, /soft-ui-panel/);
+  });
+
+  it('locks the Creative Tim Soft UI reference parity for desktop dashboard chrome', () => {
+    const navigation = read('./navigation-panel.component.ts');
+    const header = read('./app-header.component.ts');
+    const dashboard = read('../../features/dashboard/dashboard.component.html');
+    const styles = read('../../../styles.css');
+
+    assert.match(navigation, /class="fixed bottom-4 top-4/);
+    assert.match(navigation, /<app-logo size="38px"/);
+    assert.match(navigation, /LIMS <span class="font-normal text-slate-400">NAFIQPM6<\/span>/);
+    assert.doesNotMatch(navigation, /fixed top-4 z-\[46\] h-14/);
+
+    assert.match(header, /md:flex/);
+    assert.match(header, /w-56 shrink-0/);
+    assert.match(header, /xl:w-64/);
+    assert.match(header, /h-8 w-8/);
+
+    assert.match(dashboard, /soft-ui-dashboard-page/);
+    assert.match(dashboard, /soft-ui-dashboard-toolbar/);
+    assert.match(dashboard, /grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4/);
+    assert.match(dashboard, /soft-ui-icon-tile--warning/);
+    assert.match(dashboard, /soft-ui-icon-tile--info/);
+    assert.match(dashboard, /soft-ui-icon-tile--dark/);
+    assert.match(dashboard, /lg:h-\[500px\]/);
+    assert.doesNotMatch(dashboard, /soft-ui-panel[^\n]*border border-slate-200/);
+
+    assert.match(styles, /--soft-ui-gradient-info:/);
+    assert.match(styles, /--soft-ui-gradient-success:/);
+    assert.match(styles, /--soft-ui-gradient-warning:/);
+    assert.match(styles, /--soft-ui-gradient-dark:/);
+    assert.match(styles, /\.soft-ui-dashboard-toolbar/);
+    assert.match(styles, /\.soft-ui-dashboard-page/);
   });
 
   it('keeps the global Soft UI PRO visual language and brand primary', () => {
@@ -78,6 +115,7 @@ describe('Soft UI application layout contract', () => {
     assert.match(styles, /\.soft-ui-app-shell/);
     assert.match(styles, /\.soft-ui-panel/);
     assert.match(styles, /\.soft-ui-kpi/);
+    assert.match(styles, /\.soft-ui-icon-tile/);
     assert.match(tailwind, /sans: \['"Open Sans"'/);
     assert.match(tailwind, /linear-gradient\(310deg, #7928ca 0%, #ff0080 100%\)/);
     assert.match(login, /fuchsia-/);

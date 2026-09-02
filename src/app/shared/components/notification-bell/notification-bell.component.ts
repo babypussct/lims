@@ -73,15 +73,13 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
         [attr.aria-expanded]="panel.isOpen()"
         aria-controls="notification-panel"
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
-        class="relative w-9 h-9 rounded-xl flex items-center justify-center
+        class="relative flex h-8 w-8 items-center justify-center rounded-lg
                transition-all duration-200 active:scale-95 select-none"
         [ngClass]="panel.isOpen()
           ? 'bell-btn--active'
-          : 'bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60
-             text-slate-500 dark:text-slate-400 shadow-sm
+          : 'bg-transparent text-slate-500 dark:text-slate-400
              hover:text-fuchsia-500 dark:hover:text-fuchsia-400
-             hover:border-fuchsia-300 dark:hover:border-fuchsia-700
-             hover:shadow-md hover:shadow-fuchsia-500/5'">
+             hover:bg-white dark:hover:bg-slate-900'">
 
         <i class="fa-solid fa-bell text-sm relative z-10 transition-all duration-200"
            [class.text-white]="panel.isOpen()"

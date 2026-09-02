@@ -10,6 +10,7 @@ describe('dashboard shared UI primitive integration', () => {
   it('uses the shared page header, buttons and empty state on the dashboard surface', () => {
     const component = read('./dashboard.component.ts');
     const template = read('./dashboard.component.html');
+    const header = read('../../core/layout/app-header.component.ts');
 
     assert.match(component, /AppButtonComponent/);
     assert.match(component, /AppEmptyStateComponent/);
@@ -19,7 +20,9 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /<app-empty-state\b/);
     assert.match(template, /<app-skeleton\b/);
     assert.match(template, /'Xin chào, '/);
-    assert.match(template, />Nhật ký \{\{state\.systemVersion\(\)\}\}<\/span>/);
+    assert.doesNotMatch(template, />Nhật ký \{\{state\.systemVersion\(\)\}\}<\/span>/);
+    assert.match(header, /openChangelog\(\)/);
+    assert.match(header, /aria-label="Thông tin hệ thống"/);
     assert.match(template, /Quét mã/);
     assert.match(template, /aria-label="Tìm kiếm hoạt động"/);
     assert.match(template, /\[attr\.aria-pressed\]/);

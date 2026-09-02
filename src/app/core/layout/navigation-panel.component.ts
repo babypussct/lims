@@ -23,30 +23,32 @@ interface ResolvedNavigationGroup {
   standalone: true,
   imports: [CommonModule, LogoComponent],
   template: `
-    <div
-      class="fixed top-4 z-[46] h-14 flex items-center rounded-t-2xl border-b border-slate-100 bg-white/95 shadow-soft-xl backdrop-blur-xl transition-all duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-900/95"
-      [ngClass]="state.sidebarCollapsed() ? 'left-1 w-14 justify-center px-0' : 'left-4 w-60 gap-3 px-4'">
-      <div class="w-9 h-9 shrink-0 overflow-hidden rounded-xl flex items-center justify-center bg-white shadow-soft-md dark:bg-slate-800">
-        <app-logo size="40px" class="scale-105"></app-logo>
-      </div>
-      @if (!state.sidebarCollapsed()) {
-        <div class="min-w-0">
-          <div class="text-[13px] font-bold text-gray-700 dark:text-white truncate">
-            LIMS <span class="font-normal text-slate-400">NAFIQPM6</span>
-          </div>
-          <div
-            class="mt-0.5 text-[8px] font-medium leading-tight whitespace-nowrap text-slate-400"
-            title="Hệ thống quản lý thông tin phòng thí nghiệm">
-            Hệ thống quản lý thông tin phòng thí nghiệm
-          </div>
-        </div>
-      }
-    </div>
-
     <aside
       data-navigation-panel
-      class="fixed top-[4.5rem] bottom-4 z-40 flex flex-col rounded-b-2xl bg-white/95 shadow-soft-xl backdrop-blur-xl transition-all duration-300 ease-in-out dark:bg-slate-900/95"
-      [ngClass]="state.sidebarCollapsed() ? 'left-1 w-14' : 'left-4 w-60'">
+      class="fixed bottom-4 top-4 z-40 flex flex-col overflow-hidden rounded-2xl bg-white shadow-soft-xl transition-all duration-300 ease-in-out dark:bg-slate-900"
+      [ngClass]="state.sidebarCollapsed() ? 'left-1 w-14' : 'left-4 w-64'">
+
+      <div
+        class="flex h-16 shrink-0 items-center transition-all duration-300"
+        [ngClass]="state.sidebarCollapsed() ? 'justify-center px-1' : 'gap-3 px-5'">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+          <app-logo size="38px" class="scale-105"></app-logo>
+        </div>
+        @if (!state.sidebarCollapsed()) {
+          <div class="min-w-0">
+            <div class="truncate text-[13px] font-bold text-gray-700 dark:text-white">
+              LIMS <span class="font-normal text-slate-400">NAFIQPM6</span>
+            </div>
+            <div
+              class="mt-0.5 whitespace-nowrap text-[8px] font-medium leading-tight text-slate-400"
+              title="Hệ thống quản lý thông tin phòng thí nghiệm">
+              Hệ thống quản lý thông tin phòng thí nghiệm
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-black/10 to-transparent dark:via-white/10"></div>
 
       <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 py-2.5">
         @for (group of menuGroups(); track group.id) {
@@ -57,10 +59,9 @@ interface ResolvedNavigationGroup {
                 (click)="toggleGroup(group.id)"
                 [attr.aria-expanded]="expandedGroups()[group.id]"
                 [attr.aria-controls]="'nav-group-' + group.id"
-                class="w-full px-2.5 pt-3 pb-1.5 flex items-center justify-between rounded-lg text-left group/header hover:bg-gray-50 dark:hover:bg-slate-800/70 transition-colors">
+                class="w-full px-4 pt-3.5 pb-2 flex items-center justify-between text-left group/header transition-colors">
                 <div class="min-w-0 flex items-center gap-2">
-                  <i class="fa-solid {{group.icon}} text-[10px] text-slate-400 group-hover/header:text-fuchsia-500"></i>
-                  <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 truncate group-hover/header:text-gray-700 dark:group-hover/header:text-slate-200">
+                  <span class="text-xs font-bold uppercase tracking-wide text-slate-500/70 truncate group-hover/header:text-slate-700 dark:text-white/60 dark:group-hover/header:text-white">
                     {{ group.title }}
                   </span>
                 </div>
@@ -90,19 +91,15 @@ interface ResolvedNavigationGroup {
                     state.sidebarCollapsed() ? 'justify-center px-1.5' : 'px-2.5',
                     item.isLocked ? 'cursor-not-allowed opacity-55 bg-slate-50 dark:bg-slate-800/30 border-transparent' : 'active:scale-[0.98]',
                     !item.isLocked && isActive(item.activeMatch)
-                      ? 'bg-white dark:bg-slate-800 border-transparent shadow-soft-md'
-                      : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-800/80'
+                      ? 'bg-white dark:bg-slate-900 border-transparent shadow-soft-xl'
+                      : 'border-transparent hover:bg-white/65 dark:hover:bg-slate-900/70'
                   ]">
-
-                  @if (!item.isLocked && isActive(item.activeMatch)) {
-                    <span class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-fuchsia-500 shadow-sm shadow-fuchsia-500/20"></span>
-                  }
 
                   <span
                     class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
                     [ngClass]="!item.isLocked && isActive(item.activeMatch)
                       ? 'bg-gradient-soft text-white shadow-soft-md'
-                      : 'bg-white text-slate-500 shadow-soft-md dark:bg-slate-800 dark:text-slate-400 group-hover/item:text-fuchsia-500'">
+                      : 'bg-white text-slate-500 shadow-soft-md dark:bg-slate-900 dark:text-slate-400 group-hover/item:text-fuchsia-500'">
                     <i class="fa-solid {{item.icon}} text-[11px]"></i>
                   </span>
 
@@ -140,7 +137,8 @@ interface ResolvedNavigationGroup {
         }
       </div>
 
-      <div class="shrink-0 border-t border-slate-100 p-2 dark:border-slate-800">
+      <div class="shrink-0 p-2">
+        <div class="mx-2 mb-2 h-px bg-gradient-to-r from-transparent via-black/20 to-transparent dark:via-white/20"></div>
         <button
           type="button"
           (click)="state.toggleSidebarCollapse()"

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.02-b03",
-    "title": "Hoàn thiện Soft UI PRO trên toàn bộ LIMS",
+    "version": "v26.09.02-b04",
+    "title": "Tinh chỉnh Dashboard Soft UI theo live demo",
     "features": [
-      "Đồng bộ ngôn ngữ thiết kế Soft UI PRO trên toàn bộ các khu vực nghiệp vụ hiện có của LIMS, giữ nguyên luồng xử lý và phân quyền.",
-      "Tăng khả năng sử dụng trên desktop, tablet và mobile với vùng bấm rõ hơn, thao tác bàn phím tốt hơn và hành động không còn phụ thuộc vào hover.",
-      "Chuẩn hóa shell, sidebar, header, trang cài đặt, bảng dữ liệu, modal và các primitive dùng chung theo hệ thống màu, bo góc, bóng đổ và khoảng cách Soft UI.",
-      "Cải thiện độ dễ đọc và kích thước control tại Results, Standards, SOP, Recipes, Targets, Config, Inventory, Documents và các màn hình xác thực.",
-      "Tối ưu trạng thái focus, selected, responsive action và các control sao chép, in nhãn, chọn dữ liệu, lịch sử phiên bản để thao tác nhất quán hơn."
+      "Tinh chỉnh Dashboard desktop sát hơn với bố cục, mật độ và bề mặt của Creative Tim Soft UI Dashboard PRO, đồng thời giữ nguyên dữ liệu và nghiệp vụ LIMS.",
+      "Chuẩn hóa sidebar, navbar, KPI, khối phân tích và bảng hoạt động theo cùng một ngôn ngữ Soft UI nhẹ, nổi khối và nhất quán hơn.",
+      "Đưa logo vào sidenav nổi, thu gọn header và utility controls, đồng thời loại bỏ phần chào desktop để Dashboard bắt đầu trực tiếp từ tổng quan vận hành.",
+      "Thu gọn bốn KPI card, đa dạng gradient icon và chuyển các chỉ số phụ sang bố cục divider nhẹ hơn theo tỷ lệ Soft UI.",
+      "Giảm chiều cao các panel phân tích/hoạt động, bỏ border cứng và nền lồng không cần thiết, đồng thời đồng bộ toolbar và ô tìm kiếm với shared Soft UI controls."
     ]
   },
   "assetGroups": [

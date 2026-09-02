@@ -58,6 +58,7 @@ describe('shared UI primitive contracts', () => {
     assert.match(toolbar, /select="\[toolbarSearch\]"/);
     assert.match(toolbar, /select="\[toolbarFilters\]"/);
     assert.match(toolbar, /select="\[toolbarActions\]"/);
+    assert.match(toolbar, /soft-ui-toolbar-host/);
     assert.match(toolbar, /gap-3/);
   });
 
