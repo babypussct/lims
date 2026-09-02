@@ -1,16 +1,17 @@
 {
-  "title": "Tinh chỉnh Dashboard Soft UI theo live demo",
+  "title": "Đồng bộ Dashboard, hồ sơ và cài đặt theo Soft UI live demo",
   "highlights": [
-    "Tinh chỉnh Dashboard desktop sát hơn với bố cục, mật độ và bề mặt của Creative Tim Soft UI Dashboard PRO, đồng thời giữ nguyên dữ liệu và nghiệp vụ LIMS.",
-    "Chuẩn hóa sidebar, navbar, KPI, khối phân tích và bảng hoạt động theo cùng một ngôn ngữ Soft UI nhẹ, nổi khối và nhất quán hơn."
+    "Tinh chỉnh Dashboard, hồ sơ tài khoản và khu vực Cài đặt sát hơn với bố cục, mật độ và bề mặt của Creative Tim Soft UI Dashboard PRO, đồng thời giữ nguyên dữ liệu và nghiệp vụ LIMS.",
+    "Chuẩn hóa sidebar, navbar, card, điều hướng cài đặt và thông tin hồ sơ theo cùng một ngôn ngữ Soft UI nhẹ, nổi khối và nhất quán hơn."
   ],
   "features": [],
   "improvements": [
-    "Đưa logo vào sidenav nổi, thu gọn header và utility controls, đồng thời loại bỏ phần chào desktop để Dashboard bắt đầu trực tiếp từ tổng quan vận hành.",
-    "Thu gọn bốn KPI card, đa dạng gradient icon và chuyển các chỉ số phụ sang bố cục divider nhẹ hơn theo tỷ lệ Soft UI.",
-    "Giảm chiều cao các panel phân tích/hoạt động, bỏ border cứng và nền lồng không cần thiết, đồng thời đồng bộ toolbar và ô tìm kiếm với shared Soft UI controls."
+    "Tinh chỉnh app header và sidenav theo tỷ lệ Soft UI, đưa nút thu gọn về khu vực utility và giảm các border, shadow nặng không cần thiết.",
+    "Điều chỉnh Dashboard để thông tin phạm vi thời gian nằm đúng ngữ cảnh khối phân tích và giữ bố cục tổng quan gọn hơn.",
+    "Thiết kế lại Settings shell với điều hướng dạng Soft UI, card không viền và mật độ nội dung gần live demo hơn trên cả desktop lẫn mobile.",
+    "Tổ chức lại trang hồ sơ tài khoản thành các card thông tin, cá nhân hóa và quyền truy cập rõ ràng hơn, đồng thời giữ nguyên các thao tác sao chép UID và chọn avatar."
   ],
   "fixes": [
-    "Cập nhật regression contracts để bảo vệ cấu trúc desktop chrome theo tham chiếu Soft UI và tránh lặp changelog trong Dashboard."
+    "Cập nhật regression contracts để bảo vệ cấu trúc desktop chrome theo tham chiếu Soft UI và tránh sai lệch bố cục ở các lần chỉnh giao diện tiếp theo."
   ]
 }

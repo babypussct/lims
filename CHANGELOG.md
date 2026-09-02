@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.02-b04
+## Phiên bản hiện tại: v26.09.02-b05
+
+### v26.09.02-b05
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tinh chỉnh Dashboard, hồ sơ tài khoản và khu vực Cài đặt sát hơn với bố cục, mật độ và bề mặt của Creative Tim Soft UI Dashboard PRO, đồng thời giữ nguyên dữ liệu và nghiệp vụ LIMS.
+- Chuẩn hóa sidebar, navbar, card, điều hướng cài đặt và thông tin hồ sơ theo cùng một ngôn ngữ Soft UI nhẹ, nổi khối và nhất quán hơn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tinh chỉnh app header và sidenav theo tỷ lệ Soft UI, đưa nút thu gọn về khu vực utility và giảm các border, shadow nặng không cần thiết.
+- Điều chỉnh Dashboard để thông tin phạm vi thời gian nằm đúng ngữ cảnh khối phân tích và giữ bố cục tổng quan gọn hơn.
+- Thiết kế lại Settings shell với điều hướng dạng Soft UI, card không viền và mật độ nội dung gần live demo hơn trên cả desktop lẫn mobile.
+- Tổ chức lại trang hồ sơ tài khoản thành các card thông tin, cá nhân hóa và quyền truy cập rõ ràng hơn, đồng thời giữ nguyên các thao tác sao chép UID và chọn avatar.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Cập nhật regression contracts để bảo vệ cấu trúc desktop chrome theo tham chiếu Soft UI và tránh sai lệch bố cục ở các lần chỉnh giao diện tiếp theo.
 
 ### v26.09.02-b04
 

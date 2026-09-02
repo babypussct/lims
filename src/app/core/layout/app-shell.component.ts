@@ -45,9 +45,9 @@ import { NavigationPanelComponent } from './navigation-panel.component';
         <div
           class="flex-1 min-h-0 flex flex-col overflow-hidden"
           [class.px-3]="!state.focusMode()"
-          [class.pt-2]="!state.focusMode()"
+          [class.pt-1]="!state.focusMode()"
           [class.md:px-6]="!state.focusMode()"
-          [class.md:pt-4]="!state.focusMode()"
+          [class.md:pt-2]="!state.focusMode()"
           [class.p-0]="state.focusMode()">
 
           @if (state.permissionError()) {

@@ -17,7 +17,6 @@
         <app-toolbar class="soft-ui-dashboard-toolbar mb-4 block">
             <div toolbarSearch class="min-w-0">
                 <h2 class="text-lg font-bold leading-tight text-gray-700 dark:text-white">Tổng quan vận hành</h2>
-                <div class="mt-1 truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">Phạm vi thời gian áp dụng cho phân tích và xu hướng</div>
             </div>
             <div toolbarFilters class="w-full sm:w-auto">
                 <app-date-range-filter
@@ -203,7 +202,10 @@
                 <div class="flex-1 flex flex-col" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()" [class.pointer-events-none]="!auth.canViewReports()">
                     <div class="mb-3 flex flex-col items-start justify-between gap-3 xl:flex-row xl:items-center">
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            <h6 class="shrink-0 text-base font-bold capitalize text-gray-700 dark:text-slate-200">Hiệu Suất Phân Tích</h6>
+                            <div class="shrink-0">
+                                <h6 class="text-base font-bold capitalize text-gray-700 dark:text-slate-200">Hiệu Suất Phân Tích</h6>
+                                <div class="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">Phạm vi thời gian áp dụng cho phân tích và xu hướng</div>
+                            </div>
                             <!-- SOP Active Filter Badge -->
                             @if(selectedSopFilter(); as activeSop) {
                                 <button (click)="selectedSopFilter.set(null)" 

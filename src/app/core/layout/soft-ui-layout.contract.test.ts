@@ -41,8 +41,9 @@ describe('Soft UI application layout contract', () => {
     assert.match(shell, /\[class\.md:ml-\[17rem\]\]="!state\.sidebarCollapsed\(\)/);
     assert.match(navigation, /state\.sidebarCollapsed\(\) \? 'left-1 w-14/);
     assert.match(navigation, /: 'left-4 w-64/);
-    assert.match(navigation, /rounded-2xl bg-white shadow-soft-xl/);
-    assert.match(navigation, /shadow-soft-xl/);
+    assert.match(navigation, /rounded-2xl bg-white shadow-none/);
+    assert.match(navigation, /md:bg-transparent/);
+    assert.match(navigation, /bg-white dark:bg-slate-900 border-transparent shadow-soft-xl/);
     assert.match(navigation, /Thu gọn thanh điều hướng/);
     assert.match(header, /state\.sidebarCollapsed\(\) \? '4rem' : '17rem'/);
     assert.doesNotMatch(header, /bg-white\/75 dark:bg-slate-900\/80 backdrop-blur-xl/);

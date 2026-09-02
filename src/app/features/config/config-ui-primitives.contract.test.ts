@@ -35,8 +35,10 @@ describe('config shared UI primitive integration', () => {
     const routes = read('../../app.routes.ts');
     const navigation = read('../../core/layout/navigation.config.ts');
 
-    assert.match(shell, /AppPageHeaderComponent/);
-    assert.match(shell, /<app-page-header\b/);
+    assert.doesNotMatch(shell, /AppPageHeaderComponent/);
+    assert.doesNotMatch(shell, /<app-page-header\b/);
+    assert.match(shell, /getUserRoleLabel\(auth\.currentUser\(\)\?\.role\)/);
+    assert.match(shell, /v\{\{ state\.systemVersion\(\) \}\}/);
     assert.match(shell, /<router-outlet\s*\/>/);
     assert.match(shell, /Tìm cài đặt/);
     assert.match(shell, /\/settings\/account\/profile/);

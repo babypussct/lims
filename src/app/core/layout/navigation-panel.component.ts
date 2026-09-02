@@ -25,7 +25,7 @@ interface ResolvedNavigationGroup {
   template: `
     <aside
       data-navigation-panel
-      class="fixed bottom-4 top-4 z-40 flex flex-col overflow-hidden rounded-2xl bg-white shadow-soft-xl transition-all duration-300 ease-in-out dark:bg-slate-900"
+      class="fixed bottom-4 top-4 z-40 flex flex-col overflow-hidden rounded-2xl bg-white shadow-none transition-all duration-300 ease-in-out md:bg-transparent dark:bg-slate-950 md:dark:bg-transparent"
       [ngClass]="state.sidebarCollapsed() ? 'left-1 w-14' : 'left-4 w-64'">
 
       <div
@@ -52,16 +52,16 @@ interface ResolvedNavigationGroup {
 
       <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 py-2.5">
         @for (group of menuGroups(); track group.id) {
-          <section class="mb-2">
+          <section class="mb-1.5">
             @if (!state.sidebarCollapsed()) {
               <button
                 type="button"
                 (click)="toggleGroup(group.id)"
                 [attr.aria-expanded]="expandedGroups()[group.id]"
                 [attr.aria-controls]="'nav-group-' + group.id"
-                class="w-full px-4 pt-3.5 pb-2 flex items-center justify-between text-left group/header transition-colors">
+                class="group/header flex w-full items-center justify-between px-4 pb-1.5 pt-3 text-left transition-colors">
                 <div class="min-w-0 flex items-center gap-2">
-                  <span class="text-xs font-bold uppercase tracking-wide text-slate-500/70 truncate group-hover/header:text-slate-700 dark:text-white/60 dark:group-hover/header:text-white">
+                  <span class="truncate text-[10px] font-bold uppercase tracking-[0.06em] text-slate-500/60 group-hover/header:text-slate-700 dark:text-white/55 dark:group-hover/header:text-white">
                     {{ group.title }}
                   </span>
                 </div>
@@ -86,28 +86,28 @@ interface ResolvedNavigationGroup {
                   [attr.aria-current]="!item.isLocked && isActive(item.activeMatch) ? 'page' : null"
                   [attr.aria-disabled]="item.isLocked ? 'true' : null"
                   [attr.title]="state.sidebarCollapsed() ? item.name : null"
-                  class="group/item w-full min-h-11 py-2.5 rounded-xl flex items-center gap-2.5 text-left border transition-all duration-200 relative"
+                  class="group/item relative flex min-h-10 w-full items-center gap-2.5 rounded-lg border py-2 text-left transition-all duration-200"
                   [ngClass]="[
                     state.sidebarCollapsed() ? 'justify-center px-1.5' : 'px-2.5',
-                    item.isLocked ? 'cursor-not-allowed opacity-55 bg-slate-50 dark:bg-slate-800/30 border-transparent' : 'active:scale-[0.98]',
+                    item.isLocked ? 'cursor-not-allowed opacity-55 bg-white/45 dark:bg-slate-900/30 border-transparent' : 'active:scale-[0.98]',
                     !item.isLocked && isActive(item.activeMatch)
                       ? 'bg-white dark:bg-slate-900 border-transparent shadow-soft-xl'
-                      : 'border-transparent hover:bg-white/65 dark:hover:bg-slate-900/70'
+                      : 'border-transparent hover:bg-white/55 dark:hover:bg-slate-900/60'
                   ]">
 
                   <span
-                    class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200"
                     [ngClass]="!item.isLocked && isActive(item.activeMatch)
                       ? 'bg-gradient-soft text-white shadow-soft-md'
-                      : 'bg-white text-slate-500 shadow-soft-md dark:bg-slate-900 dark:text-slate-400 group-hover/item:text-fuchsia-500'">
+                      : 'bg-white text-slate-500 shadow-soft-md dark:bg-slate-900 dark:text-slate-400 group-hover/item:text-gray-700 dark:group-hover/item:text-white'">
                     <i class="fa-solid {{item.icon}} text-[11px]"></i>
                   </span>
 
                   @if (!state.sidebarCollapsed()) {
                     <span
-                      class="flex-1 min-w-0 text-[13px] font-semibold leading-snug truncate"
+                      class="min-w-0 flex-1 truncate text-[13px] font-medium leading-snug"
                       [ngClass]="!item.isLocked && isActive(item.activeMatch)
-                        ? 'text-gray-700 dark:text-white'
+                        ? 'font-semibold text-gray-700 dark:text-white'
                         : 'text-slate-500 group-hover/item:text-gray-700 dark:text-slate-400 dark:group-hover/item:text-white'">
                       {{ item.name }}
                     </span>
@@ -142,7 +142,7 @@ interface ResolvedNavigationGroup {
         <button
           type="button"
           (click)="state.toggleSidebarCollapse()"
-          class="flex h-10 w-full items-center rounded-xl text-slate-400 transition-colors hover:bg-gray-50 hover:text-fuchsia-500 dark:hover:bg-slate-800 dark:hover:text-white"
+          class="flex h-10 w-full items-center rounded-lg text-slate-400 transition-colors hover:bg-white/60 hover:text-gray-700 dark:hover:bg-slate-900/60 dark:hover:text-white"
           [ngClass]="state.sidebarCollapsed() ? 'justify-center' : 'gap-2.5 px-2.5'"
           [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'"
           [title]="state.sidebarCollapsed() ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'">

@@ -5,7 +5,6 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AuthService, getUserRoleLabel } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
-import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { calculateCenteredScrollLeft, calculateVisibleScrollTop } from './settings-scroll.utils';
 
 type SettingsNavItem = {
@@ -24,35 +23,34 @@ type SettingsNavGroup = {
 @Component({
   selector: 'app-settings-shell',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet, AppPageHeaderComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   template: `
-    <div class="mx-auto w-full max-w-[1500px] px-3 pb-24 sm:px-5 lg:px-8">
-      <app-page-header
-        title="Cài đặt"
-        subtitle="Quản lý tài khoản cá nhân, phân quyền truy cập, cấu hình và an toàn dữ liệu hệ thống."
-        icon="fa-sliders">
-        <div pageHeaderActions class="flex items-center gap-2">
-          <span class="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-            <i class="fa-solid fa-user-shield mr-1.5 text-fuchsia-500" aria-hidden="true"></i>
-            {{ getUserRoleLabel(auth.currentUser()?.role) }}
-          </span>
-          <span class="hidden h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 sm:inline-flex">
-            v{{ state.systemVersion() }}
-          </span>
+    <div class="mx-auto w-full max-w-[1500px] px-0 pb-24">
+      <div class="flex justify-end pt-1">
+        <div class="hidden rounded-xl bg-gray-50 p-1 shadow-soft-md dark:bg-slate-900 sm:flex">
+          @for (item of accessibleGroups()[0].items; track item.path) {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="bg-white text-gray-700 shadow-soft-md dark:bg-slate-800 dark:text-white"
+              class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-gray-700 dark:text-slate-400 dark:hover:text-white">
+              <i class="fa-solid mr-1.5 text-[10px]" [class]="item.icon" aria-hidden="true"></i>
+              {{ item.label }}
+            </a>
+          }
         </div>
-      </app-page-header>
+      </div>
 
       <!-- Mobile Quick Horizontal Navigation Pills (<lg) -->
-      <div class="mt-3 block lg:hidden">
-        <div #mobileNavContainer class="flex items-center gap-1.5 overflow-x-auto pb-2 pt-1 custom-scrollbar">
+      <div class="mt-2 block lg:hidden">
+        <div #mobileNavContainer class="flex items-center gap-1 overflow-x-auto rounded-xl bg-gray-50 p-1 custom-scrollbar dark:bg-slate-900">
           @for (group of accessibleGroups(); track group.label) {
             @for (item of group.items; track item.path) {
               <a
                 [routerLink]="item.path"
-                routerLinkActive="bg-fuchsia-600 text-white shadow-sm ring-2 ring-fuchsia-500/20"
+                routerLinkActive="bg-white text-gray-700 shadow-soft-md dark:bg-slate-800 dark:text-white"
                 #rlaMob="routerLinkActive"
                 [attr.aria-current]="rlaMob.isActive ? 'page' : null"
-                class="flex shrink-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition active:scale-95 dark:text-slate-400">
                 <i class="fa-solid" [class]="item.icon" aria-hidden="true"></i>
                 <span>{{ item.label }}</span>
               </a>
@@ -61,12 +59,19 @@ type SettingsNavGroup = {
         </div>
       </div>
 
-      <div class="mt-4 grid gap-5 lg:grid-cols-[290px_minmax(0,1fr)]">
+      <div class="mt-4 grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
         <!-- Desktop Sticky Navigation Sidebar -->
         <aside class="hidden lg:block lg:sticky lg:top-20 lg:self-start">
-          <div class="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none">
+          <div class="rounded-2xl border-0 bg-white p-4 shadow-soft-xl dark:bg-slate-900">
+            <div class="mb-3 flex items-center justify-between gap-3 px-1">
+              <span class="truncate text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <i class="fa-solid fa-user-shield mr-1.5 text-fuchsia-500" aria-hidden="true"></i>
+                {{ getUserRoleLabel(auth.currentUser()?.role) }}
+              </span>
+              <span class="shrink-0 text-[10px] font-semibold text-slate-400">v{{ state.systemVersion() }}</span>
+            </div>
             <label for="settings-search" class="sr-only">Tìm kiếm cài đặt</label>
-            <div class="relative mb-3">
+            <div class="relative mb-4">
               <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
               <input
                 id="settings-search"
@@ -74,7 +79,7 @@ type SettingsNavGroup = {
                 [value]="searchQuery()"
                 (input)="setSearch($event)"
                 placeholder="Tìm cài đặt..."
-                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 text-sm font-medium text-slate-700 outline-none transition focus:border-fuchsia-500 focus:bg-white focus:ring-2 focus:ring-fuchsia-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-fuchsia-500"
+                class="h-10 w-full rounded-xl border-0 bg-gray-50 pl-9 pr-8 text-sm font-medium text-slate-600 shadow-soft-md outline-none transition focus:ring-2 focus:ring-fuchsia-500/15 dark:bg-slate-800 dark:text-slate-200"
               >
               @if (searchQuery()) {
                 <button
@@ -90,24 +95,23 @@ type SettingsNavGroup = {
             <nav #desktopNavContainer aria-label="Điều hướng cài đặt" class="max-h-[calc(100vh-13rem)] space-y-4 overflow-y-auto custom-scrollbar pr-0.5">
               @for (group of filteredGroups(); track group.label) {
                 <div>
-                  <div class="mb-1.5 px-2 text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ group.label }}</div>
+                  <div class="mb-1.5 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ group.label }}</div>
                   <div class="space-y-1">
                     @for (item of group.items; track item.path) {
                       <a
                         [routerLink]="item.path"
-                        routerLinkActive="bg-fuchsia-50/80 text-fuchsia-700 ring-1 ring-fuchsia-500/20 dark:bg-fuchsia-500/15 dark:text-fuchsia-300 dark:ring-fuchsia-500/30"
+                        routerLinkActive="bg-gray-50 text-gray-700 shadow-soft-md dark:bg-slate-800 dark:text-white"
                         #rla="routerLinkActive"
                         [attr.aria-current]="rla.isActive ? 'page' : null"
-                        class="group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                        class="group flex min-h-10 items-center gap-2.5 rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition hover:bg-gray-50 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white">
                         <span
-                          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:scale-105 group-hover:bg-white group-hover:shadow-2xs dark:bg-slate-900 dark:text-slate-400 dark:group-hover:bg-slate-800"
-                          [class.text-fuchsia-600]="rla.isActive"
-                          [class.dark:text-fuchsia-300]="rla.isActive">
-                          <i class="fa-solid" [class]="item.icon" aria-hidden="true"></i>
+                          class="flex h-5 w-5 shrink-0 items-center justify-center text-slate-500 transition group-hover:text-fuchsia-500 dark:text-slate-400"
+                          [class.text-fuchsia-500]="rla.isActive">
+                          <i class="fa-solid text-[12px]" [class]="item.icon" aria-hidden="true"></i>
                         </span>
                         <span class="min-w-0">
                           <span class="block truncate leading-tight">{{ item.label }}</span>
-                          <span class="hidden truncate text-[11px] font-medium text-slate-400 xl:block dark:text-slate-500">{{ item.description }}</span>
+                          <span class="hidden truncate text-[10px] font-normal text-slate-400 xl:block dark:text-slate-500">{{ item.description }}</span>
                         </span>
                       </a>
                     }

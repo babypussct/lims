@@ -28,37 +28,20 @@ interface PaletteItem {
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
-      class="fixed right-6 top-4 z-[45] hidden h-12 items-center justify-between gap-4 px-4 transition-[left] duration-300 ease-in-out md:flex"
+      class="fixed right-6 top-2 z-[45] hidden h-14 items-center justify-between gap-4 px-4 transition-[left] duration-300 ease-in-out md:flex"
       [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '4rem' : '17rem')">
 
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <!-- ── Sidebar Toggle ── -->
-        <button
-          (click)="state.toggleSidebarCollapse()"
-          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg
-                 text-slate-500 dark:text-slate-300
-                 hover:bg-white dark:hover:bg-slate-900
-                 hover:text-slate-700 dark:hover:text-white
-                 transition-all duration-200 active:scale-90"
-          [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
-          <span class="flex w-[18px] flex-col gap-[3px]" aria-hidden="true">
-            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
-            <span class="block h-0.5 rounded-sm bg-current"></span>
-            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
-          </span>
-        </button>
-
+      <div class="flex min-w-0 flex-1 items-center">
         <!-- ── Breadcrumb / Page Title ── -->
         <div class="min-w-0 leading-tight">
-          <div class="flex items-center gap-1.5 truncate text-[11px] text-slate-500 dark:text-white/60">
+          <div class="flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-white/60">
             <button type="button" (click)="goToDashboard()" class="transition hover:text-slate-700 dark:hover:text-white" title="Về Trang Chủ" aria-label="Về Trang Chủ">
               <i class="fa-solid fa-house text-[10px]" aria-hidden="true"></i>
             </button>
             <span>/</span>
             <span class="truncate">{{ pageTitle() }}</span>
           </div>
-          <div class="mt-0.5 truncate text-sm font-bold text-slate-700 dark:text-white">{{ pageTitle() }}</div>
+          <div class="mt-0.5 truncate text-[13px] font-bold text-slate-700 dark:text-white">{{ pageTitle() }}</div>
         </div>
       </div>
 
@@ -84,6 +67,19 @@ interface PaletteItem {
       </button>
 
       <div class="flex min-w-0 items-center justify-end gap-1.5">
+        <!-- ── Mini sidenav burger (Soft UI navbar placement) ── -->
+        <button
+          (click)="state.toggleSidebarCollapse()"
+          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all duration-200 hover:text-slate-700 active:scale-90 dark:text-slate-300 dark:hover:text-white"
+          [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
+          <span class="flex w-[18px] flex-col gap-[3px] overflow-hidden" aria-hidden="true">
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+            <span class="block h-0.5 rounded-sm bg-current"></span>
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+          </span>
+        </button>
+
         <!-- ── System Info (mirrors Soft UI utility affordance) ── -->
         <button
           type="button"
@@ -154,8 +150,8 @@ interface PaletteItem {
 
         <!-- ── Profile Dropdown ── -->
         @if (profileMenuOpen()) {
-          <div id="profile-menu" role="menu" class="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-soft-xl overflow-hidden z-[60] fade-in">
-            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+          <div id="profile-menu" role="menu" class="absolute right-0 top-full z-[60] mt-2 w-72 overflow-hidden rounded-2xl border-0 bg-white text-slate-700 shadow-soft-xl fade-in dark:bg-slate-900 dark:text-slate-200">
+            <div class="flex items-center gap-3 px-4 py-3">
               <span class="relative w-10 h-10 shrink-0">
                 <img
                   [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
@@ -187,7 +183,7 @@ interface PaletteItem {
                    [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
                 <span>{{ state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối' }}</span>
               </button>
-              <div class="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
+              <div class="my-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700"></div>
               <button role="menuitem" (click)="logout()"
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left font-semibold">
                 <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>

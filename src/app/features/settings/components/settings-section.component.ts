@@ -9,7 +9,7 @@ export type SettingsSectionVariant = 'default' | 'danger' | 'warning' | 'info';
   imports: [CommonModule],
   template: `
     <section [class]="sectionClasses()">
-      <div class="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-start sm:justify-between" [class]="headerBorderClass()">
+      <div class="flex flex-col gap-3 px-5 pb-3 pt-5 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
           @if (icon()) {
             <span [class]="iconWrapperClasses()">
@@ -27,7 +27,7 @@ export type SettingsSectionVariant = 'default' | 'danger' | 'warning' | 'info';
           <ng-content select="[settingsSectionActions]" />
         </div>
       </div>
-      <div class="p-5">
+      <div class="px-5 pb-5 pt-1">
         <ng-content />
       </div>
     </section>
@@ -42,39 +42,26 @@ export class SettingsSectionComponent {
   protected readonly sectionClasses = computed(() => {
     switch (this.variant()) {
       case 'danger':
-        return 'rounded-2xl border border-red-200 bg-red-50/40 shadow-sm dark:border-red-900/50 dark:bg-red-950/20 dark:shadow-none';
+        return 'rounded-2xl border-0 bg-red-50/50 shadow-soft-xl dark:bg-red-950/20';
       case 'warning':
-        return 'rounded-2xl border border-amber-200 bg-amber-50/40 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:shadow-none';
+        return 'rounded-2xl border-0 bg-amber-50/50 shadow-soft-xl dark:bg-amber-950/20';
       case 'info':
-        return 'rounded-2xl border border-fuchsia-200 bg-fuchsia-50/40 shadow-sm dark:border-fuchsia-900/50 dark:bg-fuchsia-950/20 dark:shadow-none';
+        return 'rounded-2xl border-0 bg-fuchsia-50/50 shadow-soft-xl dark:bg-fuchsia-950/20';
       default:
-        return 'rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none';
-    }
-  });
-
-  protected readonly headerBorderClass = computed(() => {
-    switch (this.variant()) {
-      case 'danger':
-        return 'border-red-100 dark:border-red-900/40';
-      case 'warning':
-        return 'border-amber-100 dark:border-amber-900/40';
-      case 'info':
-        return 'border-fuchsia-100 dark:border-fuchsia-900/40';
-      default:
-        return 'border-slate-100 dark:border-slate-700/70';
+        return 'rounded-2xl border-0 bg-white shadow-soft-xl dark:bg-slate-900';
     }
   });
 
   protected readonly iconWrapperClasses = computed(() => {
     switch (this.variant()) {
       case 'danger':
-        return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300';
+        return 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300';
       case 'warning':
-        return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300';
+        return 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300';
       case 'info':
-        return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300';
+        return 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300';
       default:
-        return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-500/10 dark:text-fuchsia-300';
+        return 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-fuchsia-500 shadow-soft-md dark:bg-slate-800 dark:text-fuchsia-300';
     }
   });
 
