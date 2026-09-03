@@ -201,6 +201,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/pages/account-privacy-settings.component').then(m => m.AccountPrivacySettingsComponent)
       },
       {
+        path: 'manager',
+        loadComponent: () => import('./features/settings/pages/manager-settings.component').then(m => m.ManagerSettingsComponent),
+        canActivate: [permissionGuard],
+        data: { role: 'manager' }
+      },
+      {
         path: 'system',
         loadComponent: () => import('./features/settings/pages/system-settings.component').then(m => m.SystemSettingsComponent),
         canActivate: [permissionGuard],

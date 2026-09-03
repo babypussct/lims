@@ -11,26 +11,32 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
   template: `
     <div class="space-y-5 fade-in">
       <app-settings-section
-        title="Phương thức đăng nhập"
-        description="Quản lý các phương thức dùng để xác thực và truy cập vào tài khoản LIMS của bạn."
+        title="Đăng nhập & xác thực"
+        description="Quản lý các cách bạn có thể đăng nhập vào LIMS. Nên duy trì ít nhất một phương thức hoạt động để tránh mất quyền truy cập."
         icon="fa-shield-halved">
-        <div class="space-y-3">
-          <!-- Google Account Row -->
-          <div class="flex flex-col gap-3.5 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-3.5">
-              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
-                <i class="fa-brands fa-google text-red-500 text-lg" aria-hidden="true"></i>
+        <div class="grid gap-4 xl:grid-cols-2">
+          <article class="flex h-full flex-col rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
+            <div class="flex items-start gap-3.5">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-soft-sm dark:bg-slate-900">
+                <i class="fa-brands fa-google text-lg text-red-500" aria-hidden="true"></i>
               </span>
-              <div>
-                <div class="text-sm font-black text-slate-800 dark:text-slate-100">Tài khoản Google</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Đăng nhập một chạm tiện lợi và bảo mật bằng tài khoản Google đã liên kết.</div>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Google</h3>
+                  @if (auth.hasGoogleProvider()) {
+                    <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                      <i class="fa-solid fa-circle-check text-[9px]" aria-hidden="true"></i>Đã liên kết
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-slate-400 dark:bg-slate-900">Chưa liên kết</span>
+                  }
+                </div>
+                <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Đăng nhập bằng tài khoản Google đang liên kết với hồ sơ LIMS này.</p>
               </div>
             </div>
-            @if (auth.hasGoogleProvider()) {
-              <div class="flex items-center gap-3 sm:shrink-0">
-                <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400">
-                  <i class="fa-solid fa-circle-check text-[10px]" aria-hidden="true"></i>Đã liên kết
-                </span>
+
+            <div class="mt-auto flex flex-wrap items-center gap-2 pt-4">
+              @if (auth.hasGoogleProvider()) {
                 <app-button
                   variant="secondary"
                   size="sm"
@@ -39,36 +45,45 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
                   (click)="unlinkProvider('google.com')">
                   Hủy liên kết
                 </app-button>
-              </div>
-            } @else {
-              <div class="sm:shrink-0">
+                @if (!auth.canUnlinkProvider('google.com')) {
+                  <span class="text-[10px] font-semibold text-slate-400">Cần giữ ít nhất một phương thức đăng nhập.</span>
+                }
+              } @else {
                 <app-button size="sm" (click)="linkGoogle()">Liên kết Google</app-button>
-              </div>
-            }
-          </div>
+              }
+            </div>
+          </article>
 
-          <!-- LIMS Password Row -->
-          <div class="flex flex-col gap-3.5 p-4 rounded-xl border border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-3.5">
-              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-fuchsia-600 dark:text-fuchsia-400">
-                <i class="fa-solid fa-key text-base" aria-hidden="true"></i>
+          <article class="flex h-full flex-col rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
+            <div class="flex items-start gap-3.5">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-fuchsia-600 shadow-soft-sm dark:bg-slate-900 dark:text-fuchsia-300">
+                <i class="fa-solid fa-key" aria-hidden="true"></i>
               </span>
-              <div>
-                <div class="text-sm font-black text-slate-800 dark:text-slate-100">Mật khẩu LIMS dự phòng</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Mật khẩu dự phòng riêng của hệ thống LIMS khi không dùng Google.</div>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Mật khẩu LIMS</h3>
+                  @if (auth.needsPasswordSetup()) {
+                    <span class="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                      <i class="fa-solid fa-triangle-exclamation text-[9px]" aria-hidden="true"></i>Cần thiết lập
+                    </span>
+                  } @else if (auth.hasPasswordProvider()) {
+                    <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                      <i class="fa-solid fa-circle-check text-[9px]" aria-hidden="true"></i>Đã thiết lập
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-slate-400 dark:bg-slate-900">Chưa thiết lập</span>
+                  }
+                </div>
+                <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Dùng email của tài khoản này cùng mật khẩu riêng của LIMS để đăng nhập mà không cần Google.</p>
+                <p class="mt-2 text-[11px] font-semibold text-slate-400"><i class="fa-solid fa-circle-info mr-1.5 text-fuchsia-500" aria-hidden="true"></i>Mật khẩu mới bắt buộc có ít nhất 8 ký tự.</p>
               </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 sm:shrink-0">
-              @if (auth.needsPasswordSetup()) {
-                <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">
-                  <i class="fa-solid fa-triangle-exclamation text-[10px]" aria-hidden="true"></i>Cần thiết lập
-                </span>
-                <app-button size="sm" (click)="auth.openPasswordSetup()">Thiết lập ngay</app-button>
-              } @else if (auth.hasPasswordProvider()) {
-                <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400">
-                  <i class="fa-solid fa-circle-check text-[10px]" aria-hidden="true"></i>Đã bật
-                </span>
-                <app-button variant="secondary" size="sm" (click)="auth.openPasswordSetup()">Đổi mật khẩu</app-button>
+
+            <div class="mt-auto flex flex-wrap items-center gap-2 pt-4">
+              <app-button size="sm" (click)="auth.openPasswordSetup()">
+                {{ auth.hasPasswordProvider() ? 'Đổi mật khẩu' : 'Thiết lập mật khẩu' }}
+              </app-button>
+              @if (auth.hasPasswordProvider()) {
                 <app-button
                   variant="secondary"
                   size="sm"
@@ -77,11 +92,9 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
                   (click)="unlinkProvider('password')">
                   Xóa mật khẩu
                 </app-button>
-              } @else {
-                <span class="text-xs font-bold text-slate-400">Chưa bật</span>
               }
             </div>
-          </div>
+          </article>
         </div>
 
         @if (auth.googleRedirectError()) {
@@ -90,37 +103,23 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
             <span>{{ auth.googleRedirectError() }}</span>
           </div>
         }
-
-        <div class="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div class="rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
-            <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Mật khẩu LIMS</div>
-            <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-              Dùng cùng email tài khoản để đăng nhập dự phòng khi không sử dụng Google. Việc đổi mật khẩu được thực hiện trong hộp thoại bảo mật chuyên biệt.
-            </p>
-            <div class="mt-3">
-              <app-button size="sm" (click)="auth.openPasswordSetup()">
-                <i class="fa-solid fa-key" aria-hidden="true"></i>{{ auth.hasPasswordProvider() ? 'Đổi mật khẩu' : 'Thiết lập mật khẩu' }}
-              </app-button>
-            </div>
-          </div>
-          <div class="rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Yêu cầu mật khẩu</div>
-            <ul class="mt-3 space-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-500" aria-hidden="true"></i><span>Bắt buộc ít nhất 8 ký tự.</span></li>
-              <li class="flex items-start gap-2"><i class="fa-solid fa-lightbulb mt-0.5 text-fuchsia-500" aria-hidden="true"></i><span>Nên tránh khoảng trắng và dùng nhiều nhóm ký tự.</span></li>
-              <li class="flex items-start gap-2"><i class="fa-solid fa-shield-halved mt-0.5 text-fuchsia-500" aria-hidden="true"></i><span>Đổi mật khẩu yêu cầu xác thực phù hợp với trạng thái tài khoản.</span></li>
-            </ul>
-          </div>
-        </div>
       </app-settings-section>
 
       <app-settings-section
-        title="Nhật ký bảo mật"
-        description="Các mốc bảo mật quan trọng gần nhất của tài khoản."
+        title="Hoạt động bảo mật"
+        description="Thông tin gần nhất giúp bạn kiểm tra thay đổi quan trọng trên tài khoản."
         icon="fa-clock-rotate-left">
-        <div class="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700/60 dark:bg-slate-900/40">
-          <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Mật khẩu LIMS cập nhật lần cuối:</span>
-          <span class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">{{ formatAuditDate(auth.currentUser()?.lastPasswordChangedAt) }}</span>
+        <div class="flex flex-col gap-3 rounded-xl bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-slate-800/70">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-fuchsia-500 shadow-soft-sm dark:bg-slate-900">
+              <i class="fa-solid fa-key" aria-hidden="true"></i>
+            </span>
+            <div>
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Lần đổi mật khẩu gần nhất</div>
+              <div class="mt-0.5 text-[11px] text-slate-400">Chỉ áp dụng cho mật khẩu đăng nhập riêng của LIMS.</div>
+            </div>
+          </div>
+          <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">{{ formatAuditDate(auth.currentUser()?.lastPasswordChangedAt) }}</span>
         </div>
       </app-settings-section>
     </div>

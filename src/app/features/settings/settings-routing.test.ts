@@ -46,6 +46,7 @@ describe('Settings routing contract', () => {
 
   it('protects every administrative Settings page with the manager guard', () => {
     const managerOnlyPaths = [
+      'manager',
       'system',
       'data/master',
       'data/backups',
@@ -119,13 +120,35 @@ describe('Settings routing contract', () => {
     const settingsShellSource = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
     const profileSettingsSource = readFileSync(new URL('./pages/account-profile-settings.component.ts', import.meta.url), 'utf8');
 
-    assert.match(settingsShellSource, /isAccountArea = computed\(\(\) => this\.currentUrl\(\)\.startsWith\('\/settings\/account\/'\)\)/);
-    assert.match(settingsShellSource, /aria-label="Điều hướng cấu hình cá nhân"/);
-    assert.match(settingsShellSource, /accountItems\(\)/);
+    assert.match(settingsShellSource, /isAccountArea = computed\(\(\) =>[\s\S]*startsWith\('\/settings\/account\/'\)[\s\S]*startsWith\('\/settings\/manager'\)/);
+    assert.match(settingsShellSource, /aria-label="Điều hướng cấu hình tài khoản"/);
+    assert.match(settingsShellSource, /topNavItems\(\)/);
     assert.match(settingsShellSource, /\/settings\/account\/privacy/);
+    assert.match(settingsShellSource, /label: 'Quản trị'[\s\S]*path: '\/settings\/manager'[\s\S]*adminOnly: true/);
+    assert.match(settingsShellSource, /startsWith\('\/settings\/manager'\)/);
     assert.match(settingsShellSource, /Desktop Sticky Navigation Sidebar: administrative Settings only/);
     assert.doesNotMatch(profileSettingsSource, /routerLink="\/settings\/account\//);
     assert.doesNotMatch(profileSettingsSource, /relative h-40 overflow-hidden rounded-2xl bg-gradient-soft/);
+  });
+
+  it('keeps the security page non-duplicative and the manager hub explicit', () => {
+    const securitySource = readFileSync(new URL('./pages/account-security-settings.component.ts', import.meta.url), 'utf8');
+    const managerSource = readFileSync(new URL('./pages/manager-settings.component.ts', import.meta.url), 'utf8');
+
+    assert.equal((securitySource.match(/<h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Mật khẩu LIMS<\/h3>/g) || []).length, 1);
+    assert.match(securitySource, /title="Đăng nhập & xác thực"/);
+    assert.match(securitySource, /title="Hoạt động bảo mật"/);
+    assert.doesNotMatch(securitySource, /title="Nhật ký bảo mật"/);
+    assert.doesNotMatch(securitySource, /Yêu cầu mật khẩu/);
+
+    assert.match(managerSource, /Trung tâm quản trị/);
+    assert.match(managerSource, /Quyền quản trị đang hiệu lực/);
+    assert.match(managerSource, /PERMISSIONS\.USER_MANAGE/);
+    assert.match(managerSource, /PERMISSIONS\.BACKUP_RESTORE/);
+    assert.match(managerSource, /\/settings\/access\/users/);
+    assert.match(managerSource, /\/settings\/system/);
+    assert.match(managerSource, /\/settings\/data\/backups/);
+    assert.match(managerSource, /\/settings\/diagnostics/);
   });
 
   it('calculates mobile centering from container-relative viewport geometry and clamps to bounds', () => {

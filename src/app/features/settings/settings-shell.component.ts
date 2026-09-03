@@ -58,8 +58,8 @@ type SettingsNavGroup = {
                 </div>
               </div>
 
-              <nav #mobileNavContainer aria-label="Điều hướng cấu hình cá nhân" class="flex w-full items-center gap-1 overflow-x-auto rounded-xl bg-gray-50 p-1 custom-scrollbar dark:bg-slate-800 lg:w-auto lg:max-w-[560px]">
-                @for (item of accountItems(); track item.path) {
+              <nav #mobileNavContainer aria-label="Điều hướng cấu hình tài khoản" class="flex w-full items-center gap-1 overflow-x-auto rounded-xl bg-gray-50 p-1 custom-scrollbar dark:bg-slate-800 lg:w-auto lg:max-w-[680px]">
+                @for (item of topNavItems(); track item.path) {
                   <a
                     [routerLink]="item.path"
                     routerLinkActive="bg-white text-gray-700 shadow-soft-md dark:bg-slate-900 dark:text-white"
@@ -200,6 +200,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
         { label: 'Bảo mật', description: 'Google, mật khẩu và lịch sử bảo mật', icon: 'fa-shield-halved', path: '/settings/account/security' },
         { label: 'Thông báo', description: 'Thông báo đẩy trên thiết bị', icon: 'fa-bell', path: '/settings/account/notifications' },
         { label: 'Quyền riêng tư', description: 'Chính sách và dữ liệu tài khoản', icon: 'fa-user-shield', path: '/settings/account/privacy' },
+        { label: 'Quản trị', description: 'Khu vực riêng cho quản trị viên', icon: 'fa-screwdriver-wrench', path: '/settings/manager', adminOnly: true },
       ],
     },
     {
@@ -237,9 +238,11 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
       .filter(group => group.items.length > 0);
   });
 
-  readonly accountItems = computed(() => this.accessibleGroups().find(group => group.label === 'Tài khoản')?.items ?? []);
+  readonly topNavItems = computed(() => this.accessibleGroups().find(group => group.label === 'Tài khoản')?.items ?? []);
 
-  readonly isAccountArea = computed(() => this.currentUrl().startsWith('/settings/account/'));
+  readonly isAccountArea = computed(() =>
+    this.currentUrl().startsWith('/settings/account/') || this.currentUrl().startsWith('/settings/manager')
+  );
 
   readonly filteredGroups = computed(() => {
     const query = this.searchQuery().trim().toLocaleLowerCase('vi');

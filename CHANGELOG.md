@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b05
+## Phiên bản hiện tại: v26.09.03-b06
+
+### v26.09.03-b06
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thiết kế lại tab Bảo mật theo luồng đăng nhập rõ ràng, loại bỏ nội dung và thao tác mật khẩu bị lặp.
+- Bổ sung tab Quản trị chỉ hiển thị cho quản trị viên, tập trung các lối vào quản lý người dùng, hệ thống, backup và chẩn đoán.
+
+#### ✨ Tính Năng Mới
+
+- Thêm Trung tâm quản trị với các nhóm quyền quản trị nổi bật và lối vào trực tiếp tới các khu vực cấu hình chuyên sâu.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Gom Google và Mật khẩu LIMS thành hai phương thức đăng nhập song song, mỗi phương thức có trạng thái và hành động riêng.
+- Đưa yêu cầu tối thiểu 8 ký tự vào đúng card mật khẩu thay vì tạo một khối hướng dẫn trùng lặp bên dưới.
+- Đổi Nhật ký bảo mật thành Hoạt động bảo mật gọn hơn, tập trung vào thời điểm đổi mật khẩu gần nhất.
+- Giữ nguyên các guard quản trị hiện có cho từng màn hình chuyên sâu để tab Quản trị không làm thay đổi phạm vi phân quyền.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục việc thiếu điểm vào Quản trị trên thanh tab ngang đối với tài khoản manager.
+- Khắc phục bố cục Bảo mật có hai khu vực Mật khẩu LIMS với nội dung và nút thao tác trùng nhau.
 
 ### v26.09.03-b05
 
