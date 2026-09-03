@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.03-b07",
-    "title": "Đồng bộ điều hướng Settings và hoàn thiện Trung tâm quản trị",
+    "version": "v26.09.04-b01",
+    "title": "Tinh gọn Settings quản trị và hợp nhất Backup",
     "features": [
-      "Thống nhất toàn bộ Settings về một layout điều hướng trên cùng, loại bỏ sidebar quản trị xuất hiện lại khi mở các trang con.",
-      "Mở rộng Trung tâm quản trị để hiển thị đầy đủ các chức năng hệ thống, dữ liệu, truy cập và quy tắc vận hành hiện có.",
-      "Thêm thanh điều hướng quản trị chuyên sâu ngay dưới cụm tab tài khoản, luôn sẵn sàng trên mọi trang Settings đối với manager.",
-      "Bổ sung tìm nhanh cài đặt quản trị ngay trên thanh điều hướng để truy cập trực tiếp các khu vực chuyên sâu.",
-      "Giữ nguyên header hồ sơ và phong cách Soft UI cho cả trang cá nhân lẫn các trang quản trị sâu, tránh thay đổi bố cục khi chuyển route."
+      "Thanh Quản trị hệ thống chỉ xuất hiện khi người dùng thực sự đi vào khu vực quản trị, không còn chiếm chỗ trên các tab tài khoản cá nhân.",
+      "Loại bỏ Chẩn đoán và hợp nhất toàn bộ công cụ lưu trữ dữ liệu cũ vào Backup & phục hồi.",
+      "Route Vòng đời dữ liệu cũ tự chuyển sang Backup & phục hồi để các bookmark/liên kết cũ tiếp tục hoạt động.",
+      "Kho Lưu Trữ & Phục Hồi hiện nằm trực tiếp trong trang Backup & phục hồi cùng các chức năng backup, verify, restore và thùng rác.",
+      "Gỡ trang Chẩn đoán cùng khối Tài Nguyên liên quan khỏi Settings và Trung tâm quản trị."
     ]
   },
   "assetGroups": [

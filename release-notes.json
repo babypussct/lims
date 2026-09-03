@@ -1,21 +1,21 @@
 {
-  "title": "Đồng bộ điều hướng Settings và hoàn thiện Trung tâm quản trị",
+  "title": "Tinh gọn Settings quản trị và hợp nhất Backup",
   "highlights": [
-    "Thống nhất toàn bộ Settings về một layout điều hướng trên cùng, loại bỏ sidebar quản trị xuất hiện lại khi mở các trang con.",
-    "Mở rộng Trung tâm quản trị để hiển thị đầy đủ các chức năng hệ thống, dữ liệu, truy cập và quy tắc vận hành hiện có."
+    "Thanh Quản trị hệ thống chỉ xuất hiện khi người dùng thực sự đi vào khu vực quản trị, không còn chiếm chỗ trên các tab tài khoản cá nhân.",
+    "Loại bỏ Chẩn đoán và hợp nhất toàn bộ công cụ lưu trữ dữ liệu cũ vào Backup & phục hồi."
   ],
   "features": [
-    "Thêm thanh điều hướng quản trị chuyên sâu ngay dưới cụm tab tài khoản, luôn sẵn sàng trên mọi trang Settings đối với manager.",
-    "Bổ sung tìm nhanh cài đặt quản trị ngay trên thanh điều hướng để truy cập trực tiếp các khu vực chuyên sâu."
+    "Route Vòng đời dữ liệu cũ tự chuyển sang Backup & phục hồi để các bookmark/liên kết cũ tiếp tục hoạt động.",
+    "Kho Lưu Trữ & Phục Hồi hiện nằm trực tiếp trong trang Backup & phục hồi cùng các chức năng backup, verify, restore và thùng rác."
   ],
   "improvements": [
-    "Giữ nguyên header hồ sơ và phong cách Soft UI cho cả trang cá nhân lẫn các trang quản trị sâu, tránh thay đổi bố cục khi chuyển route.",
-    "Thanh quản trị có đủ Tổng quan, Cấu hình chung, Dữ liệu nền, Backup & phục hồi, Vòng đời dữ liệu, Chẩn đoán, Người dùng, Vai trò và Định mức & tiêu hao.",
-    "Trung tâm quản trị được chia theo bốn nhóm nghiệp vụ với đủ tám chức năng chuyên sâu và số lượng chức năng hiển thị rõ ràng.",
-    "Giữ nguyên toàn bộ guard manager của từng route nên thay đổi điều hướng không làm nới quyền truy cập."
+    "Gỡ trang Chẩn đoán cùng khối Tài Nguyên liên quan khỏi Settings và Trung tâm quản trị.",
+    "Loại bỏ công cụ Migration lastUpdated một lần sau khi DeltaSync đã chuyển sang cơ chế ghi lastUpdated thường trực.",
+    "Trung tâm quản trị và thanh điều hướng được rút gọn theo đúng các chức năng vận hành còn sử dụng.",
+    "Giữ nguyên guard manager và cấu trúc điều hướng trên cùng cho toàn bộ các trang quản trị còn lại."
   ],
   "fixes": [
-    "Khắc phục tình trạng một số trang con Settings vẫn quay về sidebar cũ sau khi người dùng chọn chức năng quản trị.",
-    "Khắc phục việc nhiều route quản trị tồn tại nhưng không có lối truy cập trực tiếp từ Trung tâm quản trị."
+    "Khắc phục việc cụm Quản trị hệ thống vẫn hiển thị khi manager đang xem Hồ sơ, Bảo mật, Thông báo hoặc Quyền riêng tư.",
+    "Loại bỏ các menu và trang chức năng đã dư thừa để Settings không còn lặp khái niệm Backup, lưu trữ và chẩn đoán."
   ]
 }

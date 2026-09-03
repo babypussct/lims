@@ -50,11 +50,9 @@ describe('Settings routing contract', () => {
       'system',
       'data/master',
       'data/backups',
-      'data/lifecycle',
       'access/users',
       'access/roles',
       'policies/consumption',
-      'diagnostics',
     ];
 
     for (const path of managerOnlyPaths) {
@@ -69,6 +67,8 @@ describe('Settings routing contract', () => {
     assert.equal(settingsChild('').redirectTo, 'account/profile');
     assert.equal(settingsChild('account').redirectTo, 'account/profile');
     assert.equal(settingsChild('data').redirectTo, 'data/master');
+    assert.equal(settingsChild('data/lifecycle').redirectTo, 'data/backups');
+    assert.equal(settingsChild('data/lifecycle').pathMatch, 'full');
     assert.equal(settingsChild('access').redirectTo, 'access/users');
   });
 
@@ -125,6 +125,9 @@ describe('Settings routing contract', () => {
     assert.match(settingsShellSource, /topNavItems\(\)/);
     assert.match(settingsShellSource, /managerNavItems/);
     assert.match(settingsShellSource, /filteredManagerNavItems/);
+    assert.match(settingsShellSource, /showManagerNavigation/);
+    assert.match(settingsShellSource, /url === '\/settings\/manager'/);
+    assert.doesNotMatch(settingsShellSource, /url\.startsWith\('\/settings\/account\/'\)/);
     assert.match(settingsShellSource, /Tìm nhanh cài đặt/);
     assert.match(settingsShellSource, /\/settings\/account\/privacy/);
     assert.match(settingsShellSource, /label: 'Quản trị'[\s\S]*path: '\/settings\/manager'[\s\S]*adminOnly: true/);
@@ -157,11 +160,27 @@ describe('Settings routing contract', () => {
     assert.match(managerSource, /\/settings\/system/);
     assert.match(managerSource, /\/settings\/data\/master/);
     assert.match(managerSource, /\/settings\/data\/backups/);
-    assert.match(managerSource, /\/settings\/data\/lifecycle/);
     assert.match(managerSource, /\/settings\/policies\/consumption/);
-    assert.match(managerSource, /\/settings\/diagnostics/);
+    assert.doesNotMatch(managerSource, /\/settings\/data\/lifecycle/);
+    assert.doesNotMatch(managerSource, /\/settings\/diagnostics/);
     assert.match(managerSource, /adminAreaCount/);
     assert.match(managerSource, /Mọi trang quản trị dùng chung một hệ điều hướng trên cùng/);
+  });
+
+  it('removes diagnostics and folds lifecycle tools into Backup & phục hồi', () => {
+    const settings = route('settings');
+    const shell = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
+    const manager = readFileSync(new URL('./pages/manager-settings.component.ts', import.meta.url), 'utf8');
+    const general = readFileSync(new URL('../config/components/config-general.component.html', import.meta.url), 'utf8');
+    const generalSource = readFileSync(new URL('../config/components/config-general.component.ts', import.meta.url), 'utf8');
+
+    assert.equal(settings.children?.some(item => item.path === 'diagnostics'), false);
+    assert.doesNotMatch(shell, /Chẩn đoán|\/settings\/diagnostics/);
+    assert.doesNotMatch(manager, /Chẩn đoán|\/settings\/diagnostics/);
+    assert.doesNotMatch(general, /Tài Nguyên|Migration Dữ Liệu Hệ Thống|runLastUpdatedMigration/);
+    assert.doesNotMatch(generalSource, /runLastUpdatedMigration|isMigrating|migrationLog|storageEstimate|usageBusy/);
+    assert.match(general, /view\(\) === 'backup'[\s\S]*Kho Lưu Trữ & Phục Hồi/);
+    assert.doesNotMatch(generalSource, /'data' \| 'diagnostics'/);
   });
 
   it('calculates mobile centering from container-relative viewport geometry and clamps to bounds', () => {

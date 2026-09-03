@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b07
+## Phiên bản hiện tại: v26.09.04-b01
+
+### v26.09.04-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thanh Quản trị hệ thống chỉ xuất hiện khi người dùng thực sự đi vào khu vực quản trị, không còn chiếm chỗ trên các tab tài khoản cá nhân.
+- Loại bỏ Chẩn đoán và hợp nhất toàn bộ công cụ lưu trữ dữ liệu cũ vào Backup & phục hồi.
+
+#### ✨ Tính Năng Mới
+
+- Route Vòng đời dữ liệu cũ tự chuyển sang Backup & phục hồi để các bookmark/liên kết cũ tiếp tục hoạt động.
+- Kho Lưu Trữ & Phục Hồi hiện nằm trực tiếp trong trang Backup & phục hồi cùng các chức năng backup, verify, restore và thùng rác.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Gỡ trang Chẩn đoán cùng khối Tài Nguyên liên quan khỏi Settings và Trung tâm quản trị.
+- Loại bỏ công cụ Migration lastUpdated một lần sau khi DeltaSync đã chuyển sang cơ chế ghi lastUpdated thường trực.
+- Trung tâm quản trị và thanh điều hướng được rút gọn theo đúng các chức năng vận hành còn sử dụng.
+- Giữ nguyên guard manager và cấu trúc điều hướng trên cùng cho toàn bộ các trang quản trị còn lại.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục việc cụm Quản trị hệ thống vẫn hiển thị khi manager đang xem Hồ sơ, Bảo mật, Thông báo hoặc Quyền riêng tư.
+- Loại bỏ các menu và trang chức năng đã dư thừa để Settings không còn lặp khái niệm Backup, lưu trữ và chẩn đoán.
 
 ### v26.09.03-b07
 

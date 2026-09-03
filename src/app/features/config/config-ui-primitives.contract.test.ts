@@ -63,12 +63,15 @@ describe('config shared UI primitive integration', () => {
     const source = read('./components/config-general.component.ts');
     const template = read('./components/config-general.component.html');
 
-    assert.match(source, /input\.required<'system' \| 'master' \| 'backup' \| 'data' \| 'diagnostics'>\(\)/);
+    assert.match(source, /input\.required<'system' \| 'master' \| 'backup'>\(\)/);
     assert.doesNotMatch(source, /'all'/);
     assert.doesNotMatch(template, /view\(\) === 'all'/);
     assert.match(template, /view\(\) === 'master'/);
     assert.match(template, /view\(\) === 'backup'/);
-    assert.match(template, /view\(\) === 'diagnostics'/);
+    assert.doesNotMatch(template, /view\(\) === 'diagnostics'/);
+    assert.doesNotMatch(template, /view\(\) === 'data'/);
+    assert.match(template, /view\(\) === 'backup'[\s\S]*Kho Lưu Trữ & Phục Hồi/);
+    assert.doesNotMatch(template, /Migration Dữ Liệu Hệ Thống|Tài Nguyên/);
     assert.match(template, /createComprehensiveBackup\(\)/);
     assert.match(template, /verifySelectedBackup\(\)/);
     assert.match(template, /recoverMissingFromSelectedBackup\(\)/);

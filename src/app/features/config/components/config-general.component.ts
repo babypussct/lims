@@ -9,7 +9,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { CategoryItem, PrintConfig } from '../../../core/models/config.model';
 import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
-import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, orderBy, limit } from 'firebase/firestore';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { BackupService, type BackupListItem, type BackupStatusResponse, type BackupCreateResponse, type BackupVerificationResponse, type RestoreResponse, type RestoreCheckpointListItem } from '../../../core/services/backup.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
@@ -23,7 +23,7 @@ import { validateCategoriesDraft } from '../../settings/settings-validation.util
   templateUrl: './config-general.component.html'
 })
 export class ConfigGeneralComponent implements OnInit, OnDestroy {
-  readonly view = input.required<'system' | 'master' | 'backup' | 'data' | 'diagnostics'>();
+  readonly view = input.required<'system' | 'master' | 'backup'>();
   fb = inject(FirebaseService);
   state = inject(StateService);
 
@@ -103,8 +103,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   archiverData = signal<any>(null);
   archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
   archiverDays = signal(180);
-  storageEstimate = signal<{ totalDocs: number; estimatedSizeKB: number; details: any } | null>(null);
-  usageBusy = signal(false);
   printConfig = signal<PrintConfig>({
     showSignature: true,
     footerText: ''
@@ -319,7 +317,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.toast.show(`Thành công! Đã dọn dẹp ${count} bản ghi cũ rác.`, 'success');
       this.archiverStatus.set('idle');
       this.archiverData.set({logs: [], requests: []});
-      this.loadUsage();
     } catch (e) {
       this.toast.show('Lỗi khi xóa dữ liệu.', 'error');
       this.archiverStatus.set('ready_to_delete');
@@ -361,7 +358,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
             if (reqsToRestore.length > 0) restoredCount += await this.fb.restoreArchivedData('requests', reqsToRestore);
             this.toast.show(`Thành công! Đã nạp lại ${restoredCount} bản ghi vào hệ thống.`, 'success');
             this.archiverStatus.set('idle');
-            this.loadUsage();
         } catch (err) {
             this.toast.show('Lỗi định dạng File Excel.', 'error');
             this.archiverStatus.set('idle');
@@ -380,19 +376,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   private loadXlsx(): Promise<typeof import('xlsx')> {
     this.xlsxLoader ??= import('xlsx');
     return this.xlsxLoader;
-  }
-
-  async loadUsage() {
-      if (this.usageBusy()) return;
-      this.usageBusy.set(true);
-      try {
-          const estimate = await this.fb.getFirestoreDataEstimate();
-          this.storageEstimate.set(estimate);
-      } catch (e) {
-          this.toast.show('Lỗi tính dung lượng.', 'error');
-      } finally {
-          this.usageBusy.set(false);
-      }
   }
 
   private backupErrorMessage(error: any): string {
@@ -745,73 +728,4 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       }
   }
 
-  // ─── Migration: Đặt lastUpdated cho legacy docs ─────────────────────────────
-  isMigrating = signal(false);
-  migrationLog = signal<string[]>([]);
-
-  async runLastUpdatedMigration() {
-    if (!await this.confirmationService.confirm({
-      message: 'Migration sẽ quét inventory, sops và logs để ghi lastUpdated cho các document cũ chưa có field này. Thao tác này an toàn và idempotent (có thể chạy lại). Tiếp tục?',
-      confirmText: 'Chạy Migration'
-    })) return;
-
-    this.isMigrating.set(true);
-    this.migrationLog.set([]);
-    const appId = this.fb.APP_ID;
-    const BATCH_SIZE = 400;
-    const logs: string[] = [];
-    const addLog = (msg: string) => {
-      logs.push(msg);
-      this.migrationLog.set([...logs]);
-    };
-
-    try {
-      const collectionsToMigrate: { name: string; path: string }[] = [
-        { name: 'inventory', path: `artifacts/${appId}/inventory` },
-        { name: 'sops', path: `artifacts/${appId}/sops` },
-        { name: 'logs', path: `artifacts/${appId}/logs` },
-      ];
-
-      for (const col of collectionsToMigrate) {
-        addLog(`🔍 Đang quét ${col.name}...`);
-        const colRef = collection(this.fb.db, col.path);
-        const snap = await getDocs(colRef);
-
-        let batchOps = writeBatch(this.fb.db);
-        let opCount = 0;
-        let updatedCount = 0;
-
-        for (const docSnap of snap.docs) {
-          const data = docSnap.data();
-          // Idempotent: chỉ migrate docs THỰC SỰ thiếu lastUpdated
-          if (data['lastUpdated'] != null) continue;
-
-          // Với sops: dùng lastModified làm gốc nếu có, tránh ghi đè thông tin cũ
-          const fallbackTs = data['lastModified'] ?? serverTimestamp();
-          batchOps.update(docSnap.ref, { lastUpdated: fallbackTs });
-          opCount++;
-          updatedCount++;
-
-          if (opCount >= BATCH_SIZE) {
-            await batchOps.commit();
-            batchOps = writeBatch(this.fb.db);
-            opCount = 0;
-            addLog(`  ✅ Đã commit batch (${updatedCount} docs xử lý...)`);
-          }
-        }
-
-        if (opCount > 0) await batchOps.commit();
-        addLog(`✅ ${col.name}: ${updatedCount}/${snap.size} docs đã được cập nhật lastUpdated`);
-      }
-
-      addLog('🎉 Migration hoàn tất! Hệ thống DeltaSync cursor sẽ hoạt động đúng cho tất cả collections.');
-      this.toast.show('Migration lastUpdated hoàn tất!', 'success');
-    } catch (e: any) {
-      addLog(`❌ Lỗi: ${e?.message || e}`);
-      this.toast.show('Lỗi trong quá trình migration.', 'error');
-      console.error('[Migration] Error:', e);
-    } finally {
-      this.isMigrating.set(false);
-    }
-  }
 }

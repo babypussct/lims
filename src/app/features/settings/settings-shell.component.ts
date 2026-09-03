@@ -73,7 +73,7 @@ type SettingsNavGroup = {
           </div>
         </div>
 
-        @if (state.isAdmin()) {
+        @if (showManagerNavigation()) {
           <div class="mx-3 mt-3 rounded-2xl bg-white p-3 shadow-soft-lg dark:bg-slate-900 sm:mx-6 sm:p-4">
             <div class="flex flex-col gap-3 xl:flex-row xl:items-center">
               <div class="flex shrink-0 items-center gap-2 px-1">
@@ -164,9 +164,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
       items: [
         { label: 'Cấu hình chung', description: 'Giao diện, in ấn, thông báo, bảo trì', icon: 'fa-sliders', path: '/settings/system', adminOnly: true },
         { label: 'Dữ liệu nền', description: 'Chỉ tiêu, nền mẫu, thiết bị, phân loại', icon: 'fa-layer-group', path: '/settings/data/master', adminOnly: true },
-        { label: 'Backup & phục hồi', description: 'Backup, verify, restore và thùng rác', icon: 'fa-cloud-arrow-up', path: '/settings/data/backups', adminOnly: true },
-        { label: 'Vòng đời dữ liệu', description: 'Archive, restore và migration', icon: 'fa-database', path: '/settings/data/lifecycle', adminOnly: true },
-        { label: 'Chẩn đoán', description: 'Phiên bản, tài nguyên và trạng thái', icon: 'fa-stethoscope', path: '/settings/diagnostics', adminOnly: true },
+        { label: 'Backup & phục hồi', description: 'Backup, verify, restore, lưu trữ dữ liệu cũ và thùng rác', icon: 'fa-cloud-arrow-up', path: '/settings/data/backups', adminOnly: true },
       ],
     },
     {
@@ -214,6 +212,17 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     );
   });
 
+  readonly currentUrl = signal(this.router.url);
+  readonly showManagerNavigation = computed(() => {
+    if (!this.state.isAdmin()) return false;
+    const url = this.currentUrl().split('?')[0].split('#')[0];
+    return url === '/settings/manager' ||
+      url === '/settings/system' ||
+      url.startsWith('/settings/data/') ||
+      url.startsWith('/settings/access/') ||
+      url.startsWith('/settings/policies/');
+  });
+
   setSearch(event: Event): void {
     this.searchQuery.set((event.target as HTMLInputElement).value);
   }
@@ -226,7 +235,10 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     this.scheduleScrollActiveIntoView(100);
     this.routerSub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => this.scheduleScrollActiveIntoView(50));
+      .subscribe(event => {
+        this.currentUrl.set(event.urlAfterRedirects);
+        this.scheduleScrollActiveIntoView(50);
+      });
   }
 
   ngOnDestroy(): void {

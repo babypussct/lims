@@ -202,7 +202,7 @@
         }
 
         <!-- RIGHT COLUMN -->
-        <div class="space-y-6" [ngClass]="view() === 'backup' || view() === 'data' || view() === 'diagnostics' ? 'md:col-span-2' : ''">
+        <div class="space-y-6" [ngClass]="view() === 'backup' ? 'md:col-span-2' : ''">
 
             @if (view() === 'system') {
             <!-- 3. SYSTEM & AVATAR -->
@@ -458,26 +458,7 @@
             </div>
             }
 
-            @if (view() === 'diagnostics') {
-            <!-- 5. RESOURCES (Compact) -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-hard-drive"></i></div>
-                        Tài Nguyên
-                    </h3>
-                    <button (click)="loadUsage()" [disabled]="usageBusy()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-2 py-1 rounded text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-wait"><i class="fa-solid fa-rotate" [class.fa-spin]="usageBusy()"></i> {{usageBusy() ? 'Đang kiểm tra...' : 'Check'}}</button>
-                </div>
-                @if(storageEstimate(); as stat) {
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Tổng số tài liệu</div>
-                        <div class="text-sm font-black text-slate-800 dark:text-slate-100">{{stat.totalDocs}}</div>
-                    </div>
-                }
-            </div>
-            }
-
-            @if (view() === 'data') {
+            @if (view() === 'backup') {
             <!-- 6. DATA ARCHIVER -->
             <div class="bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-900/30 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-start">
@@ -545,37 +526,6 @@
         </div>
 
     </div>
-
-    @if (view() === 'data') {
-    <!-- MIGRATION PANEL -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-amber-200 dark:border-amber-900/40 p-6 flex flex-col gap-4 mt-6">
-        <div class="flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
-                <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i class="fa-solid fa-database"></i></div>
-                Migration Dữ Liệu Hệ Thống
-            </h3>
-            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">Chỉ Admin</span>
-        </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Ghi <code class="font-mono bg-slate-100 dark:bg-slate-700 px-1 rounded">lastUpdated</code> cho các document cũ trong <strong>inventory</strong>, <strong>sops</strong> và <strong>logs</strong> để DeltaSync cursor hoạt động đúng. Thao tác idempotent — an toàn khi chạy lại.</p>
-        <button (click)="runLastUpdatedMigration()"
-            [disabled]="isMigrating()"
-            class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-wait text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm">
-            @if (isMigrating()) {
-                <i class="fa-solid fa-spinner fa-spin"></i> Đang chạy migration...
-            } @else {
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Chạy Migration lastUpdated
-            }
-        </button>
-        @if (migrationLog().length > 0) {
-            <div class="bg-slate-900 dark:bg-slate-950 rounded-xl p-4 font-mono text-[11px] text-slate-300 max-h-48 overflow-y-auto flex flex-col gap-1">
-                @for (line of migrationLog(); track $index) {
-                    <div>{{ line }}</div>
-                }
-            </div>
-            <button (click)="migrationLog.set([])" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition self-end">Xóa log</button>
-        }
-    </div>
-    }
 
     <!-- RECYCLE BIN MODAL -->
     @if (view() === 'backup' && showRecycleBin()) {

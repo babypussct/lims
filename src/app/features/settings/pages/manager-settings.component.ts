@@ -76,7 +76,7 @@ import { PERMISSIONS, PERMISSION_NAMES } from '../../../core/services/auth.servi
         <div class="flex items-start gap-3">
           <i class="fa-solid fa-circle-info mt-0.5 text-fuchsia-500" aria-hidden="true"></i>
           <p class="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            Mọi trang quản trị dùng chung một hệ điều hướng trên cùng; không còn sidebar riêng khi đi sâu vào Người dùng, Vai trò, Backup, Dữ liệu hay Chẩn đoán. Guard của từng route vẫn được giữ nguyên.
+            Mọi trang quản trị dùng chung một hệ điều hướng trên cùng; không còn sidebar riêng khi đi sâu vào Người dùng, Vai trò, Backup hay Dữ liệu nền. Guard của từng route vẫn được giữ nguyên.
           </p>
         </div>
       </section>
@@ -95,7 +95,7 @@ export class ManagerSettingsComponent {
   readonly adminGroups = [
     {
       title: 'Hệ thống',
-      description: 'Cấu hình nền, dữ liệu dùng chung và tình trạng vận hành của ứng dụng.',
+      description: 'Cấu hình nền và dữ liệu dùng chung của ứng dụng.',
       items: [
         {
           title: 'Cấu hình chung',
@@ -109,12 +109,6 @@ export class ManagerSettingsComponent {
           icon: 'fa-layer-group',
           path: '/settings/data/master',
         },
-        {
-          title: 'Chẩn đoán',
-          description: 'Theo dõi phiên bản, tài nguyên, trạng thái và thông tin chẩn đoán hệ thống.',
-          icon: 'fa-stethoscope',
-          path: '/settings/diagnostics',
-        },
       ],
     },
     {
@@ -123,15 +117,9 @@ export class ManagerSettingsComponent {
       items: [
         {
           title: 'Backup & phục hồi',
-          description: 'Tạo backup, kiểm tra tính toàn vẹn, restore và quản lý bản sao lưu.',
+          description: 'Tạo backup, kiểm tra tính toàn vẹn, restore, lưu trữ dữ liệu cũ và quản lý bản sao lưu.',
           icon: 'fa-cloud-arrow-up',
           path: '/settings/data/backups',
-        },
-        {
-          title: 'Vòng đời dữ liệu',
-          description: 'Archive, restore, migration và các thao tác vòng đời dữ liệu có kiểm soát.',
-          icon: 'fa-database',
-          path: '/settings/data/lifecycle',
         },
       ],
     },

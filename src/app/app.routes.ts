@@ -225,12 +225,7 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { role: 'manager' }
       },
-      {
-        path: 'data/lifecycle',
-        loadComponent: () => import('./features/settings/pages/data-lifecycle-settings.component').then(m => m.DataLifecycleSettingsComponent),
-        canActivate: [permissionGuard],
-        data: { role: 'manager' }
-      },
+      { path: 'data/lifecycle', redirectTo: 'data/backups', pathMatch: 'full' },
       { path: 'access', redirectTo: 'access/users', pathMatch: 'full' },
       {
         path: 'access/users',
@@ -247,12 +242,6 @@ export const routes: Routes = [
       {
         path: 'policies/consumption',
         loadComponent: () => import('./features/settings/pages/consumption-settings.component').then(m => m.ConsumptionSettingsComponent),
-        canActivate: [permissionGuard],
-        data: { role: 'manager' }
-      },
-      {
-        path: 'diagnostics',
-        loadComponent: () => import('./features/settings/pages/diagnostics-settings.component').then(m => m.DiagnosticsSettingsComponent),
         canActivate: [permissionGuard],
         data: { role: 'manager' }
       }
