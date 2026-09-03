@@ -787,7 +787,7 @@ service cloud.firestore {
       allow write: if canUpdateStats(appId);
     }
     match /artifacts/{appId}/monthly_stats/{docId} {
-      allow read: if hasPermission(appId, 'report_view') || canUpdateStats(appId);
+      allow read: if hasPermission(appId, 'report_view') || hasPermission(appId, 'sop_view') || canUpdateStats(appId);
       allow write: if canUpdateStats(appId);
     }
     match /artifacts/{appId}/notifications/{docId} {

@@ -11,6 +11,7 @@ export interface NavigationItem {
   access?: NavigationAccess;
   lockPermission?: string;
   badgeKey?: 'requests';
+  menuHidden?: boolean;
 }
 
 export interface NavigationGroup {
@@ -116,12 +117,11 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     title: 'Vận hành',
     icon: 'fa-layer-group',
     items: [
-      { id: 'calculator', name: 'Vận Hành SOP', icon: 'fa-calculator', path: 'calculator', activeMatch: ['/calculator'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW },
+      { id: 'calculator', name: 'Vận Hành SOP', icon: 'fa-calculator', path: 'calculator', activeMatch: ['/calculator'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, menuHidden: true },
       { id: 'smart-batch', name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], access: PERMISSIONS.BATCH_RUN, lockPermission: PERMISSIONS.BATCH_RUN },
       { id: 'prep', name: 'Chuẩn bị dung dịch', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'] },
-      { id: 'daily-checklist', name: 'Theo Dõi Mẫu Ngày', icon: 'fa-calendar-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW },
+      { id: 'daily-checklist', name: 'Theo Dõi Mẫu Ngày', icon: 'fa-calendar-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, menuHidden: true },
       { id: 'traceability', name: 'Truy Xuất Nguồn Gốc', icon: 'fa-route', path: 'traceability', activeMatch: ['/traceability'] },
-      { id: 'requests', name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, badgeKey: 'requests' },
       { id: 'results', name: 'Kết Quả Phân Tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW }
     ]
   },
@@ -142,6 +142,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     title: 'Quản trị',
     icon: 'fa-screwdriver-wrench',
     items: [
+      { id: 'requests', name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, badgeKey: 'requests' },
       { id: 'editor', name: 'Trình Soạn SOP', icon: 'fa-pen-ruler', path: 'editor', activeMatch: ['/editor'], access: PERMISSIONS.SOP_EDIT, lockPermission: PERMISSIONS.SOP_EDIT }
     ]
   }

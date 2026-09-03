@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b01
+## Phiên bản hiện tại: v26.09.03-b02
+
+### v26.09.03-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Sắp xếp lại thanh điều hướng và khu vực đầu trang để tập trung hơn vào các chức năng sử dụng thường xuyên trong vận hành phòng kiểm nghiệm.
+- Chuyển bộ lọc thời gian vào đúng khối Hiệu Suất Phân Tích và cho phép người dùng có quyền Vận hành SOP xem dữ liệu phân tích trên Dashboard.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đưa ô Tìm chức năng vào chính giữa thanh đầu trang và chuyển nút thu gọn thanh điều hướng về vị trí riêng ở cuối sidebar.
+- Ẩn Vận Hành SOP và Theo Dõi Mẫu Ngày khỏi sidebar để giảm trùng lặp, trong khi vẫn giữ khả năng truy cập chức năng từ Dashboard hoặc tìm kiếm.
+- Chuyển Quản Lý Yêu Cầu sang nhóm Quản trị để phản ánh đúng cấu trúc nghiệp vụ.
+- Loại bỏ các mục Nhật ký thay đổi và Giao diện Sáng/Tối bị lặp trong menu tài khoản.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Đồng bộ quyền đọc monthly_stats giữa giao diện, dịch vụ thống kê và Firestore Rules để người có SOP_VIEW xem được Hiệu Suất Phân Tích mà không cần REPORT_VIEW.
+- Giữ trang Báo Cáo chuyên sâu tiếp tục yêu cầu REPORT_VIEW, tránh mở rộng quyền ngoài phạm vi Dashboard.
 
 ### v26.09.03-b01
 

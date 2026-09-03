@@ -46,6 +46,8 @@ describe('Soft UI application layout contract', () => {
     assert.match(navigation, /bg-white dark:bg-slate-900 border-transparent shadow-soft-xl/);
     assert.match(navigation, /Thu gọn thanh điều hướng/);
     assert.match(header, /state\.sidebarCollapsed\(\) \? '4rem' : '17rem'/);
+    assert.match(header, /absolute left-1\/2 top-1\/2 hidden h-9 w-56 -translate-x-1\/2 -translate-y-1\/2/);
+    assert.doesNotMatch(header, /Mở rộng sidebar|Thu gọn sidebar/);
     assert.doesNotMatch(header, /bg-white\/75 dark:bg-slate-900\/80 backdrop-blur-xl/);
   });
 
@@ -58,6 +60,9 @@ describe('Soft UI application layout contract', () => {
     assert.match(header, /md:hidden/);
     assert.match(header, /openPalette\(\)/);
     assert.match(header, /state\.toggleDarkMode\(\)/);
+    const profileMenu = header.slice(header.indexOf('<!-- ── Profile Dropdown ── -->'), header.indexOf('<!-- ═══════ MOBILE TOP HEADER BAR ═══════ -->'));
+    assert.doesNotMatch(profileMenu, /Nhật ký thay đổi/);
+    assert.doesNotMatch(profileMenu, /Giao diện Sáng|Giao diện Tối/);
   });
 
   it('keeps the dashboard toolbar, global date scope and Soft UI surfaces', () => {
@@ -68,6 +73,8 @@ describe('Soft UI application layout contract', () => {
     assert.match(template, /<app-toolbar\b/);
     assert.match(template, /<app-date-range-filter\b/);
     assert.match(template, /containerClass="bg-transparent p-0 border-0 shadow-none"/);
+    assert.ok(template.indexOf('<app-date-range-filter') > template.indexOf('Hiệu Suất Phân Tích'));
+    assert.match(template, /@if\(!auth\.canViewSop\(\)\)/);
     assert.match(template, /soft-ui-kpi/);
     assert.match(template, /soft-ui-icon-tile/);
     assert.match(template, /soft-ui-panel/);
@@ -85,7 +92,7 @@ describe('Soft UI application layout contract', () => {
     assert.doesNotMatch(navigation, /fixed top-4 z-\[46\] h-14/);
 
     assert.match(header, /md:flex/);
-    assert.match(header, /w-56 shrink-0/);
+    assert.match(header, /w-56[^\n]*shrink-0/);
     assert.match(header, /xl:w-64/);
     assert.match(header, /h-8 w-8/);
 

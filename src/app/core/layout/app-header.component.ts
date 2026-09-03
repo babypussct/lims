@@ -45,11 +45,11 @@ interface PaletteItem {
         </div>
       </div>
 
-      <!-- ── Command Palette Trigger (real search, not just QR) ── -->
+      <!-- ── Command Palette Trigger: centered in the desktop navbar ── -->
       <button
         (click)="openPalette()"
         aria-label="Mở tìm kiếm chức năng"
-        class="hidden h-9 w-56 shrink-0 items-center gap-2.5 rounded-lg px-3 lg:flex xl:w-64
+        class="absolute left-1/2 top-1/2 hidden h-9 w-56 -translate-x-1/2 -translate-y-1/2 shrink-0 items-center gap-2.5 rounded-lg px-3 lg:flex xl:w-64
                bg-white dark:bg-slate-950
                border border-gray-300 dark:border-slate-700 shadow-none
                text-slate-500 dark:text-slate-300
@@ -67,19 +67,6 @@ interface PaletteItem {
       </button>
 
       <div class="flex min-w-0 items-center justify-end gap-1.5">
-        <!-- ── Mini sidenav burger (Soft UI navbar placement) ── -->
-        <button
-          (click)="state.toggleSidebarCollapse()"
-          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all duration-200 hover:text-slate-700 active:scale-90 dark:text-slate-300 dark:hover:text-white"
-          [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
-          <span class="flex w-[18px] flex-col gap-[3px] overflow-hidden" aria-hidden="true">
-            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
-            <span class="block h-0.5 rounded-sm bg-current"></span>
-            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
-          </span>
-        </button>
-
         <!-- ── System Info (mirrors Soft UI utility affordance) ── -->
         <button
           type="button"
@@ -171,17 +158,6 @@ interface PaletteItem {
                       class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                 <i class="fa-solid fa-user-gear w-4 text-center text-slate-400"></i>
                 <span>Cài Đặt Tài Khoản</span>
-              </button>
-              <button role="menuitem" (click)="openChangelog()"
-                      class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
-                <i class="fa-solid fa-clock-rotate-left w-4 text-center text-slate-400"></i>
-                <span>Nhật ký thay đổi</span>
-              </button>
-              <button role="menuitem" (click)="toggleDarkMode()"
-                      class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
-                <i class="fa-solid w-4 text-center text-slate-400"
-                   [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
-                <span>{{ state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối' }}</span>
               </button>
               <div class="my-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700"></div>
               <button role="menuitem" (click)="logout()"
@@ -490,11 +466,6 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   openChangelog() {
     this.profileMenuOpen.set(false);
     this.changelogService.open();
-  }
-
-  toggleDarkMode() {
-    this.state.toggleDarkMode();
-    this.profileMenuOpen.set(false);
   }
 
   logout() {

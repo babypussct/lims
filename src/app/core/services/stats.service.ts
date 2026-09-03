@@ -135,7 +135,7 @@ export class StatsService {
    */
   async getStatsForMonths(monthKeys: string[]): Promise<Record<string, MonthlyStatsDoc>> {
     const result: Record<string, MonthlyStatsDoc> = {};
-    if (!this.auth.canViewReports()) return result;
+    if (!this.auth.canViewReports() && !this.auth.canViewSop()) return result;
 
     for (const key of Array.from(new Set(monthKeys))) {
       try {
@@ -157,7 +157,7 @@ export class StatsService {
   /** Load the complete monthly aggregate history for the All time dashboard view. */
   async getAllMonthlyStats(): Promise<Record<string, MonthlyStatsDoc>> {
     const result: Record<string, MonthlyStatsDoc> = {};
-    if (!this.auth.canViewReports()) return result;
+    if (!this.auth.canViewReports() && !this.auth.canViewSop()) return result;
 
     try {
       const statsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/monthly_stats`);

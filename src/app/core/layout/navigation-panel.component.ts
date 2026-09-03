@@ -175,6 +175,7 @@ export class NavigationPanelComponent {
     NAVIGATION_GROUPS.map(group => ({
       ...group,
       items: group.items
+        .filter(item => !item.menuHidden)
         .map(item => ({ ...item, isLocked: this.isItemLocked(item) }))
         .filter(item => !item.isLocked || this.state.showLockedFeatures())
     })).filter(group => group.items.length > 0)

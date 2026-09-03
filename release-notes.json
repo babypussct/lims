@@ -1,19 +1,18 @@
 {
-  "title": "Đồng bộ giao diện đầu trang và nâng cao độ mượt khi chuyển đổi nghiệp vụ",
+  "title": "Tinh gọn điều hướng Dashboard và mở quyền Hiệu Suất Phân Tích cho Vận hành SOP",
   "highlights": [
-    "Chuẩn hóa toàn bộ khu vực đầu trang trên tất cả các màn hình nghiệp vụ (Kho, Chất chuẩn, Yêu cầu, Kết quả, Báo cáo...), giữ vị trí ổn định và không còn hiện tượng nhảy giật khi chuyển trang.",
-    "Tăng kích thước các nút chuyển tab lựa chọn trên di động, giúp kiểm nghiệm viên thao tác bằng ngón tay nhanh và chính xác hơn.",
-    "Cải thiện tốc độ tải và đảm bảo phiếu in Bảng theo dõi mẫu ngày luôn chuẩn nét, không bị tràn trang khi in ấn."
+    "Sắp xếp lại thanh điều hướng và khu vực đầu trang để tập trung hơn vào các chức năng sử dụng thường xuyên trong vận hành phòng kiểm nghiệm.",
+    "Chuyển bộ lọc thời gian vào đúng khối Hiệu Suất Phân Tích và cho phép người dùng có quyền Vận hành SOP xem dữ liệu phân tích trên Dashboard."
   ],
   "features": [],
   "improvements": [
-    "Đồng bộ vị trí biểu tượng, tiêu đề và dòng mô tả của tất cả các trang làm việc, mang lại trải nghiệm liền mạch và tập trung khi tra cứu hoặc nhập liệu liên tục giữa các phân hệ.",
-    "Cải thiện các thanh lựa chọn chế độ hiển thị tại trang Kết quả và Yêu cầu với nút bấm êm và rõ nét hơn trên cả màn hình cảm ứng lẫn máy tính để bàn.",
-    "Tối ưu hóa Bảng theo dõi mẫu ngày, hiển thị thông báo tải mẻ phân tích rõ ràng và duy trì định dạng xem trước khi in ổn định.",
-    "Đảm bảo bố cục giao diện giữ nguyên vị trí hoàn hảo khi kiểm nghiệm viên bật hoặc tắt chế độ nền tối (Dark mode)."
+    "Đưa ô Tìm chức năng vào chính giữa thanh đầu trang và chuyển nút thu gọn thanh điều hướng về vị trí riêng ở cuối sidebar.",
+    "Ẩn Vận Hành SOP và Theo Dõi Mẫu Ngày khỏi sidebar để giảm trùng lặp, trong khi vẫn giữ khả năng truy cập chức năng từ Dashboard hoặc tìm kiếm.",
+    "Chuyển Quản Lý Yêu Cầu sang nhóm Quản trị để phản ánh đúng cấu trúc nghiệp vụ.",
+    "Loại bỏ các mục Nhật ký thay đổi và Giao diện Sáng/Tối bị lặp trong menu tài khoản."
   ],
   "fixes": [
-    "Khắc phục hiện tượng xê dịch nhẹ của đầu trang giữa các danh mục cài đặt và nghiệp vụ kiểm nghiệm khi đóng/mở thanh điều hướng.",
-    "Sửa lỗi ẩn các nút chuyển đổi chế độ xem không cần thiết trên màn hình điện thoại nhỏ để dành trọn không gian cho dữ liệu mẫu."
+    "Đồng bộ quyền đọc monthly_stats giữa giao diện, dịch vụ thống kê và Firestore Rules để người có SOP_VIEW xem được Hiệu Suất Phân Tích mà không cần REPORT_VIEW.",
+    "Giữ trang Báo Cáo chuyên sâu tiếp tục yêu cầu REPORT_VIEW, tránh mở rộng quyền ngoài phạm vi Dashboard."
   ]
 }

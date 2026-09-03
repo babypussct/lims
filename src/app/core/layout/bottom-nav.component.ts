@@ -321,6 +321,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       title: group.title,
       accentClass: this.accentClass(group.id),
       items: group.items
+        .filter(item => !item.menuHidden)
         .map(item => this.toMenuItem(item))
         .filter(item => !item.isLocked || this.state.showLockedFeatures())
     })).filter(group => group.items.length > 0);

@@ -438,14 +438,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       // deliberately uses monthly_stats as the historical source of truth.
       effect(() => {
           const user = this.auth.currentUser();
-          const canViewReports = !!user && this.auth.canViewReports();
+          const canViewAnalytics = !!user && this.auth.canViewSop();
           const startStr = this.startDate();
           const endStr = this.endDate();
 
-          // The analytics panel is locked for users without report access.
+          // The dashboard analytics panel follows SOP operational access.
           // Do not fetch its monthly aggregates just to blur them underneath
           // the lock overlay.
-          if (!canViewReports) {
+          if (!canViewAnalytics) {
               this.statsData.set({});
               this._allStatsLoaded = false;
               return;
@@ -455,7 +455,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
               if (this._allStatsLoaded) return;
               this._allStatsLoaded = true;
               this.statsService.getAllMonthlyStats().then(data => {
-                  if (!this.auth.canViewReports()) return;
+                  if (!this.auth.canViewSop()) return;
                   this.statsData.set(data);
               }).catch(e => {
                   this._allStatsLoaded = false;
@@ -485,7 +485,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           if (missingKeys.length === 0) return;
 
           this.statsService.getStatsForMonths(missingKeys).then(data => {
-              if (!this.auth.canViewReports()) return;
+              if (!this.auth.canViewSop()) return;
               this.statsData.update(prev => ({ ...prev, ...data }));
           }).catch(e => console.error('Error fetching stats:', e));
       });
@@ -640,7 +640,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async initChart() {
-      if (!this.auth.canViewReports()) return;
+      if (!this.auth.canViewSop()) return;
       const canvas = this.chartCanvas()?.nativeElement;
       const dCanvas = this.doughnutChartCanvas()?.nativeElement;
       if (!canvas || !dCanvas) return;

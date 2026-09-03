@@ -50,3 +50,11 @@ test('report stats reads surface Firestore failures instead of silently publishi
   assert.doesNotMatch(rangeLoader, /catch \(e\) \{[\s\S]*result\[key\] = \{\};/);
   assert.match(allTimeLoader, /catch \(e\) \{[\s\S]*throw e;/);
 });
+
+test('monthly aggregate reads are available to dashboard SOP viewers as well as report viewers', () => {
+  const rangeLoaderStart = source.indexOf('async getStatsForMonths');
+  const allTimeLoaderStart = source.indexOf('async getAllMonthlyStats');
+  const rangeLoader = source.slice(rangeLoaderStart, allTimeLoaderStart);
+
+  assert.match(rangeLoader, /!this\.auth\.canViewReports\(\) && !this\.auth\.canViewSop\(\)/);
+});

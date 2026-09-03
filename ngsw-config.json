@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.03-b01",
-    "title": "Đồng bộ giao diện đầu trang và nâng cao độ mượt khi chuyển đổi nghiệp vụ",
+    "version": "v26.09.03-b02",
+    "title": "Tinh gọn điều hướng Dashboard và mở quyền Hiệu Suất Phân Tích cho Vận hành SOP",
     "features": [
-      "Chuẩn hóa toàn bộ khu vực đầu trang trên tất cả các màn hình nghiệp vụ (Kho, Chất chuẩn, Yêu cầu, Kết quả, Báo cáo...), giữ vị trí ổn định và không còn hiện tượng nhảy giật khi chuyển trang.",
-      "Tăng kích thước các nút chuyển tab lựa chọn trên di động, giúp kiểm nghiệm viên thao tác bằng ngón tay nhanh và chính xác hơn.",
-      "Cải thiện tốc độ tải và đảm bảo phiếu in Bảng theo dõi mẫu ngày luôn chuẩn nét, không bị tràn trang khi in ấn.",
-      "Đồng bộ vị trí biểu tượng, tiêu đề và dòng mô tả của tất cả các trang làm việc, mang lại trải nghiệm liền mạch và tập trung khi tra cứu hoặc nhập liệu liên tục giữa các phân hệ.",
-      "Cải thiện các thanh lựa chọn chế độ hiển thị tại trang Kết quả và Yêu cầu với nút bấm êm và rõ nét hơn trên cả màn hình cảm ứng lẫn máy tính để bàn."
+      "Sắp xếp lại thanh điều hướng và khu vực đầu trang để tập trung hơn vào các chức năng sử dụng thường xuyên trong vận hành phòng kiểm nghiệm.",
+      "Chuyển bộ lọc thời gian vào đúng khối Hiệu Suất Phân Tích và cho phép người dùng có quyền Vận hành SOP xem dữ liệu phân tích trên Dashboard.",
+      "Đưa ô Tìm chức năng vào chính giữa thanh đầu trang và chuyển nút thu gọn thanh điều hướng về vị trí riêng ở cuối sidebar.",
+      "Ẩn Vận Hành SOP và Theo Dõi Mẫu Ngày khỏi sidebar để giảm trùng lặp, trong khi vẫn giữ khả năng truy cập chức năng từ Dashboard hoặc tìm kiếm.",
+      "Chuyển Quản Lý Yêu Cầu sang nhóm Quản trị để phản ánh đúng cấu trúc nghiệp vụ."
     ]
   },
   "assetGroups": [

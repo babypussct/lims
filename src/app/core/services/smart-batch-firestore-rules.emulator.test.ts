@@ -653,6 +653,14 @@ test('stats writes require batch_run, sop_approve or manager privileges', async 
   }
 });
 
+test('sop_view can read monthly dashboard stats without report_view', async () => {
+  const monthlyStatsPath = `artifacts/${APP_ID}/monthly_stats/2026-08`;
+
+  await assertSucceeds(getDoc(doc(dbFor(users.viewer), monthlyStatsPath)));
+  await assertSucceeds(getDoc(doc(dbFor(users.customReportOnly), monthlyStatsPath)));
+  await assertFails(getDoc(doc(dbFor(users.pending), monthlyStatsPath)));
+});
+
 test('monthly stats atomic increments tolerate concurrent writers on the same month document', async () => {
   const db = dbFor(users.batchA);
   const statsRef = doc(db, `artifacts/${APP_ID}/monthly_stats/2026-08`);
