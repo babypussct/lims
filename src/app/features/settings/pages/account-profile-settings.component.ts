@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { AuthService, PERMISSIONS, PERMISSION_NAMES, getUserRoleLabel } from '../../../core/services/auth.service';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { StateService } from '../../../core/services/state.service';
@@ -12,48 +11,9 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
 @Component({
   selector: 'app-account-profile-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AppButtonComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent],
   template: `
     <div class="space-y-6 fade-in">
-      <section>
-        <div class="relative h-40 overflow-hidden rounded-2xl bg-gradient-soft sm:h-48">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(255,255,255,0.38),transparent_24%),radial-gradient(circle_at_15%_85%,rgba(255,255,255,0.18),transparent_30%)]"></div>
-          <div class="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10"></div>
-        </div>
-
-        <div class="relative mx-3 -mt-14 rounded-2xl border-0 bg-white/85 p-4 shadow-soft-xl backdrop-blur-2xl backdrop-saturate-200 dark:bg-slate-900/85 sm:mx-6">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div class="h-20 w-20 shrink-0 rounded-xl bg-white p-1 shadow-soft-sm dark:bg-slate-800">
-              <img
-                [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
-                alt="Ảnh đại diện tài khoản"
-                class="h-full w-full rounded-lg bg-slate-100 object-cover dark:bg-slate-700">
-            </div>
-
-            <div class="min-w-0 flex-1">
-              <h1 class="truncate text-xl font-bold text-gray-700 dark:text-white">{{ auth.currentUser()?.displayName }}</h1>
-              <p class="mt-1 truncate text-sm font-semibold text-slate-500 dark:text-slate-400">
-                {{ getUserRoleLabel(auth.currentUser()?.role) }} · {{ auth.currentUser()?.email }}
-              </p>
-            </div>
-
-            <div class="w-full rounded-xl bg-gray-50 p-1 shadow-soft-md dark:bg-slate-800 sm:w-auto">
-              <div class="grid grid-cols-3 gap-1 text-center">
-                <a class="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-soft-md dark:bg-slate-900 dark:text-white" routerLink="/settings/account/profile">
-                  <i class="fa-solid fa-user mr-1.5 text-[10px]" aria-hidden="true"></i>Hồ sơ
-                </a>
-                <a class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-white hover:text-gray-700 hover:shadow-soft-md dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white" routerLink="/settings/account/security">
-                  <i class="fa-solid fa-shield-halved mr-1.5 text-[10px]" aria-hidden="true"></i>Bảo mật
-                </a>
-                <a class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-white hover:text-gray-700 hover:shadow-soft-md dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white" routerLink="/settings/account/notifications">
-                  <i class="fa-solid fa-bell mr-1.5 text-[10px]" aria-hidden="true"></i>Thông báo
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div class="grid gap-6 xl:grid-cols-3">
         <section class="flex h-full flex-col rounded-2xl border-0 bg-white p-4 shadow-soft-xl dark:bg-slate-900">
           <h2 class="text-sm font-bold text-gray-700 dark:text-white">Cá nhân hóa</h2>
@@ -90,30 +50,25 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
           </div>
         </section>
 
-        <section class="flex h-full flex-col rounded-2xl border-0 bg-white p-4 shadow-soft-xl dark:bg-slate-900">
+        <section class="flex h-full flex-col rounded-2xl border-0 bg-white p-5 shadow-soft-xl dark:bg-slate-900">
           <div class="flex items-center justify-between gap-3">
-            <h2 class="text-sm font-bold text-gray-700 dark:text-white">Thông tin hồ sơ</h2>
+            <h2 class="text-sm font-bold text-gray-700 dark:text-white">Thông tin cơ bản</h2>
             <i class="fa-solid fa-user-pen text-xs text-slate-400" aria-hidden="true"></i>
           </div>
-          <p class="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">Thông tin định danh được dùng trong audit trail và các thao tác có kiểm soát của hệ thống.</p>
-          <div class="my-5 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700"></div>
+          <p class="mt-1 text-xs leading-relaxed text-slate-400">Thông tin định danh dùng trong audit trail và các thao tác có kiểm soát của hệ thống.</p>
 
-          <dl class="space-y-3 text-sm">
-            <div class="flex gap-2">
-              <dt class="shrink-0 font-semibold text-gray-700 dark:text-white">Họ tên:</dt>
-              <dd class="min-w-0 truncate text-slate-500 dark:text-slate-400">{{ auth.currentUser()?.displayName }}</dd>
+          <dl class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <div>
+              <dt class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Họ tên</dt>
+              <dd class="min-h-10 rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-slate-600 shadow-soft-sm dark:bg-slate-800 dark:text-slate-200">{{ auth.currentUser()?.displayName }}</dd>
             </div>
-            <div class="flex gap-2">
-              <dt class="shrink-0 font-semibold text-gray-700 dark:text-white">Email:</dt>
-              <dd class="min-w-0 truncate text-slate-500 dark:text-slate-400">{{ auth.currentUser()?.email }}</dd>
+            <div>
+              <dt class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Vai trò</dt>
+              <dd class="min-h-10 rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-slate-600 shadow-soft-sm dark:bg-slate-800 dark:text-slate-200">{{ getUserRoleLabel(auth.currentUser()?.role) }}</dd>
             </div>
-            <div class="flex gap-2">
-              <dt class="shrink-0 font-semibold text-gray-700 dark:text-white">Vai trò:</dt>
-              <dd class="text-slate-500 dark:text-slate-400">{{ getUserRoleLabel(auth.currentUser()?.role) }}</dd>
-            </div>
-            <div class="flex items-start gap-2">
-              <dt class="shrink-0 font-semibold text-gray-700 dark:text-white">App:</dt>
-              <dd class="min-w-0 break-all text-xs text-slate-500 dark:text-slate-400">{{ fb.APP_ID }}</dd>
+            <div class="sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+              <dt class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Email</dt>
+              <dd class="min-h-10 break-all rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-slate-600 shadow-soft-sm dark:bg-slate-800 dark:text-slate-200">{{ auth.currentUser()?.email }}</dd>
             </div>
           </dl>
 
@@ -127,6 +82,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                 </app-button>
               </div>
             </div>
+            <div class="mt-3 text-[10px] leading-relaxed text-slate-400">App ID: <span class="font-mono">{{ fb.APP_ID }}</span></div>
           </div>
         </section>
 

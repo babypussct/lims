@@ -115,6 +115,19 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(settingsShellSource, /activeDesk\.offsetTop/);
   });
 
+  it('uses a single Soft UI-style top navigation for personal account settings', () => {
+    const settingsShellSource = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
+    const profileSettingsSource = readFileSync(new URL('./pages/account-profile-settings.component.ts', import.meta.url), 'utf8');
+
+    assert.match(settingsShellSource, /isAccountArea = computed\(\(\) => this\.currentUrl\(\)\.startsWith\('\/settings\/account\/'\)\)/);
+    assert.match(settingsShellSource, /aria-label="Điều hướng cấu hình cá nhân"/);
+    assert.match(settingsShellSource, /accountItems\(\)/);
+    assert.match(settingsShellSource, /\/settings\/account\/privacy/);
+    assert.match(settingsShellSource, /Desktop Sticky Navigation Sidebar: administrative Settings only/);
+    assert.doesNotMatch(profileSettingsSource, /routerLink="\/settings\/account\//);
+    assert.doesNotMatch(profileSettingsSource, /relative h-40 overflow-hidden rounded-2xl bg-gradient-soft/);
+  });
+
   it('calculates mobile centering from container-relative viewport geometry and clamps to bounds', () => {
     assert.equal(calculateCenteredScrollLeft({
       scrollLeft: 200,

@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b04
+## Phiên bản hiện tại: v26.09.03-b05
+
+### v26.09.03-b05
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Gộp trải nghiệm cấu hình cá nhân về một thanh điều hướng ngang thống nhất, loại bỏ khu điều khiển bên trái bị trùng trên các trang tài khoản.
+- Bổ sung header hồ sơ dùng chung với avatar, vai trò, trạng thái phiên và các tab Hồ sơ, Bảo mật, Thông báo, Quyền riêng tư.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa phần Thông tin cơ bản theo bố cục field-card rõ ràng hơn, đồng thời giữ nguyên dữ liệu định danh và audit hiện có.
+- Bổ sung khối hướng dẫn yêu cầu mật khẩu ngay trong trang Bảo mật để người dùng nắm rõ điều kiện trước khi thiết lập hoặc đổi mật khẩu.
+- Giữ nguyên sidebar và tìm kiếm cho các trang cấu hình quản trị, tránh làm mất đường dẫn vận hành hệ thống khi tối giản khu vực tài khoản cá nhân.
+- Cải thiện khả năng sử dụng trên màn hình nhỏ với thanh tab ngang có cuộn và tự đưa mục đang hoạt động vào vùng nhìn thấy.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục tình trạng trang cấu hình cá nhân đồng thời hiển thị nhiều khu điều hướng gây trùng lặp và chiếm không gian nội dung.
 
 ### v26.09.03-b04
 

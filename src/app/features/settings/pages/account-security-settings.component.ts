@@ -90,6 +90,28 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
             <span>{{ auth.googleRedirectError() }}</span>
           </div>
         }
+
+        <div class="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
+            <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Mật khẩu LIMS</div>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Dùng cùng email tài khoản để đăng nhập dự phòng khi không sử dụng Google. Việc đổi mật khẩu được thực hiện trong hộp thoại bảo mật chuyên biệt.
+            </p>
+            <div class="mt-3">
+              <app-button size="sm" (click)="auth.openPasswordSetup()">
+                <i class="fa-solid fa-key" aria-hidden="true"></i>{{ auth.hasPasswordProvider() ? 'Đổi mật khẩu' : 'Thiết lập mật khẩu' }}
+              </app-button>
+            </div>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Yêu cầu mật khẩu</div>
+            <ul class="mt-3 space-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-500" aria-hidden="true"></i><span>Bắt buộc ít nhất 8 ký tự.</span></li>
+              <li class="flex items-start gap-2"><i class="fa-solid fa-lightbulb mt-0.5 text-fuchsia-500" aria-hidden="true"></i><span>Nên tránh khoảng trắng và dùng nhiều nhóm ký tự.</span></li>
+              <li class="flex items-start gap-2"><i class="fa-solid fa-shield-halved mt-0.5 text-fuchsia-500" aria-hidden="true"></i><span>Đổi mật khẩu yêu cầu xác thực phù hợp với trạng thái tài khoản.</span></li>
+            </ul>
+          </div>
+        </div>
       </app-settings-section>
 
       <app-settings-section

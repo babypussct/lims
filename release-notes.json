@@ -1,17 +1,17 @@
 {
-  "title": "Tối ưu dung lượng dự án và tốc độ build/deploy",
+  "title": "Làm mới khu vực cấu hình tài khoản cá nhân",
   "highlights": [
-    "Tinh gọn cây phụ thuộc UniverJS và Vercel để giảm mạnh dung lượng cài đặt cục bộ mà vẫn giữ đầy đủ luồng xem Excel chỉ đọc.",
-    "Tối ưu pipeline Vercel để commit chỉ thay đổi tài liệu, CI hoặc test có thể được bỏ qua đúng cách thay vì luôn kích hoạt full build."
+    "Gộp trải nghiệm cấu hình cá nhân về một thanh điều hướng ngang thống nhất, loại bỏ khu điều khiển bên trái bị trùng trên các trang tài khoản.",
+    "Bổ sung header hồ sơ dùng chung với avatar, vai trò, trạng thái phiên và các tab Hồ sơ, Bảo mật, Thông báo, Quyền riêng tư."
   ],
   "features": [],
   "improvements": [
-    "Khởi tạo UniverJS bằng các plugin runtime cần thiết thay cho gói preset tổng hợp, đồng thời loại các preset UI và CSS không sử dụng.",
-    "Giữ Filter, Find, hyperlink, note, number format và các bảo vệ read-only của Excel viewer trong khi giảm kích thước lazy bundle chính.",
-    "Chuyển Vercel CLI sang lệnh npx có phiên bản cố định để không lưu toàn bộ CLI và các adapter framework trong node_modules của dự án.",
-    "Giữ Git metadata trên máy build Vercel để bước kiểm tra phạm vi thay đổi có thể so sánh commit trước khi quyết định build."
+    "Chuẩn hóa phần Thông tin cơ bản theo bố cục field-card rõ ràng hơn, đồng thời giữ nguyên dữ liệu định danh và audit hiện có.",
+    "Bổ sung khối hướng dẫn yêu cầu mật khẩu ngay trong trang Bảo mật để người dùng nắm rõ điều kiện trước khi thiết lập hoặc đổi mật khẩu.",
+    "Giữ nguyên sidebar và tìm kiếm cho các trang cấu hình quản trị, tránh làm mất đường dẫn vận hành hệ thống khi tối giản khu vực tài khoản cá nhân.",
+    "Cải thiện khả năng sử dụng trên màn hình nhỏ với thanh tab ngang có cuộn và tự đưa mục đang hoạt động vào vùng nhìn thấy."
   ],
   "fixes": [
-    "Khắc phục tình trạng ignored build step luôn fail-open do .vercelignore xóa .git trước khi script kiểm tra thay đổi chạy."
+    "Khắc phục tình trạng trang cấu hình cá nhân đồng thời hiển thị nhiều khu điều hướng gây trùng lặp và chiếm không gian nội dung."
   ]
 }
