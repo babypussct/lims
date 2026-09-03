@@ -107,9 +107,9 @@ export const ACTIVITY_NOTIFICATION_DISPATCH_CONTRACT = {
     ['standard_request', 'standard_edit', 'standard_approve']
   ),
 
-  MAINTENANCE_ON: workflow('SYSTEM', 'SYSTEM_ADMIN', 'SYSTEM_UPDATE', 'SYSTEM_ADMINS', ['user_manage'], true),
-  MAINTENANCE_OFF: workflow('SYSTEM', 'SYSTEM_ADMIN', 'SYSTEM_UPDATE', 'SYSTEM_ADMINS', ['user_manage'], true),
-  POST_SYSTEM_UPDATE: workflow('SYSTEM', 'SYSTEM_ADMIN', 'SYSTEM_UPDATE', 'SYSTEM_ALL_USERS', ['user_manage'], true)
+  MAINTENANCE_ON: workflow('SYSTEM', 'SYSTEM_ADMIN', 'SYSTEM_UPDATE', 'SYSTEM_ADMINS', ['system_manage']),
+  MAINTENANCE_OFF: workflow('SYSTEM', 'SYSTEM_ADMIN', 'SYSTEM_UPDATE', 'SYSTEM_ADMINS', ['system_manage']),
+  POST_SYSTEM_UPDATE: workflow('SYSTEM', 'SYSTEM_ADMIN', 'SYSTEM_UPDATE', 'SYSTEM_ALL_USERS', ['system_manage'])
 } as const satisfies Record<string, ActivityDispatchContract>;
 
 export type DispatchActivityAction = keyof typeof ACTIVITY_NOTIFICATION_DISPATCH_CONTRACT;

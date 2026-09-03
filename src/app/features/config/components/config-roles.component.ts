@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FirebaseService } from '../../../core/services/firebase.service';
@@ -11,6 +11,7 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { findUsersReferencingRole } from '../../settings/settings-validation.utils';
+import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog';
 
 @Component({
   selector: 'app-config-roles',
@@ -157,8 +158,13 @@ import { findUsersReferencingRole } from '../../settings/settings-validation.uti
                     <!-- Permissions Selection Matrix -->
                     <div>
                         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 ml-1">Tổ hợp Quyền hạn Chi tiết</label>
+                        <label class="relative mb-4 block">
+                            <span class="sr-only">Tìm quyền</span>
+                            <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                            <input type="search" [ngModel]="permissionQuery()" (ngModelChange)="permissionQuery.set($event)" placeholder="Tìm quyền theo tên hoặc mô tả..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:bg-slate-900">
+                        </label>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @for (group of permissionGroups; track group.name) {
+                            @for (group of filteredPermissionGroups(); track group.name) {
                                 <div class="rounded-2xl border p-4 relative pt-5" [ngClass]="[group.bg, group.border]">
                                     <span class="absolute -top-3 left-4 px-2 py-0.5 text-[10px] font-black uppercase flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 border shadow-sm" [ngClass]="[group.color, group.border]">
                                         <i class="fa-solid" [ngClass]="group.icon"></i> {{group.name}}
@@ -201,6 +207,7 @@ export class ConfigRolesComponent implements OnInit {
   modalOpen = signal(false);
   editingRole = signal<any | null>(null);
   selectedPermissions = signal<string[]>([]);
+  permissionQuery = signal('');
   isLoading = signal(false);
   loadError = signal('');
   savingRole = signal(false);
@@ -208,89 +215,18 @@ export class ConfigRolesComponent implements OnInit {
   
   roleForm!: FormGroup;
 
-  availablePermissions = [
-      { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },
-      { val: PERMISSIONS.INVENTORY_EDIT,  label: 'Sửa Kho' },
-      { val: PERMISSIONS.BATCH_RUN,       label: 'Chạy Batch & Pha Chế' },
-      { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem chất chuẩn' },
-      { val: PERMISSIONS.STANDARD_REQUEST,label: 'Mượn chất chuẩn' },
-      { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa chất chuẩn' },
-      { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt và cấp chất chuẩn' },
-      { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem báo cáo chất chuẩn' },
-      { val: PERMISSIONS.STANDARD_LOG_DELETE,label: 'Xóa báo cáo chất chuẩn' },
-      { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem công thức' },
-      { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa công thức' },
-      { val: PERMISSIONS.SOP_VIEW,        label: 'Xem SOP' },
-      { val: PERMISSIONS.SOP_EDIT,        label: 'Sửa SOP' },
-      { val: PERMISSIONS.SOP_APPROVE,     label: 'Duyệt SOP' },
-      { val: PERMISSIONS.REPORT_VIEW,     label: 'Xem Báo cáo Tổng hợp' },
-      { val: PERMISSIONS.USER_MANAGE,     label: 'Quản trị Admin' },
-      { val: PERMISSIONS.BACKUP_CREATE,   label: 'Tạo Backup Toàn Diện' },
-      { val: PERMISSIONS.BACKUP_VERIFY,   label: 'Kiểm tra Backup' },
-      { val: PERMISSIONS.BACKUP_RESTORE,  label: 'Restore Backup' }
-  ];
-
-  permissionGroups = [
-    {
-      name: 'Kho và hóa chất',
-      icon: 'fa-box-open',
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      border: 'border-emerald-100 dark:border-emerald-800/30',
-      ring: 'var(--tw-colors-emerald-500, #10b981)',
-      perms: [
-        { val: PERMISSIONS.INVENTORY_VIEW, label: 'Xem Kho' },
-        { val: PERMISSIONS.INVENTORY_EDIT, label: 'Sửa Kho (Thêm/Xoá/Nhập xuất)' },
-        { val: PERMISSIONS.BATCH_RUN, label: 'Pha chế và lập mẻ phân tích' }
-      ]
-    },
-    {
-      name: 'Chất chuẩn đối chiếu',
-      icon: 'fa-vial-circle-check',
-      color: 'text-fuchsia-500',
-      bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20',
-      border: 'border-fuchsia-100 dark:border-fuchsia-800/30',
-      ring: 'var(--tw-colors-fuchsia-500, #6366f1)',
-      perms: [
-        { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt và giao nhận chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký sử dụng chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xóa yêu cầu và nhật ký chất chuẩn' }
-      ]
-    },
-    {
-      name: 'Quy trình SOP và công thức',
-      icon: 'fa-book-open',
-      color: 'text-amber-500',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-100 dark:border-amber-800/30',
-      ring: 'var(--tw-colors-amber-500, #f59e0b)',
-      perms: [
-        { val: PERMISSIONS.SOP_VIEW, label: 'Xem SOP' },
-        { val: PERMISSIONS.SOP_EDIT, label: 'Biên soạn SOP (Editor)' },
-        { val: PERMISSIONS.SOP_APPROVE, label: 'Phê duyệt SOP (Approve)' },
-        { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem công thức (Library)' },
-        { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa công thức (Recipe)' }
-      ]
-    },
-    {
-      name: 'Hệ thống và báo cáo',
-      icon: 'fa-server',
-      color: 'text-slate-500',
-      bg: 'bg-slate-50 dark:bg-slate-800/50',
-      border: 'border-slate-100 dark:border-slate-700/50',
-      ring: 'var(--tw-colors-slate-500, #64748b)',
-      perms: [
-        { val: PERMISSIONS.REPORT_VIEW, label: 'Xem Báo cáo Tổng hợp' },
-        { val: PERMISSIONS.USER_MANAGE, label: 'Quản trị nhân sự (Admin)' },
-        { val: PERMISSIONS.BACKUP_CREATE, label: 'Tạo Backup Toàn Diện' },
-        { val: PERMISSIONS.BACKUP_VERIFY, label: 'Kiểm tra Backup' },
-        { val: PERMISSIONS.BACKUP_RESTORE, label: 'Restore Backup' }
-      ]
-    }
-  ];
+  readonly availablePermissions = PERMISSION_CATALOG.map(permission => ({ val: permission.code, label: permission.label }));
+  readonly permissionGroups = PERMISSION_EDITOR_GROUPS;
+  readonly filteredPermissionGroups = computed(() => {
+      const query = this.permissionQuery().trim().toLocaleLowerCase('vi');
+      if (!query) return this.permissionGroups;
+      return this.permissionGroups
+          .map(group => ({
+              ...group,
+              perms: group.perms.filter(permission => `${permission.label} ${permission.description}`.toLocaleLowerCase('vi').includes(query)),
+          }))
+          .filter(group => group.perms.length > 0);
+  });
 
   ngOnInit() {
       this.initForm();
@@ -349,6 +285,7 @@ export class ConfigRolesComponent implements OnInit {
 
   closeModal() {
       this.modalOpen.set(false);
+      this.permissionQuery.set('');
   }
 
   onNameInput() {

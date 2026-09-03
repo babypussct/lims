@@ -21,7 +21,7 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                         <div class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center shadow-2xs">
                             <i class="fa-solid fa-percent text-sm"></i>
                         </div>
-                        Quy Định Hao Hụt (Safety Margin)
+                        Chính Sách Hao Hụt
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cấu hình tỷ lệ hao hụt tự động dựa trên phân loại hóa chất khi tính toán và lập mẻ.</p>
                 </div>
@@ -78,6 +78,15 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                     <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
                                 </button>
                             </div>
+                            @if (rule.category) {
+                                <div class="text-[10px] font-bold" [class.text-amber-600]="isOrphanRule(rule.category)" [class.text-slate-400]="!isOrphanRule(rule.category)">
+                                    @if (isOrphanRule(rule.category)) {
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Phân loại này không còn tồn tại trong danh mục.
+                                    } @else {
+                                        <i class="fa-solid fa-flask mr-1"></i>Áp dụng cho {{ affectedInventoryCount(rule.category) }} hóa chất/vật tư hiện có.
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                     @if(safetyRulesLocal().length === 0) {
@@ -108,6 +117,15 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                                     <option [value]="cat.id">{{cat.name}} ({{cat.id}})</option>
                                                 }
                                             </select>
+                                            @if (rule.category) {
+                                                <div class="mt-1 text-[10px] font-bold" [class.text-amber-600]="isOrphanRule(rule.category)" [class.text-slate-400]="!isOrphanRule(rule.category)">
+                                                    @if (isOrphanRule(rule.category)) {
+                                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Orphan rule
+                                                    } @else {
+                                                        {{ affectedInventoryCount(rule.category) }} mục đang chịu tác động
+                                                    }
+                                                </div>
+                                            }
                                         </td>
                                         <td class="px-4 py-2.5 text-center">
                                             <div class="relative mx-auto w-24">
@@ -179,6 +197,13 @@ export class ConfigSafetyComponent implements OnInit {
 
   addSafetyRule() { this.safetyRulesLocal.update(r => [...r, { category: '', margin: 10 }]); }
   removeSafetyRule(index: number) { this.safetyRulesLocal.update(r => r.filter((_, i) => i !== index)); }
+  affectedInventoryCount(category: string): number {
+    return this.state.inventory().filter(item => item.category === category).length;
+  }
+
+  isOrphanRule(category: string): boolean {
+    return !!category && !this.state.categories().some(item => item.id === category);
+  }
   async saveSafety() {
       const validation = validateSafetyConfigDraft(
         this.safetyConfigLocal.defaultMargin,

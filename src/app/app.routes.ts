@@ -91,33 +91,28 @@ export const routes: Routes = [
   },
   {
     path: 'target-groups',
-    loadComponent: () => import('./features/targets/target-group-manager.component').then(m => m.TargetGroupManagerComponent),
-    canActivate: [permissionGuard],
-    data: { role: 'manager' } // Cấu hình hệ thống — chỉ manager
+    redirectTo: 'settings/data/master/target-groups',
+    pathMatch: 'full'
   },
   {
-    path: 'master-targets', 
-    loadComponent: () => import('./features/targets/master-target-manager.component').then(m => m.MasterTargetManagerComponent),
-    canActivate: [permissionGuard],
-    data: { role: 'manager' } // Cấu hình hệ thống — chỉ manager
+    path: 'master-targets',
+    redirectTo: 'settings/data/master/analytes',
+    pathMatch: 'full'
   },
   {
     path: 'matrix-types',
-    loadComponent: () => import('./features/config/matrix-type-manager.component').then(m => m.MatrixTypeManagerComponent),
-    canActivate: [permissionGuard],
-    data: { role: 'manager' }
+    redirectTo: 'settings/data/master/matrices',
+    pathMatch: 'full'
   },
   {
     path: 'master-devices',
-    loadComponent: () => import('./features/config/master-device-manager.component').then(m => m.MasterDeviceManagerComponent),
-    canActivate: [permissionGuard],
-    data: { role: 'manager' }
+    redirectTo: 'settings/data/master/devices',
+    pathMatch: 'full'
   },
   {
     path: 'sample-description-master',
-    loadComponent: () => import('./features/config/sample-description-master.component').then(m => m.SampleDescriptionMasterComponent),
-    canActivate: [permissionGuard],
-    data: { role: 'manager' }
+    redirectTo: 'settings/data/master/sample-descriptions',
+    pathMatch: 'full'
   },
   {
     path: 'requests',
@@ -204,26 +199,57 @@ export const routes: Routes = [
         path: 'manager',
         loadComponent: () => import('./features/settings/pages/manager-settings.component').then(m => m.ManagerSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permissionsAny: [PERMISSIONS.SYSTEM_MANAGE, PERMISSIONS.MASTER_DATA_MANAGE, PERMISSIONS.USER_MANAGE, PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE, PERMISSIONS.POLICY_MANAGE] }
       },
       {
         path: 'system',
         loadComponent: () => import('./features/settings/pages/system-settings.component').then(m => m.SystemSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permission: PERMISSIONS.SYSTEM_MANAGE }
       },
       { path: 'data', redirectTo: 'data/master', pathMatch: 'full' },
+      { path: 'data/master', redirectTo: 'data/master/analytes', pathMatch: 'full' },
       {
-        path: 'data/master',
+        path: 'data/master/analytes',
+        loadComponent: () => import('./features/targets/master-target-manager.component').then(m => m.MasterTargetManagerComponent),
+        canActivate: [permissionGuard],
+        data: { permission: PERMISSIONS.MASTER_DATA_MANAGE }
+      },
+      {
+        path: 'data/master/target-groups',
+        loadComponent: () => import('./features/targets/target-group-manager.component').then(m => m.TargetGroupManagerComponent),
+        canActivate: [permissionGuard],
+        data: { permission: PERMISSIONS.MASTER_DATA_MANAGE }
+      },
+      {
+        path: 'data/master/matrices',
+        loadComponent: () => import('./features/config/matrix-type-manager.component').then(m => m.MatrixTypeManagerComponent),
+        canActivate: [permissionGuard],
+        data: { permission: PERMISSIONS.MASTER_DATA_MANAGE }
+      },
+      {
+        path: 'data/master/sample-descriptions',
+        loadComponent: () => import('./features/config/sample-description-master.component').then(m => m.SampleDescriptionMasterComponent),
+        canActivate: [permissionGuard],
+        data: { permission: PERMISSIONS.MASTER_DATA_MANAGE }
+      },
+      {
+        path: 'data/master/devices',
+        loadComponent: () => import('./features/config/master-device-manager.component').then(m => m.MasterDeviceManagerComponent),
+        canActivate: [permissionGuard],
+        data: { permission: PERMISSIONS.MASTER_DATA_MANAGE }
+      },
+      {
+        path: 'data/master/categories',
         loadComponent: () => import('./features/settings/pages/master-data-settings.component').then(m => m.MasterDataSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permission: PERMISSIONS.MASTER_DATA_MANAGE }
       },
       {
         path: 'data/backups',
         loadComponent: () => import('./features/settings/pages/backup-settings.component').then(m => m.BackupSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permissionsAny: [PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE] }
       },
       { path: 'data/lifecycle', redirectTo: 'data/backups', pathMatch: 'full' },
       { path: 'access', redirectTo: 'access/users', pathMatch: 'full' },
@@ -231,19 +257,19 @@ export const routes: Routes = [
         path: 'access/users',
         loadComponent: () => import('./features/settings/pages/access-users-settings.component').then(m => m.AccessUsersSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permission: PERMISSIONS.USER_MANAGE }
       },
       {
         path: 'access/roles',
         loadComponent: () => import('./features/settings/pages/access-roles-settings.component').then(m => m.AccessRolesSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permission: PERMISSIONS.USER_MANAGE }
       },
       {
         path: 'policies/consumption',
         loadComponent: () => import('./features/settings/pages/consumption-settings.component').then(m => m.ConsumptionSettingsComponent),
         canActivate: [permissionGuard],
-        data: { role: 'manager' }
+        data: { permission: PERMISSIONS.POLICY_MANAGE }
       }
     ]
   },

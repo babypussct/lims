@@ -18,7 +18,7 @@ test('global activity logs use V2 create validation and separated read policies'
   assert.match(rules, /validActivityClassification\(data\)/);
   assert.match(rules, /data\.get\('publicTraceable', false\) == true/);
   assert.match(rules, /data\.get\('auditClass', ''\) == 'BUSINESS'/);
-  assert.match(rules, /audience == 'SYSTEM_ADMIN' && hasPermission\(appId, 'user_manage'\)/);
+  assert.match(rules, /audience == 'SYSTEM_ADMIN'[\s\S]*hasPermission\(appId, 'user_manage'\) \|\| hasPermission\(appId, 'system_manage'\)/);
 });
 
 test('canonical Activity readers no longer depend on the legacy StateService log stream', () => {

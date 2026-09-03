@@ -141,7 +141,7 @@ export class StateService implements OnDestroy {
   // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
   usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
-  systemVersion = signal<string>('v26.09.04-b01');
+  systemVersion = signal<string>('v26.09.04-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -1177,8 +1177,8 @@ export class StateService implements OnDestroy {
 
   async postSystemUpdate(content: string, updateType: string, actionUrl: string): Promise<string> {
     const currentUser = this.auth.currentUser();
-    if (!currentUser || currentUser.role !== 'manager') {
-      throw new Error('Chỉ quản trị viên được đăng thông báo hệ thống.');
+    if (!currentUser || !this.auth.hasPermission('system_manage')) {
+      throw new Error('Bạn cần quyền quản lý cấu hình hệ thống để đăng thông báo.');
     }
     const normalizedContent = content.trim();
     if (!normalizedContent) throw new Error('Nội dung thông báo hệ thống không được để trống.');

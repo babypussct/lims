@@ -2,7 +2,37 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.04-b01
+## Phiên bản hiện tại: v26.09.04-b02
+
+### v26.09.04-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Settings dùng một hệ điều hướng phía trên thống nhất, bỏ hoàn toàn sidebar nội bộ và giữ ngữ cảnh rõ ràng giữa tài khoản cá nhân với khu vực quản trị.
+- Manager vẫn toàn quyền, đồng thời Staff có thể được ủy quyền từng module quản trị bằng các quyền system_manage, master_data_manage, policy_manage và bộ quyền Backup riêng biệt.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung catalog quyền dùng chung cho Users, Roles, route guards và các module quản trị; hỗ trợ permissionsAny cho các hub cần nhiều quyền thay thế.
+- Chuẩn hóa Master Data dưới /settings/data/master/* với sub-navigation riêng, deep-link canonical và giữ trạng thái tìm kiếm/lọc bằng query parameter.
+- Trung tâm Manager hiển thị trạng thái vận hành có hành động: người dùng chờ duyệt, sức khỏe backup, bảo trì và số lượng dữ liệu nền.
+- Backup & phục hồi phân quyền riêng cho tạo, kiểm tra và khôi phục; trạng thái sức khỏe được dùng chung cho người có bất kỳ quyền Backup nào.
+- Bổ sung xác nhận nhập chính xác cho thao tác purge thùng rác và khóa tài khoản quản trị được bảo vệ ở cả UI lẫn Firestore Rules.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Thiết kế lại tab Bảo mật để loại bỏ nội dung lặp; các trang quản trị dùng compact header, breadcrumb và thanh top navigation theo phong cách Soft UI.
+- Loại bỏ Chẩn đoán, công cụ migration runtime đã hoàn tất và các luồng Excel restore/permanent-delete không còn phù hợp với cơ chế disaster recovery.
+- Hợp nhất các editor Master Data về cùng layout Settings trên desktop expanded/collapsed, mobile và dark mode; các URL cũ vẫn redirect để tương thích bookmark.
+- Users và Roles cùng dùng catalog quyền trung tâm, có tìm kiếm quyền, phân biệt quyền kế thừa/quyền gán trực tiếp và bảo vệ Manager cuối cùng.
+- Chính sách hao hụt hiển thị phạm vi ảnh hưởng, cảnh báo orphan/duplicate; cấu hình chữ ký in được nối trực tiếp vào mặc định PrintService.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn pending/viewer tự mang custom permission và chặn delegated user_manage tự cấp hoặc thay đổi vai trò Manager trong Firestore Rules.
+- Sửa Manager overview không còn hiển thị số 0 giả khi nguồn dữ liệu lỗi; trạng thái không khả dụng được phân biệt rõ với dữ liệu thực sự bằng 0.
+- Cập nhật UI zero-jump audit theo các route Settings canonical và phát hiện/sửa lệch ngang giữa các editor Master Data khi sidebar ứng dụng thu gọn.
+- Đổi các liên kết nội bộ còn dùng alias Master Data sang canonical Settings route để điều hướng luôn nhất quán.
 
 ### v26.09.04-b01
 

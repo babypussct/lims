@@ -75,13 +75,13 @@ test('batch_run cannot approve or arbitrarily rewrite an existing request', () =
   assert.doesNotMatch(rules, /fromStatus == 'pending' && toStatus == 'approved'/);
 });
 
-test('master data writes are manager-only', () => {
+test('master data writes allow the delegated master_data_manage permission', () => {
   for (const collectionName of ['master_targets', 'master_analytes', 'matrix_types', 'master_devices']) {
     const marker = `match /artifacts/{appId}/${collectionName}/{docId}`;
     const start = rules.indexOf(marker);
     assert.notEqual(start, -1, `${collectionName} rule must exist`);
     const block = rules.slice(start, rules.indexOf('\n    }', start) + 6);
-    assert.match(block, /allow write:\s*if isManager\(appId\)/);
+    assert.match(block, /allow write:\s*if isManager\(appId\) \|\| hasPermission\(appId, 'master_data_manage'\)/);
     assert.doesNotMatch(block, /allow read, write:\s*if isSignedIn\(\)/);
   }
 });

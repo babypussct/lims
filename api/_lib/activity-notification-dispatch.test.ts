@@ -49,6 +49,7 @@ test('permission resolution honors direct/custom/role permissions and manager ov
   const systemContract = getActivityDispatchContract('POST_SYSTEM_UPDATE');
   assert.ok(systemContract);
   assert.equal(actorMayDispatchContract({ role: 'staff', customPermissions: ['user_manage'] }, [], systemContract), false);
+  assert.equal(actorMayDispatchContract({ role: 'staff', customPermissions: ['system_manage'] }, [], systemContract), true);
   assert.equal(actorMayDispatchContract({ role: 'manager' }, [], systemContract), true);
   const standardContract = getActivityDispatchContract('REQUEST_STANDARD');
   assert.ok(standardContract);

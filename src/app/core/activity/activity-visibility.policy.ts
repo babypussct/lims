@@ -7,7 +7,7 @@ const AUDIENCE_PERMISSIONS: Record<ActivityAudience, readonly string[]> = {
   INVENTORY_OPERATOR: ['inventory_edit'],
   STANDARD_VIEW: ['standard_view', 'standard_edit', 'standard_approve', 'standard_log_view'],
   STANDARD_OPERATOR: ['standard_edit', 'standard_approve'],
-  SYSTEM_ADMIN: ['user_manage']
+  SYSTEM_ADMIN: ['user_manage', 'system_manage']
 };
 
 const ALL_AUDIENCES = Object.freeze(Object.keys(AUDIENCE_PERMISSIONS) as ActivityAudience[]);
@@ -34,6 +34,6 @@ export function canViewActivityEvent(context: ActivityViewerContext, event: Pick
 export function canViewAuditEvent(context: ActivityViewerContext, event: Pick<ActivityEvent, 'auditClass'>): boolean {
   if (context.role === 'pending' || context.role === 'viewer') return false;
   if (context.role === 'manager') return true;
-  if (event.auditClass === 'SYSTEM') return hasAnyPermission(context.permissions, ['user_manage']);
+  if (event.auditClass === 'SYSTEM') return hasAnyPermission(context.permissions, ['user_manage', 'system_manage']);
   return hasAnyPermission(context.permissions, ['report_view']);
 }

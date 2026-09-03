@@ -523,7 +523,7 @@
                         @if(availableGroups().length === 0) {
                             <div class="p-8 text-center text-slate-400 dark:text-slate-500 italic text-sm">
                                 Chưa có bộ chỉ tiêu nào.<br>
-                                <a routerLink="/target-groups" class="text-teal-600 dark:text-teal-400 hover:underline font-bold mt-1 inline-block">Tạo mới tại đây</a>
+                                <a routerLink="/settings/data/master/target-groups" class="text-teal-600 dark:text-teal-400 hover:underline font-bold mt-1 inline-block">Tạo mới tại đây</a>
                             </div>
                         } @else {
                             @for(g of availableGroups(); track g.id) {

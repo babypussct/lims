@@ -44,32 +44,79 @@ describe('Settings routing contract', () => {
     }
   });
 
-  it('protects every administrative Settings page with the manager guard', () => {
-    const managerOnlyPaths = [
-      'manager',
-      'system',
-      'data/master',
-      'data/backups',
-      'access/users',
-      'access/roles',
-      'policies/consumption',
+  it('protects administrative Settings pages with granular delegated permissions and manager override', () => {
+    const singlePermissionRoutes: Array<[string, string]> = [
+      ['system', 'system_manage'],
+      ['data/master/analytes', 'master_data_manage'],
+      ['data/master/target-groups', 'master_data_manage'],
+      ['data/master/matrices', 'master_data_manage'],
+      ['data/master/sample-descriptions', 'master_data_manage'],
+      ['data/master/devices', 'master_data_manage'],
+      ['data/master/categories', 'master_data_manage'],
+      ['access/users', 'user_manage'],
+      ['access/roles', 'user_manage'],
+      ['policies/consumption', 'policy_manage'],
     ];
 
-    for (const path of managerOnlyPaths) {
+    for (const [path, permission] of singlePermissionRoutes) {
       const child = settingsChild(path);
       assert.ok(child.loadComponent, `/settings/${path} phải lazy-load component`);
       assert.ok(child.canActivate?.length, `/settings/${path} phải có guard`);
-      assert.equal(child.data?.['role'], 'manager');
+      assert.equal(child.data?.['permission'], permission);
+      assert.equal(child.data?.['role'], undefined);
     }
+
+    const manager = settingsChild('manager');
+    assert.ok(manager.canActivate?.length);
+    assert.deepEqual(manager.data?.['permissionsAny'], [
+      'system_manage',
+      'master_data_manage',
+      'user_manage',
+      'backup_create',
+      'backup_verify',
+      'backup_restore',
+      'policy_manage',
+    ]);
+    assert.equal(manager.data?.['role'], undefined);
+
+    const backups = settingsChild('data/backups');
+    assert.ok(backups.canActivate?.length);
+    assert.deepEqual(backups.data?.['permissionsAny'], ['backup_create', 'backup_verify', 'backup_restore']);
+    assert.equal(backups.data?.['role'], undefined);
   });
 
   it('keeps the Settings aliases and data hub redirects deterministic', () => {
     assert.equal(settingsChild('').redirectTo, 'account/profile');
     assert.equal(settingsChild('account').redirectTo, 'account/profile');
     assert.equal(settingsChild('data').redirectTo, 'data/master');
+    assert.equal(settingsChild('data/master').redirectTo, 'data/master/analytes');
     assert.equal(settingsChild('data/lifecycle').redirectTo, 'data/backups');
     assert.equal(settingsChild('data/lifecycle').pathMatch, 'full');
     assert.equal(settingsChild('access').redirectTo, 'access/users');
+
+    assert.equal(route('master-targets').redirectTo, 'settings/data/master/analytes');
+    assert.equal(route('target-groups').redirectTo, 'settings/data/master/target-groups');
+    assert.equal(route('matrix-types').redirectTo, 'settings/data/master/matrices');
+    assert.equal(route('sample-description-master').redirectTo, 'settings/data/master/sample-descriptions');
+    assert.equal(route('master-devices').redirectTo, 'settings/data/master/devices');
+  });
+
+  it('keeps Master Data internal links canonical and preserves searchable list state in the URL', () => {
+    const masterAnalytesSource = readFileSync(new URL('../targets/master-target-manager.component.ts', import.meta.url), 'utf8');
+    const sampleDescriptionsSource = readFileSync(new URL('../config/sample-description-master.component.ts', import.meta.url), 'utf8');
+    const sampleDescriptionsTemplate = readFileSync(new URL('../config/sample-description-master.component.html', import.meta.url), 'utf8');
+    const sopEditorTemplate = readFileSync(new URL('../sop/editor/sop-editor.component.html', import.meta.url), 'utf8');
+
+    assert.match(masterAnalytesSource, /queryParamMap\.get\('q'\)/);
+    assert.match(masterAnalytesSource, /queryParams:\s*\{ q: value\.trim\(\) \|\| null \}/);
+    assert.match(masterAnalytesSource, /queryParamsHandling:\s*'merge'/);
+    assert.match(sampleDescriptionsSource, /queryParamMap\.get\('q'\)/);
+    assert.match(sampleDescriptionsSource, /queryParamMap\.get\('status'\)/);
+    assert.match(sampleDescriptionsSource, /updateListQueryParams/);
+    assert.match(sampleDescriptionsTemplate, /onSearchTermChange\(\$event\)/);
+    assert.match(sampleDescriptionsTemplate, /onStatusFilterChange\(\$event\)/);
+    assert.match(sopEditorTemplate, /routerLink="\/settings\/data\/master\/target-groups"/);
+    assert.doesNotMatch(sopEditorTemplate, /routerLink="\/target-groups"/);
   });
 
   it('supports a persistent per-user device opt-out for push notifications', () => {
@@ -122,18 +169,20 @@ describe('Settings routing contract', () => {
 
     assert.match(settingsShellSource, /aria-label="Điều hướng cấu hình tài khoản"/);
     assert.match(settingsShellSource, /aria-label="Điều hướng quản trị hệ thống"/);
-    assert.match(settingsShellSource, /topNavItems\(\)/);
+    assert.match(settingsShellSource, /accountNavItems/);
     assert.match(settingsShellSource, /managerNavItems/);
     assert.match(settingsShellSource, /filteredManagerNavItems/);
-    assert.match(settingsShellSource, /showManagerNavigation/);
+    assert.match(settingsShellSource, /isAdminArea/);
+    assert.match(settingsShellSource, /contextSubNavItems/);
     assert.match(settingsShellSource, /url === '\/settings\/manager'/);
-    assert.doesNotMatch(settingsShellSource, /url\.startsWith\('\/settings\/account\/'\)/);
     assert.match(settingsShellSource, /Tìm nhanh cài đặt/);
     assert.match(settingsShellSource, /\/settings\/account\/privacy/);
-    assert.match(settingsShellSource, /label: 'Quản trị'[\s\S]*path: '\/settings\/manager'[\s\S]*adminOnly: true/);
-    assert.match(settingsShellSource, /label: 'Cấu hình chung'[\s\S]*path: '\/settings\/system'/);
-    assert.match(settingsShellSource, /label: 'Vai trò'[\s\S]*path: '\/settings\/access\/roles'/);
-    assert.match(settingsShellSource, /label: 'Định mức & tiêu hao'[\s\S]*path: '\/settings\/policies\/consumption'/);
+    assert.match(settingsShellSource, /label: 'Quản trị'[\s\S]*path: '\/settings\/manager'[\s\S]*permissionsAny: ADMIN_PERMISSIONS/);
+    assert.match(settingsShellSource, /label: 'Hệ thống'[\s\S]*path: '\/settings\/system'[\s\S]*PERMISSIONS\.SYSTEM_MANAGE/);
+    assert.match(settingsShellSource, /label: 'Người dùng & quyền'[\s\S]*path: '\/settings\/access\/users'[\s\S]*PERMISSIONS\.USER_MANAGE/);
+    assert.match(settingsShellSource, /label: 'Chính sách hao hụt'[\s\S]*path: '\/settings\/policies\/consumption'[\s\S]*PERMISSIONS\.POLICY_MANAGE/);
+    assert.match(settingsShellSource, /label: 'Chỉ tiêu'[\s\S]*\/settings\/data\/master\/analytes/);
+    assert.match(settingsShellSource, /label: 'Vai trò & quyền'[\s\S]*\/settings\/access\/roles/);
     assert.doesNotMatch(settingsShellSource, /<aside/);
     assert.doesNotMatch(settingsShellSource, /Desktop Sticky Navigation Sidebar/);
     assert.doesNotMatch(settingsShellSource, /isAccountArea/);
@@ -141,7 +190,7 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(profileSettingsSource, /relative h-40 overflow-hidden rounded-2xl bg-gradient-soft/);
   });
 
-  it('keeps the security page non-duplicative and the manager hub explicit', () => {
+  it('keeps the security page non-duplicative and the manager overview action-driven', () => {
     const securitySource = readFileSync(new URL('./pages/account-security-settings.component.ts', import.meta.url), 'utf8');
     const managerSource = readFileSync(new URL('./pages/manager-settings.component.ts', import.meta.url), 'utf8');
 
@@ -151,20 +200,23 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(securitySource, /title="Nhật ký bảo mật"/);
     assert.doesNotMatch(securitySource, /Yêu cầu mật khẩu/);
 
-    assert.match(managerSource, /Trung tâm quản trị/);
-    assert.match(managerSource, /Quyền quản trị đang hiệu lực/);
+    assert.match(managerSource, /Tổng quan quản trị/);
+    assert.match(managerSource, /Ưu tiên các việc cần xử lý/);
+    assert.match(managerSource, /Hệ thống vận hành bình thường/);
+    assert.match(managerSource, /pendingUsers/);
+    assert.match(managerSource, /backupNeedsAttention/);
+    assert.match(managerSource, /masterCounts/);
+    assert.match(managerSource, /userSummaryAvailable/);
+    assert.match(managerSource, /masterDataSummaryAvailable/);
     assert.match(managerSource, /PERMISSIONS\.USER_MANAGE/);
     assert.match(managerSource, /PERMISSIONS\.BACKUP_RESTORE/);
     assert.match(managerSource, /\/settings\/access\/users/);
-    assert.match(managerSource, /\/settings\/access\/roles/);
     assert.match(managerSource, /\/settings\/system/);
     assert.match(managerSource, /\/settings\/data\/master/);
     assert.match(managerSource, /\/settings\/data\/backups/);
-    assert.match(managerSource, /\/settings\/policies\/consumption/);
     assert.doesNotMatch(managerSource, /\/settings\/data\/lifecycle/);
     assert.doesNotMatch(managerSource, /\/settings\/diagnostics/);
-    assert.match(managerSource, /adminAreaCount/);
-    assert.match(managerSource, /Mọi trang quản trị dùng chung một hệ điều hướng trên cùng/);
+    assert.doesNotMatch(managerSource, /shortcut/i);
   });
 
   it('removes diagnostics and folds lifecycle tools into Backup & phục hồi', () => {
@@ -179,7 +231,7 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(manager, /Chẩn đoán|\/settings\/diagnostics/);
     assert.doesNotMatch(general, /Tài Nguyên|Migration Dữ Liệu Hệ Thống|runLastUpdatedMigration/);
     assert.doesNotMatch(generalSource, /runLastUpdatedMigration|isMigrating|migrationLog|storageEstimate|usageBusy/);
-    assert.match(general, /view\(\) === 'backup'[\s\S]*Kho Lưu Trữ & Phục Hồi/);
+    assert.match(general, /view\(\) === 'backup'[\s\S]*Backup & Phục Hồi/);
     assert.doesNotMatch(generalSource, /'data' \| 'diagnostics'/);
   });
 

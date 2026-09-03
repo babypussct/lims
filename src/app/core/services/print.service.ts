@@ -30,6 +30,7 @@ export class PrintService {
   private readonly pendingPreviewKey = '__gd_pending_pdf_preview';
   private toast = inject(ToastService);
   private googleDriveService = inject(GoogleDriveService);
+  private state = inject(StateService);
 
   // Operations state
   isPrinting = signal<boolean>(false);
@@ -59,13 +60,15 @@ export class PrintService {
   pdfPreviewType = signal<'iframe' | 'image'>('iframe');
   onRepublishCallback = signal<(() => Promise<void>) | null>(null);
 
-  // Default Options
-  defaultOptions: PrintOptions = {
+  // Default options resolve from the global print policy at preview-open time.
+  get defaultOptions(): PrintOptions {
+    return {
       showHeader: true,
       showFooter: true,
-      showSignature: true,
-      showCutLine: true
-  };
+      showSignature: this.state.printConfig()?.showSignature ?? true,
+      showCutLine: true,
+    };
+  }
 
   // --- 1. ENTRY POINT: OPEN PREVIEW ---
   openPreview(jobs: PrintJob[]) {

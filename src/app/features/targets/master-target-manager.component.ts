@@ -3,12 +3,11 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { MasterTargetService } from './master-target.service';
-import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { MasterAnalyte } from '../../core/models/sop.model';
 import { generateSlug, formatDate } from '../../shared/utils/utils';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.directive';
 import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
 
@@ -28,11 +27,6 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                 <app-button variant="ghost" size="sm" (click)="goBack()">
                     <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span class="hidden md:inline">Cấu hình</span>
                 </app-button>
-                <!-- Migrate Button -->
-                <app-button variant="danger" size="sm" (click)="migrateHyphenToUnderscore()" [disabled]="isProcessing()">
-                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Migrate data (- to _)
-                </app-button>
-
                 <!-- Export Button -->
                 <app-button variant="secondary" size="sm" (click)="exportToExcel()" [disabled]="isProcessing() || isLoading() || items().length === 0">
                     <i class="fa-solid fa-file-export" aria-hidden="true"></i> Export Excel
@@ -53,7 +47,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
         <app-toolbar>
             <div toolbarSearch class="relative">
                 <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm"></i>
-                <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+                <input [ngModel]="searchTerm()" (ngModelChange)="onSearchTermChange($event)"
                        class="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition shadow-sm"
                        placeholder="Tìm kiếm tên chất, CAS number, công thức hóa học...">
             </div>
@@ -229,10 +223,10 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
 })
 export class MasterTargetManagerComponent implements OnInit {
   masterService = inject(MasterTargetService);
-  firebase = inject(FirebaseService);
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   router: Router = inject(Router);
+  route: ActivatedRoute = inject(ActivatedRoute);
   fb: FormBuilder = inject(FormBuilder); // Explicitly type FormBuilder
 
   items = signal<MasterAnalyte[]>([]);
@@ -256,211 +250,6 @@ export class MasterTargetManagerComponent implements OnInit {
       description: ['']
   });
 
-  async migrateHyphenToUnderscore() {
-      if (!await this.confirmation.confirm({
-          message: 'Are you sure you want to run the full migration replacing hyphens with underscores in IDs? This will modify master_analytes, targetGroups, sops, and requests.',
-          confirmText: 'Run migration',
-          isDangerous: true
-      })) return;
-      this.isProcessing.set(true);
-      try {
-          const { getDocs, collection, writeBatch, doc, serverTimestamp } = await import('firebase/firestore');
-          const db = this.firebase.db;
-          const appId = this.firebase.APP_ID;
-          let batch = writeBatch(db);
-          let opCount = 0;
-
-          const commitBatch = async () => {
-              if (opCount > 0) {
-                  await batch.commit();
-                  batch = writeBatch(db);
-                  opCount = 0;
-              }
-          };
-
-          console.log('Đang chuyển đổi danh mục chỉ tiêu...');
-          const analytesSnap = await getDocs(collection(db, `artifacts/${appId}/master_analytes`));
-          for (const d of analytesSnap.docs) {
-              const docId = d.id;
-              const data = d.data() as any;
-              let changed = false;
-              let newDocId = docId;
-
-              if (docId.includes('-')) {
-                  newDocId = docId.replace(/-/g, '_');
-                  changed = true;
-              }
-              if (data.id && data.id.includes('-')) {
-                  data.id = data.id.replace(/-/g, '_');
-                  changed = true;
-              }
-
-              if (changed) {
-                  data.lastUpdated = serverTimestamp(); // BẮT BUỘC ĐỂ DELTASYNC NHẬN DIỆN THAY ĐỔI
-                  if (newDocId !== docId) {
-                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, newDocId), {
-                          ...data,
-                          _isDeleted: false,
-                          lastUpdated: serverTimestamp()
-                      });
-                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, docId), {
-                          _isDeleted: true,
-                          lastUpdated: serverTimestamp()
-                      }, { merge: true });
-                      opCount += 2;
-                  } else {
-                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, docId), data);
-                      opCount++;
-                  }
-                  if (opCount > 400) await commitBatch();
-              }
-          }
-          await commitBatch();
-
-          console.log('Đang chuyển đổi nhóm chỉ tiêu...');
-          const tgSnap = await getDocs(collection(db, `artifacts/${appId}/target_groups`));
-          for (const d of tgSnap.docs) {
-              const data = d.data() as any;
-              let changed = false;
-              if (data.id && data.id.includes('-')) {
-                  data.id = data.id.replace(/-/g, '_');
-                  changed = true;
-              }
-              if (data.targets && Array.isArray(data.targets)) {
-                  data.targets.forEach((t: any) => {
-                      if (t.id && t.id.includes('-')) {
-                          t.id = t.id.replace(/-/g, '_');
-                          changed = true;
-                      }
-                  });
-              }
-              if (changed) {
-                  data.lastUpdated = serverTimestamp();
-                  if (d.id.includes('-')) {
-                      const newId = d.id.replace(/-/g, '_');
-                      batch.set(doc(db, `artifacts/${appId}/target_groups`, newId), data);
-                      batch.delete(doc(db, `artifacts/${appId}/target_groups`, d.id));
-                      opCount += 2;
-                  } else {
-                      batch.set(doc(db, `artifacts/${appId}/target_groups`, d.id), data);
-                      opCount++;
-                  }
-                  if (opCount > 400) await commitBatch();
-              }
-          }
-          await commitBatch();
-
-          console.log('Migrating SOPs...');
-          const sopsSnap = await getDocs(collection(db, `artifacts/${appId}/sops`));
-          for (const d of sopsSnap.docs) {
-              const data = d.data() as any;
-              let changed = false;
-              if (data.targets && Array.isArray(data.targets)) {
-                  data.targets.forEach((t: any) => {
-                      if (t.id && t.id.includes('-')) {
-                          t.id = t.id.replace(/-/g, '_');
-                          changed = true;
-                      }
-                  });
-              }
-              if (changed) {
-                  data.lastUpdated = serverTimestamp();
-                  batch.set(doc(db, `artifacts/${appId}/sops`, d.id), data);
-                  opCount++;
-                  if (opCount > 400) await commitBatch();
-              }
-          }
-          await commitBatch();
-
-          console.log('Migrating Requests...');
-          const reqsSnap = await getDocs(collection(db, `artifacts/${appId}/requests`));
-          for (const d of reqsSnap.docs) {
-              const data = d.data() as any;
-              let changed = false;
-
-              if (data.targetIds && Array.isArray(data.targetIds)) {
-                  const newTargetIds = data.targetIds.map((tid: string) => tid.includes('-') ? tid.replace(/-/g, '_') : tid);
-                  if (JSON.stringify(newTargetIds) !== JSON.stringify(data.targetIds)) {
-                      data.targetIds = newTargetIds;
-                      changed = true;
-                  }
-              }
-
-              if (data.tests && Array.isArray(data.tests)) {
-                  data.tests.forEach((test: any) => {
-                      if (test.targets && Array.isArray(test.targets)) {
-                          test.targets.forEach((t: any) => {
-                              if (t.id && t.id.includes('-')) {
-                                  t.id = t.id.replace(/-/g, '_');
-                                  changed = true;
-                              }
-                          });
-                      }
-                  });
-              }
-
-              if (data.sampleTargetMap) {
-                  for (const sampleId of Object.keys(data.sampleTargetMap)) {
-                      const arr = data.sampleTargetMap[sampleId];
-                      if (Array.isArray(arr)) {
-                          const newArr = arr.map((id: string) => id.includes('-') ? id.replace(/-/g, '_') : id);
-                          if (JSON.stringify(newArr) !== JSON.stringify(arr)) {
-                              data.sampleTargetMap[sampleId] = newArr;
-                              changed = true;
-                          }
-                      } else if (typeof arr === 'object' && arr !== null) {
-                          // In case it's a map not an array
-                          const tMap: any = arr;
-                          for (const k of Object.keys(tMap)) {
-                              if (k.includes('-')) {
-                                  const newK = k.replace(/-/g, '_');
-                                  tMap[newK] = tMap[k];
-                                  delete tMap[k];
-                                  changed = true;
-                              }
-                          }
-                      }
-                  }
-              }
-
-              if (data.analysisResult && data.analysisResult.resultData) {
-                  for (const sampleId of Object.keys(data.analysisResult.resultData)) {
-                      const rData = data.analysisResult.resultData[sampleId];
-                      for (const k of Object.keys(rData)) {
-                          if (k.includes('-')) {
-                              const newK = k.replace(/-/g, '_');
-                              rData[newK] = rData[k];
-                              delete rData[k];
-                              changed = true;
-                          }
-                      }
-                  }
-              }
-              
-              if (changed) {
-                  data.lastUpdated = serverTimestamp();
-                  batch.set(doc(db, `artifacts/${appId}/requests`, d.id), data);
-                  opCount++;
-                  if (opCount > 400) await commitBatch();
-              }
-          }
-          await commitBatch();
-
-          this.toast.show('Migration completed successfully! Reloading...', 'success');
-          
-          // Xóa cache cục bộ để DeltaSync tải lại toàn bộ danh sách mới nhất
-          localStorage.removeItem(`delta_master_analytes_${appId}`);
-          localStorage.removeItem(`delta_master_analytes_cursor_${appId}`);
-          
-          setTimeout(() => window.location.reload(), 1500);
-      } catch (error: any) {
-          console.error('Migration error:', error);
-          this.toast.show('Migration failed: ' + error.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
-
   filteredItems = computed(() => {
       const term = this.searchTerm().toLowerCase().trim();
       if (!term) return this.items();
@@ -474,7 +263,18 @@ export class MasterTargetManagerComponent implements OnInit {
   });
 
   ngOnInit() {
+      this.searchTerm.set(this.route.snapshot.queryParamMap.get('q') || '');
       this.loadData();
+  }
+
+  onSearchTermChange(value: string) {
+      this.searchTerm.set(value);
+      void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { q: value.trim() || null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true
+      });
   }
 
   async loadData() {

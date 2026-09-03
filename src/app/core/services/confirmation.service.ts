@@ -7,6 +7,7 @@ export interface ConfirmationOptions {
   confirmText?: string;
   cancelText?: string;
   isDangerous?: boolean;
+  requiredText?: string;
 }
 
 interface ConfirmationState extends ConfirmationOptions {
@@ -22,9 +23,11 @@ export class ConfirmationService {
     confirmText: 'Xác nhận',
     cancelText: 'Hủy',
     isDangerous: false,
+    requiredText: undefined,
   };
 
   state = signal<ConfirmationState>(this.defaultState);
+  typedText = signal('');
   private resolver?: (value: boolean) => void;
 
   confirm(options: ConfirmationOptions | string): Promise<boolean> {
@@ -38,11 +41,22 @@ export class ConfirmationService {
         confirmText: opts.confirmText || 'Xác nhận',
         cancelText: opts.cancelText || 'Hủy',
         isDangerous: opts.isDangerous || false,
+        requiredText: opts.requiredText,
       });
+      this.typedText.set('');
     });
   }
 
-  onConfirm() { if (this.resolver) this.resolver(true); this.close(); }
+  canConfirm(): boolean {
+    const requiredText = this.state().requiredText;
+    return !requiredText || this.typedText() === requiredText;
+  }
+
+  onConfirm() {
+    if (!this.canConfirm()) return;
+    if (this.resolver) this.resolver(true);
+    this.close();
+  }
   onCancel() { if (this.resolver) this.resolver(false); this.close(); }
-  private close() { this.state.set({ ...this.defaultState }); this.resolver = undefined; }
+  private close() { this.state.set({ ...this.defaultState }); this.typedText.set(''); this.resolver = undefined; }
 }

@@ -33,55 +33,12 @@ import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 
 import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
+import { PERMISSIONS, PERMISSION_NAMES } from '../auth/permission-catalog';
+
+export { PERMISSIONS, PERMISSION_NAMES } from '../auth/permission-catalog';
 
 const GOOGLE_REDIRECT_PENDING_KEY = '__lims_google_redirect_pending';
 const GOOGLE_LINK_REDIRECT_PENDING_KEY = '__lims_google_link_redirect_pending';
-
-export const PERMISSIONS = {
-  INVENTORY_VIEW: 'inventory_view',
-  INVENTORY_EDIT: 'inventory_edit',
-  STANDARD_VIEW: 'standard_view',
-  STANDARD_EDIT: 'standard_edit',
-  STANDARD_APPROVE: 'standard_approve', // Phê duyệt yêu cầu chuẩn
-  STANDARD_LOG_VIEW: 'standard_log_view', // Xem nhật ký dùng toàn hệ thống
-  STANDARD_LOG_DELETE: 'standard_log_delete', // Xóa nhật ký / yêu cầu mượn chuẩn
-  RECIPE_VIEW: 'recipe_view',
-  RECIPE_EDIT: 'recipe_edit',
-  SOP_VIEW: 'sop_view',
-  SOP_EDIT: 'sop_edit',
-  SOP_APPROVE: 'sop_approve',
-  BATCH_RUN: 'batch_run',  // Chạy Smart Batch (thao tác tiêu hao kho)
-  REPORT_VIEW: 'report_view',
-  USER_MANAGE: 'user_manage',
-  STANDARD_REQUEST: 'standard_request', // Đăng ký mượn chuẩn
-  BYPASS_MAINTENANCE: 'bypass_maintenance', // Quyền truy cập khi bảo trì (Whitelist)
-  BACKUP_CREATE: 'backup_create',
-  BACKUP_VERIFY: 'backup_verify',
-  BACKUP_RESTORE: 'backup_restore'
-};
-
-export const PERMISSION_NAMES: Record<string, string> = {
-  [PERMISSIONS.INVENTORY_VIEW]: 'Xem Kho',
-  [PERMISSIONS.INVENTORY_EDIT]: 'Sửa Kho',
-  [PERMISSIONS.STANDARD_VIEW]: 'Xem Chất Chuẩn',
-  [PERMISSIONS.STANDARD_EDIT]: 'Sửa Chất Chuẩn',
-  [PERMISSIONS.STANDARD_APPROVE]: 'Duyệt Chuẩn',
-  [PERMISSIONS.STANDARD_LOG_VIEW]: 'Xem Nhật Ký Chuẩn',
-  [PERMISSIONS.STANDARD_LOG_DELETE]: 'Xóa Nhật Ký Chuẩn',
-  [PERMISSIONS.RECIPE_VIEW]: 'Xem Công Thức',
-  [PERMISSIONS.RECIPE_EDIT]: 'Sửa Công Thức',
-  [PERMISSIONS.SOP_VIEW]: 'Xem SOP & Nhập KQ',
-  [PERMISSIONS.SOP_EDIT]: 'Sửa SOP',
-  [PERMISSIONS.SOP_APPROVE]: 'Duyệt SOP',
-  [PERMISSIONS.BATCH_RUN]: 'Vận Hành Mẻ',
-  [PERMISSIONS.REPORT_VIEW]: 'Xem Báo Cáo',
-  [PERMISSIONS.USER_MANAGE]: 'Quản Lý Hệ Thống',
-  [PERMISSIONS.STANDARD_REQUEST]: 'Mượn Chuẩn',
-  [PERMISSIONS.BYPASS_MAINTENANCE]: 'Vượt Bảo Trì',
-  [PERMISSIONS.BACKUP_CREATE]: 'Tạo Backup Toàn Diện',
-  [PERMISSIONS.BACKUP_VERIFY]: 'Kiểm Tra Backup',
-  [PERMISSIONS.BACKUP_RESTORE]: 'Restore Backup'
-};
 
 export const DEFAULT_ROLES = {
   role_staff_default: {
@@ -153,6 +110,8 @@ export interface UserProfile {
   roleId?: string; // Khóa liên kết Dynamic RBAC
   permissions?: string[]; // Fallback hoặc Quyền cá nhân
   customPermissions?: string[]; // Quyền ghi đè cá nhân cho Staff
+  /** Trusted-layer marker. Client UI may display it but must never assign/remove it. */
+  protectedAdmin?: boolean;
   photoURL?: string;
   avatarStyle?: string;
   /** Cờ onboarding, không chứa và không thay thế mật khẩu Firebase. */
@@ -858,16 +817,6 @@ export class AuthService {
               const data = snap.data() as UserProfile;
               data.uid = firebaseUser.uid; // Ensure uid is present
 
-              // Auto-upgrade existing Super Admin account to Manager if not already
-              if ((data.email || '').toLowerCase() === 'oneloveonepeopleforever@gmail.com' && data.role !== 'manager') {
-                  data.role = 'manager';
-                  data.permissions = Object.values(PERMISSIONS);
-                  updateDoc(userRef, { 
-                      role: 'manager', 
-                      permissions: Object.values(PERMISSIONS) 
-                  }).catch((e: any) => console.error("Could not auto-promote Super Admin in Firestore", e));
-              }
-              
               // Ensure we sync Google Avatar to Firestore so others can see it
               if (firebaseUser.photoURL && data.photoURL !== firebaseUser.photoURL) {
                   data.photoURL = firebaseUser.photoURL;
@@ -890,13 +839,12 @@ export class AuthService {
 
               this.currentUser.set(data);
             } else {
-              const isSuperAdmin = (firebaseUser.email || '').toLowerCase() === 'oneloveonepeopleforever@gmail.com';
               const newUser: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
                 displayName: firebaseUser.displayName || 'User',
-                role: isSuperAdmin ? 'manager' : 'pending',
-                permissions: isSuperAdmin ? Object.values(PERMISSIONS) : [],
+                role: 'pending',
+                permissions: [],
                 photoURL: firebaseUser.photoURL || '',
                 localPasswordConfigured: !this.hasGoogleProvider() || this.hasPasswordProvider(),
                 createdAt: serverTimestamp()

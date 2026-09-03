@@ -9,6 +9,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog';
 
 @Component({
   selector: 'app-config-users',
@@ -58,6 +59,19 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                 </button>
             </div>
         </div>
+
+        @if (pendingCount() > 0) {
+            <button type="button" (click)="roleFilter.set('pending')" class="flex w-full items-center justify-between gap-4 rounded-2xl border border-orange-200 bg-orange-50/70 p-3.5 text-left transition hover:bg-orange-100/70 dark:border-orange-900/50 dark:bg-orange-950/20 dark:hover:bg-orange-950/30">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300"><i class="fa-solid fa-user-clock"></i></span>
+                    <div>
+                        <div class="text-xs font-black text-orange-800 dark:text-orange-300">{{pendingCount()}} tài khoản đang chờ duyệt</div>
+                        <div class="mt-0.5 text-[10px] font-semibold text-orange-700/70 dark:text-orange-300/70">Ưu tiên xử lý để tài khoản mới không bị kẹt ở trạng thái pending.</div>
+                    </div>
+                </div>
+                <span class="shrink-0 text-[10px] font-black uppercase tracking-wider text-orange-700 dark:text-orange-300">Xem ngay <i class="fa-solid fa-arrow-right ml-1"></i></span>
+            </button>
+        }
 
         @if (usersLoadError() || rolesLoadError()) {
             <div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -189,7 +203,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <select [ngModel]="batchRole()" (ngModelChange)="batchRole.set($event)" 
                                 class="bg-slate-900 text-xs font-bold text-slate-200 border-none rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
                             <option value="staff">Staff</option>
-                            <option value="manager">Manager</option>
+                            <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Manager</option>
                             <option value="viewer">Viewer</option>
                             <option value="pending">Pending</option>
                         </select>
@@ -248,8 +262,10 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <div class="col-span-1 md:col-span-4 flex items-center gap-3.5">
                             <input type="checkbox" 
                                    [checked]="selectedUids().has(u.uid)" 
+                                   [disabled]="isSuperAdmin(u)"
+                                   [title]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ và không tham gia thao tác hàng loạt.' : 'Chọn người dùng'"
                                    (change)="toggleSelectUser(u.uid)" 
-                                   class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer accent-fuchsia-600 shrink-0">
+                                   class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-fuchsia-600 shrink-0">
                             
                             <img [src]="getAvatarUrl(u.displayName, state.avatarStyle(), u.photoURL)" class="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 object-cover" alt="Avatar">
                             
@@ -260,7 +276,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                     <!-- Status Badges -->
                                     @if (isSuperAdmin(u)) {
                                         <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-black rounded-md border border-amber-300 dark:border-amber-700/60 shrink-0 flex items-center gap-1">
-                                            👑 Super Admin
+                                            <i class="fa-solid fa-lock" aria-hidden="true"></i> Quản trị được bảo vệ
                                         </span>
                                     }
                                     @if (u.role === 'pending') {
@@ -289,10 +305,12 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                             
                             <div class="flex items-center gap-2">
                                 <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
+                                        [disabled]="isSuperAdmin(u)"
+                                        [title]="isSuperAdmin(u) ? 'Vai trò của tài khoản quản trị gốc chỉ có thể thay đổi qua trusted admin path.' : 'Vai trò tài khoản'"
                                         class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-fuchsia-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
                                         [class.text-orange-600]="u.role === 'pending'"
                                         [class.dark:text-orange-400]="u.role === 'pending'">
-                                    <option value="manager">Manager (Toàn quyền)</option>
+                                    <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Manager (Toàn quyền)</option>
                                     <option value="staff">Staff (Nhân viên)</option>
                                     <option value="viewer">Viewer (Chỉ xem)</option>
                                     <option value="pending">Pending (Chờ duyệt)</option>
@@ -349,9 +367,10 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         
                         <!-- Col 4: Save Single User -->
                         <div class="col-span-1 md:col-span-1 flex md:justify-center mt-2 md:mt-0">
-                            <button (click)="saveUser(u)" 
-                                    class="w-full md:w-10 h-10 md:h-10 rounded-xl bg-fuchsia-50 md:bg-fuchsia-50/60 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-600 dark:hover:bg-fuchsia-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-fuchsia-200 md:border-transparent dark:border-fuchsia-800/40 font-bold gap-2 text-sm shadow-xs"
-                                    title="Lưu thay đổi cho người dùng này">
+                            <button (click)="saveUser(u)"
+                                    [disabled]="isSuperAdmin(u)"
+                                    class="w-full md:w-10 h-10 md:h-10 rounded-xl bg-fuchsia-50 md:bg-fuchsia-50/60 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-600 dark:hover:bg-fuchsia-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-fuchsia-200 md:border-transparent dark:border-fuchsia-800/40 font-bold gap-2 text-sm shadow-xs disabled:cursor-not-allowed disabled:opacity-40"
+                                    [title]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ ở trusted layer.' : 'Lưu thay đổi cho người dùng này'">
                                 <i class="fa-solid fa-floppy-disk text-base md:text-sm"></i> <span class="md:hidden">Lưu Thay Đổi</span>
                             </button>
                         </div>
@@ -389,8 +408,13 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             (closed)="closePermModal()"
         >
                 <div modalBody class="space-y-6">
+                    <label class="relative block">
+                        <span class="sr-only">Tìm quyền</span>
+                        <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                        <input type="search" [ngModel]="permissionQuery()" (ngModelChange)="permissionQuery.set($event)" placeholder="Tìm quyền theo tên hoặc mô tả..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-xs font-bold text-slate-700 outline-none focus:border-fuchsia-500 focus:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:bg-slate-900">
+                    </label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @for (group of permissionGroups; track group.name) {
+                        @for (group of filteredPermissionGroups(); track group.name) {
                             <div class="rounded-2xl border p-4 relative pt-5" [ngClass]="[group.bg, group.border]">
                                 <span class="absolute -top-3 left-4 px-2 py-0.5 text-[10px] font-black uppercase flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 border shadow-sm" [ngClass]="[group.color, group.border]">
                                     <i class="fa-solid" [ngClass]="group.icon"></i> {{group.name}}
@@ -414,6 +438,8 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                             </div>
                                             @if (isPermInherited(user, perm.val)) {
                                                 <span class="text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600/50">Kế thừa</span>
+                                            } @else if (isPermChecked(user, perm.val)) {
+                                                <span class="text-[9px] bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 font-bold px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800/50">Cấp riêng</span>
                                             }
                                         </label>
                                     }
@@ -453,6 +479,7 @@ export class ConfigUsersComponent implements OnInit {
   roleFilter = signal<string>('all'); // 'all' | 'pending' | 'staff' | 'manager' | 'viewer'
   roleIdFilter = signal<string>('all'); // 'all' | role.id
   permStatusFilter = signal<string>('all'); // 'all' | 'has_custom' | 'inherited_only'
+  permissionQuery = signal('');
 
   // SELECTION & BATCH ACTIONS SIGNALS
   selectedUids = signal<Set<string>>(new Set());
@@ -517,73 +544,23 @@ export class ConfigUsersComponent implements OnInit {
   });
 
   isAllSelected = computed(() => {
-    const visible = this.filteredUsers();
+    const visible = this.filteredUsers().filter(u => !this.isSuperAdmin(u));
     if (visible.length === 0) return false;
     const selected = this.selectedUids();
     return visible.every(u => selected.has(u.uid));
   });
 
-  permissionGroups = [
-    {
-      name: 'Quản lý kho và hóa chất',
-      icon: 'fa-box-open',
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      border: 'border-emerald-100 dark:border-emerald-800/30',
-      ring: 'var(--tw-colors-emerald-500, #10b981)',
-      perms: [
-        { val: PERMISSIONS.INVENTORY_VIEW, label: 'Xem Kho' },
-        { val: PERMISSIONS.INVENTORY_EDIT, label: 'Sửa Kho (Nhập/Xuất/Xóa)' },
-        { val: PERMISSIONS.BATCH_RUN, label: 'Pha chế & Tiêu hao (Batch)' }
-      ]
-    },
-    {
-      name: 'Chất chuẩn đối chiếu',
-      icon: 'fa-vial-circle-check',
-      color: 'text-fuchsia-500',
-      bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20',
-      border: 'border-fuchsia-100 dark:border-fuchsia-800/30',
-      ring: 'var(--tw-colors-fuchsia-500, #6366f1)',
-      perms: [
-        { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt và giao nhận chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký sử dụng chất chuẩn' },
-        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xóa yêu cầu và nhật ký chất chuẩn' }
-      ]
-    },
-    {
-      name: 'Quy trình SOP và công thức',
-      icon: 'fa-book-open',
-      color: 'text-amber-500',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-100 dark:border-amber-800/30',
-      ring: 'var(--tw-colors-amber-500, #f59e0b)',
-      perms: [
-        { val: PERMISSIONS.SOP_VIEW, label: 'Xem SOP' },
-        { val: PERMISSIONS.SOP_EDIT, label: 'Biên soạn SOP' },
-        { val: PERMISSIONS.SOP_APPROVE, label: 'Phê duyệt SOP' },
-        { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem công thức' },
-        { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa công thức' }
-      ]
-    },
-    {
-      name: 'Hệ thống và báo cáo',
-      icon: 'fa-server',
-      color: 'text-slate-500',
-      bg: 'bg-slate-50 dark:bg-slate-800/50',
-      border: 'border-slate-100 dark:border-slate-700/50',
-      ring: 'var(--tw-colors-slate-500, #64748b)',
-      perms: [
-        { val: PERMISSIONS.REPORT_VIEW, label: 'Xem Báo cáo Tổng hợp' },
-        { val: PERMISSIONS.USER_MANAGE, label: 'Quản trị nhân sự (Admin)' },
-        { val: PERMISSIONS.BACKUP_CREATE, label: 'Tạo Backup Toàn Diện' },
-        { val: PERMISSIONS.BACKUP_VERIFY, label: 'Kiểm tra Backup' },
-        { val: PERMISSIONS.BACKUP_RESTORE, label: 'Restore Backup' }
-      ]
-    }
-  ];
+  readonly permissionGroups = PERMISSION_EDITOR_GROUPS;
+  readonly filteredPermissionGroups = computed(() => {
+    const query = this.permissionQuery().trim().toLocaleLowerCase('vi');
+    if (!query) return this.permissionGroups;
+    return this.permissionGroups
+      .map(group => ({
+        ...group,
+        perms: group.perms.filter(permission => `${permission.label} ${permission.description}`.toLocaleLowerCase('vi').includes(query)),
+      }))
+      .filter(group => group.perms.length > 0);
+  });
 
   rolesList = signal<any[]>([]);
 
@@ -627,6 +604,8 @@ export class ConfigUsersComponent implements OnInit {
 
   // SELECTION HANDLERS
   toggleSelectUser(uid: string) {
+      const user = this.userList().find(candidate => candidate.uid === uid);
+      if (user && this.isSuperAdmin(user)) return;
       const next = new Set(this.selectedUids());
       if (next.has(uid)) {
           next.delete(uid);
@@ -638,7 +617,7 @@ export class ConfigUsersComponent implements OnInit {
 
   toggleSelectAll() {
       const next = new Set(this.selectedUids());
-      const visible = this.filteredUsers();
+      const visible = this.filteredUsers().filter(u => !this.isSuperAdmin(u));
       if (this.isAllSelected()) {
           visible.forEach(u => next.delete(u.uid));
       } else {
@@ -693,6 +672,11 @@ export class ConfigUsersComponent implements OnInit {
       const targetRoleId = this.batchRoleId();
       const selected = this.selectedUids();
 
+      if (targetRole === 'manager' && this.auth.currentUser()?.role !== 'manager') {
+          this.toast.show('Chỉ Manager mới được cấp vai trò Manager.', 'error');
+          return;
+      }
+
       // SAFETY GUARD: Protect last manager(s) from being demoted in batch
       if (targetRole !== 'manager') {
           const currentManagers = this.userList().filter(u => u.role === 'manager');
@@ -728,7 +712,7 @@ export class ConfigUsersComponent implements OnInit {
 
   async saveBatchUsers() {
       const selected = this.selectedUids();
-      const targets = this.userList().filter(u => selected.has(u.uid));
+      const targets = this.userList().filter(u => selected.has(u.uid) && !this.isSuperAdmin(u));
 
       if (targets.length === 0 || this.batchSaving()) return;
 
@@ -824,13 +808,16 @@ export class ConfigUsersComponent implements OnInit {
       );
   }
 
-  SUPER_ADMIN_EMAIL = 'oneloveonepeopleforever@gmail.com';
-
   isSuperAdmin(u: UserProfile): boolean {
-      return (u.email || '').toLowerCase() === this.SUPER_ADMIN_EMAIL;
+      return u.protectedAdmin === true;
   }
 
   updateRole(u: UserProfile, role: 'manager' | 'staff' | 'viewer' | 'pending') { 
+      if (this.auth.currentUser()?.role !== 'manager' && (u.role === 'manager' || role === 'manager')) {
+          this.toast.show('Chỉ Manager mới được cấp hoặc thay đổi vai trò Manager.', 'error');
+          return;
+      }
+
       // SAFETY GUARD: Protect Super Admin account
       if (this.isSuperAdmin(u) && role !== 'manager') {
           this.toast.show('Không thể hạ cấp tài khoản quản trị cao nhất.', 'error');
@@ -866,6 +853,9 @@ export class ConfigUsersComponent implements OnInit {
   }
 
   private async persistUser(u: UserProfile): Promise<void> {
+      if (this.isSuperAdmin(u)) {
+          throw new Error('Tài khoản quản trị gốc được bảo vệ và không thể sửa từ giao diện phân quyền.');
+      }
       let resolvedPerms: string[] = [];
       let roleId = '';
       let customPermissions: string[] = [];
@@ -909,6 +899,7 @@ export class ConfigUsersComponent implements OnInit {
 
   closePermModal() {
       this.selectedUserForPerms.set(null);
+      this.permissionQuery.set('');
   }
 
   copyUid(uid: string) {

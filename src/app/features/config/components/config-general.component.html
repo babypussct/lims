@@ -5,71 +5,6 @@
         <div class="space-y-6">
 
             @if (view() === 'master') {
-            <!-- 1. MASTER DATA -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-5">
-                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-700/60 pb-4">
-                    <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg shadow-2xs">
-                        <i class="fa-solid fa-layer-group"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-base tracking-tight">Danh Mục Dữ Liệu Gốc</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Các danh mục chuẩn hóa dùng xuyên suốt quy trình nhập liệu, SOP và kết quả thử nghiệm.</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button (click)="router.navigate(['/master-targets'])" class="p-3.5 border border-teal-200/80 dark:border-teal-800/40 bg-teal-50/50 dark:bg-teal-950/20 text-teal-900 dark:text-teal-200 rounded-2xl font-bold text-xs hover:bg-teal-100/70 dark:hover:bg-teal-900/40 transition flex items-center justify-between group active:scale-[0.98]">
-                        <span class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center">
-                                <i class="fa-solid fa-book-medical"></i>
-                            </span>
-                            <span class="font-black">Master Chỉ Tiêu Gốc</span>
-                        </span>
-                        <i class="fa-solid fa-arrow-right text-teal-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"></i>
-                    </button>
-
-                    <button (click)="router.navigate(['/target-groups'])" class="p-3.5 border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 rounded-2xl font-bold text-xs hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs transition flex items-center justify-between group active:scale-[0.98]">
-                        <span class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                                <i class="fa-solid fa-list-check"></i>
-                            </span>
-                            <span class="font-black">Nhóm Chỉ Tiêu</span>
-                        </span>
-                        <i class="fa-solid fa-arrow-right text-slate-400 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"></i>
-                    </button>
-
-                    <button (click)="router.navigate(['/matrix-types'])" class="p-3.5 border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 rounded-2xl font-bold text-xs hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs transition flex items-center justify-between group active:scale-[0.98]">
-                        <span class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                                <i class="fa-solid fa-table-cells"></i>
-                            </span>
-                            <span class="font-black">Nền Mẫu Phân Tích</span>
-                        </span>
-                        <i class="fa-solid fa-arrow-right text-slate-400 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"></i>
-                    </button>
-
-                    <button (click)="router.navigate(['/sample-description-master'])" class="p-3.5 border border-fuchsia-200/80 dark:border-fuchsia-800/40 bg-fuchsia-50/50 dark:bg-fuchsia-950/20 text-fuchsia-900 dark:text-fuchsia-200 rounded-2xl font-bold text-xs hover:bg-fuchsia-100/70 dark:hover:bg-fuchsia-900/40 transition flex items-center justify-between group active:scale-[0.98]">
-                        <span class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-lg bg-fuchsia-100 dark:bg-fuchsia-900/60 text-fuchsia-700 dark:text-fuchsia-300 flex items-center justify-center">
-                                <i class="fa-solid fa-tags"></i>
-                            </span>
-                            <span class="font-black">Mô Tả Mẫu</span>
-                        </span>
-                        <i class="fa-solid fa-arrow-right text-fuchsia-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"></i>
-                    </button>
-
-                    <button (click)="router.navigate(['/master-devices'])" class="sm:col-span-2 p-3.5 border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 rounded-2xl font-bold text-xs hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs transition flex items-center justify-between group active:scale-[0.98]">
-                        <span class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                                <i class="fa-solid fa-microscope"></i>
-                            </span>
-                            <span class="font-black">Thiết Bị Phân Tích</span>
-                        </span>
-                        <i class="fa-solid fa-arrow-right text-slate-400 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"></i>
-                    </button>
-                </div>
-            </div>
-
             <!-- 1.5. CATEGORIES CONFIG -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/60 pb-3">
@@ -239,7 +174,6 @@
             </div>
 
             <!-- 3.1. FEATURE VISIBILITY (LOCKING VS HIDING) -->
-            @if (state.currentUser()?.role === 'manager') {
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                     <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/60 pb-3">
                         <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 text-base tracking-tight">
@@ -262,7 +196,6 @@
                         </label>
                     </div>
                 </div>
-            }
 
             <!-- 3.5. MAINTENANCE MODE -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
@@ -316,8 +249,8 @@
                         <i class="fa-solid fa-shield-cat text-sm"></i>
                     </div>
                     <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-base tracking-tight">An Toàn & Sao Lưu Dữ Liệu</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Quản lý các bản backup toàn diện lên Google Drive, kiểm tra toàn vẹn (integrity) và thùng rác đám mây.</p>
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-base tracking-tight">Backup & Phục Hồi</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Theo dõi sức khỏe sao lưu, kiểm tra toàn vẹn và phục hồi dữ liệu theo đúng quyền được cấp.</p>
                     </div>
                 </div>
 
@@ -325,10 +258,10 @@
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-fuchsia-100/70 dark:border-fuchsia-900/40 pb-3.5">
                         <div>
                             <div class="text-xs font-black uppercase tracking-wider text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-2">
-                                <i class="fa-solid fa-cloud-arrow-up"></i> Backup Toàn Diện Qua Google Drive (AES-256)
+                                <i class="fa-solid fa-heart-pulse"></i> Sức khỏe dữ liệu
                             </div>
                             <p class="text-xs leading-relaxed text-fuchsia-900/75 dark:text-fuchsia-300/80 mt-1 max-w-3xl">
-                                Bao gồm toàn bộ Firestore trong namespace LIMS, Firebase Auth, tài liệu CoA, tệp PDF, Google Docs, Sheets/Excel, mã nguồn Apps Script. Bản sao lưu được nén, mã hóa chuẩn AES-256-GCM và tự động dọn bản cũ khi bản mới đạt kiểm tra toàn vẹn.
+                                {{ backupStatus()?.ready ? 'Hạ tầng backup đã sẵn sàng. Hãy ưu tiên bản sao lưu đã kiểm tra integrity trước khi thực hiện phục hồi.' : 'Hạ tầng backup chưa đủ điều kiện vận hành; kiểm tra cấu hình triển khai bên dưới.' }}
                             </p>
                         </div>
                         <app-button variant="secondary" size="sm" (click)="loadBackupStatus(true)" [disabled]="backupBusy() !== 'idle'" class="shrink-0">
@@ -337,7 +270,27 @@
                     </div>
 
                     @if (backupStatus(); as backup) {
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="rounded-xl border p-4"
+                             [ngClass]="backup.ready ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/50 dark:bg-emerald-950/20' : 'border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/20'">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-full"
+                                      [ngClass]="backup.ready ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300'">
+                                    <i class="fa-solid" [class.fa-circle-check]="backup.ready" [class.fa-triangle-exclamation]="!backup.ready"></i>
+                                </span>
+                                <div>
+                                    <div class="text-sm font-black" [class.text-emerald-700]="backup.ready" [class.text-amber-700]="!backup.ready">
+                                        {{ backup.ready ? 'Sẵn sàng sao lưu' : 'Cần chú ý' }}
+                                    </div>
+                                    <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        Drive {{backup.drive.accessAvailable ? 'đã kết nối' : 'chưa kết nối'}} · Mã hóa {{backup.encryption.configured ? 'đã cấu hình' : 'chưa cấu hình'}} · Apps Script {{backup.appsScript.scopesConfigured ? 'đủ quyền' : 'chưa đủ quyền'}}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <details class="rounded-xl border border-slate-200 bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-900/30">
+                          <summary class="cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300">Chi tiết kỹ thuật</summary>
+                          <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="rounded-xl bg-white/90 dark:bg-slate-800/80 border border-fuchsia-100/80 dark:border-slate-700 p-3.5 shadow-2xs">
                                 <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Firestore coverage</div>
                                 <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.firestore.topLevelCollectionCount}} active + {{backup.firestore.retainedLegacyCollectionCount}} legacy</div>
@@ -358,7 +311,8 @@
                                     {{backup.appsScript.sourceBundleAvailable ? 'Có source bundle' : 'Thiếu bundle'}} · {{backup.appsScript.scopesConfigured ? 'Đủ scope' : 'Cần cấp scope'}}
                                 </div>
                             </div>
-                        </div>
+                          </div>
+                        </details>
                     }
 
                     @if (!backupStatus()?.ready) {
@@ -389,21 +343,21 @@
 
                         <!-- Action Toolbar for Backups -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1">
-                            <button type="button" (click)="createComprehensiveBackup()" [disabled]="backupBusy() !== 'idle' || !backupStatus()?.ready" class="h-10 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-cloud-arrow-up"></i> Tạo backup mới</button>
-                            <button type="button" (click)="resumeSelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupStatus()?.ready || !backupSelectedId()" class="h-10 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 text-xs font-black hover:bg-amber-100 dark:hover:bg-amber-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-forward-step"></i> Tiếp tục dở dang</button>
-                            <button type="button" (click)="verifySelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 text-xs font-black hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-shield-check"></i> Kiểm tra integrity</button>
-                            <button type="button" (click)="dryRunSelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/20 text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> Dry-run đối chiếu</button>
+                            <button type="button" (click)="createComprehensiveBackup()" [title]="canBackupCreate() ? 'Tạo bản backup mới' : missingBackupPermissionLabel('create')" [disabled]="!canBackupCreate() || backupBusy() !== 'idle' || !backupStatus()?.ready" class="h-10 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-cloud-arrow-up"></i> Tạo backup mới</button>
+                            <button type="button" (click)="resumeSelectedBackup()" [title]="canBackupCreate() ? 'Tiếp tục backup dở dang' : missingBackupPermissionLabel('create')" [disabled]="!canBackupCreate() || backupBusy() !== 'idle' || !backupStatus()?.ready || !backupSelectedId()" class="h-10 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 text-xs font-black hover:bg-amber-100 dark:hover:bg-amber-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-forward-step"></i> Tiếp tục dở dang</button>
+                            <button type="button" (click)="verifySelectedBackup()" [title]="canBackupVerify() ? 'Kiểm tra tính toàn vẹn' : missingBackupPermissionLabel('verify')" [disabled]="!canBackupVerify() || backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 text-xs font-black hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-shield-check"></i> Kiểm tra integrity</button>
+                            <button type="button" (click)="dryRunSelectedBackup()" [title]="canBackupRestore() ? 'Đối chiếu trước khi phục hồi' : missingBackupPermissionLabel('restore')" [disabled]="!canBackupRestore() || backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/20 text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> Dry-run đối chiếu</button>
                         </div>
 
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-slate-600 dark:text-slate-300 pt-1">
-                            <label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" [ngModel]="backupRestoreDrive()" (ngModelChange)="backupRestoreDrive.set($event)" class="rounded border-slate-300 text-fuchsia-600"> Khôi phục tệp Drive bị thiếu</label>
-                            <label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" [ngModel]="backupRestoreAuth()" (ngModelChange)="backupRestoreAuth.set($event)" class="rounded border-slate-300 text-fuchsia-600"> Khôi phục tài khoản người dùng bị thiếu</label>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-slate-600 dark:text-slate-300 pt-1" [class.opacity-50]="!canBackupRestore()">
+                            <label class="inline-flex items-center gap-2" [class.cursor-pointer]="canBackupRestore()"><input type="checkbox" [disabled]="!canBackupRestore()" [ngModel]="backupRestoreDrive()" (ngModelChange)="backupRestoreDrive.set($event)" class="rounded border-slate-300 text-fuchsia-600"> Khôi phục tệp Drive bị thiếu</label>
+                            <label class="inline-flex items-center gap-2" [class.cursor-pointer]="canBackupRestore()"><input type="checkbox" [disabled]="!canBackupRestore()" [ngModel]="backupRestoreAuth()" (ngModelChange)="backupRestoreAuth.set($event)" class="rounded border-slate-300 text-fuchsia-600"> Khôi phục tài khoản người dùng bị thiếu</label>
                         </div>
 
-                        <button type="button" (click)="recoverMissingFromSelectedBackup()" [disabled]="backupBusy() !== 'idle' || !backupSelectedId()" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-2"><i class="fa-solid fa-life-ring"></i> Phục hồi an toàn — Chỉ bổ sung dữ liệu bị thiếu</button>
+                        <button type="button" (click)="recoverMissingFromSelectedBackup()" [title]="canBackupRestore() ? 'Chỉ bổ sung dữ liệu đang thiếu' : missingBackupPermissionLabel('restore')" [disabled]="!canBackupRestore() || backupBusy() !== 'idle' || !backupSelectedId()" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-2"><i class="fa-solid fa-life-ring"></i> Phục hồi an toàn — Chỉ bổ sung dữ liệu bị thiếu</button>
 
                         @if (resumableRestoreCheckpoint(); as checkpoint) {
-                            <button type="button" (click)="resumeMissingRestore()" [disabled]="backupBusy() !== 'idle'" class="w-full h-10 rounded-xl border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 text-xs font-black hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"><i class="fa-solid fa-forward-step"></i> Tiếp tục restore dở dang · {{checkpoint.restoreId}} · {{checkpoint.phase}}</button>
+                            <button type="button" (click)="resumeMissingRestore()" [disabled]="!canBackupRestore() || backupBusy() !== 'idle'" class="w-full h-10 rounded-xl border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 text-xs font-black hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"><i class="fa-solid fa-forward-step"></i> Tiếp tục restore dở dang · {{checkpoint.restoreId}} · {{checkpoint.phase}}</button>
                         }
                     </div>
 
@@ -447,9 +401,9 @@
                                 <div class="text-[11px] font-bold text-rose-700 dark:text-rose-400 flex items-center gap-2 uppercase tracking-wide">
                                     <i class="fa-solid fa-trash-can-arrow-up"></i> Thùng Rác (Recycle Bin - Soft Delete)
                                 </div>
-                                <div class="text-[10px] text-rose-600/70 dark:text-rose-400/80 mt-1">Dữ liệu được giữ trên mây để phòng ngừa rủi ro. Quản trị viên có thể "Xóa vĩnh viễn" để làm sạch.</div>
+                                <div class="text-[10px] text-rose-600/70 dark:text-rose-400/80 mt-1">Khôi phục các bản ghi nghiệp vụ đã soft-delete. Xóa vĩnh viễn được bảo vệ bằng bước xác nhận riêng.</div>
                             </div>
-                            <button (click)="openRecycleBin()" class="bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-800 transition shadow-sm">
+                            <button (click)="openRecycleBin()" [disabled]="!canManageRecycleBin()" [title]="canManageRecycleBin() ? 'Mở thùng rác' : 'Thùng rác hiện chỉ dành cho Manager vì thao tác xóa vĩnh viễn phụ thuộc quyền nghiệp vụ kho/chất chuẩn.'" class="bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-800 transition shadow-sm disabled:cursor-not-allowed disabled:opacity-40">
                                 Mở Thùng Rác
                             </button>
                         </div>
@@ -459,26 +413,23 @@
             }
 
             @if (view() === 'backup') {
-            <!-- 6. DATA ARCHIVER -->
-            <div class="bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-900/30 p-6 flex flex-col gap-4">
-                <div class="flex justify-between items-start">
+            <!-- Legacy reporting export: intentionally not a restore/delete mechanism. -->
+            <div class="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
+                <div class="flex justify-between items-start gap-4">
                     <div>
-                        <h3 class="font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 text-base">
-                            <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center">
-                                <i class="fa-solid fa-boxes-packing"></i>
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-base">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
+                                <i class="fa-solid fa-file-excel"></i>
                             </div>
-                            Kho Lưu Trữ & Phục Hồi
+                            Xuất báo cáo lịch sử
                         </h3>
-                        <p class="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1">Xuất dữ liệu cũ ra Excel và xóa khỏi Firebase để bảo vệ 1GB dung lượng.</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Công cụ legacy chỉ còn dùng để xuất Logs/Requests cũ ra Excel phục vụ báo cáo. Không xóa và không khôi phục dữ liệu production.</p>
                     </div>
-                    <label class="text-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
-                        <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i> Nạp lại Excel
-                        <input type="file" class="hidden" accept=".xlsx" (change)="importArchiverData($event)">
-                    </label>
+                    <span class="rounded-lg bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Legacy export</span>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-600 dark:text-slate-400">Dọn bản ghi cũ hơn:</span>
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-400">Xuất bản ghi cũ hơn:</span>
                     <select [(ngModel)]="archiverDays" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold outline-none cursor-pointer">
                         <option [value]="90">3 Tháng (90 ngày)</option>
                         <option [value]="180">6 Tháng (180 ngày)</option>
@@ -489,7 +440,7 @@
 
                 @if(archiverStatus() === 'idle') {
                     <button (click)="fetchArchiverData()" class="w-full py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-file-excel text-green-400"></i> Bắt Đầu Trích Xuất
+                        <i class="fa-solid fa-file-excel text-green-400"></i> Xuất báo cáo Excel
                     </button>
                 } @else if(archiverStatus() === 'fetching') {
                     <button disabled class="w-full py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
@@ -499,24 +450,11 @@
                     <button disabled class="w-full py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
                         <i class="fa-solid fa-spinner fa-spin"></i> Đang Tạo Tệp Excel...
                     </button>
-                } @else if(archiverStatus() === 'deleting') {
-                    <button disabled class="w-full py-2 bg-red-300 dark:bg-red-900/50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang Dọn Dẹp Hệ Thống...
-                    </button>
-                } @else if(archiverStatus() === 'restoring') {
-                    <button disabled class="w-full py-2 bg-blue-300 dark:bg-blue-900/50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang Nạp Lại Dữ Liệu...
-                    </button>
-                } @else if(archiverStatus() === 'ready_to_delete') {
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-rose-200 dark:border-rose-900/50 text-center">
+                } @else if(archiverStatus() === 'ready') {
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-emerald-200 dark:border-emerald-900/50 text-center">
                         <p class="text-xs font-bold text-green-600 dark:text-green-400 mb-2">Đã lưu tệp Excel thành công!</p>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Sẵn sàng dọn dẹp {{archiverData().logs.length + archiverData().requests.length}} bản ghi.</p>
-                        <div class="flex gap-2">
-                            <button (click)="cancelArchiver()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition">Hủy</button>
-                            <button (click)="confirmDeleteArchiver()" class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-trash-can"></i> Xóa Vĩnh Viễn
-                            </button>
-                        </div>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Đã xuất {{archiverData().logs.length + archiverData().requests.length}} bản ghi. Dữ liệu trên Firebase không bị thay đổi.</p>
+                        <button (click)="cancelArchiver()" class="w-full py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition">Hoàn tất</button>
                     </div>
                 }
 

@@ -90,7 +90,7 @@ export async function backupStatusHandler(req: VercelRequest, res: VercelRespons
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const authorization = await requireBackupAuthorization(req, res, 'backup_verify');
+  const authorization = await requireBackupAuthorization(req, res, ['backup_create', 'backup_verify', 'backup_restore']);
   if (!authorization) return;
   try {
     let backupFolderConfigured = false;
@@ -176,7 +176,7 @@ export async function backupListHandler(req: VercelRequest, res: VercelResponse)
   res.setHeader('Allow', 'GET');
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
-  const authorization = await requireBackupAuthorization(req, res, 'backup_verify');
+  const authorization = await requireBackupAuthorization(req, res, ['backup_create', 'backup_verify', 'backup_restore']);
   if (!authorization) return;
   try {
     const access = await getBackupDriveAccess(req, res);

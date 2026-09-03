@@ -134,15 +134,15 @@ service cloud.firestore {
         (directPerms is list && directPerms.hasAny([permission])) ||
         (overridePerms is list && overridePerms.hasAny([permission]));
       
-      return role == 'manager' || 
+      return role == 'manager' ||
         (
-          role == 'viewer' && 
+          role == 'viewer' &&
           ['inventory_view', 'standard_view', 'sop_view', 'recipe_view'].hasAny([permission])
         ) ||
-        hasCustom ||
         (
           role == 'staff' &&
           (
+            hasCustom ||
             // 1. Uu tien cao nhat: Neu manager da cau hinh roles_config thi lay theo cau hinh do
             (
               exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
@@ -205,17 +205,30 @@ service cloud.firestore {
     }
 
     function canCreateAuditLog(appId) {
-      return isManager(appId) || (
-        isActiveUser(appId) && (
-          hasPermission(appId, 'inventory_edit') ||
-          hasPermission(appId, 'standard_request') ||
-          hasPermission(appId, 'standard_edit') ||
-          hasPermission(appId, 'standard_approve') ||
-          hasPermission(appId, 'standard_log_delete') ||
-          hasPermission(appId, 'recipe_edit') ||
-          hasPermission(appId, 'sop_edit') ||
-          hasPermission(appId, 'sop_approve') ||
-          hasPermission(appId, 'batch_run')
+      let profile = getUserProfile(appId);
+      let role = profile.get('role', 'pending');
+      let rawRoleId = profile.get('roleId', 'role_staff_default');
+      let roleId = (rawRoleId == null || rawRoleId == '') ? 'role_staff_default' : rawRoleId;
+      let directPerms = profile.get('permissions', []);
+      let customPerms = profile.get('customPermissions', []);
+      let auditWritePerms = [
+        'user_manage', 'system_manage', 'master_data_manage', 'policy_manage',
+        'backup_create', 'backup_verify', 'backup_restore', 'inventory_edit',
+        'standard_request', 'standard_edit', 'standard_approve', 'standard_log_delete',
+        'recipe_edit', 'sop_edit', 'sop_approve', 'batch_run'
+      ];
+      let roleConfigPath = /databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId);
+      let hasRoleConfig = role == 'staff' && exists(roleConfigPath);
+      let configuredPerms = hasRoleConfig ? get(roleConfigPath).data.get('permissions', []) : [];
+      return isSignedIn() && userExists(appId) && (
+        role == 'manager' ||
+        (
+          role == 'staff' && (
+            (directPerms is list && directPerms.hasAny(auditWritePerms)) ||
+            (customPerms is list && customPerms.hasAny(auditWritePerms)) ||
+            (hasRoleConfig && configuredPerms is list && configuredPerms.hasAny(auditWritePerms)) ||
+            !hasRoleConfig
+          )
         )
       );
     }
@@ -465,7 +478,9 @@ service cloud.firestore {
         (audience == 'STANDARD_OPERATOR' && (
           hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_approve')
         )) ||
-        (audience == 'SYSTEM_ADMIN' && hasPermission(appId, 'user_manage'))
+        (audience == 'SYSTEM_ADMIN' && (
+          hasPermission(appId, 'user_manage') || hasPermission(appId, 'system_manage')
+        ))
       );
     }
 
@@ -474,7 +489,9 @@ service cloud.firestore {
       return isActiveUser(appId) && (
         isManager(appId) ||
         (auditClass == 'BUSINESS' && hasPermission(appId, 'report_view')) ||
-        (auditClass == 'SYSTEM' && hasPermission(appId, 'user_manage'))
+        (auditClass == 'SYSTEM' && (
+          hasPermission(appId, 'user_manage') || hasPermission(appId, 'system_manage')
+        ))
       );
     }
 
@@ -732,8 +749,23 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid &&
         request.resource.data.role == 'pending' &&
-        request.resource.data.get('permissions', []).size() == 0;
-      allow update: if isManager(appId) || (
+        request.resource.data.get('permissions', []).size() == 0 &&
+        request.resource.data.get('customPermissions', []).size() == 0 &&
+        request.resource.data.get('protectedAdmin', false) == false;
+      allow update: if (
+        (
+          isManager(appId) ||
+          (
+            hasPermission(appId, 'user_manage') &&
+            resource.data.get('role', 'pending') != 'manager' &&
+            request.resource.data.get('role', 'pending') != 'manager'
+          )
+        ) &&
+        resource.data.get('protectedAdmin', false) == false &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'role', 'roleId', 'permissions', 'customPermissions'
+        ])
+      ) || (
         isSignedIn() && request.auth.uid == uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'photoURL', 'avatarStyle', 'fcmTokens', 'email', 'displayName', 'lastSeen', 'lastLogin',
@@ -743,7 +775,11 @@ service cloud.firestore {
           request.resource.data.lastPasswordChangedAt == request.time
         )
       );
-      allow delete: if isManager(appId);
+      allow delete: if (
+        isManager(appId) ||
+        (hasPermission(appId, 'user_manage') && resource.data.get('role', 'pending') != 'manager')
+      ) &&
+        resource.data.get('protectedAdmin', false) == false;
     }
 
     // Per-user Activity UI marker. This is deliberately separate from Bell
@@ -762,25 +798,34 @@ service cloud.firestore {
     // Cau hinh nhom vai tro dong (Roles Config)
     match /artifacts/{appId}/roles_config/{roleId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
     }
 
     // Metadata he thong va Cau hinh chung
     match /artifacts/{appId}/system/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'system_manage');
     }
     match /artifacts/{appId}/config/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) ||
+        (docId == 'system' && hasPermission(appId, 'system_manage')) ||
+        (docId == 'print' && hasPermission(appId, 'system_manage')) ||
+        (docId == 'categories' && hasPermission(appId, 'master_data_manage')) ||
+        (docId == 'safety' && hasPermission(appId, 'policy_manage')) ||
+        (docId == '_metadata' && (
+          hasPermission(appId, 'system_manage') ||
+          hasPermission(appId, 'master_data_manage') ||
+          hasPermission(appId, 'policy_manage')
+        ));
     }
     match /artifacts/{appId}/sample_description_master/{itemId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
+      allow write: if isManager(appId) || hasPermission(appId, 'master_data_manage') || hasPermission(appId, 'sop_edit');
     }
     match /artifacts/{appId}/system_updates/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'system_manage');
     }
     match /artifacts/{appId}/stats/{docId} {
       allow read: if hasPermission(appId, 'report_view');
@@ -1351,23 +1396,23 @@ service cloud.firestore {
     // Thu vien Target Master
     match /artifacts/{appId}/target_groups/{tgId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
+      allow write: if isManager(appId) || hasPermission(appId, 'master_data_manage') || hasPermission(appId, 'sop_edit');
     }
     match /artifacts/{appId}/master_targets/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'master_data_manage');
     }
     match /artifacts/{appId}/master_analytes/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'master_data_manage');
     }
     match /artifacts/{appId}/matrix_types/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'master_data_manage');
     }
     match /artifacts/{appId}/master_devices/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId);
+      allow write: if isManager(appId) || hasPermission(appId, 'master_data_manage');
     }
 
     // Lich su Audit Trail / Nhat ky he thong chung (Logs)

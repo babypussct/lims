@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SampleDescriptionMaster } from '../../core/models/sample-description.model';
 import { AuthService } from '../../core/services/auth.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -34,6 +34,8 @@ export class SampleDescriptionMasterComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly confirmation = inject(ConfirmationService);
   private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly items = signal<SampleDescriptionMaster[]>([]);
   readonly loading = signal(true);
@@ -58,7 +60,22 @@ export class SampleDescriptionMasterComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    this.searchTerm.set(this.route.snapshot.queryParamMap.get('q') || '');
+    const status = this.route.snapshot.queryParamMap.get('status');
+    if (status === 'all' || status === 'active' || status === 'inactive') {
+      this.statusFilter.set(status);
+    }
     await this.loadData();
+  }
+
+  onSearchTermChange(value: string): void {
+    this.searchTerm.set(value);
+    this.updateListQueryParams({ q: value.trim() || null });
+  }
+
+  onStatusFilterChange(value: 'all' | 'active' | 'inactive'): void {
+    this.statusFilter.set(value);
+    this.updateListQueryParams({ status: value === 'active' ? null : value });
   }
 
   async loadData(): Promise<void> {
@@ -248,6 +265,15 @@ export class SampleDescriptionMasterComponent implements OnInit {
 
   private emptyForm() {
     return { id: '', name: '', aliasesText: '', description: '', isActive: true };
+  }
+
+  private updateListQueryParams(queryParams: { q?: string | null; status?: string | null }): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 }
 

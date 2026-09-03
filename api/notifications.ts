@@ -262,7 +262,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else if (dispatchContract.recipientStrategy === 'INVENTORY_OPERATORS') {
         recipientUids = await resolvePermissionRecipients(['inventory_edit']);
       } else if (dispatchContract.recipientStrategy === 'SYSTEM_ADMINS') {
-        recipientUids = await resolvePermissionRecipients(['user_manage']);
+        recipientUids = await resolvePermissionRecipients(['user_manage', 'system_manage']);
       } else if (dispatchContract.recipientStrategy === 'SYSTEM_ALL_USERS') {
         const { users } = await loadRecipientDirectory();
         recipientUids = users.docs.map(userDoc => userDoc.id);

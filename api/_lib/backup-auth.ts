@@ -63,7 +63,7 @@ export async function writeBackupAuditLog(
 export async function requireBackupAuthorization(
   req: VercelRequest,
   res: VercelResponse,
-  requiredPermission: 'backup_create' | 'backup_verify' | 'backup_restore' = 'backup_create',
+  requiredPermission: 'backup_create' | 'backup_verify' | 'backup_restore' | readonly ('backup_create' | 'backup_verify' | 'backup_restore')[] = 'backup_create',
 ): Promise<BackupAuthorization | null> {
   const authorization = req.headers?.authorization || '';
   const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
@@ -97,8 +97,10 @@ export async function requireBackupAuthorization(
         ? (roleConfig.data()?.['permissions'] as unknown[]).filter((value): value is string => typeof value === 'string')
         : fallbackRolePermissions(roleId);
     }
+    const requiredPermissions = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission];
+    const effectivePermissions = [...direct, ...rolePermissions];
     const allowed = profile['role'] === 'manager'
-      || (profile['role'] === 'staff' && [...direct, ...rolePermissions].includes(requiredPermission));
+      || (profile['role'] === 'staff' && requiredPermissions.some(permission => effectivePermissions.includes(permission)));
     if (!allowed) {
       res.status(403).json({ error: 'Bạn không có quyền thực hiện thao tác backup/restore.' });
       return null;

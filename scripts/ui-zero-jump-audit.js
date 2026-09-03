@@ -182,15 +182,15 @@ const ROUTE_FIXTURES = [
   { path: '/documents', family: 'fullwidth', expectedHash: '#/documents', expectedTitle: 'Phiếu giao nhận mẫu', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
   { path: '/daily-checklist', family: 'fullwidth', expectedHash: '#/daily-checklist', expectedTitle: 'Bảng theo dõi mẫu ngày', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
   { path: '/recipes', family: 'fullwidth', expectedHash: '#/recipes', expectedTitle: 'Thư viện công thức', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
-  { path: '/target-groups', family: 'fullwidth', expectedHash: '#/target-groups', expectedTitle: 'Quản lý nhóm chỉ tiêu', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
-  { path: '/master-targets', family: 'fullwidth', expectedHash: '#/master-targets', expectedTitle: 'Thư viện chỉ tiêu gốc', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
+  { path: '/settings/data/master/target-groups', family: 'settings-master', expectedHash: '#/settings/data/master/target-groups', expectedTitle: 'Quản lý nhóm chỉ tiêu', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
+  { path: '/settings/data/master/analytes', family: 'settings-master', expectedHash: '#/settings/data/master/analytes', expectedTitle: 'Thư viện chỉ tiêu gốc', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
   { path: '/stats', family: 'fullwidth', expectedHash: '#/stats', expectedTitle: 'Báo cáo quản trị', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
   { path: '/calculator', family: 'fullwidth', expectedHash: '#/calculator', expectedTitle: 'Thư viện quy trình và công thức', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
 
-  // Family 2: Constrained 7xl Authenticated
-  { path: '/matrix-types', family: 'constrained', expectedHash: '#/matrix-types', expectedTitle: 'Quản lý nền mẫu phân tích', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
-  { path: '/master-devices', family: 'constrained', expectedHash: '#/master-devices', expectedTitle: 'Quản lý thiết bị phân tích', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
-  { path: '/sample-description-master', family: 'constrained', expectedHash: '#/sample-description-master', expectedTitle: 'Danh mục mô tả mẫu', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
+  // Family 2: Settings Master Data (inside the shared Settings top shell)
+  { path: '/settings/data/master/matrices', family: 'settings-master', expectedHash: '#/settings/data/master/matrices', expectedTitle: 'Quản lý nền mẫu phân tích', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
+  { path: '/settings/data/master/devices', family: 'settings-master', expectedHash: '#/settings/data/master/devices', expectedTitle: 'Quản lý thiết bị phân tích', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
+  { path: '/settings/data/master/sample-descriptions', family: 'settings-master', expectedHash: '#/settings/data/master/sample-descriptions', expectedTitle: 'Danh mục mô tả mẫu', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '.app-content-scroll', expectedAppShell: true },
 
   // Family 3: Public Standalone (Signed-out canvas)
   { path: '/privacy-policy', family: 'public', expectedHash: '#/privacy-policy', expectedTitle: 'Chính sách bảo mật và quyền riêng tư', requiredHooks: ['icon', 'title', 'subtitle'], scrollOwner: '[data-public-scroll-owner]', isPublic: true, expectedAppShell: false },
@@ -694,7 +694,7 @@ async function run() {
     }
 
     // Family Zero Jump Assertions
-    for (const fam of ['fullwidth', 'constrained']) {
+    for (const fam of ['fullwidth', 'settings-master']) {
       const items = state2Results.get(fam);
       for (const hook of ['icon', 'title', 'subtitle']) {
         const lefts = items.map((r) => r.res[hook].left);
@@ -737,7 +737,7 @@ async function run() {
       console.log(`  [${fixture.family.padEnd(11)}] ${fixture.path.padEnd(28)} | Icon: (${res.icon.left.toFixed(1)}, ${res.icon.top.toFixed(1)}) | Title: (${res.title.left.toFixed(1)}, ${res.title.top.toFixed(1)}) | Subtitle: (${res.subtitle.left.toFixed(1)}, ${res.subtitle.top.toFixed(1)})`);
     }
 
-    for (const fam of ['fullwidth', 'constrained']) {
+    for (const fam of ['fullwidth', 'settings-master']) {
       const items = state3Results.get(fam);
       for (const hook of ['icon', 'title', 'subtitle']) {
         const lefts = items.map((r) => r.res[hook].left);
@@ -784,7 +784,7 @@ async function run() {
     const dashRes = await measureRoute(MOBILE_DASHBOARD_FIXTURE);
     console.log(`  [Mobile] ${MOBILE_DASHBOARD_FIXTURE.path.padEnd(28)} | Title: (${dashRes.title.left.toFixed(1)}, ${dashRes.title.top.toFixed(1)}) | Subtitle: (${dashRes.subtitle.left.toFixed(1)}, ${dashRes.subtitle.top.toFixed(1)}) | Forbidden Icon: PASS`);
 
-    for (const fam of ['fullwidth', 'constrained']) {
+    for (const fam of ['fullwidth', 'settings-master']) {
       const items = state4Results.get(fam);
       for (const hook of ['icon', 'title', 'subtitle']) {
         const lefts = items.map((r) => r.res[hook].left);

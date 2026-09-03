@@ -39,6 +39,9 @@ const users = {
   staffDefault: { uid: 'staff-default', email: 'staff-default@example.test', displayName: 'Staff Default', role: 'staff', roleId: 'role_staff_default', permissions: [], customPermissions: [] },
   customReportOnly: { uid: 'report-only', email: 'report-only@example.test', displayName: 'Report Only', role: 'staff', roleId: 'role_custom_report_only', permissions: [], customPermissions: ['report_view'] },
   customUserManage: { uid: 'user-manage', email: 'user-manage@example.test', displayName: 'User Manage', role: 'staff', roleId: 'role_custom_user_manage', permissions: [], customPermissions: ['user_manage'] },
+  customSystemManage: { uid: 'system-manage', email: 'system-manage@example.test', displayName: 'System Manage', role: 'staff', roleId: 'role_custom_system_manage', permissions: [], customPermissions: ['system_manage'] },
+  customMasterDataManage: { uid: 'master-data-manage', email: 'master-data-manage@example.test', displayName: 'Master Data Manage', role: 'staff', roleId: 'role_custom_master_data_manage', permissions: [], customPermissions: ['master_data_manage'] },
+  customPolicyManage: { uid: 'policy-manage', email: 'policy-manage@example.test', displayName: 'Policy Manage', role: 'staff', roleId: 'role_custom_policy_manage', permissions: [], customPermissions: ['policy_manage'] },
   inventoryViewer: { uid: 'inventory-viewer', email: 'inventory-viewer@example.test', displayName: 'Inventory Viewer', role: 'staff', roleId: 'role_custom_inventory_viewer', permissions: [], customPermissions: ['inventory_view'] },
   standardViewer: { uid: 'standard-viewer', email: 'standard-viewer@example.test', displayName: 'Standard Viewer', role: 'staff', roleId: 'role_custom_standard_viewer', permissions: [], customPermissions: ['standard_view'] },
   manager: { uid: 'manager', email: 'manager@example.test', displayName: 'Manager', role: 'manager', roleId: 'role_manager', permissions: [], customPermissions: [] }
@@ -101,6 +104,9 @@ async function seedBaseData(): Promise<void> {
     await Promise.all([
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_report_only`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_user_manage`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_system_manage`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_master_data_manage`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_policy_manage`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_inventory_viewer`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_standard_viewer`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_downgraded`), { permissions: [] }),
@@ -351,6 +357,94 @@ test('viewer and pending profiles cannot use SmartBatch operational collections'
   }
 });
 
+test('self-registration cannot inject permissions or protected-admin state', async () => {
+  const elevatedDb = env.authenticatedContext('register-elevated', { email: 'register-elevated@example.test' }).firestore();
+  await assertFails(setDoc(doc(elevatedDb, `artifacts/${APP_ID}/users/register-elevated`), {
+    email: 'register-elevated@example.test',
+    displayName: 'Register Elevated',
+    role: 'pending',
+    permissions: [],
+    customPermissions: ['system_manage']
+  }));
+
+  const protectedDb = env.authenticatedContext('register-protected', { email: 'register-protected@example.test' }).firestore();
+  await assertFails(setDoc(doc(protectedDb, `artifacts/${APP_ID}/users/register-protected`), {
+    email: 'register-protected@example.test',
+    displayName: 'Register Protected',
+    role: 'pending',
+    permissions: [],
+    customPermissions: [],
+    protectedAdmin: true
+  }));
+
+  const cleanDb = env.authenticatedContext('register-clean', { email: 'register-clean@example.test' }).firestore();
+  await assertSucceeds(setDoc(doc(cleanDb, `artifacts/${APP_ID}/users/register-clean`), {
+    email: 'register-clean@example.test',
+    displayName: 'Register Clean',
+    role: 'pending',
+    permissions: [],
+    customPermissions: []
+  }));
+});
+
+test('pending and viewer profiles ignore forged custom administrative permissions', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await updateDoc(doc(db, `artifacts/${APP_ID}/users/${users.pending.uid}`), {
+      customPermissions: ['system_manage']
+    });
+    await updateDoc(doc(db, `artifacts/${APP_ID}/users/${users.viewer.uid}`), {
+      customPermissions: ['system_manage']
+    });
+  });
+
+  await assertFails(setDoc(doc(dbFor(users.pending), `artifacts/${APP_ID}/config/system`), { maintenanceMode: false }));
+  await assertFails(setDoc(doc(dbFor(users.viewer), `artifacts/${APP_ID}/config/system`), { maintenanceMode: false }));
+});
+
+test('delegated Settings permissions write only their intended configuration domains', async () => {
+  await assertSucceeds(setDoc(doc(dbFor(users.customSystemManage), `artifacts/${APP_ID}/config/system`), { maintenanceMode: false }));
+  await assertFails(setDoc(doc(dbFor(users.customSystemManage), `artifacts/${APP_ID}/config/safety`), { rules: [] }));
+  await assertFails(setDoc(doc(dbFor(users.customSystemManage), `artifacts/${APP_ID}/master_analytes/system-nope`), { id: 'system-nope' }));
+
+  await assertSucceeds(setDoc(doc(dbFor(users.customMasterDataManage), `artifacts/${APP_ID}/master_analytes/master-ok`), { id: 'master-ok' }));
+  await assertFails(setDoc(doc(dbFor(users.customMasterDataManage), `artifacts/${APP_ID}/config/system`), { maintenanceMode: false }));
+
+  await assertSucceeds(setDoc(doc(dbFor(users.customPolicyManage), `artifacts/${APP_ID}/config/safety`), { rules: [] }));
+  await assertFails(setDoc(doc(dbFor(users.customPolicyManage), `artifacts/${APP_ID}/master_analytes/policy-nope`), { id: 'policy-nope' }));
+});
+
+test('user_manage cannot grant, demote, or delete Manager accounts while Manager retains non-protected control', async () => {
+  const userManagerDb = dbFor(users.customUserManage);
+  const managerPath = `artifacts/${APP_ID}/users/${users.manager.uid}`;
+  const staffPath = `artifacts/${APP_ID}/users/${users.staffDefault.uid}`;
+
+  await assertFails(updateDoc(doc(userManagerDb, managerPath), { role: 'staff', roleId: 'role_staff_default' }));
+  await assertFails(updateDoc(doc(userManagerDb, staffPath), { role: 'manager', roleId: '' }));
+  await assertFails(deleteDoc(doc(userManagerDb, managerPath)));
+
+  await assertSucceeds(updateDoc(doc(dbFor(users.manager), staffPath), { role: 'manager', roleId: '' }));
+});
+
+test('protectedAdmin cannot be changed or deleted through client rules, including by Manager', async () => {
+  const protectedUid = 'protected-manager';
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/users/${protectedUid}`), {
+      email: 'protected-manager@example.test',
+      displayName: 'Protected Manager',
+      role: 'manager',
+      roleId: 'role_manager',
+      permissions: [],
+      customPermissions: [],
+      protectedAdmin: true
+    });
+  });
+
+  const managerDb = dbFor(users.manager);
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/users/${protectedUid}`), { role: 'staff', roleId: 'role_staff_default' }));
+  await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/users/${protectedUid}`)));
+});
+
 test('release history is readable before authentication for the public changelog route', async () => {
   const publicDb = env.unauthenticatedContext().firestore();
   const snapshot = await assertSucceeds(getDocs(collection(publicDb, 'releases')));
@@ -381,7 +475,7 @@ test('Activity RESULT_OPERATOR is actor-independent and viewer/pending fail clos
   assert.equal(managerSnapshot.size, 11);
 });
 
-test('SYSTEM Activity is visible only to user_manage or Manager', async () => {
+test('SYSTEM Activity is visible to user_manage, system_manage or Manager', async () => {
   const systemQuery = (user: TestUser) => query(
     collection(dbFor(user), `artifacts/${APP_ID}/logs`),
     where('audience', '==', 'SYSTEM_ADMIN'),
@@ -395,6 +489,10 @@ test('SYSTEM Activity is visible only to user_manage or Manager', async () => {
   const userManageSnapshot = await assertSucceeds(getDocs(systemQuery(users.customUserManage)));
   assert.equal(userManageSnapshot.size, 1);
   assert.equal(userManageSnapshot.docs[0]?.id, 'system-maintenance');
+
+  const systemManageSnapshot = await assertSucceeds(getDocs(systemQuery(users.customSystemManage)));
+  assert.equal(systemManageSnapshot.size, 1);
+  assert.equal(systemManageSnapshot.docs[0]?.id, 'system-maintenance');
 
   const managerSnapshot = await assertSucceeds(getDocs(systemQuery(users.manager)));
   assert.equal(managerSnapshot.size, 1);
@@ -428,6 +526,8 @@ test('BUSINESS and SYSTEM audit classes are independently authorized', async () 
 
   const systemSnapshot = await assertSucceeds(getDocs(auditQuery(users.customUserManage, 'SYSTEM')));
   assert.equal(systemSnapshot.size, 1);
+  const delegatedSystemSnapshot = await assertSucceeds(getDocs(auditQuery(users.customSystemManage, 'SYSTEM')));
+  assert.equal(delegatedSystemSnapshot.size, 1);
   await assertFails(getDocs(auditQuery(users.customUserManage, 'BUSINESS')));
 
   const managerSnapshot = await assertSucceeds(

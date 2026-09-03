@@ -1,8 +1,8 @@
 import { Component, inject, signal, OnInit, OnDestroy, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { FirebaseService } from '../../../core/services/firebase.service';
+import { AuthService, PERMISSIONS } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { StateService } from '../../../core/services/state.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
@@ -86,10 +86,10 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   toast = inject(ToastService);
+  auth = inject(AuthService);
   confirmationService = inject(ConfirmationService);
   inventoryService = inject(InventoryService);
   standardService = inject(StandardService);
-  router = inject(Router);
   notificationCenter = inject(NotificationCenterService);
   backupService = inject(BackupService);
 
@@ -101,7 +101,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   categoriesLocal = signal<CategoryItem[]>([]);
 
   archiverData = signal<any>(null);
-  archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
+  archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready'>('idle');
   archiverDays = signal(180);
   printConfig = signal<PrintConfig>({
     showSignature: true,
@@ -284,7 +284,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       }
       const fileName = `LIMS_Archive_${this.archiverDays()}days_${new Date().getTime()}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      this.archiverStatus.set('ready_to_delete');
+      this.archiverStatus.set('ready');
     } catch (e) {
       this.toast.show('Lỗi khi tạo tệp Excel.', 'error');
       this.archiverStatus.set('idle');
@@ -296,83 +296,6 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.archiverData.set({logs: [], requests: []});
   }
 
-  async confirmDeleteArchiver() {
-    const data = this.archiverData();
-    if (!data || (data.logs?.length === 0 && data.requests?.length === 0)) return;
-    const count = (data.logs?.length || 0) + (data.requests?.length || 0);
-    if (!await this.confirmationService.confirm({
-      message: `CẢNH BÁO: Tác vụ này sẽ XÓA VĨNH VIỄN ${count} bản ghi cũ khỏi Firebase. Bạn CHẮC CHẮN MÌNH ĐÃ TẢI LƯU TRỮ CHƯA?`,
-      confirmText: 'XÓA THẬT KỸ',
-      isDangerous: true
-    })) return;
-
-    this.archiverStatus.set('deleting');
-    try {
-      if (data.logs?.length > 0) {
-        await this.fb.deleteDocsInBatch('logs', data.logs.map((d: any) => d.id));
-      }
-      if (data.requests?.length > 0) {
-        await this.fb.deleteDocsInBatch('requests', data.requests.map((d: any) => d.id));
-      }
-      this.toast.show(`Thành công! Đã dọn dẹp ${count} bản ghi cũ rác.`, 'success');
-      this.archiverStatus.set('idle');
-      this.archiverData.set({logs: [], requests: []});
-    } catch (e) {
-      this.toast.show('Lỗi khi xóa dữ liệu.', 'error');
-      this.archiverStatus.set('ready_to_delete');
-    }
-  }
-
-  async importArchiverData(event: any) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!await this.confirmationService.confirm({
-        message: `Bạn chuẩn bị khôi phục lại dữ liệu từ File Excel: ${file.name}. Quá trình này sẽ nạp lại các bản ghi cũ lên hệ thống (có thể tốn thời gian). Bạn chắc chắn chứ?`,
-        confirmText: 'Bắt đầu Nạp'
-    })) {
-        event.target.value = '';
-        return;
-    }
-    this.archiverStatus.set('restoring');
-    const reader = new FileReader();
-    reader.onload = async (e: any) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const XLSX = await this.loadXlsx();
-            const workbook = XLSX.read(data, { type: 'array' });
-            let logsToRestore: any[] = [];
-            let reqsToRestore: any[] = [];
-            if (workbook.SheetNames.includes('Logs')) {
-                logsToRestore = XLSX.utils.sheet_to_json(workbook.Sheets['Logs']);
-            }
-            if (workbook.SheetNames.includes('Requests')) {
-                reqsToRestore = XLSX.utils.sheet_to_json(workbook.Sheets['Requests']);
-            }
-            if (logsToRestore.length === 0 && reqsToRestore.length === 0) {
-                this.toast.show('Không tìm thấy dữ liệu hợp lệ trong tệp Excel.', 'error');
-                this.archiverStatus.set('idle');
-                return;
-            }
-            let restoredCount = 0;
-            if (logsToRestore.length > 0) restoredCount += await this.fb.restoreArchivedData('logs', logsToRestore);
-            if (reqsToRestore.length > 0) restoredCount += await this.fb.restoreArchivedData('requests', reqsToRestore);
-            this.toast.show(`Thành công! Đã nạp lại ${restoredCount} bản ghi vào hệ thống.`, 'success');
-            this.archiverStatus.set('idle');
-        } catch (err) {
-            this.toast.show('Lỗi định dạng File Excel.', 'error');
-            this.archiverStatus.set('idle');
-        } finally {
-            event.target.value = '';
-        }
-    };
-    reader.onerror = () => {
-        this.toast.show('Không thể đọc file.', 'error');
-        this.archiverStatus.set('idle');
-        event.target.value = '';
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
   private loadXlsx(): Promise<typeof import('xlsx')> {
     this.xlsxLoader ??= import('xlsx');
     return this.xlsxLoader;
@@ -380,6 +303,31 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   private backupErrorMessage(error: any): string {
     return error?.message || error?.error || 'Không thể thực hiện thao tác backup.';
+  }
+
+  canBackupCreate(): boolean {
+    return this.auth.hasPermission(PERMISSIONS.BACKUP_CREATE);
+  }
+
+  canBackupVerify(): boolean {
+    return this.auth.hasPermission(PERMISSIONS.BACKUP_VERIFY);
+  }
+
+  canBackupRestore(): boolean {
+    return this.auth.hasPermission(PERMISSIONS.BACKUP_RESTORE);
+  }
+
+  canManageRecycleBin(): boolean {
+    return this.auth.currentUser()?.role === 'manager';
+  }
+
+  missingBackupPermissionLabel(permission: 'create' | 'verify' | 'restore'): string {
+    const permissionCode = permission === 'create'
+      ? PERMISSIONS.BACKUP_CREATE
+      : permission === 'verify'
+        ? PERMISSIONS.BACKUP_VERIFY
+        : PERMISSIONS.BACKUP_RESTORE;
+    return `Bạn cần quyền “${this.auth.getPermissionName(permissionCode)}”.`;
   }
 
   async loadBackupStatus(showError = false) {
@@ -697,7 +645,13 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async emptyRecycleBin() {
-      if (!await this.confirmationService.confirm({ message: 'Thao tác này là KHÔNG THỂ PHỤC HỒI. Nó gửi lệnh ÉP TOÀN BỘ NHÂN VIÊN phải khởi động lại ứng dụng. Tiếp tục?', confirmText: 'DỌN RÁC NGAY', isDangerous: true })) return;
+      if (!await this.confirmationService.confirm({
+        title: 'Xóa vĩnh viễn dữ liệu trong Thùng rác',
+        message: `Thao tác này KHÔNG THỂ PHỤC HỒI. ${this.recycleItems().length} bản ghi sẽ bị xóa khỏi đám mây và hệ thống sẽ yêu cầu các thiết bị tải lại dữ liệu.`,
+        confirmText: 'DỌN RÁC NGAY',
+        isDangerous: true,
+        requiredText: 'XAC NHAN XOA',
+      })) return;
 
       this.isRecycling.set(true);
       try {
