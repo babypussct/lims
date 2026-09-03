@@ -31,7 +31,8 @@ import { NavigationPanelComponent } from './navigation-panel.component';
       <!-- Soft UI-style application header (desktop + mobile) -->
       @if (!state.focusMode()) {
         @defer (when !!state.currentUser()) {
-          <app-header></app-header>
+          <app-bottom-nav #mobileNavigation></app-bottom-nav>
+          <app-header (mobileMenuRequested)="mobileNavigation.toggleMenu()"></app-header>
         }
       }
 
@@ -82,16 +83,11 @@ import { NavigationPanelComponent } from './navigation-panel.component';
         </div>
       </main>
 
-      @if (!state.focusMode()) {
-        @defer (when !!state.currentUser()) {
-          <app-bottom-nav></app-bottom-nav>
-        }
-      }
     </div>
   `,
   styles: [`
     .app-content-scroll {
-      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
 
     @media (min-width: 768px) {

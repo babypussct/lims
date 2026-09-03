@@ -1,30 +1,17 @@
-    <div class="soft-ui-dashboard-page pb-20 fade-in font-sans md:pb-4">
-        
-        <!-- HEADER: Welcome & Scan -->
+    <div class="soft-ui-dashboard-page pb-4 fade-in font-sans">
+
+        <!-- Single dashboard greeting shared by desktop and mobile -->
         <app-page-header
-            class="mb-3 block md:hidden"
-            [title]="'Xin chào, ' + (auth.currentUser()?.displayName || '') + '!'"
+            class="mb-4 block"
+            [title]="'Xin chào, ' + (auth.currentUser()?.displayName || 'bạn') + '!'"
             subtitle="Hệ thống quản lý thông tin phòng thí nghiệm (LIMS) đã sẵn sàng.">
             <div pageHeaderActions class="contents">
-                <app-button class="md:hidden" size="sm" (click)="qrService.startScan()">
-                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
-                    Quét mã
-                </app-button>
-            </div>
-        </app-page-header>
-
-        <!-- Soft UI-style dashboard controls: overview + quick action -->
-        <app-toolbar class="soft-ui-dashboard-toolbar mb-4 block">
-            <div toolbarSearch class="min-w-0">
-                <h2 class="text-lg font-bold leading-tight text-gray-700 dark:text-white">Tổng quan vận hành</h2>
-            </div>
-            <div toolbarActions>
-                <app-button variant="secondary" size="sm" (click)="qrService.startScan()">
+                <app-button size="sm" (click)="qrService.startScan()">
                     <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                     <span>Quét mã</span>
                 </app-button>
             </div>
-        </app-toolbar>
+        </app-page-header>
 
 
         <!-- SECTION 1: KPI CARDS -->

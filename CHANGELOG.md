@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b02
+## Phiên bản hiện tại: v26.09.03-b03
+
+### v26.09.03-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thống nhất thanh điều hướng trên di động vào phần đầu ứng dụng để truy cập tìm kiếm, thông báo và menu thuận tiện hơn.
+- Tinh gọn Dashboard về một khu vực chào mừng duy nhất, giảm các khối điều khiển lặp lại và giữ thao tác Quét mã ngay tại tiêu đề trang.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Ẩn thanh điều hướng cố định ở cạnh dưới trên di động và chuyển nút mở menu lên thanh đầu trang.
+- Đưa chuông thông báo lên thanh đầu trang di động và bổ sung mục Nhật ký cập nhật vào menu điều hướng.
+- Giảm khoảng đệm đáy của nội dung sau khi bỏ thanh điều hướng dưới, giúp không gian hiển thị gọn hơn.
+- Đồng nhất tiêu đề Dashboard giữa desktop và di động, đồng thời loại bỏ toolbar Tổng quan vận hành bị trùng chức năng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Giữ thao tác mở menu di động hoạt động qua cùng thành phần điều hướng sau khi thay đổi vị trí hiển thị.
 
 ### v26.09.03-b02
 

@@ -1,5 +1,25 @@
 [
   {
+    "version": "v26.09.03-b03",
+    "date": "3/9/2026",
+    "title": "Thống nhất điều hướng di động và tinh gọn phần đầu Dashboard",
+    "highlights": [
+      "Thống nhất thanh điều hướng trên di động vào phần đầu ứng dụng để truy cập tìm kiếm, thông báo và menu thuận tiện hơn.",
+      "Tinh gọn Dashboard về một khu vực chào mừng duy nhất, giảm các khối điều khiển lặp lại và giữ thao tác Quét mã ngay tại tiêu đề trang."
+    ],
+    "features": [],
+    "improvements": [
+      "Ẩn thanh điều hướng cố định ở cạnh dưới trên di động và chuyển nút mở menu lên thanh đầu trang.",
+      "Đưa chuông thông báo lên thanh đầu trang di động và bổ sung mục Nhật ký cập nhật vào menu điều hướng.",
+      "Giảm khoảng đệm đáy của nội dung sau khi bỏ thanh điều hướng dưới, giúp không gian hiển thị gọn hơn.",
+      "Đồng nhất tiêu đề Dashboard giữa desktop và di động, đồng thời loại bỏ toolbar Tổng quan vận hành bị trùng chức năng."
+    ],
+    "fixes": [
+      "Giữ thao tác mở menu di động hoạt động qua cùng thành phần điều hướng sau khi thay đổi vị trí hiển thị."
+    ],
+    "releaseOrder": 26090300003
+  },
+  {
     "version": "v26.09.03-b02",
     "date": "3/9/2026",
     "title": "Tinh gọn điều hướng Dashboard và mở quyền Hiệu Suất Phân Tích cho Vận hành SOP",

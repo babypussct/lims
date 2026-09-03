@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.03-b02",
-    "title": "Tinh gọn điều hướng Dashboard và mở quyền Hiệu Suất Phân Tích cho Vận hành SOP",
+    "version": "v26.09.03-b03",
+    "title": "Thống nhất điều hướng di động và tinh gọn phần đầu Dashboard",
     "features": [
-      "Sắp xếp lại thanh điều hướng và khu vực đầu trang để tập trung hơn vào các chức năng sử dụng thường xuyên trong vận hành phòng kiểm nghiệm.",
-      "Chuyển bộ lọc thời gian vào đúng khối Hiệu Suất Phân Tích và cho phép người dùng có quyền Vận hành SOP xem dữ liệu phân tích trên Dashboard.",
-      "Đưa ô Tìm chức năng vào chính giữa thanh đầu trang và chuyển nút thu gọn thanh điều hướng về vị trí riêng ở cuối sidebar.",
-      "Ẩn Vận Hành SOP và Theo Dõi Mẫu Ngày khỏi sidebar để giảm trùng lặp, trong khi vẫn giữ khả năng truy cập chức năng từ Dashboard hoặc tìm kiếm.",
-      "Chuyển Quản Lý Yêu Cầu sang nhóm Quản trị để phản ánh đúng cấu trúc nghiệp vụ."
+      "Thống nhất thanh điều hướng trên di động vào phần đầu ứng dụng để truy cập tìm kiếm, thông báo và menu thuận tiện hơn.",
+      "Tinh gọn Dashboard về một khu vực chào mừng duy nhất, giảm các khối điều khiển lặp lại và giữ thao tác Quét mã ngay tại tiêu đề trang.",
+      "Ẩn thanh điều hướng cố định ở cạnh dưới trên di động và chuyển nút mở menu lên thanh đầu trang.",
+      "Đưa chuông thông báo lên thanh đầu trang di động và bổ sung mục Nhật ký cập nhật vào menu điều hướng.",
+      "Giảm khoảng đệm đáy của nội dung sau khi bỏ thanh điều hướng dưới, giúp không gian hiển thị gọn hơn."
     ]
   },
   "assetGroups": [

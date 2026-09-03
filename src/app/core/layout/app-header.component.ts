@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal, HostListener, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, signal, HostListener, OnInit, OnDestroy, ElementRef, ViewChild, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
@@ -172,7 +172,7 @@ interface PaletteItem {
       </div>
     </header>
 
-    <!-- ═══════ MOBILE TOP HEADER BAR ═══════ -->
+    <!-- ═══════ UNIFIED MOBILE TOP NAVIGATION ═══════ -->
     <header class="fixed inset-x-0 top-0 z-[45] flex h-14 items-center gap-2 border-b border-white/70 bg-white/90 px-3 shadow-navbar backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <button
         type="button"
@@ -194,22 +194,14 @@ interface PaletteItem {
         title="Tìm kiếm chức năng">
         <i class="fa-solid fa-magnifying-glass text-xs" aria-hidden="true"></i>
       </button>
+      <app-notification-bell [headerMode]="true"></app-notification-bell>
       <button
         type="button"
-        (click)="openChangelog()"
-        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-        aria-label="Thông tin hệ thống"
-        title="Thông tin hệ thống">
-        <i class="fa-solid fa-circle-info text-xs" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        (click)="state.toggleDarkMode()"
-        [disabled]="state.themeTransitioning()"
-        [attr.aria-pressed]="state.darkMode()"
-        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm disabled:pointer-events-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-        [attr.aria-label]="state.darkMode() ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'">
-        <i class="fa-solid text-xs" [class.fa-sun]="state.darkMode()" [class.fa-moon]="!state.darkMode()" aria-hidden="true"></i>
+        (click)="mobileMenuRequested.emit()"
+        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        aria-label="Mở menu điều hướng"
+        title="Menu">
+        <i class="fa-solid fa-bars text-xs" aria-hidden="true"></i>
       </button>
     </header>
 
@@ -284,6 +276,7 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   qrService = inject(QrGlobalService);
   changelogService = inject(ChangelogService);
   private router = inject(Router);
+  @Output() mobileMenuRequested = new EventEmitter<void>();
 
   getAvatarUrl = getAvatarUrl;
   profileMenuOpen = signal(false);

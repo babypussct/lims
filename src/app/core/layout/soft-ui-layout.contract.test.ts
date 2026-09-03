@@ -51,26 +51,28 @@ describe('Soft UI application layout contract', () => {
     assert.doesNotMatch(header, /bg-white\/75 dark:bg-slate-900\/80 backdrop-blur-xl/);
   });
 
-  it('keeps Soft UI utility chrome and a dedicated responsive mobile header', () => {
+  it('keeps Soft UI utility chrome and a unified responsive mobile header', () => {
     const header = read('./app-header.component.ts');
 
     assert.match(header, /fa-circle-info/);
     assert.match(header, /openChangelog\(\)/);
-    assert.match(header, /MOBILE TOP HEADER BAR/);
+    assert.match(header, /UNIFIED MOBILE TOP NAVIGATION/);
     assert.match(header, /md:hidden/);
     assert.match(header, /openPalette\(\)/);
-    assert.match(header, /state\.toggleDarkMode\(\)/);
-    const profileMenu = header.slice(header.indexOf('<!-- ── Profile Dropdown ── -->'), header.indexOf('<!-- ═══════ MOBILE TOP HEADER BAR ═══════ -->'));
+    assert.match(header, /mobileMenuRequested\.emit\(\)/);
+    assert.match(header, /\[headerMode\]="true"/);
+    const profileMenu = header.slice(header.indexOf('<!-- ── Profile Dropdown ── -->'), header.indexOf('<!-- ═══════ UNIFIED MOBILE TOP NAVIGATION ═══════ -->'));
     assert.doesNotMatch(profileMenu, /Nhật ký thay đổi/);
     assert.doesNotMatch(profileMenu, /Giao diện Sáng|Giao diện Tối/);
   });
 
-  it('keeps the dashboard toolbar, global date scope and Soft UI surfaces', () => {
+  it('keeps one dashboard greeting, global date scope and Soft UI surfaces', () => {
     const component = read('../../features/dashboard/dashboard.component.ts');
     const template = read('../../features/dashboard/dashboard.component.html');
 
-    assert.match(component, /AppToolbarComponent/);
-    assert.match(template, /<app-toolbar\b/);
+    assert.match(component, /AppPageHeaderComponent/);
+    assert.match(template, /<app-page-header\b/);
+    assert.doesNotMatch(template, /<app-toolbar\b/);
     assert.match(template, /<app-date-range-filter\b/);
     assert.match(template, /containerClass="bg-transparent p-0 border-0 shadow-none"/);
     assert.ok(template.indexOf('<app-date-range-filter') > template.indexOf('Hiệu Suất Phân Tích'));
@@ -97,7 +99,7 @@ describe('Soft UI application layout contract', () => {
     assert.match(header, /h-8 w-8/);
 
     assert.match(dashboard, /soft-ui-dashboard-page/);
-    assert.match(dashboard, /soft-ui-dashboard-toolbar/);
+    assert.doesNotMatch(dashboard, /soft-ui-dashboard-toolbar/);
     assert.match(dashboard, /grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4/);
     assert.match(dashboard, /soft-ui-icon-tile--warning/);
     assert.match(dashboard, /soft-ui-icon-tile--info/);

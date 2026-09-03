@@ -7,7 +7,7 @@ function read(relativePath: string): string {
 }
 
 describe('dashboard shared UI primitive integration', () => {
-  it('uses the shared page header, buttons and empty state on the dashboard surface', () => {
+  it('uses one shared page header, buttons and empty state on the dashboard surface', () => {
     const component = read('./dashboard.component.ts');
     const template = read('./dashboard.component.html');
     const header = read('../../core/layout/app-header.component.ts');
@@ -16,6 +16,7 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(component, /AppEmptyStateComponent/);
     assert.match(component, /AppPageHeaderComponent/);
     assert.match(template, /<app-page-header\b/);
+    assert.doesNotMatch(template, /<app-toolbar\b/);
     assert.match(template, /<app-button\b/);
     assert.match(template, /<app-empty-state\b/);
     assert.match(template, /<app-skeleton\b/);

@@ -7,6 +7,7 @@ import { PwaInstallPromptComponent } from '../../shared/components/pwa-install-p
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { AuthService } from '../services/auth.service';
+import { ChangelogService } from '../services/changelog.service';
 import { QrGlobalService } from '../services/qr-global.service';
 import { StateService } from '../services/state.service';
 import { ToastService } from '../services/toast.service';
@@ -206,7 +207,7 @@ interface VisitedPage {
     }
 
     <nav
-      class="fixed bottom-0 left-0 w-full rounded-t-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 shadow-soft-xl z-[40] md:hidden pb-safe"
+      class="hidden"
       aria-label="Điều hướng chính trên di động">
 
       <div class="absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none fade-in" aria-hidden="true">
@@ -291,6 +292,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   qrService = inject(QrGlobalService);
   auth = inject(AuthService);
   toast = inject(ToastService);
+  changelogService = inject(ChangelogService);
   getAvatarUrl = getAvatarUrl;
 
   showMenu = signal(false);
@@ -335,6 +337,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
         items: [
           { id: 'scan', name: 'Quét QR', icon: 'fa-qrcode', action: () => this.startScan(), isLocked: false },
           { id: 'dark-mode', name: 'Giao Diện', icon: this.state.darkMode() ? 'fa-sun' : 'fa-moon', action: () => this.toggleDarkMode(), isLocked: false },
+          { id: 'changelog', name: 'Nhật ký cập nhật', icon: 'fa-circle-info', action: () => this.openChangelog(), isLocked: false },
           { id: 'install-pwa', name: 'Cài Ứng Dụng', icon: 'fa-download', kind: 'install' as const, isLocked: false },
           { id: 'config', name: 'Cài Đặt', icon: 'fa-gear', path: '/settings/account/profile', activeMatch: ['/settings'], isLocked: false },
           { id: 'logout', name: 'Đăng Xuất', icon: 'fa-right-from-bracket', action: () => this.auth.logout(), isLocked: false }
@@ -426,6 +429,12 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     this.haptic();
     this.closeMenu();
     this.qrService.startScan();
+  }
+
+  openChangelog() {
+    this.haptic();
+    this.closeMenu();
+    this.changelogService.open();
   }
 
   navTo(path: string, name?: string, icon?: string) {
