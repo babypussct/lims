@@ -5,7 +5,9 @@ dist/
 out-tsc/
 
 # Ignore local configuration and IDE files
-.git/
+# Keep Git metadata available in Git-based Vercel builds so
+# scripts/vercel-ignore-build.js can diff HEAD against its parent.
+# Vercel CLI excludes .git/ from local uploads independently.
 .github/
 .vscode/
 .idea/

@@ -39,6 +39,8 @@ service-account.json
 
 # Vercel local metadata
 .vercel/
+# Vercel may synthesize an empty lockfile for the dependency-free API package.
+api/package-lock.json
 
 # Heavy template/scratch data directories
 FILEBIEUMAUGOC/

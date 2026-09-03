@@ -14,18 +14,32 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CanceledError, LocaleType, WrapStrategy, mergeLocales } from '@univerjs/core';
-import { createUniver } from '@univerjs/presets';
-import { UniverSheetsCorePreset } from '@univerjs/preset-sheets-core';
-import { UniverSheetsFilterPreset } from '@univerjs/preset-sheets-filter';
-import { UniverSheetsFindReplacePreset } from '@univerjs/preset-sheets-find-replace';
-import { UniverSheetsHyperLinkPreset } from '@univerjs/preset-sheets-hyper-link';
-import { UniverSheetsNotePreset } from '@univerjs/preset-sheets-note';
-import sheetsCoreViVN from '@univerjs/preset-sheets-core/locales/vi-VN';
-import sheetsFilterViVN from '@univerjs/preset-sheets-filter/locales/vi-VN';
-import sheetsFindReplaceViVN from '@univerjs/preset-sheets-find-replace/locales/vi-VN';
-import sheetsHyperLinkViVN from '@univerjs/preset-sheets-hyper-link/locales/vi-VN';
-import sheetsNoteViVN from '@univerjs/preset-sheets-note/locales/vi-VN';
+import { CanceledError, LocaleType, LogLevel, Univer, WrapStrategy, mergeLocales } from '@univerjs/core';
+import { FUniver } from '@univerjs/core/facade';
+import designViVN from '@univerjs/design/locale/vi-VN';
+import { UniverDocsPlugin } from '@univerjs/docs';
+import docsUiViVN from '@univerjs/docs-ui/locale/vi-VN';
+import { UniverDocsUIPlugin } from '@univerjs/docs-ui';
+import { UniverRenderEnginePlugin } from '@univerjs/engine-render';
+import { UniverFindReplacePlugin } from '@univerjs/find-replace';
+import findReplaceViVN from '@univerjs/find-replace/locale/vi-VN';
+import { UniverNetworkPlugin } from '@univerjs/network';
+import { UniverSheetsPlugin } from '@univerjs/sheets';
+import sheetsViVN from '@univerjs/sheets/locale/vi-VN';
+import { UniverSheetsFilterPlugin } from '@univerjs/sheets-filter';
+import sheetsFilterViVN from '@univerjs/sheets-filter/locale/vi-VN';
+import { UniverSheetsFilterUIPlugin } from '@univerjs/sheets-filter-ui';
+import sheetsFilterUiViVN from '@univerjs/sheets-filter-ui/locale/vi-VN';
+import { UniverSheetsFindReplacePlugin } from '@univerjs/sheets-find-replace';
+import { UniverSheetsHyperLinkPlugin } from '@univerjs/sheets-hyper-link';
+import { UniverSheetsNotePlugin } from '@univerjs/sheets-note';
+import { UniverSheetsNumfmtPlugin } from '@univerjs/sheets-numfmt';
+import { UniverSheetsNumfmtUIPlugin } from '@univerjs/sheets-numfmt-ui';
+import sheetsNumfmtUiViVN from '@univerjs/sheets-numfmt-ui/locale/vi-VN';
+import { UniverSheetsUIPlugin } from '@univerjs/sheets-ui';
+import sheetsUiViVN from '@univerjs/sheets-ui/locale/vi-VN';
+import { UniverUIPlugin } from '@univerjs/ui';
+import uiViVN from '@univerjs/ui/locale/vi-VN';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
@@ -65,8 +79,14 @@ import '@univerjs/sheets-filter/facade';
 import '@univerjs/sheets-hyper-link/facade';
 import '@univerjs/sheets-note/facade';
 import '@univerjs/sheets-numfmt/facade';
+import '@univerjs/sheets-find-replace/facade';
+import '@univerjs/network/facade';
+import '@univerjs/sheets/facade';
+import '@univerjs/ui/facade';
+import '@univerjs/docs-ui/facade';
+import '@univerjs/sheets-ui/facade';
 
-type UniverBundle = ReturnType<typeof createUniver>;
+type UniverBundle = { univer: Univer; univerAPI: FUniver };
 type UniverWorkbook = ReturnType<UniverBundle['univerAPI']['createWorkbook']>;
 type UniverWorkbookSnapshot = Parameters<UniverBundle['univerAPI']['createWorkbook']>[0];
 
@@ -3576,42 +3596,59 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       // Install the keyboard boundary before Univer registers its shortcuts,
       // so Ctrl/Cmd+H cannot race the read-only replace guard during mount.
       this.installReadonlyInteractionGuard();
-      const instance = createUniver({
+      const univer = new Univer({
+        logLevel: LogLevel.WARN,
         locale: LocaleType.VI_VN,
         locales: {
           [LocaleType.VI_VN]: mergeLocales(
-            sheetsCoreViVN,
+            designViVN,
+            docsUiViVN,
+            sheetsViVN,
+            sheetsNumfmtUiViVN,
+            sheetsUiViVN,
+            uiViVN,
             sheetsFilterViVN,
-            sheetsFindReplaceViVN,
-            sheetsHyperLinkViVN,
-            sheetsNoteViVN,
+            sheetsFilterUiViVN,
+            findReplaceViVN,
           ),
         },
         darkMode: this.state.darkMode(),
-        presets: [
-          UniverSheetsCorePreset({
-            container: this.univerHost.nativeElement,
-            header: true,
-            toolbar: false,
-            ribbonType: 'classic',
-            contextMenu: false,
-            // A view-only preview must not expose the formula editor surface
-            // or its cancel/confirm/function controls.
-            formulaBar: false,
-            footer: {
-              sheetBar: true,
-              statisticBar: true,
-              menus: true,
-              zoomSlider: true,
-              addSheetButtonConfig: { show: false },
-            },
-          }),
-          UniverSheetsFilterPreset(),
-          UniverSheetsFindReplacePreset(),
-          UniverSheetsHyperLinkPreset(),
-          UniverSheetsNotePreset(),
-        ],
       });
+      univer.registerPlugin(UniverNetworkPlugin);
+      univer.registerPlugin(UniverDocsPlugin, {});
+      univer.registerPlugin(UniverRenderEnginePlugin);
+      univer.registerPlugin(UniverUIPlugin, {
+        container: this.univerHost.nativeElement,
+        header: true,
+        toolbar: false,
+        ribbonType: 'classic',
+        contextMenu: false,
+      });
+      univer.registerPlugin(UniverDocsUIPlugin);
+      univer.registerPlugin(UniverSheetsPlugin);
+      univer.registerPlugin(UniverSheetsUIPlugin, {
+        formulaBar: false,
+        footer: {
+          sheetBar: true,
+          statisticBar: true,
+          menus: true,
+          zoomSlider: true,
+          addSheetButtonConfig: { show: false },
+        },
+      });
+      univer.registerPlugin(UniverSheetsNumfmtPlugin);
+      univer.registerPlugin(UniverSheetsNumfmtUIPlugin);
+      univer.registerPlugin(UniverSheetsFilterPlugin);
+      univer.registerPlugin(UniverSheetsFilterUIPlugin);
+      univer.registerPlugin(UniverFindReplacePlugin);
+      univer.registerPlugin(UniverSheetsFindReplacePlugin);
+      univer.registerPlugin(UniverSheetsHyperLinkPlugin);
+      univer.registerPlugin(UniverSheetsNotePlugin);
+
+      const instance: UniverBundle = {
+        univer,
+        univerAPI: FUniver.newAPI(univer),
+      };
 
       if (token !== this.loadToken) {
         this.removeReadonlyInteractionGuard?.();

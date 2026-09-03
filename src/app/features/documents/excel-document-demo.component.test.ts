@@ -22,9 +22,6 @@ test('keeps the Excel presentation route dev-only and exercises the real viewer 
     'node_modules/@univerjs/preset-sheets-core/lib/index.css',
     'node_modules/@univerjs/preset-sheets-filter/lib/index.css',
     'node_modules/@univerjs/preset-sheets-find-replace/lib/index.css',
-    'node_modules/@univerjs/preset-sheets-hyper-link/lib/index.css',
-    'node_modules/@univerjs/preset-sheets-note/lib/index.css',
-    'node_modules/@univerjs/preset-sheets-sort/lib/index.css',
   ];
 
   assert.match(routes, /path: '__excel-demo'/);
@@ -39,7 +36,9 @@ test('keeps the Excel presentation route dev-only and exercises the real viewer 
   assert.match(demo, /!autofilter/);
   assert.match(demo, /yyyy-mm-dd hh:mm:ss\.000/);
   assert.doesNotMatch(demo, /Date\.UTC/);
-  assert.match(viewer, /createUniver\(/);
+  assert.match(viewer, /new Univer\(/);
+  assert.match(viewer, /FUniver\.newAPI\(univer\)/);
+  assert.doesNotMatch(viewer, /@univerjs\/presets/);
   assert.match(viewer, /aria-readonly="true"/);
   assert.match(viewer, /data-excel-readonly="true"/);
   assert.match(viewer, /previewWorkbook\.setEditable\(false\)/);

@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b03
+## Phiên bản hiện tại: v26.09.03-b04
+
+### v26.09.03-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tinh gọn cây phụ thuộc UniverJS và Vercel để giảm mạnh dung lượng cài đặt cục bộ mà vẫn giữ đầy đủ luồng xem Excel chỉ đọc.
+- Tối ưu pipeline Vercel để commit chỉ thay đổi tài liệu, CI hoặc test có thể được bỏ qua đúng cách thay vì luôn kích hoạt full build.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Khởi tạo UniverJS bằng các plugin runtime cần thiết thay cho gói preset tổng hợp, đồng thời loại các preset UI và CSS không sử dụng.
+- Giữ Filter, Find, hyperlink, note, number format và các bảo vệ read-only của Excel viewer trong khi giảm kích thước lazy bundle chính.
+- Chuyển Vercel CLI sang lệnh npx có phiên bản cố định để không lưu toàn bộ CLI và các adapter framework trong node_modules của dự án.
+- Giữ Git metadata trên máy build Vercel để bước kiểm tra phạm vi thay đổi có thể so sánh commit trước khi quyết định build.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục tình trạng ignored build step luôn fail-open do .vercelignore xóa .git trước khi script kiểm tra thay đổi chạy.
 
 ### v26.09.03-b03
 

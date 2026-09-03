@@ -1,17 +1,17 @@
 {
-  "title": "Thống nhất điều hướng di động và tinh gọn phần đầu Dashboard",
+  "title": "Tối ưu dung lượng dự án và tốc độ build/deploy",
   "highlights": [
-    "Thống nhất thanh điều hướng trên di động vào phần đầu ứng dụng để truy cập tìm kiếm, thông báo và menu thuận tiện hơn.",
-    "Tinh gọn Dashboard về một khu vực chào mừng duy nhất, giảm các khối điều khiển lặp lại và giữ thao tác Quét mã ngay tại tiêu đề trang."
+    "Tinh gọn cây phụ thuộc UniverJS và Vercel để giảm mạnh dung lượng cài đặt cục bộ mà vẫn giữ đầy đủ luồng xem Excel chỉ đọc.",
+    "Tối ưu pipeline Vercel để commit chỉ thay đổi tài liệu, CI hoặc test có thể được bỏ qua đúng cách thay vì luôn kích hoạt full build."
   ],
   "features": [],
   "improvements": [
-    "Ẩn thanh điều hướng cố định ở cạnh dưới trên di động và chuyển nút mở menu lên thanh đầu trang.",
-    "Đưa chuông thông báo lên thanh đầu trang di động và bổ sung mục Nhật ký cập nhật vào menu điều hướng.",
-    "Giảm khoảng đệm đáy của nội dung sau khi bỏ thanh điều hướng dưới, giúp không gian hiển thị gọn hơn.",
-    "Đồng nhất tiêu đề Dashboard giữa desktop và di động, đồng thời loại bỏ toolbar Tổng quan vận hành bị trùng chức năng."
+    "Khởi tạo UniverJS bằng các plugin runtime cần thiết thay cho gói preset tổng hợp, đồng thời loại các preset UI và CSS không sử dụng.",
+    "Giữ Filter, Find, hyperlink, note, number format và các bảo vệ read-only của Excel viewer trong khi giảm kích thước lazy bundle chính.",
+    "Chuyển Vercel CLI sang lệnh npx có phiên bản cố định để không lưu toàn bộ CLI và các adapter framework trong node_modules của dự án.",
+    "Giữ Git metadata trên máy build Vercel để bước kiểm tra phạm vi thay đổi có thể so sánh commit trước khi quyết định build."
   ],
   "fixes": [
-    "Giữ thao tác mở menu di động hoạt động qua cùng thành phần điều hướng sau khi thay đổi vị trí hiển thị."
+    "Khắc phục tình trạng ignored build step luôn fail-open do .vercelignore xóa .git trước khi script kiểm tra thay đổi chạy."
   ]
 }

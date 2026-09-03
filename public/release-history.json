@@ -1,5 +1,25 @@
 [
   {
+    "version": "v26.09.03-b04",
+    "date": "3/9/2026",
+    "title": "Tối ưu dung lượng dự án và tốc độ build/deploy",
+    "highlights": [
+      "Tinh gọn cây phụ thuộc UniverJS và Vercel để giảm mạnh dung lượng cài đặt cục bộ mà vẫn giữ đầy đủ luồng xem Excel chỉ đọc.",
+      "Tối ưu pipeline Vercel để commit chỉ thay đổi tài liệu, CI hoặc test có thể được bỏ qua đúng cách thay vì luôn kích hoạt full build."
+    ],
+    "features": [],
+    "improvements": [
+      "Khởi tạo UniverJS bằng các plugin runtime cần thiết thay cho gói preset tổng hợp, đồng thời loại các preset UI và CSS không sử dụng.",
+      "Giữ Filter, Find, hyperlink, note, number format và các bảo vệ read-only của Excel viewer trong khi giảm kích thước lazy bundle chính.",
+      "Chuyển Vercel CLI sang lệnh npx có phiên bản cố định để không lưu toàn bộ CLI và các adapter framework trong node_modules của dự án.",
+      "Giữ Git metadata trên máy build Vercel để bước kiểm tra phạm vi thay đổi có thể so sánh commit trước khi quyết định build."
+    ],
+    "fixes": [
+      "Khắc phục tình trạng ignored build step luôn fail-open do .vercelignore xóa .git trước khi script kiểm tra thay đổi chạy."
+    ],
+    "releaseOrder": 26090300004
+  },
+  {
     "version": "v26.09.03-b03",
     "date": "3/9/2026",
     "title": "Thống nhất điều hướng di động và tinh gọn phần đầu Dashboard",
