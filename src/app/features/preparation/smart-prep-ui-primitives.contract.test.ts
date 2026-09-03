@@ -14,7 +14,10 @@ describe('preparation shared UI primitive integration', () => {
     assert.match(component, /AppButtonComponent/);
     assert.match(component, /AppPageHeaderComponent/);
     assert.match(template, /<app-page-header\b/);
+    assert.match(template, /variant="workspace"/);
+    assert.match(template, /\[sticky\]="true"/);
     assert.match(template, /pageHeaderActions/);
+    assert.doesNotMatch(template, /pageHeaderActions class="contents"/);
     assert.match(template, /<app-button\b/);
 
     assert.match(template, /<app-button[^>]*\(click\)="addAddition\(\)"/);

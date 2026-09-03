@@ -21,6 +21,9 @@ describe('targets shared UI primitive integration', () => {
     assert.match(component, /<app-modal-shell\b/);
     assert.match(component, /title="Quản lý nhóm chỉ tiêu"/);
     assert.doesNotMatch(component, /fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900\/50/);
+    assert.match(component, /class="[^"]*p-4 md:p-6[^"]*"/);
+    assert.doesNotMatch(component, /<app-page-header[^>]*border/);
+    assert.doesNotMatch(component, /<app-page-header[^>]*shadow/);
     assert.doesNotMatch(component, /Tạo Mới/);
     assert.doesNotMatch(component, /Chọn Hết/);
     assert.doesNotMatch(component, /Thay thế Chỉ tiêu/);

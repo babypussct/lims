@@ -17,14 +17,14 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
-    <div class="h-full flex flex-col fade-in bg-slate-50 dark:bg-slate-900 relative pb-10">
+    <div class="h-full flex flex-col fade-in bg-slate-50 dark:bg-slate-900 relative p-4 md:p-6">
         
         <!-- Header -->
         <app-page-header
             title="Thư viện chỉ tiêu gốc"
             subtitle="Danh mục chỉ tiêu gốc dùng để đồng bộ tên, mã và đơn vị chuẩn."
             icon="fa-book-medical">
-            <div pageHeaderActions class="contents">
+            <div pageHeaderActions class="flex items-center gap-2 flex-wrap">
                 <app-button variant="ghost" size="sm" (click)="goBack()">
                     <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span class="hidden md:inline">Cấu hình</span>
                 </app-button>

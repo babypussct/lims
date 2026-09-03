@@ -31,6 +31,11 @@ describe('standards shared UI primitive integration', () => {
     assert.match(toolbar, /closeMenuOnOutsideClick/);
     assert.match(toolbar, /closeMenuOnEscape/);
     assert.match(toolbar, /this\.functionMenuOpen\.set\(false\);\s*input\.click\(\);/);
+
+    // Spatial anchor and borderless page header contract
+    assert.match(page, /class="[^"]*p-4 md:p-6[^"]*"/);
+    assert.doesNotMatch(toolbar, /<app-page-header[^>]*border/);
+    assert.doesNotMatch(toolbar, /<app-page-header[^>]*shadow/);
   });
 
   it('uses the shared page header, toolbar and buttons for standards requests with sentence-case migrated labels', () => {
@@ -83,7 +88,10 @@ describe('standards shared UI primitive integration', () => {
     assert.match(component, /AppEmptyStateComponent/);
     assert.match(component, /AppPageHeaderComponent/);
     assert.match(template, /<app-page-header\b/);
+    assert.match(template, /variant="detail"/);
+    assert.match(template, /pageHeaderLeading/);
     assert.match(template, /pageHeaderActions/);
+    assert.match(template, /pageHeaderMeta/);
     assert.match(template, /<app-button\b/);
     assert.match(template, /<app-empty-state\b/);
     assert.match(template, /title="Chi tiết chất chuẩn đối chiếu"/);

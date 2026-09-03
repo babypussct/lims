@@ -2,11 +2,13 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
+import { AppHeaderSyncComponent } from '../../../shared/components/ui/header-sync/header-sync.component';
 
 @Component({
   selector: 'app-result-entry-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, AppPageHeaderComponent, AppHeaderSyncComponent],
   templateUrl: './result-entry-header.component.html'
 })
 export class ResultEntryHeaderComponent {
@@ -24,7 +26,6 @@ export class ResultEntryHeaderComponent {
   @Input() isReadOnly = false;
   @Input() showRestoreMenu = false;
   @Input() showActionsMenu = false;
-  @Input() samplesPerReport: number | null = null;
   @Input() currentPdfUrl: string | null = null;
   @Input() currentDocsUrl: string | null = null;
   @Input() printButtonLabel = 'Xuất báo cáo';
@@ -38,7 +39,6 @@ export class ResultEntryHeaderComponent {
   @Output() deleteVirtualMaster = new EventEmitter<void>();
   @Output() openPdf = new EventEmitter<{ pdfUrl: string | null | undefined; docsUrl?: string | null | undefined }>();
   @Output() restoreVersion = new EventEmitter<{ version: number; prefix?: string; reportId?: string }>();
-  @Output() samplesPerReportChange = new EventEmitter<number | null>();
   @Output() toggleRestoreMenu = new EventEmitter<void>();
   @Output() closeRestoreMenu = new EventEmitter<void>();
   @Output() toggleActionsMenu = new EventEmitter<void>();

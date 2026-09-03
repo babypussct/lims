@@ -20,29 +20,35 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent],
   template: `
-    <div class="h-full flex flex-col fade-in relative">
+    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
         <app-page-header
             class="mb-4 shrink-0"
             title="Quản lý yêu cầu"
             subtitle="Phê duyệt yêu cầu, theo dõi lịch sử và quản lý hàng đợi in."
             icon="fa-list-check">
-          <div pageHeaderActions class="flex max-w-full items-center overflow-x-auto rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
-               <button (click)="setCurrentTab('pending')" 
-                       class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'pending' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
+          <div pageHeaderActions class="inline-flex items-center soft-ui-segmented" role="group" aria-label="Trạng thái yêu cầu">
+               <button type="button"
+                       (click)="setCurrentTab('pending')"
+                       class="soft-ui-segmented__item flex items-center gap-2"
+                       [class.soft-ui-segmented__item--active]="currentTab() === 'pending'"
+                       [attr.aria-pressed]="currentTab() === 'pending'">
                    <i class="fa-solid fa-clock"></i> Chờ duyệt 
                    @if(state.requests().length > 0) { <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 rounded-md text-[10px]">{{state.requests().length}}</span> }
                </button>
                
-               <button (click)="setCurrentTab('approved')" 
-                       class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'approved' ? 'bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
+               <button type="button"
+                       (click)="setCurrentTab('approved')"
+                       class="soft-ui-segmented__item flex items-center gap-2"
+                       [class.soft-ui-segmented__item--active]="currentTab() === 'approved'"
+                       [attr.aria-pressed]="currentTab() === 'approved'">
                    <i class="fa-solid fa-check-double"></i> Lịch Sử
                </button>
 
-               <button (click)="setCurrentTab('printing')" 
-                       class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'printing' ? 'bg-white dark:bg-slate-700 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
+               <button type="button"
+                       (click)="setCurrentTab('printing')"
+                       class="soft-ui-segmented__item flex items-center gap-2"
+                       [class.soft-ui-segmented__item--active]="currentTab() === 'printing'"
+                       [attr.aria-pressed]="currentTab() === 'printing'">
                    <i class="fa-solid fa-print"></i> Hàng đợi In
                    @if(printQueue.printableLogs().length > 0) { <span class="bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 px-1.5 rounded-md text-[10px]">{{printQueue.printableLogs().length}}</span> }
                </button>

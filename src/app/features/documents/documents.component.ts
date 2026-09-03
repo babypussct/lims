@@ -72,27 +72,29 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
     '[class.document-preview-active]': 'previewItem() !== null'
   },
   template: `
-    <div class="documents-page-enter h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-2 md:p-3 relative overflow-hidden">
+    <div class="documents-page-enter h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6 relative overflow-hidden">
       
       <app-page-header
-        class="mb-2 block shrink-0 overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700"
+        class="mb-4 block shrink-0"
         title="Phiếu giao nhận mẫu"
         subtitle="Quản lý tài liệu giao nhận mẫu phòng thí nghiệm."
         icon="fa-folder-open">
         <div pageHeaderActions class="flex items-center gap-1.5">
           <!-- View Toggle -->
-          <div class="hidden sm:flex items-center bg-slate-50 dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700" role="group" aria-label="Chế độ hiển thị">
-            <button (click)="setViewMode('list')"
-                    class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-                    [class.bg-white]="viewMode() === 'list'" [class.dark:bg-slate-800]="viewMode() === 'list'"
-                    [class.text-fuchsia-600]="viewMode() === 'list'" [class.text-slate-400]="viewMode() !== 'list'"
+          <div class="hidden sm:inline-flex items-center soft-ui-segmented" role="group" aria-label="Chế độ hiển thị">
+            <button type="button"
+                    (click)="setViewMode('list')"
+                    class="soft-ui-segmented__item flex items-center justify-center"
+                    [class.soft-ui-segmented__item--active]="viewMode() === 'list'"
+                    [attr.aria-pressed]="viewMode() === 'list'"
                     title="Chế độ danh sách" aria-label="Chế độ danh sách">
               <i class="fa-solid fa-list"></i>
             </button>
-            <button (click)="setViewMode('grid')"
-                    class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-                    [class.bg-white]="viewMode() === 'grid'" [class.dark:bg-slate-800]="viewMode() === 'grid'"
-                    [class.text-fuchsia-600]="viewMode() === 'grid'" [class.text-slate-400]="viewMode() !== 'grid'"
+            <button type="button"
+                    (click)="setViewMode('grid')"
+                    class="soft-ui-segmented__item flex items-center justify-center"
+                    [class.soft-ui-segmented__item--active]="viewMode() === 'grid'"
+                    [attr.aria-pressed]="viewMode() === 'grid'"
                     title="Chế độ lưới" aria-label="Chế độ lưới">
               <i class="fa-solid fa-border-all"></i>
             </button>

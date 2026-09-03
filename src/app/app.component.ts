@@ -308,7 +308,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
         } 
         @else {
           @if (isPublicRoute()) {
-            <div class="min-h-screen h-[100dvh] bg-slate-50 overflow-y-auto">
+            <div data-public-scroll-owner class="min-h-screen h-[100dvh] bg-slate-50 overflow-y-auto">
               <router-outlet></router-outlet>
             </div>
           } @else {

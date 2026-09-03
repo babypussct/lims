@@ -29,12 +29,56 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
   standalone: true,
   imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent],
   template: `
-    <div class="w-full h-screen overflow-y-auto max-w-7xl mx-auto pb-20 fade-in px-4 md:px-0">
+    <div class="relative mx-auto w-full max-w-7xl p-4 md:p-6 pb-20 fade-in">
         <app-page-header
-          title="Truy xuất nguồn gốc"
-          subtitle="Chi tiết nhật ký hoạt động và thông tin minh bạch."
+          [variant]="id ? 'detail' : 'page'"
+          [sticky]="!!id"
+          [title]="id ? 'Chi tiết truy xuất hồ sơ' : 'Truy xuất nguồn gốc'"
+          [subtitle]="id ? 'Nhật ký hoạt động và dữ liệu toàn vẹn của hồ sơ LIMS.' : 'Tra cứu nhật ký hoạt động và thông tin minh bạch.'"
           icon="fa-qrcode"
-          class="mb-6 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700">
+          class="mb-6 block">
+          @if (id) {
+            <app-button pageHeaderLeading variant="ghost" size="sm" (click)="openLookup()" title="Quay lại tra cứu hồ sơ">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              <span class="sr-only">Quay lại tra cứu hồ sơ</span>
+            </app-button>
+          }
+
+          @if (id) {
+            <div pageHeaderActions class="contents">
+              <app-button variant="secondary" size="sm" (click)="startQrScan()" [disabled]="isLoading() || isVerifying()">
+                <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                Quét QR
+              </app-button>
+              <app-button size="sm" (click)="openLookup()">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                Tra cứu mã khác
+              </app-button>
+            </div>
+          }
+
+          @if (logData(); as headerLog) {
+            <div pageHeaderMeta class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  <i class="fa-solid fa-shield-halved text-[10px]" aria-hidden="true"></i>
+                  Đã xác thực
+                </span>
+                <span class="inline-flex min-w-0 items-center gap-1.5">
+                  <i class="fa-solid fa-fingerprint text-slate-400" aria-hidden="true"></i>
+                  <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ headerLog.id }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                  <i class="fa-regular fa-clock text-slate-400" aria-hidden="true"></i>
+                  {{ formatDate(headerLog.timestamp) }}
+                </span>
+                @if (getAssociatedRequestId(); as requestId) {
+                  <span class="inline-flex items-center gap-1.5">
+                    <i class="fa-solid fa-barcode text-slate-400" aria-hidden="true"></i>
+                    <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ requestId }}</span>
+                  </span>
+                }
+            </div>
+          }
         </app-page-header>
 
         <!-- SMART LOOKUP -->
@@ -738,6 +782,10 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   startQrScan() {
       this.qrService.startScan();
+  }
+
+  openLookup() {
+      void this.router.navigate(['/traceability']);
   }
 
   private handleRouteId(value: string | undefined) {

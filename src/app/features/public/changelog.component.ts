@@ -15,11 +15,11 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, SkeletonComponent, AppToolbarComponent],
   template: `
-    <div class="min-h-full w-full bg-slate-50 dark:bg-slate-900 py-4 sm:py-8 px-2 sm:px-4 lg:px-6 transition-colors duration-300">
-      <div class="w-full max-w-5xl mx-auto">
+    <div class="min-h-screen w-full bg-slate-50 dark:bg-slate-900 p-4 md:p-6 transition-colors duration-300">
+      <div class="relative mx-auto w-full max-w-5xl">
         
         <app-page-header
-          class="mb-5 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700 sm:mb-8"
+          class="mb-6 block shrink-0"
           title="Nhật ký cập nhật"
           [subtitle]="'Cổng thông tin công khai · LIMS Cloud · ' + state.systemVersion()"
           icon="fa-scroll">

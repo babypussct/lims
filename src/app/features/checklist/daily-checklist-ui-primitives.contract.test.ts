@@ -25,6 +25,12 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /<app-button\b[^>]*\(click\)="refreshData\(\)"/);
     assert.match(template, /<app-empty-state\b[\s\S]*title="Chưa có mẻ theo ngày phân tích này"/);
     assert.match(template, /<app-button\b[^>]*emptyStateActions[^>]*\(click\)="clearFilters\(\)"/);
+
+    // Spatial anchor and unadorned screen wrapper
+    assert.match(template, /\[ngClass\]="embedded \? '' : 'p-4 md:p-6 relative'"/);
+    assert.doesNotMatch(template, /class="cl-screen-only[^"]*border/);
+    assert.doesNotMatch(template, /class="cl-screen-only[^"]*shadow/);
+    assert.doesNotMatch(template, /class="cl-screen-only[^"]*bg-white/);
   });
 
   it('keeps embedded, date/view controls, progressive loading and print layout as domain-specific boundaries', () => {
@@ -37,6 +43,10 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /moveAvailableDate\('newer'\)/);
     assert.match(template, /type="date"/);
     assert.match(template, /role="group" aria-label="Chế độ hiển thị card"/);
+    assert.match(template, /data-daily-checklist-loading/);
+    assert.match(template, /data-daily-checklist-error/);
+    assert.match(template, /data-daily-checklist-empty/);
+    assert.match(template, /data-daily-batch-card/);
     assert.match(template, /setViewMode\(option\.value\)/);
     assert.match(template, /Đã nhận \{\{loadedBatchCount\(\)\}\} mẻ phù hợp\./);
     assert.match(template, /class="cl-print-document cl-print-only"/);

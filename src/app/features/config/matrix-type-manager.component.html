@@ -1,10 +1,10 @@
-<div class="p-6 max-w-6xl mx-auto">
+<div class="relative mx-auto w-full max-w-7xl p-4 md:p-6">
   <app-page-header
     title="Quản lý nền mẫu phân tích"
     subtitle="Quản lý danh sách các nền mẫu áp dụng cho SOP và khai báo mẻ."
     icon="fa-flask"
   >
-    <div pageHeaderActions class="contents">
+    <div pageHeaderActions class="flex items-center gap-2">
       <app-button variant="ghost" size="sm" routerLink="/settings/data/master">
         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
         Quay lại cấu hình
@@ -16,6 +16,7 @@
     </div>
   </app-page-header>
 
+  <div class="mx-auto w-full max-w-6xl">
   @if (isLoading()) {
     <div class="flex justify-center p-12">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -68,6 +69,7 @@
       }
     </div>
   }
+  </div>
 </div>
 
 @if (showModal()) {

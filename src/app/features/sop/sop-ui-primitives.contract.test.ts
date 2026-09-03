@@ -16,6 +16,13 @@ describe('SOP shared UI primitive integration', () => {
     assert.match(source, /AppPageHeaderComponent/);
     assert.match(source, /AppToolbarComponent/);
     assert.match(template, /<app-page-header\b/);
+    assert.match(template, /variant="workspace"/);
+    assert.match(template, /pageHeaderLeading/);
+    assert.match(template, /pageHeaderActions/);
+    assert.match(template, /\[title\]="currentSop\.name"/);
+    assert.match(template, /\(click\)="clearSelection\(\)"/);
+    assert.match(template, /\(click\)="onPrintDraft\(currentSop\)"/);
+    assert.match(template, /variant="page"/);
     assert.match(template, /<app-toolbar\b/);
     assert.match(template, /<app-button\b/);
     assert.match(template, /<app-empty-state\b/);
@@ -28,8 +35,16 @@ describe('SOP shared UI primitive integration', () => {
 
     assert.match(source, /AppButtonComponent/);
     assert.match(source, /AppModalShellComponent/);
+    assert.match(source, /AppPageHeaderComponent/);
+    assert.match(template, /<app-page-header\b/);
+    assert.match(template, /variant="workspace"/);
+    assert.match(template, /\[sticky\]="true"/);
+    assert.match(template, /pageHeaderLeading/);
+    assert.match(template, /pageHeaderActions/);
+    assert.match(template, /\[formControl\]="form\.controls\.version"/);
     assert.match(template, /<app-button\b[^>]*\(click\)="save\(\)"/);
     assert.match(template, /<app-button\b[^>]*\(click\)="goBack\(\)"/);
+    assert.doesNotMatch(template, /class="h-14 bg-white/);
     assert.equal((template.match(/<app-modal-shell\b/g) || []).length, 3);
     assert.doesNotMatch(template, /fa-times/);
   });

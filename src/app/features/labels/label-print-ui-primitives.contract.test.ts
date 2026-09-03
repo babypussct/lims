@@ -14,7 +14,10 @@ describe('label print shared UI primitive integration', () => {
     assert.match(component, /AppButtonComponent/);
     assert.match(component, /AppPageHeaderComponent/);
     assert.match(template, /<app-page-header\b/);
+    assert.match(template, /variant="workspace"/);
+    assert.match(template, /\[sticky\]="true"/);
     assert.match(template, /title="In tem & nhãn"/);
+    assert.doesNotMatch(template, /icon="fa-print"/);
     assert.match(template, /<app-button\b[^>]*\(click\)="fetchFromRequests\(\)"/);
     assert.match(template, /<app-button\b[^>]*\(click\)="printBrother\(\)"/);
     assert.match(template, /<app-button\b[^>]*\(click\)="printA4\(\)"/);

@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.02-b05
+## Phiên bản hiện tại: v26.09.03-b01
+
+### v26.09.03-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chuẩn hóa toàn bộ khu vực đầu trang trên tất cả các màn hình nghiệp vụ (Kho, Chất chuẩn, Yêu cầu, Kết quả, Báo cáo...), giữ vị trí ổn định và không còn hiện tượng nhảy giật khi chuyển trang.
+- Tăng kích thước các nút chuyển tab lựa chọn trên di động, giúp kiểm nghiệm viên thao tác bằng ngón tay nhanh và chính xác hơn.
+- Cải thiện tốc độ tải và đảm bảo phiếu in Bảng theo dõi mẫu ngày luôn chuẩn nét, không bị tràn trang khi in ấn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đồng bộ vị trí biểu tượng, tiêu đề và dòng mô tả của tất cả các trang làm việc, mang lại trải nghiệm liền mạch và tập trung khi tra cứu hoặc nhập liệu liên tục giữa các phân hệ.
+- Cải thiện các thanh lựa chọn chế độ hiển thị tại trang Kết quả và Yêu cầu với nút bấm êm và rõ nét hơn trên cả màn hình cảm ứng lẫn máy tính để bàn.
+- Tối ưu hóa Bảng theo dõi mẫu ngày, hiển thị thông báo tải mẻ phân tích rõ ràng và duy trì định dạng xem trước khi in ổn định.
+- Đảm bảo bố cục giao diện giữ nguyên vị trí hoàn hảo khi kiểm nghiệm viên bật hoặc tắt chế độ nền tối (Dark mode).
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục hiện tượng xê dịch nhẹ của đầu trang giữa các danh mục cài đặt và nghiệp vụ kiểm nghiệm khi đóng/mở thanh điều hướng.
+- Sửa lỗi ẩn các nút chuyển đổi chế độ xem không cần thiết trên màn hình điện thoại nhỏ để dành trọn không gian cho dữ liệu mẫu.
 
 ### v26.09.02-b05
 

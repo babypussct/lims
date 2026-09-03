@@ -18,75 +18,64 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../results/share
 import { MasterTargetService } from '../targets/master-target.service';
 import { timestampToDate } from '../../shared/utils/timestamp';
 import { ConfirmationService } from '../../core/services/confirmation.service';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-batch-detail-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent],
   template: `
     <div class="h-full flex flex-col animate-fade-in bg-slate-50/60 dark:bg-slate-900 p-4 lg:p-6 space-y-4 lg:space-y-5">
       
-      <!-- TOP HEADER & BREADCRUMBS -->
-      <div class="flex flex-col gap-4 shrink-0 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
-        <!-- Title and actions row -->
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <button (click)="goBack()" 
-                    class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-fuchsia-600 dark:text-slate-400 dark:hover:text-fuchsia-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 group shrink-0">
-              <i class="fa-solid fa-arrow-left group-hover:-translate-x-0.5 transition-transform text-base"></i>
-            </button>
-            <div>
-              <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-0.5">
-                <span>Kết quả phân tích</span>
-                <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-650"></i>
-                <span class="text-fuchsia-650 dark:text-fuchsia-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
-              </div>
-              <h3 class="text-xl font-black text-slate-850 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
-                Chi Tiết Kết Quả Mẻ Phân Tích
-                @if (run() && draft() && config()) {
-                  <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border shadow-xs">
-                    <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                      'bg-emerald-500': draft()?.status === 'completed',
-                      'bg-fuchsia-500': draft()?.status === 'draft',
-                      'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
-                    }"></span>
-                    {{ getStatusText() }}
-                  </span>
-                }
+      <!-- ENTITY DETAIL HEADER -->
+      <app-page-header
+        variant="detail"
+        [sticky]="true"
+        title="Chi tiết kết quả mẻ phân tích"
+        [subtitle]="run() ? run().sopName : 'Đang tải thông tin mẻ chạy...'">
+        <button
+          pageHeaderLeading
+          type="button"
+          (click)="goBack()"
+          aria-label="Quay lại danh sách kết quả"
+          title="Quay lại danh sách kết quả"
+          class="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-soft-sm transition hover:bg-slate-50 hover:text-fuchsia-600 active:scale-95 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-fuchsia-400">
+          <i class="fa-solid fa-arrow-left text-xs transition-transform group-hover:-translate-x-0.5" aria-hidden="true"></i>
+        </button>
 
-                @if (run()?.parentMasterId) {
-                  <a [routerLink]="['/results-view', run().parentMasterId]" class="px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-extrabold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
-                    <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Đã Gộp Mẻ Tổng Hợp
-                  </a>
-                }
-              </h3>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          @if (run() && draft() && config()) {
-            <div class="flex items-center gap-2 shrink-0">
-              <button (click)="openQrModal()"
-                      class="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition duration-200 active:scale-95 flex items-center gap-2">
-                <i class="fa-solid fa-qrcode text-fuchsia-500"></i>
-                <span>Mã QR</span>
-              </button>
-
-              <button (click)="goToEditMode()"
-                      [class]="lockedByOthers() 
-                        ? 'px-4 py-2 text-xs font-black text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'
-                        : 'px-4 py-2 text-xs font-black text-white bg-fuchsia-650 hover:bg-fuchsia-700 dark:bg-fuchsia-600 dark:hover:bg-fuchsia-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'"
-                      [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
-                <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()"></i>
-                <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
-              </button>
-            </div>
-          }
-        </div>
-
-        <!-- Metadata row -->
         @if (run() && draft() && config()) {
-          <div class="pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <div pageHeaderActions class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="openQrModal()"
+              class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-xs font-bold text-slate-700 shadow-soft-sm transition hover:bg-slate-50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+              <i class="fa-solid fa-qrcode text-fuchsia-500" aria-hidden="true"></i>
+              <span>Mã QR</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="goToEditMode()"
+              [class]="lockedByOthers()
+                ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white shadow-soft-md transition hover:bg-amber-700 active:scale-95'
+                : 'inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-soft px-4 text-xs font-bold text-white shadow-soft-md transition active:scale-95'"
+              [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
+              <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()" aria-hidden="true"></i>
+              <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
+            </button>
+          </div>
+        }
+
+        @if (run() && draft() && config()) {
+          <div pageHeaderMeta class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500 dark:border-slate-800 dark:text-slate-400">
+            <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide shadow-xs">
+              <span class="h-1.5 w-1.5 rounded-full" [ngClass]="{
+                'bg-emerald-500': draft()?.status === 'completed',
+                'bg-fuchsia-500': draft()?.status === 'draft',
+                'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
+              }"></span>
+              {{ getStatusText() }}
+            </span>
             <div class="flex items-center gap-1.5">
               <i class="fa-solid fa-barcode text-slate-400 dark:text-slate-600 text-[11px]"></i>
               <span>Mã mẻ:</span>
@@ -108,9 +97,16 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
               <span>Ngày phân tích:</span>
               <span class="font-bold text-slate-700 dark:text-slate-300">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
             </div>
+
+            @if (run()?.parentMasterId) {
+              <a [routerLink]="['/results-view', run().parentMasterId]" class="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2.5 py-1 text-[9px] font-extrabold uppercase text-fuchsia-600 shadow-xs transition hover:bg-fuchsia-100 dark:bg-fuchsia-950/30 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/30" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
+                <i class="fa-solid fa-link text-[8px]" aria-hidden="true"></i>
+                Đã gộp mẻ tổng hợp
+              </a>
+            }
           </div>
         }
-      </div>
+      </app-page-header>
 
       <!-- MAIN SPLIT SCREEN LAYOUT -->
       @if (isLoading()) {
@@ -1562,5 +1558,3 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return url;
   }
 }
-
-

@@ -26,6 +26,7 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
 
 const STANDARD_VARS = [
     { value: 'total_n', label: 'Biến: Tổng số mẫu (n_sample + n_qc)' },
@@ -36,7 +37,7 @@ const STANDARD_VARS = [
 @Component({
   selector: 'app-sop-editor',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AppButtonComponent, AppModalShellComponent],
+  imports: [CommonModule, ReactiveFormsModule, AppButtonComponent, AppModalShellComponent, AppPageHeaderComponent],
   templateUrl: './sop-editor.component.html'
 })
 export class SopEditorComponent {

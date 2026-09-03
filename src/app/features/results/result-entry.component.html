@@ -12,7 +12,6 @@
     [isReadOnly]="isReadOnly()"
     [showRestoreMenu]="showRestoreMenu()"
     [showActionsMenu]="showActionsMenu()"
-    [samplesPerReport]="samplesPerReport()"
     [currentPdfUrl]="getCurrentPdfUrl()"
     [currentDocsUrl]="getCurrentDocsUrl()"
     [printButtonLabel]="getPrintButtonLabel()"
@@ -24,7 +23,6 @@
     (deleteVirtualMaster)="triggerDeleteVirtualMaster()"
     (openPdf)="openPdfPreview($event.pdfUrl, $event.docsUrl)"
     (restoreVersion)="restoreFromVersion($event.version, $event.prefix, $event.reportId)"
-    (samplesPerReportChange)="samplesPerReport.set($event)"
     (toggleRestoreMenu)="toggleRestoreMenu()"
     (closeRestoreMenu)="closeRestoreMenu()"
     (toggleActionsMenu)="toggleActionsMenu()"
@@ -92,13 +90,39 @@
 
 
 
-      <!-- Prefix Tabs Filter -->
-      @if (detectedPrefixes().length > 1) {
-        <app-result-prefix-tabs
-          [prefixes]="detectedPrefixes()"
-          [activeFilter]="activeFilter()"
-          (filterChange)="activeFilter.set($event)">
-        </app-result-prefix-tabs>
+      <!-- Data toolbar: prefix scope + report splitting -->
+      @if (detectedPrefixes().length > 1 || !isReadOnly()) {
+        <div class="mb-4 flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-soft-sm dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+          @if (detectedPrefixes().length > 1) {
+            <app-result-prefix-tabs
+              class="min-w-0 flex-1"
+              [prefixes]="detectedPrefixes()"
+              [activeFilter]="activeFilter()"
+              (filterChange)="activeFilter.set($event)">
+            </app-result-prefix-tabs>
+          } @else {
+            <div class="hidden sm:block"></div>
+          }
+
+          @if (!isReadOnly()) {
+            <label class="flex shrink-0 items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
+              <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Tách phiếu in</span>
+              <span class="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  [disabled]="isProcessing()"
+                  [value]="samplesPerReport() || ''"
+                  (input)="samplesPerReport.set($any($event.target).valueAsNumber || null)"
+                  aria-label="Số mẫu trên mỗi phiếu in"
+                  placeholder="Tất cả"
+                  class="h-8 w-16 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-bold text-slate-700 shadow-soft-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" />
+                <span class="text-[11px] text-slate-400">mẫu/phiếu</span>
+              </span>
+            </label>
+          }
+        </div>
       }
 
 

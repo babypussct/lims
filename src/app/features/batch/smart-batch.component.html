@@ -6,10 +6,36 @@
         </datalist>
         <!-- HEADER -->
         <app-page-header
-            class="mb-4 block shrink-0 overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700"
+            class="mb-4 block shrink-0"
+            variant="workspace"
+            [sticky]="true"
             title="Lập mẻ phân tích tự động"
-            subtitle="Tự động ghép SOP theo chỉ tiêu và tối ưu lượng hóa chất sử dụng."
-            icon="fa-layer-group">
+            subtitle="Tự động ghép SOP theo chỉ tiêu và tối ưu lượng hóa chất sử dụng.">
+            @if (step() === 1) {
+                <app-button
+                    pageHeaderLeading
+                    variant="ghost"
+                    size="sm"
+                    (click)="goBackToStep0()"
+                    title="Quay lại chọn chế độ">
+                    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    <span class="hidden sm:inline">Đổi chế độ</span>
+                    <span class="sr-only sm:hidden">Quay lại chọn chế độ</span>
+                </app-button>
+            }
+            @if (step() === 2) {
+                <app-button
+                    pageHeaderLeading
+                    variant="ghost"
+                    size="sm"
+                    (click)="goBackFromStep2()"
+                    title="Quay lại thiết lập nhóm mẫu">
+                    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    <span class="hidden sm:inline">Quay lại</span>
+                    <span class="sr-only sm:hidden">Quay lại thiết lập nhóm mẫu</span>
+                </app-button>
+            }
+
             <div pageHeaderActions class="flex flex-wrap items-center justify-end gap-2">
                 @if (step() >= 1) {
                     @if (smartBatchMode() === 'multiple') {
@@ -30,18 +56,6 @@
                         title="Mở SOP Calculator khi cần tính nhanh hoặc kiểm tra chi tiết">
                         <i class="fa-solid fa-calculator" aria-hidden="true"></i>
                         Tính nhanh SOP
-                    </app-button>
-                }
-                @if(step() === 1) {
-                    <app-button variant="secondary" size="sm" (click)="goBackToStep0()">
-                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-                        Đổi chế độ
-                    </app-button>
-                }
-                @if(step() === 2) {
-                    <app-button variant="secondary" size="sm" (click)="goBackFromStep2()">
-                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                        Quay lại
                     </app-button>
                 }
             </div>

@@ -23,6 +23,13 @@ describe('documents shared UI primitive integration', () => {
     assert.match(component, /<app-button\b[^>]*emptyStateActions/);
     assert.match(component, /<app-empty-state\b/);
     assert.match(component, /<app-skeleton\b/);
+
+    // Spatial anchor, borderless header, and soft-ui-segmented control
+    assert.match(component, /class="[^"]*p-4 md:p-6[^"]*"/);
+    assert.match(component, /class="[^"]*soft-ui-segmented[^"]*"/);
+    assert.match(component, /hidden sm:inline-flex/);
+    assert.doesNotMatch(component, /<app-page-header[^>]*border/);
+    assert.doesNotMatch(component, /<app-page-header[^>]*shadow/);
   });
 
   it('keeps document preview as an explicit fullscreen viewer boundary', () => {

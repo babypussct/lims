@@ -1,7 +1,7 @@
-    <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-2 md:p-4">
+    <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-4 md:p-6">
       <!-- Header Area -->
       <app-page-header
-          class="mx-4 block overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700 md:mx-0"
+          class="block shrink-0"
           title="Quản lý kho hóa chất"
           subtitle="Nhật ký tồn kho, thông tin định lượng và an toàn hóa chất."
           icon="fa-boxes-stacked">
@@ -9,7 +9,7 @@
 
       <!-- Statistics Card Row (Only show for List/Capacity tabs) -->
       @if (activeTab() !== 'labels') {
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 shrink-0 pt-4 px-4 md:pt-0 md:px-0">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 shrink-0">
               <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none p-4 flex items-center gap-4 relative overflow-hidden group border border-slate-200 dark:border-slate-700 active:scale-95 transition-all duration-200 h-20 md:h-24">
                   <div class="w-12 h-12 rounded-xl bg-fuchsia-600 dark:bg-fuchsia-500 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
                       <i class="fa-solid fa-boxes-stacked"></i>

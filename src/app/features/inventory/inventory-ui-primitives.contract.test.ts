@@ -27,9 +27,13 @@ describe('inventory shared UI primitive integration', () => {
     assert.match(template, /Xem thêm\.\.\./);
     assert.match(template, />\s*Chọn quy trình\s*</);
     assert.match(template, />\s*Một mẫu\s*</);
-    assert.match(template, />\s*Mẻ tiêu chuẩn\s*</);
     assert.match(template, /Cảnh báo hóa học/);
     assert.match(template, /Cảnh báo nguy hiểm \(H\):/);
+
+    // Spatial anchor and borderless page header contracts
+    assert.match(template, /class="[^"]*p-4 md:p-6[^"]*"/);
+    assert.doesNotMatch(template, /<app-page-header[^>]*border/);
+    assert.doesNotMatch(template, /<app-page-header[^>]*shadow/);
   });
 
   it('keeps the responsive inventory bottom sheet on the existing accessible modal boundary', () => {

@@ -37,54 +37,54 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
     AppToolbarComponent,
   ],
   template: `
-    <div class="h-full flex flex-col fade-in relative bg-slate-50/30 dark:bg-slate-950/10 p-2 md:p-4">
+    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
 
       <!-- ══════════════════════════════════════════════════════
            HEADER: Title + Status Tabs
       ══════════════════════════════════════════════════════ -->
       <div class="shrink-0 pb-0">
         <app-page-header
-          class="mb-4 block overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm dark:border-slate-800"
+          class="mb-4 block shrink-0"
           title="Tra cứu và quản lý kết quả mẻ chạy"
           subtitle="Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động."
           icon="fa-square-poll-vertical">
           <!-- Status Filter Tabs -->
-          <div pageHeaderActions class="flex max-w-full shrink-0 items-center self-stretch overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-inner scrollbar-none dark:border-slate-800 dark:bg-slate-950 sm:self-start">
-            <button (click)="setStatusFilter('all')"
-                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
-                    [class]="filterStatus() === 'all'
-                      ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-sm'
-                      : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+          <div pageHeaderActions class="inline-flex items-center soft-ui-segmented" role="group" aria-label="Lọc trạng thái mẻ phân tích">
+            <button type="button"
+                    (click)="setStatusFilter('all')"
+                    class="soft-ui-segmented__item flex items-center gap-1.5"
+                    [class.soft-ui-segmented__item--active]="filterStatus() === 'all'"
+                    [attr.aria-pressed]="filterStatus() === 'all'">
               Tất cả
               @if(filteredCount('all') > 0) {
                 <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('all')}}</span>
               }
             </button>
-            <button (click)="setStatusFilter('pending')"
-                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
-                    [class]="filterStatus() === 'pending'
-                      ? 'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 shadow-sm border border-amber-100/60 dark:border-amber-900/20'
-                      : 'text-slate-455 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
+            <button type="button"
+                    (click)="setStatusFilter('pending')"
+                    class="soft-ui-segmented__item flex items-center gap-1.5"
+                    [class.soft-ui-segmented__item--active]="filterStatus() === 'pending'"
+                    [attr.aria-pressed]="filterStatus() === 'pending'">
               Chờ nhập
               @if(filteredCount('pending') > 0) {
                 <span class="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('pending')}}</span>
               }
             </button>
-            <button (click)="setStatusFilter('draft')"
-                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
-                    [class]="filterStatus() === 'draft'
-                      ? 'bg-fuchsia-50 dark:bg-fuchsia-955/20 text-fuchsia-700 dark:text-fuchsia-400 shadow-sm border border-fuchsia-100/60 dark:border-fuchsia-900/20'
-                      : 'text-slate-455 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400'">
+            <button type="button"
+                    (click)="setStatusFilter('draft')"
+                    class="soft-ui-segmented__item flex items-center gap-1.5"
+                    [class.soft-ui-segmented__item--active]="filterStatus() === 'draft'"
+                    [attr.aria-pressed]="filterStatus() === 'draft'">
               Đang nháp
               @if(filteredCount('draft') > 0) {
                 <span class="bg-fuchsia-100 dark:bg-fuchsia-955/40 text-fuchsia-700 dark:text-fuchsia-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('draft')}}</span>
               }
             </button>
-            <button (click)="setStatusFilter('completed')"
-                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
-                    [class]="filterStatus() === 'completed'
-                      ? 'bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 shadow-sm border border-emerald-100/60 dark:border-emerald-900/20'
-                      : 'text-slate-455 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
+            <button type="button"
+                    (click)="setStatusFilter('completed')"
+                    class="soft-ui-segmented__item flex items-center gap-1.5"
+                    [class.soft-ui-segmented__item--active]="filterStatus() === 'completed'"
+                    [attr.aria-pressed]="filterStatus() === 'completed'">
               Hoàn thành
               @if(filteredCount('completed') > 0) {
                 <span class="bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('completed')}}</span>

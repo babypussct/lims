@@ -9,10 +9,10 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
   standalone: true,
   imports: [CommonModule, AppButtonComponent, AppPageHeaderComponent],
   template: `
-    <div class="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div class="max-w-4xl mx-auto">
+    <div class="min-h-screen w-full bg-slate-50 dark:bg-slate-900 p-4 md:p-6 transition-colors duration-300">
+      <div class="relative mx-auto w-full max-w-5xl">
         <app-page-header
-          class="mb-8 block overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700"
+          class="mb-6 block shrink-0"
           title="Chính sách bảo mật và quyền riêng tư"
           subtitle="LIMS Cloud · Cổng thông tin công khai"
           icon="fa-shield-halved">

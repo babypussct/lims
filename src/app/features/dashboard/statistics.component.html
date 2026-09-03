@@ -1,15 +1,15 @@
     @if (auth.canViewReports()) {
-        <div class="h-full flex flex-col space-y-5 pb-6 fade-in overflow-hidden relative font-sans text-slate-800 dark:text-slate-200">
+        <div class="h-full flex flex-col space-y-5 fade-in relative font-sans text-slate-800 dark:text-slate-200 p-4 md:p-6">
             
-            <!-- 1. Header with Filters -->
-            <div class="mb-4 shrink-0 overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700 z-20">
-                <app-page-header
-                    title="Báo cáo quản trị"
-                    subtitle="Phân tích hiệu suất & tiêu hao theo thời gian thực."
-                    icon="fa-chart-pie">
-                </app-page-header>
+            <!-- 1. Header Area -->
+            <app-page-header
+                class="block shrink-0"
+                title="Báo cáo quản trị"
+                subtitle="Phân tích hiệu suất & tiêu hao theo thời gian thực."
+                icon="fa-chart-pie">
+            </app-page-header>
 
-                <app-toolbar>
+            <app-toolbar>
                     <div toolbarSearch class="flex flex-col gap-3 md:flex-row md:items-center">
                         <div class="relative group min-w-[200px]">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -58,7 +58,6 @@
                         }
                     </div>
                 </app-toolbar>
-            </div>
 
             @if (reportWarnings().length > 0) {
                 <div class="shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200" role="alert">

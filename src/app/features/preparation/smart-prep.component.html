@@ -1,10 +1,11 @@
 <div class="flex min-h-full flex-col bg-slate-50 pb-10 font-sans text-slate-800 dark:bg-slate-950 dark:text-slate-100">
   <app-page-header
-    class="mb-5 block shrink-0 overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800"
+    class="mb-5 block shrink-0"
+    variant="workspace"
+    [sticky]="true"
     title="Chuẩn bị dung dịch"
-    subtitle="Công cụ hỗ trợ tính toán và rà soát thông tin chuẩn bị dung dịch."
-    icon="fa-flask-vial">
-    <div pageHeaderActions class="contents">
+    subtitle="Công cụ hỗ trợ tính toán và rà soát thông tin chuẩn bị dung dịch.">
+    <div pageHeaderActions class="flex flex-wrap items-center justify-end gap-2">
       <app-button variant="secondary" size="sm" (click)="copyResult()">
         <i class="fa-solid fa-copy" aria-hidden="true"></i> Sao chép
       </app-button>

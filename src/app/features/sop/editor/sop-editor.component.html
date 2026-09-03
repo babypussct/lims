@@ -1,33 +1,39 @@
     <div class="h-full flex flex-col bg-slate-100 dark:bg-slate-900 fade-in text-slate-800 dark:text-slate-200 relative">
-        <!-- Toolbar -->
-        <div class="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 shrink-0 shadow-sm z-30">
-            <div class="flex items-center gap-4">
-                <app-button variant="ghost" size="sm" (click)="goBack()" [disabled]="isLoading()">
-                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span class="hidden md:inline">Quay lại</span>
-                </app-button>
-                <div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
-                <div>
-                   <h2 class="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 leading-none">
-                       {{ form.get('name')?.value || 'Quy trình Mới' }}
-                   </h2>
-                   <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-1 flex items-center gap-3">
-                       <span>ID: {{ form.get('id')?.value || 'Pending...' }}</span>
-                       <div class="flex items-center bg-slate-100 dark:bg-slate-900 rounded px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
-                           <span class="text-slate-500 dark:text-slate-400 font-bold mr-1">v</span>
-                           <input type="number" [formControl]="form.controls.version" 
-                                  class="bg-transparent w-8 text-[10px] font-bold text-blue-700 dark:text-blue-400 outline-none text-center" 
-                                  min="1">
-                       </div>
-                   </div>
-                </div>
-            </div>
-            <div class="flex gap-2">
+        <!-- Focused workspace header -->
+        <app-page-header
+            class="mb-3 block shrink-0"
+            variant="workspace"
+            [sticky]="true"
+            [title]="form.get('name')?.value || 'Quy trình mới'"
+            [subtitle]="'ID: ' + (form.get('id')?.value || 'Đang tạo') + ' · Phiên bản v' + (form.get('version')?.value || 1)">
+            <app-button
+                pageHeaderLeading
+                variant="ghost"
+                size="sm"
+                (click)="goBack()"
+                [disabled]="isLoading()"
+                title="Quay lại thư viện SOP">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                <span class="sr-only">Quay lại thư viện SOP</span>
+            </app-button>
+
+            <div pageHeaderActions class="flex items-center gap-2">
+                <label class="flex h-9 items-center gap-1.5 rounded-xl bg-slate-100 px-2.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <span class="hidden sm:inline">Phiên bản</span>
+                    <span aria-hidden="true">v</span>
+                    <input
+                        type="number"
+                        min="1"
+                        [formControl]="form.controls.version"
+                        aria-label="Phiên bản quy trình"
+                        class="w-10 bg-transparent text-center text-xs font-bold text-fuchsia-700 outline-none dark:text-fuchsia-400" />
+                </label>
                 <app-button size="sm" (click)="save()" [disabled]="isLoading()" [loading]="isLoading()">
                     @if (!isLoading()) { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> }
                     <span>{{ isLoading() ? 'Đang lưu' : 'Lưu quy trình' }}</span>
                 </app-button>
             </div>
-        </div>
+        </app-page-header>
 
         <!-- Split View Layout -->
         <div class="flex-1 flex overflow-hidden relative">

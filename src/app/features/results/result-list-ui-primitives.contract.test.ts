@@ -24,8 +24,15 @@ describe('results list shared UI primitive integration', () => {
     assert.match(component, /<app-button\b/);
     assert.match(component, /<app-empty-state\b/);
     assert.match(component, /Xóa bộ lọc/);
-    assert.match(component, /Báo cáo PDF/);
     assert.match(component, /Chi tiết mẻ chạy/);
+
+    // Spatial anchor, borderless page header, and soft-ui-segmented control
+    assert.match(component, /class="[^"]*p-4 md:p-6[^"]*"/);
+    assert.match(component, /class="[^"]*\bsoft-ui-segmented\b[^"]*"/);
+    assert.match(component, /class="[^"]*\binline-flex\b[^"]*"/);
+    assert.match(component, /aria-label="Lọc trạng thái mẻ phân tích"/);
+    assert.doesNotMatch(component, /<app-page-header[^>]*border/);
+    assert.doesNotMatch(component, /<app-page-header[^>]*shadow/);
   });
 
   it('keeps results-specific stateful controls and complex modals on their existing boundaries', () => {
@@ -61,10 +68,26 @@ describe('results entry shared UI primitive integration', () => {
 
   it('keeps SOP-specific entry controls behind their existing specialized components', () => {
     const template = read('./result-entry.component.html');
+    const header = read('./components/result-entry-header.component.html');
 
     assert.match(template, /<app-result-entry-header\b/);
     assert.match(template, /<app-result-prefix-tabs\b/);
     assert.match(template, /<app-sop-entry-outlet\b/);
     assert.match(template, /<app-excel-result-import-modal\b/);
+    assert.match(template, /Tách phiếu in/);
+    assert.match(template, /samplesPerReport\.set/);
+    assert.doesNotMatch(header, /Tách phiếu in/);
+  });
+
+  it('uses the shared detail header contract on batch details', () => {
+    const component = read('../results-view/batch-detail-view.component.ts');
+
+    assert.match(component, /AppPageHeaderComponent/);
+    assert.match(component, /<app-page-header\b/);
+    assert.match(component, /variant="detail"/);
+    assert.match(component, /pageHeaderLeading/);
+    assert.match(component, /pageHeaderActions/);
+    assert.match(component, /pageHeaderMeta/);
+    assert.match(component, /title="Chi tiết kết quả mẻ phân tích"/);
   });
 });

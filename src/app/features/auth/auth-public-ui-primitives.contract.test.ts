@@ -23,7 +23,16 @@ describe('auth/public shared UI primitive integration', () => {
       assert.match(source, /<app-page-header\b/);
       assert.match(source, /pageHeaderActions/);
       assert.match(source, /<app-button\b/);
+
+      // Public two-layer shell and borderless page header contract
+      assert.match(source, /p-4 md:p-6/);
+      assert.match(source, /max-w-5xl/);
+      assert.doesNotMatch(source, /<app-page-header[^>]*border/);
+      assert.doesNotMatch(source, /<app-page-header[^>]*shadow/);
     }
+
+    const appComponent = read('../../app.component.ts');
+    assert.match(appComponent, /data-public-scroll-owner/);
   });
 
   it('keeps the mobile QR scanner dark-mode safe while using shared confirmation actions', () => {

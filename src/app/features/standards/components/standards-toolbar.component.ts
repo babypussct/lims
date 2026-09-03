@@ -14,7 +14,7 @@ import { AppPageHeaderComponent } from '../../../shared/components/ui/page-heade
       title="Quản lý chất chuẩn đối chiếu"
       subtitle="Quản lý danh sách chất chuẩn, in tem và cập nhật thông tin lô sản xuất."
       icon="fa-vial-circle-check">
-      <div pageHeaderActions class="contents">
+      <div pageHeaderActions class="flex items-center gap-2 flex-wrap">
          @if(selectedCount() > 0) {
               <app-button class="animate-bounce-in" size="sm" (click)="printSelected.emit()" [disabled]="isProcessing()">
                   <i class="fa-solid fa-print"></i> In {{selectedCount()}} nhãn

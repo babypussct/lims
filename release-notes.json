@@ -1,17 +1,19 @@
 {
-  "title": "Đồng bộ Dashboard, hồ sơ và cài đặt theo Soft UI live demo",
+  "title": "Đồng bộ giao diện đầu trang và nâng cao độ mượt khi chuyển đổi nghiệp vụ",
   "highlights": [
-    "Tinh chỉnh Dashboard, hồ sơ tài khoản và khu vực Cài đặt sát hơn với bố cục, mật độ và bề mặt của Creative Tim Soft UI Dashboard PRO, đồng thời giữ nguyên dữ liệu và nghiệp vụ LIMS.",
-    "Chuẩn hóa sidebar, navbar, card, điều hướng cài đặt và thông tin hồ sơ theo cùng một ngôn ngữ Soft UI nhẹ, nổi khối và nhất quán hơn."
+    "Chuẩn hóa toàn bộ khu vực đầu trang trên tất cả các màn hình nghiệp vụ (Kho, Chất chuẩn, Yêu cầu, Kết quả, Báo cáo...), giữ vị trí ổn định và không còn hiện tượng nhảy giật khi chuyển trang.",
+    "Tăng kích thước các nút chuyển tab lựa chọn trên di động, giúp kiểm nghiệm viên thao tác bằng ngón tay nhanh và chính xác hơn.",
+    "Cải thiện tốc độ tải và đảm bảo phiếu in Bảng theo dõi mẫu ngày luôn chuẩn nét, không bị tràn trang khi in ấn."
   ],
   "features": [],
   "improvements": [
-    "Tinh chỉnh app header và sidenav theo tỷ lệ Soft UI, đưa nút thu gọn về khu vực utility và giảm các border, shadow nặng không cần thiết.",
-    "Điều chỉnh Dashboard để thông tin phạm vi thời gian nằm đúng ngữ cảnh khối phân tích và giữ bố cục tổng quan gọn hơn.",
-    "Thiết kế lại Settings shell với điều hướng dạng Soft UI, card không viền và mật độ nội dung gần live demo hơn trên cả desktop lẫn mobile.",
-    "Tổ chức lại trang hồ sơ tài khoản thành các card thông tin, cá nhân hóa và quyền truy cập rõ ràng hơn, đồng thời giữ nguyên các thao tác sao chép UID và chọn avatar."
+    "Đồng bộ vị trí biểu tượng, tiêu đề và dòng mô tả của tất cả các trang làm việc, mang lại trải nghiệm liền mạch và tập trung khi tra cứu hoặc nhập liệu liên tục giữa các phân hệ.",
+    "Cải thiện các thanh lựa chọn chế độ hiển thị tại trang Kết quả và Yêu cầu với nút bấm êm và rõ nét hơn trên cả màn hình cảm ứng lẫn máy tính để bàn.",
+    "Tối ưu hóa Bảng theo dõi mẫu ngày, hiển thị thông báo tải mẻ phân tích rõ ràng và duy trì định dạng xem trước khi in ổn định.",
+    "Đảm bảo bố cục giao diện giữ nguyên vị trí hoàn hảo khi kiểm nghiệm viên bật hoặc tắt chế độ nền tối (Dark mode)."
   ],
   "fixes": [
-    "Cập nhật regression contracts để bảo vệ cấu trúc desktop chrome theo tham chiếu Soft UI và tránh sai lệch bố cục ở các lần chỉnh giao diện tiếp theo."
+    "Khắc phục hiện tượng xê dịch nhẹ của đầu trang giữa các danh mục cài đặt và nghiệp vụ kiểm nghiệm khi đóng/mở thanh điều hướng.",
+    "Sửa lỗi ẩn các nút chuyển đổi chế độ xem không cần thiết trên màn hình điện thoại nhỏ để dành trọn không gian cho dữ liệu mẫu."
   ]
 }

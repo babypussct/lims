@@ -21,14 +21,14 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
-    <div class="flex flex-col flex-1 min-h-0 fade-in relative pb-10 bg-transparent dark:text-slate-100">
+    <div class="flex flex-col flex-1 min-h-0 fade-in relative p-4 md:p-6 bg-transparent dark:text-slate-100">
 
         <app-page-header
             title="Thư viện công thức"
             subtitle="Quản lý các công thức dùng chung cho tính toán và chuẩn bị mẫu."
             icon="fa-book-bookmark">
             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
-                <div pageHeaderActions class="contents">
+                <div pageHeaderActions class="flex items-center gap-2">
                     <app-button [appLockPermission]="'recipe_edit'" (click)="openModal()">
                         <i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo công thức
                     </app-button>

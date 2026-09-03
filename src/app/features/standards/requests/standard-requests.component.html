@@ -1,10 +1,10 @@
-<div class="requests-page flex flex-col space-y-4 h-full relative p-1 pb-6 overflow-visible">
+<div class="requests-page flex flex-col space-y-4 h-full relative p-4 md:p-6 overflow-visible">
       <!-- Header Area -->
       <app-page-header
         title="Quản lý yêu cầu chất chuẩn"
         subtitle="Theo dõi, cấp phát và thu hồi chuẩn đối chiếu."
         icon="fa-clipboard-list">
-        <div pageHeaderActions class="contents">
+        <div pageHeaderActions class="flex items-center gap-2 flex-wrap">
              <app-button variant="secondary" size="sm" (click)="openExportModal()">
                 <i class="fa-solid fa-file-excel text-emerald-500"></i> Xuất Excel
              </app-button>
@@ -22,7 +22,7 @@
          </div>
       </app-page-header>
 
-      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-0">
+      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-0">
           
           <!-- Modern Tab Filters & Search -->
           <app-toolbar [sticky]="true">

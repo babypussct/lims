@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.09.02-b05",
+  "version": "26.09.03-b01",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -36,11 +36,13 @@
     "test:backup": "tsx --test api/_lib/backup-crypto.test.ts api/_lib/backup-contract.test.ts api/_lib/firestore-backup.test.ts api/_lib/backup-restore.test.ts api/_lib/apps-script-backup.test.ts api/_lib/drive-assets-backup.test.ts api/_lib/backup-retention.test.ts api/_lib/backup-resumable.test.ts",
     "test:notification-workflow": "node scripts/run-notification-workflow-emulator.js",
     "test:ui-primitives": "tsx --test src/app/shared/components/ui/ui-primitives.contract.test.ts src/app/shared/components/confirmation-modal/confirmation-modal.component.test.ts src/app/core/layout/soft-ui-layout.contract.test.ts",
-    "test:ui-contracts": "npm run test:ui-primitives && npm run test:ui-dashboard && npm run test:ui-inventory && npm run test:ui-results && npm run test:ui-recipes && npm run test:ui-preparation && npm run test:ui-standards && npm run test:ui-targets && npm run test:ui-documents && npm run test:ui-checklist && npm run test:ui-labels && npm run test:ui-config && npm run test:settings && npm run test:ui-traceability && npm run test:ui-sop && npm run test:ui-auth-public",
-    "test:ui-guardrails": "node scripts/ui-guardrails.js",
+    "test:ui-contracts": "npm run test:ui-primitives && npm run test:ui-dashboard && npm run test:ui-inventory && npm run test:ui-results && npm run test:ui-requests && npm run test:ui-batch && npm run test:ui-recipes && npm run test:ui-preparation && npm run test:ui-standards && npm run test:ui-targets && npm run test:ui-documents && npm run test:ui-checklist && npm run test:ui-labels && npm run test:ui-config && npm run test:settings && npm run test:ui-traceability && npm run test:ui-sop && npm run test:ui-auth-public",
+    "test:ui-guardrails": "tsx --test scripts/ui-guardrails.test.ts && node scripts/ui-guardrails.js",
     "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts",
     "test:ui-inventory": "tsx --test src/app/features/inventory/inventory-ui-primitives.contract.test.ts",
     "test:ui-results": "tsx --test src/app/features/results/result-list-ui-primitives.contract.test.ts",
+    "test:ui-requests": "tsx --test src/app/features/requests/request-list-ui-primitives.contract.test.ts",
+    "test:ui-batch": "tsx --test src/app/features/batch/smart-batch-ui-primitives.contract.test.ts",
     "test:ui-recipes": "tsx --test src/app/features/recipes/recipe-ui-primitives.contract.test.ts",
     "test:ui-preparation": "tsx --test src/app/features/preparation/smart-prep-ui-primitives.contract.test.ts",
     "test:ui-standards": "tsx --test src/app/features/standards/standards-ui-primitives.contract.test.ts",
@@ -53,6 +55,8 @@
     "test:ui-traceability": "tsx --test src/app/features/traceability/traceability-ui-primitives.contract.test.ts",
     "test:ui-sop": "tsx --test src/app/features/sop/sop-ui-primitives.contract.test.ts",
     "test:ui-auth-public": "tsx --test src/app/features/auth/auth-public-ui-primitives.contract.test.ts",
+    "test:ui-zero-jump": "node scripts/ui-zero-jump-audit.js",
+    "verify:ui-release": "npm run test:ui-guardrails && npm run test:ui-contracts && npm run test:ui-zero-jump",
     "test:service-worker": "tsx --test src/app/core/utils/service-worker-recovery.test.ts src/app/core/utils/chunk-reload-recovery.test.ts src/app/core/utils/service-worker-update.contract.test.ts",
     "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts src/app/features/documents/document-viewer.utils.test.ts src/app/features/documents/excel-univer-converter.test.ts src/app/features/documents/excel-univer-metadata.test.ts src/app/features/documents/excel-viewer-tools.test.ts src/app/features/documents/excel-document-demo.component.test.ts",
     "test:results": "tsx --test src/app/features/results/result-pdf-helper.test.ts src/app/features/results/services/report-request-id.test.ts",
