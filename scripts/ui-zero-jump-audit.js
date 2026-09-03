@@ -618,12 +618,19 @@ async function run() {
         ? (w) => w >= 255
         : (w) => w <= 57;
 
-      const curWidth = await client.eval(`
-        (() => {
-          const panel = document.querySelector('[data-navigation-panel]');
-          return panel ? panel.getBoundingClientRect().width : null;
-        })()
-      `);
+      let curWidth = null;
+      for (let i = 0; i < 25; i++) {
+        curWidth = await client.eval(`
+          (() => {
+            const panel = document.querySelector('[data-navigation-panel]');
+            return panel ? panel.getBoundingClientRect().width : null;
+          })()
+        `);
+        if (curWidth !== null && expected(curWidth)) {
+          return curWidth;
+        }
+        await sleep(150);
+      }
 
       if (curWidth !== null && expected(curWidth)) {
         return curWidth;
