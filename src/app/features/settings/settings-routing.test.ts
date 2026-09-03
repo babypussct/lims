@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { routes } from '../../app.routes';
-import { calculateCenteredScrollLeft, calculateVisibleScrollTop } from './settings-scroll.utils';
+import { calculateCenteredScrollLeft } from './settings-scroll.utils';
 
 const notificationServiceSource = readFileSync(new URL('../../core/services/notification.service.ts', import.meta.url), 'utf8');
 const notificationSettingsSource = readFileSync(new URL('./pages/account-notifications-settings.component.ts', import.meta.url), 'utf8');
@@ -99,34 +99,41 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(profileSettingsSource, /role === 'manager' \? 'Quản trị viên' : 'Nhân viên'/);
   });
 
-  it('tracks and automatically scrolls active navigation items into view on mobile and desktop', () => {
+  it('tracks and automatically scrolls active top navigation items into view', () => {
     const settingsShellSource = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
 
-    assert.match(settingsShellSource, /#mobileNavContainer/);
-    assert.match(settingsShellSource, /#desktopNavContainer/);
-    assert.match(settingsShellSource, /mobileNavContainer = viewChild/);
-    assert.match(settingsShellSource, /desktopNavContainer = viewChild/);
+    assert.match(settingsShellSource, /#accountNavContainer/);
+    assert.match(settingsShellSource, /#adminNavContainer/);
+    assert.match(settingsShellSource, /accountNavContainer = viewChild/);
+    assert.match(settingsShellSource, /adminNavContainer = viewChild/);
     assert.match(settingsShellSource, /scrollActiveIntoView/);
+    assert.match(settingsShellSource, /scrollHorizontalActiveIntoView/);
     assert.match(settingsShellSource, /NavigationEnd/);
     assert.match(settingsShellSource, /ngAfterViewInit/);
     assert.match(settingsShellSource, /getBoundingClientRect/);
     assert.match(settingsShellSource, /calculateCenteredScrollLeft/);
-    assert.match(settingsShellSource, /calculateVisibleScrollTop/);
-    assert.doesNotMatch(settingsShellSource, /activeMob\.offsetLeft/);
-    assert.doesNotMatch(settingsShellSource, /activeDesk\.offsetTop/);
+    assert.doesNotMatch(settingsShellSource, /calculateVisibleScrollTop/);
+    assert.doesNotMatch(settingsShellSource, /offsetLeft/);
   });
 
-  it('uses a single Soft UI-style top navigation for personal account settings', () => {
+  it('uses one Soft UI-style top navigation system across every Settings route', () => {
     const settingsShellSource = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
     const profileSettingsSource = readFileSync(new URL('./pages/account-profile-settings.component.ts', import.meta.url), 'utf8');
 
-    assert.match(settingsShellSource, /isAccountArea = computed\(\(\) =>[\s\S]*startsWith\('\/settings\/account\/'\)[\s\S]*startsWith\('\/settings\/manager'\)/);
     assert.match(settingsShellSource, /aria-label="Điều hướng cấu hình tài khoản"/);
+    assert.match(settingsShellSource, /aria-label="Điều hướng quản trị hệ thống"/);
     assert.match(settingsShellSource, /topNavItems\(\)/);
+    assert.match(settingsShellSource, /managerNavItems/);
+    assert.match(settingsShellSource, /filteredManagerNavItems/);
+    assert.match(settingsShellSource, /Tìm nhanh cài đặt/);
     assert.match(settingsShellSource, /\/settings\/account\/privacy/);
     assert.match(settingsShellSource, /label: 'Quản trị'[\s\S]*path: '\/settings\/manager'[\s\S]*adminOnly: true/);
-    assert.match(settingsShellSource, /startsWith\('\/settings\/manager'\)/);
-    assert.match(settingsShellSource, /Desktop Sticky Navigation Sidebar: administrative Settings only/);
+    assert.match(settingsShellSource, /label: 'Cấu hình chung'[\s\S]*path: '\/settings\/system'/);
+    assert.match(settingsShellSource, /label: 'Vai trò'[\s\S]*path: '\/settings\/access\/roles'/);
+    assert.match(settingsShellSource, /label: 'Định mức & tiêu hao'[\s\S]*path: '\/settings\/policies\/consumption'/);
+    assert.doesNotMatch(settingsShellSource, /<aside/);
+    assert.doesNotMatch(settingsShellSource, /Desktop Sticky Navigation Sidebar/);
+    assert.doesNotMatch(settingsShellSource, /isAccountArea/);
     assert.doesNotMatch(profileSettingsSource, /routerLink="\/settings\/account\//);
     assert.doesNotMatch(profileSettingsSource, /relative h-40 overflow-hidden rounded-2xl bg-gradient-soft/);
   });
@@ -146,9 +153,15 @@ describe('Settings routing contract', () => {
     assert.match(managerSource, /PERMISSIONS\.USER_MANAGE/);
     assert.match(managerSource, /PERMISSIONS\.BACKUP_RESTORE/);
     assert.match(managerSource, /\/settings\/access\/users/);
+    assert.match(managerSource, /\/settings\/access\/roles/);
     assert.match(managerSource, /\/settings\/system/);
+    assert.match(managerSource, /\/settings\/data\/master/);
     assert.match(managerSource, /\/settings\/data\/backups/);
+    assert.match(managerSource, /\/settings\/data\/lifecycle/);
+    assert.match(managerSource, /\/settings\/policies\/consumption/);
     assert.match(managerSource, /\/settings\/diagnostics/);
+    assert.match(managerSource, /adminAreaCount/);
+    assert.match(managerSource, /Mọi trang quản trị dùng chung một hệ điều hướng trên cùng/);
   });
 
   it('calculates mobile centering from container-relative viewport geometry and clamps to bounds', () => {
@@ -180,24 +193,4 @@ describe('Settings routing contract', () => {
     }), 680);
   });
 
-  it('scrolls the desktop nav only when the active item is outside the container viewport', () => {
-    const base = {
-      scrollTop: 300,
-      scrollHeight: 1200,
-      containerTop: 200,
-      containerHeight: 400,
-      padding: 16,
-    };
-
-    assert.equal(calculateVisibleScrollTop({ ...base, itemTop: 300, itemHeight: 44 }), null);
-    assert.equal(calculateVisibleScrollTop({ ...base, itemTop: 150, itemHeight: 44 }), 234);
-    assert.equal(calculateVisibleScrollTop({ ...base, itemTop: 590, itemHeight: 50 }), 356);
-
-    assert.equal(calculateVisibleScrollTop({
-      ...base,
-      scrollTop: 20,
-      itemTop: 100,
-      itemHeight: 44,
-    }), 0);
-  });
 });

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.03-b06",
-    "title": "Tối ưu Bảo mật và bổ sung Trung tâm quản trị",
+    "version": "v26.09.03-b07",
+    "title": "Đồng bộ điều hướng Settings và hoàn thiện Trung tâm quản trị",
     "features": [
-      "Thiết kế lại tab Bảo mật theo luồng đăng nhập rõ ràng, loại bỏ nội dung và thao tác mật khẩu bị lặp.",
-      "Bổ sung tab Quản trị chỉ hiển thị cho quản trị viên, tập trung các lối vào quản lý người dùng, hệ thống, backup và chẩn đoán.",
-      "Thêm Trung tâm quản trị với các nhóm quyền quản trị nổi bật và lối vào trực tiếp tới các khu vực cấu hình chuyên sâu.",
-      "Gom Google và Mật khẩu LIMS thành hai phương thức đăng nhập song song, mỗi phương thức có trạng thái và hành động riêng.",
-      "Đưa yêu cầu tối thiểu 8 ký tự vào đúng card mật khẩu thay vì tạo một khối hướng dẫn trùng lặp bên dưới."
+      "Thống nhất toàn bộ Settings về một layout điều hướng trên cùng, loại bỏ sidebar quản trị xuất hiện lại khi mở các trang con.",
+      "Mở rộng Trung tâm quản trị để hiển thị đầy đủ các chức năng hệ thống, dữ liệu, truy cập và quy tắc vận hành hiện có.",
+      "Thêm thanh điều hướng quản trị chuyên sâu ngay dưới cụm tab tài khoản, luôn sẵn sàng trên mọi trang Settings đối với manager.",
+      "Bổ sung tìm nhanh cài đặt quản trị ngay trên thanh điều hướng để truy cập trực tiếp các khu vực chuyên sâu.",
+      "Giữ nguyên header hồ sơ và phong cách Soft UI cho cả trang cá nhân lẫn các trang quản trị sâu, tránh thay đổi bố cục khi chuyển route."
     ]
   },
   "assetGroups": [

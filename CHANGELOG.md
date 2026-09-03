@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.03-b06
+## Phiên bản hiện tại: v26.09.03-b07
+
+### v26.09.03-b07
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thống nhất toàn bộ Settings về một layout điều hướng trên cùng, loại bỏ sidebar quản trị xuất hiện lại khi mở các trang con.
+- Mở rộng Trung tâm quản trị để hiển thị đầy đủ các chức năng hệ thống, dữ liệu, truy cập và quy tắc vận hành hiện có.
+
+#### ✨ Tính Năng Mới
+
+- Thêm thanh điều hướng quản trị chuyên sâu ngay dưới cụm tab tài khoản, luôn sẵn sàng trên mọi trang Settings đối với manager.
+- Bổ sung tìm nhanh cài đặt quản trị ngay trên thanh điều hướng để truy cập trực tiếp các khu vực chuyên sâu.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ nguyên header hồ sơ và phong cách Soft UI cho cả trang cá nhân lẫn các trang quản trị sâu, tránh thay đổi bố cục khi chuyển route.
+- Thanh quản trị có đủ Tổng quan, Cấu hình chung, Dữ liệu nền, Backup & phục hồi, Vòng đời dữ liệu, Chẩn đoán, Người dùng, Vai trò và Định mức & tiêu hao.
+- Trung tâm quản trị được chia theo bốn nhóm nghiệp vụ với đủ tám chức năng chuyên sâu và số lượng chức năng hiển thị rõ ràng.
+- Giữ nguyên toàn bộ guard manager của từng route nên thay đổi điều hướng không làm nới quyền truy cập.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục tình trạng một số trang con Settings vẫn quay về sidebar cũ sau khi người dùng chọn chức năng quản trị.
+- Khắc phục việc nhiều route quản trị tồn tại nhưng không có lối truy cập trực tiếp từ Trung tâm quản trị.
 
 ### v26.09.03-b06
 

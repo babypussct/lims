@@ -40,7 +40,11 @@ describe('config shared UI primitive integration', () => {
     assert.match(shell, /getUserRoleLabel\(auth\.currentUser\(\)\?\.role\)/);
     assert.match(shell, /v\{\{ state\.systemVersion\(\) \}\}/);
     assert.match(shell, /<router-outlet\s*\/>/);
-    assert.match(shell, /Tìm cài đặt/);
+    assert.match(shell, /Tìm nhanh cài đặt/);
+    assert.match(shell, /aria-label="Điều hướng cấu hình tài khoản"/);
+    assert.match(shell, /aria-label="Điều hướng quản trị hệ thống"/);
+    assert.doesNotMatch(shell, /<aside/);
+    assert.doesNotMatch(shell, /Desktop Sticky Navigation Sidebar/);
     assert.match(shell, /\/settings\/account\/profile/);
     assert.match(shell, /\/settings\/data\/backups/);
     assert.match(routes, /path: 'settings'/);

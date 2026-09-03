@@ -1,20 +1,21 @@
 {
-  "title": "Tối ưu Bảo mật và bổ sung Trung tâm quản trị",
+  "title": "Đồng bộ điều hướng Settings và hoàn thiện Trung tâm quản trị",
   "highlights": [
-    "Thiết kế lại tab Bảo mật theo luồng đăng nhập rõ ràng, loại bỏ nội dung và thao tác mật khẩu bị lặp.",
-    "Bổ sung tab Quản trị chỉ hiển thị cho quản trị viên, tập trung các lối vào quản lý người dùng, hệ thống, backup và chẩn đoán."
+    "Thống nhất toàn bộ Settings về một layout điều hướng trên cùng, loại bỏ sidebar quản trị xuất hiện lại khi mở các trang con.",
+    "Mở rộng Trung tâm quản trị để hiển thị đầy đủ các chức năng hệ thống, dữ liệu, truy cập và quy tắc vận hành hiện có."
   ],
   "features": [
-    "Thêm Trung tâm quản trị với các nhóm quyền quản trị nổi bật và lối vào trực tiếp tới các khu vực cấu hình chuyên sâu."
+    "Thêm thanh điều hướng quản trị chuyên sâu ngay dưới cụm tab tài khoản, luôn sẵn sàng trên mọi trang Settings đối với manager.",
+    "Bổ sung tìm nhanh cài đặt quản trị ngay trên thanh điều hướng để truy cập trực tiếp các khu vực chuyên sâu."
   ],
   "improvements": [
-    "Gom Google và Mật khẩu LIMS thành hai phương thức đăng nhập song song, mỗi phương thức có trạng thái và hành động riêng.",
-    "Đưa yêu cầu tối thiểu 8 ký tự vào đúng card mật khẩu thay vì tạo một khối hướng dẫn trùng lặp bên dưới.",
-    "Đổi Nhật ký bảo mật thành Hoạt động bảo mật gọn hơn, tập trung vào thời điểm đổi mật khẩu gần nhất.",
-    "Giữ nguyên các guard quản trị hiện có cho từng màn hình chuyên sâu để tab Quản trị không làm thay đổi phạm vi phân quyền."
+    "Giữ nguyên header hồ sơ và phong cách Soft UI cho cả trang cá nhân lẫn các trang quản trị sâu, tránh thay đổi bố cục khi chuyển route.",
+    "Thanh quản trị có đủ Tổng quan, Cấu hình chung, Dữ liệu nền, Backup & phục hồi, Vòng đời dữ liệu, Chẩn đoán, Người dùng, Vai trò và Định mức & tiêu hao.",
+    "Trung tâm quản trị được chia theo bốn nhóm nghiệp vụ với đủ tám chức năng chuyên sâu và số lượng chức năng hiển thị rõ ràng.",
+    "Giữ nguyên toàn bộ guard manager của từng route nên thay đổi điều hướng không làm nới quyền truy cập."
   ],
   "fixes": [
-    "Khắc phục việc thiếu điểm vào Quản trị trên thanh tab ngang đối với tài khoản manager.",
-    "Khắc phục bố cục Bảo mật có hai khu vực Mật khẩu LIMS với nội dung và nút thao tác trùng nhau."
+    "Khắc phục tình trạng một số trang con Settings vẫn quay về sidebar cũ sau khi người dùng chọn chức năng quản trị.",
+    "Khắc phục việc nhiều route quản trị tồn tại nhưng không có lối truy cập trực tiếp từ Trung tâm quản trị."
   ]
 }
