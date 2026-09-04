@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.04-b03
+## Phiên bản hiện tại: v26.09.04-b04
+
+### v26.09.04-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bổ sung module Lịch trực đêm với quản lý nhân sự, xếp ca, thống kê và widget tổng quan ngay trên Dashboard.
+
+#### ✨ Tính Năng Mới
+
+- Cho phép người dùng đã đăng nhập xem lịch trực; Manager hoặc người có quyền Quản lý lịch trực có thể tạo, chỉnh sửa và hủy ca.
+- Hỗ trợ liên kết nhân sự trực với tài khoản LIMS để đánh dấu Ca của bạn trên lịch và Dashboard.
+- Bổ sung bảng thống kê có thể sắp xếp theo nhân viên, lượt trực, số ca Thứ 2, số tháng tham gia và ngày trực gần nhất.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hiển thị lịch dạng bảng trên desktop và dạng card dọc trên thiết bị di động, kèm trạng thái, người chủ trì, ghi chú và thao tác phù hợp quyền.
+- Cải thiện khả năng tiếp cận của bảng thống kê bằng nút bàn phím, chỉ báo chiều sắp xếp và thuộc tính aria-sort.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Bổ sung Firestore rules cho dữ liệu Lịch trực để tài khoản đã đăng nhập có thể đọc và mọi thao tác ghi được kiểm soát theo quyền.
 
 ### v26.09.04-b03
 

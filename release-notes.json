@@ -1,14 +1,18 @@
 {
-  "title": "Tối ưu tùy chọn in Theo Dõi Mẫu & Kết Quả Ngày",
+  "title": "Ra mắt Lịch trực đêm và tối ưu trải nghiệm đa thiết bị",
   "highlights": [
-    "Bản in Theo Dõi Mẫu & Kết Quả Ngày luôn gom dải mã mẫu liên tục và cho phép chọn có hoặc không kèm mô tả mẫu."
+    "Bổ sung module Lịch trực đêm với quản lý nhân sự, xếp ca, thống kê và widget tổng quan ngay trên Dashboard."
   ],
-  "features": [],
+  "features": [
+    "Cho phép người dùng đã đăng nhập xem lịch trực; Manager hoặc người có quyền Quản lý lịch trực có thể tạo, chỉnh sửa và hủy ca.",
+    "Hỗ trợ liên kết nhân sự trực với tài khoản LIMS để đánh dấu Ca của bạn trên lịch và Dashboard.",
+    "Bổ sung bảng thống kê có thể sắp xếp theo nhân viên, lượt trực, số ca Thứ 2, số tháng tham gia và ngày trực gần nhất."
+  ],
   "improvements": [
-    "Thay checkbox gom dải mẫu bằng tùy chọn Kèm mô tả mẫu; mặc định vẫn hiển thị mô tả để giữ trải nghiệm hiện tại.",
-    "Khi bỏ chọn mô tả, bản in chỉ hiển thị mã số mẫu đã gom dải và bộ lập kế hoạch in tự tính lại bố cục theo nội dung ngắn hơn."
+    "Hiển thị lịch dạng bảng trên desktop và dạng card dọc trên thiết bị di động, kèm trạng thái, người chủ trì, ghi chú và thao tác phù hợp quyền.",
+    "Cải thiện khả năng tiếp cận của bảng thống kê bằng nút bàn phím, chỉ báo chiều sắp xếp và thuộc tính aria-sort."
   ],
   "fixes": [
-    "Ngăn việc tắt tùy chọn in làm mã mẫu bị bung thành danh sách rời thay vì giữ dạng dải liên tục."
+    "Bổ sung Firestore rules cho dữ liệu Lịch trực để tài khoản đã đăng nhập có thể đọc và mọi thao tác ghi được kiểm soát theo quyền."
   ]
 }

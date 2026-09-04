@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.09.04-b04",
+    "date": "4/9/2026",
+    "title": "Ra mắt Lịch trực đêm và tối ưu trải nghiệm đa thiết bị",
+    "highlights": [
+      "Bổ sung module Lịch trực đêm với quản lý nhân sự, xếp ca, thống kê và widget tổng quan ngay trên Dashboard."
+    ],
+    "features": [
+      "Cho phép người dùng đã đăng nhập xem lịch trực; Manager hoặc người có quyền Quản lý lịch trực có thể tạo, chỉnh sửa và hủy ca.",
+      "Hỗ trợ liên kết nhân sự trực với tài khoản LIMS để đánh dấu Ca của bạn trên lịch và Dashboard.",
+      "Bổ sung bảng thống kê có thể sắp xếp theo nhân viên, lượt trực, số ca Thứ 2, số tháng tham gia và ngày trực gần nhất."
+    ],
+    "improvements": [
+      "Hiển thị lịch dạng bảng trên desktop và dạng card dọc trên thiết bị di động, kèm trạng thái, người chủ trì, ghi chú và thao tác phù hợp quyền.",
+      "Cải thiện khả năng tiếp cận của bảng thống kê bằng nút bàn phím, chỉ báo chiều sắp xếp và thuộc tính aria-sort."
+    ],
+    "fixes": [
+      "Bổ sung Firestore rules cho dữ liệu Lịch trực để tài khoản đã đăng nhập có thể đọc và mọi thao tác ghi được kiểm soát theo quyền."
+    ],
+    "releaseOrder": 26090400004
+  },
+  {
     "version": "v26.09.04-b03",
     "date": "4/9/2026",
     "title": "Tối ưu tùy chọn in Theo Dõi Mẫu & Kết Quả Ngày",
