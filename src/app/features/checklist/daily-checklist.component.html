@@ -368,15 +368,17 @@
                       </td>
                       <td>
                         <div class="cl-print-samples">
-                          @if (group.sampleDisplayRuns.length) {
+                          @if (!printIncludeSampleDescriptions()) {
+                            <span class="cl-print-sample-code">{{group.formattedSamples}}</span>
+                          } @else if (group.sampleDisplayRuns.length) {
                             @for (run of group.sampleDisplayRuns; track $index; let isLast = $last) {
-                              <span class="cl-print-sample-code">{{printGroupSamples() ? run.formattedSamples : joinWithCommas(run.sampleIds)}}</span>@if (run.description) {<span class="cl-print-sample-description"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
+                              <span class="cl-print-sample-code">{{run.formattedSamples}}</span>@if (run.description) {<span class="cl-print-sample-description"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
                             }
                           } @else {
                             Chưa xác định mã mẫu
                           }
                         </div>
-                        @if (group.hasDescriptionConflict) { <div class="cl-print-missing">Cảnh báo: mô tả mẫu không thống nhất giữa các mẻ</div> }
+                        @if (printIncludeSampleDescriptions() && group.hasDescriptionConflict) { <div class="cl-print-missing">Cảnh báo: mô tả mẫu không thống nhất giữa các mẻ</div> }
                       </td>
                       <td>
                         @if (group.targetNames.length === 0) {
@@ -427,15 +429,17 @@
                                 <div class="cl-print-compact-label">Nhóm {{groupIndex + 1}}</div>
                               }
                               <div class="cl-print-compact-samples">
-                                @if (group.sampleDisplayRuns.length) {
+                                @if (!printIncludeSampleDescriptions()) {
+                                  <span class="cl-print-sample-code">{{group.formattedSamples}}</span>
+                                } @else if (group.sampleDisplayRuns.length) {
                                   @for (run of group.sampleDisplayRuns; track $index; let isLast = $last) {
-                                    <span class="cl-print-sample-code">{{printGroupSamples() ? run.formattedSamples : joinWithCommas(run.sampleIds)}}</span>@if (run.description) {<span class="cl-print-sample-description"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
+                                    <span class="cl-print-sample-code">{{run.formattedSamples}}</span>@if (run.description) {<span class="cl-print-sample-description"> ({{run.description.nameSnapshot}})</span>}@if (!isLast) {<span class="cl-print-sample-separator">; </span>}
                                   }
                                 } @else {
                                   Chưa xác định mã mẫu
                                 }
                               </div>
-                              @if (group.hasDescriptionConflict) { <div class="cl-print-missing">Mô tả mẫu không thống nhất</div> }
+                              @if (printIncludeSampleDescriptions() && group.hasDescriptionConflict) { <div class="cl-print-missing">Mô tả mẫu không thống nhất</div> }
                               @if (group.targetNames.length === 0) {
                                 <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
                               } @else if (group.targetScope.compact) {
@@ -529,10 +533,13 @@
 
         <div class="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <label class="flex items-center gap-2.5 cursor-pointer select-none">
-            <input type="checkbox" [ngModel]="printGroupSamples()" (ngModelChange)="printGroupSamples.set($event)"
+            <input type="checkbox" [ngModel]="printIncludeSampleDescriptions()" (ngModelChange)="printIncludeSampleDescriptions.set($event)"
                    class="w-4 h-4 text-blue-600 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded focus:ring-blue-500/30">
-            <span>Gom dải mẫu liên tục (L0115 → L5015)</span>
+            <span>Kèm mô tả mẫu</span>
           </label>
+          <p class="text-[10px] font-medium text-slate-400 pl-6">
+            Mã mẫu luôn được gom dải liên tục (ví dụ L0115 → L5015). Bỏ chọn để bản in chỉ hiển thị mã số mẫu.
+          </p>
         </div>
 
       </div>

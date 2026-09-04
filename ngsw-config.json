@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.04-b02",
-    "title": "Hoàn thiện Settings & Manager theo RBAC phân quyền",
+    "version": "v26.09.04-b03",
+    "title": "Tối ưu tùy chọn in Theo Dõi Mẫu & Kết Quả Ngày",
     "features": [
-      "Settings dùng một hệ điều hướng phía trên thống nhất, bỏ hoàn toàn sidebar nội bộ và giữ ngữ cảnh rõ ràng giữa tài khoản cá nhân với khu vực quản trị.",
-      "Manager vẫn toàn quyền, đồng thời Staff có thể được ủy quyền từng module quản trị bằng các quyền system_manage, master_data_manage, policy_manage và bộ quyền Backup riêng biệt.",
-      "Bổ sung catalog quyền dùng chung cho Users, Roles, route guards và các module quản trị; hỗ trợ permissionsAny cho các hub cần nhiều quyền thay thế.",
-      "Chuẩn hóa Master Data dưới /settings/data/master/* với sub-navigation riêng, deep-link canonical và giữ trạng thái tìm kiếm/lọc bằng query parameter.",
-      "Trung tâm Manager hiển thị trạng thái vận hành có hành động: người dùng chờ duyệt, sức khỏe backup, bảo trì và số lượng dữ liệu nền."
+      "Bản in Theo Dõi Mẫu & Kết Quả Ngày luôn gom dải mã mẫu liên tục và cho phép chọn có hoặc không kèm mô tả mẫu.",
+      "Thay checkbox gom dải mẫu bằng tùy chọn Kèm mô tả mẫu; mặc định vẫn hiển thị mô tả để giữ trải nghiệm hiện tại.",
+      "Khi bỏ chọn mô tả, bản in chỉ hiển thị mã số mẫu đã gom dải và bộ lập kế hoạch in tự tính lại bố cục theo nội dung ngắn hơn.",
+      "Ngăn việc tắt tùy chọn in làm mã mẫu bị bung thành danh sách rời thay vì giữ dạng dải liên tục."
     ]
   },
   "assetGroups": [

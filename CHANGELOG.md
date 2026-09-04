@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.04-b02
+## Phiên bản hiện tại: v26.09.04-b03
+
+### v26.09.04-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bản in Theo Dõi Mẫu & Kết Quả Ngày luôn gom dải mã mẫu liên tục và cho phép chọn có hoặc không kèm mô tả mẫu.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Thay checkbox gom dải mẫu bằng tùy chọn Kèm mô tả mẫu; mặc định vẫn hiển thị mô tả để giữ trải nghiệm hiện tại.
+- Khi bỏ chọn mô tả, bản in chỉ hiển thị mã số mẫu đã gom dải và bộ lập kế hoạch in tự tính lại bố cục theo nội dung ngắn hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn việc tắt tùy chọn in làm mã mẫu bị bung thành danh sách rời thay vì giữ dạng dải liên tục.
 
 ### v26.09.04-b02
 

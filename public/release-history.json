@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.09.04-b03",
+    "date": "4/9/2026",
+    "title": "Tối ưu tùy chọn in Theo Dõi Mẫu & Kết Quả Ngày",
+    "highlights": [
+      "Bản in Theo Dõi Mẫu & Kết Quả Ngày luôn gom dải mã mẫu liên tục và cho phép chọn có hoặc không kèm mô tả mẫu."
+    ],
+    "features": [],
+    "improvements": [
+      "Thay checkbox gom dải mẫu bằng tùy chọn Kèm mô tả mẫu; mặc định vẫn hiển thị mô tả để giữ trải nghiệm hiện tại.",
+      "Khi bỏ chọn mô tả, bản in chỉ hiển thị mã số mẫu đã gom dải và bộ lập kế hoạch in tự tính lại bố cục theo nội dung ngắn hơn."
+    ],
+    "fixes": [
+      "Ngăn việc tắt tùy chọn in làm mã mẫu bị bung thành danh sách rời thay vì giữ dạng dải liên tục."
+    ],
+    "releaseOrder": 26090400003
+  },
+  {
     "version": "v26.09.04-b02",
     "date": "4/9/2026",
     "title": "Hoàn thiện Settings & Manager theo RBAC phân quyền",

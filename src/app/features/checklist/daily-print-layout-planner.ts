@@ -63,13 +63,13 @@ interface CompactPlacement {
 
 export function planDailyPrintLayout(
   batches: DailyBatchView[],
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   orientationPreference: DailyPrintOrientationPreference = 'auto',
   modePreference: DailyPrintModePreference = 'auto'
 ): DailyPrintLayoutPlan {
   const candidates = (['compact', 'list'] as const).flatMap(mode =>
     (['portrait', 'landscape'] as const)
-      .map(orientation => evaluateLayout(batches, groupSamples, mode, orientation))
+      .map(orientation => evaluateLayout(batches, includeSampleDescriptions, mode, orientation))
   );
   const eligible = candidates.filter(candidate =>
     (orientationPreference === 'auto' || candidate.orientation === orientationPreference)
@@ -85,18 +85,18 @@ export function planDailyPrintLayout(
 
 function evaluateLayout(
   batches: DailyBatchView[],
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   mode: DailyPrintMode,
   orientation: DailyPrintOrientation
 ): DailyPrintLayoutCandidate {
   return mode === 'compact'
-    ? evaluateCompactLayout(batches, groupSamples, orientation)
-    : evaluateListLayout(batches, groupSamples, orientation);
+    ? evaluateCompactLayout(batches, includeSampleDescriptions, orientation)
+    : evaluateListLayout(batches, includeSampleDescriptions, orientation);
 }
 
 function evaluateListLayout(
   batches: DailyBatchView[],
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   orientation: DailyPrintOrientation
 ): DailyPrintLayoutCandidate {
   const metrics = ORIENTATION_METRICS[orientation];
@@ -111,7 +111,7 @@ function evaluateListLayout(
     let batchWasSplit = false;
     batch.groups.forEach(group => {
       const batchText = `${batch.sopName} v${batch.sopVersion || ''}`;
-      const sampleText = getPrintSampleText(group, groupSamples);
+      const sampleText = getPrintSampleText(group, includeSampleDescriptions);
       const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
         estimateLines(batchText, metrics.batchCharsPerLine),
@@ -165,10 +165,10 @@ function evaluateListLayout(
 
 function evaluateCompactLayout(
   batches: DailyBatchView[],
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   orientation: DailyPrintOrientation
 ): DailyPrintLayoutCandidate {
-  const placement = buildCompactPlacement(batches, groupSamples, orientation);
+  const placement = buildCompactPlacement(batches, includeSampleDescriptions, orientation);
   const estimatedPages = placement.pages.length + placement.overflowPageCount;
   const { estimatedBatchSplits, wrappedLineCount } = placement;
 
@@ -194,15 +194,15 @@ function evaluateCompactLayout(
 
 export function buildDailyCompactPrintPages(
   batches: DailyBatchView[],
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   orientation: DailyPrintOrientation
 ): DailyBatchView[][][] {
-  return buildCompactPlacement(batches, groupSamples, orientation).pages;
+  return buildCompactPlacement(batches, includeSampleDescriptions, orientation).pages;
 }
 
 function buildCompactPlacement(
   batches: DailyBatchView[],
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   orientation: DailyPrintOrientation
 ): CompactPlacement {
   if (batches.length === 0) {
@@ -226,7 +226,7 @@ function buildCompactPlacement(
 
   startPage();
   batches.forEach(batch => {
-    const estimate = estimateCompactCard(batch, groupSamples, metrics);
+    const estimate = estimateCompactCard(batch, includeSampleDescriptions, metrics);
     wrappedLineCount += estimate.wrappedLineCount;
     if (estimate.heightMm > pageBodyHeight) {
       estimatedBatchSplits += 1;
@@ -249,14 +249,14 @@ function buildCompactPlacement(
 
 function estimateCompactCard(
   batch: DailyBatchView,
-  groupSamples: boolean,
+  includeSampleDescriptions: boolean,
   metrics: OrientationMetrics
 ): CompactCardEstimate {
   let heightMm = COMPACT_CARD_HEADER_MM;
   let wrappedLineCount = 0;
 
   batch.groups.forEach(group => {
-    const sampleText = getPrintSampleText(group, groupSamples);
+    const sampleText = getPrintSampleText(group, includeSampleDescriptions);
     const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
     const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
     const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);
@@ -276,13 +276,8 @@ function estimateLines(text: string, charsPerLine: number): number {
   return Math.max(1, Math.ceil(normalizedLength / charsPerLine));
 }
 
-function getPrintSampleText(group: DailyBatchView['groups'][number], groupSamples: boolean): string {
-  if (groupSamples) return group.formattedSampleDisplay;
-  return group.sampleDisplayRuns.map(run => {
-    const codes = run.sampleIds.join(', ');
-    const description = run.description?.nameSnapshot?.trim();
-    return description ? `${codes} (${description})` : codes;
-  }).join('; ');
+function getPrintSampleText(group: DailyBatchView['groups'][number], includeSampleDescriptions: boolean): string {
+  return includeSampleDescriptions ? group.formattedSampleDisplay : group.formattedSamples;
 }
 
 function buildReason(

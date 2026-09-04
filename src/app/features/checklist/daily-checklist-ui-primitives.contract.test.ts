@@ -64,9 +64,14 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /font-sans font-normal text-fuchsia-700[^>]*> \(\{\{sample\.description\.nameSnapshot\}\}\)<\/span>/);
     assert.match(template, /font-sans font-normal text-fuchsia-700[^>]*> \(\{\{run\.description\.nameSnapshot\}\}\)<\/span>/);
     assert.doesNotMatch(template, /font-sans font-bold text-fuchsia-700/);
-    assert.match(template, /class="cl-print-sample-code">\{\{printGroupSamples\(\) \? run\.formattedSamples : joinWithCommas\(run\.sampleIds\)\}\}<\/span>/);
+    assert.match(template, /@if \(!printIncludeSampleDescriptions\(\)\) \{[\s\S]*class="cl-print-sample-code">\{\{group\.formattedSamples\}\}<\/span>/);
+    assert.match(template, /class="cl-print-sample-code">\{\{run\.formattedSamples\}\}<\/span>/);
     assert.match(template, /class="cl-print-sample-description"> \(\{\{run\.description\.nameSnapshot\}\}\)<\/span>/);
     assert.match(template, /class="cl-print-sample-separator">; <\/span>/);
+    assert.match(template, /\[ngModel\]="printIncludeSampleDescriptions\(\)"/);
+    assert.match(template, />Kèm mô tả mẫu<\/span>/);
+    assert.match(template, /Mã mẫu luôn được gom dải liên tục/);
+    assert.doesNotMatch(template, /\[ngModel\]="printGroupSamples\(\)"/);
     assert.match(component, /\.\.\.group\.sampleIds,[\s\S]*?group\.formattedSampleDetails/);
     assert.match(component, /\.cl-print-sample-code \{[\s\S]*?font-weight: 800 !important;/);
     assert.match(component, /\.cl-print-sample-description,[\s\S]*?\.cl-print-sample-separator \{[\s\S]*?font-weight: 400 !important;/);

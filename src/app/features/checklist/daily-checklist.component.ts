@@ -766,7 +766,7 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly showPrintSettings = signal(false);
   readonly printOrientation = signal<DailyPrintOrientationPreference>('auto');
   readonly printMode = signal<DailyPrintModePreference>('auto');
-  readonly printGroupSamples = signal(true);
+  readonly printIncludeSampleDescriptions = signal(true);
   readonly expandedBatchIds = signal<Set<string>>(new Set());
   readonly openSourceBatchCardKeys = signal<Set<string>>(new Set());
   readonly viewMode = signal<DailyBatchViewMode>(this.loadStoredViewMode());
@@ -924,14 +924,14 @@ export class DailyChecklistComponent implements OnDestroy {
 
   readonly printPlan = computed(() => planDailyPrintLayout(
     this.boardBatches(),
-    this.printGroupSamples(),
+    this.printIncludeSampleDescriptions(),
     this.printOrientation(),
     this.printMode()
   ));
 
   readonly compactPrintPages = computed(() => buildDailyCompactPrintPages(
     this.boardBatches(),
-    this.printGroupSamples(),
+    this.printIncludeSampleDescriptions(),
     this.printPlan().orientation
   ));
 
@@ -1076,7 +1076,7 @@ export class DailyChecklistComponent implements OnDestroy {
     styleEl.innerHTML = `@page { size: A4 ${orientation}; margin: 8mm; }`;
     document.head.appendChild(styleEl);
 
-    // Đợi góc render của Angular cập nhật lại dải mẫu nếu tắt/bật gom mẫu
+    // Đợi Angular cập nhật nội dung mô tả mẫu trước khi clone vùng in.
     setTimeout(async () => {
       const clone = source.cloneNode(true) as HTMLElement;
       
@@ -1108,10 +1108,6 @@ export class DailyChecklistComponent implements OnDestroy {
       window.addEventListener('afterprint', cleanupPrintMode, { once: true });
       window.print();
     }, 120);
-  }
-
-  joinWithCommas(ids: string[]): string {
-    return ids.join(', ');
   }
 
   isBatchExpanded(requestId: string): boolean {
