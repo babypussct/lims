@@ -1,0 +1,526 @@
+<div class="flex h-full min-h-0 flex-col gap-5 p-4 text-slate-800 md:p-6 dark:text-slate-200">
+  <app-page-header
+    title="Lịch trực đêm"
+    subtitle="Xếp lịch, quản lý nhân sự trực và theo dõi phân bổ lâu dài."
+    icon="fa-user-clock">
+  </app-page-header>
+
+  <app-toolbar>
+    <div toolbarSearch class="flex w-full flex-wrap items-center gap-2">
+      <select
+        aria-label="Năm lịch trực"
+        [ngModel]="selectedYear()"
+        (ngModelChange)="setYear($event)"
+        class="h-[42px] min-w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+        @for (year of years; track year) {
+          <option [ngValue]="year">{{ year }}</option>
+        }
+      </select>
+      <select
+        aria-label="Tháng lịch trực"
+        [ngModel]="selectedMonth()"
+        (ngModelChange)="setMonth($event)"
+        class="h-[42px] min-w-36 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+        <option [ngValue]="null">Cả năm</option>
+        @for (month of months; track month) {
+          <option [ngValue]="month">Tháng {{ formatMonth(month) }}</option>
+        }
+      </select>
+      <div class="flex h-[42px] items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900" aria-label="Điều hướng thời gian lịch trực">
+        <button type="button" (click)="prevPeriod()" aria-label="Kỳ trước" title="Kỳ trước"
+          class="h-full min-w-9 px-2 text-sm font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white">‹</button>
+        <button type="button" (click)="goToCurrentMonth()" aria-label="Về tháng này"
+          class="h-full border-x border-slate-200 px-3 text-[11px] font-black transition dark:border-slate-700"
+          [class]="isCurrentMonth() ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white'">
+          Tháng này
+        </button>
+        <button type="button" (click)="nextPeriod()" aria-label="Kỳ sau" title="Kỳ sau"
+          class="h-full min-w-9 px-2 text-sm font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white">›</button>
+      </div>
+      @if (activeView() === 'schedule') {
+        <select
+          aria-label="Lọc theo nhân viên"
+          [ngModel]="selectedStaffFilter()"
+          (ngModelChange)="setStaffFilter($event)"
+          class="h-[42px] min-w-44 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+          <option [ngValue]="null">Tất cả nhân viên</option>
+          @for (person of duty.staff(); track person.id) {
+            <option [ngValue]="person.id">{{ person.displayName }}</option>
+          }
+        </select>
+      }
+    </div>
+
+    <div toolbarActions class="flex items-center gap-2">
+      <app-button variant="secondary" size="sm" (click)="exportCsv()">
+        <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Xuất CSV
+      </app-button>
+      @if (duty.canManage() && activeView() === 'schedule') {
+        <app-button size="sm" (click)="openNewSchedule()">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm ca
+        </app-button>
+      }
+      @if (duty.canManage() && activeView() === 'staff') {
+        <app-button size="sm" (click)="openNewStaff()">
+          <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Thêm nhân viên
+        </app-button>
+      }
+    </div>
+  </app-toolbar>
+
+  @if (duty.error()) {
+    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+      <i class="fa-solid fa-triangle-exclamation mr-2"></i>{{ duty.error() }}
+    </div>
+  }
+
+  <div class="flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <button type="button" (click)="setActiveView('schedule')"
+      class="rounded-lg px-4 py-2 text-xs font-black transition"
+      [class]="activeView() === 'schedule' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'">
+      <i class="fa-solid fa-calendar-days mr-2"></i>Lịch trực
+    </button>
+    <button type="button" (click)="setActiveView('staff')"
+      class="rounded-lg px-4 py-2 text-xs font-black transition"
+      [class]="activeView() === 'staff' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'">
+      <i class="fa-solid fa-users mr-2"></i>Nhân sự
+    </button>
+    <button type="button" (click)="setActiveView('stats')"
+      class="rounded-lg px-4 py-2 text-xs font-black transition"
+      [class]="activeView() === 'stats' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'">
+      <i class="fa-solid fa-chart-column mr-2"></i>Thống kê
+    </button>
+  </div>
+
+  @if (activeView() === 'schedule') {
+    <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="text-[10px] font-bold uppercase text-slate-400">Ca đang áp dụng</div>
+        <div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt trực</div>
+        <div class="mt-1 text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ totalAssignments() }}</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="text-[10px] font-bold uppercase text-slate-400">Người tham gia</div>
+        <div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="text-[10px] font-bold uppercase text-slate-400">Bình quân/người</div>
+        <div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div>
+      </div>
+    </div>
+
+    <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <label class="flex items-center gap-2 text-[11px] font-bold text-slate-500">
+          <input type="checkbox" [ngModel]="includeCancelled()" (ngModelChange)="includeCancelled.set($event)" class="rounded border-slate-300">
+          Hiện cả ca đã hủy
+        </label>
+        @if (!duty.canManage()) {
+          <span class="text-[10px] font-bold text-slate-400"><i class="fa-solid fa-eye mr-1"></i>Chế độ chỉ xem</span>
+        }
+      </div>
+      <div class="h-full min-h-0 overflow-auto custom-scrollbar">
+        <div class="hidden md:block">
+          <table class="w-full min-w-[860px] text-left text-sm">
+            <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <tr>
+                <th class="px-5 py-3">Ngày trực</th>
+                <th class="px-5 py-3">Nhân sự</th>
+                <th class="px-5 py-3">Bắt đầu</th>
+                <th class="px-5 py-3">Ghi chú</th>
+                <th class="px-5 py-3">Trạng thái</th>
+                @if (duty.canManage()) { <th class="px-5 py-3 text-right">Thao tác</th> }
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              @for (schedule of visibleSchedules(); track schedule.date) {
+                <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40" [class.opacity-50]="schedule.status === 'cancelled'">
+                  <td
+                    class="whitespace-nowrap px-5 py-3.5 text-xs font-black"
+                    [class.border-l-4]="isMyShift(schedule)"
+                    [class.border-blue-500]="isMyShift(schedule)">
+                    <div>{{ formatDate(schedule.date) }}</div>
+                    @if (isMyShift(schedule)) {
+                      <span class="mt-1 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">Ca của bạn</span>
+                    }
+                  </td>
+                  <td class="px-5 py-3.5">
+                    <div class="flex flex-wrap gap-1.5">
+                      @for (name of namesFor(schedule); track $index) {
+                        <span class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold dark:border-slate-700 dark:bg-slate-800">
+                          @if ($index === 0) { <i class="fa-solid fa-star mr-1 text-amber-500" title="Người chủ trì"></i> }
+                          {{ name }}
+                        </span>
+                      }
+                    </div>
+                  </td>
+                  <td class="px-5 py-3.5 font-mono text-xs">{{ schedule.startTime }}</td>
+                  <td class="max-w-[260px] px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400">{{ schedule.note || '—' }}</td>
+                  <td class="px-5 py-3.5">
+                    <span class="rounded-full px-2 py-1 text-[10px] font-black"
+                      [class]="schedule.status === 'cancelled' ? 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300'">
+                      {{ schedule.status === 'cancelled' ? 'Đã hủy' : 'Đang áp dụng' }}
+                    </span>
+                  </td>
+                  @if (duty.canManage()) {
+                    <td class="whitespace-nowrap px-5 py-3.5 text-right">
+                      <button type="button" (click)="openEditSchedule(schedule)" class="rounded-lg px-2 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30">Sửa</button>
+                      @if (schedule.status !== 'cancelled') {
+                        <button type="button" (click)="cancelSchedule(schedule)" class="rounded-lg px-2 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">Hủy ca</button>
+                      }
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                @if (duty.loadingSchedules()) {
+                  <tr><td [attr.colspan]="duty.canManage() ? 6 : 5" class="p-14 text-center text-sm font-medium text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2" aria-hidden="true"></i>Đang tải lịch trực...</td></tr>
+                } @else {
+                  <tr><td [attr.colspan]="duty.canManage() ? 6 : 5" class="p-14 text-center text-sm italic text-slate-400">Chưa có lịch trực trong khoảng thời gian này.</td></tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="space-y-3 p-3 md:hidden">
+          @for (schedule of visibleSchedules(); track schedule.date) {
+            <article
+              class="shift-card overflow-hidden rounded-2xl border bg-white shadow-sm transition dark:bg-slate-900"
+              [ngClass]="isMyShift(schedule) ? ['border-blue-300', 'bg-blue-50/20', 'dark:border-blue-700'] : ['border-slate-200', 'dark:border-slate-700']"
+              [class.opacity-50]="schedule.status === 'cancelled'">
+              <header class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                <div class="min-w-0">
+                  <div class="text-sm font-black text-slate-800 dark:text-slate-100">{{ formatDate(schedule.date) }}</div>
+                  <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                      <i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>{{ schedule.startTime || '18:00' }}
+                    </span>
+                    @if (isMyShift(schedule)) {
+                      <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
+                    }
+                  </div>
+                </div>
+                <span class="shrink-0 rounded-full px-2 py-1 text-[9px] font-black"
+                  [class]="schedule.status === 'cancelled' ? 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300'">
+                  {{ schedule.status === 'cancelled' ? 'Đã hủy' : 'Đang áp dụng' }}
+                </span>
+              </header>
+
+              <div class="space-y-3 px-4 py-3">
+                <div class="flex flex-wrap gap-1.5">
+                  @for (name of namesFor(schedule); track $index) {
+                    <span class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-bold dark:border-slate-700 dark:bg-slate-800">
+                      @if ($index === 0) { <i class="fa-solid fa-star mr-1 text-amber-500" title="Người chủ trì"></i> }
+                      {{ name }}
+                    </span>
+                  }
+                </div>
+                @if (schedule.note) {
+                  <p class="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ schedule.note }}</p>
+                }
+              </div>
+
+              @if (duty.canManage()) {
+                <footer class="flex justify-end gap-1 border-t border-slate-100 px-3 py-2 dark:border-slate-800">
+                  <button type="button" (click)="openEditSchedule(schedule)" class="rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30">Sửa</button>
+                  @if (schedule.status !== 'cancelled') {
+                    <button type="button" (click)="cancelSchedule(schedule)" class="rounded-lg px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">Hủy ca</button>
+                  }
+                </footer>
+              }
+            </article>
+          } @empty {
+            @if (duty.loadingSchedules()) {
+              <div class="grid min-h-36 place-items-center rounded-xl border border-dashed border-slate-200 text-sm font-medium text-slate-400 dark:border-slate-700">
+                <span><i class="fa-solid fa-spinner fa-spin mr-2" aria-hidden="true"></i>Đang tải lịch trực...</span>
+              </div>
+            } @else {
+              <div class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm italic text-slate-400 dark:border-slate-700">
+                Chưa có lịch trực trong khoảng thời gian này.
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (activeView() === 'staff') {
+    <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+        <div class="relative min-w-[220px] flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+          <input type="search" [ngModel]="staffSearch()" (ngModelChange)="staffSearch.set($event)" placeholder="Tìm tên hoặc mã nhân viên..."
+            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-medium outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+        </div>
+        <label class="flex items-center gap-2 text-[11px] font-bold text-slate-500">
+          <input type="checkbox" [ngModel]="includeInactiveStaff()" (ngModelChange)="includeInactiveStaff.set($event)" class="rounded border-slate-300">
+          Hiện nhân viên ngừng dùng
+        </label>
+      </div>
+      <div class="h-full min-h-0 overflow-auto custom-scrollbar">
+        <table class="w-full min-w-[850px] text-left text-sm">
+          <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <tr>
+              <th class="px-5 py-3">Mã</th>
+              <th class="px-5 py-3">Nhân viên</th>
+              <th class="px-5 py-3">Tài khoản LIMS</th>
+              <th class="px-5 py-3 text-right">Lượt trong kỳ</th>
+              <th class="px-5 py-3">Trạng thái</th>
+              @if (duty.canManage()) { <th class="px-5 py-3 text-right">Thao tác</th> }
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            @for (person of filteredStaff(); track person.id) {
+              <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40" [class.opacity-50]="!person.active">
+                <td class="px-5 py-3.5 font-mono text-xs text-slate-500">{{ person.employeeCode || '—' }}</td>
+                <td class="px-5 py-3.5">
+                  <div class="font-black">{{ person.displayName }}</div>
+                  @if (person.note) { <div class="mt-1 max-w-[320px] truncate text-[10px] text-slate-400" [title]="person.note">{{ person.note }}</div> }
+                </td>
+                <td class="px-5 py-3.5">
+                  @if (person.linkedUserUid) {
+                    @if (accountFor(person); as account) {
+                      <div class="text-xs font-bold text-emerald-700 dark:text-emerald-300">{{ account.displayName || account.email }}</div>
+                      <div class="text-[10px] text-slate-400">{{ account.email }}</div>
+                    } @else {
+                      <span class="text-xs font-bold text-amber-600">Đã gán UID · chưa tải hồ sơ</span>
+                    }
+                  } @else {
+                    <span class="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500 dark:bg-slate-800">Chưa gán tài khoản</span>
+                  }
+                </td>
+                <td class="px-5 py-3.5 text-right font-black">{{ scheduleCountForStaff(person.id) }}</td>
+                <td class="px-5 py-3.5">
+                  <span class="rounded-full px-2 py-1 text-[10px] font-black"
+                    [class]="person.active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'">
+                    {{ person.active ? 'Đang sử dụng' : 'Ngừng sử dụng' }}
+                  </span>
+                </td>
+                @if (duty.canManage()) {
+                  <td class="whitespace-nowrap px-5 py-3.5 text-right">
+                    <button type="button" (click)="openEditStaff(person)" class="rounded-lg px-2 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30">Sửa</button>
+                    <button type="button" (click)="toggleStaffActive(person)" class="rounded-lg px-2 py-1.5 text-xs font-bold"
+                      [class]="person.active ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30' : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'">
+                      {{ person.active ? 'Ngừng dùng' : 'Kích hoạt' }}
+                    </button>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr><td [attr.colspan]="duty.canManage() ? 6 : 5" class="p-14 text-center text-sm italic text-slate-400">Chưa có nhân sự phù hợp.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (activeView() === 'stats') {
+    <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt</div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Người tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Bình quân</div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Ca trực</div><div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div></div>
+    </div>
+    <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="border-b border-slate-100 px-5 py-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+        Thống kê được tính trực tiếp từ lịch đang áp dụng trong khoảng thời gian đã chọn; ca đã hủy không được tính.
+      </div>
+      <div class="h-full min-h-0 overflow-auto custom-scrollbar">
+        <table class="w-full min-w-[700px] text-left text-sm">
+          <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <tr>
+              <th class="px-5 py-3">#</th>
+              <th class="px-5 py-3" [attr.aria-sort]="ariaSortFor('displayName')">
+                <button type="button" (click)="toggleSort('displayName')" class="inline-flex items-center gap-1 rounded-md text-left uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Nhân viên
+                  <i class="fa-solid" aria-hidden="true"
+                    [class.fa-sort-up]="sortColumn() === 'displayName' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'displayName' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'displayName'"></i>
+                </button>
+              </th>
+              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('total')">
+                <button type="button" (click)="toggleSort('total')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Lượt trực
+                  <i class="fa-solid" aria-hidden="true"
+                    [class.fa-sort-up]="sortColumn() === 'total' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'total' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'total'"></i>
+                </button>
+              </th>
+              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('mondayCount')">
+                <button type="button" (click)="toggleSort('mondayCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Thứ 2
+                  <i class="fa-solid" aria-hidden="true"
+                    [class.fa-sort-up]="sortColumn() === 'mondayCount' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'mondayCount' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'mondayCount'"></i>
+                </button>
+              </th>
+              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('activeMonthCount')">
+                <button type="button" (click)="toggleSort('activeMonthCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Số tháng
+                  <i class="fa-solid" aria-hidden="true"
+                    [class.fa-sort-up]="sortColumn() === 'activeMonthCount' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'activeMonthCount' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'activeMonthCount'"></i>
+                </button>
+              </th>
+              <th class="px-5 py-3" [attr.aria-sort]="ariaSortFor('lastDate')">
+                <button type="button" (click)="toggleSort('lastDate')" class="inline-flex items-center gap-1 rounded-md text-left uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Gần nhất
+                  <i class="fa-solid" aria-hidden="true"
+                    [class.fa-sort-up]="sortColumn() === 'lastDate' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'lastDate' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'lastDate'"></i>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            @for (stat of sortedPersonStats(); track stat.staffId; let index = $index) {
+              <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                <td class="px-5 py-3.5 text-xs font-black text-slate-400">{{ index + 1 }}</td>
+                <td class="px-5 py-3.5"><div class="font-black">{{ stat.displayName }}</div><div class="text-[10px] text-slate-400">{{ stat.employeeCode || 'Chưa có mã' }}</div></td>
+                <td class="px-5 py-3.5 text-right text-base font-black text-indigo-600 dark:text-indigo-400">{{ stat.total }}</td>
+                <td class="px-5 py-3.5 text-right">{{ stat.mondayCount }}</td>
+                <td class="px-5 py-3.5 text-right">{{ stat.activeMonthCount }}</td>
+                <td class="px-5 py-3.5 text-xs text-slate-500">{{ stat.lastDate ? formatDate(stat.lastDate) : '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="p-14 text-center text-sm italic text-slate-400">Chưa có dữ liệu để thống kê.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+@if (staffModalOpen()) {
+  <app-modal-shell
+    [title]="staffDraft.id ? 'Cập nhật nhân viên trực' : 'Thêm nhân viên trực'"
+    description="Tài khoản LIMS là tùy chọn và có thể gán sau."
+    size="md"
+    [closeDisabled]="saving()"
+    (closed)="closeStaffModal()">
+    <div modalBody class="grid gap-4 sm:grid-cols-2">
+      <label class="sm:col-span-2 text-xs font-bold text-slate-600 dark:text-slate-300">Tên hiển thị <span class="text-red-500">*</span>
+        <input [(ngModel)]="staffDraft.displayName" maxlength="150" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Ví dụ: Huỳnh">
+      </label>
+      <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Mã nhân viên
+        <input [(ngModel)]="staffDraft.employeeCode" maxlength="50" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Có thể để trống">
+      </label>
+      <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Tài khoản LIMS
+        <select [(ngModel)]="staffDraft.linkedUserUid" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+          <option [ngValue]="null">— Chưa gán tài khoản LIMS —</option>
+          @for (account of duty.accounts(); track account.uid) {
+            @if (accountAssignedToOther(account.uid); as assignedStaff) {
+              <option [ngValue]="account.uid" [disabled]="true">{{ accountLabel(account) }} — (Đã gán cho {{ assignedStaff.displayName }})</option>
+            } @else {
+              <option [ngValue]="account.uid">{{ accountLabel(account) }}</option>
+            }
+          }
+        </select>
+        @if (duty.loadingAccounts()) { <span class="mt-1 block text-[10px] font-medium text-slate-400">Đang tải tài khoản...</span> }
+      </label>
+      <label class="sm:col-span-2 text-xs font-bold text-slate-600 dark:text-slate-300">Ghi chú
+        <textarea [(ngModel)]="staffDraft.note" maxlength="500" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Thông tin phân biệt khi tên gần giống nhau, nhóm công tác..."></textarea>
+      </label>
+      <label class="sm:col-span-2 flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+        <input type="checkbox" [(ngModel)]="staffDraft.active" class="rounded border-slate-300"> Đang sử dụng để xếp lịch
+      </label>
+    </div>
+    <div modalFooter class="flex gap-2">
+      <app-button variant="secondary" [disabled]="saving()" (click)="closeStaffModal()">Hủy</app-button>
+      <app-button [loading]="saving()" (click)="saveStaff()">Lưu nhân viên</app-button>
+    </div>
+  </app-modal-shell>
+}
+
+@if (scheduleModalOpen()) {
+  <app-modal-shell
+    title="Xếp ca trực"
+    description="Người đứng đầu danh sách là người chủ trì ca trực."
+    size="lg"
+    [closeDisabled]="saving()"
+    (closed)="closeScheduleModal()">
+    <div modalBody class="space-y-5">
+      <div class="grid gap-4 sm:grid-cols-3">
+        <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Ngày trực <span class="text-red-500">*</span>
+          <input type="date" [(ngModel)]="scheduleDraft.date" [disabled]="!!scheduleDraft.originalDate" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:disabled:bg-slate-800">
+          @if (scheduleDraft.originalDate) { <span class="mt-1 block text-[10px] font-medium text-slate-400">Ngày là mã của ca trực nên không đổi sau khi tạo.</span> }
+        </label>
+        <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Giờ bắt đầu
+          <input type="time" [(ngModel)]="scheduleDraft.startTime" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+        </label>
+        <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Trạng thái
+          <select [(ngModel)]="scheduleDraft.status" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+            <option value="planned">Đang áp dụng</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
+        </label>
+      </div>
+
+      <div>
+        <div class="mb-2 text-xs font-black text-slate-700 dark:text-slate-200">Nhân sự được phân công</div>
+        @if (scheduleDraft.staffIds.length > 0) {
+          <div class="mb-3 space-y-2 rounded-xl border border-amber-100 bg-amber-50/60 p-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+            @for (staffId of scheduleDraft.staffIds; track staffId; let index = $index) {
+              <div class="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs shadow-sm dark:bg-slate-900">
+                <span class="w-6 text-center font-black text-slate-400">{{ index + 1 }}</span>
+                @if (index === 0) { <i class="fa-solid fa-star text-amber-500" title="Người chủ trì"></i> }
+                <span class="min-w-0 flex-1 font-black">{{ staffName(staffId) }}</span>
+                <button type="button" [disabled]="index === 0" (click)="moveScheduleStaff(staffId, -1)" class="h-7 w-7 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 dark:hover:bg-slate-800" aria-label="Đưa lên"><i class="fa-solid fa-arrow-up"></i></button>
+                <button type="button" [disabled]="index === scheduleDraft.staffIds.length - 1" (click)="moveScheduleStaff(staffId, 1)" class="h-7 w-7 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 dark:hover:bg-slate-800" aria-label="Đưa xuống"><i class="fa-solid fa-arrow-down"></i></button>
+                <button type="button" (click)="toggleScheduleStaff(staffId, false)" class="h-7 w-7 rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30" aria-label="Gỡ nhân viên khỏi ca" title="Gỡ khỏi ca"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            }
+          </div>
+        }
+        <div class="relative mb-2">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
+          <input type="search" [ngModel]="scheduleStaffSearch()" (ngModelChange)="scheduleStaffSearch.set($event)"
+            placeholder="Tìm nhanh nhân viên..." aria-label="Tìm nhanh nhân viên xếp ca"
+            class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-medium outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+          @if (scheduleStaffSearch()) {
+            <button type="button" (click)="scheduleStaffSearch.set('')" aria-label="Xóa tìm kiếm nhân viên"
+              class="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          }
+        </div>
+        <div class="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto rounded-xl border border-slate-200 p-3 sm:grid-cols-2 dark:border-slate-700">
+          @for (person of filteredScheduleStaffOptions(); track person.id) {
+            <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
+              <input type="checkbox" [checked]="isStaffSelected(person.id)" (change)="toggleScheduleStaff(person.id, $any($event.target).checked)" class="rounded border-slate-300">
+              <span class="min-w-0 flex-1"><span class="block truncate text-xs font-black">{{ person.displayName }}</span><span class="text-[10px] text-slate-400">{{ person.employeeCode || 'Chưa có mã' }}</span></span>
+            </label>
+          } @empty {
+            <div class="col-span-full p-6 text-center text-xs italic text-slate-400">
+              {{ scheduleStaffSearch() ? 'Không tìm thấy nhân viên phù hợp.' : 'Chưa có nhân viên đang hoạt động. Hãy tạo nhân sự trước khi xếp lịch.' }}
+            </div>
+          }
+        </div>
+      </div>
+
+      <label class="block text-xs font-bold text-slate-600 dark:text-slate-300">Ghi chú ca trực
+        <textarea [(ngModel)]="scheduleDraft.note" maxlength="1000" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Ghi chú đặc biệt cho ca trực..."></textarea>
+      </label>
+    </div>
+    <div modalFooter class="flex flex-wrap items-center justify-end gap-2">
+      @if (!scheduleDraft.date) {
+        <span class="mr-auto text-[11px] font-bold text-amber-600 dark:text-amber-400">Vui lòng chọn ngày trực.</span>
+      } @else if (scheduleDraft.staffIds.length === 0) {
+        <span class="mr-auto text-[11px] font-bold text-amber-600 dark:text-amber-400">Cần chọn ít nhất 1 nhân viên trực.</span>
+      }
+      <app-button variant="secondary" [disabled]="saving()" (click)="closeScheduleModal()">Hủy</app-button>
+      <app-button [loading]="saving()" [disabled]="!scheduleDraft.date || scheduleDraft.staffIds.length === 0 || saving()" (click)="saveSchedule()">Lưu ca trực</app-button>
+    </div>
+  </app-modal-shell>
+}

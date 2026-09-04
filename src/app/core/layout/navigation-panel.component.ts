@@ -137,20 +137,22 @@ interface ResolvedNavigationGroup {
         }
       </div>
 
-      <div class="shrink-0 p-2">
+      <div
+        class="shrink-0 p-2"
+        [ngClass]="state.sidebarCollapsed() ? 'flex flex-col items-center' : ''">
         <div class="mx-2 mb-2 h-px bg-gradient-to-r from-transparent via-black/20 to-transparent dark:via-white/20"></div>
         <button
           type="button"
           (click)="state.toggleSidebarCollapse()"
-          class="flex h-10 w-full items-center rounded-lg text-slate-400 transition-colors hover:bg-white/60 hover:text-gray-700 dark:hover:bg-slate-900/60 dark:hover:text-white"
-          [ngClass]="state.sidebarCollapsed() ? 'justify-center' : 'gap-2.5 px-2.5'"
+          class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all duration-200 hover:bg-white hover:text-slate-700 active:scale-90 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
+          [ngClass]="state.sidebarCollapsed() ? '' : 'ml-2'"
           [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'"
           [title]="state.sidebarCollapsed() ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'">
-          <i class="fa-solid text-[11px]" [class.fa-angles-right]="state.sidebarCollapsed()" [class.fa-angles-left]="!state.sidebarCollapsed()"></i>
-          @if (!state.sidebarCollapsed()) {
-            <span class="flex-1 text-left text-xs font-semibold">Thu gọn</span>
-            <span class="text-[9px] font-medium text-slate-600">{{ state.systemVersion() }}</span>
-          }
+          <span class="flex w-[18px] flex-col gap-[3px]" aria-hidden="true">
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+            <span class="block h-0.5 rounded-sm bg-current"></span>
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+          </span>
         </button>
       </div>
     </aside>

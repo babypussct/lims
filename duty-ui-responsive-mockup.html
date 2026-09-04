@@ -1,0 +1,621 @@
+<div id="duty-ui-mock" aria-label="Mô phỏng giao diện Lịch trực trên web và mobile">
+  <style>
+    #duty-ui-mock {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: light-dark(#0f172a, #e2e8f0);
+      background: transparent;
+      padding: 6px 0 18px;
+    }
+    #duty-ui-mock * { box-sizing: border-box; }
+    #duty-ui-mock .mock-title {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: 800;
+      color: light-dark(#334155, #cbd5e1);
+    }
+    #duty-ui-mock .boards {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(300px, .55fr);
+      gap: 18px;
+      align-items: start;
+    }
+    #duty-ui-mock .device-label {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: light-dark(#64748b, #94a3b8);
+    }
+    #duty-ui-mock .desktop-shell {
+      display: grid;
+      grid-template-columns: 164px minmax(0, 1fr);
+      min-height: 650px;
+      overflow: hidden;
+      border: 1px solid light-dark(#dbe4f0, #263348);
+      border-radius: 20px;
+      background: light-dark(#f8fafc, #0b1220);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, .12);
+    }
+    #duty-ui-mock .side {
+      padding: 18px 12px;
+      background: light-dark(#0f172a, #070d18);
+      color: #e2e8f0;
+    }
+    #duty-ui-mock .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 2px 6px 24px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+    }
+    #duty-ui-mock .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      font-size: 12px;
+    }
+    #duty-ui-mock .nav-section {
+      margin: 15px 8px 6px;
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #64748b;
+    }
+    #duty-ui-mock .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      margin: 3px 0;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: #94a3b8;
+      text-align: left;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 750;
+    }
+    #duty-ui-mock .nav-item.active {
+      background: rgba(59, 130, 246, .16);
+      color: #dbeafe;
+    }
+    #duty-ui-mock .nav-dot {
+      width: 18px;
+      text-align: center;
+      font-weight: 900;
+    }
+    #duty-ui-mock .desktop-content {
+      min-width: 0;
+      padding: 20px;
+      background: light-dark(#f8fafc, #0b1220);
+    }
+    #duty-ui-mock .topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    #duty-ui-mock .headline {
+      font-size: 22px;
+      line-height: 1.2;
+      font-weight: 900;
+      color: light-dark(#0f172a, #f8fafc);
+    }
+    #duty-ui-mock .subhead {
+      margin-top: 5px;
+      font-size: 10px;
+      color: light-dark(#64748b, #94a3b8);
+    }
+    #duty-ui-mock .primary-action,
+    #duty-ui-mock .secondary-action {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    #duty-ui-mock .primary-action { background: #2563eb; color: white; }
+    #duty-ui-mock .secondary-action {
+      background: light-dark(#fff, #111c2e);
+      border-color: light-dark(#dbe4f0, #2b3a52);
+      color: light-dark(#334155, #cbd5e1);
+    }
+    #duty-ui-mock .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 10px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 14px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .selectlike {
+      min-width: 92px;
+      padding: 8px 10px;
+      border: 1px solid light-dark(#e2e8f0, #314056);
+      border-radius: 9px;
+      background: light-dark(#f8fafc, #0b1220);
+      color: light-dark(#475569, #cbd5e1);
+      font-size: 9px;
+      font-weight: 800;
+    }
+    #duty-ui-mock .toolbar-spacer { flex: 1; }
+    #duty-ui-mock .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 5px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 12px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .tabs button {
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: transparent;
+      color: light-dark(#64748b, #94a3b8);
+      font: inherit;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    #duty-ui-mock .tabs button.active {
+      background: light-dark(#0f172a, #f8fafc);
+      color: light-dark(#fff, #0f172a);
+    }
+    #duty-ui-mock .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    #duty-ui-mock .metric {
+      padding: 11px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 12px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .metric-label {
+      font-size: 8px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: light-dark(#94a3b8, #64748b);
+    }
+    #duty-ui-mock .metric-value {
+      margin-top: 3px;
+      font-size: 19px;
+      font-weight: 950;
+      color: light-dark(#0f172a, #f8fafc);
+    }
+    #duty-ui-mock .metric-value.accent { color: #4f46e5; }
+    #duty-ui-mock .surface {
+      overflow: hidden;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 14px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .surface-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid light-dark(#eef2f7, #223047);
+      font-size: 9px;
+      font-weight: 800;
+      color: light-dark(#64748b, #94a3b8);
+    }
+    #duty-ui-mock table { width: 100%; border-collapse: collapse; }
+    #duty-ui-mock th {
+      padding: 9px 10px;
+      background: light-dark(#f8fafc, #0c1524);
+      text-align: left;
+      font-size: 7.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: light-dark(#64748b, #94a3b8);
+    }
+    #duty-ui-mock td {
+      padding: 10px;
+      border-top: 1px solid light-dark(#f1f5f9, #1d2a3e);
+      font-size: 9px;
+      color: light-dark(#334155, #cbd5e1);
+      vertical-align: middle;
+    }
+    #duty-ui-mock .name-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 2px 3px 2px 0;
+      padding: 4px 6px;
+      border: 1px solid light-dark(#e2e8f0, #334155);
+      border-radius: 7px;
+      background: light-dark(#f8fafc, #172033);
+      font-size: 8.5px;
+      font-weight: 850;
+    }
+    #duty-ui-mock .lead-star { color: #f59e0b; }
+    #duty-ui-mock .status-ok,
+    #duty-ui-mock .status-off {
+      display: inline-block;
+      padding: 4px 6px;
+      border-radius: 999px;
+      font-size: 7.5px;
+      font-weight: 900;
+    }
+    #duty-ui-mock .status-ok { background: light-dark(#ecfdf5, #09261d); color: #059669; }
+    #duty-ui-mock .status-off { background: light-dark(#fff1f2, #2a1116); color: #e11d48; }
+    #duty-ui-mock .staff-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+    }
+    #duty-ui-mock .staff-card {
+      padding: 11px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 12px;
+      background: light-dark(#f8fafc, #0c1524);
+    }
+    #duty-ui-mock .staff-name { font-size: 10px; font-weight: 900; }
+    #duty-ui-mock .staff-meta { margin-top: 4px; font-size: 8px; color: light-dark(#64748b, #94a3b8); }
+    #duty-ui-mock .mobile-frame {
+      width: min(100%, 370px);
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid light-dark(#dbe4f0, #263348);
+      border-radius: 28px;
+      background: light-dark(#f8fafc, #0b1220);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, .13);
+    }
+    #duty-ui-mock .mobile-status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 18px 6px;
+      font-size: 8px;
+      font-weight: 850;
+      color: light-dark(#475569, #cbd5e1);
+    }
+    #duty-ui-mock .mobile-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px 12px;
+    }
+    #duty-ui-mock .mobile-back,
+    #duty-ui-mock .mobile-more {
+      display: grid;
+      width: 32px;
+      height: 32px;
+      place-items: center;
+      border: 1px solid light-dark(#e2e8f0, #2b3a52);
+      border-radius: 10px;
+      background: light-dark(#fff, #111c2e);
+      color: light-dark(#475569, #cbd5e1);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    #duty-ui-mock .mobile-head-title { flex: 1; min-width: 0; }
+    #duty-ui-mock .mobile-head-title strong { display: block; font-size: 15px; }
+    #duty-ui-mock .mobile-head-title span { display: block; margin-top: 2px; font-size: 8px; color: light-dark(#64748b, #94a3b8); }
+    #duty-ui-mock .mobile-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      padding: 0 14px 10px;
+    }
+    #duty-ui-mock .mobile-filter {
+      padding: 9px 10px;
+      border: 1px solid light-dark(#e2e8f0, #2b3a52);
+      border-radius: 10px;
+      background: light-dark(#fff, #101827);
+      font-size: 8.5px;
+      font-weight: 850;
+      color: light-dark(#475569, #cbd5e1);
+    }
+    #duty-ui-mock .mobile-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin: 0 14px 10px;
+      padding: 4px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 11px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .mobile-tabs button {
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 4px;
+      background: transparent;
+      color: light-dark(#64748b, #94a3b8);
+      font: inherit;
+      font-size: 8px;
+      font-weight: 900;
+    }
+    #duty-ui-mock .mobile-tabs button.active { background: #2563eb; color: white; }
+    #duty-ui-mock .mobile-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      padding: 0 14px 10px;
+    }
+    #duty-ui-mock .mobile-stat {
+      padding: 9px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 11px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .mobile-stat span { display: block; font-size: 7px; font-weight: 850; color: light-dark(#94a3b8, #64748b); text-transform: uppercase; }
+    #duty-ui-mock .mobile-stat strong { display: block; margin-top: 3px; font-size: 16px; }
+    #duty-ui-mock .mobile-list { padding: 0 14px 72px; }
+    #duty-ui-mock .shift-card {
+      margin-bottom: 8px;
+      padding: 12px;
+      border: 1px solid light-dark(#e2e8f0, #263348);
+      border-radius: 13px;
+      background: light-dark(#fff, #101827);
+    }
+    #duty-ui-mock .shift-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    #duty-ui-mock .shift-date { font-size: 10px; font-weight: 950; }
+    #duty-ui-mock .shift-time { font-size: 8px; font-weight: 850; color: #2563eb; }
+    #duty-ui-mock .shift-people { display: flex; flex-wrap: wrap; gap: 5px; }
+    #duty-ui-mock .shift-person {
+      padding: 5px 7px;
+      border-radius: 8px;
+      background: light-dark(#f1f5f9, #172033);
+      font-size: 8.5px;
+      font-weight: 850;
+    }
+    #duty-ui-mock .mobile-bottom {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: -58px;
+      padding: 8px 10px 12px;
+      border-top: 1px solid light-dark(#e2e8f0, #263348);
+      background: light-dark(rgba(255,255,255,.97), rgba(11,18,32,.97));
+      backdrop-filter: blur(12px);
+    }
+    #duty-ui-mock .bottom-item {
+      text-align: center;
+      font-size: 7px;
+      font-weight: 850;
+      color: light-dark(#94a3b8, #64748b);
+    }
+    #duty-ui-mock .bottom-item strong { display: block; margin-bottom: 3px; font-size: 14px; font-weight: 900; }
+    #duty-ui-mock .bottom-item.active { color: #2563eb; }
+    #duty-ui-mock .mobile-fab {
+      position: absolute;
+      right: 18px;
+      bottom: 62px;
+      display: grid;
+      width: 46px;
+      height: 46px;
+      place-items: center;
+      border: 0;
+      border-radius: 16px;
+      background: #2563eb;
+      color: white;
+      font-size: 22px;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, .35);
+    }
+    #duty-ui-mock [data-panel] { display: none; }
+    #duty-ui-mock [data-panel].active { display: block; }
+    @media (max-width: 820px) {
+      #duty-ui-mock .boards { grid-template-columns: 1fr; }
+      #duty-ui-mock .desktop-shell { grid-template-columns: 128px minmax(0, 1fr); }
+      #duty-ui-mock .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+
+  <p class="mock-title">Mô phỏng responsive — Lịch trực LIMS</p>
+  <div class="boards">
+    <section aria-label="Mô phỏng giao diện desktop">
+      <p class="device-label">Desktop / Web</p>
+      <div class="desktop-shell">
+        <aside class="side">
+          <div class="brand"><span class="brand-mark">L</span><span>LIMS</span></div>
+          <div class="nav-section">Tổng quan</div>
+          <button class="nav-item"><span class="nav-dot">⌂</span>Trang Chủ</button>
+          <button class="nav-item"><span class="nav-dot">◫</span>Báo Cáo</button>
+          <button class="nav-item active"><span class="nav-dot">◷</span>Lịch Trực</button>
+          <div class="nav-section">Vận hành</div>
+          <button class="nav-item"><span class="nav-dot">▦</span>Lập Mẻ</button>
+          <button class="nav-item"><span class="nav-dot">✓</span>Kết Quả</button>
+          <div class="nav-section">Lưu trữ</div>
+          <button class="nav-item"><span class="nav-dot">□</span>Kho Hóa Chất</button>
+          <button class="nav-item"><span class="nav-dot">◇</span>Chất Chuẩn</button>
+        </aside>
+
+        <main class="desktop-content">
+          <div class="topline">
+            <div>
+              <div class="headline">Lịch trực đêm</div>
+              <div class="subhead">Xếp lịch, quản lý nhân sự trực và theo dõi phân bổ lâu dài.</div>
+            </div>
+            <button class="primary-action">＋ Thêm ca</button>
+          </div>
+
+          <div class="toolbar">
+            <div class="selectlike">2026 ▾</div>
+            <div class="selectlike">Tháng 09 ▾</div>
+            <div class="selectlike">Tất cả nhân viên ▾</div>
+            <span class="toolbar-spacer"></span>
+            <button class="secondary-action">⇩ Xuất CSV</button>
+          </div>
+
+          <div class="tabs" data-desktop-tabs>
+            <button class="active" data-tab="schedule">Lịch trực</button>
+            <button data-tab="staff">Nhân sự</button>
+            <button data-tab="stats">Thống kê</button>
+          </div>
+
+          <div data-panel="schedule" class="active">
+            <div class="metrics">
+              <div class="metric"><div class="metric-label">Ca đang áp dụng</div><div class="metric-value">18</div></div>
+              <div class="metric"><div class="metric-label">Tổng lượt trực</div><div class="metric-value accent">36</div></div>
+              <div class="metric"><div class="metric-label">Người tham gia</div><div class="metric-value">11</div></div>
+              <div class="metric"><div class="metric-label">Bình quân/người</div><div class="metric-value">3.3</div></div>
+            </div>
+            <div class="surface">
+              <div class="surface-head"><span>☑ Chỉ ca đang áp dụng</span><span>Chế độ quản lý</span></div>
+              <table>
+                <thead><tr><th>Ngày trực</th><th>Nhân sự</th><th>Bắt đầu</th><th>Ghi chú</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Thứ Sáu, 04/09</strong></td><td><span class="name-tag"><span class="lead-star">★</span>Huỳnh</span><span class="name-tag">Huynh</span></td><td>18:00</td><td>Trực đêm</td><td><span class="status-ok">Đang áp dụng</span></td><td><strong style="color:#2563eb">Sửa</strong></td></tr>
+                  <tr><td><strong>Thứ Bảy, 05/09</strong></td><td><span class="name-tag"><span class="lead-star">★</span>Đạt</span><span class="name-tag">Tâm</span></td><td>18:00</td><td>—</td><td><span class="status-ok">Đang áp dụng</span></td><td><strong style="color:#2563eb">Sửa</strong></td></tr>
+                  <tr><td><strong>Chủ Nhật, 06/09</strong></td><td><span class="name-tag"><span class="lead-star">★</span>Đạt (O)</span><span class="name-tag">Đạt (N)</span></td><td>18:00</td><td>Ca cuối tuần</td><td><span class="status-ok">Đang áp dụng</span></td><td><strong style="color:#2563eb">Sửa</strong></td></tr>
+                  <tr><td><strong>Thứ Hai, 07/09</strong></td><td><span class="name-tag"><span class="lead-star">★</span>Phong</span><span class="name-tag">Phương</span></td><td>18:00</td><td>—</td><td><span class="status-off">Đã hủy</span></td><td><strong style="color:#2563eb">Sửa</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-panel="staff">
+            <div class="surface">
+              <div class="surface-head"><span>Danh mục nhân sự trực</span><button class="primary-action">＋ Thêm nhân viên</button></div>
+              <div class="staff-card-grid">
+                <div class="staff-card"><div class="staff-name">Huỳnh</div><div class="staff-meta">Mã: NV-01 · Chưa gán tài khoản LIMS</div></div>
+                <div class="staff-card"><div class="staff-name">Huynh</div><div class="staff-meta">Mã: NV-02 · Đã gán tài khoản LIMS</div></div>
+                <div class="staff-card"><div class="staff-name">Đạt</div><div class="staff-meta">Không mã · Chưa gán tài khoản LIMS</div></div>
+                <div class="staff-card"><div class="staff-name">Đạt (O)</div><div class="staff-meta">Không mã · Đang sử dụng</div></div>
+                <div class="staff-card"><div class="staff-name">Đạt (N)</div><div class="staff-meta">Không mã · Đang sử dụng</div></div>
+                <div class="staff-card"><div class="staff-name">Tâm</div><div class="staff-meta">Mã: NV-06 · Đang sử dụng</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div data-panel="stats">
+            <div class="metrics">
+              <div class="metric"><div class="metric-label">Tổng lượt</div><div class="metric-value">36</div></div>
+              <div class="metric"><div class="metric-label">Người tham gia</div><div class="metric-value">11</div></div>
+              <div class="metric"><div class="metric-label">Bình quân</div><div class="metric-value">3.3</div></div>
+              <div class="metric"><div class="metric-label">Ca trực</div><div class="metric-value">18</div></div>
+            </div>
+            <div class="surface">
+              <table>
+                <thead><tr><th>#</th><th>Nhân viên</th><th>Lượt trực</th><th>Thứ 2</th><th>Số tháng</th><th>Gần nhất</th></tr></thead>
+                <tbody>
+                  <tr><td>1</td><td><strong>Huỳnh</strong></td><td><strong>6</strong></td><td>2</td><td>3</td><td>04/09</td></tr>
+                  <tr><td>2</td><td><strong>Huynh</strong></td><td><strong>5</strong></td><td>1</td><td>3</td><td>04/09</td></tr>
+                  <tr><td>3</td><td><strong>Đạt</strong></td><td><strong>4</strong></td><td>1</td><td>2</td><td>05/09</td></tr>
+                  <tr><td>4</td><td><strong>Tâm</strong></td><td><strong>4</strong></td><td>1</td><td>2</td><td>05/09</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <section aria-label="Mô phỏng giao diện mobile">
+      <p class="device-label">Mobile</p>
+      <div class="mobile-frame">
+        <div class="mobile-status"><span>15:55</span><span>●●●  Wi‑Fi  ▰</span></div>
+        <div class="mobile-head">
+          <div class="mobile-back">‹</div>
+          <div class="mobile-head-title"><strong>Lịch trực</strong><span>Tháng 09/2026</span></div>
+          <div class="mobile-more">⋯</div>
+        </div>
+        <div class="mobile-filters"><div class="mobile-filter">2026 ▾</div><div class="mobile-filter">Tháng 09 ▾</div></div>
+        <div class="mobile-tabs" data-mobile-tabs>
+          <button class="active" data-tab="schedule">Lịch trực</button>
+          <button data-tab="staff">Nhân sự</button>
+          <button data-tab="stats">Thống kê</button>
+        </div>
+        <div data-mobile-panel="schedule" class="active">
+          <div class="mobile-summary">
+            <div class="mobile-stat"><span>Ca</span><strong>18</strong></div>
+            <div class="mobile-stat"><span>Lượt</span><strong>36</strong></div>
+            <div class="mobile-stat"><span>Người</span><strong>11</strong></div>
+          </div>
+          <div class="mobile-list">
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Hôm nay · 04/09</div><div class="shift-time">18:00</div></div><div class="shift-people"><span class="shift-person">★ Huỳnh</span><span class="shift-person">Huynh</span></div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Thứ Bảy · 05/09</div><div class="shift-time">18:00</div></div><div class="shift-people"><span class="shift-person">★ Đạt</span><span class="shift-person">Tâm</span></div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Chủ Nhật · 06/09</div><div class="shift-time">18:00</div></div><div class="shift-people"><span class="shift-person">★ Đạt (O)</span><span class="shift-person">Đạt (N)</span></div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Thứ Ba · 08/09</div><div class="shift-time">18:00</div></div><div class="shift-people"><span class="shift-person">★ Phong</span><span class="shift-person">Phương</span></div></div>
+          </div>
+          <button class="mobile-fab" aria-label="Thêm ca trực">＋</button>
+        </div>
+        <div data-mobile-panel="staff">
+          <div class="mobile-list">
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Huỳnh</div><span class="status-ok">Đang dùng</span></div><div class="staff-meta">NV-01 · Chưa gán tài khoản LIMS</div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Huynh</div><span class="status-ok">Đang dùng</span></div><div class="staff-meta">NV-02 · Đã gán tài khoản LIMS</div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Đạt</div><span class="status-ok">Đang dùng</span></div><div class="staff-meta">Không mã · Chưa gán tài khoản</div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">Đạt (O)</div><span class="status-ok">Đang dùng</span></div><div class="staff-meta">Không mã · Chưa gán tài khoản</div></div>
+          </div>
+          <button class="mobile-fab" aria-label="Thêm nhân viên">＋</button>
+        </div>
+        <div data-mobile-panel="stats">
+          <div class="mobile-summary">
+            <div class="mobile-stat"><span>Tổng lượt</span><strong>36</strong></div>
+            <div class="mobile-stat"><span>Người</span><strong>11</strong></div>
+            <div class="mobile-stat"><span>TB</span><strong>3.3</strong></div>
+          </div>
+          <div class="mobile-list">
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">1 · Huỳnh</div><strong>6 lượt</strong></div><div class="staff-meta">2 ca Thứ 2 · gần nhất 04/09</div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">2 · Huynh</div><strong>5 lượt</strong></div><div class="staff-meta">1 ca Thứ 2 · gần nhất 04/09</div></div>
+            <div class="shift-card"><div class="shift-top"><div class="shift-date">3 · Đạt</div><strong>4 lượt</strong></div><div class="staff-meta">1 ca Thứ 2 · gần nhất 05/09</div></div>
+          </div>
+        </div>
+        <div class="mobile-bottom"><div class="bottom-item"><strong>⌂</strong>Trang chủ</div><div class="bottom-item active"><strong>◷</strong>Lịch trực</div><div class="bottom-item"><strong>✓</strong>Kết quả</div><div class="bottom-item"><strong>☰</strong>Khác</div></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('duty-ui-mock');
+      if (!root) return;
+      const syncTabs = (tab) => {
+        root.querySelectorAll('[data-desktop-tabs] button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
+        root.querySelectorAll('[data-mobile-tabs] button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
+        root.querySelectorAll('[data-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.panel === tab));
+        root.querySelectorAll('[data-mobile-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.mobilePanel === tab));
+      };
+      root.querySelectorAll('[data-desktop-tabs] button, [data-mobile-tabs] button').forEach(button => {
+        button.addEventListener('click', () => syncTabs(button.dataset.tab));
+      });
+
+      if (globalThis.Tweak) {
+        const state = { radius: 20, compact: false };
+        const desktop = root.querySelector('.desktop-shell');
+        const mobile = root.querySelector('.mobile-frame');
+        const render = () => {
+          desktop.style.borderRadius = `${state.radius}px`;
+          mobile.style.borderRadius = `${Math.min(32, state.radius + 8)}px`;
+          root.querySelectorAll('td').forEach(cell => { cell.style.padding = state.compact ? '7px 9px' : '10px'; });
+          root.querySelectorAll('.shift-card').forEach(card => { card.style.padding = state.compact ? '9px 10px' : '12px'; });
+        };
+        render();
+        const tweak = new Tweak({ container: root, onChange: render });
+        tweak.addSlider(state, 'radius', { label: 'Độ bo góc', min: 8, max: 28, unit: 'px', reference: 'duty.radius' });
+        tweak.addToggle(state, 'compact', { label: 'Chế độ gọn', reference: 'duty.compact' });
+      }
+    })();
+  </script>
+</div>

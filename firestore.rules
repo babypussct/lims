@@ -194,6 +194,90 @@ service cloud.firestore {
         (hasPermission(appId, 'batch_run') || hasPermission(appId, 'sop_approve'));
     }
 
+    function canManageDutySchedule(appId) {
+      return isManager(appId) ||
+        (isActiveUser(appId) && hasPermission(appId, 'duty_manage'));
+    }
+
+    function validDutyLinkedUser(appId, linkedUserUid) {
+      return linkedUserUid == null ||
+        (
+          linkedUserUid is string &&
+          linkedUserUid.size() > 0 &&
+          exists(/databases/$(database)/documents/artifacts/$(appId)/users/$(linkedUserUid))
+        );
+    }
+
+    function validDutyStaffData(appId, data) {
+      return data.keys().hasOnly([
+          'displayName', 'employeeCode', 'linkedUserUid', 'active', 'note',
+          'createdAt', 'createdByUid', 'updatedAt', 'updatedByUid'
+        ]) &&
+        data.keys().hasAll([
+          'displayName', 'employeeCode', 'linkedUserUid', 'active', 'note',
+          'createdAt', 'createdByUid', 'updatedAt', 'updatedByUid'
+        ]) &&
+        data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 150 &&
+        data.employeeCode is string && data.employeeCode.size() <= 50 &&
+        validDutyLinkedUser(appId, data.linkedUserUid) &&
+        data.active is bool &&
+        data.note is string && data.note.size() <= 500 &&
+        data.createdByUid is string && data.createdByUid.size() > 0 &&
+        data.updatedByUid is string && data.updatedByUid.size() > 0;
+    }
+
+    function validDutyStaffCreate(appId) {
+      return validDutyStaffData(appId, request.resource.data) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.createdByUid == request.auth.uid &&
+        request.resource.data.updatedByUid == request.auth.uid;
+    }
+
+    function validDutyStaffUpdate(appId) {
+      return validDutyStaffData(appId, request.resource.data) &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.createdByUid == resource.data.createdByUid &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.updatedByUid == request.auth.uid;
+    }
+
+    function validDutyScheduleData(scheduleDate, data) {
+      return data.keys().hasOnly([
+          'date', 'staffIds', 'startTime', 'status', 'note', 'source',
+          'createdAt', 'createdByUid', 'updatedAt', 'updatedByUid'
+        ]) &&
+        data.keys().hasAll([
+          'date', 'staffIds', 'startTime', 'status', 'note', 'source',
+          'createdAt', 'createdByUid', 'updatedAt', 'updatedByUid'
+        ]) &&
+        data.date is string && data.date == scheduleDate &&
+        data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.staffIds is list && data.staffIds.size() > 0 && data.staffIds.size() <= 50 &&
+        data.startTime is string && data.startTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$') &&
+        data.status is string && ['planned', 'cancelled'].hasAny([data.status]) &&
+        data.note is string && data.note.size() <= 1000 &&
+        data.source is string && ['manual', 'import'].hasAny([data.source]) &&
+        data.createdByUid is string && data.createdByUid.size() > 0 &&
+        data.updatedByUid is string && data.updatedByUid.size() > 0;
+    }
+
+    function validDutyScheduleCreate(scheduleDate) {
+      return validDutyScheduleData(scheduleDate, request.resource.data) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.createdByUid == request.auth.uid &&
+        request.resource.data.updatedByUid == request.auth.uid;
+    }
+
+    function validDutyScheduleUpdate(scheduleDate) {
+      return validDutyScheduleData(scheduleDate, request.resource.data) &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.createdByUid == resource.data.createdByUid &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.updatedByUid == request.auth.uid;
+    }
+
     function isCurrentActorName(appId, value) {
       let profile = getUserProfile(appId);
       return value is string && (
@@ -1367,6 +1451,18 @@ service cloud.firestore {
     match /artifacts/{appId}/daily_checklists/{analysisDate} {
       allow read: if isSignedIn();
       allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+    }
+    match /artifacts/{appId}/duty_staff/{staffId} {
+      allow read: if isSignedIn();
+      allow create: if canManageDutySchedule(appId) && validDutyStaffCreate(appId);
+      allow update: if canManageDutySchedule(appId) && validDutyStaffUpdate(appId);
+      allow delete: if false;
+    }
+    match /artifacts/{appId}/duty_schedules/{scheduleDate} {
+      allow read: if isSignedIn();
+      allow create: if canManageDutySchedule(appId) && validDutyScheduleCreate(scheduleDate);
+      allow update: if canManageDutySchedule(appId) && validDutyScheduleUpdate(scheduleDate);
+      allow delete: if false;
     }
     match /artifacts/{appId}/results_details/{docId} {
       allow read: if canUseSopWorkspace(appId);

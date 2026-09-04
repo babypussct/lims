@@ -1,0 +1,123 @@
+<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
+          <i class="fa-solid fa-user-clock text-xs" aria-hidden="true"></i>
+        </span>
+        <div>
+          <h2 class="text-sm font-black text-slate-800 dark:text-slate-100">Lịch trực đêm</h2>
+          <p class="text-[10px] font-medium text-slate-400">Tháng {{ monthKey.slice(5, 7) }}/{{ monthKey.slice(0, 4) }}</p>
+        </div>
+      </div>
+    </div>
+    <button
+      type="button"
+      (click)="openModule()"
+      class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+      Chi tiết
+      <i class="fa-solid fa-arrow-right text-[10px]" aria-hidden="true"></i>
+    </button>
+  </header>
+
+  @if (duty.loadingStaff() || duty.loadingSchedules()) {
+    <div class="grid min-h-44 place-items-center text-sm font-bold text-slate-400">
+      <span><i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang tải lịch trực...</span>
+    </div>
+  } @else if (duty.error()) {
+    <div class="p-5 text-sm text-red-600 dark:text-red-400">{{ duty.error() }}</div>
+  } @else if (duty.staff().length === 0) {
+    <app-empty-state
+      icon="fa-users"
+      title="Chưa có danh mục nhân sự trực"
+      message="Mở Lịch trực để tạo nhân sự và bắt đầu xếp lịch.">
+    </app-empty-state>
+  } @else {
+    <div class="grid gap-4 p-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
+      <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/20">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="text-[10px] font-black uppercase tracking-[0.12em] text-indigo-500">Trực hôm nay</div>
+            <div class="mt-1 text-sm font-black text-slate-800 dark:text-slate-100">{{ formatShortDate(todayKey) }}</div>
+          </div>
+          @if (todaySchedule(); as today) {
+            <span class="rounded-lg bg-white px-2.5 py-1 text-[10px] font-bold text-indigo-600 shadow-sm dark:bg-slate-900 dark:text-indigo-300">
+              {{ today.startTime }} → hết mẫu
+            </span>
+          }
+        </div>
+
+        @if (todaySchedule(); as today) {
+          <div class="mt-4 flex flex-wrap gap-2">
+            @for (name of namesFor(today); track $index) {
+              <span class="rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm dark:border-indigo-900 dark:bg-slate-900 dark:text-slate-200">
+                @if ($index === 0) { <i class="fa-solid fa-star mr-1.5 text-amber-500" title="Người chủ trì"></i> }
+                {{ name }}
+              </span>
+            }
+          </div>
+          @if (today.note) {
+            <p class="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ today.note }}</p>
+          }
+        } @else {
+          <div class="mt-4 rounded-xl border border-dashed border-indigo-200 bg-white/60 px-4 py-5 text-center text-xs font-medium text-slate-500 dark:border-indigo-900 dark:bg-slate-900/50 dark:text-slate-400">
+            Không có ca trực được xếp cho hôm nay.
+          </div>
+        }
+
+        <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+          <div class="rounded-xl bg-white/80 p-3 dark:bg-slate-900/70">
+            <div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt tháng</div>
+            <div class="mt-1 text-xl font-black">{{ monthAssignmentCount() }}</div>
+          </div>
+          <div class="rounded-xl bg-white/80 p-3 dark:bg-slate-900/70">
+            <div class="text-[10px] font-bold uppercase text-slate-400">Lượt của tôi</div>
+            @if (myMonthCount() !== null) {
+              <div class="mt-1 text-xl font-black">{{ myMonthCount() }}</div>
+            } @else {
+              <div class="mt-1 text-[11px] font-bold text-slate-400">Chưa liên kết nhân sự</div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="min-w-0">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">Ca sắp tới</h3>
+          @if (nextSchedule(); as next) {
+            <span class="text-[10px] font-bold text-slate-400">Tiếp theo: {{ formatShortDate(next.date) }}</span>
+          }
+        </div>
+        <div class="space-y-2">
+          @for (schedule of upcomingSchedules(); track schedule.date) {
+            <div
+              class="rounded-xl border px-3 py-2.5 transition"
+              [ngClass]="isMyShift(schedule) ? ['border-blue-200', 'bg-blue-50/40', 'dark:border-blue-800', 'dark:bg-blue-950/20'] : ['border-slate-100', 'dark:border-slate-800']">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-[11px] font-black text-slate-500 dark:text-slate-400">{{ formatShortDate(schedule.date) }}</div>
+                @if (isMyShift(schedule)) {
+                  <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500" aria-hidden="true"></span>
+                    Ca của bạn
+                  </span>
+                }
+              </div>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                @for (name of namesFor(schedule); track $index) {
+                  <span class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    @if ($index === 0) { <i class="fa-solid fa-star mr-1 text-amber-500" title="Người chủ trì"></i> }
+                    {{ name }}
+                  </span>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-xs text-slate-400 dark:border-slate-700">
+              Chưa có ca trực sắp tới trong tháng này.
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</section>

@@ -22,6 +22,7 @@ export class AdaptivePreloadingStrategy implements PreloadingStrategy {
     'requests',
     'results',
     'stats',
+    'duty-stats',
     'printing',
     'labels',
     'settings',

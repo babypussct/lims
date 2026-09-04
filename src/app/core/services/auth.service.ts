@@ -1045,6 +1045,7 @@ export class AuthService {
   canAssignStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_EDIT) || this.hasPermission(PERMISSIONS.STANDARD_APPROVE); }
   canViewStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_VIEW); }
   canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
+  canManageDutySchedule(): boolean { return this.hasPermission(PERMISSIONS.DUTY_MANAGE); }
   canManageSystem(): boolean { return this.hasPermission(PERMISSIONS.USER_MANAGE); }
   /** Chạy Smart Batch (lập và vận hành mẻ tiêu hao kho thực tế) */
   canRunBatch(): boolean { return this.hasPermission(PERMISSIONS.BATCH_RUN); }

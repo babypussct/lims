@@ -42,6 +42,7 @@ const users = {
   customSystemManage: { uid: 'system-manage', email: 'system-manage@example.test', displayName: 'System Manage', role: 'staff', roleId: 'role_custom_system_manage', permissions: [], customPermissions: ['system_manage'] },
   customMasterDataManage: { uid: 'master-data-manage', email: 'master-data-manage@example.test', displayName: 'Master Data Manage', role: 'staff', roleId: 'role_custom_master_data_manage', permissions: [], customPermissions: ['master_data_manage'] },
   customPolicyManage: { uid: 'policy-manage', email: 'policy-manage@example.test', displayName: 'Policy Manage', role: 'staff', roleId: 'role_custom_policy_manage', permissions: [], customPermissions: ['policy_manage'] },
+  customDutyManage: { uid: 'duty-manage', email: 'duty-manage@example.test', displayName: 'Duty Manager', role: 'staff', roleId: 'role_custom_duty_manage', permissions: [], customPermissions: ['duty_manage'] },
   inventoryViewer: { uid: 'inventory-viewer', email: 'inventory-viewer@example.test', displayName: 'Inventory Viewer', role: 'staff', roleId: 'role_custom_inventory_viewer', permissions: [], customPermissions: ['inventory_view'] },
   standardViewer: { uid: 'standard-viewer', email: 'standard-viewer@example.test', displayName: 'Standard Viewer', role: 'staff', roleId: 'role_custom_standard_viewer', permissions: [], customPermissions: ['standard_view'] },
   manager: { uid: 'manager', email: 'manager@example.test', displayName: 'Manager', role: 'manager', roleId: 'role_manager', permissions: [], customPermissions: [] }
@@ -107,6 +108,7 @@ async function seedBaseData(): Promise<void> {
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_system_manage`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_master_data_manage`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_policy_manage`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_duty_manage`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_inventory_viewer`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_standard_viewer`), { permissions: [] }),
       setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_downgraded`), { permissions: [] }),
@@ -759,6 +761,95 @@ test('sop_view can read monthly dashboard stats without report_view', async () =
   await assertSucceeds(getDoc(doc(dbFor(users.viewer), monthlyStatsPath)));
   await assertSucceeds(getDoc(doc(dbFor(users.customReportOnly), monthlyStatsPath)));
   await assertFails(getDoc(doc(dbFor(users.pending), monthlyStatsPath)));
+});
+
+test('duty schedule is readable by signed-in users but writable only with duty_manage or Manager', async () => {
+  const dutyDb = dbFor(users.customDutyManage);
+  const managerDb = dbFor(users.manager);
+  const staffDb = dbFor(users.staffDefault);
+  const viewerDb = dbFor(users.viewer);
+  const anonymousDb = env.unauthenticatedContext().firestore();
+
+  const staffRef = doc(dutyDb, `artifacts/${APP_ID}/duty_staff/staff-huynh`);
+  await assertSucceeds(setDoc(staffRef, {
+    displayName: 'Huỳnh',
+    employeeCode: '',
+    linkedUserUid: null,
+    active: true,
+    note: '',
+    createdAt: serverTimestamp(),
+    createdByUid: users.customDutyManage.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.customDutyManage.uid
+  }));
+
+  await assertSucceeds(getDoc(doc(viewerDb, `artifacts/${APP_ID}/duty_staff/staff-huynh`)));
+  await assertFails(getDoc(doc(anonymousDb, `artifacts/${APP_ID}/duty_staff/staff-huynh`)));
+
+  await assertFails(setDoc(doc(staffDb, `artifacts/${APP_ID}/duty_staff/staff-denied`), {
+    displayName: 'Không có quyền',
+    employeeCode: '',
+    linkedUserUid: null,
+    active: true,
+    note: '',
+    createdAt: serverTimestamp(),
+    createdByUid: users.staffDefault.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.staffDefault.uid
+  }));
+
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/staff-manager`), {
+    displayName: 'Nhân sự do Manager tạo',
+    employeeCode: '',
+    linkedUserUid: users.viewer.uid,
+    active: true,
+    note: '',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  }));
+
+  await assertFails(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/staff-bad-link`), {
+    displayName: 'Liên kết sai',
+    employeeCode: '',
+    linkedUserUid: 'missing-user',
+    active: true,
+    note: '',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  }));
+
+  const scheduleRef = doc(dutyDb, `artifacts/${APP_ID}/duty_schedules/2026-09-04`);
+  await assertSucceeds(setDoc(scheduleRef, {
+    date: '2026-09-04',
+    staffIds: ['staff-huynh'],
+    startTime: '18:00',
+    status: 'planned',
+    note: '',
+    source: 'manual',
+    createdAt: serverTimestamp(),
+    createdByUid: users.customDutyManage.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.customDutyManage.uid
+  }));
+
+  await assertSucceeds(getDoc(doc(viewerDb, `artifacts/${APP_ID}/duty_schedules/2026-09-04`)));
+  await assertFails(updateDoc(doc(staffDb, `artifacts/${APP_ID}/duty_schedules/2026-09-04`), {
+    status: 'cancelled',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.staffDefault.uid
+  }));
+  await assertSucceeds(updateDoc(scheduleRef, {
+    status: 'cancelled',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.customDutyManage.uid
+  }));
+
+  await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/2026-09-04`)));
+  await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/staff-huynh`)));
 });
 
 test('monthly stats atomic increments tolerate concurrent writers on the same month document', async () => {

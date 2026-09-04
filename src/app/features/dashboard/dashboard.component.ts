@@ -41,6 +41,7 @@ interface PriorityStandard {
 }
 
 import { DailyChecklistComponent } from '../checklist/daily-checklist.component';
+import { DutyDashboardComponent } from '../duty-stats/duty-dashboard.component';
 import { ChangelogService } from '../../core/services/changelog.service';
 
 @Component({
@@ -53,6 +54,7 @@ import { ChangelogService } from '../../core/services/changelog.service';
     FormsModule,
     DateRangeFilterComponent,
     DailyChecklistComponent,
+    DutyDashboardComponent,
     AppButtonComponent,
     AppEmptyStateComponent,
     AppPageHeaderComponent,

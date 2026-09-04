@@ -151,6 +151,11 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.REPORT_VIEW }
   },
   {
+    path: 'duty-stats',
+    loadComponent: () => import('./features/duty-stats/duty-stats.component').then(m => m.DutyStatsComponent),
+    canActivate: [permissionGuard]
+  },
+  {
     path: 'documents',
     loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent)
   },

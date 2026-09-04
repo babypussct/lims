@@ -28,6 +28,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   'calculator': 'Vận Hành SOP',
   'requests': 'Quản Lý Yêu Cầu',
   'stats': 'Báo Cáo',
+  'duty-stats': 'Lịch Trực',
   'settings': 'Cài Đặt',
   'standards': 'Chất Chuẩn Đối Chiếu',
   'recipes': 'Thư Viện Công Thức',
@@ -57,6 +58,7 @@ export const ROUTE_ICONS: Record<string, string> = {
   'calculator': 'fa-calculator',
   'requests': 'fa-clipboard-list',
   'stats': 'fa-chart-pie',
+  'duty-stats': 'fa-user-clock',
   'settings': 'fa-sliders',
   'standards': 'fa-vial-circle-check',
   'recipes': 'fa-book-bookmark',
@@ -109,6 +111,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     icon: 'fa-chart-pie',
     items: [
       { id: 'stats', name: 'Báo Cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], access: PERMISSIONS.REPORT_VIEW, lockPermission: PERMISSIONS.REPORT_VIEW },
+      { id: 'duty-stats', name: 'Lịch Trực', icon: 'fa-user-clock', path: 'duty-stats', activeMatch: ['/duty-stats'] },
       { id: 'documents', name: 'Phiếu Giao Nhận Mẫu', icon: 'fa-file-signature', path: 'documents', activeMatch: ['/documents'] }
     ]
   },
