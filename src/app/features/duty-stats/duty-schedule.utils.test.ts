@@ -4,10 +4,14 @@ import type { DutyScheduleEntry, DutyStaff } from './duty-schedule.model';
 import {
   aggregateDutyPeopleById,
   countDutyAssignments,
+  dutyAdjacentAssignment,
+  dutyMonthCalendarDateKeys,
+  dutyMonthDateKeys,
   dutyMonthRange,
   findLinkedDutyStaff,
   isDutyDateKey,
   resolveDutyStaffNames,
+  shiftDutyDateKey,
 } from './duty-schedule.utils';
 
 const staff: DutyStaff[] = [
@@ -26,6 +30,26 @@ test('duty date helpers validate dates and month ranges', () => {
   assert.equal(isDutyDateKey('2026-02-28'), true);
   assert.equal(isDutyDateKey('2026-02-29'), false);
   assert.deepEqual(dutyMonthRange('2028-02'), { start: '2028-02-01', end: '2028-02-29' });
+  assert.equal(shiftDutyDateKey('2026-09-01', -1), '2026-08-31');
+  assert.equal(shiftDutyDateKey('2026-12-31', 1), '2027-01-01');
+  assert.equal(dutyMonthDateKeys(2028, 2).length, 29);
+});
+
+test('month calendar grid is Monday-first and padded to complete weeks', () => {
+  const cells = dutyMonthCalendarDateKeys(2026, 9);
+  assert.equal(cells.length % 7, 0);
+  assert.deepEqual(cells.slice(0, 3), [null, '2026-09-01', '2026-09-02']);
+  assert.equal(cells.filter(Boolean).length, 30);
+});
+
+test('adjacent duty warnings detect previous and next active assignments only', () => {
+  const context: DutyScheduleEntry[] = [
+    { id: '2026-08-31', date: '2026-08-31', staffIds: ['staff-accented'], startTime: '18:00', status: 'planned' },
+    { id: '2026-09-02', date: '2026-09-02', staffIds: ['staff-accented'], startTime: '18:00', status: 'planned' },
+    { id: '2026-09-02-cancelled', date: '2026-09-02', staffIds: ['staff-plain'], startTime: '18:00', status: 'cancelled' },
+  ];
+  assert.deepEqual(dutyAdjacentAssignment('2026-09-01', 'staff-accented', context), { previous: true, next: true });
+  assert.deepEqual(dutyAdjacentAssignment('2026-09-01', 'staff-plain', context), { previous: false, next: false });
 });
 
 test('duty statistics stay identity-based for similar names', () => {

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.04-b04",
-    "title": "Ra mắt Lịch trực đêm và tối ưu trải nghiệm đa thiết bị",
+    "version": "v26.09.05-b01",
+    "title": "Hoàn thiện Lịch trực với dữ liệu thực tế và thao tác theo tháng",
     "features": [
-      "Bổ sung module Lịch trực đêm với quản lý nhân sự, xếp ca, thống kê và widget tổng quan ngay trên Dashboard.",
-      "Cho phép người dùng đã đăng nhập xem lịch trực; Manager hoặc người có quyền Quản lý lịch trực có thể tạo, chỉnh sửa và hủy ca.",
-      "Hỗ trợ liên kết nhân sự trực với tài khoản LIMS để đánh dấu Ca của bạn trên lịch và Dashboard.",
-      "Bổ sung bảng thống kê có thể sắp xếp theo nhân viên, lượt trực, số ca Thứ 2, số tháng tham gia và ngày trực gần nhất.",
-      "Hiển thị lịch dạng bảng trên desktop và dạng card dọc trên thiết bị di động, kèm trạng thái, người chủ trì, ghi chú và thao tác phù hợp quyền."
+      "Lịch trực đã có đầy đủ 295 ca được đối chiếu từ 14 bảng lịch, giúp tra cứu và thống kê ngay từ tháng 06/2025 đến tháng 08/2026.",
+      "Chuyển nhanh giữa danh sách và lưới tháng; người quản lý có thể bấm trực tiếp vào một ngày để thêm hoặc chỉnh sửa ca.",
+      "Tạo khung ca cho cả tháng, ngày trong tuần hoặc cuối tuần trong một lần và tự động giữ nguyên những ngày đã có lịch.",
+      "Lọc riêng Ca của bạn và in lịch trực khổ A4 ngang, có người chủ trì, nhân viên phối hợp, ghi chú và vùng ký duyệt.",
+      "Cảnh báo khi phân công một người vào ca liền kề hôm trước hoặc hôm sau để người xếp lịch dễ cân đối."
     ]
   },
   "assetGroups": [

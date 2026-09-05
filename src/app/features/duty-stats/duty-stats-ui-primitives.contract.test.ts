@@ -101,3 +101,38 @@ test('phase 2 statistics table is sortable and exposes accessible sort state', (
   assert.match(template, /fa-sort-down/);
   assert.match(template, /fa-sort/);
 });
+
+test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning and month skeleton tools', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const service = read('src/app/features/duty-stats/duty-schedule.service.ts');
+  const rules = read('firestore.rules');
+
+  assert.match(component, /readonly myShiftsOnly = signal\(false\)/);
+  assert.match(component, /toggleMyShifts\(\)/);
+  assert.match(template, /Chỉ ca của tôi/);
+
+  assert.match(component, /handlePrintShortcut\(event: KeyboardEvent\)/);
+  assert.match(component, /printSchedule\(\)/);
+  assert.match(component, /@page \{ size: A4 landscape/);
+  assert.match(template, /In lịch trực/);
+
+  assert.match(component, /readonly scheduleLayout = signal<DutyScheduleLayout>\('list'\)/);
+  assert.match(component, /dutyMonthCalendarDateKeys/);
+  assert.match(template, /Lưới lịch/);
+  assert.match(template, /grid-cols-7/);
+
+  assert.match(component, /dutyAdjacentAssignment/);
+  assert.match(component, /conflictWarningForStaff\(staffId: string\)/);
+  assert.match(component, /2 ca liền kề/);
+  assert.match(template, /cảnh báo mềm/);
+
+  assert.match(component, /openBatchMonth\(\)/);
+  assert.match(service, /createMonthSkeleton\(/);
+  assert.match(service, /staffIds: \[\]/);
+  assert.match(service, /source: 'batch'/);
+  assert.match(template, /Tạo khung tháng/);
+  assert.match(template, /Tất cả ngày trống/);
+  assert.match(rules, /data\.staffIds\.size\(\) > 0 \|\| data\.source == 'batch'/);
+  assert.match(rules, /\['manual', 'import', 'batch'\]/);
+});

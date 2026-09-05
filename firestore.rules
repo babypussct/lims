@@ -253,11 +253,12 @@ service cloud.firestore {
         ]) &&
         data.date is string && data.date == scheduleDate &&
         data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
-        data.staffIds is list && data.staffIds.size() > 0 && data.staffIds.size() <= 50 &&
+        data.staffIds is list && data.staffIds.size() <= 50 &&
+        (data.staffIds.size() > 0 || data.source == 'batch') &&
         data.startTime is string && data.startTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$') &&
         data.status is string && ['planned', 'cancelled'].hasAny([data.status]) &&
         data.note is string && data.note.size() <= 1000 &&
-        data.source is string && ['manual', 'import'].hasAny([data.source]) &&
+        data.source is string && ['manual', 'import', 'batch'].hasAny([data.source]) &&
         data.createdByUid is string && data.createdByUid.size() > 0 &&
         data.updatedByUid is string && data.updatedByUid.size() > 0;
     }

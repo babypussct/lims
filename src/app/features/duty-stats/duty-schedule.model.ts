@@ -20,7 +20,7 @@ export interface DutyScheduleEntry {
   startTime: string;
   status: DutyScheduleStatus;
   note?: string;
-  source?: 'manual' | 'import';
+  source?: 'manual' | 'import' | 'batch';
   createdAt?: unknown;
   createdByUid?: string;
   updatedAt?: unknown;
@@ -43,7 +43,7 @@ export interface DutyScheduleDraft {
   startTime?: string;
   status?: DutyScheduleStatus;
   note?: string;
-  source?: 'manual' | 'import';
+  source?: 'manual' | 'import' | 'batch';
 }
 
 export interface DutyPersonStat {

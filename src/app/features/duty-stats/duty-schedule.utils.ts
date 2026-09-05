@@ -48,6 +48,55 @@ export function currentDutyDateKey(now = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
+export function shiftDutyDateKey(dateKey: string, dayOffset: number): string {
+  if (!isDutyDateKey(dateKey) || !Number.isInteger(dayOffset)) {
+    throw new Error('Ngày lịch trực hoặc độ lệch ngày không hợp lệ.');
+  }
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + dayOffset));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+export function dutyMonthDateKeys(year: number, month: number): string[] {
+  if (!Number.isInteger(year) || year < 2000 || year > 2200 || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error('Tháng lịch trực không hợp lệ.');
+  }
+  const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return Array.from({ length: days }, (_, index) => `${monthKey}-${String(index + 1).padStart(2, '0')}`);
+}
+
+export function dutyMonthCalendarDateKeys(year: number, month: number): Array<string | null> {
+  const dates = dutyMonthDateKeys(year, month);
+  const [firstYear, firstMonth, firstDay] = dates[0].split('-').map(Number);
+  const firstWeekday = new Date(Date.UTC(firstYear, firstMonth - 1, firstDay)).getUTCDay();
+  const leadingBlankCount = (firstWeekday + 6) % 7;
+  const cellCount = Math.ceil((leadingBlankCount + dates.length) / 7) * 7;
+  return Array.from({ length: cellCount }, (_, index) => {
+    const dateIndex = index - leadingBlankCount;
+    return dateIndex >= 0 && dateIndex < dates.length ? dates[dateIndex] : null;
+  });
+}
+
+export function dutyAdjacentAssignment(
+  dateKey: string,
+  staffId: string,
+  schedules: readonly DutyScheduleEntry[],
+): { previous: boolean; next: boolean } {
+  if (!staffId || !isDutyDateKey(dateKey)) return { previous: false, next: false };
+  const previousDate = shiftDutyDateKey(dateKey, -1);
+  const nextDate = shiftDutyDateKey(dateKey, 1);
+  const assignedDates = new Set(
+    activeDutySchedules(schedules)
+      .filter(item => item.staffIds.includes(staffId))
+      .map(item => item.date),
+  );
+  return {
+    previous: assignedDates.has(previousDate),
+    next: assignedDates.has(nextDate),
+  };
+}
+
 export function resolveDutyStaff(
   staffId: string,
   staff: readonly DutyStaff[],

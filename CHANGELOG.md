@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.04-b04
+## Phiên bản hiện tại: v26.09.05-b01
+
+### v26.09.05-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Lịch trực đã có đầy đủ 295 ca được đối chiếu từ 14 bảng lịch, giúp tra cứu và thống kê ngay từ tháng 06/2025 đến tháng 08/2026.
+
+#### ✨ Tính Năng Mới
+
+- Chuyển nhanh giữa danh sách và lưới tháng; người quản lý có thể bấm trực tiếp vào một ngày để thêm hoặc chỉnh sửa ca.
+- Tạo khung ca cho cả tháng, ngày trong tuần hoặc cuối tuần trong một lần và tự động giữ nguyên những ngày đã có lịch.
+- Lọc riêng Ca của bạn và in lịch trực khổ A4 ngang, có người chủ trì, nhân viên phối hợp, ghi chú và vùng ký duyệt.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Cảnh báo khi phân công một người vào ca liền kề hôm trước hoặc hôm sau để người xếp lịch dễ cân đối.
+- Hiển thị rõ ngày hiện tại, ngày cuối tuần, ca chưa phân công và trạng thái đang tải trên cả máy tính lẫn điện thoại.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Chuẩn hóa đúng các tên dễ nhầm trong lịch gốc như Dĩ, Bến, Đạt (O), Đạt (N), đồng thời giữ riêng Huynh và Huỳnh theo danh tính thực tế.
 
 ### v26.09.04-b04
 

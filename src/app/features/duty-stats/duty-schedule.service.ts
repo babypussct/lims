@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   collection,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -164,6 +165,21 @@ export class DutyScheduleService {
     }
   }
 
+  async loadScheduleDates(dateKeys: readonly string[]): Promise<DutyScheduleEntry[]> {
+    const uniqueDates = [...new Set(dateKeys.filter(isDutyDateKey))];
+    if (uniqueDates.length === 0) return [];
+    const path = `artifacts/${this.fb.APP_ID}/duty_schedules`;
+    const snapshots = await Promise.all(uniqueDates.map(async dateKey => {
+      const ref = doc(this.fb.db, path, dateKey);
+      const snapshot = await getDoc(ref);
+      this.readMonitor.record('getDoc', `${path}/${dateKey}`, snapshot.exists() ? 1 : 0);
+      return snapshot;
+    }));
+    return snapshots
+      .filter(snapshot => snapshot.exists())
+      .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as DutyScheduleEntry));
+  }
+
   async saveStaff(draft: DutyStaffDraft): Promise<string> {
     this.assertCanManage();
     const displayName = normalizeDutyStaffName(draft.displayName);
@@ -267,6 +283,58 @@ export class DutyScheduleService {
           createdByUid: user?.uid || '',
         });
       }
+    });
+  }
+
+  async createMonthSkeleton(
+    dateKeys: readonly string[],
+    startTime = '18:00',
+  ): Promise<{ created: number; skipped: number }> {
+    this.assertCanManage();
+    const uniqueDates = [...new Set(dateKeys)];
+    if (uniqueDates.length === 0) return { created: 0, skipped: 0 };
+    if (uniqueDates.length > 31 || uniqueDates.some(dateKey => !isDutyDateKey(dateKey))) {
+      throw new Error('Danh sách ngày tạo khung lịch trực không hợp lệ.');
+    }
+    const monthKey = uniqueDates[0].slice(0, 7);
+    if (uniqueDates.some(dateKey => dateKey.slice(0, 7) !== monthKey)) {
+      throw new Error('Chỉ có thể tạo khung ca trong cùng một tháng.');
+    }
+    const normalizedStartTime = startTime.trim();
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(normalizedStartTime)) {
+      throw new Error('Giờ bắt đầu phải có dạng HH:mm.');
+    }
+
+    const user = this.auth.currentUser();
+    const basePath = `artifacts/${this.fb.APP_ID}/duty_schedules`;
+    const refs = uniqueDates.map(dateKey => doc(this.fb.db, basePath, dateKey));
+    return runTransaction(this.fb.db, async transaction => {
+      const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+      let created = 0;
+      let skipped = 0;
+
+      snapshots.forEach((snapshot, index) => {
+        if (snapshot.exists()) {
+          skipped += 1;
+          return;
+        }
+        const date = uniqueDates[index];
+        transaction.set(refs[index], {
+          date,
+          staffIds: [],
+          startTime: normalizedStartTime,
+          status: 'planned',
+          note: '',
+          source: 'batch',
+          createdAt: serverTimestamp(),
+          createdByUid: user?.uid || '',
+          updatedAt: serverTimestamp(),
+          updatedByUid: user?.uid || '',
+        });
+        created += 1;
+      });
+
+      return { created, skipped };
     });
   }
 

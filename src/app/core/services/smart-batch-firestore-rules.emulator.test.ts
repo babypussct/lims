@@ -836,7 +836,52 @@ test('duty schedule is readable by signed-in users but writable only with duty_m
     updatedByUid: users.customDutyManage.uid
   }));
 
+  await assertFails(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/2026-09-06`), {
+    date: '2026-09-06',
+    staffIds: [],
+    startTime: '18:00',
+    status: 'planned',
+    note: '',
+    source: 'manual',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  }));
+
   await assertSucceeds(getDoc(doc(viewerDb, `artifacts/${APP_ID}/duty_schedules/2026-09-04`)));
+
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/2026-09-05`), {
+    date: '2026-09-05',
+    staffIds: [],
+    startTime: '18:00',
+    status: 'planned',
+    note: '',
+    source: 'batch',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  }));
+
+  const fullMonthBatch = writeBatch(managerDb);
+  for (let day = 1; day <= 31; day += 1) {
+    const date = `2026-10-${String(day).padStart(2, '0')}`;
+    fullMonthBatch.set(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${date}`), {
+      date,
+      staffIds: [],
+      startTime: '18:00',
+      status: 'planned',
+      note: '',
+      source: 'batch',
+      createdAt: serverTimestamp(),
+      createdByUid: users.manager.uid,
+      updatedAt: serverTimestamp(),
+      updatedByUid: users.manager.uid
+    });
+  }
+  await assertSucceeds(fullMonthBatch.commit());
+
   await assertFails(updateDoc(doc(staffDb, `artifacts/${APP_ID}/duty_schedules/2026-09-04`), {
     status: 'cancelled',
     updatedAt: serverTimestamp(),
