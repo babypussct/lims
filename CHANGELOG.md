@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.05-b01
+## Phiên bản hiện tại: v26.09.05-b02
+
+### v26.09.05-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mở Lịch trực theo một tháng sẽ hiển thị ngay dạng lưới và cho thấy đầy đủ tên của tất cả nhân sự trong từng ngày.
+
+#### ✨ Tính Năng Mới
+
+- Lưới lịch trở thành kiểu hiển thị mặc định khi chọn một tháng cụ thể; chế độ danh sách vẫn có thể chọn khi cần.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Mỗi ô ngày tự xuống dòng để hiển thị từng người trực, giúp kiểm tra phân công ngay trên lưới mà không cần mở ca.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không còn thay tên người trực thứ hai và thứ ba bằng mô tả số lượng phối hợp.
 
 ### v26.09.05-b01
 

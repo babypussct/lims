@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.05-b01",
-    "title": "Hoàn thiện Lịch trực với dữ liệu thực tế và thao tác theo tháng",
+    "version": "v26.09.05-b02",
+    "title": "Xem lịch trực theo tháng nhanh và đầy đủ hơn",
     "features": [
-      "Lịch trực đã có đầy đủ 295 ca được đối chiếu từ 14 bảng lịch, giúp tra cứu và thống kê ngay từ tháng 06/2025 đến tháng 08/2026.",
-      "Chuyển nhanh giữa danh sách và lưới tháng; người quản lý có thể bấm trực tiếp vào một ngày để thêm hoặc chỉnh sửa ca.",
-      "Tạo khung ca cho cả tháng, ngày trong tuần hoặc cuối tuần trong một lần và tự động giữ nguyên những ngày đã có lịch.",
-      "Lọc riêng Ca của bạn và in lịch trực khổ A4 ngang, có người chủ trì, nhân viên phối hợp, ghi chú và vùng ký duyệt.",
-      "Cảnh báo khi phân công một người vào ca liền kề hôm trước hoặc hôm sau để người xếp lịch dễ cân đối."
+      "Mở Lịch trực theo một tháng sẽ hiển thị ngay dạng lưới và cho thấy đầy đủ tên của tất cả nhân sự trong từng ngày.",
+      "Lưới lịch trở thành kiểu hiển thị mặc định khi chọn một tháng cụ thể; chế độ danh sách vẫn có thể chọn khi cần.",
+      "Mỗi ô ngày tự xuống dòng để hiển thị từng người trực, giúp kiểm tra phân công ngay trên lưới mà không cần mở ca.",
+      "Không còn thay tên người trực thứ hai và thứ ba bằng mô tả số lượng phối hợp."
     ]
   },
   "assetGroups": [

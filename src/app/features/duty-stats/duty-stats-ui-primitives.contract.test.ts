@@ -117,10 +117,13 @@ test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning 
   assert.match(component, /@page \{ size: A4 landscape/);
   assert.match(template, /In lịch trực/);
 
-  assert.match(component, /readonly scheduleLayout = signal<DutyScheduleLayout>\('list'\)/);
+  assert.match(component, /readonly scheduleLayout = signal<DutyScheduleLayout>\('calendar'\)/);
+  assert.match(component, /this\.scheduleLayout\.set\(this\.selectedMonth\(\) === null \? 'list' : 'calendar'\)/);
   assert.match(component, /dutyMonthCalendarDateKeys/);
   assert.match(template, /Lưới lịch/);
   assert.match(template, /grid-cols-7/);
+  assert.match(template, /@for \(name of namesFor\(cell\.schedule\); track \$index\)/);
+  assert.doesNotMatch(template, /\+\{\{ namesFor\(cell\.schedule\)\.length - 1 \}\} phối hợp/);
 
   assert.match(component, /dutyAdjacentAssignment/);
   assert.match(component, /conflictWarningForStaff\(staffId: string\)/);

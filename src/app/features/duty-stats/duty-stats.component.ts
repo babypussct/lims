@@ -66,7 +66,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly selectedMonth = signal<number | null>(Number(currentDutyMonthKey().slice(5, 7)));
   readonly selectedStaffFilter = signal<string | null>(null);
   readonly myShiftsOnly = signal(false);
-  readonly scheduleLayout = signal<DutyScheduleLayout>('list');
+  readonly scheduleLayout = signal<DutyScheduleLayout>('calendar');
   readonly staffSearch = signal('');
   readonly scheduleStaffSearch = signal('');
   readonly includeInactiveStaff = signal(false);
@@ -184,7 +184,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   setMonth(value: number | string | null): void {
     this.selectedMonth.set(value === null || value === '' ? null : Number(value));
-    if (this.selectedMonth() === null) this.scheduleLayout.set('list');
+    this.scheduleLayout.set(this.selectedMonth() === null ? 'list' : 'calendar');
     this.refreshRange();
   }
 

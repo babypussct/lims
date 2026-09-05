@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.09.05-b02",
+    "date": "5/9/2026",
+    "title": "Xem lịch trực theo tháng nhanh và đầy đủ hơn",
+    "highlights": [
+      "Mở Lịch trực theo một tháng sẽ hiển thị ngay dạng lưới và cho thấy đầy đủ tên của tất cả nhân sự trong từng ngày."
+    ],
+    "features": [
+      "Lưới lịch trở thành kiểu hiển thị mặc định khi chọn một tháng cụ thể; chế độ danh sách vẫn có thể chọn khi cần."
+    ],
+    "improvements": [
+      "Mỗi ô ngày tự xuống dòng để hiển thị từng người trực, giúp kiểm tra phân công ngay trên lưới mà không cần mở ca."
+    ],
+    "fixes": [
+      "Không còn thay tên người trực thứ hai và thứ ba bằng mô tả số lượng phối hợp."
+    ],
+    "releaseOrder": 26090500002
+  },
+  {
     "version": "v26.09.05-b01",
     "date": "5/9/2026",
     "title": "Hoàn thiện Lịch trực với dữ liệu thực tế và thao tác theo tháng",
