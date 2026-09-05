@@ -69,6 +69,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly selectedMonth = signal<number | null>(Number(currentDutyMonthKey().slice(5, 7)));
   readonly selectedStaffFilter = signal<string | null>(null);
   readonly myShiftsOnly = signal(false);
+  readonly needsVerificationOnly = signal(false);
   readonly scheduleLayout = signal<DutyScheduleLayout>('calendar');
   readonly staffSearch = signal('');
   readonly scheduleStaffSearch = signal('');
@@ -107,13 +108,18 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const staffId = this.myShiftsOnly() ? this.myStaffId() : this.selectedStaffFilter();
     return this.duty.schedules().filter(item => {
       if (!this.includeCancelled() && item.status === 'cancelled') return false;
+      if (this.needsVerificationOnly() && item.needsVerification !== true) return false;
       if (staffId && !item.staffIds.includes(staffId)) return false;
       return true;
     });
   });
   readonly activeSchedules = computed(() => activeDutySchedules(this.duty.schedules()));
-  readonly unassignedSchedules = computed(() => this.activeSchedules().filter(item => item.staffIds.length === 0));
-  readonly calendarCells = computed<Array<DutyCalendarCell | null>>(() => {
+  readonly unassignedSchedules = computed(() => this.activeSchedules()
+    .filter(item => item.staffIds.length === 0 && (item.unresolvedAssignees?.length || 0) === 0));
+  readonly verificationSchedules = computed(() => this.activeSchedules().filter(item => item.needsVerification === true));
+  readonly unresolvedAssignmentCount = computed(() => this.activeSchedules()
+    .reduce((total, item) => total + (item.unresolvedAssignees?.length || 0), 0));
+  readonly calendarCells = computed<(DutyCalendarCell | null)[]>(() => {
     const month = this.selectedMonth();
     if (!month) return [];
     const byDate = new Map(this.duty.schedules().map(schedule => [schedule.date, schedule]));
@@ -366,6 +372,9 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
       originalDate: schedule.date,
       date: schedule.date,
       staffIds: [...schedule.staffIds],
+      unresolvedAssignees: [...(schedule.unresolvedAssignees || [])],
+      needsVerification: schedule.needsVerification === true,
+      sourceAssignees: schedule.sourceAssignees || '',
       startTime: schedule.startTime || '18:00',
       status: schedule.status,
       note: schedule.note || '',
@@ -414,6 +423,31 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   removeScheduleStaff(staffId: string): void {
     this.scheduleDraft.staffIds = this.scheduleDraft.staffIds.filter(id => id !== staffId);
+  }
+
+  addUnresolvedAssignee(): void {
+    this.scheduleDraft.unresolvedAssignees = [...(this.scheduleDraft.unresolvedAssignees || []), '?'];
+    this.scheduleDraft.needsVerification = true;
+  }
+
+  updateUnresolvedAssignee(index: number, value: string): void {
+    const current = [...(this.scheduleDraft.unresolvedAssignees || [])];
+    if (index < 0 || index >= current.length) return;
+    current[index] = value;
+    this.scheduleDraft.unresolvedAssignees = current;
+    this.scheduleDraft.needsVerification = true;
+  }
+
+  removeUnresolvedAssignee(index: number): void {
+    const current = [...(this.scheduleDraft.unresolvedAssignees || [])];
+    if (index < 0 || index >= current.length) return;
+    current.splice(index, 1);
+    this.scheduleDraft.unresolvedAssignees = current;
+    if (current.length === 0) this.scheduleDraft.needsVerification = false;
+  }
+
+  scheduleDraftHasAssignment(): boolean {
+    return this.scheduleDraft.staffIds.length > 0 || (this.scheduleDraft.unresolvedAssignees?.length || 0) > 0;
   }
 
   conflictWarningForStaff(staffId: string): string | null {
@@ -465,7 +499,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   async saveSchedule(): Promise<void> {
-    if (this.saving() || !this.scheduleDraft.date || this.scheduleDraft.staffIds.length === 0) return;
+    if (this.saving() || !this.scheduleDraft.date || !this.scheduleDraftHasAssignment()) return;
     this.saving.set(true);
     try {
       await this.duty.saveSchedule({ ...this.scheduleDraft, source: 'manual' });
@@ -501,6 +535,10 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   namesFor(schedule: DutyScheduleEntry): string[] {
     return resolveDutyStaffNames(schedule, this.duty.staff());
+  }
+
+  unresolvedFor(schedule: DutyScheduleEntry): string[] {
+    return schedule.unresolvedAssignees || [];
   }
 
   accountFor(person: DutyStaff): UserProfile | undefined {
@@ -551,15 +589,18 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   exportCsv(): void {
     const rows = [
-      ['Ngày', 'Giờ bắt đầu', 'Trạng thái', 'Nhân sự', 'Người chủ trì', 'Ghi chú'],
+      ['Ngày', 'Giờ bắt đầu', 'Trạng thái', 'Nhân sự xác định', 'Vị trí chưa xác định', 'Người chủ trì', 'Nguồn Gemini ban đầu', 'Ghi chú'],
       ...this.duty.schedules().map(schedule => {
         const names = this.namesFor(schedule);
+        const unresolved = this.unresolvedFor(schedule);
         return [
           schedule.date,
           schedule.startTime,
-          schedule.status === 'cancelled' ? 'Đã hủy' : 'Đang áp dụng',
+          schedule.status === 'cancelled' ? 'Đã hủy' : (schedule.needsVerification ? 'Cần xác minh' : 'Đang áp dụng'),
           names.join('; '),
+          unresolved.join('; '),
           names[0] || '',
+          schedule.sourceAssignees || '',
           schedule.note || '',
         ];
       }),
@@ -603,14 +644,16 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const title = `LỊCH TRỰC ĐÊM ${periodLabel} - PHÒNG KIỂM NGHIỆM`;
     const rows = schedules.map(schedule => {
       const names = this.namesFor(schedule);
+      const unresolved = this.unresolvedFor(schedule);
+      const coordination = [...names.slice(1), ...unresolved.map(label => `⚠ ${label || '?'}`)];
       return `
         <tr>
           <td>${this.escapeHtml(this.formatPrintDate(schedule.date))}</td>
           <td>${this.escapeHtml(this.weekdayLabel(schedule.date))}</td>
           <td class="time">${this.escapeHtml(schedule.startTime || '18:00')}</td>
           <td class="lead">${this.escapeHtml(names[0] || 'Chưa phân công')}</td>
-          <td>${this.escapeHtml(names.slice(1).join(', ') || '—')}</td>
-          <td>${this.escapeHtml(schedule.note || '')}</td>
+          <td>${this.escapeHtml(coordination.join(', ') || '—')}</td>
+          <td>${this.escapeHtml([schedule.needsVerification ? 'CẦN XÁC MINH' : '', schedule.note || ''].filter(Boolean).join(' · '))}</td>
         </tr>`;
     }).join('');
     const generatedAt = new Intl.DateTimeFormat('vi-VN', {
@@ -760,6 +803,9 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     return {
       date,
       staffIds: [],
+      unresolvedAssignees: [],
+      needsVerification: false,
+      sourceAssignees: '',
       startTime: '18:00',
       status: 'planned',
       note: '',

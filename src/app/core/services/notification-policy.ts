@@ -21,7 +21,7 @@ export interface MetadataSyncToast {
 export function levelForNotificationType(type?: NotificationType): NotificationLevel {
   if (type === 'REQUEST_APPROVED') return 'success';
   if (type === 'REQUEST_REJECTED') return 'error';
-  if (type === 'STOCK_LOW_ALERT' || type === 'RETURN_OVERDUE') return 'warning';
+  if (type === 'STOCK_LOW_ALERT' || type === 'RETURN_OVERDUE' || type === 'DUTY_VERIFICATION_REQUIRED') return 'warning';
   return 'info';
 }
 

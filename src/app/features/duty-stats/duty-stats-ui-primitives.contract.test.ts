@@ -53,7 +53,9 @@ test('duty schedule includes fast assignment and period navigation controls', ()
   assert.match(template, /Tháng này/);
   assert.match(template, /toggleScheduleStaff\(staffId, false\)/);
   assert.match(template, /Đã gán cho/);
-  assert.match(template, /Cần chọn ít nhất 1 nhân viên trực/);
+  assert.match(template, /Cần chọn ít nhất 1 nhân viên hoặc thêm vị trí chưa xác định/);
+  assert.match(template, /Vị trí chưa xác định/);
+  assert.match(template, /Cần xác minh/);
 });
 
 test('phase 2 provides responsive schedule cards and personal shift cues', () => {
@@ -79,6 +81,84 @@ test('phase 2 provides responsive schedule cards and personal shift cues', () =>
   assert.match(dashboardTemplate, /@for \(name of namesFor\(schedule\); track \$index\)/);
   assert.match(dashboardTemplate, /fa-solid fa-star/);
   assert.match(dashboardTemplate, /Ca của bạn/);
+});
+
+test('dashboard duty widget exposes the current month calendar and monthly statistics', () => {
+  const component = read('src/app/features/duty-stats/duty-dashboard.component.ts');
+  const template = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  assert.match(component, /dutyMonthCalendarDateKeys/);
+  assert.match(component, /readonly calendarCells = computed/);
+  assert.match(component, /aggregateDutyPeopleById/);
+  assert.match(component, /readonly personStats = computed/);
+  assert.match(component, /readonly averageAssignments = computed/);
+
+  assert.match(template, /Lịch tháng/);
+  assert.match(template, /grid-cols-7/);
+  assert.match(template, /@for \(cell of calendarCells\(\); track \$index\)/);
+  assert.match(template, /Thống kê theo người/);
+  assert.match(template, /Người tham gia/);
+  assert.match(template, /Bình quân\/người/);
+  assert.match(template, /@for \(stat of personStats\(\); track stat\.staffId/);
+});
+
+test('Gemini import prompt exposes a prominent copy action beside the prompt', () => {
+  const component = read('src/app/features/duty-stats/duty-tsv-import.component.ts');
+  const template = read('src/app/features/duty-stats/duty-tsv-import.component.html');
+
+  assert.match(component, /readonly promptCopied = signal\(false\)/);
+  assert.match(component, /navigator\.clipboard\.writeText\(this\.prompt\(\)\)/);
+  assert.match(component, /this\.promptCopied\.set\(true\)/);
+  assert.match(template, /<details open/);
+  assert.match(template, /Copy Prompt/);
+  assert.match(template, /Đã sao chép/);
+  assert.match(template, /fa-copy/);
+});
+
+test('Gemini month import requires a second independent TSV match before LIMS import', () => {
+  const component = read('src/app/features/duty-stats/duty-tsv-import.component.ts');
+  const template = read('src/app/features/duty-stats/duty-tsv-import.component.html');
+
+  assert.match(component, /compareDutyImportRuns/);
+  assert.match(component, /readonly verificationText = signal\(''\)/);
+  assert.match(component, /readonly verificationMatched = computed/);
+  assert.match(component, /readonly independentRunConfirmed = signal\(false\)/);
+  assert.match(component, /this\.previewReady\(\) && this\.verificationMatched\(\) && this\.independentRunConfirmed\(\) && this\.reviewed\(\)/);
+  assert.match(component, /buildDutyGeminiVerificationPrompt/);
+  assert.match(component, /navigator\.clipboard\.writeText\(this\.verificationPrompt\(\)\)/);
+  assert.match(component, /validateVerification\(\): void/);
+  assert.match(template, /Cổng xác minh trước khi nhập/);
+  assert.match(template, /Bắt buộc dùng một cuộc trò chuyện Gemini mới/);
+  assert.match(template, /Copy Prompt xác minh/);
+  assert.match(template, /TSV Gemini xác minh lần 2/);
+  assert.match(template, /So khớp TSV lần 2/);
+  assert.match(template, /Hai lần Gemini không khớp — chưa được nhập/);
+  assert.match(template, /Xác nhận Gemini lần 2 chạy trong chat mới/);
+  assert.match(template, /\[disabled\]="busy\(\) \|\| !verificationMatched\(\) \|\| !independentRunConfirmed\(\)"/);
+});
+
+test('Gemini month import is paste-first and preserves unresolved source information for later correction', () => {
+  const component = read('src/app/features/duty-stats/duty-tsv-import.component.ts');
+  const template = read('src/app/features/duty-stats/duty-tsv-import.component.html');
+  const parser = read('src/app/features/duty-stats/duty-tsv-import.ts');
+  const persistence = read('src/app/features/duty-stats/duty-tsv-import.persistence.ts');
+  const schedule = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const dashboard = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  assert.match(template, /Dán TSV Gemini trả về/);
+  assert.doesNotMatch(template, /type="file"/);
+  assert.doesNotMatch(template, /Tải mẫu TSV/);
+  assert.match(template, /Cần xác minh/);
+  assert.match(component, /readonly unresolvedAssignments = computed/);
+  assert.match(component, /readonly verificationRows = computed/);
+
+  assert.match(parser, /unresolvedAssignees/);
+  assert.match(parser, /CHƯA RÕ/);
+  assert.match(persistence, /sourceAssignees: row\.names\.join\(' \| '\)/);
+  assert.match(persistence, /needsVerification:/);
+  assert.match(schedule, /needsVerificationOnly/);
+  assert.match(schedule, /addUnresolvedAssignee/);
+  assert.match(dashboard, /Cần xác minh/);
 });
 
 test('phase 2 statistics table is sortable and exposes accessible sort state', () => {
@@ -136,6 +216,6 @@ test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning 
   assert.match(service, /source: 'batch'/);
   assert.match(template, /Tạo khung tháng/);
   assert.match(template, /Tất cả ngày trống/);
-  assert.match(rules, /data\.staffIds\.size\(\) > 0 \|\| data\.source == 'batch'/);
+  assert.match(rules, /data\.staffIds\.size\(\) > 0 \|\| data\.get\('unresolvedAssignees', \[\]\)\.size\(\) > 0 \|\| data\.source == 'batch'/);
   assert.match(rules, /\['manual', 'import', 'batch'\]/);
 });

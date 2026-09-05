@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.05-b03",
-    "title": "Nhập lịch trực cả tháng từ ảnh nhanh và có đối chiếu",
+    "version": "v26.09.05-b04",
+    "title": "Lịch trực tháng: nhập Gemini có xác minh và thông báo nhân sự",
     "features": [
-      "Lịch trực → Nhập lịch TSV giúp dán hoặc tải lịch cả tháng, kiểm tra từng ngày và lưu sau khi đối chiếu ảnh gốc.",
-      "Sao chép sẵn yêu cầu đọc ảnh cho Gemini, tự điền tháng đang chọn và tên nhân sự đang hoạt động.",
-      "Xem trước nhân sự, giờ và ghi chú; giữ lịch hiện có hoặc chọn riêng từng ngày cần thay thế.",
-      "Tải mẫu và tải lại lịch đã đối chiếu để lưu cùng ảnh nguồn cho những lần sử dụng sau.",
-      "Báo rõ ngày trùng, sai tháng, sai giờ, tên chưa khớp hoặc thông tin chưa đọc chắc chắn trước khi nhập."
+      "Nhập lịch trực tháng theo luồng dán TSV từ Gemini, bắt buộc một lượt nhận diện độc lập lần hai trước khi cho phép ghi vào LIMS.",
+      "Dashboard hiển thị lịch tháng, thống kê lượt trực và làm nổi bật đúng tên nhân sự đang đăng nhập cùng ca trực sắp tới.",
+      "Có nút sao chép prompt Gemini cho lượt nhận diện đầu và prompt xác minh riêng; lượt hai yêu cầu mở chat Gemini mới, tải lại đúng ảnh nguồn và đọc lại độc lập.",
+      "Các vị trí chưa đọc chắc chắn như ?, Đạt (?) hoặc CHƯA RÕ vẫn có thể nhập với trạng thái Cần xác minh, giữ nguyên cách ghi nguồn và sửa bổ sung về sau.",
+      "Lịch trực phát thông báo qua Bell/Push đến tài khoản đã liên kết khi được phân công, thay đổi hoặc hủy ca; quản lý lịch nhận cảnh báo riêng khi còn vị trí cần xác minh."
     ]
   },
   "assetGroups": [

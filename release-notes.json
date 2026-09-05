@@ -1,16 +1,20 @@
 {
-  "title": "Nhập lịch trực cả tháng từ ảnh nhanh và có đối chiếu",
+  "title": "Lịch trực tháng: nhập Gemini có xác minh và thông báo nhân sự",
   "highlights": [
-    "Lịch trực → Nhập lịch TSV giúp dán hoặc tải lịch cả tháng, kiểm tra từng ngày và lưu sau khi đối chiếu ảnh gốc."
+    "Nhập lịch trực tháng theo luồng dán TSV từ Gemini, bắt buộc một lượt nhận diện độc lập lần hai trước khi cho phép ghi vào LIMS.",
+    "Dashboard hiển thị lịch tháng, thống kê lượt trực và làm nổi bật đúng tên nhân sự đang đăng nhập cùng ca trực sắp tới."
   ],
   "features": [
-    "Sao chép sẵn yêu cầu đọc ảnh cho Gemini, tự điền tháng đang chọn và tên nhân sự đang hoạt động.",
-    "Xem trước nhân sự, giờ và ghi chú; giữ lịch hiện có hoặc chọn riêng từng ngày cần thay thế.",
-    "Tải mẫu và tải lại lịch đã đối chiếu để lưu cùng ảnh nguồn cho những lần sử dụng sau."
+    "Có nút sao chép prompt Gemini cho lượt nhận diện đầu và prompt xác minh riêng; lượt hai yêu cầu mở chat Gemini mới, tải lại đúng ảnh nguồn và đọc lại độc lập.",
+    "Các vị trí chưa đọc chắc chắn như ?, Đạt (?) hoặc CHƯA RÕ vẫn có thể nhập với trạng thái Cần xác minh, giữ nguyên cách ghi nguồn và sửa bổ sung về sau.",
+    "Lịch trực phát thông báo qua Bell/Push đến tài khoản đã liên kết khi được phân công, thay đổi hoặc hủy ca; quản lý lịch nhận cảnh báo riêng khi còn vị trí cần xác minh.",
+    "Notification Center có tab Lịch trực và Activity Feed ghi nhận thao tác cập nhật hoặc nhập lịch tháng."
   ],
   "improvements": [
-    "Báo rõ ngày trùng, sai tháng, sai giờ, tên chưa khớp hoặc thông tin chưa đọc chắc chắn trước khi nhập.",
-    "Kiểm tra lại các ca trước khi lưu cả tháng và yêu cầu xem trước lại nếu người khác vừa chỉnh sửa lịch."
+    "Luồng nhập ưu tiên dán TSV trực tiếp, giảm thao tác tải file TSV xuống rồi tải ngược lên hệ thống.",
+    "Bộ kiểm tra TSV đối chiếu cấu trúc, ngày, giờ, nhân sự và kết quả giữa hai lượt Gemini trước khi mở nút nhập.",
+    "Tên thật của nhân sự luôn được giữ nguyên trên lịch; trạng thái cá nhân chỉ dùng để làm nổi bật và hiển thị ca gần nhất, không thay tên bằng 'Bạn'.",
+    "Khi nhập cả tháng, thông báo được gom theo từng người để tránh gửi một thông báo cho từng ngày trực."
   ],
   "fixes": []
 }

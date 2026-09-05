@@ -11,9 +11,7 @@ export interface ActivityFeedDisplayEvent extends ActivityEvent {
   aggregationFirstTimestamp?: unknown;
 }
 
-export interface ActivityFeedDocumentData {
-  [key: string]: unknown;
-}
+export type ActivityFeedDocumentData = Record<string, unknown>;
 
 export function buildActivityFeedScopeKey(uid: string, audiences: readonly ActivityAudience[]): string {
   return `${uid}|${[...audiences].sort().join(',')}`;
@@ -195,6 +193,7 @@ export function getActivityModuleLabel(module: ActivityModule): string {
   if (module === 'RESULT') return 'Kết quả';
   if (module === 'INVENTORY') return 'Kho';
   if (module === 'STANDARD') return 'Chuẩn';
+  if (module === 'DUTY') return 'Lịch trực';
   return 'Hệ thống';
 }
 

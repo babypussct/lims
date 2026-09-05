@@ -27,7 +27,16 @@ import {
 const NOTIFICATION_TYPES = new Set([
   'COA_REQUEST', 'BORROW_REQUEST', 'REQUEST_APPROVED', 'REQUEST_REJECTED',
   'RETURN_OVERDUE', 'STOCK_LOW_ALERT', 'SYSTEM_INFO', 'SYSTEM_UPDATE',
-  'RESULT_PUBLISHED', 'RESULT_RESET', 'RESULT_REVERTED', 'STANDARD_RETURN_PENDING'
+  'RESULT_PUBLISHED', 'RESULT_RESET', 'RESULT_REVERTED', 'STANDARD_RETURN_PENDING',
+  'DUTY_SCHEDULE_PUBLISHED', 'DUTY_ASSIGNMENT_CHANGED', 'DUTY_ASSIGNMENT_CANCELLED',
+  'DUTY_VERIFICATION_REQUIRED'
+]);
+
+const DUTY_NOTIFICATION_TYPES = new Set([
+  'DUTY_SCHEDULE_PUBLISHED',
+  'DUTY_ASSIGNMENT_CHANGED',
+  'DUTY_ASSIGNMENT_CANCELLED',
+  'DUTY_VERIFICATION_REQUIRED'
 ]);
 
 const USER_INITIATED_ADMIN_EVENTS = new Set([
@@ -127,6 +136,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       || directPermissions.includes('standard_approve')
       || rolePermissions.includes('standard_edit')
       || rolePermissions.includes('standard_approve');
+    const canManageDuty = isManager
+      || directPermissions.includes('duty_manage')
+      || rolePermissions.includes('duty_manage');
     const action = body.action;
 
     const usersCollection = db.collection(`artifacts/${appId}/users`);
@@ -329,14 +341,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (recipientUid === 'role:all' && (!isManager || type !== 'SYSTEM_UPDATE')) {
         return res.status(403).json({ error: 'Không có quyền gửi broadcast toàn hệ thống.' });
       }
+      if (recipientUid === 'role:duty-manager' && (!canManageDuty || type !== 'DUTY_VERIFICATION_REQUIRED')) {
+        return res.status(403).json({ error: 'Không có quyền gửi cảnh báo xác minh lịch trực.' });
+      }
       if (recipientUid === 'role:admin' && !isManager && !canManageStandards && !USER_INITIATED_ADMIN_EVENTS.has(type)) {
         return res.status(403).json({ error: 'Không có quyền gửi loại thông báo này đến quản trị viên.' });
       }
-      if (!recipientUid.startsWith('role:') && !canManageStandards && recipientUid !== decoded.uid) {
+      if (!recipientUid.startsWith('role:') && !canManageStandards
+          && !(canManageDuty && DUTY_NOTIFICATION_TYPES.has(type))
+          && recipientUid !== decoded.uid) {
         return res.status(403).json({ error: 'Không có quyền gửi thông báo trực tiếp cho người dùng khác.' });
       }
 
-      if (recipientUid === 'role:all' || recipientUid === 'role:admin') {
+      if (recipientUid === 'role:duty-manager') {
+        recipientUids = await resolvePermissionRecipients(['duty_manage']);
+      } else if (recipientUid === 'role:all' || recipientUid === 'role:admin') {
         const users = await usersCollection.get();
         const roles = recipientUid === 'role:admin'
           ? await db.collection(`artifacts/${appId}/roles_config`).get()

@@ -7,6 +7,7 @@ const AUDIENCE_PERMISSIONS: Record<ActivityAudience, readonly string[]> = {
   INVENTORY_OPERATOR: ['inventory_edit'],
   STANDARD_VIEW: ['standard_view', 'standard_edit', 'standard_approve', 'standard_log_view'],
   STANDARD_OPERATOR: ['standard_edit', 'standard_approve'],
+  DUTY_OPERATOR: ['duty_manage'],
   SYSTEM_ADMIN: ['user_manage', 'system_manage']
 };
 

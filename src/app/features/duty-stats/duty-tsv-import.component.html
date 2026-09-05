@@ -2,30 +2,33 @@
   <div modalBody class="space-y-5 text-sm text-slate-700 dark:text-slate-200">
     <div class="rounded-xl bg-blue-50 p-4 dark:bg-blue-950/30">
       <p>1. Sao chép prompt bên dưới, gửi cùng ảnh lịch tháng <strong>{{ month() }}</strong> cho Gemini.</p>
-      <p class="mt-1">2. Chỉ sao chép khối TSV từ câu trả lời hoặc tải tệp .tsv UTF-8 vào đây.</p>
-      <p class="mt-1">3. Đối chiếu ảnh, tổng số ngày và từng người trong bảng xem trước rồi xác nhận nhập.</p>
-      <p class="mt-2 text-xs">Chỉ các ngày có trong nội dung nhập được xử lý. Ngày không có trong tệp được giữ nguyên. Ca thay thế sẽ trở thành “Đang áp dụng”, kể cả ca trước đó đã hủy.</p>
+      <p class="mt-1">2. Sao chép trực tiếp khối TSV Gemini trả về và dán vào ô bên dưới.</p>
+      <p class="mt-1">3. Sau khi bản đầu vượt qua kiểm tra, <strong>mở một chat Gemini mới</strong>, tải lại ảnh gốc và dùng prompt xác minh độc lập của LIMS.</p>
+      <p class="mt-1">4. Đối chiếu ảnh, tổng số ngày và từng người trong bảng xem trước rồi xác nhận nhập.</p>
+      <p class="mt-2 text-xs">Dòng có <strong>?</strong> vẫn được phép nhập nhưng sẽ mang trạng thái <strong>Cần xác minh</strong>. LIMS không tự đoán người và bạn có thể chỉnh lại sau khi có thông tin chính thức.</p>
     </div>
-    <details class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+    <details open class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
       <summary class="cursor-pointer font-bold">Prompt Gemini cố định · phiên bản 1 · tháng {{ month() }}</summary>
-      <p class="my-2 text-xs">Nội dung tự điền tháng và danh mục nhân sự đang hoạt động. Nếu có người mới, thêm trong Nhân sự rồi mở lại màn hình này.</p>
-      <textarea aria-label="Prompt Gemini cố định" readonly [value]="prompt()" rows="12" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs">Nội dung tự điền tháng và danh mục nhân sự đang hoạt động. Nếu có người mới, thêm trong Nhân sự rồi mở lại màn hình này.</p>
+        <app-button
+          variant="secondary"
+          (click)="copyPrompt()"
+          [disabled]="duty.loadingStaff()"
+          aria-label="Sao chép toàn bộ prompt Gemini">
+          <i class="fa-solid mr-1.5" [class.fa-check]="promptCopied()" [class.fa-copy]="!promptCopied()" aria-hidden="true"></i>
+          {{ promptCopied() ? 'Đã sao chép' : 'Copy Prompt' }}
+        </app-button>
+      </div>
+      <textarea aria-label="Prompt Gemini cố định" readonly [value]="prompt()" rows="12" class="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
     </details>
-    <div class="flex flex-wrap gap-2">
-      <app-button variant="secondary" (click)="copyPrompt()" [disabled]="duty.loadingStaff()">Sao chép prompt Gemini</app-button>
-      <app-button variant="secondary" (click)="downloadTemplate()">Tải mẫu TSV</app-button>
-    </div>
     @if (!result()) {
-      <label class="block font-bold">Tải tệp TSV hoặc TXT (UTF-8, tối đa 100 KB)
-        <input type="file" accept=".tsv,.txt,text/tab-separated-values,text/plain" (change)="upload($event)" [disabled]="busy()" class="mt-2 block w-full text-xs">
-      </label>
-      @if (filename()) { <p class="text-xs text-slate-500">Tệp đang đọc: {{ filename() }}</p> }
-      <label class="block font-bold">Nội dung TSV
+      <label class="block font-bold">Dán TSV Gemini trả về
         <textarea aria-label="Nội dung TSV" [ngModel]="text()" (ngModelChange)="changeText($event)" [disabled]="busy()" rows="8" maxlength="100000"
           placeholder="Dán dòng tiêu đề và các dòng lịch từ khối TSV Gemini trả về" spellcheck="false"
           class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
       </label>
-      <p class="text-xs">4 cột: date → assignees → startTime → note, ngăn cách bằng Tab. Tên cách nhau bằng dấu |; thứ tự đầu tiên là người chủ trì. Giữ riêng Huynh / Huỳnh và Đạt (O) / Đạt (N).</p>
+      <p class="text-xs">4 cột: date → assignees → startTime → note, ngăn cách bằng Tab. Tên cách nhau bằng dấu |; thứ tự đầu tiên là người chủ trì. Dấu <strong>?</strong> được giữ lại như một vị trí chưa xác định, không được tự gán cho nhân sự nào.</p>
       <app-button (click)="preview()" [disabled]="busy() || !text().trim() || duty.loadingStaff()">Kiểm tra và xem trước</app-button>
     }
     @if (errors().length) {
@@ -36,16 +39,27 @@
     @if (rows().length) {
       <div aria-live="polite" class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
         <strong>{{ rows().length }} ngày trong tệp</strong>
-        @if (previewReady()) { <span> · {{ created() }} mới · {{ replaced() }} thay thế · {{ kept() }} giữ lại · {{ assignments() }} lượt sẽ nhập</span> }
+        @if (previewReady()) {
+          <span> · {{ created() }} mới · {{ replaced() }} thay thế · {{ kept() }} giữ lại · {{ assignments() }} lượt đã xác định</span>
+          @if (unresolvedAssignments() > 0) { <span> · {{ unresolvedAssignments() }} vị trí chưa rõ</span> }
+          <span> · {{ totalAssignmentSlots() }} vị trí phân công</span>
+        }
       </div>
       <div class="max-h-80 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700">
         <table class="w-full min-w-[680px] text-left text-xs">
-          <thead class="sticky top-0 bg-slate-100 dark:bg-slate-800"><tr><th class="p-3">Dòng / Ngày</th><th class="p-3">Nhân sự / giờ mới / ghi chú</th><th class="p-3">Lịch hiện có</th><th class="p-3">Xử lý</th></tr></thead>
+          <thead class="sticky top-0 bg-slate-100 dark:bg-slate-800"><tr><th class="p-3">Dòng / Ngày</th><th class="p-3">Nhân sự / giờ mới / ghi chú</th><th class="p-3">Lịch đang lưu trên LIMS</th><th class="p-3">Xử lý</th></tr></thead>
           <tbody>
             @for (row of rows(); track $index) {
               <tr class="border-t border-slate-100 align-top dark:border-slate-800">
                 <td class="p-3">{{ row.line }} · {{ row.date }}</td>
-                <td class="p-3"><strong>{{ row.names.join(' · ') }}</strong><p>{{ row.startTime }}</p><p class="whitespace-pre-wrap break-words">{{ row.note }}</p></td>
+                <td class="p-3">
+                  <strong>{{ row.names.join(' · ') }}</strong>
+                  @if (row.warnings.length) {
+                    <span class="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Cần xác minh</span>
+                  }
+                  <p>{{ row.startTime }}</p><p class="whitespace-pre-wrap break-words">{{ row.note }}</p>
+                  @for (warning of row.warnings; track $index) { <p class="mt-1 text-amber-700 dark:text-amber-300">⚠ {{ warning }}</p> }
+                </td>
                 <td class="p-3">
                   @if (row.previous) { <p>{{ existingNames(row) }}</p><p>{{ row.previous.startTime }} · {{ row.previous.status === 'cancelled' ? 'Đã hủy' : 'Đang áp dụng' }}</p><p class="whitespace-pre-wrap break-words">{{ row.previous.note }}</p> }
                   @else { <span>{{ previewReady() || result() ? 'Chưa có ca' : 'Chưa đối chiếu' }}</span> }
@@ -64,16 +78,98 @@
       </div>
     }
     @if (previewReady()) {
-      <label class="flex items-start gap-2 rounded-xl border border-blue-200 p-3 dark:border-blue-800">
-        <input type="checkbox" aria-label="Đã đối chiếu ảnh và xác nhận các ngày sẽ nhập" [ngModel]="reviewed()" (ngModelChange)="reviewed.set($event)" [disabled]="busy()">
-        <span>Tôi đã đối chiếu ảnh, tên người, ngày, giờ và xác nhận {{ created() }} ca mới, {{ replaced() }} ca thay thế trong tháng {{ month() }}.</span>
-      </label>
+      <section class="space-y-3 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 class="font-black text-slate-800 dark:text-slate-100">Cổng xác minh trước khi nhập</h3>
+            <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">LIMS chỉ cho nhập khi TSV lần 2 khớp hoàn toàn với bản đã xem trước và bạn đã đối chiếu lại ảnh gốc.</p>
+            @if (verificationRows() > 0) {
+              <p class="mt-1 text-xs font-bold text-amber-700 dark:text-amber-300">{{ verificationRows() }} ca có {{ unresolvedAssignments() }} vị trí chưa xác định sẽ được nhập với cờ “Cần xác minh”.</p>
+            }
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-[10px] font-black">
+            <span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"><i class="fa-solid fa-check mr-1" aria-hidden="true"></i>Cấu trúc đạt</span>
+            <span class="rounded-full px-2 py-1"
+              [class]="verificationMatched() ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'">
+              <i class="fa-solid mr-1" [class.fa-check]="verificationMatched()" [class.fa-shield-halved]="!verificationMatched()" aria-hidden="true"></i>
+              {{ verificationMatched() ? 'Hai lần khớp' : 'Chờ xác minh lần 2' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-black text-amber-700 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1.5" aria-hidden="true"></i>Bắt buộc dùng một cuộc trò chuyện Gemini mới.</p>
+              <p class="mt-1 text-xs">Tải lại chính ảnh gốc và dùng prompt bên dưới. Không gửi TSV lần 1 cho Gemini; LIMS sẽ tự so sánh hai kết quả sau khi nhận diện độc lập.</p>
+            </div>
+            <app-button
+              variant="secondary"
+              (click)="copyVerificationPrompt()"
+              [disabled]="duty.loadingStaff()"
+              aria-label="Sao chép prompt xác minh Gemini độc lập">
+              <i class="fa-solid mr-1.5" [class.fa-check]="verificationPromptCopied()" [class.fa-copy]="!verificationPromptCopied()" aria-hidden="true"></i>
+              {{ verificationPromptCopied() ? 'Đã sao chép' : 'Copy Prompt xác minh' }}
+            </app-button>
+          </div>
+          <details class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950/50">
+            <summary class="cursor-pointer text-xs font-bold">Xem prompt nhận diện độc lập lần 2</summary>
+            <textarea aria-label="Prompt Gemini xác minh độc lập" readonly [value]="verificationPrompt()" rows="10" class="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
+          </details>
+          <textarea
+            aria-label="TSV Gemini xác minh lần 2"
+            [ngModel]="verificationText()"
+            (ngModelChange)="changeVerificationText($event)"
+            [disabled]="busy()"
+            rows="6"
+            maxlength="100000"
+            placeholder="Dán TSV của lần Gemini thứ 2 để so khớp độc lập"
+            spellcheck="false"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950"></textarea>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <app-button
+              variant="secondary"
+              (click)="validateVerification()"
+              [disabled]="busy() || !verificationText().trim()">
+              <i class="fa-solid fa-code-compare mr-1.5" aria-hidden="true"></i>So khớp TSV lần 2
+            </app-button>
+            @if (verificationMatched()) {
+              <span role="status" class="text-xs font-black text-emerald-700 dark:text-emerald-300"><i class="fa-solid fa-circle-check mr-1"></i>Khớp hoàn toàn theo ngày, người, thứ tự, giờ và ghi chú.</span>
+            }
+          </div>
+          <label class="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/70 p-2.5 text-xs dark:border-amber-900/60 dark:bg-amber-950/20">
+            <input type="checkbox" aria-label="Xác nhận Gemini lần 2 chạy trong chat mới" [ngModel]="independentRunConfirmed()" (ngModelChange)="independentRunConfirmed.set($event)" [disabled]="busy()">
+            <span>Tôi xác nhận lần 2 được thực hiện trong <strong>chat Gemini mới</strong>, chỉ dùng ảnh gốc + prompt xác minh độc lập và không đưa TSV lần 1 cho Gemini.</span>
+          </label>
+        </div>
+
+        @if (verificationErrors().length) {
+          <div role="alert" class="rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/30 dark:text-red-300">
+            <strong>TSV lần 2 chưa đạt chuẩn:</strong>
+            @for (error of verificationErrors(); track $index) { <p class="mt-1">• {{ error }}</p> }
+          </div>
+        }
+        @if (verificationMismatches().length) {
+          <div role="alert" class="rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/30 dark:text-red-300">
+            <strong>Hai lần Gemini không khớp — chưa được nhập:</strong>
+            @for (mismatch of verificationMismatches(); track $index) { <p class="mt-1">• {{ mismatch }}</p> }
+            <p class="mt-2 font-bold">Hãy đối chiếu lại ảnh và sửa bản TSV chính, sau đó xem trước và xác minh lại.</p>
+          </div>
+        }
+
+        <label class="flex items-start gap-2 rounded-xl border border-blue-200 bg-white p-3 dark:border-blue-800 dark:bg-slate-900"
+          [class.opacity-50]="!verificationMatched() || !independentRunConfirmed()">
+          <input type="checkbox" aria-label="Đã đối chiếu ảnh và xác nhận các ngày sẽ nhập" [ngModel]="reviewed()" (ngModelChange)="reviewed.set($event)" [disabled]="busy() || !verificationMatched() || !independentRunConfirmed()">
+          <span>Tôi đã đối chiếu ảnh gốc, tên người, ngày, giờ và xác nhận {{ created() }} ca mới, {{ replaced() }} ca thay thế trong tháng {{ month() }}.@if (unresolvedAssignments() > 0) { Tôi chấp nhận nhập tạm {{ unresolvedAssignments() }} vị trí chưa xác định để bổ sung sau. }</span>
+        </label>
+      </section>
     }
     @if (result(); as done) {
       <div role="status" class="rounded-xl bg-emerald-50 p-4 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
         <strong>Đã nhập thành công tháng {{ month() }}</strong>
         <p>{{ done.created }} ca mới · {{ done.replaced }} ca thay thế · {{ done.kept }} ca được giữ nguyên.</p>
-        <p class="mt-1">Lịch đã được lưu trên LIMS. Bạn có thể tải lại các dòng đã nhập để lưu cùng ảnh nguồn.</p>
+        @if (unresolvedAssignments() > 0) { <p class="mt-1 font-bold">{{ unresolvedAssignments() }} vị trí đang mang trạng thái Cần xác minh và có thể chỉnh trực tiếp trong Lịch trực.</p> }
+        <p class="mt-1">Lịch đã được lưu trên LIMS. Bản phân công Gemini ban đầu được giữ lại để đối chiếu khi chỉnh sửa sau này.</p>
       </div>
     }
   </div>

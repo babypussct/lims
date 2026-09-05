@@ -3,15 +3,24 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { AppEmptyStateComponent } from '../../shared/components/ui';
+import type { DutyScheduleEntry } from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
 import {
   activeDutySchedules,
+  aggregateDutyPeopleById,
   currentDutyDateKey,
   currentDutyMonthKey,
+  dutyMonthCalendarDateKeys,
   dutyMonthRange,
   findLinkedDutyStaff,
   resolveDutyStaffNames,
 } from './duty-schedule.utils';
+
+interface DutyDashboardCalendarCell {
+  date: string;
+  day: number;
+  schedule?: DutyScheduleEntry;
+}
 
 @Component({
   selector: 'app-duty-dashboard',
@@ -27,8 +36,19 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
 
   readonly todayKey = currentDutyDateKey();
   readonly monthKey = currentDutyMonthKey();
+  readonly calendarWeekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   readonly activeSchedules = computed(() => activeDutySchedules(this.duty.schedules()));
+  readonly calendarCells = computed<(DutyDashboardCalendarCell | null)[]>(() => {
+    const year = Number(this.monthKey.slice(0, 4));
+    const month = Number(this.monthKey.slice(5, 7));
+    const byDate = new Map(this.activeSchedules().map(schedule => [schedule.date, schedule]));
+    return dutyMonthCalendarDateKeys(year, month).map(date => date ? {
+      date,
+      day: Number(date.slice(-2)),
+      schedule: byDate.get(date),
+    } : null);
+  });
   readonly todaySchedule = computed(() =>
     this.activeSchedules().find(item => item.date === this.todayKey),
   );
@@ -46,9 +66,28 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     if (!staffId) return null;
     return this.activeSchedules().filter(item => item.staffIds.includes(staffId)).length;
   });
+  readonly myNextSchedule = computed(() => {
+    const staffId = this.linkedStaff()?.id;
+    if (!staffId) return undefined;
+    return this.activeSchedules().find(item => item.date >= this.todayKey && item.staffIds.includes(staffId));
+  });
   readonly monthAssignmentCount = computed(() =>
     this.activeSchedules().reduce((total, item) => total + new Set(item.staffIds).size, 0),
   );
+  readonly verificationScheduleCount = computed(() =>
+    this.activeSchedules().filter(item => item.needsVerification === true).length,
+  );
+  readonly unresolvedAssignmentCount = computed(() =>
+    this.activeSchedules().reduce((total, item) => total + (item.unresolvedAssignees?.length || 0), 0),
+  );
+  readonly personStats = computed(() =>
+    aggregateDutyPeopleById(this.activeSchedules(), this.duty.staff()),
+  );
+  readonly uniqueAssignedPeople = computed(() => this.personStats().length);
+  readonly averageAssignments = computed(() => {
+    const people = this.uniqueAssignedPeople();
+    return people === 0 ? 0 : this.monthAssignmentCount() / people;
+  });
 
   ngOnInit(): void {
     const range = dutyMonthRange(this.monthKey);
@@ -63,9 +102,26 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     return resolveDutyStaffNames(schedule, this.duty.staff());
   }
 
+  unresolvedFor(schedule: Pick<DutyScheduleEntry, 'unresolvedAssignees'>): string[] {
+    return schedule.unresolvedAssignees || [];
+  }
+
   isMyShift(schedule: { staffIds: string[] }): boolean {
     const staffId = this.linkedStaff()?.id;
     return !!staffId && schedule.staffIds.includes(staffId);
+  }
+
+  isMyName(name: string): boolean {
+    return this.linkedStaff()?.displayName === name;
+  }
+
+  isToday(dateKey: string): boolean {
+    return dateKey === this.todayKey;
+  }
+
+  isWeekend(dateKey: string): boolean {
+    const weekday = new Date(`${dateKey}T12:00:00+07:00`).getDay();
+    return weekday === 0 || weekday === 6;
   }
 
   formatShortDate(dateKey: string): string {

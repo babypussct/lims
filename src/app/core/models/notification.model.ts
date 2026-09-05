@@ -10,11 +10,15 @@ export type NotificationType =
   | 'RESULT_PUBLISHED'
   | 'RESULT_RESET'
   | 'RESULT_REVERTED'
-  | 'STANDARD_RETURN_PENDING';
+  | 'STANDARD_RETURN_PENDING'
+  | 'DUTY_SCHEDULE_PUBLISHED'
+  | 'DUTY_ASSIGNMENT_CHANGED'
+  | 'DUTY_ASSIGNMENT_CANCELLED'
+  | 'DUTY_VERIFICATION_REQUIRED';
 
 export type NotificationLevel = 'success' | 'error' | 'info' | 'warning';
 export type NotificationChannel = 'toast' | 'inbox' | 'push';
-export type NotificationRecipient = string | 'role:admin' | 'role:all';
+export type NotificationRecipient = string | 'role:admin' | 'role:all' | 'role:duty-manager';
 
 /**
  * Contract duy nhất dùng khi một nghiệp vụ muốn phát thông báo.
@@ -23,7 +27,7 @@ export type NotificationRecipient = string | 'role:admin' | 'role:all';
 export interface NotificationEvent {
   eventId?: string;
   activityAction?: string;
-  module?: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'SYSTEM';
+  module?: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'DUTY' | 'SYSTEM';
   recipientUid?: NotificationRecipient;
   senderUid?: string;
   senderName?: string;
@@ -59,7 +63,7 @@ export interface AppNotification {
   groupId?: string;               // Optional: shared ID grouping fan-out copies of the same event
   eventId?: string;               // Stable ID shared by inbox, toast and push channels
   activityAction?: string;        // Canonical Activity action when projected from /logs
-  module?: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'SYSTEM';
+  module?: 'RESULT' | 'INVENTORY' | 'STANDARD' | 'DUTY' | 'SYSTEM';
   targetType?: string;
   targetName?: string;
   requestId?: string;

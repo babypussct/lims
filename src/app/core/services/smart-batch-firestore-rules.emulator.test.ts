@@ -41,7 +41,9 @@ test('monthly TSV import commits 31 dates, keeps existing, replaces selected and
   const tsv = [DUTY_TSV_HEADER, ...Array.from({ length: 31 }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}\tNgười ${i % 21}\t18:00\t`)].join('\n');
   const plan = parseDutyTsv(tsv, month, people).rows.map(row => ({ ...row, previous: null as DutyScheduleEntry | null, replace: false }));
   const db = dbFor(users.customDutyManage);
-  const save = (text = tsv, rows = plan, uid: string = users.customDutyManage.uid, database = db) => persistDutyMonthImport(database as never, APP_ID, uid, people, text, month, rows);
+  const save = (text = tsv, rows = plan, uid: string = users.customDutyManage.uid, database = db, verificationText = text) => persistDutyMonthImport(database as never, APP_ID, uid, people, text, month, rows, verificationText);
+  const mismatchedVerification = tsv.replace('Người 0\t18:00', 'Người 1\t18:00');
+  await assert.rejects(() => save(tsv, plan, users.customDutyManage.uid, db, mismatchedVerification), /xác minh lần 2.*khớp/i);
   assert.deepEqual(await save(), { created: 31, replaced: 0, kept: 0 });
   const current = await Promise.all(plan.map(async row => {
     const snapshot = await getDoc(doc(db, `artifacts/${APP_ID}/duty_schedules/${row.date}`));
@@ -65,6 +67,51 @@ test('monthly TSV import commits 31 dates, keeps existing, replaces selected and
     await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/duty_staff/tsv-person-1`), { active: false });
   });
   await assert.rejects(() => save(tsv, current.map((row, i) => ({ ...row, replace: i === 1 }))), /nhân sự vừa thay đổi/);
+});
+
+test('monthly TSV import stores unresolved duty positions for later verification without creating fake staff', async () => {
+  const person = { id: 'tsv-known-person', displayName: 'Phương', active: true };
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/duty_staff/${person.id}`), person);
+  });
+
+  const month = '2026-09';
+  const tsv = `${DUTY_TSV_HEADER}\n2026-09-16\tPhương | ?\t18:00\tCHƯA RÕ`;
+  const parsed = parseDutyTsv(tsv, month, [person]);
+  assert.deepEqual(parsed.errors, []);
+  assert.deepEqual(parsed.rows[0].errors, []);
+  assert.deepEqual(parsed.rows[0].staffIds, [person.id]);
+  assert.deepEqual(parsed.rows[0].unresolvedAssignees, ['?']);
+
+  const reviewed = parsed.rows.map(row => ({ ...row, previous: null as DutyScheduleEntry | null, replace: false }));
+  const db = dbFor(users.customDutyManage);
+  assert.deepEqual(
+    await persistDutyMonthImport(db as never, APP_ID, users.customDutyManage.uid, [person], tsv, month, reviewed, tsv),
+    { created: 1, replaced: 0, kept: 0 },
+  );
+
+  const stored = (await getDoc(doc(db, `artifacts/${APP_ID}/duty_schedules/2026-09-16`))).data();
+  assert.deepEqual(stored?.staffIds, [person.id]);
+  assert.deepEqual(stored?.unresolvedAssignees, ['?']);
+  assert.equal(stored?.needsVerification, true);
+  assert.equal(stored?.sourceAssignees, 'Phương | ?');
+  assert.equal(stored?.note, 'CHƯA RÕ');
+
+  await assertFails(setDoc(doc(db, `artifacts/${APP_ID}/duty_schedules/2026-09-17`), {
+    date: '2026-09-17',
+    staffIds: [person.id],
+    unresolvedAssignees: '?',
+    needsVerification: true,
+    sourceAssignees: 'Phương | ?',
+    startTime: '18:00',
+    status: 'planned',
+    note: 'CHƯA RÕ',
+    source: 'import',
+    createdAt: serverTimestamp(),
+    createdByUid: users.customDutyManage.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.customDutyManage.uid,
+  }));
 });
 const rules = readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8');
 

@@ -9,7 +9,7 @@ import { AppNotification, NotificationType } from '../../../core/models/notifica
 import { formatNotificationFilterCount } from './notification-panel.utils';
 import { ModalA11yDirective } from '../../directives/modal-a11y.directive';
 
-type TabId = 'all' | 'unread' | 'actionable' | 'system';
+type TabId = 'all' | 'unread' | 'actionable' | 'duty' | 'system';
 
 interface DateGroup {
   label: string;
@@ -765,7 +765,8 @@ export class NotificationPanelComponent {
 
   // ── Tab definitions ──────────────────────────────────────────────────────
   readonly SYSTEM_TYPES = new Set<NotificationType>(['SYSTEM_INFO', 'SYSTEM_UPDATE', 'STOCK_LOW_ALERT', 'RETURN_OVERDUE']);
-  readonly ACTIONABLE_TYPES = new Set<NotificationType>(['COA_REQUEST', 'BORROW_REQUEST']);
+  readonly DUTY_TYPES = new Set<NotificationType>(['DUTY_SCHEDULE_PUBLISHED', 'DUTY_ASSIGNMENT_CHANGED', 'DUTY_ASSIGNMENT_CANCELLED', 'DUTY_VERIFICATION_REQUIRED']);
+  readonly ACTIONABLE_TYPES = new Set<NotificationType>(['COA_REQUEST', 'BORROW_REQUEST', 'DUTY_VERIFICATION_REQUIRED']);
 
   tabs = [
     {
@@ -784,6 +785,11 @@ export class NotificationPanelComponent {
       count: computed(() => this.notifications().filter(n => !n.isRead && this.ACTIONABLE_TYPES.has(n.type)).length)
     },
     {
+      id: 'duty' as TabId,
+      label: 'Lịch trực',
+      count: computed(() => this.notifications().filter(n => this.DUTY_TYPES.has(n.type)).length)
+    },
+    {
       id: 'system' as TabId,
       label: 'Hệ thống',
       count: computed(() => this.notifications().filter(n => this.SYSTEM_TYPES.has(n.type)).length)
@@ -793,6 +799,7 @@ export class NotificationPanelComponent {
   emptyIcon = computed(() => {
     if (this.activeTab() === 'unread') return 'fa-circle-check';
     if (this.activeTab() === 'actionable') return 'fa-clipboard-check';
+    if (this.activeTab() === 'duty') return 'fa-user-clock';
     if (this.activeTab() === 'system') return 'fa-shield-halved';
     return 'fa-bell-slash';
   });
@@ -800,6 +807,7 @@ export class NotificationPanelComponent {
   emptyTitle = computed(() => {
     if (this.activeTab() === 'unread') return 'Tất cả đã đọc! 🎉';
     if (this.activeTab() === 'actionable') return 'Không có yêu cầu chờ duyệt 👍';
+    if (this.activeTab() === 'duty') return 'Chưa có thông báo lịch trực';
     if (this.activeTab() === 'system') return 'Không có cảnh báo hệ thống';
     return 'Chưa có thông báo nào';
   });
@@ -807,6 +815,7 @@ export class NotificationPanelComponent {
   emptySubtitle = computed(() => {
     if (this.activeTab() === 'unread') return 'Bạn đã xử lý hết tất cả thông báo.';
     if (this.activeTab() === 'actionable') return 'Tất cả yêu cầu COA và mượn trả thiết bị đã được xử lý.';
+    if (this.activeTab() === 'duty') return 'Phân công mới và các thay đổi lịch trực sẽ xuất hiện ở đây.';
     if (this.activeTab() === 'system') return 'Không có cảnh báo tồn kho thấp hay cập nhật hệ thống nào.';
     return 'Các thông báo mới sẽ xuất hiện ở đây khi có hoạt động liên quan.';
   });
@@ -820,6 +829,8 @@ export class NotificationPanelComponent {
       items = items.filter(n => !n.isRead);
     } else if (tab === 'actionable') {
       items = items.filter(n => this.ACTIONABLE_TYPES.has(n.type));
+    } else if (tab === 'duty') {
+      items = items.filter(n => this.DUTY_TYPES.has(n.type));
     } else if (tab === 'system') {
       items = items.filter(n => this.SYSTEM_TYPES.has(n.type));
     }
@@ -1003,6 +1014,10 @@ export class NotificationPanelComponent {
       'RETURN_OVERDUE':   'bg-amber-500 dark:bg-amber-400',
       'SYSTEM_UPDATE':    'bg-orange-500 dark:bg-orange-400',
       'SYSTEM_INFO':      'bg-sky-500 dark:bg-sky-400',
+      'DUTY_SCHEDULE_PUBLISHED': 'bg-indigo-500 dark:bg-indigo-400',
+      'DUTY_ASSIGNMENT_CHANGED': 'bg-blue-500 dark:bg-blue-400',
+      'DUTY_ASSIGNMENT_CANCELLED': 'bg-rose-500 dark:bg-rose-400',
+      'DUTY_VERIFICATION_REQUIRED': 'bg-amber-500 dark:bg-amber-400',
     };
     return map[type] ?? 'bg-slate-400 dark:bg-slate-500';
   }
@@ -1017,6 +1032,10 @@ export class NotificationPanelComponent {
       'RETURN_OVERDUE':   'bg-amber-100/90 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 ring-1 ring-amber-500/20',
       'SYSTEM_UPDATE':    'bg-orange-100/90 text-orange-600 dark:bg-orange-950/60 dark:text-orange-300 ring-1 ring-orange-500/20',
       'SYSTEM_INFO':      'bg-sky-100/90 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300 ring-1 ring-sky-500/20',
+      'DUTY_SCHEDULE_PUBLISHED': 'bg-indigo-100/90 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300 ring-1 ring-indigo-500/20',
+      'DUTY_ASSIGNMENT_CHANGED': 'bg-blue-100/90 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 ring-1 ring-blue-500/20',
+      'DUTY_ASSIGNMENT_CANCELLED': 'bg-rose-100/90 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300 ring-1 ring-rose-500/20',
+      'DUTY_VERIFICATION_REQUIRED': 'bg-amber-100/90 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 ring-1 ring-amber-500/20',
     };
     return map[type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
   }
@@ -1031,6 +1050,10 @@ export class NotificationPanelComponent {
       'RETURN_OVERDUE':   'fa-clock-rotate-left',
       'SYSTEM_UPDATE':    'fa-bullhorn',
       'SYSTEM_INFO':      'fa-circle-info',
+      'DUTY_SCHEDULE_PUBLISHED': 'fa-calendar-check',
+      'DUTY_ASSIGNMENT_CHANGED': 'fa-calendar-day',
+      'DUTY_ASSIGNMENT_CANCELLED': 'fa-calendar-xmark',
+      'DUTY_VERIFICATION_REQUIRED': 'fa-triangle-exclamation',
     };
     return map[type] ?? 'fa-bell';
   }
@@ -1043,6 +1066,10 @@ export class NotificationPanelComponent {
       'REQUEST_REJECTED': 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/50',
       'STOCK_LOW_ALERT':  'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50',
       'RETURN_OVERDUE':   'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50',
+      'DUTY_SCHEDULE_PUBLISHED': 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/50',
+      'DUTY_ASSIGNMENT_CHANGED': 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50',
+      'DUTY_ASSIGNMENT_CANCELLED': 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/50',
+      'DUTY_VERIFICATION_REQUIRED': 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50',
     };
     return map[type] ?? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-800/50';
   }
@@ -1057,6 +1084,10 @@ export class NotificationPanelComponent {
       'RETURN_OVERDUE':   'Xem lịch hoàn trả',
       'SYSTEM_UPDATE':    'Xem cập nhật',
       'SYSTEM_INFO':      'Xem thông tin',
+      'DUTY_SCHEDULE_PUBLISHED': 'Xem lịch trực',
+      'DUTY_ASSIGNMENT_CHANGED': 'Xem lịch trực',
+      'DUTY_ASSIGNMENT_CANCELLED': 'Xem lịch trực',
+      'DUTY_VERIFICATION_REQUIRED': 'Xử lý lịch cần xác minh',
     };
     return map[type] ?? 'Xem chi tiết';
   }

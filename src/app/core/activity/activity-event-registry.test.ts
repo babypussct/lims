@@ -19,7 +19,8 @@ const writerFiles = [
   'src/app/features/standards/services/standard-import.service.ts',
   'src/app/features/standards/services/standard-request.service.ts',
   'src/app/features/standards/services/standard-tag-catalog.service.ts',
-  'src/app/features/standards/services/standard-usage.service.ts'
+  'src/app/features/standards/services/standard-usage.service.ts',
+  'src/app/features/duty-stats/duty-schedule.service.ts'
 ] as const;
 
 const dynamicWriterActions = [
@@ -112,6 +113,7 @@ test('default action URLs are deterministic and encode identifiers', () => {
   assert.equal(resolveDefaultActivityActionUrl(event('PUBLISH_RESULT_REPORT', { requestId: 'REQ/01' })), '/results/REQ%2F01');
   assert.equal(resolveDefaultActivityActionUrl(event('CREATE_STANDARD', { targetId: 'STD 01' })), '/standards/STD%2001');
   assert.equal(resolveDefaultActivityActionUrl(event('CREATE_ITEM', { targetId: 'CHEM-1' })), '/inventory');
+  assert.equal(resolveDefaultActivityActionUrl(event('UPDATE_DUTY_SCHEDULE')), '/duty-stats');
   assert.equal(resolveDefaultActivityActionUrl(event('MAINTENANCE_ON')), '/settings/system');
 });
 

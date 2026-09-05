@@ -244,7 +244,8 @@ service cloud.firestore {
 
     function validDutyScheduleData(scheduleDate, data) {
       return data.keys().hasOnly([
-          'date', 'staffIds', 'startTime', 'status', 'note', 'source',
+          'date', 'staffIds', 'unresolvedAssignees', 'needsVerification', 'sourceAssignees',
+          'startTime', 'status', 'note', 'source',
           'createdAt', 'createdByUid', 'updatedAt', 'updatedByUid'
         ]) &&
         data.keys().hasAll([
@@ -254,7 +255,11 @@ service cloud.firestore {
         data.date is string && data.date == scheduleDate &&
         data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
         data.staffIds is list && data.staffIds.size() <= 50 &&
-        (data.staffIds.size() > 0 || data.source == 'batch') &&
+        data.get('unresolvedAssignees', []) is list && data.get('unresolvedAssignees', []).size() <= 50 &&
+        data.staffIds.size() + data.get('unresolvedAssignees', []).size() <= 50 &&
+        (data.staffIds.size() > 0 || data.get('unresolvedAssignees', []).size() > 0 || data.source == 'batch') &&
+        data.get('needsVerification', false) is bool &&
+        data.get('sourceAssignees', '') is string && data.get('sourceAssignees', '').size() <= 2000 &&
         data.startTime is string && data.startTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$') &&
         data.status is string && ['planned', 'cancelled'].hasAny([data.status]) &&
         data.note is string && data.note.size() <= 1000 &&
@@ -300,7 +305,7 @@ service cloud.firestore {
         'user_manage', 'system_manage', 'master_data_manage', 'policy_manage',
         'backup_create', 'backup_verify', 'backup_restore', 'inventory_edit',
         'standard_request', 'standard_edit', 'standard_approve', 'standard_log_delete',
-        'recipe_edit', 'sop_edit', 'sop_approve', 'batch_run'
+        'recipe_edit', 'sop_edit', 'sop_approve', 'batch_run', 'duty_manage'
       ];
       let roleConfigPath = /databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId);
       let hasRoleConfig = role == 'staff' && exists(roleConfigPath);
@@ -371,6 +376,10 @@ service cloud.firestore {
       ].hasAny([action]);
     }
 
+    function isDutyOperatorActivityAction(action) {
+      return ['UPDATE_DUTY_SCHEDULE', 'IMPORT_DUTY_SCHEDULE'].hasAny([action]);
+    }
+
     function isSystemAdminActivityAction(action) {
       return [
         'MAINTENANCE_ON', 'MAINTENANCE_OFF', 'POST_SYSTEM_UPDATE',
@@ -386,6 +395,7 @@ service cloud.firestore {
         isInventoryOperatorActivityAction(action) ||
         isStandardViewActivityAction(action) ||
         isStandardOperatorActivityAction(action) ||
+        isDutyOperatorActivityAction(action) ||
         isSystemAdminActivityAction(action);
     }
 
@@ -412,6 +422,9 @@ service cloud.firestore {
       ) || (
         isStandardOperatorActivityAction(action) &&
         module == 'STANDARD' && audience == 'STANDARD_OPERATOR' && auditClass == 'BUSINESS'
+      ) || (
+        isDutyOperatorActivityAction(action) &&
+        module == 'DUTY' && audience == 'DUTY_OPERATOR' && auditClass == 'BUSINESS'
       ) || (
         isSystemAdminActivityAction(action) &&
         module == 'SYSTEM' && audience == 'SYSTEM_ADMIN' && auditClass == 'SYSTEM'
@@ -441,7 +454,8 @@ service cloud.firestore {
         'RETURN_STANDARD', 'BACKFILL_USAGE_LOG', 'SOFT_DELETE_STANDARD_TAG',
         'RESTORE_STANDARD_TAG', 'IMPORT_ACCREDITATION_TAG_SEED',
         'ARCHIVE_ACCREDITATION_TAG_SEED', 'MAINTENANCE_OFF', 'POST_SYSTEM_UPDATE',
-        'SHOW_LOCKED_ON', 'SHOW_LOCKED_OFF', 'BACKUP_CREATE', 'BACKUP_VERIFY'
+        'SHOW_LOCKED_ON', 'SHOW_LOCKED_OFF', 'BACKUP_CREATE', 'BACKUP_VERIFY',
+        'UPDATE_DUTY_SCHEDULE', 'IMPORT_DUTY_SCHEDULE'
       ].hasAny([action]);
     }
 
@@ -563,6 +577,7 @@ service cloud.firestore {
         (audience == 'STANDARD_OPERATOR' && (
           hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_approve')
         )) ||
+        (audience == 'DUTY_OPERATOR' && hasPermission(appId, 'duty_manage')) ||
         (audience == 'SYSTEM_ADMIN' && (
           hasPermission(appId, 'user_manage') || hasPermission(appId, 'system_manage')
         ))

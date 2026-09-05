@@ -2,7 +2,32 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.05-b03
+## Phiên bản hiện tại: v26.09.05-b04
+
+### v26.09.05-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nhập lịch trực tháng theo luồng dán TSV từ Gemini, bắt buộc một lượt nhận diện độc lập lần hai trước khi cho phép ghi vào LIMS.
+- Dashboard hiển thị lịch tháng, thống kê lượt trực và làm nổi bật đúng tên nhân sự đang đăng nhập cùng ca trực sắp tới.
+
+#### ✨ Tính Năng Mới
+
+- Có nút sao chép prompt Gemini cho lượt nhận diện đầu và prompt xác minh riêng; lượt hai yêu cầu mở chat Gemini mới, tải lại đúng ảnh nguồn và đọc lại độc lập.
+- Các vị trí chưa đọc chắc chắn như ?, Đạt (?) hoặc CHƯA RÕ vẫn có thể nhập với trạng thái Cần xác minh, giữ nguyên cách ghi nguồn và sửa bổ sung về sau.
+- Lịch trực phát thông báo qua Bell/Push đến tài khoản đã liên kết khi được phân công, thay đổi hoặc hủy ca; quản lý lịch nhận cảnh báo riêng khi còn vị trí cần xác minh.
+- Notification Center có tab Lịch trực và Activity Feed ghi nhận thao tác cập nhật hoặc nhập lịch tháng.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Luồng nhập ưu tiên dán TSV trực tiếp, giảm thao tác tải file TSV xuống rồi tải ngược lên hệ thống.
+- Bộ kiểm tra TSV đối chiếu cấu trúc, ngày, giờ, nhân sự và kết quả giữa hai lượt Gemini trước khi mở nút nhập.
+- Tên thật của nhân sự luôn được giữ nguyên trên lịch; trạng thái cá nhân chỉ dùng để làm nổi bật và hiển thị ca gần nhất, không thay tên bằng 'Bạn'.
+- Khi nhập cả tháng, thông báo được gom theo từng người để tránh gửi một thông báo cho từng ngày trực.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.09.05-b03
 

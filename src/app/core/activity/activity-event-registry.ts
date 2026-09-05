@@ -48,6 +48,8 @@ const inventoryUrl = (): string => '/inventory';
 const standardUrl = (event: ActivityEvent): string =>
   event.targetId ? `/standards/${encodeURIComponent(event.targetId)}` : '/standards';
 
+const dutyUrl = (): string => '/duty-stats';
+
 const configUrl = (): string => '/settings/system';
 
 const systemUpdateUrl = (event: ActivityEvent): string =>
@@ -368,6 +370,15 @@ export const ACTIVITY_ACTION_REGISTRY = {
   ARCHIVE_ACCREDITATION_TAG_SEED: define('ARCHIVE_ACCREDITATION_TAG_SEED', {
     module: 'STANDARD', audience: 'STANDARD_OPERATOR', importance: 'IMPORTANT', activityVisible: false,
     label: 'đã lưu trữ seed nhãn công nhận', iconKey: 'box-archive', defaultActionUrl: standardUrl, notification: none()
+  }),
+
+  UPDATE_DUTY_SCHEDULE: define('UPDATE_DUTY_SCHEDULE', {
+    module: 'DUTY', audience: 'DUTY_OPERATOR', importance: 'IMPORTANT', activityVisible: true,
+    label: 'đã cập nhật lịch trực', iconKey: 'calendar-day', defaultActionUrl: dutyUrl, notification: none()
+  }),
+  IMPORT_DUTY_SCHEDULE: define('IMPORT_DUTY_SCHEDULE', {
+    module: 'DUTY', audience: 'DUTY_OPERATOR', importance: 'IMPORTANT', activityVisible: true,
+    label: 'đã nhập lịch trực cả tháng', iconKey: 'calendar-check', defaultActionUrl: dutyUrl, notification: none()
   }),
 
   MAINTENANCE_ON: define('MAINTENANCE_ON', {

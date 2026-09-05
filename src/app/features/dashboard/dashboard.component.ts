@@ -233,6 +233,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           RESULT: ['bg-cyan-100 dark:bg-cyan-900/30', 'text-cyan-600 dark:text-cyan-400'],
           INVENTORY: ['bg-blue-100 dark:bg-blue-900/30', 'text-blue-600 dark:text-blue-400'],
           STANDARD: ['bg-orange-100 dark:bg-orange-900/30', 'text-orange-600 dark:text-orange-400'],
+          DUTY: ['bg-rose-100 dark:bg-rose-900/30', 'text-rose-600 dark:text-rose-400'],
           SYSTEM: ['bg-violet-100 dark:bg-violet-900/30', 'text-violet-600 dark:text-violet-400']
       } as const;
       const [bg, text] = palette[definition.module];

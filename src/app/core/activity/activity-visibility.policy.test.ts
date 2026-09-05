@@ -12,6 +12,7 @@ test('manager receives every activity audience including SYSTEM_ADMIN', () => {
   assert.ok(audiences.includes('RESULT_VIEW'));
   assert.ok(audiences.includes('INVENTORY_OPERATOR'));
   assert.ok(audiences.includes('STANDARD_OPERATOR'));
+  assert.ok(audiences.includes('DUTY_OPERATOR'));
   assert.ok(audiences.includes('SYSTEM_ADMIN'));
 });
 
@@ -27,6 +28,9 @@ test('staff audiences are permission-based and operators retain high-level visib
   const standardOperator = resolveAllowedActivityAudiences({ role: 'staff', permissions: ['standard_approve'] });
   assert.ok(standardOperator.includes('STANDARD_VIEW'));
   assert.ok(standardOperator.includes('STANDARD_OPERATOR'));
+
+  const dutyOperator = resolveAllowedActivityAudiences({ role: 'staff', permissions: ['duty_manage'] });
+  assert.ok(dutyOperator.includes('DUTY_OPERATOR'));
 });
 
 test('report_view does not open global Activity Feed visibility', () => {

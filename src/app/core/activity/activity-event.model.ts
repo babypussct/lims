@@ -2,6 +2,7 @@ export type ActivityModule =
   | 'RESULT'
   | 'INVENTORY'
   | 'STANDARD'
+  | 'DUTY'
   | 'SYSTEM';
 
 export type ActivityAudience =
@@ -11,6 +12,7 @@ export type ActivityAudience =
   | 'INVENTORY_OPERATOR'
   | 'STANDARD_VIEW'
   | 'STANDARD_OPERATOR'
+  | 'DUTY_OPERATOR'
   | 'SYSTEM_ADMIN';
 
 export type ActivityImportance = 'NORMAL' | 'IMPORTANT' | 'WARNING';

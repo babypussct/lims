@@ -31,6 +31,7 @@ test('Firestore Rules action/audience classification stays in lockstep with the 
     ['isInventoryOperatorActivityAction', 'INVENTORY_OPERATOR', 'INVENTORY', 'BUSINESS'],
     ['isStandardViewActivityAction', 'STANDARD_VIEW', 'STANDARD', 'BUSINESS'],
     ['isStandardOperatorActivityAction', 'STANDARD_OPERATOR', 'STANDARD', 'BUSINESS'],
+    ['isDutyOperatorActivityAction', 'DUTY_OPERATOR', 'DUTY', 'BUSINESS'],
     ['isSystemAdminActivityAction', 'SYSTEM_ADMIN', 'SYSTEM', 'SYSTEM']
   ] as const;
 

@@ -17,6 +17,9 @@ export interface DutyScheduleEntry {
   id: string;
   date: string;
   staffIds: string[];
+  unresolvedAssignees?: string[];
+  needsVerification?: boolean;
+  sourceAssignees?: string;
   startTime: string;
   status: DutyScheduleStatus;
   note?: string;
@@ -40,6 +43,9 @@ export interface DutyScheduleDraft {
   originalDate?: string;
   date: string;
   staffIds: string[];
+  unresolvedAssignees?: string[];
+  needsVerification?: boolean;
+  sourceAssignees?: string;
   startTime?: string;
   status?: DutyScheduleStatus;
   note?: string;

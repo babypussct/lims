@@ -150,7 +150,7 @@ test('notification workflow fan-out, recipient policy, suppression and idempoten
   ]);
 
   await db.doc(`artifacts/${APP_ID}/roles_config/role_lab_technician`).set({
-    permissions: ['inventory_view', 'inventory_edit', 'standard_view', 'standard_request', 'batch_run']
+    permissions: ['inventory_view', 'inventory_edit', 'standard_view', 'standard_request', 'batch_run', 'duty_manage']
   });
   await db.doc(`artifacts/${APP_ID}/roles_config/role_qc_lead`).set({
     permissions: ['inventory_view', 'inventory_edit', 'standard_view', 'standard_edit', 'standard_approve', 'batch_run']
@@ -241,6 +241,53 @@ test('notification workflow fan-out, recipient policy, suppression and idempoten
     recipientsFor(await notificationDocs(), systemUpdateId),
     [lab.uid, qc.uid, requester.uid].sort()
   );
+
+  const dutyPublishedId = 'fixture-duty-published';
+  const dutyPublished = await invoke(lab, {
+    action: 'publish', appId: APP_ID, sendPush: false,
+    notification: {
+      recipientUid: requester.uid,
+      eventId: dutyPublishedId,
+      type: 'DUTY_SCHEDULE_PUBLISHED',
+      module: 'DUTY',
+      title: 'Lịch trực 09/2026 của Fixture requester',
+      message: '07/09/2026 18:00 — được phân công — Fixture requester · Fixture lab',
+      actionUrl: '/duty-stats'
+    }
+  });
+  assert.equal(dutyPublished.statusCode, 200);
+  assert.deepEqual(recipientsFor(await notificationDocs(), dutyPublishedId), [requester.uid]);
+
+  const dutyVerifyId = 'fixture-duty-verification';
+  const dutyVerification = await invoke(lab, {
+    action: 'publish', appId: APP_ID, sendPush: false,
+    notification: {
+      recipientUid: 'role:duty-manager',
+      eventId: dutyVerifyId,
+      type: 'DUTY_VERIFICATION_REQUIRED',
+      module: 'DUTY',
+      title: '1 ca trực cần xác minh',
+      message: '16/09/2026. 1 vị trí chưa xác định.',
+      actionUrl: '/duty-stats'
+    }
+  });
+  assert.equal(dutyVerification.statusCode, 200);
+  assert.deepEqual(recipientsFor(await notificationDocs(), dutyVerifyId), [lab.uid, manager.uid].sort());
+
+  const unauthorizedDuty = await invoke(requester, {
+    action: 'publish', appId: APP_ID, sendPush: false,
+    notification: {
+      recipientUid: lab.uid,
+      eventId: 'fixture-duty-forged',
+      type: 'DUTY_ASSIGNMENT_CHANGED',
+      module: 'DUTY',
+      title: 'Lịch trực đã thay đổi',
+      message: 'Nội dung không được phép',
+      actionUrl: '/duty-stats'
+    }
+  });
+  assert.equal(unauthorizedDuty.statusCode, 403);
+  assert.deepEqual(recipientsFor(await notificationDocs(), 'fixture-duty-forged'), []);
 
   const docs = await notificationDocs();
   const publishDoc = docs.find(doc => doc['eventId'] === resultPublishId && doc['recipientUid'] === requester.uid);
