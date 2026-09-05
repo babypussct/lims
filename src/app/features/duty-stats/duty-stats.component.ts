@@ -121,7 +121,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     return this.duty.staff().filter(item => {
       if (!this.includeInactiveStaff() && !item.active) return false;
       if (!search) return true;
-      return `${item.employeeCode || ''} ${item.displayName}`.toLocaleLowerCase('vi-VN').includes(search);
+      return item.displayName.toLocaleLowerCase('vi-VN').includes(search);
     });
   });
   readonly visibleSchedules = computed(() => {
@@ -434,7 +434,6 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     this.staffDraft = {
       id: person.id,
       displayName: person.displayName,
-      employeeCode: person.employeeCode || '',
       linkedUserUid: person.linkedUserUid || null,
       active: person.active,
       note: person.note || '',
@@ -698,7 +697,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     );
     if (!search) return options;
     return options.filter(person => {
-      const haystack = this.normalizeSearchTerm(`${person.employeeCode || ''} ${person.displayName}`);
+      const haystack = this.normalizeSearchTerm(person.displayName);
       return haystack.includes(search);
     });
   }
@@ -1000,7 +999,6 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   private emptyStaffDraft(): DutyStaffDraft {
     return {
       displayName: '',
-      employeeCode: '',
       linkedUserUid: null,
       active: true,
       note: '',

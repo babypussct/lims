@@ -164,7 +164,6 @@ export function aggregateDutyPeopleById(
     return {
       staffId,
       displayName: person?.displayName || `[${staffId}]`,
-      employeeCode: person?.employeeCode,
       linkedUserUid: person?.linkedUserUid,
       total: value.total,
       mondayCount: value.mondayCount,
@@ -188,7 +187,6 @@ export function aggregateDutyRosterById(
     byStaffId.set(person.id, {
       staffId: person.id,
       displayName: person.displayName,
-      employeeCode: person.employeeCode,
       linkedUserUid: person.linkedUserUid,
       total: 0,
       mondayCount: 0,
@@ -262,10 +260,6 @@ export function findLinkedDutyStaff(
 ): DutyStaff | undefined {
   if (!uid) return undefined;
   return staff.find(item => item.linkedUserUid === uid);
-}
-
-export function normalizeDutyStaffCode(value: string | null | undefined): string {
-  return (value || '').trim().toLocaleUpperCase('vi-VN');
 }
 
 export function normalizeDutyStaffName(value: string | null | undefined): string {

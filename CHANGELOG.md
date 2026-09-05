@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.05-b06
+## Phiên bản hiện tại: v26.09.06-b01
+
+### v26.09.06-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Giao diện thao tác Lịch trực được thiết kế lại theo Soft-UI với phân cấp toolbar rõ ràng, segmented control và các nút hành động có icon dễ nhận biết trên desktop lẫn mobile.
+- Loại bỏ hoàn toàn luồng mã nhân viên khỏi Lịch trực vì phòng không sử dụng: không còn nhập, hiển thị, tìm kiếm, kiểm tra trùng hay cảnh báo thiếu mã.
+
+#### ✨ Tính Năng Mới
+
+- Mobile Action Sheet chuyển sang Action Cards cho In lịch, Xuất CSV, Nhập TSV và Tạo khung tháng, kèm icon, mô tả ngắn và phản hồi chạm.
+- Các thao tác Sửa, Hủy ca, Ngừng dùng và Kích hoạt được chuẩn hóa bằng icon, màu trạng thái và vùng bấm rõ ràng; thẻ mobile dùng touch target cao 40px.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Toolbar desktop được nhóm theo thứ tự Công cụ tháng, Xuất/In và Primary CTA; điều hướng kỳ dùng chevron và trạng thái active mượt hơn.
+- Ba tab Lịch trực, Nhân sự và Thống kê dùng segmented control Soft-UI trong khi vẫn giữ sticky navigation trên mobile.
+- Modal Xếp ca tăng độ rõ của nút sắp thứ tự và bổ sung nút viền đứt nét cho vị trí chưa xác định.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Danh sách và thống kê nhân sự không còn hiển thị trạng thái Chưa khai báo mã nhân viên hoặc phụ thuộc vào dữ liệu employeeCode cũ.
 
 ### v26.09.05-b06
 

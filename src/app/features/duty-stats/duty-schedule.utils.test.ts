@@ -115,7 +115,7 @@ test('rolling recommendations exclude the edited shift and apply four-tier workl
 test('duty roster statistics keep active staff with zero assignments visible', () => {
   const roster = aggregateDutyRosterById(schedules, [
     ...staff,
-    { id: 'staff-zero', displayName: 'Chưa trực', employeeCode: 'NV00', active: true },
+    { id: 'staff-zero', displayName: 'Chưa trực', active: true },
     { id: 'staff-inactive-zero', displayName: 'Đã nghỉ', active: false },
   ]);
 

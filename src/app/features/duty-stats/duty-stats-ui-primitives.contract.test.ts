@@ -39,6 +39,19 @@ test('duty schedule is available to signed-in users and uses dedicated managemen
   assert.match(rules, /allow delete: if false;/);
 });
 
+test('duty staffing does not expose or depend on employee codes', () => {
+  const model = read('src/app/features/duty-stats/duty-schedule.model.ts');
+  const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');
+  const service = read('src/app/features/duty-stats/duty-schedule.service.ts');
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const dashboard = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  for (const source of [model, utils, service, component, template, dashboard]) {
+    assert.doesNotMatch(source, /employeeCode|normalizeDutyStaffCode|Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
+  }
+});
+
 test('duty schedule includes fast assignment and period navigation controls', () => {
   const component = read('src/app/features/duty-stats/duty-stats.component.ts');
   const template = read('src/app/features/duty-stats/duty-stats.component.html');
@@ -100,7 +113,7 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /Người tham gia/);
   assert.match(template, /Bình quân\/người/);
   assert.match(template, /@for \(stat of personStats\(\); track stat\.staffId/);
-  assert.match(template, /Chưa khai báo mã nhân viên/);
+  assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
   assert.match(template, /so bình quân/);
 });
 
@@ -117,7 +130,7 @@ test('duty statistics support selected period, full year and all-time balance co
   assert.match(template, /Cả năm \{\{ selectedYear\(\) \}\}/);
   assert.match(template, /Toàn bộ/);
   assert.match(template, /So với bình quân/);
-  assert.match(template, /Chưa khai báo mã nhân viên/);
+  assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
 });
 
 test('Gemini import prompt exposes a prominent copy action beside the prompt', () => {
@@ -296,4 +309,38 @@ test('phase 1 fairness adds weekend and lead statistics plus rolling recommendat
   assert.match(template, /★ Chủ trì/);
   assert.match(dashboardTemplate, /Cuối tuần:/);
   assert.match(dashboardTemplate, /★ Chủ trì:/);
+});
+
+test('duty action buttons follow soft-ui hierarchy, row icons, touch targets and action cards', () => {
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+
+  // Navigation chevrons
+  assert.match(template, /fa-chevron-left/);
+  assert.match(template, /fa-chevron-right/);
+
+  // Soft-UI Segmented Control preserving sticky top-0 z-20
+  assert.match(template, /sticky top-0 z-20/);
+  assert.match(template, /border border-slate-200\/80 bg-white text-blue-600/);
+
+  // Desktop Row action icons
+  assert.match(template, /fa-pen-to-square[\s\S]*?Sửa/);
+  assert.match(template, /fa-ban[\s\S]*?Hủy ca/);
+  assert.match(template, /fa-user-slash/);
+  assert.match(template, /fa-user-check/);
+  assert.match(template, /Ngừng dùng/);
+  assert.match(template, /Kích hoạt/);
+
+  // Mobile touch target h-10 on cards and drawer
+  assert.match(template, /inline-flex h-10 items-center justify-center gap-1\.5 rounded-xl border border-blue-200/);
+  assert.match(template, /inline-flex h-10 items-center justify-center gap-1\.5 rounded-xl border border-rose-200/);
+
+  // Mobile Action Sheet Cards with icons & subtitles
+  assert.match(template, /Xem bản in hoặc xuất PDF/);
+  assert.match(template, /Tải tệp bảng tính ca trực/);
+  assert.match(template, /Dán kết quả Gemini từ ảnh/);
+  assert.match(template, /Khởi tạo ngày trực chưa xếp/);
+
+  // Schedule modal staff reorder h-8 w-8 and unresolved position button
+  assert.match(template, /h-8 w-8 items-center justify-center rounded-lg border border-slate-200/);
+  assert.match(template, /border-dashed border-amber-300 bg-amber-50\/80/);
 });

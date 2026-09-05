@@ -28,7 +28,6 @@ import type {
 } from './duty-schedule.model';
 import {
   isDutyDateKey,
-  normalizeDutyStaffCode,
   normalizeDutyStaffName,
 } from './duty-schedule.utils';
 import { type DutyImportPlanRow } from './duty-tsv-import';
@@ -221,15 +220,8 @@ export class DutyScheduleService {
     const displayName = normalizeDutyStaffName(draft.displayName);
     if (!displayName) throw new Error('Tên nhân viên không được để trống.');
 
-    const employeeCode = normalizeDutyStaffCode(draft.employeeCode);
     const linkedUserUid = (draft.linkedUserUid || '').trim() || null;
     const note = (draft.note || '').trim().slice(0, 500);
-    const duplicateCode = employeeCode && this.staff().find(item =>
-      item.id !== draft.id && normalizeDutyStaffCode(item.employeeCode) === employeeCode,
-    );
-    if (duplicateCode) {
-      throw new Error(`Mã nhân viên ${employeeCode} đã được dùng cho ${duplicateCode.displayName}.`);
-    }
 
     const duplicateLink = linkedUserUid && this.staff().find(item =>
       item.id !== draft.id && item.linkedUserUid === linkedUserUid,
@@ -245,7 +237,6 @@ export class DutyScheduleService {
       : doc(collection(this.fb.db, path));
     const payload: Record<string, unknown> = {
       displayName,
-      employeeCode,
       linkedUserUid,
       active: draft.active !== false,
       note,

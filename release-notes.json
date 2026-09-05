@@ -1,20 +1,19 @@
 {
-  "title": "Lịch trực: Mobile-First và cân bằng phân công theo tải 90 ngày",
+  "title": "Lịch trực: tinh gọn nhân sự và nâng cấp thao tác Soft-UI",
   "highlights": [
-    "Trải nghiệm Lịch trực trên điện thoại được thiết kế lại theo hướng Mobile-First với agenda, lịch tháng thu gọn, bottom sheet chi tiết ngày và Dashboard tập trung vào ca sắp tới.",
-    "Khi xếp ca, LIMS phân tích tải trực 90 ngày gần nhất để gợi ý nhân sự theo bốn mức Nên xếp, Cân bằng, Cân nhắc và Đang nhiều."
+    "Giao diện thao tác Lịch trực được thiết kế lại theo Soft-UI với phân cấp toolbar rõ ràng, segmented control và các nút hành động có icon dễ nhận biết trên desktop lẫn mobile.",
+    "Loại bỏ hoàn toàn luồng mã nhân viên khỏi Lịch trực vì phòng không sử dụng: không còn nhập, hiển thị, tìm kiếm, kiểm tra trùng hay cảnh báo thiếu mã."
   ],
   "features": [
-    "Bổ sung hai chỉ số công bằng nghiệp vụ: số ca cuối tuần và số ca đứng vai trò chủ trì, đồng thời thay cột Thứ 2 trên bảng thống kê bằng hai chỉ số này.",
-    "Danh sách nhân sự trong cửa sổ xếp ca hiển thị tổng lượt 90 ngày, phần trăm lệch so với bình quân, số ca cuối tuần, số lần chủ trì và cảnh báo ca liền kề.",
-    "Thuật toán gợi ý dùng cửa sổ rolling 90 ngày thực sự, tự loại trừ ca đang sửa khỏi baseline và vẫn giữ quyền quyết định cuối cùng cho người quản lý."
+    "Mobile Action Sheet chuyển sang Action Cards cho In lịch, Xuất CSV, Nhập TSV và Tạo khung tháng, kèm icon, mô tả ngắn và phản hồi chạm.",
+    "Các thao tác Sửa, Hủy ca, Ngừng dùng và Kích hoạt được chuẩn hóa bằng icon, màu trạng thái và vùng bấm rõ ràng; thẻ mobile dùng touch target cao 40px."
   ],
   "improvements": [
-    "Mobile mặc định dùng agenda thay cho lưới lịch rộng; lịch tháng compact có bottom sheet chi tiết, menu công cụ rút gọn, sticky tabs và thống kê dạng thẻ dễ thao tác bằng một tay.",
-    "Dashboard mobile được rút gọn theo thứ tự Ca của bạn sắp tới, Trực hôm nay và 7 ngày tới thay cho lưới tháng desktop thu nhỏ.",
-    "Bảng thống kê desktop và mobile đồng bộ chỉ số Cuối tuần và Chủ trì; danh sách ứng viên ưu tiên người có ít lượt, ít ca cuối tuần và ít lần chủ trì hơn trong cùng nhóm khuyến nghị."
+    "Toolbar desktop được nhóm theo thứ tự Công cụ tháng, Xuất/In và Primary CTA; điều hướng kỳ dùng chevron và trạng thái active mượt hơn.",
+    "Ba tab Lịch trực, Nhân sự và Thống kê dùng segmented control Soft-UI trong khi vẫn giữ sticky navigation trên mobile.",
+    "Modal Xếp ca tăng độ rõ của nút sắp thứ tự và bổ sung nút viền đứt nét cho vị trí chưa xác định."
   ],
   "fixes": [
-    "Ngữ cảnh ca liền kề hôm trước và hôm sau được tách khỏi baseline 90 ngày để cảnh báo đúng mà không làm sai số tải dùng cho gợi ý phân công."
+    "Danh sách và thống kê nhân sự không còn hiển thị trạng thái Chưa khai báo mã nhân viên hoặc phụ thuộc vào dữ liệu employeeCode cũ."
   ]
 }

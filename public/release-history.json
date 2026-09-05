@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.09.06-b01",
+    "date": "6/9/2026",
+    "title": "Lịch trực: tinh gọn nhân sự và nâng cấp thao tác Soft-UI",
+    "highlights": [
+      "Giao diện thao tác Lịch trực được thiết kế lại theo Soft-UI với phân cấp toolbar rõ ràng, segmented control và các nút hành động có icon dễ nhận biết trên desktop lẫn mobile.",
+      "Loại bỏ hoàn toàn luồng mã nhân viên khỏi Lịch trực vì phòng không sử dụng: không còn nhập, hiển thị, tìm kiếm, kiểm tra trùng hay cảnh báo thiếu mã."
+    ],
+    "features": [
+      "Mobile Action Sheet chuyển sang Action Cards cho In lịch, Xuất CSV, Nhập TSV và Tạo khung tháng, kèm icon, mô tả ngắn và phản hồi chạm.",
+      "Các thao tác Sửa, Hủy ca, Ngừng dùng và Kích hoạt được chuẩn hóa bằng icon, màu trạng thái và vùng bấm rõ ràng; thẻ mobile dùng touch target cao 40px."
+    ],
+    "improvements": [
+      "Toolbar desktop được nhóm theo thứ tự Công cụ tháng, Xuất/In và Primary CTA; điều hướng kỳ dùng chevron và trạng thái active mượt hơn.",
+      "Ba tab Lịch trực, Nhân sự và Thống kê dùng segmented control Soft-UI trong khi vẫn giữ sticky navigation trên mobile.",
+      "Modal Xếp ca tăng độ rõ của nút sắp thứ tự và bổ sung nút viền đứt nét cho vị trí chưa xác định."
+    ],
+    "fixes": [
+      "Danh sách và thống kê nhân sự không còn hiển thị trạng thái Chưa khai báo mã nhân viên hoặc phụ thuộc vào dữ liệu employeeCode cũ."
+    ],
+    "releaseOrder": 26090600001
+  },
+  {
     "version": "v26.09.05-b06",
     "date": "5/9/2026",
     "title": "Lịch trực: Mobile-First và cân bằng phân công theo tải 90 ngày",

@@ -3,7 +3,6 @@ export type DutyScheduleStatus = 'planned' | 'cancelled';
 export interface DutyStaff {
   id: string;
   displayName: string;
-  employeeCode?: string;
   linkedUserUid?: string | null;
   active: boolean;
   note?: string;
@@ -33,7 +32,6 @@ export interface DutyScheduleEntry {
 export interface DutyStaffDraft {
   id?: string;
   displayName: string;
-  employeeCode?: string;
   linkedUserUid?: string | null;
   active?: boolean;
   note?: string;
@@ -55,7 +53,6 @@ export interface DutyScheduleDraft {
 export interface DutyPersonStat {
   staffId: string;
   displayName: string;
-  employeeCode?: string;
   linkedUserUid?: string | null;
   total: number;
   mondayCount: number;
