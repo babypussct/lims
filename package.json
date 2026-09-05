@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.09.05-b05",
+  "version": "26.09.05-b06",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"

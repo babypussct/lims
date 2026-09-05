@@ -215,8 +215,8 @@ test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning 
   assert.match(component, /@page \{ size: A4 landscape/);
   assert.match(template, /In lịch trực/);
 
-  assert.match(component, /readonly scheduleLayout = signal<DutyScheduleLayout>\('calendar'\)/);
-  assert.match(component, /this\.scheduleLayout\.set\(this\.selectedMonth\(\) === null \? 'list' : 'calendar'\)/);
+  assert.match(component, /readonly scheduleLayout = signal<DutyScheduleLayout>\([\s\S]*window\.innerWidth < 768 \? 'list' : 'calendar'/);
+  assert.match(component, /this\.scheduleLayout\.set\(this\.selectedMonth\(\) === null \|\| this\.isMobileViewport\(\) \? 'list' : 'calendar'\)/);
   assert.match(component, /dutyMonthCalendarDateKeys/);
   assert.match(template, /Lưới lịch/);
   assert.match(template, /grid-cols-7/);
@@ -236,4 +236,64 @@ test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning 
   assert.match(template, /Tất cả ngày trống/);
   assert.match(rules, /data\.staffIds\.size\(\) > 0 \|\| data\.get\('unresolvedAssignees', \[\]\)\.size\(\) > 0 \|\| data\.source == 'batch'/);
   assert.match(rules, /\['manual', 'import', 'batch'\]/);
+});
+
+test('mobile-first duty roster adds compact calendar, bottom sheets, staff distribution cards and simplified dashboard', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const dashboardComponent = read('src/app/features/duty-stats/duty-dashboard.component.ts');
+  const dashboardTemplate = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  assert.match(component, /readonly mobileMenuOpen = signal\(false\)/);
+  assert.match(component, /readonly selectedDayCell = signal<DutyCalendarCell \| null>\(null\)/);
+  assert.match(component, /readonly mobilePeriodMode = signal<DutyMobilePeriodMode>\('month'\)/);
+  assert.match(component, /distributionPercent\(total: number\): number/);
+  assert.match(component, /openMobileDay\(cell: DutyCalendarCell\)/);
+  assert.match(template, /aria-label="Lịch tháng dạng thu gọn"/);
+  assert.match(template, /•/);
+  assert.match(template, /Chi tiết ngày trực/);
+  assert.match(template, /Công cụ lịch trực trên mobile/);
+  assert.match(template, /Phạm vi thống kê mobile/);
+  assert.match(template, /Thống kê nhân viên dạng thẻ/);
+  assert.match(template, />Ít<\/span><span>Nhiều</);
+  assert.match(template, /sticky top-0 z-20/);
+  assert.match(template, /hidden h-full min-h-0 overflow-auto p-3 custom-scrollbar md:block/);
+  assert.match(template, /hidden h-full min-h-0 overflow-auto custom-scrollbar md:block/);
+
+  assert.match(dashboardComponent, /readonly nextSevenDaysSchedules = computed/);
+  assert.match(dashboardComponent, /shiftDutyDateKey\(this\.todayKey, 6\)/);
+  assert.match(dashboardTemplate, /Ca của bạn sắp tới/);
+  assert.match(dashboardTemplate, /Trực hôm nay/);
+  assert.match(dashboardTemplate, /7 ngày tới/);
+  assert.match(dashboardTemplate, /Xem toàn bộ lịch tháng/);
+  assert.match(dashboardTemplate, /class="space-y-3 p-3 md:hidden"/);
+  assert.match(dashboardTemplate, /class="hidden space-y-4 p-4 md:block"/);
+});
+
+test('phase 1 fairness adds weekend and lead statistics plus rolling recommendation cues', () => {
+  const model = read('src/app/features/duty-stats/duty-schedule.model.ts');
+  const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');
+  const service = read('src/app/features/duty-stats/duty-schedule.service.ts');
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const dashboardTemplate = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  assert.match(model, /weekendCount: number/);
+  assert.match(model, /leadCount: number/);
+  assert.match(model, /DutyRecommendationTier/);
+  assert.match(utils, /dutyRolling90Range/);
+  assert.match(utils, /computeDutyStaffRecommendations/);
+  assert.match(service, /loadScheduleRange\(start: string, end: string\)/);
+  assert.match(component, /readonly rollingSchedules = signal<DutyScheduleEntry\[]>\(\[]\)/);
+  assert.match(component, /readonly staffRecommendations = computed/);
+  assert.match(component, /return 'Nên xếp'/);
+  assert.match(component, /return 'Cân bằng'/);
+  assert.match(component, /return 'Cân nhắc'/);
+  assert.match(component, /return 'Đang nhiều'/);
+  assert.match(template, /toggleSort\('weekendCount'\)/);
+  assert.match(template, /toggleSort\('leadCount'\)/);
+  assert.match(template, /Cuối tuần/);
+  assert.match(template, /★ Chủ trì/);
+  assert.match(dashboardTemplate, /Cuối tuần:/);
+  assert.match(dashboardTemplate, /★ Chủ trì:/);
 });

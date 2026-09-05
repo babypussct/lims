@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.05-b05",
-    "title": "Lịch trực: lịch tháng gọn hơn và thống kê cân bằng theo thời gian",
+    "version": "v26.09.05-b06",
+    "title": "Lịch trực: Mobile-First và cân bằng phân công theo tải 90 ngày",
     "features": [
-      "Lưới lịch tháng được thu gọn chiều cao nhưng tăng cỡ chữ tên, ngày, giờ và trạng thái để quan sát nhanh hơn trên cùng một màn hình.",
-      "Thống kê lịch trực bổ sung so sánh từng người với mức bình quân, giúp nhận biết ngay ai đang trực nhiều hơn, ít hơn hoặc tương đối cân bằng.",
-      "Màn hình Thống kê có ba phạm vi: kỳ đang chọn, cả năm và toàn bộ dữ liệu lịch trực đã lưu.",
-      "Mỗi nhân sự có chỉ số phần trăm lệch so với bình quân và số lượt chênh lệch tuyệt đối trong cùng phạm vi thống kê.",
-      "Nhân sự đang hoạt động chưa từng được xếp ca vẫn xuất hiện trong thống kê với 0 lượt để phản ánh đầy đủ mức phân bổ."
+      "Trải nghiệm Lịch trực trên điện thoại được thiết kế lại theo hướng Mobile-First với agenda, lịch tháng thu gọn, bottom sheet chi tiết ngày và Dashboard tập trung vào ca sắp tới.",
+      "Khi xếp ca, LIMS phân tích tải trực 90 ngày gần nhất để gợi ý nhân sự theo bốn mức Nên xếp, Cân bằng, Cân nhắc và Đang nhiều.",
+      "Bổ sung hai chỉ số công bằng nghiệp vụ: số ca cuối tuần và số ca đứng vai trò chủ trì, đồng thời thay cột Thứ 2 trên bảng thống kê bằng hai chỉ số này.",
+      "Danh sách nhân sự trong cửa sổ xếp ca hiển thị tổng lượt 90 ngày, phần trăm lệch so với bình quân, số ca cuối tuần, số lần chủ trì và cảnh báo ca liền kề.",
+      "Thuật toán gợi ý dùng cửa sổ rolling 90 ngày thực sự, tự loại trừ ca đang sửa khỏi baseline và vẫn giữ quyền quyết định cuối cùng cho người quản lý."
     ]
   },
   "assetGroups": [

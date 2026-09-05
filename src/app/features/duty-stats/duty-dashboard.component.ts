@@ -14,6 +14,7 @@ import {
   dutyMonthRange,
   findLinkedDutyStaff,
   resolveDutyStaffNames,
+  shiftDutyDateKey,
 } from './duty-schedule.utils';
 
 interface DutyDashboardCalendarCell {
@@ -38,7 +39,10 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly monthKey = currentDutyMonthKey();
   readonly calendarWeekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
-  readonly activeSchedules = computed(() => activeDutySchedules(this.duty.schedules()));
+  private readonly currentMonthRange = dutyMonthRange(this.monthKey);
+  readonly watchedActiveSchedules = computed(() => activeDutySchedules(this.duty.schedules()));
+  readonly activeSchedules = computed(() => this.watchedActiveSchedules()
+    .filter(item => item.date >= this.currentMonthRange.start && item.date <= this.currentMonthRange.end));
   readonly calendarCells = computed<(DutyDashboardCalendarCell | null)[]>(() => {
     const year = Number(this.monthKey.slice(0, 4));
     const month = Number(this.monthKey.slice(5, 7));
@@ -50,7 +54,7 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     } : null);
   });
   readonly todaySchedule = computed(() =>
-    this.activeSchedules().find(item => item.date === this.todayKey),
+    this.watchedActiveSchedules().find(item => item.date === this.todayKey),
   );
   readonly nextSchedule = computed(() =>
     this.activeSchedules().find(item => item.date > this.todayKey),
@@ -58,6 +62,10 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly upcomingSchedules = computed(() =>
     this.activeSchedules().filter(item => item.date >= this.todayKey).slice(0, 5),
   );
+  readonly nextSevenDaysSchedules = computed(() => {
+    const end = shiftDutyDateKey(this.todayKey, 6);
+    return this.watchedActiveSchedules().filter(item => item.date >= this.todayKey && item.date <= end);
+  });
   readonly linkedStaff = computed(() =>
     findLinkedDutyStaff(this.auth.currentUser()?.uid, this.duty.staff()),
   );
@@ -70,6 +78,13 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     const staffId = this.linkedStaff()?.id;
     if (!staffId) return undefined;
     return this.activeSchedules().find(item => item.date >= this.todayKey && item.staffIds.includes(staffId));
+  });
+  readonly mobileMyNextSchedule = computed(() => {
+    const staffId = this.linkedStaff()?.id;
+    if (!staffId) return undefined;
+    const sevenDayEnd = shiftDutyDateKey(this.todayKey, 6);
+    return this.watchedActiveSchedules()
+      .find(item => item.date >= this.todayKey && item.date <= sevenDayEnd && item.staffIds.includes(staffId));
   });
   readonly monthAssignmentCount = computed(() =>
     this.activeSchedules().reduce((total, item) => total + new Set(item.staffIds).size, 0),
@@ -91,8 +106,8 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    const range = dutyMonthRange(this.monthKey);
-    this.duty.watchRange(range.start, range.end);
+    const sevenDayEnd = shiftDutyDateKey(this.todayKey, 6);
+    this.duty.watchRange(this.currentMonthRange.start, sevenDayEnd > this.currentMonthRange.end ? sevenDayEnd : this.currentMonthRange.end);
   }
 
   ngOnDestroy(): void {

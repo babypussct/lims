@@ -3,6 +3,7 @@ import type {
   DutyPersonStat,
   DutyScheduleEntry,
   DutyStaff,
+  DutyStaffRecommendation,
 } from './duty-schedule.model';
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -31,6 +32,11 @@ export function dutyMonthRange(monthKey: string): DutyMonthRange {
     start: `${monthKey}-01`,
     end: `${monthKey}-${String(lastDay).padStart(2, '0')}`,
   };
+}
+
+export function dutyRolling90Range(dateKey: string): DutyMonthRange {
+  if (!isDutyDateKey(dateKey)) throw new Error('Ngày lịch trực không hợp lệ.');
+  return { start: shiftDutyDateKey(dateKey, -89), end: dateKey };
 }
 
 export function dutyYearRange(year: number): DutyMonthRange {
@@ -124,6 +130,8 @@ export function aggregateDutyPeopleById(
   const stats = new Map<string, {
     total: number;
     mondayCount: number;
+    weekendCount: number;
+    leadCount: number;
     months: Set<string>;
     lastDate: string;
   }>();
@@ -136,11 +144,15 @@ export function aggregateDutyPeopleById(
       const current = stats.get(staffId) || {
         total: 0,
         mondayCount: 0,
+        weekendCount: 0,
+        leadCount: 0,
         months: new Set<string>(),
         lastDate: '',
       };
       current.total += 1;
       if (weekday === 1) current.mondayCount += 1;
+      if (weekday === 0 || weekday === 6) current.weekendCount += 1;
+      if (schedule.staffIds[0] === staffId) current.leadCount += 1;
       current.months.add(monthKey);
       if (!current.lastDate || schedule.date > current.lastDate) current.lastDate = schedule.date;
       stats.set(staffId, current);
@@ -156,6 +168,8 @@ export function aggregateDutyPeopleById(
       linkedUserUid: person?.linkedUserUid,
       total: value.total,
       mondayCount: value.mondayCount,
+      weekendCount: value.weekendCount,
+      leadCount: value.leadCount,
       activeMonthCount: value.months.size,
       lastDate: value.lastDate,
     };
@@ -178,6 +192,8 @@ export function aggregateDutyRosterById(
       linkedUserUid: person.linkedUserUid,
       total: 0,
       mondayCount: 0,
+      weekendCount: 0,
+      leadCount: 0,
       activeMonthCount: 0,
       lastDate: '',
     });
@@ -185,6 +201,54 @@ export function aggregateDutyRosterById(
 
   return [...byStaffId.values()]
     .sort((a, b) => b.total - a.total || a.displayName.localeCompare(b.displayName, 'vi'));
+}
+
+export function computeDutyStaffRecommendations(
+  targetDateKey: string,
+  schedules: readonly DutyScheduleEntry[],
+  staff: readonly DutyStaff[],
+  excludeDateKey?: string,
+): DutyStaffRecommendation[] {
+  if (!isDutyDateKey(targetDateKey)) return [];
+  const activeStaff = staff.filter(person => person.active);
+  if (activeStaff.length === 0) return [];
+
+  const range = dutyRolling90Range(targetDateKey);
+  const baseline = schedules.filter(schedule =>
+    schedule.date >= range.start
+    && schedule.date <= range.end
+    && schedule.date !== excludeDateKey,
+  );
+  const roster = aggregateDutyRosterById(baseline, activeStaff);
+  const average = countDutyAssignments(baseline) / activeStaff.length;
+  const tierRank = { recommended: 1, balanced: 2, consider: 3, high: 4 } as const;
+
+  return roster.map(stat => {
+    const deviationPercent = average === 0 ? 0 : ((stat.total - average) / average) * 100;
+    const adjacent = dutyAdjacentAssignment(targetDateKey, stat.staffId, schedules);
+    const hasAdjacent = adjacent.previous || adjacent.next;
+    const tier = deviationPercent > 35
+      ? 'high'
+      : hasAdjacent || deviationPercent > 15
+        ? 'consider'
+        : deviationPercent >= -15
+          ? 'balanced'
+          : 'recommended';
+
+    return {
+      ...stat,
+      deviationPercent,
+      tier,
+      adjacentPrevious: adjacent.previous,
+      adjacentNext: adjacent.next,
+    } as DutyStaffRecommendation;
+  }).sort((a, b) =>
+    tierRank[a.tier] - tierRank[b.tier]
+    || a.total - b.total
+    || a.weekendCount - b.weekendCount
+    || a.leadCount - b.leadCount
+    || a.displayName.localeCompare(b.displayName, 'vi'),
+  );
 }
 
 export function countDutyAssignments(schedules: readonly DutyScheduleEntry[]): number {

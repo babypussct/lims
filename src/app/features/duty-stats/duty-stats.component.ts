@@ -10,12 +10,20 @@ import {
   AppPageHeaderComponent,
   AppToolbarComponent,
 } from '../../shared/components/ui';
-import type { DutyScheduleDraft, DutyScheduleEntry, DutyStaff, DutyStaffDraft } from './duty-schedule.model';
+import type {
+  DutyRecommendationTier,
+  DutyScheduleDraft,
+  DutyScheduleEntry,
+  DutyStaff,
+  DutyStaffDraft,
+  DutyStaffRecommendation,
+} from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
 import { DutyTsvImportComponent } from './duty-tsv-import.component';
 import {
   activeDutySchedules,
   aggregateDutyRosterById,
+  computeDutyStaffRecommendations,
   countDutyAssignments,
   currentDutyDateKey,
   currentDutyMonthKey,
@@ -23,6 +31,7 @@ import {
   dutyMonthCalendarDateKeys,
   dutyMonthDateKeys,
   dutyMonthRange,
+  dutyRolling90Range,
   dutyYearRange,
   findLinkedDutyStaff,
   isDutyDateKey,
@@ -34,7 +43,8 @@ type DutyView = 'schedule' | 'staff' | 'stats';
 type DutyScheduleLayout = 'list' | 'calendar';
 type DutyBatchScope = 'all' | 'weekdays' | 'weekends';
 type DutyStatsRangeMode = 'selection' | 'year' | 'all';
-type DutyStatsSortColumn = 'total' | 'mondayCount' | 'activeMonthCount' | 'lastDate' | 'displayName';
+type DutyMobilePeriodMode = 'month' | 'year' | 'all';
+type DutyStatsSortColumn = 'total' | 'mondayCount' | 'weekendCount' | 'leadCount' | 'activeMonthCount' | 'lastDate' | 'displayName';
 type SortDirection = 'asc' | 'desc';
 interface DutyCalendarCell {
   date: string;
@@ -71,7 +81,12 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly selectedStaffFilter = signal<string | null>(null);
   readonly myShiftsOnly = signal(false);
   readonly needsVerificationOnly = signal(false);
-  readonly scheduleLayout = signal<DutyScheduleLayout>('calendar');
+  readonly scheduleLayout = signal<DutyScheduleLayout>(
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'calendar',
+  );
+  readonly mobileMenuOpen = signal(false);
+  readonly selectedDayCell = signal<DutyCalendarCell | null>(null);
+  readonly mobilePeriodMode = signal<DutyMobilePeriodMode>('month');
   readonly staffSearch = signal('');
   readonly scheduleStaffSearch = signal('');
   readonly includeInactiveStaff = signal(false);
@@ -85,6 +100,8 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly batchStartTime = signal('18:00');
   readonly conflictSchedules = signal<DutyScheduleEntry[]>([]);
   readonly conflictLoading = signal(false);
+  readonly rollingSchedules = signal<DutyScheduleEntry[]>([]);
+  readonly rollingLoading = signal(false);
   readonly sortColumn = signal<DutyStatsSortColumn>('total');
   readonly sortDirection = signal<SortDirection>('desc');
   readonly statsRangeMode = signal<DutyStatsRangeMode>('selection');
@@ -93,6 +110,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly months = Array.from({ length: 12 }, (_, index) => index + 1);
   readonly calendarWeekdays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
   private conflictRequestId = 0;
+  private recommendationRequestId = 0;
 
   staffDraft: DutyStaffDraft = this.emptyStaffDraft();
   scheduleDraft: DutyScheduleDraft = this.emptyScheduleDraft();
@@ -180,6 +198,18 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const people = this.statsPopulationCount();
     return people === 0 ? 0 : this.totalAssignments() / people;
   });
+  readonly staffRecommendations = computed(() => {
+    const byDate = new Map(
+      [...this.rollingSchedules(), ...this.conflictSchedules()]
+        .map(schedule => [schedule.date, schedule] as const),
+    );
+    return computeDutyStaffRecommendations(
+      this.scheduleDraft.date,
+      [...byDate.values()],
+      this.duty.staff(),
+      this.scheduleDraft.originalDate,
+    );
+  });
   readonly statsRangeLabel = computed(() => {
     const mode = this.statsRangeMode();
     if (mode === 'all') return 'Toàn bộ dữ liệu lịch trực';
@@ -205,7 +235,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   setMonth(value: number | string | null): void {
     this.selectedMonth.set(value === null || value === '' ? null : Number(value));
-    this.scheduleLayout.set(this.selectedMonth() === null ? 'list' : 'calendar');
+    this.scheduleLayout.set(this.selectedMonth() === null || this.isMobileViewport() ? 'list' : 'calendar');
     this.refreshRange();
   }
 
@@ -292,6 +322,29 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     else this.openNewSchedule(cell.date);
   }
 
+  openMobileDay(cell: DutyCalendarCell): void {
+    this.selectedDayCell.set(cell);
+  }
+
+  closeMobileDay(): void {
+    this.selectedDayCell.set(null);
+  }
+
+  editSelectedMobileDay(): void {
+    const cell = this.selectedDayCell();
+    if (!cell || !this.duty.canManage()) return;
+    this.closeMobileDay();
+    if (cell.schedule) this.openEditSchedule(cell.schedule);
+    else this.openNewSchedule(cell.date);
+  }
+
+  cancelSelectedMobileDay(): void {
+    const schedule = this.selectedDayCell()?.schedule;
+    if (!schedule || !this.duty.canManage() || schedule.status === 'cancelled') return;
+    this.closeMobileDay();
+    void this.cancelSchedule(schedule);
+  }
+
   toggleSort(column: DutyStatsSortColumn): void {
     if (this.sortColumn() === column) {
       this.sortDirection.update(direction => direction === 'asc' ? 'desc' : 'asc');
@@ -316,6 +369,41 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   setStatsRangeMode(mode: DutyStatsRangeMode): void {
     this.statsRangeMode.set(mode);
     if (this.activeView() === 'stats') this.refreshRange();
+  }
+
+  setMobilePeriodMode(mode: DutyMobilePeriodMode): void {
+    this.mobilePeriodMode.set(mode);
+    if (mode === 'month') {
+      if (this.selectedMonth() === null) {
+        const current = currentDutyMonthKey();
+        this.selectedYear.set(Number(current.slice(0, 4)));
+        this.selectedMonth.set(Number(current.slice(5, 7)));
+      }
+      this.statsRangeMode.set('selection');
+    } else if (mode === 'year') {
+      this.selectedMonth.set(null);
+      this.statsRangeMode.set('year');
+      this.scheduleLayout.set('list');
+    } else {
+      this.statsRangeMode.set('all');
+    }
+    this.refreshRange();
+  }
+
+  mobilePeriodLabel(): string {
+    if (this.mobilePeriodMode() === 'all') return 'Toàn bộ dữ liệu';
+    if (this.mobilePeriodMode() === 'year') return `${this.selectedYear()}`;
+    const month = this.selectedMonth() ?? Number(currentDutyMonthKey().slice(5, 7));
+    return `Tháng ${this.formatMonth(month)}/${this.selectedYear()}`;
+  }
+
+  distributionPercent(total: number): number {
+    const totals = this.personStats().map(item => item.total);
+    if (totals.length === 0) return 50;
+    const min = Math.min(...totals);
+    const max = Math.max(...totals);
+    if (max === min) return 50;
+    return Math.max(0, Math.min(100, ((total - min) / (max - min)) * 100));
   }
 
   assignmentDifference(total: number): number {
@@ -398,6 +486,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     this.scheduleStaffSearch.set('');
     this.scheduleModalOpen.set(true);
     void this.refreshScheduleConflictContext();
+    void this.refreshRecommendationContext();
   }
 
   openEditSchedule(schedule: DutyScheduleEntry): void {
@@ -416,13 +505,17 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     this.scheduleStaffSearch.set('');
     this.scheduleModalOpen.set(true);
     void this.refreshScheduleConflictContext();
+    void this.refreshRecommendationContext();
   }
 
   closeScheduleModal(): void {
     if (!this.saving()) {
       this.conflictRequestId += 1;
+      this.recommendationRequestId += 1;
       this.conflictSchedules.set([]);
       this.conflictLoading.set(false);
+      this.rollingSchedules.set([]);
+      this.rollingLoading.set(false);
       this.scheduleModalOpen.set(false);
     }
   }
@@ -430,6 +523,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   onScheduleDateChange(value: string): void {
     this.scheduleDraft.date = value;
     void this.refreshScheduleConflictContext();
+    void this.refreshRecommendationContext();
   }
 
   isStaffSelected(staffId: string): boolean {
@@ -596,11 +690,42 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   filteredScheduleStaffOptions(): DutyStaff[] {
     const search = this.normalizeSearchTerm(this.scheduleStaffSearch());
-    if (!search) return this.scheduleStaffOptions();
-    return this.scheduleStaffOptions().filter(person => {
+    const recommendationOrder = new Map(this.staffRecommendations().map((item, index) => [item.staffId, index]));
+    const options = this.scheduleStaffOptions().sort((a, b) =>
+      (recommendationOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER)
+      - (recommendationOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      || a.displayName.localeCompare(b.displayName, 'vi'),
+    );
+    if (!search) return options;
+    return options.filter(person => {
       const haystack = this.normalizeSearchTerm(`${person.employeeCode || ''} ${person.displayName}`);
       return haystack.includes(search);
     });
+  }
+
+  recommendationForStaff(staffId: string): DutyStaffRecommendation | undefined {
+    return this.staffRecommendations().find(item => item.staffId === staffId);
+  }
+
+  recommendationLabel(tier: DutyRecommendationTier): string {
+    if (tier === 'recommended') return 'Nên xếp';
+    if (tier === 'balanced') return 'Cân bằng';
+    if (tier === 'high') return 'Đang nhiều';
+    return 'Cân nhắc';
+  }
+
+  recommendationBadgeClass(tier: DutyRecommendationTier): string {
+    if (tier === 'recommended') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300';
+    if (tier === 'balanced') return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
+    if (tier === 'high') return 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300';
+    return 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300';
+  }
+
+  recommendationMarker(tier: DutyRecommendationTier): string {
+    if (tier === 'recommended') return '🟢';
+    if (tier === 'balanced') return '🔵';
+    if (tier === 'high') return '🔴';
+    return '🟠';
   }
 
   scheduleCountForStaff(staffId: string): number {
@@ -774,6 +899,10 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     this.duty.watchRange(range.start, range.end);
   }
 
+  private isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  }
+
   private async refreshScheduleConflictContext(): Promise<void> {
     const requestId = ++this.conflictRequestId;
     const date = this.scheduleDraft.date;
@@ -813,6 +942,46 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
       }
     } finally {
       if (requestId === this.conflictRequestId) this.conflictLoading.set(false);
+    }
+  }
+
+  private async refreshRecommendationContext(): Promise<void> {
+    const requestId = ++this.recommendationRequestId;
+    const date = this.scheduleDraft.date;
+    if (!isDutyDateKey(date)) {
+      this.rollingSchedules.set([]);
+      this.rollingLoading.set(false);
+      return;
+    }
+
+    const range = dutyRolling90Range(date);
+    const activeRange = this.duty.activeRange();
+    const canUseLocalRange = !this.duty.loadingSchedules()
+      && Boolean(activeRange)
+      && !!activeRange
+      && range.start >= activeRange.start
+      && range.end <= activeRange.end;
+
+    if (canUseLocalRange) {
+      this.rollingSchedules.set(this.duty.schedules().filter(schedule =>
+        schedule.date >= range.start && schedule.date <= range.end,
+      ));
+      this.rollingLoading.set(false);
+      return;
+    }
+
+    this.rollingLoading.set(true);
+    try {
+      const schedules = await this.duty.loadScheduleRange(range.start, range.end);
+      if (requestId !== this.recommendationRequestId) return;
+      this.rollingSchedules.set(schedules);
+    } catch (error) {
+      if (requestId === this.recommendationRequestId) {
+        this.rollingSchedules.set([]);
+        this.toast.show(`Không tải được dữ liệu 90 ngày để gợi ý phân công: ${this.errorMessage(error)}`, 'warning');
+      }
+    } finally {
+      if (requestId === this.recommendationRequestId) this.rollingLoading.set(false);
     }
   }
 

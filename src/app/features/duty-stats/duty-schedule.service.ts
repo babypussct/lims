@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -198,6 +199,21 @@ export class DutyScheduleService {
     return snapshots
       .filter(snapshot => snapshot.exists())
       .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as DutyScheduleEntry));
+  }
+
+  async loadScheduleRange(start: string, end: string): Promise<DutyScheduleEntry[]> {
+    if (!isDutyDateKey(start) || !isDutyDateKey(end) || start > end) {
+      throw new Error('Khoảng ngày lịch trực không hợp lệ.');
+    }
+    const path = `artifacts/${this.fb.APP_ID}/duty_schedules`;
+    const snapshot = await getDocs(query(
+      collection(this.fb.db, path),
+      where('date', '>=', start),
+      where('date', '<=', end),
+      orderBy('date'),
+    ));
+    this.readMonitor.record('getDocs', path, snapshot.size, { phase: 'history' });
+    return snapshot.docs.map(item => ({ id: item.id, ...item.data() } as DutyScheduleEntry));
   }
 
   async saveStaff(draft: DutyStaffDraft): Promise<string> {

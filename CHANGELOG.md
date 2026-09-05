@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.05-b05
+## Phiên bản hiện tại: v26.09.05-b06
+
+### v26.09.05-b06
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Trải nghiệm Lịch trực trên điện thoại được thiết kế lại theo hướng Mobile-First với agenda, lịch tháng thu gọn, bottom sheet chi tiết ngày và Dashboard tập trung vào ca sắp tới.
+- Khi xếp ca, LIMS phân tích tải trực 90 ngày gần nhất để gợi ý nhân sự theo bốn mức Nên xếp, Cân bằng, Cân nhắc và Đang nhiều.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung hai chỉ số công bằng nghiệp vụ: số ca cuối tuần và số ca đứng vai trò chủ trì, đồng thời thay cột Thứ 2 trên bảng thống kê bằng hai chỉ số này.
+- Danh sách nhân sự trong cửa sổ xếp ca hiển thị tổng lượt 90 ngày, phần trăm lệch so với bình quân, số ca cuối tuần, số lần chủ trì và cảnh báo ca liền kề.
+- Thuật toán gợi ý dùng cửa sổ rolling 90 ngày thực sự, tự loại trừ ca đang sửa khỏi baseline và vẫn giữ quyền quyết định cuối cùng cho người quản lý.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Mobile mặc định dùng agenda thay cho lưới lịch rộng; lịch tháng compact có bottom sheet chi tiết, menu công cụ rút gọn, sticky tabs và thống kê dạng thẻ dễ thao tác bằng một tay.
+- Dashboard mobile được rút gọn theo thứ tự Ca của bạn sắp tới, Trực hôm nay và 7 ngày tới thay cho lưới tháng desktop thu nhỏ.
+- Bảng thống kê desktop và mobile đồng bộ chỉ số Cuối tuần và Chủ trì; danh sách ứng viên ưu tiên người có ít lượt, ít ca cuối tuần và ít lần chủ trì hơn trong cùng nhóm khuyến nghị.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngữ cảnh ca liền kề hôm trước và hôm sau được tách khỏi baseline 90 ngày để cảnh báo đúng mà không làm sai số tải dùng cho gợi ý phân công.
 
 ### v26.09.05-b05
 

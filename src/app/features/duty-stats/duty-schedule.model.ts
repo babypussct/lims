@@ -59,8 +59,19 @@ export interface DutyPersonStat {
   linkedUserUid?: string | null;
   total: number;
   mondayCount: number;
+  weekendCount: number;
+  leadCount: number;
   activeMonthCount: number;
   lastDate: string;
+}
+
+export type DutyRecommendationTier = 'recommended' | 'balanced' | 'consider' | 'high';
+
+export interface DutyStaffRecommendation extends DutyPersonStat {
+  deviationPercent: number;
+  tier: DutyRecommendationTier;
+  adjacentPrevious: boolean;
+  adjacentNext: boolean;
 }
 
 export interface DutyMonthRange {

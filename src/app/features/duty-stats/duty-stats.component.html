@@ -5,6 +5,7 @@
     icon="fa-user-clock">
   </app-page-header>
 
+  <div class="hidden md:block">
   <app-toolbar>
     <div toolbarSearch class="flex w-full flex-wrap items-center gap-2">
       <select
@@ -91,6 +92,35 @@
       }
     </div>
   </app-toolbar>
+  </div>
+
+  <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-slate-800 dark:bg-slate-900">
+    <button type="button" (click)="prevPeriod()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Kỳ trước">‹</button>
+    <button type="button" (click)="goToCurrentMonth()" class="min-w-0 flex-1 rounded-xl px-2 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/70" aria-label="Về tháng hiện tại">
+      <div class="truncate text-[10px] font-black uppercase tracking-wide text-slate-400">{{ activeView() === 'stats' ? 'Thống kê trực' : (activeView() === 'staff' ? 'Nhân sự trực' : 'Lịch trực') }}</div>
+      <div class="truncate text-sm font-black text-slate-800 dark:text-slate-100">{{ selectedMonth() === null ? 'Năm ' + selectedYear() : 'Tháng ' + formatMonth(selectedMonth()!) + '/' + selectedYear() }}</div>
+    </button>
+    <button type="button" (click)="nextPeriod()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Kỳ sau">›</button>
+    @if (activeView() === 'schedule' && myStaffId()) {
+      <button type="button" (click)="toggleMyShifts()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm"
+        [class]="myShiftsOnly() ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' : 'border-slate-200 text-slate-500 dark:border-slate-700'"
+        [attr.aria-pressed]="myShiftsOnly()" aria-label="Ca của tôi">
+        <i class="fa-solid fa-star" aria-hidden="true"></i>
+      </button>
+    }
+    @if (duty.canManage() && activeView() === 'schedule') {
+      <button type="button" (click)="openNewSchedule()" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-sm" aria-label="Thêm ca">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Ca</span>
+      </button>
+    } @else if (duty.canManage() && activeView() === 'staff') {
+      <button type="button" (click)="openNewStaff()" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-sm" aria-label="Thêm nhân viên">
+        <i class="fa-solid fa-user-plus" aria-hidden="true"></i><span>NV</span>
+      </button>
+    }
+    <button type="button" (click)="mobileMenuOpen.set(true)" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-base font-black text-slate-600 dark:border-slate-700 dark:text-slate-300" aria-label="Mở thêm công cụ">
+      <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+    </button>
+  </div>
 
   @if (duty.error()) {
     <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
@@ -98,7 +128,7 @@
     </div>
   }
 
-  <div class="flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="sticky top-0 z-20 flex shrink-0 gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur-md md:static md:gap-2 md:bg-white dark:border-slate-800 dark:bg-slate-900/95 md:dark:bg-slate-900">
     <button type="button" (click)="setActiveView('schedule')"
       class="rounded-lg px-4 py-2 text-xs font-black transition"
       [class]="activeView() === 'schedule' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'">
@@ -146,7 +176,7 @@
 
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <div class="flex flex-wrap items-center gap-4">
+        <div class="hidden flex-wrap items-center gap-4 md:flex">
           <label class="flex items-center gap-2 text-[11px] font-bold text-slate-500">
             <input type="checkbox" [ngModel]="includeCancelled()" (ngModelChange)="includeCancelled.set($event)" class="rounded border-slate-300">
             Hiện cả ca đã hủy
@@ -176,7 +206,7 @@
         </div>
       </div>
       @if (scheduleLayout() === 'calendar') {
-        <div class="h-full min-h-0 overflow-auto p-3 custom-scrollbar">
+        <div class="hidden h-full min-h-0 overflow-auto p-3 custom-scrollbar md:block">
           <div class="min-w-[640px] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
             <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
               @for (weekday of calendarWeekdays; track weekday) {
@@ -254,6 +284,38 @@
               }
             </div>
           </div>
+        </div>
+        <div class="p-2 md:hidden" aria-label="Lịch tháng dạng thu gọn">
+          <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+              @for (weekday of calendarWeekdays; track weekday) {
+                <div class="py-2 text-center text-[9px] font-black uppercase text-slate-400">{{ weekday === 'Chủ nhật' ? 'CN' : weekday.replace('Thứ ', 'T') }}</div>
+              }
+            </div>
+            <div class="grid grid-cols-7 bg-slate-100/70 dark:bg-slate-950/60">
+              @for (cell of calendarCells(); track $index) {
+                @if (cell) {
+                  <button type="button" (click)="openMobileDay(cell)"
+                    class="relative aspect-square min-w-0 border-b border-r border-slate-200 bg-white p-1 text-center dark:border-slate-700 dark:bg-slate-900"
+                    [class.ring-2]="cell.schedule && isMyShift(cell.schedule)"
+                    [class.ring-inset]="cell.schedule && isMyShift(cell.schedule)"
+                    [class.ring-blue-500]="cell.schedule && isMyShift(cell.schedule)">
+                    <span class="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-black"
+                      [class]="isToday(cell.date) ? 'bg-blue-600 text-white' : (isWeekend(cell.date) ? 'text-rose-600 dark:text-rose-300' : 'text-slate-700 dark:text-slate-200')">{{ cell.day }}</span>
+                    @if (cell.schedule) {
+                      <div class="mt-0.5 flex items-center justify-center gap-0.5 text-[9px] font-black"
+                        [class]="cell.schedule.status === 'cancelled' ? 'text-red-500' : (cell.schedule.needsVerification || cell.schedule.staffIds.length === 0 ? 'text-amber-500' : 'text-emerald-500')">
+                        <span class="text-[12px] leading-none">•</span>{{ namesFor(cell.schedule).length + unresolvedFor(cell.schedule).length }}
+                      </div>
+                    }
+                  </button>
+                } @else {
+                  <div class="aspect-square border-b border-r border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-950/40"></div>
+                }
+              }
+            </div>
+          </div>
+          <p class="mt-2 text-center text-[10px] font-medium text-slate-400">Chạm vào một ngày để xem đầy đủ phân công.</p>
         </div>
       } @else {
       <div class="h-full min-h-0 overflow-auto custom-scrollbar">
@@ -482,7 +544,7 @@
   }
 
   @if (activeView() === 'stats') {
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="hidden flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:flex dark:border-slate-800 dark:bg-slate-900">
       <div>
         <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">Phạm vi thống kê</div>
         <div class="mt-0.5 text-sm font-black text-slate-700 dark:text-slate-200">{{ statsRangeLabel() }}</div>
@@ -506,17 +568,43 @@
       </div>
     </div>
 
+    <div class="space-y-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm md:hidden dark:border-slate-800 dark:bg-slate-900">
+      <div class="grid grid-cols-3 rounded-xl bg-slate-100 p-1 dark:bg-slate-950" aria-label="Phạm vi thống kê mobile">
+        <button type="button" (click)="setMobilePeriodMode('month')" class="rounded-lg px-2 py-2 text-[10px] font-black"
+          [class]="mobilePeriodMode() === 'month' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Tháng</button>
+        <button type="button" (click)="setMobilePeriodMode('year')" class="rounded-lg px-2 py-2 text-[10px] font-black"
+          [class]="mobilePeriodMode() === 'year' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Năm</button>
+        <button type="button" (click)="setMobilePeriodMode('all')" class="rounded-lg px-2 py-2 text-[10px] font-black"
+          [class]="mobilePeriodMode() === 'all' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Toàn bộ</button>
+      </div>
+      <div class="flex items-center justify-between gap-2 px-1">
+        @if (mobilePeriodMode() !== 'all') {
+          <button type="button" (click)="prevPeriod()" class="h-9 w-9 rounded-lg text-lg font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Kỳ trước">‹</button>
+        } @else {
+          <span class="h-9 w-9"></span>
+        }
+        <button type="button" (click)="mobilePeriodMode() === 'month' ? goToCurrentMonth() : null" class="min-w-0 flex-1 rounded-lg px-2 py-2 text-center text-xs font-black text-slate-700 dark:text-slate-200">
+          {{ mobilePeriodLabel() }}
+        </button>
+        @if (mobilePeriodMode() !== 'all') {
+          <button type="button" (click)="nextPeriod()" class="h-9 w-9 rounded-lg text-lg font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Kỳ sau">›</button>
+        } @else {
+          <span class="h-9 w-9"></span>
+        }
+      </div>
+    </div>
+
     <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt trong phạm vi</div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div><div class="mt-1 text-[10px] font-bold text-slate-400">{{ statsRangeLabel() }}</div></div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Đã tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}/{{ statsPopulationCount() }}</div><div class="mt-1 text-[10px] font-bold text-slate-400">người có lượt / người trong thống kê</div></div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Bình quân/người</div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div><div class="mt-1 text-[10px] font-bold text-slate-400">mốc 0% để so mức trực</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">Tổng lượt</span><span class="hidden md:inline">Tổng lượt trong phạm vi</span></div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">{{ statsRangeLabel() }}</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Đã tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}/{{ statsPopulationCount() }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">người có lượt / người trong thống kê</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">TB/người</span><span class="hidden md:inline">Bình quân/người</span><span class="md:hidden" title="Mốc 0% để so mức trực">ⓘ</span></div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">mốc 0% để so mức trực</div></div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Ca trực</div><div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div></div>
     </div>
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div class="border-b border-slate-100 px-5 py-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+      <div class="hidden border-b border-slate-100 px-5 py-4 text-xs text-slate-500 md:block dark:border-slate-800 dark:text-slate-400">
         Ca đã hủy không được tính. Nhân sự đang hoạt động chưa từng được xếp ca vẫn hiển thị với 0 lượt. “% lệch” so số lượt của từng người với bình quân trong cùng phạm vi: số dương = trực nhiều hơn, số âm = trực ít hơn.
       </div>
-      <div class="h-full min-h-0 overflow-auto custom-scrollbar">
+      <div class="hidden h-full min-h-0 overflow-auto custom-scrollbar md:block">
         <table class="w-full min-w-[900px] text-left text-sm">
           <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
             <tr>
@@ -540,13 +628,22 @@
                 </button>
               </th>
               <th class="px-5 py-3 text-right">So với bình quân</th>
-              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('mondayCount')">
-                <button type="button" (click)="toggleSort('mondayCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
-                  Thứ 2
+              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('weekendCount')">
+                <button type="button" (click)="toggleSort('weekendCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Cuối tuần
                   <i class="fa-solid" aria-hidden="true"
-                    [class.fa-sort-up]="sortColumn() === 'mondayCount' && sortDirection() === 'asc'"
-                    [class.fa-sort-down]="sortColumn() === 'mondayCount' && sortDirection() === 'desc'"
-                    [class.fa-sort]="sortColumn() !== 'mondayCount'"></i>
+                    [class.fa-sort-up]="sortColumn() === 'weekendCount' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'weekendCount' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'weekendCount'"></i>
+                </button>
+              </th>
+              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('leadCount')">
+                <button type="button" (click)="toggleSort('leadCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  ★ Chủ trì
+                  <i class="fa-solid" aria-hidden="true"
+                    [class.fa-sort-up]="sortColumn() === 'leadCount' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'leadCount' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'leadCount'"></i>
                 </button>
               </th>
               <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('activeMonthCount')">
@@ -604,19 +701,149 @@
                     {{ assignmentDifference(stat.total) > 0 ? '+' : '' }}{{ assignmentDifference(stat.total) | number:'1.1-1' }} lượt
                   </div>
                 </td>
-                <td class="px-5 py-3.5 text-right">{{ stat.mondayCount }}</td>
+                <td class="px-5 py-3.5 text-right">{{ stat.weekendCount }}</td>
+                <td class="px-5 py-3.5 text-right">{{ stat.leadCount }}</td>
                 <td class="px-5 py-3.5 text-right">{{ stat.activeMonthCount }}</td>
                 <td class="px-5 py-3.5 text-xs text-slate-500">{{ stat.lastDate ? formatDate(stat.lastDate) : '—' }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="7" class="p-14 text-center text-sm italic text-slate-400">Chưa có dữ liệu để thống kê.</td></tr>
+              <tr><td colspan="8" class="p-14 text-center text-sm italic text-slate-400">Chưa có dữ liệu để thống kê.</td></tr>
             }
           </tbody>
         </table>
       </div>
+      <div class="space-y-3 p-3 md:hidden" aria-label="Thống kê nhân viên dạng thẻ">
+        @for (stat of sortedPersonStats(); track stat.staffId; let index = $index) {
+          <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-black text-slate-800 dark:text-slate-100">{{ index + 1 }} · {{ stat.displayName }}</div>
+                <div class="mt-0.5 text-[10px] text-slate-400">{{ stat.employeeCode ? 'Mã NV: ' + stat.employeeCode : 'Chưa khai báo mã nhân viên' }}</div>
+              </div>
+              <div class="shrink-0 text-right">
+                <div class="text-xl font-black text-indigo-600 dark:text-indigo-300">{{ stat.total }} <span class="text-[10px] font-bold text-slate-400">lượt</span></div>
+                <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black"
+                  [class]="assignmentBalanceLabel(stat.total) === 'Cân bằng' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : (assignmentDeviationPercent(stat.total) > 0 ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300')">
+                  {{ assignmentDeviationPercent(stat.total) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat.total) | number:'1.0-0' }}% · {{ assignmentBalanceLabel(stat.total) }}
+                </span>
+              </div>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
+              <div><span class="block text-slate-400">Bình quân</span><strong>{{ averageAssignments() | number:'1.1-1' }} lượt</strong></div>
+              <div><span class="block text-slate-400">Cuối tuần</span><strong>{{ stat.weekendCount }}</strong></div>
+              <div><span class="block text-slate-400">★ Chủ trì</span><strong>{{ stat.leadCount }}</strong></div>
+              <div><span class="block text-slate-400">Hoạt động</span><strong>{{ stat.activeMonthCount }} tháng</strong></div>
+            </div>
+            <div class="mt-2 text-[10px] text-slate-400">Gần nhất: <strong class="text-slate-600 dark:text-slate-300">{{ stat.lastDate ? formatDate(stat.lastDate) : '—' }}</strong></div>
+            <div class="mt-4">
+              <div class="relative h-2 rounded-full bg-gradient-to-r from-blue-100 via-emerald-100 to-rose-100 dark:from-blue-950 dark:via-emerald-950 dark:to-rose-950">
+                <span class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm dark:border-slate-900"
+                  [style.left.%]="distributionPercent(stat.total)"
+                  [class]="assignmentBalanceLabel(stat.total) === 'Cân bằng' ? 'bg-emerald-500' : (assignmentDeviationPercent(stat.total) > 0 ? 'bg-rose-500' : 'bg-blue-500')"></span>
+              </div>
+              <div class="mt-1 flex justify-between text-[9px] font-bold text-slate-400"><span>Ít</span><span>Nhiều</span></div>
+            </div>
+          </article>
+        } @empty {
+          <div class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm italic text-slate-400 dark:border-slate-700">Chưa có dữ liệu để thống kê.</div>
+        }
+      </div>
     </section>
   }
 </div>
+
+@if (mobileMenuOpen()) {
+  <section class="fixed inset-x-0 bottom-0 z-[60] max-h-[82vh] overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-4 shadow-2xl md:hidden dark:border-slate-700 dark:bg-slate-900" aria-label="Công cụ lịch trực trên mobile">
+    <div class="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="text-sm font-black">Công cụ</h2>
+      <button type="button" (click)="mobileMenuOpen.set(false)" class="h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    @if (activeView() === 'schedule') {
+      <div class="space-y-3">
+        <select aria-label="Lọc theo nhân viên" [ngModel]="selectedStaffFilter()" (ngModelChange)="setStaffFilter($event)" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold dark:border-slate-700 dark:bg-slate-950">
+          <option [ngValue]="null">Tất cả nhân viên</option>
+          @for (person of duty.staff(); track person.id) {
+            <option [ngValue]="person.id">{{ person.displayName }}</option>
+          }
+        </select>
+        <label class="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 text-xs font-bold dark:border-slate-700">
+          <input type="checkbox" [ngModel]="needsVerificationOnly()" (ngModelChange)="needsVerificationOnly.set($event)" class="rounded">
+          Chỉ ca cần xác minh
+        </label>
+        <label class="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 text-xs font-bold dark:border-slate-700">
+          <input type="checkbox" [ngModel]="includeCancelled()" (ngModelChange)="includeCancelled.set($event)" class="rounded">
+          Hiện cả ca đã hủy
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" (click)="mobileMenuOpen.set(false); printSchedule()" class="rounded-xl border border-slate-200 px-3 py-3 text-left text-xs font-black dark:border-slate-700"><i class="fa-solid fa-print mr-2"></i>In lịch trực</button>
+          <button type="button" (click)="mobileMenuOpen.set(false); exportCsv()" class="rounded-xl border border-slate-200 px-3 py-3 text-left text-xs font-black dark:border-slate-700"><i class="fa-solid fa-file-csv mr-2"></i>Xuất CSV</button>
+          @if (duty.canManage() && selectedMonth() !== null) {
+            <button type="button" (click)="mobileMenuOpen.set(false); importMonth.set(selectedYear() + '-' + formatMonth(selectedMonth()!))" class="rounded-xl border border-slate-200 px-3 py-3 text-left text-xs font-black dark:border-slate-700"><i class="fa-solid fa-file-import mr-2"></i>Nhập TSV</button>
+            <button type="button" (click)="mobileMenuOpen.set(false); openBatchMonth()" class="rounded-xl border border-slate-200 px-3 py-3 text-left text-xs font-black dark:border-slate-700"><i class="fa-solid fa-calendar-plus mr-2"></i>Tạo khung tháng</button>
+          }
+        </div>
+      </div>
+    } @else {
+      <button type="button" (click)="mobileMenuOpen.set(false); exportCsv()" class="w-full rounded-xl border border-slate-200 px-3 py-3 text-left text-xs font-black dark:border-slate-700"><i class="fa-solid fa-file-csv mr-2"></i>Xuất CSV</button>
+    }
+  </section>
+}
+
+@if (selectedDayCell(); as cell) {
+  <section class="fixed inset-x-0 bottom-0 z-[60] max-h-[80vh] overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-4 shadow-2xl md:hidden dark:border-slate-700 dark:bg-slate-900" aria-label="Chi tiết ngày trực">
+    <div class="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">Chi tiết ngày trực</div>
+        <h2 class="mt-1 text-lg font-black">{{ formatDate(cell.date) }}</h2>
+      </div>
+      <button type="button" (click)="closeMobileDay()" class="h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    @if (cell.schedule; as schedule) {
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <span class="font-mono text-xs font-black text-blue-600 dark:text-blue-300"><i class="fa-regular fa-clock mr-1"></i>{{ schedule.startTime || '18:00' }}</span>
+        @if (isMyShift(schedule)) {
+          <span class="rounded-full bg-blue-100 px-2 py-1 text-[9px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
+        }
+        <span class="rounded-full px-2 py-1 text-[9px] font-black"
+          [class]="schedule.status === 'cancelled' ? 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300' : (schedule.needsVerification ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300')">
+          {{ schedule.status === 'cancelled' ? 'Đã hủy' : (schedule.needsVerification ? 'Cần xác minh' : 'Đang áp dụng') }}
+        </span>
+      </div>
+      <div class="mt-4 space-y-2">
+        @for (name of namesFor(schedule); track $index) {
+          <div class="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-black dark:border-slate-700">
+            @if ($index === 0) { <i class="fa-solid fa-star mr-2 text-amber-500"></i> }
+            {{ name }}
+          </div>
+        }
+        @for (label of unresolvedFor(schedule); track $index) {
+          <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-black text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-2"></i>{{ label || '?' }}</div>
+        }
+        @if (namesFor(schedule).length === 0 && unresolvedFor(schedule).length === 0) {
+          <div class="rounded-xl border border-dashed border-amber-200 px-3 py-5 text-center text-xs font-bold text-amber-600">Chưa phân công người trực.</div>
+        }
+      </div>
+      @if (schedule.note) {
+        <p class="mt-3 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-500 dark:bg-slate-950 dark:text-slate-400">{{ schedule.note }}</p>
+      }
+      @if (duty.canManage()) {
+        <div class="mt-4 flex gap-2">
+          <button type="button" (click)="editSelectedMobileDay()" class="flex-1 rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white">Sửa ca</button>
+          @if (schedule.status !== 'cancelled') {
+            <button type="button" (click)="cancelSelectedMobileDay()" class="rounded-xl border border-red-200 px-4 py-3 text-xs font-black text-red-600 dark:border-red-900">Hủy ca</button>
+          }
+        </div>
+      }
+    } @else {
+      <div class="mt-5 rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400 dark:border-slate-700">Ngày này chưa có ca trực.</div>
+      @if (duty.canManage()) {
+        <button type="button" (click)="editSelectedMobileDay()" class="mt-4 w-full rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white">Tạo ca</button>
+      }
+    }
+  </section>
+}
 
 @if (importMonth(); as month) {
   <app-duty-tsv-import [month]="month" (closed)="importMonth.set(null)"></app-duty-tsv-import>
@@ -788,17 +1015,38 @@
             </button>
           }
         </div>
+        @if (rollingLoading()) {
+          <div class="mb-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
+            <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Đang tính tải 90 ngày gần nhất để xếp hạng gợi ý...
+          </div>
+        }
         <div class="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto rounded-xl border border-slate-200 p-3 sm:grid-cols-2 dark:border-slate-700">
           @for (person of filteredScheduleStaffOptions(); track person.id) {
             <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
               <input type="checkbox" [checked]="isStaffSelected(person.id)" (change)="toggleScheduleStaff(person.id, $any($event.target).checked)" class="rounded border-slate-300">
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-xs font-black">{{ person.displayName }}</span>
+                <span class="flex min-w-0 items-center gap-2">
+                  <span class="min-w-0 flex-1 truncate text-xs font-black">{{ person.displayName }}</span>
+                  @if (recommendationForStaff(person.id); as recommendation) {
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black" [class]="recommendationBadgeClass(recommendation.tier)">
+                      {{ recommendationMarker(recommendation.tier) }} {{ recommendationLabel(recommendation.tier) }}
+                    </span>
+                  }
+                </span>
                 <span class="text-[10px] text-slate-400">
                   {{ person.employeeCode ? 'Mã NV: ' + person.employeeCode : 'Chưa khai báo mã nhân viên' }}
                 </span>
+                @if (recommendationForStaff(person.id); as recommendation) {
+                  <span class="mt-1 block text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    <strong class="text-slate-700 dark:text-slate-200">{{ recommendation.total }} lượt</strong>
+                    <span [class.text-rose-600]="recommendation.deviationPercent > 15" [class.text-blue-600]="recommendation.deviationPercent < -15">
+                      · {{ recommendation.deviationPercent > 0 ? '+' : '' }}{{ recommendation.deviationPercent | number:'1.0-0' }}%
+                    </span>
+                    · Cuối tuần {{ recommendation.weekendCount }} · ★ Chủ trì {{ recommendation.leadCount }}
+                  </span>
+                }
                 @if (conflictWarningForStaff(person.id); as warning) {
-                  <span class="ml-1 inline-flex rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">{{ warning }}</span>
+                  <span class="mt-1 inline-flex rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">⚠ {{ warning }}</span>
                 }
               </span>
             </label>

@@ -4,11 +4,13 @@ import type { DutyScheduleEntry, DutyStaff } from './duty-schedule.model';
 import {
   aggregateDutyPeopleById,
   aggregateDutyRosterById,
+  computeDutyStaffRecommendations,
   countDutyAssignments,
   dutyAdjacentAssignment,
   dutyMonthCalendarDateKeys,
   dutyMonthDateKeys,
   dutyMonthRange,
+  dutyRolling90Range,
   findLinkedDutyStaff,
   isDutyDateKey,
   resolveDutyStaffNames,
@@ -34,6 +36,7 @@ test('duty date helpers validate dates and month ranges', () => {
   assert.equal(shiftDutyDateKey('2026-09-01', -1), '2026-08-31');
   assert.equal(shiftDutyDateKey('2026-12-31', 1), '2027-01-01');
   assert.equal(dutyMonthDateKeys(2028, 2).length, 29);
+  assert.deepEqual(dutyRolling90Range('2026-09-08'), { start: '2026-06-11', end: '2026-09-08' });
 });
 
 test('month calendar grid is Monday-first and padded to complete weeks', () => {
@@ -59,7 +62,54 @@ test('duty statistics stay identity-based for similar names', () => {
   assert.equal(stats.find(item => item.staffId === 'staff-accented')?.total, 2);
   assert.equal(stats.find(item => item.staffId === 'staff-plain')?.total, 1);
   assert.equal(stats.find(item => item.staffId === 'staff-dat')?.total, 1);
+  assert.equal(stats.find(item => item.staffId === 'staff-accented')?.leadCount, 2);
+  assert.equal(stats.find(item => item.staffId === 'staff-accented')?.weekendCount, 0);
   assert.deepEqual(resolveDutyStaffNames(schedules[0], staff), ['Huỳnh', 'Huynh']);
+});
+
+test('duty statistics count weekend assignments and lead responsibility independently', () => {
+  const weekendSchedules: DutyScheduleEntry[] = [
+    { id: 'sat', date: '2026-09-05', staffIds: ['staff-plain', 'staff-accented'], startTime: '18:00', status: 'planned' },
+    { id: 'sun', date: '2026-09-06', staffIds: ['staff-accented', 'staff-plain'], startTime: '18:00', status: 'planned' },
+  ];
+  const stats = aggregateDutyPeopleById(weekendSchedules, staff);
+  assert.equal(stats.find(item => item.staffId === 'staff-plain')?.weekendCount, 2);
+  assert.equal(stats.find(item => item.staffId === 'staff-plain')?.leadCount, 1);
+  assert.equal(stats.find(item => item.staffId === 'staff-accented')?.weekendCount, 2);
+  assert.equal(stats.find(item => item.staffId === 'staff-accented')?.leadCount, 1);
+});
+
+test('rolling recommendations exclude the edited shift and apply four-tier workload rules', () => {
+  const people: DutyStaff[] = [
+    { id: 'a', displayName: 'A', active: true },
+    { id: 'b', displayName: 'B', active: true },
+    { id: 'c', displayName: 'C', active: true },
+    { id: 'd', displayName: 'D', active: true },
+    { id: 'e', displayName: 'E', active: true },
+  ];
+  const context: DutyScheduleEntry[] = [
+    { id: '0901', date: '2026-09-01', staffIds: ['b', 'c', 'd', 'e'], startTime: '18:00', status: 'planned' },
+    { id: '0902', date: '2026-09-02', staffIds: ['c', 'd', 'e'], startTime: '18:00', status: 'planned' },
+    { id: '0903', date: '2026-09-03', staffIds: ['d', 'e'], startTime: '18:00', status: 'planned' },
+    { id: '0904', date: '2026-09-04', staffIds: ['e'], startTime: '18:00', status: 'planned' },
+    { id: '0905', date: '2026-09-05', staffIds: ['b', 'c', 'd', 'e'], startTime: '18:00', status: 'planned' },
+    { id: '0906', date: '2026-09-06', staffIds: ['c', 'e'], startTime: '18:00', status: 'planned' },
+    { id: '0907', date: '2026-09-07', staffIds: ['b', 'e'], startTime: '18:00', status: 'planned' },
+    { id: '0820', date: '2026-08-20', staffIds: ['e'], startTime: '18:00', status: 'planned' },
+    { id: '0821', date: '2026-08-21', staffIds: ['d'], startTime: '18:00', status: 'planned' },
+    { id: '0908', date: '2026-09-08', staffIds: ['a'], startTime: '18:00', status: 'planned' },
+  ];
+
+  const recommendations = computeDutyStaffRecommendations('2026-09-08', context, people, '2026-09-08');
+  const byId = new Map(recommendations.map(item => [item.staffId, item]));
+  assert.equal(byId.get('a')?.total, 0);
+  assert.equal(byId.get('a')?.tier, 'recommended');
+  assert.equal(byId.get('b')?.tier, 'consider');
+  assert.equal(byId.get('b')?.adjacentPrevious, true);
+  assert.equal(byId.get('c')?.tier, 'balanced');
+  assert.equal(byId.get('d')?.tier, 'consider');
+  assert.equal(byId.get('e')?.tier, 'high');
+  assert.equal(recommendations[0].staffId, 'a');
 });
 
 test('duty roster statistics keep active staff with zero assignments visible', () => {
