@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.05-b02
+## Phiên bản hiện tại: v26.09.05-b03
+
+### v26.09.05-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Lịch trực → Nhập lịch TSV giúp dán hoặc tải lịch cả tháng, kiểm tra từng ngày và lưu sau khi đối chiếu ảnh gốc.
+
+#### ✨ Tính Năng Mới
+
+- Sao chép sẵn yêu cầu đọc ảnh cho Gemini, tự điền tháng đang chọn và tên nhân sự đang hoạt động.
+- Xem trước nhân sự, giờ và ghi chú; giữ lịch hiện có hoặc chọn riêng từng ngày cần thay thế.
+- Tải mẫu và tải lại lịch đã đối chiếu để lưu cùng ảnh nguồn cho những lần sử dụng sau.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Báo rõ ngày trùng, sai tháng, sai giờ, tên chưa khớp hoặc thông tin chưa đọc chắc chắn trước khi nhập.
+- Kiểm tra lại các ca trước khi lưu cả tháng và yêu cầu xem trước lại nếu người khác vừa chỉnh sửa lịch.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.09.05-b02
 

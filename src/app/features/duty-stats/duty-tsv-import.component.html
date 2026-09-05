@@ -1,0 +1,85 @@
+<app-modal-shell title="Nhập lịch cả tháng" [description]="'Tháng ' + month() + ' · Ảnh → Gemini → Xem trước → Nhập lịch'" size="xl" [closeDisabled]="busy()" (closed)="closed.emit()">
+  <div modalBody class="space-y-5 text-sm text-slate-700 dark:text-slate-200">
+    <div class="rounded-xl bg-blue-50 p-4 dark:bg-blue-950/30">
+      <p>1. Sao chép prompt bên dưới, gửi cùng ảnh lịch tháng <strong>{{ month() }}</strong> cho Gemini.</p>
+      <p class="mt-1">2. Chỉ sao chép khối TSV từ câu trả lời hoặc tải tệp .tsv UTF-8 vào đây.</p>
+      <p class="mt-1">3. Đối chiếu ảnh, tổng số ngày và từng người trong bảng xem trước rồi xác nhận nhập.</p>
+      <p class="mt-2 text-xs">Chỉ các ngày có trong nội dung nhập được xử lý. Ngày không có trong tệp được giữ nguyên. Ca thay thế sẽ trở thành “Đang áp dụng”, kể cả ca trước đó đã hủy.</p>
+    </div>
+    <details class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+      <summary class="cursor-pointer font-bold">Prompt Gemini cố định · phiên bản 1 · tháng {{ month() }}</summary>
+      <p class="my-2 text-xs">Nội dung tự điền tháng và danh mục nhân sự đang hoạt động. Nếu có người mới, thêm trong Nhân sự rồi mở lại màn hình này.</p>
+      <textarea aria-label="Prompt Gemini cố định" readonly [value]="prompt()" rows="12" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
+    </details>
+    <div class="flex flex-wrap gap-2">
+      <app-button variant="secondary" (click)="copyPrompt()" [disabled]="duty.loadingStaff()">Sao chép prompt Gemini</app-button>
+      <app-button variant="secondary" (click)="downloadTemplate()">Tải mẫu TSV</app-button>
+    </div>
+    @if (!result()) {
+      <label class="block font-bold">Tải tệp TSV hoặc TXT (UTF-8, tối đa 100 KB)
+        <input type="file" accept=".tsv,.txt,text/tab-separated-values,text/plain" (change)="upload($event)" [disabled]="busy()" class="mt-2 block w-full text-xs">
+      </label>
+      @if (filename()) { <p class="text-xs text-slate-500">Tệp đang đọc: {{ filename() }}</p> }
+      <label class="block font-bold">Nội dung TSV
+        <textarea aria-label="Nội dung TSV" [ngModel]="text()" (ngModelChange)="changeText($event)" [disabled]="busy()" rows="8" maxlength="100000"
+          placeholder="Dán dòng tiêu đề và các dòng lịch từ khối TSV Gemini trả về" spellcheck="false"
+          class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
+      </label>
+      <p class="text-xs">4 cột: date → assignees → startTime → note, ngăn cách bằng Tab. Tên cách nhau bằng dấu |; thứ tự đầu tiên là người chủ trì. Giữ riêng Huynh / Huỳnh và Đạt (O) / Đạt (N).</p>
+      <app-button (click)="preview()" [disabled]="busy() || !text().trim() || duty.loadingStaff()">Kiểm tra và xem trước</app-button>
+    }
+    @if (errors().length) {
+      <div role="alert" class="rounded-xl bg-red-50 p-3 text-red-700 dark:bg-red-950/30 dark:text-red-300">
+        @for (error of errors(); track $index) { <p>{{ error }}</p> }
+      </div>
+    }
+    @if (rows().length) {
+      <div aria-live="polite" class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+        <strong>{{ rows().length }} ngày trong tệp</strong>
+        @if (previewReady()) { <span> · {{ created() }} mới · {{ replaced() }} thay thế · {{ kept() }} giữ lại · {{ assignments() }} lượt sẽ nhập</span> }
+      </div>
+      <div class="max-h-80 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700">
+        <table class="w-full min-w-[680px] text-left text-xs">
+          <thead class="sticky top-0 bg-slate-100 dark:bg-slate-800"><tr><th class="p-3">Dòng / Ngày</th><th class="p-3">Nhân sự / giờ mới / ghi chú</th><th class="p-3">Lịch hiện có</th><th class="p-3">Xử lý</th></tr></thead>
+          <tbody>
+            @for (row of rows(); track $index) {
+              <tr class="border-t border-slate-100 align-top dark:border-slate-800">
+                <td class="p-3">{{ row.line }} · {{ row.date }}</td>
+                <td class="p-3"><strong>{{ row.names.join(' · ') }}</strong><p>{{ row.startTime }}</p><p class="whitespace-pre-wrap break-words">{{ row.note }}</p></td>
+                <td class="p-3">
+                  @if (row.previous) { <p>{{ existingNames(row) }}</p><p>{{ row.previous.startTime }} · {{ row.previous.status === 'cancelled' ? 'Đã hủy' : 'Đang áp dụng' }}</p><p class="whitespace-pre-wrap break-words">{{ row.previous.note }}</p> }
+                  @else { <span>{{ previewReady() || result() ? 'Chưa có ca' : 'Chưa đối chiếu' }}</span> }
+                </td>
+                <td class="p-3">
+                  @for (error of row.errors; track $index) { <p class="text-red-600 dark:text-red-300">{{ error }}</p> }
+                  @if (previewReady() && row.previous) {
+                    <label class="flex items-start gap-2"><input type="checkbox" [attr.aria-label]="'Thay thế ngày ' + row.date" [ngModel]="row.replace" (ngModelChange)="replaceDate(row.date, $event)" [disabled]="busy()">Thay thế ngày này</label>
+                    <p class="mt-1 font-bold">{{ row.replace ? 'Sẽ thay thế' : 'Giữ nguyên' }}</p>
+                  } @else if (previewReady()) { <span class="font-bold text-emerald-700 dark:text-emerald-300">Tạo mới</span> }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (previewReady()) {
+      <label class="flex items-start gap-2 rounded-xl border border-blue-200 p-3 dark:border-blue-800">
+        <input type="checkbox" aria-label="Đã đối chiếu ảnh và xác nhận các ngày sẽ nhập" [ngModel]="reviewed()" (ngModelChange)="reviewed.set($event)" [disabled]="busy()">
+        <span>Tôi đã đối chiếu ảnh, tên người, ngày, giờ và xác nhận {{ created() }} ca mới, {{ replaced() }} ca thay thế trong tháng {{ month() }}.</span>
+      </label>
+    }
+    @if (result(); as done) {
+      <div role="status" class="rounded-xl bg-emerald-50 p-4 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+        <strong>Đã nhập thành công tháng {{ month() }}</strong>
+        <p>{{ done.created }} ca mới · {{ done.replaced }} ca thay thế · {{ done.kept }} ca được giữ nguyên.</p>
+        <p class="mt-1">Lịch đã được lưu trên LIMS. Bạn có thể tải lại các dòng đã nhập để lưu cùng ảnh nguồn.</p>
+      </div>
+    }
+  </div>
+  <div modalFooter class="flex flex-wrap gap-2">
+    @if ((previewReady() || result()) && created() + replaced() > 0) { <app-button variant="secondary" (click)="downloadReviewed()">Tải TSV đã đối chiếu</app-button> }
+    <app-button variant="secondary" [disabled]="busy()" (click)="closed.emit()">Đóng</app-button>
+    @if (!result()) { <app-button [disabled]="!canImport()" [loading]="busy()" (click)="submit()">Nhập {{ created() + replaced() }} ca vào LIMS</app-button> }
+  </div>
+</app-modal-shell>

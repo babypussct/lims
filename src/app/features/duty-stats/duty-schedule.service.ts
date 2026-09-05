@@ -28,6 +28,8 @@ import {
   normalizeDutyStaffCode,
   normalizeDutyStaffName,
 } from './duty-schedule.utils';
+import { type DutyImportPlanRow } from './duty-tsv-import';
+import { persistDutyMonthImport } from './duty-tsv-import.persistence';
 
 @Injectable({ providedIn: 'root' })
 export class DutyScheduleService {
@@ -336,6 +338,13 @@ export class DutyScheduleService {
 
       return { created, skipped };
     });
+  }
+
+  async importMonthTsv(text: string, month: string, reviewed: readonly DutyImportPlanRow[]): Promise<{ created: number; replaced: number; kept: number }> {
+    this.assertCanManage();
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) throw new Error('Cần đăng nhập để nhập lịch.');
+    return persistDutyMonthImport(this.fb.db, this.fb.APP_ID, uid, this.staff(), text, month, reviewed);
   }
 
   async cancelSchedule(date: string): Promise<void> {

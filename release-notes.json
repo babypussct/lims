@@ -1,15 +1,16 @@
 {
-  "title": "Xem lịch trực theo tháng nhanh và đầy đủ hơn",
+  "title": "Nhập lịch trực cả tháng từ ảnh nhanh và có đối chiếu",
   "highlights": [
-    "Mở Lịch trực theo một tháng sẽ hiển thị ngay dạng lưới và cho thấy đầy đủ tên của tất cả nhân sự trong từng ngày."
+    "Lịch trực → Nhập lịch TSV giúp dán hoặc tải lịch cả tháng, kiểm tra từng ngày và lưu sau khi đối chiếu ảnh gốc."
   ],
   "features": [
-    "Lưới lịch trở thành kiểu hiển thị mặc định khi chọn một tháng cụ thể; chế độ danh sách vẫn có thể chọn khi cần."
+    "Sao chép sẵn yêu cầu đọc ảnh cho Gemini, tự điền tháng đang chọn và tên nhân sự đang hoạt động.",
+    "Xem trước nhân sự, giờ và ghi chú; giữ lịch hiện có hoặc chọn riêng từng ngày cần thay thế.",
+    "Tải mẫu và tải lại lịch đã đối chiếu để lưu cùng ảnh nguồn cho những lần sử dụng sau."
   ],
   "improvements": [
-    "Mỗi ô ngày tự xuống dòng để hiển thị từng người trực, giúp kiểm tra phân công ngay trên lưới mà không cần mở ca."
+    "Báo rõ ngày trùng, sai tháng, sai giờ, tên chưa khớp hoặc thông tin chưa đọc chắc chắn trước khi nhập.",
+    "Kiểm tra lại các ca trước khi lưu cả tháng và yêu cầu xem trước lại nếu người khác vừa chỉnh sửa lịch."
   ],
-  "fixes": [
-    "Không còn thay tên người trực thứ hai và thứ ba bằng mô tả số lượng phối hợp."
-  ]
+  "fixes": []
 }

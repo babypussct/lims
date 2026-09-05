@@ -73,6 +73,9 @@
       </app-button>
       @if (duty.canManage() && activeView() === 'schedule') {
         @if (selectedMonth() !== null) {
+          <app-button variant="secondary" size="sm" (click)="importMonth.set(selectedYear() + '-' + formatMonth(selectedMonth()!))">
+            <i class="fa-solid fa-file-import" aria-hidden="true"></i> Nhập lịch TSV
+          </app-button>
           <app-button variant="secondary" size="sm" (click)="openBatchMonth()">
             <i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Tạo khung tháng
           </app-button>
@@ -522,6 +525,10 @@
     </section>
   }
 </div>
+
+@if (importMonth(); as month) {
+  <app-duty-tsv-import [month]="month" (closed)="importMonth.set(null)"></app-duty-tsv-import>
+}
 
 @if (staffModalOpen()) {
   <app-modal-shell

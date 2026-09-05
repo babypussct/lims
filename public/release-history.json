@@ -1,5 +1,24 @@
 [
   {
+    "version": "v26.09.05-b03",
+    "date": "5/9/2026",
+    "title": "Nhập lịch trực cả tháng từ ảnh nhanh và có đối chiếu",
+    "highlights": [
+      "Lịch trực → Nhập lịch TSV giúp dán hoặc tải lịch cả tháng, kiểm tra từng ngày và lưu sau khi đối chiếu ảnh gốc."
+    ],
+    "features": [
+      "Sao chép sẵn yêu cầu đọc ảnh cho Gemini, tự điền tháng đang chọn và tên nhân sự đang hoạt động.",
+      "Xem trước nhân sự, giờ và ghi chú; giữ lịch hiện có hoặc chọn riêng từng ngày cần thay thế.",
+      "Tải mẫu và tải lại lịch đã đối chiếu để lưu cùng ảnh nguồn cho những lần sử dụng sau."
+    ],
+    "improvements": [
+      "Báo rõ ngày trùng, sai tháng, sai giờ, tên chưa khớp hoặc thông tin chưa đọc chắc chắn trước khi nhập.",
+      "Kiểm tra lại các ca trước khi lưu cả tháng và yêu cầu xem trước lại nếu người khác vừa chỉnh sửa lịch."
+    ],
+    "fixes": [],
+    "releaseOrder": 26090500003
+  },
+  {
     "version": "v26.09.05-b02",
     "date": "5/9/2026",
     "title": "Xem lịch trực theo tháng nhanh và đầy đủ hơn",

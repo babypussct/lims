@@ -25,9 +25,47 @@ import {
   where
 } from 'firebase/firestore';
 import { StatsService } from './stats.service';
+import { persistDutyMonthImport } from '../../features/duty-stats/duty-tsv-import.persistence';
+import { DUTY_TSV_HEADER, parseDutyTsv } from '../../features/duty-stats/duty-tsv-import';
+import type { DutyScheduleEntry } from '../../features/duty-stats/duty-schedule.model';
 
 const PROJECT_ID = 'demo-lims-smart-batch-rules';
 const APP_ID = 'lims-rules-test-app';
+test('monthly TSV import commits 31 dates, keeps existing, replaces selected and rejects stale or unauthorized writes atomically', async () => {
+  const people = Array.from({ length: 21 }, (_, i) => ({ id: `tsv-person-${i}`, displayName: `Người ${i}`, active: true }));
+  await env.withSecurityRulesDisabled(async context => {
+    const seedDb = context.firestore();
+    await Promise.all(people.map(person => setDoc(doc(seedDb, `artifacts/${APP_ID}/duty_staff/${person.id}`), person)));
+  });
+  const month = '2027-01';
+  const tsv = [DUTY_TSV_HEADER, ...Array.from({ length: 31 }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}\tNgười ${i % 21}\t18:00\t`)].join('\n');
+  const plan = parseDutyTsv(tsv, month, people).rows.map(row => ({ ...row, previous: null as DutyScheduleEntry | null, replace: false }));
+  const db = dbFor(users.customDutyManage);
+  const save = (text = tsv, rows = plan, uid: string = users.customDutyManage.uid, database = db) => persistDutyMonthImport(database as never, APP_ID, uid, people, text, month, rows);
+  assert.deepEqual(await save(), { created: 31, replaced: 0, kept: 0 });
+  const current = await Promise.all(plan.map(async row => {
+    const snapshot = await getDoc(doc(db, `artifacts/${APP_ID}/duty_schedules/${row.date}`));
+    return { ...row, previous: { id: snapshot.id, ...snapshot.data() } as DutyScheduleEntry };
+  }));
+  assert.equal(current[0].previous.updatedByUid, users.customDutyManage.uid);
+  await assert.rejects(() => save(tsv, current), /Không có ngày/);
+  const editedTsv = tsv.replace('Người 0\t18:00', 'Người 1\t19:00');
+  const editedRows = parseDutyTsv(editedTsv, month, people).rows.map((row, i) => ({ ...row, previous: current[i].previous, replace: i === 0 }));
+  assert.deepEqual(await save(editedTsv, editedRows), { created: 0, replaced: 1, kept: 30 });
+  const changed = await getDoc(doc(db, `artifacts/${APP_ID}/duty_schedules/2027-01-01`));
+  assert.equal(changed.data()?.startTime, '19:00');
+  assert.deepEqual(changed.data()?.createdAt, current[0].previous.createdAt);
+  // The second selected day must remain untouched when the first review is stale.
+  const beforeSecond = current[1].previous;
+  await assert.rejects(() => save(tsv, current.map((row, i) => ({ ...row, replace: i < 2 }))), /vừa thay đổi/);
+  assert.deepEqual((await getDoc(doc(db, `artifacts/${APP_ID}/duty_schedules/2027-01-02`))).data()?.updatedAt, beforeSecond.updatedAt);
+  const denied = dbFor(users.staffDefault);
+  await assert.rejects(() => save(tsv, current.map((row, i) => ({ ...row, replace: i === 1 })), users.staffDefault.uid, denied), /permission|PERMISSION/i);
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/duty_staff/tsv-person-1`), { active: false });
+  });
+  await assert.rejects(() => save(tsv, current.map((row, i) => ({ ...row, replace: i === 1 }))), /nhân sự vừa thay đổi/);
+});
 const rules = readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8');
 
 const users = {

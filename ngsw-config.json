@@ -2,13 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.05-b02",
-    "title": "Xem lịch trực theo tháng nhanh và đầy đủ hơn",
+    "version": "v26.09.05-b03",
+    "title": "Nhập lịch trực cả tháng từ ảnh nhanh và có đối chiếu",
     "features": [
-      "Mở Lịch trực theo một tháng sẽ hiển thị ngay dạng lưới và cho thấy đầy đủ tên của tất cả nhân sự trong từng ngày.",
-      "Lưới lịch trở thành kiểu hiển thị mặc định khi chọn một tháng cụ thể; chế độ danh sách vẫn có thể chọn khi cần.",
-      "Mỗi ô ngày tự xuống dòng để hiển thị từng người trực, giúp kiểm tra phân công ngay trên lưới mà không cần mở ca.",
-      "Không còn thay tên người trực thứ hai và thứ ba bằng mô tả số lượng phối hợp."
+      "Lịch trực → Nhập lịch TSV giúp dán hoặc tải lịch cả tháng, kiểm tra từng ngày và lưu sau khi đối chiếu ảnh gốc.",
+      "Sao chép sẵn yêu cầu đọc ảnh cho Gemini, tự điền tháng đang chọn và tên nhân sự đang hoạt động.",
+      "Xem trước nhân sự, giờ và ghi chú; giữ lịch hiện có hoặc chọn riêng từng ngày cần thay thế.",
+      "Tải mẫu và tải lại lịch đã đối chiếu để lưu cùng ảnh nguồn cho những lần sử dụng sau.",
+      "Báo rõ ngày trùng, sai tháng, sai giờ, tên chưa khớp hoặc thông tin chưa đọc chắc chắn trước khi nhập."
     ]
   },
   "assetGroups": [

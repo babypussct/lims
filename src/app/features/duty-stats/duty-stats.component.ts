@@ -12,6 +12,7 @@ import {
 } from '../../shared/components/ui';
 import type { DutyScheduleDraft, DutyScheduleEntry, DutyStaff, DutyStaffDraft } from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
+import { DutyTsvImportComponent } from './duty-tsv-import.component';
 import {
   activeDutySchedules,
   aggregateDutyPeopleById,
@@ -51,6 +52,7 @@ interface DutyCalendarCell {
     AppModalShellComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    DutyTsvImportComponent,
   ],
   templateUrl: './duty-stats.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,6 +64,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   private readonly confirmation = inject(ConfirmationService);
 
   readonly activeView = signal<DutyView>('schedule');
+  readonly importMonth = signal<string | null>(null);
   readonly selectedYear = signal(Number(currentDutyMonthKey().slice(0, 4)));
   readonly selectedMonth = signal<number | null>(Number(currentDutyMonthKey().slice(5, 7)));
   readonly selectedStaffFilter = signal<string | null>(null);
