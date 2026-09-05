@@ -15,7 +15,7 @@ import { DutyScheduleService } from './duty-schedule.service';
 import { DutyTsvImportComponent } from './duty-tsv-import.component';
 import {
   activeDutySchedules,
-  aggregateDutyPeopleById,
+  aggregateDutyRosterById,
   countDutyAssignments,
   currentDutyDateKey,
   currentDutyMonthKey,
@@ -33,6 +33,7 @@ import {
 type DutyView = 'schedule' | 'staff' | 'stats';
 type DutyScheduleLayout = 'list' | 'calendar';
 type DutyBatchScope = 'all' | 'weekdays' | 'weekends';
+type DutyStatsRangeMode = 'selection' | 'year' | 'all';
 type DutyStatsSortColumn = 'total' | 'mondayCount' | 'activeMonthCount' | 'lastDate' | 'displayName';
 type SortDirection = 'asc' | 'desc';
 interface DutyCalendarCell {
@@ -86,6 +87,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly conflictLoading = signal(false);
   readonly sortColumn = signal<DutyStatsSortColumn>('total');
   readonly sortDirection = signal<SortDirection>('desc');
+  readonly statsRangeMode = signal<DutyStatsRangeMode>('selection');
 
   readonly years = Array.from({ length: 21 }, (_, index) => new Date().getFullYear() + 5 - index);
   readonly months = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -146,7 +148,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     return this.batchScopedDates().filter(date => !existing.has(date));
   });
   readonly batchExistingCount = computed(() => this.batchScopedDates().length - this.batchCandidateDates().length);
-  readonly personStats = computed(() => aggregateDutyPeopleById(this.duty.schedules(), this.duty.staff()));
+  readonly personStats = computed(() => aggregateDutyRosterById(this.duty.schedules(), this.duty.staff()));
   readonly sortedPersonStats = computed(() => {
     const column = this.sortColumn();
     const direction = this.sortDirection() === 'asc' ? 1 : -1;
@@ -172,10 +174,20 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   );
   readonly myStaffId = computed(() => this.myStaff()?.id);
   readonly totalAssignments = computed(() => countDutyAssignments(this.duty.schedules()));
-  readonly uniqueAssignedPeople = computed(() => this.personStats().length);
+  readonly uniqueAssignedPeople = computed(() => this.personStats().filter(item => item.total > 0).length);
+  readonly statsPopulationCount = computed(() => this.personStats().length);
   readonly averageAssignments = computed(() => {
-    const people = this.uniqueAssignedPeople();
+    const people = this.statsPopulationCount();
     return people === 0 ? 0 : this.totalAssignments() / people;
+  });
+  readonly statsRangeLabel = computed(() => {
+    const mode = this.statsRangeMode();
+    if (mode === 'all') return 'Toàn bộ dữ liệu lịch trực';
+    if (mode === 'year') return `Năm ${this.selectedYear()}`;
+    const month = this.selectedMonth();
+    return month === null
+      ? `Năm ${this.selectedYear()}`
+      : `Tháng ${this.formatMonth(month)}/${this.selectedYear()}`;
   });
 
   ngOnInit(): void {
@@ -297,7 +309,29 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   setActiveView(view: DutyView): void {
     this.activeView.set(view);
+    this.refreshRange();
     if (view === 'staff') void this.ensureAccounts();
+  }
+
+  setStatsRangeMode(mode: DutyStatsRangeMode): void {
+    this.statsRangeMode.set(mode);
+    if (this.activeView() === 'stats') this.refreshRange();
+  }
+
+  assignmentDifference(total: number): number {
+    return total - this.averageAssignments();
+  }
+
+  assignmentDeviationPercent(total: number): number {
+    const average = this.averageAssignments();
+    if (average === 0) return 0;
+    return ((total - average) / average) * 100;
+  }
+
+  assignmentBalanceLabel(total: number): 'Cân bằng' | 'Nhiều hơn' | 'Ít hơn' {
+    const deviation = this.assignmentDeviationPercent(total);
+    if (Math.abs(deviation) < 10) return 'Cân bằng';
+    return deviation > 0 ? 'Nhiều hơn' : 'Ít hơn';
   }
 
   openNewStaff(): void {
@@ -729,9 +763,14 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   private refreshRange(): void {
     const month = this.selectedMonth();
-    const range = month
-      ? dutyMonthRange(`${this.selectedYear()}-${String(month).padStart(2, '0')}`)
-      : dutyYearRange(this.selectedYear());
+    const statsMode = this.activeView() === 'stats' ? this.statsRangeMode() : 'selection';
+    const range = statsMode === 'all'
+      ? { start: '2000-01-01', end: '2200-12-31' }
+      : statsMode === 'year'
+        ? dutyYearRange(this.selectedYear())
+        : month
+          ? dutyMonthRange(`${this.selectedYear()}-${String(month).padStart(2, '0')}`)
+          : dutyYearRange(this.selectedYear());
     this.duty.watchRange(range.start, range.end);
   }
 

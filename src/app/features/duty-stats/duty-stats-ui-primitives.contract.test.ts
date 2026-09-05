@@ -89,7 +89,7 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
 
   assert.match(component, /dutyMonthCalendarDateKeys/);
   assert.match(component, /readonly calendarCells = computed/);
-  assert.match(component, /aggregateDutyPeopleById/);
+  assert.match(component, /aggregateDutyRosterById/);
   assert.match(component, /readonly personStats = computed/);
   assert.match(component, /readonly averageAssignments = computed/);
 
@@ -100,6 +100,24 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /Người tham gia/);
   assert.match(template, /Bình quân\/người/);
   assert.match(template, /@for \(stat of personStats\(\); track stat\.staffId/);
+  assert.match(template, /Chưa khai báo mã nhân viên/);
+  assert.match(template, /so bình quân/);
+});
+
+test('duty statistics support selected period, full year and all-time balance comparison', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+
+  assert.match(component, /type DutyStatsRangeMode = 'selection' \| 'year' \| 'all'/);
+  assert.match(component, /readonly statsRangeMode = signal<DutyStatsRangeMode>\('selection'\)/);
+  assert.match(component, /aggregateDutyRosterById/);
+  assert.match(component, /assignmentDeviationPercent\(total: number\)/);
+  assert.match(component, /start: '2000-01-01', end: '2200-12-31'/);
+  assert.match(template, /Phạm vi thống kê/);
+  assert.match(template, /Cả năm \{\{ selectedYear\(\) \}\}/);
+  assert.match(template, /Toàn bộ/);
+  assert.match(template, /So với bình quân/);
+  assert.match(template, /Chưa khai báo mã nhân viên/);
 });
 
 test('Gemini import prompt exposes a prominent copy action beside the prompt', () => {

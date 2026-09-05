@@ -66,7 +66,7 @@ export function dutyMonthDateKeys(year: number, month: number): string[] {
   return Array.from({ length: days }, (_, index) => `${monthKey}-${String(index + 1).padStart(2, '0')}`);
 }
 
-export function dutyMonthCalendarDateKeys(year: number, month: number): Array<string | null> {
+export function dutyMonthCalendarDateKeys(year: number, month: number): (string | null)[] {
   const dates = dutyMonthDateKeys(year, month);
   const [firstYear, firstMonth, firstDay] = dates[0].split('-').map(Number);
   const firstWeekday = new Date(Date.UTC(firstYear, firstMonth - 1, firstDay)).getUTCDay();
@@ -160,6 +160,31 @@ export function aggregateDutyPeopleById(
       lastDate: value.lastDate,
     };
   }).sort((a, b) => b.total - a.total || a.displayName.localeCompare(b.displayName, 'vi'));
+}
+
+export function aggregateDutyRosterById(
+  schedules: readonly DutyScheduleEntry[],
+  staff: readonly DutyStaff[],
+): DutyPersonStat[] {
+  const aggregated = aggregateDutyPeopleById(schedules, staff);
+  const byStaffId = new Map(aggregated.map(item => [item.staffId, item]));
+
+  for (const person of staff) {
+    if (!person.active || byStaffId.has(person.id)) continue;
+    byStaffId.set(person.id, {
+      staffId: person.id,
+      displayName: person.displayName,
+      employeeCode: person.employeeCode,
+      linkedUserUid: person.linkedUserUid,
+      total: 0,
+      mondayCount: 0,
+      activeMonthCount: 0,
+      lastDate: '',
+    });
+  }
+
+  return [...byStaffId.values()]
+    .sort((a, b) => b.total - a.total || a.displayName.localeCompare(b.displayName, 'vi'));
 }
 
 export function countDutyAssignments(schedules: readonly DutyScheduleEntry[]): number {

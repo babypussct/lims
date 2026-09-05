@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.05-b04",
-    "title": "Lịch trực tháng: nhập Gemini có xác minh và thông báo nhân sự",
+    "version": "v26.09.05-b05",
+    "title": "Lịch trực: lịch tháng gọn hơn và thống kê cân bằng theo thời gian",
     "features": [
-      "Nhập lịch trực tháng theo luồng dán TSV từ Gemini, bắt buộc một lượt nhận diện độc lập lần hai trước khi cho phép ghi vào LIMS.",
-      "Dashboard hiển thị lịch tháng, thống kê lượt trực và làm nổi bật đúng tên nhân sự đang đăng nhập cùng ca trực sắp tới.",
-      "Có nút sao chép prompt Gemini cho lượt nhận diện đầu và prompt xác minh riêng; lượt hai yêu cầu mở chat Gemini mới, tải lại đúng ảnh nguồn và đọc lại độc lập.",
-      "Các vị trí chưa đọc chắc chắn như ?, Đạt (?) hoặc CHƯA RÕ vẫn có thể nhập với trạng thái Cần xác minh, giữ nguyên cách ghi nguồn và sửa bổ sung về sau.",
-      "Lịch trực phát thông báo qua Bell/Push đến tài khoản đã liên kết khi được phân công, thay đổi hoặc hủy ca; quản lý lịch nhận cảnh báo riêng khi còn vị trí cần xác minh."
+      "Lưới lịch tháng được thu gọn chiều cao nhưng tăng cỡ chữ tên, ngày, giờ và trạng thái để quan sát nhanh hơn trên cùng một màn hình.",
+      "Thống kê lịch trực bổ sung so sánh từng người với mức bình quân, giúp nhận biết ngay ai đang trực nhiều hơn, ít hơn hoặc tương đối cân bằng.",
+      "Màn hình Thống kê có ba phạm vi: kỳ đang chọn, cả năm và toàn bộ dữ liệu lịch trực đã lưu.",
+      "Mỗi nhân sự có chỉ số phần trăm lệch so với bình quân và số lượt chênh lệch tuyệt đối trong cùng phạm vi thống kê.",
+      "Nhân sự đang hoạt động chưa từng được xếp ca vẫn xuất hiện trong thống kê với 0 lượt để phản ánh đầy đủ mức phân bổ."
     ]
   },
   "assetGroups": [

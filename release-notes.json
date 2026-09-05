@@ -1,20 +1,18 @@
 {
-  "title": "Lịch trực tháng: nhập Gemini có xác minh và thông báo nhân sự",
+  "title": "Lịch trực: lịch tháng gọn hơn và thống kê cân bằng theo thời gian",
   "highlights": [
-    "Nhập lịch trực tháng theo luồng dán TSV từ Gemini, bắt buộc một lượt nhận diện độc lập lần hai trước khi cho phép ghi vào LIMS.",
-    "Dashboard hiển thị lịch tháng, thống kê lượt trực và làm nổi bật đúng tên nhân sự đang đăng nhập cùng ca trực sắp tới."
+    "Lưới lịch tháng được thu gọn chiều cao nhưng tăng cỡ chữ tên, ngày, giờ và trạng thái để quan sát nhanh hơn trên cùng một màn hình.",
+    "Thống kê lịch trực bổ sung so sánh từng người với mức bình quân, giúp nhận biết ngay ai đang trực nhiều hơn, ít hơn hoặc tương đối cân bằng."
   ],
   "features": [
-    "Có nút sao chép prompt Gemini cho lượt nhận diện đầu và prompt xác minh riêng; lượt hai yêu cầu mở chat Gemini mới, tải lại đúng ảnh nguồn và đọc lại độc lập.",
-    "Các vị trí chưa đọc chắc chắn như ?, Đạt (?) hoặc CHƯA RÕ vẫn có thể nhập với trạng thái Cần xác minh, giữ nguyên cách ghi nguồn và sửa bổ sung về sau.",
-    "Lịch trực phát thông báo qua Bell/Push đến tài khoản đã liên kết khi được phân công, thay đổi hoặc hủy ca; quản lý lịch nhận cảnh báo riêng khi còn vị trí cần xác minh.",
-    "Notification Center có tab Lịch trực và Activity Feed ghi nhận thao tác cập nhật hoặc nhập lịch tháng."
+    "Màn hình Thống kê có ba phạm vi: kỳ đang chọn, cả năm và toàn bộ dữ liệu lịch trực đã lưu.",
+    "Mỗi nhân sự có chỉ số phần trăm lệch so với bình quân và số lượt chênh lệch tuyệt đối trong cùng phạm vi thống kê.",
+    "Nhân sự đang hoạt động chưa từng được xếp ca vẫn xuất hiện trong thống kê với 0 lượt để phản ánh đầy đủ mức phân bổ."
   ],
   "improvements": [
-    "Luồng nhập ưu tiên dán TSV trực tiếp, giảm thao tác tải file TSV xuống rồi tải ngược lên hệ thống.",
-    "Bộ kiểm tra TSV đối chiếu cấu trúc, ngày, giờ, nhân sự và kết quả giữa hai lượt Gemini trước khi mở nút nhập.",
-    "Tên thật của nhân sự luôn được giữ nguyên trên lịch; trạng thái cá nhân chỉ dùng để làm nổi bật và hiển thị ca gần nhất, không thay tên bằng 'Bạn'.",
-    "Khi nhập cả tháng, thông báo được gom theo từng người để tránh gửi một thông báo cho từng ngày trực."
+    "Các ô lịch tháng giảm khoảng trống và tăng độ dễ đọc của tên nhân sự, giờ trực và nhãn trạng thái trên Dashboard và màn hình Lịch trực.",
+    "Thông tin mã nhân viên được diễn đạt rõ: có mã sẽ hiển thị theo dạng Mã NV, chưa có mã sẽ ghi Chưa khai báo mã nhân viên thay cho nhãn mơ hồ Chưa có mã.",
+    "Bình quân lượt trực được tính trên toàn bộ nhân sự đang hoạt động trong thống kê, kể cả người có 0 lượt, để chỉ số cân bằng không bị lệch."
   ],
   "fixes": []
 }

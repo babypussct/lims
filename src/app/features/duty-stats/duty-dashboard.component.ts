@@ -7,7 +7,7 @@ import type { DutyScheduleEntry } from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
 import {
   activeDutySchedules,
-  aggregateDutyPeopleById,
+  aggregateDutyRosterById,
   currentDutyDateKey,
   currentDutyMonthKey,
   dutyMonthCalendarDateKeys,
@@ -81,11 +81,12 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     this.activeSchedules().reduce((total, item) => total + (item.unresolvedAssignees?.length || 0), 0),
   );
   readonly personStats = computed(() =>
-    aggregateDutyPeopleById(this.activeSchedules(), this.duty.staff()),
+    aggregateDutyRosterById(this.activeSchedules(), this.duty.staff()),
   );
-  readonly uniqueAssignedPeople = computed(() => this.personStats().length);
+  readonly uniqueAssignedPeople = computed(() => this.personStats().filter(item => item.total > 0).length);
+  readonly statsPopulationCount = computed(() => this.personStats().length);
   readonly averageAssignments = computed(() => {
-    const people = this.uniqueAssignedPeople();
+    const people = this.statsPopulationCount();
     return people === 0 ? 0 : this.monthAssignmentCount() / people;
   });
 
@@ -113,6 +114,18 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
 
   isMyName(name: string): boolean {
     return this.linkedStaff()?.displayName === name;
+  }
+
+  assignmentDeviationPercent(total: number): number {
+    const average = this.averageAssignments();
+    if (average === 0) return 0;
+    return ((total - average) / average) * 100;
+  }
+
+  assignmentDeviationLabel(total: number): string {
+    const deviation = this.assignmentDeviationPercent(total);
+    if (Math.abs(deviation) < 10) return 'Cân bằng';
+    return deviation > 0 ? 'Nhiều hơn' : 'Ít hơn';
   }
 
   isToday(dateKey: string): boolean {

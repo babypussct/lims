@@ -177,7 +177,7 @@
       </div>
       @if (scheduleLayout() === 'calendar') {
         <div class="h-full min-h-0 overflow-auto p-3 custom-scrollbar">
-          <div class="min-w-[720px] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="min-w-[640px] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
             <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
               @for (weekday of calendarWeekdays; track weekday) {
                 <div class="px-2 py-2 text-center text-[10px] font-black uppercase text-slate-500">{{ weekday }}</div>
@@ -187,21 +187,21 @@
               @for (cell of calendarCells(); track $index) {
                 @if (cell) {
                   <button type="button" (click)="openCalendarDate(cell)" [disabled]="!duty.canManage()"
-                    class="group min-h-28 border-b border-r border-slate-200 bg-white p-2.5 text-left transition enabled:hover:z-[1] enabled:hover:bg-blue-50/60 enabled:hover:shadow-sm disabled:cursor-default dark:border-slate-700 dark:bg-slate-900 dark:enabled:hover:bg-blue-950/20"
+                    class="group min-h-20 border-b border-r border-slate-200 bg-white p-1.5 text-left transition enabled:hover:z-[1] enabled:hover:bg-blue-50/60 enabled:hover:shadow-sm disabled:cursor-default dark:border-slate-700 dark:bg-slate-900 dark:enabled:hover:bg-blue-950/20"
                     [class.ring-2]="isToday(cell.date)" [class.ring-inset]="isToday(cell.date)" [class.ring-blue-500]="isToday(cell.date)">
                     <div class="flex items-center justify-between gap-2">
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black"
+                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-black"
                         [class]="isToday(cell.date) ? 'bg-blue-600 text-white' : (isWeekend(cell.date) ? 'text-rose-600 dark:text-rose-300' : 'text-slate-700 dark:text-slate-200')">
                         {{ cell.day }}
                       </span>
                       @if (cell.schedule?.status === 'cancelled') {
-                        <span class="rounded-full bg-red-50 px-1.5 py-0.5 text-[8px] font-black text-red-600 dark:bg-red-950/30 dark:text-red-300">Đã hủy</span>
+                        <span class="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-black text-red-600 dark:bg-red-950/30 dark:text-red-300">Đã hủy</span>
                       } @else if (cell.schedule?.needsVerification) {
-                        <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Cần xác minh</span>
+                        <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Cần xác minh</span>
                       } @else if (cell.schedule && cell.schedule.staffIds.length === 0) {
-                        <span class="rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-black text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">Chưa phân công</span>
+                        <span class="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">Chưa phân công</span>
                       } @else if (cell.schedule && cell.visible) {
-                        <span class="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">Đã xếp</span>
+                        <span class="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">Đã xếp</span>
                       }
                     </div>
 
@@ -210,7 +210,7 @@
                         @if (namesFor(cell.schedule).length > 0) {
                           <div class="flex flex-wrap gap-1">
                             @for (name of namesFor(cell.schedule); track $index) {
-                              <span class="inline-flex max-w-full items-start gap-1 rounded-md bg-slate-100 px-1.5 py-1 text-[9px] font-black leading-tight text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                              <span class="inline-flex max-w-full items-start gap-1 rounded-md bg-slate-100 px-1.5 py-1 text-[11px] font-black leading-tight text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                                 @if ($index === 0) {
                                   <i class="fa-solid fa-star mt-px shrink-0 text-amber-500" aria-hidden="true"></i>
                                 }
@@ -222,34 +222,34 @@
                         @if (unresolvedFor(cell.schedule).length > 0) {
                           <div class="flex flex-wrap gap-1">
                             @for (label of unresolvedFor(cell.schedule); track $index) {
-                              <span class="inline-flex rounded-md bg-amber-100 px-1.5 py-1 text-[9px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                              <span class="inline-flex rounded-md bg-amber-100 px-1.5 py-1 text-[10px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                                 <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>{{ label || '?' }}
                               </span>
                             }
                           </div>
                         }
                         @if (namesFor(cell.schedule).length === 0 && unresolvedFor(cell.schedule).length === 0) {
-                          <div class="text-[10px] font-bold text-amber-600 dark:text-amber-300">Chạm để phân công người trực</div>
+                          <div class="text-[11px] font-bold text-amber-600 dark:text-amber-300">Chạm để phân công người trực</div>
                         }
-                        <div class="font-mono text-[9px] font-bold text-blue-600 dark:text-blue-300">
+                        <div class="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-300">
                           <i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>{{ cell.schedule.startTime || '18:00' }}
                         </div>
                         @if (isMyShift(cell.schedule)) {
-                          <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[8px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
+                          <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
                         }
                       </div>
                     } @else if (cell.schedule) {
-                      <div class="mt-3 text-[9px] font-bold text-slate-400">
+                      <div class="mt-2 text-[10px] font-bold text-slate-400">
                         {{ cell.schedule.status === 'cancelled' ? 'Ca này đã hủy' : 'Đã có ca khác ngoài bộ lọc' }}
                       </div>
                     } @else {
-                      <div class="mt-3 text-[9px] font-bold text-slate-300 dark:text-slate-600">
+                      <div class="mt-2 text-[10px] font-bold text-slate-300 dark:text-slate-600">
                         {{ duty.canManage() ? 'Chạm để tạo ca' : 'Chưa có ca' }}
                       </div>
                     }
                   </button>
                 } @else {
-                  <div class="min-h-28 border-b border-r border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-950/40"></div>
+                  <div class="min-h-20 border-b border-r border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-950/40"></div>
                 }
               }
             </div>
@@ -482,18 +482,42 @@
   }
 
   @if (activeView() === 'stats') {
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div>
+        <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">Phạm vi thống kê</div>
+        <div class="mt-0.5 text-sm font-black text-slate-700 dark:text-slate-200">{{ statsRangeLabel() }}</div>
+      </div>
+      <div class="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950">
+        <button type="button" (click)="setStatsRangeMode('selection')"
+          class="rounded-lg px-3 py-2 text-[10px] font-black transition"
+          [class]="statsRangeMode() === 'selection' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">
+          Kỳ đang chọn
+        </button>
+        <button type="button" (click)="setStatsRangeMode('year')"
+          class="rounded-lg px-3 py-2 text-[10px] font-black transition"
+          [class]="statsRangeMode() === 'year' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">
+          Cả năm {{ selectedYear() }}
+        </button>
+        <button type="button" (click)="setStatsRangeMode('all')"
+          class="rounded-lg px-3 py-2 text-[10px] font-black transition"
+          [class]="statsRangeMode() === 'all' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">
+          Toàn bộ
+        </button>
+      </div>
+    </div>
+
     <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt</div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div></div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Người tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}</div></div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Bình quân</div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt trong phạm vi</div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div><div class="mt-1 text-[10px] font-bold text-slate-400">{{ statsRangeLabel() }}</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Đã tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}/{{ statsPopulationCount() }}</div><div class="mt-1 text-[10px] font-bold text-slate-400">người có lượt / người trong thống kê</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Bình quân/người</div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div><div class="mt-1 text-[10px] font-bold text-slate-400">mốc 0% để so mức trực</div></div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Ca trực</div><div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div></div>
     </div>
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="border-b border-slate-100 px-5 py-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-        Thống kê được tính trực tiếp từ lịch đang áp dụng trong khoảng thời gian đã chọn; ca đã hủy không được tính.
+        Ca đã hủy không được tính. Nhân sự đang hoạt động chưa từng được xếp ca vẫn hiển thị với 0 lượt. “% lệch” so số lượt của từng người với bình quân trong cùng phạm vi: số dương = trực nhiều hơn, số âm = trực ít hơn.
       </div>
       <div class="h-full min-h-0 overflow-auto custom-scrollbar">
-        <table class="w-full min-w-[700px] text-left text-sm">
+        <table class="w-full min-w-[900px] text-left text-sm">
           <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
             <tr>
               <th class="px-5 py-3">#</th>
@@ -515,6 +539,7 @@
                     [class.fa-sort]="sortColumn() !== 'total'"></i>
                 </button>
               </th>
+              <th class="px-5 py-3 text-right">So với bình quân</th>
               <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('mondayCount')">
                 <button type="button" (click)="toggleSort('mondayCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
                   Thứ 2
@@ -548,14 +573,43 @@
             @for (stat of sortedPersonStats(); track stat.staffId; let index = $index) {
               <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                 <td class="px-5 py-3.5 text-xs font-black text-slate-400">{{ index + 1 }}</td>
-                <td class="px-5 py-3.5"><div class="font-black">{{ stat.displayName }}</div><div class="text-[10px] text-slate-400">{{ stat.employeeCode || 'Chưa có mã' }}</div></td>
+                <td class="px-5 py-3.5">
+                  <div class="font-black">{{ stat.displayName }}</div>
+                  @if (stat.employeeCode) {
+                    <div class="text-[10px] text-slate-400">Mã NV: {{ stat.employeeCode }}</div>
+                  } @else {
+                    <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400">Chưa khai báo mã nhân viên</div>
+                  }
+                </td>
                 <td class="px-5 py-3.5 text-right text-base font-black text-indigo-600 dark:text-indigo-400">{{ stat.total }}</td>
+                <td class="px-5 py-3.5 text-right">
+                  <div class="inline-flex items-center gap-2">
+                    <span
+                      class="rounded-full px-2 py-1 text-[9px] font-black"
+                      [class]="assignmentBalanceLabel(stat.total) === 'Cân bằng'
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : (assignmentDeviationPercent(stat.total) > 0
+                          ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                          : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300')">
+                      {{ assignmentBalanceLabel(stat.total) }}
+                    </span>
+                    <span class="min-w-14 text-sm font-black"
+                      [class.text-rose-600]="assignmentDeviationPercent(stat.total) > 0"
+                      [class.text-blue-600]="assignmentDeviationPercent(stat.total) < 0"
+                      [class.text-emerald-600]="assignmentDeviationPercent(stat.total) === 0">
+                      {{ assignmentDeviationPercent(stat.total) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat.total) | number:'1.0-0' }}%
+                    </span>
+                  </div>
+                  <div class="mt-1 text-[9px] font-bold text-slate-400">
+                    {{ assignmentDifference(stat.total) > 0 ? '+' : '' }}{{ assignmentDifference(stat.total) | number:'1.1-1' }} lượt
+                  </div>
+                </td>
                 <td class="px-5 py-3.5 text-right">{{ stat.mondayCount }}</td>
                 <td class="px-5 py-3.5 text-right">{{ stat.activeMonthCount }}</td>
                 <td class="px-5 py-3.5 text-xs text-slate-500">{{ stat.lastDate ? formatDate(stat.lastDate) : '—' }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="p-14 text-center text-sm italic text-slate-400">Chưa có dữ liệu để thống kê.</td></tr>
+              <tr><td colspan="7" class="p-14 text-center text-sm italic text-slate-400">Chưa có dữ liệu để thống kê.</td></tr>
             }
           </tbody>
         </table>
@@ -740,7 +794,9 @@
               <input type="checkbox" [checked]="isStaffSelected(person.id)" (change)="toggleScheduleStaff(person.id, $any($event.target).checked)" class="rounded border-slate-300">
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-xs font-black">{{ person.displayName }}</span>
-                <span class="text-[10px] text-slate-400">{{ person.employeeCode || 'Chưa có mã' }}</span>
+                <span class="text-[10px] text-slate-400">
+                  {{ person.employeeCode ? 'Mã NV: ' + person.employeeCode : 'Chưa khai báo mã nhân viên' }}
+                </span>
                 @if (conflictWarningForStaff(person.id); as warning) {
                   <span class="ml-1 inline-flex rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">{{ warning }}</span>
                 }

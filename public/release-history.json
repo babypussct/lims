@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.09.05-b05",
+    "date": "5/9/2026",
+    "title": "Lịch trực: lịch tháng gọn hơn và thống kê cân bằng theo thời gian",
+    "highlights": [
+      "Lưới lịch tháng được thu gọn chiều cao nhưng tăng cỡ chữ tên, ngày, giờ và trạng thái để quan sát nhanh hơn trên cùng một màn hình.",
+      "Thống kê lịch trực bổ sung so sánh từng người với mức bình quân, giúp nhận biết ngay ai đang trực nhiều hơn, ít hơn hoặc tương đối cân bằng."
+    ],
+    "features": [
+      "Màn hình Thống kê có ba phạm vi: kỳ đang chọn, cả năm và toàn bộ dữ liệu lịch trực đã lưu.",
+      "Mỗi nhân sự có chỉ số phần trăm lệch so với bình quân và số lượt chênh lệch tuyệt đối trong cùng phạm vi thống kê.",
+      "Nhân sự đang hoạt động chưa từng được xếp ca vẫn xuất hiện trong thống kê với 0 lượt để phản ánh đầy đủ mức phân bổ."
+    ],
+    "improvements": [
+      "Các ô lịch tháng giảm khoảng trống và tăng độ dễ đọc của tên nhân sự, giờ trực và nhãn trạng thái trên Dashboard và màn hình Lịch trực.",
+      "Thông tin mã nhân viên được diễn đạt rõ: có mã sẽ hiển thị theo dạng Mã NV, chưa có mã sẽ ghi Chưa khai báo mã nhân viên thay cho nhãn mơ hồ Chưa có mã.",
+      "Bình quân lượt trực được tính trên toàn bộ nhân sự đang hoạt động trong thống kê, kể cả người có 0 lượt, để chỉ số cân bằng không bị lệch."
+    ],
+    "fixes": [],
+    "releaseOrder": 26090500005
+  },
+  {
     "version": "v26.09.05-b04",
     "date": "5/9/2026",
     "title": "Lịch trực tháng: nhập Gemini có xác minh và thông báo nhân sự",

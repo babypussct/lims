@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { DutyScheduleEntry, DutyStaff } from './duty-schedule.model';
 import {
   aggregateDutyPeopleById,
+  aggregateDutyRosterById,
   countDutyAssignments,
   dutyAdjacentAssignment,
   dutyMonthCalendarDateKeys,
@@ -59,6 +60,18 @@ test('duty statistics stay identity-based for similar names', () => {
   assert.equal(stats.find(item => item.staffId === 'staff-plain')?.total, 1);
   assert.equal(stats.find(item => item.staffId === 'staff-dat')?.total, 1);
   assert.deepEqual(resolveDutyStaffNames(schedules[0], staff), ['Huỳnh', 'Huynh']);
+});
+
+test('duty roster statistics keep active staff with zero assignments visible', () => {
+  const roster = aggregateDutyRosterById(schedules, [
+    ...staff,
+    { id: 'staff-zero', displayName: 'Chưa trực', employeeCode: 'NV00', active: true },
+    { id: 'staff-inactive-zero', displayName: 'Đã nghỉ', active: false },
+  ]);
+
+  assert.equal(roster.find(item => item.staffId === 'staff-zero')?.total, 0);
+  assert.equal(roster.some(item => item.staffId === 'staff-inactive-zero'), false);
+  assert.equal(roster.find(item => item.staffId === 'staff-dat')?.total, 1);
 });
 
 test('optional LIMS account linkage resolves independently from duty history', () => {
