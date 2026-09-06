@@ -2265,7 +2265,7 @@ export class SmartBatchComponent {
       }
       const coverage = this.coverageMetrics();
       if (!coverage.isFullyCovered || coverage.duplicateCount > 0) {
-          this.toast.show('Kế hoạch phải phủ đủ và không được trùng task trước khi duyệt.', 'error');
+          this.toast.show('Kế hoạch phải bao phủ đầy đủ và không được trùng công việc trước khi duyệt.', 'error');
           return;
       }
       this.validateGlobalStock();
@@ -2274,7 +2274,7 @@ export class SmartBatchComponent {
           return;
       }
       
-      if (await this.confirmation.confirm({ message: `Xác nhận tạo nguyên tử ${this.batches().length} phiếu yêu cầu, trừ kho và đưa toàn bộ vào hàng đợi in? Nếu một mẻ lỗi, toàn bộ kế hoạch sẽ không được ghi.`, confirmText: 'Duyệt Toàn Bộ' })) {
+      if (await this.confirmation.confirm({ message: `Xác nhận tạo đồng thời ${this.batches().length} phiếu yêu cầu, trừ kho và đưa toàn bộ vào hàng đợi in? Nếu một mẻ lỗi, toàn bộ kế hoạch sẽ không được ghi.`, confirmText: 'Duyệt Toàn Bộ' })) {
           this.isProcessing.set(true);
           const inventoryMap = this.state.inventoryMap();
           
@@ -2309,7 +2309,7 @@ export class SmartBatchComponent {
 
               const result = await this.state.directApproveBatchPlan(planItems, inventoryMap);
               if (result && result.length === planItems.length) {
-                  this.toast.show(`Hoàn tất! Đã duyệt nguyên tử ${result.length} mẻ và đưa phiếu vào hàng đợi in.`, 'success');
+                  this.toast.show(`Hoàn tất! Đã duyệt đồng thời ${result.length} mẻ và đưa phiếu vào hàng đợi in.`, 'success');
                   this.reset();
               }
           } catch (e: any) {

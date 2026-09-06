@@ -95,7 +95,7 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
                   <div class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200">{{ qrService.scannedGs1Data()?.gtin || 'N/A' }}</div>
                 </div>
                 <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                  <div class="text-[10px] uppercase font-bold text-slate-400 mb-1">Số Lô (Lot)</div>
+                  <div class="text-[10px] uppercase font-bold text-slate-400 mb-1">Số lô</div>
                   <div class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200">{{ qrService.scannedGs1Data()?.lotNumber || 'N/A' }}</div>
                 </div>
               </div>

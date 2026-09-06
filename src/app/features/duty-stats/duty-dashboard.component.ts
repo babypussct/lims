@@ -104,6 +104,30 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     const people = this.statsPopulationCount();
     return people === 0 ? 0 : this.monthAssignmentCount() / people;
   });
+  readonly unassignedPeopleCount = computed(() =>
+    this.personStats().filter(item => item.total === 0).length,
+  );
+  readonly balancedPeopleCount = computed(() => {
+    if (this.averageAssignments() === 0) return 0;
+    return this.personStats().filter(item => Math.abs(this.assignmentDeviationPercent(item.total)) < 10).length;
+  });
+  readonly maxAssignments = computed(() =>
+    Math.max(0, ...this.personStats().map(item => item.total)),
+  );
+  readonly minAssignments = computed(() => {
+    const stats = this.personStats();
+    return stats.length === 0 ? 0 : Math.min(...stats.map(item => item.total));
+  });
+  readonly nextAssignmentByStaffId = computed(() => {
+    const nextByStaffId = new Map<string, string>();
+    for (const schedule of this.activeSchedules()) {
+      if (schedule.date < this.todayKey) continue;
+      for (const staffId of new Set(schedule.staffIds)) {
+        if (!nextByStaffId.has(staffId)) nextByStaffId.set(staffId, schedule.date);
+      }
+    }
+    return nextByStaffId;
+  });
 
   ngOnInit(): void {
     const sevenDayEnd = shiftDutyDateKey(this.todayKey, 6);
@@ -141,6 +165,51 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     const deviation = this.assignmentDeviationPercent(total);
     if (Math.abs(deviation) < 10) return 'Cân bằng';
     return deviation > 0 ? 'Nhiều hơn' : 'Ít hơn';
+  }
+
+  assignmentDelta(total: number): number {
+    return total - this.averageAssignments();
+  }
+
+  assignmentSharePercent(total: number): number {
+    const assignments = this.monthAssignmentCount();
+    return assignments === 0 ? 0 : (total / assignments) * 100;
+  }
+
+  assignmentLoadPercent(total: number): number {
+    const max = this.maxAssignments();
+    return max === 0 ? 0 : (total / max) * 100;
+  }
+
+  nextAssignmentDate(staffId: string): string | undefined {
+    return this.nextAssignmentByStaffId().get(staffId);
+  }
+
+  initialsFor(displayName: string): string {
+    const parts = displayName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toLocaleUpperCase('vi');
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toLocaleUpperCase('vi');
+  }
+
+  daysUntil(dateKey: string): number {
+    const today = new Date(`${this.todayKey}T12:00:00+07:00`).getTime();
+    const target = new Date(`${dateKey}T12:00:00+07:00`).getTime();
+    return Math.max(0, Math.round((target - today) / 86_400_000));
+  }
+
+  relativeDutyDayLabel(dateKey: string): string {
+    const days = this.daysUntil(dateKey);
+    if (days === 0) return 'hôm nay';
+    if (days === 1) return 'còn 1 ngày';
+    return `còn ${days} ngày`;
+  }
+
+  myBalanceProgressPercent(): number {
+    const myCount = this.myMonthCount();
+    const average = this.averageAssignments();
+    if (myCount === null || average === 0) return 0;
+    return Math.min(100, (myCount / average) * 100);
   }
 
   isToday(dateKey: string): boolean {

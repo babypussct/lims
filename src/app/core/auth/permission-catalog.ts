@@ -58,9 +58,9 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
   { code: PERMISSIONS.BYPASS_MAINTENANCE, label: 'Truy cập khi bảo trì', description: 'Cho phép tiếp tục sử dụng LIMS khi chế độ bảo trì đang bật.', group: 'system', risk: 'high' },
   { code: PERMISSIONS.MASTER_DATA_MANAGE, label: 'Quản lý dữ liệu nền', description: 'Quản lý chỉ tiêu, nhóm chỉ tiêu, nền mẫu, mô tả mẫu và thiết bị.', group: 'master-data', risk: 'high' },
   { code: PERMISSIONS.POLICY_MANAGE, label: 'Quản lý chính sách hao hụt', description: 'Thay đổi ngưỡng và quy tắc hao hụt dùng trong các luồng tính toán.', group: 'policy', risk: 'high' },
-  { code: PERMISSIONS.BACKUP_CREATE, label: 'Tạo backup toàn diện', description: 'Tạo hoặc tiếp tục một bản backup toàn diện.', group: 'backup', risk: 'high' },
-  { code: PERMISSIONS.BACKUP_VERIFY, label: 'Kiểm tra backup', description: 'Liệt kê và kiểm tra tính toàn vẹn của các bản backup.', group: 'backup', risk: 'elevated' },
-  { code: PERMISSIONS.BACKUP_RESTORE, label: 'Phục hồi backup', description: 'Dry-run, phục hồi dữ liệu thiếu và tiếp tục restore dở dang.', group: 'backup', risk: 'critical' },
+  { code: PERMISSIONS.BACKUP_CREATE, label: 'Tạo bản sao lưu toàn diện', description: 'Tạo hoặc tiếp tục một bản sao lưu toàn diện.', group: 'backup', risk: 'high' },
+  { code: PERMISSIONS.BACKUP_VERIFY, label: 'Kiểm tra bản sao lưu', description: 'Liệt kê và kiểm tra tính toàn vẹn của các bản sao lưu.', group: 'backup', risk: 'elevated' },
+  { code: PERMISSIONS.BACKUP_RESTORE, label: 'Phục hồi bản sao lưu', description: 'Đối chiếu trước, phục hồi dữ liệu thiếu và tiếp tục lần phục hồi dở dang.', group: 'backup', risk: 'critical' },
 ] as const;
 
 export const PERMISSION_NAMES: Record<string, string> = Object.fromEntries(
@@ -75,7 +75,7 @@ export const PERMISSION_GROUPS = [
   { id: 'system', name: 'Hệ thống & truy cập', icon: 'fa-server', color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-800/50', border: 'border-slate-100 dark:border-slate-700/50', ring: '#64748b' },
   { id: 'master-data', name: 'Dữ liệu nền', icon: 'fa-layer-group', color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20', border: 'border-teal-100 dark:border-teal-800/30', ring: '#14b8a6' },
   { id: 'policy', name: 'Chính sách vận hành', icon: 'fa-gauge-high', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-100 dark:border-orange-800/30', ring: '#f97316' },
-  { id: 'backup', name: 'Backup & phục hồi', icon: 'fa-cloud-arrow-up', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-100 dark:border-indigo-800/30', ring: '#6366f1' },
+  { id: 'backup', name: 'Sao lưu và phục hồi', icon: 'fa-cloud-arrow-up', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-100 dark:border-indigo-800/30', ring: '#6366f1' },
 ] as const;
 
 export const PERMISSION_EDITOR_GROUPS = PERMISSION_GROUPS.map(group => ({

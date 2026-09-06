@@ -20,7 +20,7 @@ import { timestampToDate } from '../../utils/timestamp';
                 <!-- HEADER (Hidden when printing) -->
                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 print-hidden-ui">
                     <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-print text-fuchsia-600"></i> Xem Trước khi In (A4 Preview)
+                        <i class="fa-solid fa-print text-fuchsia-600"></i> Xem trước khi in (A4)
                     </h3>
                     <div class="flex gap-2">
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 border border-slate-200">
@@ -48,7 +48,7 @@ import { timestampToDate } from '../../utils/timestamp';
                             </label>
 
                             <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
-                                <span class="text-sm font-bold text-slate-700">Chân trang (Footer)</span>
+                                <span class="text-sm font-bold text-slate-700">Chân trang</span>
                                 <input type="checkbox" [(ngModel)]="options.showFooter" class="w-5 h-5 accent-fuchsia-600 rounded">
                             </label>
 
@@ -58,7 +58,7 @@ import { timestampToDate } from '../../utils/timestamp';
                             </label>
 
                             <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
-                                <span class="text-sm font-bold text-slate-700">Đường cắt (Cut line)</span>
+                                <span class="text-sm font-bold text-slate-700">Đường cắt</span>
                                 <input type="checkbox" [(ngModel)]="options.showCutLine" class="w-5 h-5 accent-fuchsia-600 rounded">
                             </label>
                         </div>
@@ -67,14 +67,14 @@ import { timestampToDate } from '../../utils/timestamp';
                             <button (click)="doPrint()" 
                                     class="w-full py-4 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-print text-lg"></i>
-                                <span>IN NGAY (Direct)</span>
+                                <span>IN NGAY</span>
                             </button>
                             
                             <button (click)="doPdf()" [disabled]="isGeneratingPdf()"
                                     class="w-full py-3 bg-white border border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-50 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
                                 @if(isGeneratingPdf()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                                 @else { <i class="fa-solid fa-file-pdf"></i> }
-                                <span>Tải PDF (High-Res)</span>
+                                <span>Tải PDF chất lượng cao</span>
                             </button>
                         </div>
                     </div>
@@ -175,7 +175,7 @@ import { timestampToDate } from '../../utils/timestamp';
                             } @else {
                                 <i class="fa-solid fa-download"></i>
                                 <span class="hidden md:inline">TẢI TÀI LIỆU</span>
-                                <span class="inline md:hidden">Tải File</span>
+                                <span class="inline md:hidden">Tải tệp</span>
                             }
                         </button>
 
@@ -184,7 +184,7 @@ import { timestampToDate } from '../../utils/timestamp';
                                 class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
                                 title="Sao chép liên kết PDF">
                             <i class="fa-solid" [class.fa-copy]="!isCopying()" [class.fa-check]="isCopying()"></i>
-                            <span class="hidden md:inline">{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LINK' }}</span>
+                            <span class="hidden md:inline">{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LIÊN KẾT' }}</span>
                             <span class="inline md:hidden">{{ isCopying() ? 'Đã sao chép' : 'Sao chép' }}</span>
                         </button>
 

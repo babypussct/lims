@@ -58,7 +58,7 @@ import { StateService } from '../../../core/services/state.service';
             
             @if (!searchQuery()) {
               <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                Top 3 bản mới nhất
+                3 bản mới nhất
               </span>
             }
           </div>

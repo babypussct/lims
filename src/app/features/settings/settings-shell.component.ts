@@ -185,7 +185,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     { label: 'Hệ thống', description: 'Giao diện, in ấn, thông báo và bảo trì', icon: 'fa-sliders', path: '/settings/system', permissionsAny: [PERMISSIONS.SYSTEM_MANAGE] },
     { label: 'Dữ liệu nền', description: 'Chỉ tiêu, nền mẫu, thiết bị và phân loại', icon: 'fa-layer-group', path: '/settings/data/master/analytes', permissionsAny: [PERMISSIONS.MASTER_DATA_MANAGE] },
     { label: 'Người dùng & quyền', description: 'Tài khoản, vai trò và quyền cá nhân', icon: 'fa-users-gear', path: '/settings/access/users', permissionsAny: [PERMISSIONS.USER_MANAGE] },
-    { label: 'Backup & phục hồi', description: 'Backup, integrity, restore, thùng rác và retention', icon: 'fa-cloud-arrow-up', path: '/settings/data/backups', permissionsAny: [PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE] },
+    { label: 'Sao lưu & phục hồi', description: 'Sao lưu, kiểm tra toàn vẹn, phục hồi, thùng rác và chính sách lưu giữ', icon: 'fa-cloud-arrow-up', path: '/settings/data/backups', permissionsAny: [PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE] },
     { label: 'Chính sách hao hụt', description: 'Ngưỡng và quy tắc hao hụt nghiệp vụ', icon: 'fa-gauge-high', path: '/settings/policies/consumption', permissionsAny: [PERMISSIONS.POLICY_MANAGE] },
   ];
 
@@ -213,7 +213,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     if (url === '/settings/manager') return 'Tổng quan';
     if (url === '/settings/system') return 'Hệ thống';
     if (url.startsWith('/settings/data/master')) return 'Dữ liệu nền';
-    if (url.startsWith('/settings/data/backups')) return 'Backup & phục hồi';
+    if (url.startsWith('/settings/data/backups')) return 'Sao lưu & phục hồi';
     if (url.startsWith('/settings/access/')) return 'Người dùng & quyền';
     if (url.startsWith('/settings/policies/')) return 'Chính sách hao hụt';
     return 'Quản trị';

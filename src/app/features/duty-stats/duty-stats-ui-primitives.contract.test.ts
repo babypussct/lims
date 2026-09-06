@@ -141,7 +141,7 @@ test('Gemini import prompt exposes a prominent copy action beside the prompt', (
   assert.match(component, /navigator\.clipboard\.writeText\(this\.prompt\(\)\)/);
   assert.match(component, /this\.promptCopied\.set\(true\)/);
   assert.match(template, /<details open/);
-  assert.match(template, /Copy Prompt/);
+  assert.match(template, /Sao chép nội dung/);
   assert.match(template, /Đã sao chép/);
   assert.match(template, /fa-copy/);
 });
@@ -160,7 +160,7 @@ test('Gemini month import requires a second independent TSV match before LIMS im
   assert.match(component, /validateVerification\(\): void/);
   assert.match(template, /Cổng xác minh trước khi nhập/);
   assert.match(template, /Bắt buộc dùng một cuộc trò chuyện Gemini mới/);
-  assert.match(template, /Copy Prompt xác minh/);
+  assert.match(template, /Sao chép nội dung xác minh/);
   assert.match(template, /TSV Gemini xác minh lần 2/);
   assert.match(template, /So khớp TSV lần 2/);
   assert.match(template, /Hai lần Gemini không khớp — chưa được nhập/);

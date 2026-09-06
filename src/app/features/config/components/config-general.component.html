@@ -25,13 +25,13 @@
                 <div class="flex flex-col gap-2">
                     <div class="text-xs text-slate-500 dark:text-slate-400">
                         <i class="fa-solid fa-circle-info text-slate-400 mr-1" aria-hidden="true"></i>
-                        Định nghĩa mã loại và tên hiển thị cho hóa chất/vật tư trong kho. Khuyến nghị giữ nguyên mã định danh (ID) để bảo toàn dữ liệu lịch sử.
+                        Định nghĩa mã loại và tên hiển thị cho hóa chất/vật tư trong kho. Khuyến nghị giữ nguyên mã định danh để bảo toàn dữ liệu lịch sử.
                     </div>
 
                     <div class="space-y-2 rounded-2xl border border-slate-100 p-3 bg-slate-50/60 dark:border-slate-700/50 dark:bg-slate-900/30">
                         @for (cat of categoriesLocal(); track $index) {
                             <div class="flex items-center gap-2 group">
-                                <input [(ngModel)]="cat.id" (ngModelChange)="onCategoryChange()" class="w-1/3 min-w-[90px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 transition shadow-2xs" placeholder="Mã ID (vd: reagent)">
+                                <input [(ngModel)]="cat.id" (ngModelChange)="onCategoryChange()" class="w-1/3 min-w-[90px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 transition shadow-2xs" placeholder="Mã (ví dụ: reagent)">
                                 <input [(ngModel)]="cat.name" (ngModelChange)="onCategoryChange()" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 transition shadow-2xs" placeholder="Tên hiển thị (ví dụ: Hóa chất)">
                                 <button (click)="removeCategory($index)" class="h-9 w-9 shrink-0 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:hover:text-red-400 rounded-xl transition" title="Xóa phân loại này">
                                     <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
@@ -249,7 +249,7 @@
                         <i class="fa-solid fa-shield-cat text-sm"></i>
                     </div>
                     <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-base tracking-tight">Backup & Phục Hồi</h3>
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-base tracking-tight">Sao lưu & Phục hồi</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Theo dõi sức khỏe sao lưu, kiểm tra toàn vẹn và phục hồi dữ liệu theo đúng quyền được cấp.</p>
                     </div>
                 </div>
@@ -261,7 +261,7 @@
                                 <i class="fa-solid fa-heart-pulse"></i> Sức khỏe dữ liệu
                             </div>
                             <p class="text-xs leading-relaxed text-fuchsia-900/75 dark:text-fuchsia-300/80 mt-1 max-w-3xl">
-                                {{ backupStatus()?.ready ? 'Hạ tầng backup đã sẵn sàng. Hãy ưu tiên bản sao lưu đã kiểm tra integrity trước khi thực hiện phục hồi.' : 'Hạ tầng backup chưa đủ điều kiện vận hành; kiểm tra cấu hình triển khai bên dưới.' }}
+                                {{ backupStatus()?.ready ? 'Hệ thống sao lưu đã sẵn sàng. Hãy ưu tiên bản sao lưu đã được kiểm tra tính toàn vẹn trước khi phục hồi.' : 'Hệ thống sao lưu chưa đủ điều kiện vận hành; hãy kiểm tra phần thiết lập bên dưới.' }}
                             </p>
                         </div>
                         <app-button variant="secondary" size="sm" (click)="loadBackupStatus(true)" [disabled]="backupBusy() !== 'idle'" class="shrink-0">
@@ -282,33 +282,33 @@
                                         {{ backup.ready ? 'Sẵn sàng sao lưu' : 'Cần chú ý' }}
                                     </div>
                                     <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                        Drive {{backup.drive.accessAvailable ? 'đã kết nối' : 'chưa kết nối'}} · Mã hóa {{backup.encryption.configured ? 'đã cấu hình' : 'chưa cấu hình'}} · Apps Script {{backup.appsScript.scopesConfigured ? 'đủ quyền' : 'chưa đủ quyền'}}
+                                        Google Drive {{backup.drive.accessAvailable ? 'đã kết nối' : 'chưa kết nối'}} · Mã hóa {{backup.encryption.configured ? 'đã cấu hình' : 'chưa cấu hình'}} · Tác vụ tự động {{backup.appsScript.scopesConfigured ? 'đủ quyền' : 'chưa đủ quyền'}}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <details class="rounded-xl border border-slate-200 bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-900/30">
-                          <summary class="cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300">Chi tiết kỹ thuật</summary>
+                          <summary class="cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300">Phạm vi sao lưu</summary>
                           <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="rounded-xl bg-white/90 dark:bg-slate-800/80 border border-fuchsia-100/80 dark:border-slate-700 p-3.5 shadow-2xs">
-                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Firestore coverage</div>
-                                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.firestore.topLevelCollectionCount}} active + {{backup.firestore.retainedLegacyCollectionCount}} legacy</div>
-                                <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">{{backup.firestore.nestedPatternCount}} mẫu subcollection · Root: {{backup.firestore.rootCollectionCount}}</div>
+                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Dữ liệu hệ thống</div>
+                                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.firestore.topLevelCollectionCount + backup.firestore.retainedLegacyCollectionCount}} nhóm dữ liệu chính</div>
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Bao gồm {{backup.firestore.nestedPatternCount}} nhóm dữ liệu liên kết và {{backup.firestore.rootCollectionCount}} nhóm cấp chính</div>
                             </div>
                             <div class="rounded-xl bg-white/90 dark:bg-slate-800/80 border border-fuchsia-100/80 dark:border-slate-700 p-3.5 shadow-2xs">
-                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Drive coverage</div>
-                                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.drive.sourceFolderCount}} thư mục · {{backup.drive.templateCount}} Docs/Sheets</div>
+                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Tệp trên Google Drive</div>
+                                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.drive.sourceFolderCount}} thư mục · {{backup.drive.templateCount}} tệp tài liệu/bảng tính</div>
                                 <div class="text-[11px] font-bold mt-1" [class.text-emerald-600]="backup.ready" [class.text-amber-600]="!backup.ready">
                                     <i class="fa-solid mr-1" [class.fa-circle-check]="backup.ready" [class.fa-triangle-exclamation]="!backup.ready"></i>
-                                    {{backup.ready ? 'Sẵn sàng tạo backup' : 'Chưa đủ điều kiện cấu hình'}}
+                                    {{backup.ready ? 'Sẵn sàng tạo bản sao lưu' : 'Chưa đủ điều kiện để sao lưu'}}
                                 </div>
                             </div>
                             <div class="rounded-xl bg-white/90 dark:bg-slate-800/80 border border-fuchsia-100/80 dark:border-slate-700 p-3.5 shadow-2xs">
-                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Apps Script deployment</div>
-                                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.appsScript.scriptIdConfigured ? 'Đã nhận diện scriptId' : 'Thiếu scriptId'}}</div>
+                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Tác vụ sao lưu tự động</div>
+                                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">{{backup.appsScript.scriptIdConfigured ? 'Đã thiết lập' : 'Chưa thiết lập'}}</div>
                                 <div class="text-[11px] font-medium mt-1 text-slate-500 dark:text-slate-400">
-                                    {{backup.appsScript.sourceBundleAvailable ? 'Có source bundle' : 'Thiếu bundle'}} · {{backup.appsScript.scopesConfigured ? 'Đủ scope' : 'Cần cấp scope'}}
+                                    {{backup.appsScript.sourceBundleAvailable ? 'Thành phần xử lý sẵn sàng' : 'Thành phần xử lý chưa sẵn sàng'}} · {{backup.appsScript.scopesConfigured ? 'Đủ quyền truy cập' : 'Cần cấp thêm quyền truy cập'}}
                                 </div>
                             </div>
                           </div>
@@ -319,7 +319,7 @@
                         <div class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/80 dark:bg-amber-950/30 p-3.5 text-xs leading-relaxed text-amber-800 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Cần hoàn tất cấu hình triển khai</div>
-                                <div class="mt-0.5 text-xs">Cần thiết lập khóa mã hóa trong biến môi trường server và cấp quyền OAuth Google Drive để kích hoạt sao lưu tự động.</div>
+                                <div class="mt-0.5 text-xs">Sao lưu tự động chưa được thiết lập đầy đủ. Hãy hoàn tất cấu hình mã hóa và kết nối Google Drive.</div>
                             </div>
                             <app-button size="sm" (click)="connectBackupDrive()" class="shrink-0">
                                 <i class="fa-brands fa-google-drive mr-1"></i> Kết nối Drive
@@ -329,11 +329,11 @@
 
                     <div class="rounded-xl bg-white dark:bg-slate-800 border border-fuchsia-100 dark:border-slate-700 p-4 space-y-3.5 shadow-2xs">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
-                            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">Bản backup đã lưu:</label>
+                            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">Bản sao lưu đã lưu:</label>
                             <select [ngModel]="backupSelectedId()" (ngModelChange)="backupSelectedId.set($event)" [disabled]="backupBusy() !== 'idle'" class="min-w-0 flex-1 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-500">
                                 <option value="">-- Chọn bản sao lưu để đối chiếu / phục hồi --</option>
                                 @for (item of backupList(); track item.backupFolderId) {
-                                    <option [value]="item.backupFolderId">{{item.backupId}} · {{backupStatusLabel(item.status)}}{{item.verified ? ' · integrity đạt' : ''}} · {{item.firestoreDocuments ?? '?'}} docs · {{backupDate(item.completedAt || item.createdTime)}}</option>
+                                    <option [value]="item.backupFolderId">{{item.backupId}} · {{backupStatusLabel(item.status)}}{{item.verified ? ' · đã kiểm tra toàn vẹn' : ''}} · {{item.firestoreDocuments ?? '?'}} mục dữ liệu · {{backupDate(item.completedAt || item.createdTime)}}</option>
                                 }
                             </select>
                             <app-button variant="secondary" size="sm" (click)="refreshBackupList()" [disabled]="backupBusy() !== 'idle'">
@@ -343,10 +343,10 @@
 
                         <!-- Action Toolbar for Backups -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1">
-                            <button type="button" (click)="createComprehensiveBackup()" [title]="canBackupCreate() ? 'Tạo bản backup mới' : missingBackupPermissionLabel('create')" [disabled]="!canBackupCreate() || backupBusy() !== 'idle' || !backupStatus()?.ready" class="h-10 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-cloud-arrow-up"></i> Tạo backup mới</button>
-                            <button type="button" (click)="resumeSelectedBackup()" [title]="canBackupCreate() ? 'Tiếp tục backup dở dang' : missingBackupPermissionLabel('create')" [disabled]="!canBackupCreate() || backupBusy() !== 'idle' || !backupStatus()?.ready || !backupSelectedId()" class="h-10 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 text-xs font-black hover:bg-amber-100 dark:hover:bg-amber-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-forward-step"></i> Tiếp tục dở dang</button>
-                            <button type="button" (click)="verifySelectedBackup()" [title]="canBackupVerify() ? 'Kiểm tra tính toàn vẹn' : missingBackupPermissionLabel('verify')" [disabled]="!canBackupVerify() || backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 text-xs font-black hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-shield-check"></i> Kiểm tra integrity</button>
-                            <button type="button" (click)="dryRunSelectedBackup()" [title]="canBackupRestore() ? 'Đối chiếu trước khi phục hồi' : missingBackupPermissionLabel('restore')" [disabled]="!canBackupRestore() || backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/20 text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> Dry-run đối chiếu</button>
+                            <button type="button" (click)="createComprehensiveBackup()" [title]="canBackupCreate() ? 'Tạo bản sao lưu mới' : missingBackupPermissionLabel('create')" [disabled]="!canBackupCreate() || backupBusy() !== 'idle' || !backupStatus()?.ready" class="h-10 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-cloud-arrow-up"></i> Tạo bản sao lưu</button>
+                            <button type="button" (click)="resumeSelectedBackup()" [title]="canBackupCreate() ? 'Tiếp tục bản sao lưu dở dang' : missingBackupPermissionLabel('create')" [disabled]="!canBackupCreate() || backupBusy() !== 'idle' || !backupStatus()?.ready || !backupSelectedId()" class="h-10 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 text-xs font-black hover:bg-amber-100 dark:hover:bg-amber-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-forward-step"></i> Tiếp tục dở dang</button>
+                            <button type="button" (click)="verifySelectedBackup()" [title]="canBackupVerify() ? 'Kiểm tra tính toàn vẹn' : missingBackupPermissionLabel('verify')" [disabled]="!canBackupVerify() || backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 text-xs font-black hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-shield-check"></i> Kiểm tra toàn vẹn</button>
+                            <button type="button" (click)="dryRunSelectedBackup()" [title]="canBackupRestore() ? 'Đối chiếu trước khi phục hồi' : missingBackupPermissionLabel('restore')" [disabled]="!canBackupRestore() || backupBusy() !== 'idle' || !backupSelectedId()" class="h-10 rounded-xl border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/20 text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> Đối chiếu trước</button>
                         </div>
 
                         <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-slate-600 dark:text-slate-300 pt-1" [class.opacity-50]="!canBackupRestore()">
@@ -357,7 +357,7 @@
                         <button type="button" (click)="recoverMissingFromSelectedBackup()" [title]="canBackupRestore() ? 'Chỉ bổ sung dữ liệu đang thiếu' : missingBackupPermissionLabel('restore')" [disabled]="!canBackupRestore() || backupBusy() !== 'idle' || !backupSelectedId()" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs flex items-center justify-center gap-2"><i class="fa-solid fa-life-ring"></i> Phục hồi an toàn — Chỉ bổ sung dữ liệu bị thiếu</button>
 
                         @if (resumableRestoreCheckpoint(); as checkpoint) {
-                            <button type="button" (click)="resumeMissingRestore()" [disabled]="!canBackupRestore() || backupBusy() !== 'idle'" class="w-full h-10 rounded-xl border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 text-xs font-black hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"><i class="fa-solid fa-forward-step"></i> Tiếp tục restore dở dang · {{checkpoint.restoreId}} · {{checkpoint.phase}}</button>
+                            <button type="button" (click)="resumeMissingRestore()" [disabled]="!canBackupRestore() || backupBusy() !== 'idle'" class="w-full h-10 rounded-xl border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 text-xs font-black hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"><i class="fa-solid fa-forward-step"></i> Tiếp tục phục hồi dở dang</button>
                         }
                     </div>
 
@@ -369,9 +369,9 @@
                             [ngClass]="created.status === 'FAILED'
                                 ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40 text-rose-700 dark:text-rose-300'
                                 : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300'">
-                            Backup gần nhất: {{created.backupId}} · {{created.status}} · {{created.summary.firestoreDocuments}} Firestore docs · {{created.summary.authUsers}} Auth · {{created.summary.driveAssets}} Drive assets.
+                            Bản sao lưu gần nhất: {{created.backupId}} · {{backupStatusLabel(created.status)}} · {{created.summary.firestoreDocuments}} mục dữ liệu · {{created.summary.authUsers}} tài khoản · {{created.summary.driveAssets}} tệp Google Drive.
                             @if (created.retention; as retention) {
-                                <div class="mt-1">Retention: giữ bản hiện tại · đã dọn {{retention.trashed.length}} bản cũ@if (retention.failed.length) { · {{retention.failed.length}} bản chưa dọn được }.</div>
+                                <div class="mt-1">Chính sách lưu giữ: giữ bản hiện tại · đã dọn {{retention.trashed.length}} bản cũ@if (retention.failed.length) { · {{retention.failed.length}} bản chưa dọn được }.</div>
                             }
                             @if (created.errors.length) {
                                 <div class="mt-1 break-words">Lỗi: {{created.errors.slice(0, 3).join(' | ')}}</div>
@@ -379,15 +379,15 @@
                         </div>
                     }
                     @if (backupLastVerification(); as verification) {
-                        <div class="text-[10px] rounded-lg p-2" [class.bg-emerald-50]="verification.verified" [class.text-emerald-700]="verification.verified" [class.bg-rose-50]="!verification.verified" [class.text-rose-700]="!verification.verified">{{verification.verified ? 'Integrity đạt.' : 'Integrity không đạt.'}} Đã kiểm tra {{verification.checkedParts}} part và {{verification.checkedAssets}} Drive assets; {{verification.errors.length}} lỗi.</div>
+                        <div class="text-[10px] rounded-lg p-2" [class.bg-emerald-50]="verification.verified" [class.text-emerald-700]="verification.verified" [class.bg-rose-50]="!verification.verified" [class.text-rose-700]="!verification.verified">{{verification.verified ? 'Kiểm tra toàn vẹn đạt.' : 'Kiểm tra toàn vẹn không đạt.'}} Đã kiểm tra {{verification.checkedParts}} phần dữ liệu và {{verification.checkedAssets}} tệp Google Drive; {{verification.errors.length}} lỗi.</div>
                     }
                     @if (backupLastRestore(); as restored) {
-                        <div class="text-[10px] rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 p-2">Restore report: {{restored.report.firestore.created}} tạo mới · {{restored.report.firestore.updated}} cập nhật · {{restored.report.firestore.different}} khác · {{restored.report.drive.recreated}} Drive tạo lại · {{restored.report.auth.imported}} Auth import.</div>
+                        <div class="text-[10px] rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 p-2">Kết quả phục hồi: {{restored.report.firestore.created}} tạo mới · {{restored.report.firestore.updated}} cập nhật · {{restored.report.firestore.different}} khác biệt · {{restored.report.drive.recreated}} tệp Google Drive tạo lại · {{restored.report.auth.imported}} tài khoản được phục hồi.</div>
                     }
                 </div>
 
                 <div class="relative mt-2 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-3">
-                    <div class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase mb-1">Quy tắc Firestore</div>
+                    <div class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase mb-1">Quy tắc bảo vệ dữ liệu</div>
                     <p class="text-[10px] leading-relaxed text-amber-700/80 dark:text-amber-300/80">
                         {{ firestoreRulesNotice }}
                     </p>
@@ -399,11 +399,11 @@
                         <div class="flex justify-between items-center">
                             <div>
                                 <div class="text-[11px] font-bold text-rose-700 dark:text-rose-400 flex items-center gap-2 uppercase tracking-wide">
-                                    <i class="fa-solid fa-trash-can-arrow-up"></i> Thùng Rác (Recycle Bin - Soft Delete)
+                                    <i class="fa-solid fa-trash-can-arrow-up"></i> Thùng rác
                                 </div>
-                                <div class="text-[10px] text-rose-600/70 dark:text-rose-400/80 mt-1">Khôi phục các bản ghi nghiệp vụ đã soft-delete. Xóa vĩnh viễn được bảo vệ bằng bước xác nhận riêng.</div>
+                                <div class="text-[10px] text-rose-600/70 dark:text-rose-400/80 mt-1">Khôi phục các bản ghi nghiệp vụ đã đưa vào thùng rác. Xóa vĩnh viễn được bảo vệ bằng bước xác nhận riêng.</div>
                             </div>
-                            <button (click)="openRecycleBin()" [disabled]="!canManageRecycleBin()" [title]="canManageRecycleBin() ? 'Mở thùng rác' : 'Thùng rác hiện chỉ dành cho Manager vì thao tác xóa vĩnh viễn phụ thuộc quyền nghiệp vụ kho/chất chuẩn.'" class="bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-800 transition shadow-sm disabled:cursor-not-allowed disabled:opacity-40">
+                            <button (click)="openRecycleBin()" [disabled]="!canManageRecycleBin()" [title]="canManageRecycleBin() ? 'Mở thùng rác' : 'Thùng rác hiện chỉ dành cho người quản lý vì thao tác xóa vĩnh viễn phụ thuộc quyền nghiệp vụ kho/chất chuẩn.'" class="bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-800 transition shadow-sm disabled:cursor-not-allowed disabled:opacity-40">
                                 Mở Thùng Rác
                             </button>
                         </div>
@@ -423,9 +423,9 @@
                             </div>
                             Xuất báo cáo lịch sử
                         </h3>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Công cụ legacy chỉ còn dùng để xuất Logs/Requests cũ ra Excel phục vụ báo cáo. Không xóa và không khôi phục dữ liệu production.</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Công cụ dữ liệu cũ chỉ còn dùng để xuất nhật ký và yêu cầu trước đây ra Excel phục vụ báo cáo. Không xóa và không khôi phục dữ liệu đang vận hành.</p>
                     </div>
-                    <span class="rounded-lg bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Legacy export</span>
+                    <span class="rounded-lg bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Dữ liệu xuất kiểu cũ</span>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -506,7 +506,7 @@
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200 text-center">{{item.name}}</div>
                                     </td>
                                     <td class="px-4 py-3 justify-center flex gap-2">
-                                        <button (click)="restoreRecycleItem(item)" class="w-8 h-8 rounded bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-600 hover:text-white transition flex items-center justify-center font-bold shadow-sm" title="Khôi phục (Restore)">
+                                        <button (click)="restoreRecycleItem(item)" class="w-8 h-8 rounded bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-600 hover:text-white transition flex items-center justify-center font-bold shadow-sm" title="Khôi phục">
                                             <i class="fa-solid fa-rotate-left"></i>
                                         </button>
                                     </td>

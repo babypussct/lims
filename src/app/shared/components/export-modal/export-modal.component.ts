@@ -45,7 +45,7 @@ import { CommonModule } from '@angular/common';
                             <i class="fa-solid fa-check-double"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-black text-emerald-700 dark:text-emerald-400">Hoàn tất! File đã được tải xuống.</div>
+                            <div class="text-sm font-black text-emerald-700 dark:text-emerald-400">Hoàn tất! Tệp đã được tải xuống.</div>
                             <div class="text-[11px] text-emerald-600 dark:text-emerald-500">Hãy kiểm tra thư mục Tải xuống.</div>
                         </div>
                     </div>

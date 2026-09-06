@@ -225,7 +225,7 @@ export class StandardTagCatalogService {
   async updateCustomTag(id: string, input: Pick<StandardTagCatalogItem, 'name' | 'description' | 'color'>): Promise<void> {
     this.requireEditPermission();
     const existing = this.requireCustomTag(id);
-    if (existing.locked) throw new Error('Nhãn nguồn công nhận bị khóa; chỉ được cập nhật qua seed revision.');
+    if (existing.locked) throw new Error('Nhãn nguồn công nhận bị khóa; chỉ được cập nhật từ dữ liệu phương pháp đã công nhận.');
     const name = String(input.name || '').trim();
     this.assertCustomName(name);
     const color = this.normalizeColor(input.color);
@@ -314,7 +314,7 @@ export class StandardTagCatalogService {
   async upsertAccreditationMethodTags(options: AccreditationMethodImportOptions = {}): Promise<AccreditationMethodImportPreview> {
     this.requireEditPermission();
     const preview = await this.previewAccreditationMethodImport(options);
-    if (preview.conflictIds.length) throw new Error(`Phát hiện ${preview.conflictIds.length} xung đột seed; đã dừng import.`);
+    if (preview.conflictIds.length) throw new Error(`Phát hiện ${preview.conflictIds.length} xung đột dữ liệu phương pháp; đã dừng nhập.`);
     const writeIds = new Set([...preview.createIds, ...preview.updateIds, ...preview.restoreIds]);
     if (!writeIds.size) return preview;
 
@@ -369,7 +369,7 @@ export class StandardTagCatalogService {
   async archiveAccreditationMethodSeed(seedVersion: string, supersededByDecision: string, supersededAt: string): Promise<void> {
     this.requireEditPermission();
     if (!seedVersion.trim() || !supersededByDecision.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(supersededAt)) {
-      throw new Error('Thông tin archive seed không hợp lệ.');
+      throw new Error('Thông tin lưu trữ dữ liệu phương pháp không hợp lệ.');
     }
     await this.refresh();
     const candidates = this.customTags().filter(item => item.origin === 'ACCREDITATION_SCOPE' && item.seedVersion === seedVersion);
@@ -385,14 +385,14 @@ export class StandardTagCatalogService {
       await batch.commit();
     }
     if (writes.length) {
-      await this.logActivity('ARCHIVE_ACCREDITATION_TAG_SEED', `Archive seed ${seedVersion} -> ${supersededByDecision} (${supersededAt}), ${writes.length} nhãn.`);
+      await this.logActivity('ARCHIVE_ACCREDITATION_TAG_SEED', `Lưu trữ dữ liệu phương pháp ${seedVersion} theo ${supersededByDecision} (${supersededAt}), ${writes.length} nhãn.`);
       await this.refresh();
     }
   }
 
   private validateAccreditationManifest(): void {
     if (VLAT_11669_CHEMICAL_METHOD_TAGS.length !== 119) {
-      throw new Error(`Manifest phương pháp phải có đúng 119 item, hiện có ${VLAT_11669_CHEMICAL_METHOD_TAGS.length}.`);
+      throw new Error(`Danh mục phương pháp phải có đúng 119 mục, hiện có ${VLAT_11669_CHEMICAL_METHOD_TAGS.length}.`);
     }
     const expectedSeries: Record<string, number> = {
       'H-1': 15, 'H-2': 4, 'H-3': 1, 'H-5': 5, 'H-6': 11,
@@ -404,24 +404,24 @@ export class StandardTagCatalogService {
     for (const item of VLAT_11669_CHEMICAL_METHOD_TAGS) {
       const methodCode = normalizeNafi6ChemicalMethodCode(item.methodCode);
       if (item.name !== methodCode || item.code !== methodCode || item.origin !== 'ACCREDITATION_SCOPE' || item.templateKind !== 'TEST_METHOD') {
-        throw new Error(`Manifest có metadata không hợp lệ tại ${item.id}.`);
+        throw new Error(`Dữ liệu phương pháp có thông tin không hợp lệ tại ${item.id}.`);
       }
       if (!item.methodName || !/^X(?:á|á|a)c\s+đ/i.test(item.methodName)) {
-        throw new Error(`Manifest thiếu tên phép thử tại ${item.id}.`);
+        throw new Error(`Dữ liệu phương pháp thiếu tên phép thử tại ${item.id}.`);
       }
       if (item.sourceDecision !== VLAT_11669_SOURCE.sourceDecision || item.sourceLabCode !== VLAT_11669_SOURCE.sourceLabCode || item.sourceSha256 !== VLAT_11669_SOURCE.sourceSha256) {
-        throw new Error(`Manifest sai provenance tại ${item.id}.`);
+        throw new Error(`Dữ liệu phương pháp không khớp nguồn đối chiếu tại ${item.id}.`);
       }
       if (!Array.isArray(item.deviceCodes) || item.deviceCodes.length > 5 || new Set(item.deviceCodes).size !== item.deviceCodes.length || item.deviceCodes.some(code => !allowedDevices.has(code))) {
-        throw new Error(`Mapping thiết bị không hợp lệ tại ${item.id}.`);
+        throw new Error(`Thông tin thiết bị không hợp lệ tại ${item.id}.`);
       }
       const series = deriveMethodSeries(methodCode);
       counts.set(series, (counts.get(series) || 0) + 1);
-      if (ids.has(item.id)) throw new Error(`Document ID seed bị trùng: ${item.id}.`);
+      if (ids.has(item.id)) throw new Error(`Dữ liệu phương pháp bị trùng mã: ${item.id}.`);
       ids.add(item.id);
     }
     for (const [series, expected] of Object.entries(expectedSeries)) {
-      if (counts.get(series) !== expected) throw new Error(`Series ${series} phải có ${expected} mã, hiện có ${counts.get(series) || 0}.`);
+      if (counts.get(series) !== expected) throw new Error(`Nhóm ${series} phải có ${expected} mã, hiện có ${counts.get(series) || 0}.`);
     }
   }
 
@@ -510,7 +510,7 @@ export class StandardTagCatalogService {
 
   private normalizeColor(color?: string): string | undefined {
     if (color === undefined || color === '') return undefined;
-    if (!/^#[0-9a-f]{6}$/i.test(color.trim())) throw new Error('Màu nhãn phải là mã hex 6 ký tự.');
+    if (!/^#[0-9a-f]{6}$/i.test(color.trim())) throw new Error('Màu nhãn không hợp lệ.');
     return color.trim().toUpperCase();
   }
 

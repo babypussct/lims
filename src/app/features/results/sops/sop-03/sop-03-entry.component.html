@@ -16,7 +16,7 @@
       </h4>
       <!-- Quick Vial input for Calibration -->
       <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
-        <span class="font-bold text-slate-500 dark:text-slate-400">Vial chuẩn:</span>
+        <span class="font-bold text-slate-500 dark:text-slate-400">Lọ chuẩn:</span>
         <input type="number"
                [(ngModel)]="bulkCalibVialStart"
                (ngModelChange)="onBulkCalibVialStartChange()"
@@ -40,7 +40,7 @@
       <!-- Left Side: QC configuration & R^2 -->
       <div class="lg:col-span-4 space-y-4">
         <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu trắng</label>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu trắng (blank)</label>
           <input type="text"
                  [(ngModel)]="draft.page1Data['blankName']"
                  (ngModelChange)="onDataChanged()"
@@ -50,7 +50,7 @@
         </div>
 
         <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu thêm chuẩn</label>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu thêm chuẩn (spike)</label>
           <input type="text"
                  [(ngModel)]="draft.page1Data['spikeName']"
                  (ngModelChange)="onDataChanged()"
@@ -159,7 +159,7 @@
               </th>
             }
 
-            <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[180px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Ghi chú (Recovery %)</th>
+            <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[180px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Ghi chú (Hiệu suất thu hồi %)</th>
             <th class="py-3 px-4 text-center font-black text-slate-450 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Tác vụ</th>
           </tr>
         </thead>
@@ -233,7 +233,7 @@
                          [(ngModel)]="draft.resultData['QC_SPIKE']['ghiChu']"
                          (ngModelChange)="onDataChanged()"
                          (focus)="$any($event.target).select()"
-                         placeholder="Tự động tính recovery..."
+                         placeholder="Tự động tính độ thu hồi (recovery)..."
                          class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-fuchsia-600 dark:text-fuchsia-400 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none transition">
                 </td>
                 <td class="py-1.5 px-4 text-center">

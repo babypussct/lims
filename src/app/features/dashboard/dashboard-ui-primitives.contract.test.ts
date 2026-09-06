@@ -65,7 +65,7 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /1\. Báo cáo nhập - xuất - tồn \(NXT\)/);
     assert.match(template, /2\. Dữ liệu tiêu hao hóa chất/);
     assert.match(template, /3\. Tần suất quy trình \(SOP\)/);
-    assert.match(template, /4\. Nhật ký hoạt động \(Audit Log\)/);
+    assert.match(template, /4\. Nhật ký hoạt động/);
     assert.match(template, /5\. Tình trạng và truy xuất chất chuẩn/);
   });
 

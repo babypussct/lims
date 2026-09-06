@@ -664,7 +664,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   'STT': i + 1,
                   'Tên chuẩn': r.standardName,
                   'Tên hóa học': r.standardDetails?.chemical_name || '',
-                  'Số lô (Lot)': r.lotNumber || '',
+                  'Số lô': r.lotNumber || '',
                   'Mã quản lý': r.standardDetails?.internal_id || '',
                   'Mã catalog (mã sản phẩm)': r.standardDetails?.product_code || '',
                   'Số CAS': r.standardDetails?.cas_number || '',

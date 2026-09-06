@@ -270,12 +270,12 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
       this.loadingProgress = 100;
 
       if (this.candidates.length === 0 && this.warnings.length === 0) {
-        this.errorMessage = 'File không có kết quả Final-Conc. phù hợp để nhập.';
+        this.errorMessage = 'Tệp không có kết quả Final-Conc. phù hợp để nhập.';
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('[Excel result import] Cannot parse workbook', error);
-      this.errorMessage = 'Không đọc được file Excel. Vui lòng kiểm tra định dạng file MassHunter.';
+      this.errorMessage = 'Không đọc được tệp Excel. Vui lòng kiểm tra định dạng tệp MassHunter.';
     } finally {
       if (this.loadAbortController === controller) {
         this.loadAbortController = undefined;

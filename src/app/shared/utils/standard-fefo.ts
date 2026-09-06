@@ -111,7 +111,7 @@ export function getFefoUnavailableReason(
   now: Date = new Date()
 ): string | null {
   if (std._isDeleted) return 'Đã xóa';
-  if (isReleasedStandardLifecycle(std)) return 'Đã trả Mã quản lý nội bộ về ngân hàng';
+  if (isReleasedStandardLifecycle(std)) return 'Đã trả Mã quản lý nội bộ về sổ mã';
   if (std.status === 'IN_USE' || std.current_holder || std.current_request_id) return 'Đang sử dụng';
   if (std.status === 'DEPLETED' || !Number.isFinite(Number(std.current_amount)) || Number(std.current_amount) <= 0) {
     return 'Đã hết';

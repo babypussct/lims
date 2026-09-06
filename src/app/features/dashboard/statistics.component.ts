@@ -645,8 +645,8 @@ export class StatisticsComponent {
               XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["NHẬT KÝ HOẠT ĐỘNG CHI TIẾT"]], { origin: "A1" });
               XLSX.utils.sheet_add_json(ws, logRows, { origin: "A8", skipHeader: false });
               this.formatSheet(ws, XLSX, 8, logRows.length, [6, 22, 20, 50, 20]);
-              XLSX.utils.book_append_sheet(wb, ws, "Audit Logs");
-              sheetsAdded.push("Audit Logs");
+              XLSX.utils.book_append_sheet(wb, ws, "Nhật ký hoạt động");
+              sheetsAdded.push("Nhật ký hoạt động");
               
               this.exportProgress.update(p => ({ ...p, logs: 'done' }));
               await new Promise(r => setTimeout(r, 200));

@@ -210,7 +210,7 @@ import { formatNum } from '../../../../shared/utils/utils';
         <!-- Detail Grid -->
         <div class="grid grid-cols-2 gap-1.5 mt-1 bg-slate-50/50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100/50 dark:border-slate-800/50">
           <div class="flex flex-col">
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Số Lô (LOT)</span>
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Số lô</span>
               <span class="text-xs font-bold text-blue-600 dark:text-blue-400 truncate">{{req.lotNumber || 'N/A'}}</span>
           </div>
           <div class="flex flex-col">

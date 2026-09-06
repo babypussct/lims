@@ -423,14 +423,14 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         if (!std || !std.internal_id || this.isProcessing() || !this.auth.canEditStandards()) return;
         if (std.lifecycle_status === 'RELEASED' || std.lifecycle_status === 'CLOSED') {
-            this.toast.show('Mã này đã được trả về ngân hàng.', 'info');
+            this.toast.show('Mã này đã được trả về sổ mã.', 'info');
             return;
         }
-        const reason = window.prompt('Ghi rõ lý do trả Mã quản lý nội bộ về ngân hàng:')?.trim();
+        const reason = window.prompt('Ghi rõ lý do trả Mã quản lý nội bộ về sổ mã:')?.trim();
         if (!reason) return;
         const confirmed = await this.confirmation.confirm({
-            message: `Trả mã ${std.internal_id} về ngân hàng? Hồ sơ vật lý cũ vẫn giữ nguyên để tra cứu lịch sử; mã chỉ được cấp lại sau thao tác này.`,
-            confirmText: 'Trả mã về ngân hàng',
+            message: `Trả mã ${std.internal_id} về sổ mã? Hồ sơ cũ vẫn giữ nguyên để tra cứu lịch sử; mã chỉ được cấp lại sau thao tác này.`,
+            confirmText: 'Trả mã về sổ mã',
             cancelText: 'Hủy',
             isDangerous: true,
         });
@@ -444,7 +444,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
                 lifecycle_status: 'RELEASED',
                 internal_id_release_reason: reason,
             } : current);
-            this.toast.show(`Đã trả mã ${std.internal_id} về ngân hàng.`, 'success');
+            this.toast.show(`Đã trả mã ${std.internal_id} về sổ mã.`, 'success');
             await this.loadStandardData(this.standardId());
         } catch (error: any) {
             this.toast.show(error?.message || 'Không thể trả Mã quản lý nội bộ.', 'error');
@@ -571,7 +571,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested_by: undefined } : current);
 
             if (siblings.length > 1) {
-                this.toast.show(`Upload thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+                this.toast.show(`Tải lên thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
             } else {
                 this.toast.show(`Tải CoA lên thành công!`);
             }

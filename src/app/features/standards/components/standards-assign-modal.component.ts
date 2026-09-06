@@ -32,7 +32,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
                   <div class="space-y-4">
                       <div class="flex flex-col">
-                          <span class="text-[10px] font-bold text-slate-400 uppercase">Số Lô / Lot</span>
+                          <span class="text-[10px] font-bold text-slate-400 uppercase">Số lô</span>
                           <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{std()?.lot_number || 'N/A'}}</span>
                       </div>
                       <div class="flex flex-col">

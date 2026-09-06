@@ -54,10 +54,10 @@ import { AppPageHeaderComponent } from '../../../shared/components/ui/page-heade
                         <i class="fa-solid fa-arrows-rotate text-amber-500 w-4"></i> Đồng bộ mã nội bộ
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(fileInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Import chuẩn
+                        <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Nhập danh mục chuẩn
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(usageLogFileInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import nhật ký
+                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Nhập nhật ký
                     </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openCleanupModal)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-broom text-fuchsia-500 w-4"></i> Chuẩn hóa tên chất chuẩn

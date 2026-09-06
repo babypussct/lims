@@ -54,7 +54,7 @@ export async function readExcelResultFile(
       onProgress({
         stage: 'fallback',
         percent: 28,
-        message: 'Trình duyệt không hỗ trợ worker; đang chuyển sang chế độ tương thích...'
+        message: 'Trình duyệt không hỗ trợ chế độ xử lý nhanh; đang chuyển sang chế độ tương thích...'
       });
       const retryBuffer = buffer.byteLength > 0
         ? buffer
@@ -100,7 +100,7 @@ function readInWorker(
 
     worker.addEventListener('error', event => {
       cleanup();
-      reject(new WorkerUnavailableError(event.message || 'Không khởi động được Excel worker.'));
+      reject(new WorkerUnavailableError(event.message || 'Không khởi động được chế độ xử lý Excel nhanh.'));
     });
 
     worker.addEventListener('message', ({ data }: MessageEvent<WorkerResponse>) => {
@@ -125,8 +125,8 @@ function readInWorker(
           stage: 'reading-sheets',
           percent: 45,
           message: relevantSheetNames.length > 0
-            ? `Đã chọn ${selectedSheetNames.length} sheet kết quả; bỏ qua ${skippedCount} sheet không liên quan và toàn bộ hình/chart.`
-            : 'Chưa nhận diện được sheet theo SOP; đang kiểm tra toàn bộ sheet dữ liệu.'
+            ? `Đã chọn ${selectedSheetNames.length} trang tính kết quả; bỏ qua ${skippedCount} trang tính không liên quan và các hình, biểu đồ.`
+            : 'Chưa nhận diện được trang tính theo SOP; đang kiểm tra toàn bộ dữ liệu trong tệp.'
         });
         worker.postMessage({ type: 'parse', sheetNames: selectedSheetNames });
         return;
@@ -134,7 +134,7 @@ function readInWorker(
 
       if (data.type === 'error') {
         cleanup();
-        const error = new Error(data.message || 'Không đọc được workbook Excel.');
+        const error = new Error(data.message || 'Không đọc được tệp Excel.');
         error.name = data.name || 'ExcelWorkbookParseError';
         reject(error);
         return;
@@ -142,7 +142,7 @@ function readInWorker(
 
       if (!data.parsed) {
         cleanup();
-        reject(new Error('Excel worker không trả về dữ liệu kết quả.'));
+        reject(new Error('Không nhận được dữ liệu kết quả từ tệp Excel.'));
         return;
       }
 

@@ -107,7 +107,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
 
                                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                     <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>
-                                    Chỉ tiêu phải được chọn từ danh mục chỉ tiêu gốc. Tên, mã ID và đơn vị được khóa theo danh mục gốc để tránh sai lệch dữ liệu hệ thống.
+                                    Chỉ tiêu phải được chọn từ danh mục chỉ tiêu gốc. Tên, mã và đơn vị được khóa theo danh mục gốc để tránh sai lệch dữ liệu hệ thống.
                                 </p>
 
                                 <div formArrayName="targets" class="space-y-2">
@@ -186,7 +186,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
         @if (showLibraryModal()) {
             <app-modal-shell
                 [title]="replacingTargetIndex() === null ? 'Chọn từ danh mục gốc' : 'Thay thế chỉ tiêu'"
-                description="Tên, mã ID và đơn vị sẽ được lấy trực tiếp từ danh mục chỉ tiêu gốc."
+                description="Tên, mã và đơn vị sẽ được lấy trực tiếp từ danh mục chỉ tiêu gốc."
                 size="md"
                 (closed)="showLibraryModal.set(false)"
             >
@@ -215,7 +215,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                         <div class="flex-1 min-w-0">
                                             <div class="font-bold text-sm text-slate-700 dark:text-slate-200 group-hover:text-teal-700 dark:group-hover:text-teal-300 truncate">{{analyte.name}}</div>
                                             <div class="flex gap-2 mt-0.5 text-[10px]">
-                                                <span class="font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 rounded">ID: {{analyte.id}}</span>
+                                                <span class="font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 rounded">Mã: {{analyte.id}}</span>
                                                 @if(analyte.chemical_formula) { <span class="text-slate-500 dark:text-slate-400 font-serif">{{analyte.chemical_formula}}</span> }
                                             </div>
                                         </div>
@@ -375,7 +375,7 @@ export class TargetGroupManagerComponent implements OnInit {
       const uniqueIds = new Set(rawTargets.map(target => target.id));
 
       if (uniqueIds.size !== rawTargets.length) {
-          this.toast.show('Không thể lưu vì có mã ID chỉ tiêu bị trùng.', 'error');
+          this.toast.show('Không thể lưu vì có mã chỉ tiêu bị trùng.', 'error');
           this.isProcessing.set(false);
           return;
       }

@@ -120,7 +120,7 @@ export class GoogleDriveService {
 
     const config = (environment as any).googleDrive;
     if (!config?.clientId) {
-      throw new Error('Chưa cấu hình Google Drive Client ID trong environment.');
+      throw new Error('Chưa thiết lập kết nối Google Drive cho tài khoản này.');
     }
 
     // Primary: popup mode
@@ -392,7 +392,7 @@ export class GoogleDriveService {
   beginClientRedirectAuth(): void {
       const config = environment.googleDrive;
       if (!config?.clientId) {
-          throw new Error('Chưa cấu hình Google Drive Client ID trong environment.');
+          throw new Error('Chưa thiết lập kết nối Google Drive cho tài khoản này.');
       }
 
       sessionStorage.setItem('__gd_route', window.location.hash || '#/');
@@ -605,7 +605,7 @@ export class GoogleDriveService {
   async downloadPublicFile(fileId: string, signal?: AbortSignal): Promise<Blob> {
     const config = (environment as any).googleDrive;
     if (!config?.apiKey) {
-      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+      throw new Error('Chưa thiết lập kết nối Google Drive để tải tệp công khai.');
     }
 
     const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(config.apiKey)}`;
@@ -613,7 +613,7 @@ export class GoogleDriveService {
     
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(`Không thể tải file: ${err?.error?.message || res.status}`);
+      throw new Error(`Không thể tải tệp: ${err?.error?.message || res.status}`);
     }
     return await res.blob();
   }
@@ -625,7 +625,7 @@ export class GoogleDriveService {
   async exportPublicFile(fileId: string, mimeType: string, signal?: AbortSignal): Promise<Blob> {
     const config = (environment as any).googleDrive;
     if (!config?.apiKey) {
-      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+      throw new Error('Chưa thiết lập kết nối Google Drive để tải tệp công khai.');
     }
 
     const params = new URLSearchParams({
@@ -672,7 +672,7 @@ export class GoogleDriveService {
   async getFolderContents(folderId: string, signal?: AbortSignal): Promise<any[]> {
     const config = (environment as any).googleDrive;
     if (!config?.apiKey) {
-      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+      throw new Error('Chưa thiết lập kết nối Google Drive để đọc thư mục công khai.');
     }
 
     const query = `'${folderId}' in parents and trashed=false`;
@@ -720,7 +720,7 @@ export class GoogleDriveService {
   async getFileMetadata(fileId: string): Promise<any> {
     const config = (environment as any).googleDrive;
     if (!config?.apiKey) {
-      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+      throw new Error('Chưa thiết lập kết nối Google Drive để đọc thông tin tệp.');
     }
 
     const fields = 'id,name,mimeType,parents';

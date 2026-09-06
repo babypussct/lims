@@ -110,9 +110,9 @@ test('sync modal exposes selectable groups and searchable warning details', () =
   assert.match(source, /toggleAllSafeChanges\(selected: boolean\)/);
   assert.match(source, /selectQuickBatch\(\)/);
   assert.match(source, /quickBatchTarget = computed/);
-  assert.match(source, /Chọn nhanh batch/);
+  assert.match(source, /Chọn nhanh đợt/);
   assert.match(source, /Chọn tất cả/);
-  assert.match(source, /giới hạn an toàn Firestore Security Rules/);
+  assert.match(source, /giới hạn an toàn của hệ thống/);
 });
 
 test('sync modal includes MISSING_REFERENCE and PARENT_REFERENCE_MISMATCH under reference filter', () => {
@@ -559,7 +559,7 @@ test('behavioral: modal component handles real-time progress and partial failure
     applyInternalIdSync: async (_report: any, _corr: any, _keys: any, onProgress: any) => {
       onProgress({ currentBatch: 1, totalBatches: 2, completedChanges: 1, totalChanges: 2, percent: 50, phase: 'BATCH_COMPLETED' });
       throw new StandardSyncPartialFailureError(
-        'Đã áp dụng thành công 1/2 batch (1 thay đổi). Batch 2 bị gián đoạn: Lỗi mạng.',
+        'Đã áp dụng thành công 1/2 đợt xử lý (1 thay đổi). Đợt 2 bị gián đoạn: Lỗi mạng.',
         ['batch-001'],
         1,
         2,
@@ -580,7 +580,7 @@ test('behavioral: modal component handles real-time progress and partial failure
   assert.equal(modal.partialFailure().completedBatchIds.length, 1);
   assert.equal(modal.partialFailure().failedBatchIndex, 2);
   assert.equal(modal.isApplying(), false);
-  assert.match(modal.errorMessage(), /1\/2 batch/);
+  assert.match(modal.errorMessage(), /1\/2 đợt xử lý/);
 
   // Test 1-click retry action
   await modal.retryRemainingAfterPartialFailure();
@@ -647,7 +647,7 @@ test('behavioral: successful apply leaves 100% state, then verifies after releas
         totalChanges: 249,
         percent: 100,
         phase: 'BATCH_COMPLETED',
-        message: 'Đã hoàn thành batch 1/1.',
+        message: 'Đã hoàn thành đợt 1/1.',
       });
       onProgress({
         currentBatch: 1,
@@ -656,7 +656,7 @@ test('behavioral: successful apply leaves 100% state, then verifies after releas
         totalChanges: 249,
         percent: 100,
         phase: 'ALL_COMPLETED',
-        message: 'Đã đồng bộ thành công toàn bộ 1 batch (249 thay đổi).',
+        message: 'Đã đồng bộ thành công toàn bộ 1 đợt xử lý (249 thay đổi).',
       });
       return ['batch-001'];
     },
@@ -672,7 +672,7 @@ test('behavioral: successful apply leaves 100% state, then verifies after releas
   assert.equal(modal.applyProgress()?.percent, 100);
   assert.match(modal.applyProgress()?.message || '', /Dữ liệu đã được quét xác minh và làm mới/);
   assert.equal(toasts[0]?.type, 'success');
-  assert.match(toasts[0]?.message || '', /1 batch/);
+  assert.match(toasts[0]?.message || '', /1 đợt xử lý/);
 });
 
 test('behavioral: post-apply verification failure does not turn a committed sync into an apply failure', async () => {
@@ -714,7 +714,7 @@ test('behavioral: post-apply verification failure does not turn a committed sync
 
   assert.equal(modal.partialFailure(), null);
   assert.equal(modal.applyProgress()?.phase, 'ALL_COMPLETED');
-  assert.match(modal.applyProgress()?.message || '', /Đồng bộ đã hoàn tất 1 batch/);
+  assert.match(modal.applyProgress()?.message || '', /Đồng bộ đã hoàn tất 1 đợt xử lý/);
   assert.match(modal.errorMessage(), /Không thể quét dữ liệu/);
   assert.equal(toasts.some(item => item.type === 'success'), true);
   assert.equal(toasts.some(item => item.type === 'warning'), true);
@@ -762,7 +762,7 @@ test('behavioral: a stalled post-apply verification scan times out instead of ha
   assert.equal(modal.isScanning(), false);
   assert.equal(modal.applyProgress()?.phase, 'ALL_COMPLETED');
   assert.match(modal.errorMessage(), /quét xác minh sau đồng bộ mất quá lâu/);
-  assert.match(modal.applyProgress()?.message || '', /Đồng bộ đã hoàn tất 1 batch/);
+  assert.match(modal.applyProgress()?.message || '', /Đồng bộ đã hoàn tất 1 đợt xử lý/);
   assert.equal(toasts.some((item: any) => item.type === 'success'), true);
   assert.equal(toasts.some((item: any) => item.type === 'warning'), true);
 });

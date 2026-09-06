@@ -198,7 +198,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.form.patchValue({
           gtin: gtin || '',
           lotNumber: lot || '',
-          reason: 'Nhập kho (Scan QR)'
+          reason: 'Nhập kho (Quét QR)'
       });
   }
 

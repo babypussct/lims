@@ -50,7 +50,7 @@ import { ensureQrious } from '../../utils/external-script-loader';
                             <!-- Right: QR & ID (Aligned Correctly) -->
                             <div class="header-right">
                                 <div class="id-container">
-                                    <div class="id-label">MÃ TRUY XUẤT (ID)</div>
+                                    <div class="id-label">MÃ TRUY XUẤT</div>
                                     <div class="id-text">{{job.requestId || '---'}}</div>
                                 </div>
                                 <div class="qr-wrapper">
@@ -362,7 +362,7 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
       });
   }
 
-  getFooterText(): string { return this.state.printConfig()?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên LIMS Cloud.'; }
+  getFooterText(): string { return this.state.printConfig()?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên hệ thống LIMS.'; }
   getSelectLabel(inp: any, value: any): string { return inp.options?.find((o: any) => o.value == value)?.label || value; }
 
   // New Helper for Margin Display

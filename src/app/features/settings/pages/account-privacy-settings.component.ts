@@ -29,13 +29,13 @@ import { SettingsSectionComponent } from '../components/settings-section.compone
       </app-settings-section>
 
       <app-settings-section
-        title="Vùng thao tác nhạy cảm (Danger zone)"
-        description="Ẩn danh hóa email và ảnh đại diện khỏi hệ thống. Tên hiển thị và UID được bảo toàn cho nhật ký kiểm toán (audit trail)."
+        title="Vùng thao tác nhạy cảm"
+        description="Ẩn danh hóa email và ảnh đại diện khỏi hệ thống. Tên hiển thị và mã tài khoản được bảo toàn trong nhật ký truy vết."
         icon="fa-triangle-exclamation"
         variant="danger">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-2">
           <div class="max-w-xl text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-            Hành động này sẽ xóa vĩnh viễn email và avatar đã liên kết với tài khoản. Sau khi hoàn tất, bạn sẽ được đăng xuất khỏi hệ thống.
+            Hành động này sẽ xóa vĩnh viễn email và ảnh đại diện đã liên kết với tài khoản. Sau khi hoàn tất, bạn sẽ được đăng xuất khỏi hệ thống.
           </div>
           <app-button variant="danger" [loading]="anonymizing()" (click)="anonymizeAccount()">
             <i class="fa-solid fa-user-slash" aria-hidden="true"></i>Ẩn danh hóa tài khoản
@@ -54,7 +54,7 @@ export class AccountPrivacySettingsComponent {
   async anonymizeAccount(): Promise<void> {
     if (this.anonymizing()) return;
     const confirmed = await this.confirmation.confirm({
-      message: 'Email và ảnh đại diện sẽ bị ẩn danh hóa. Tên hiển thị và UID vẫn được giữ cho audit. Tiếp tục?',
+      message: 'Email và ảnh đại diện sẽ bị ẩn danh hóa. Tên hiển thị và mã tài khoản vẫn được giữ trong nhật ký truy vết. Tiếp tục?',
       confirmText: 'Ẩn danh hóa tài khoản',
       isDangerous: true,
     });

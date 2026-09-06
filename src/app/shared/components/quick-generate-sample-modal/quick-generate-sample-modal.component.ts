@@ -23,7 +23,7 @@ import { FormsModule } from '@angular/forms';
 
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Tiền tố (Prefix)</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Tiền tố</label>
                     <input type="text" [ngModel]="prefix()" (ngModelChange)="prefix.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: U">
                 </div>
                 
@@ -41,7 +41,7 @@ import { FormsModule } from '@angular/forms';
 
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hậu tố (Suffix)</label>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hậu tố</label>
                         <label class="flex items-center gap-1.5 cursor-pointer group">
                             <input type="checkbox" [ngModel]="autoSuffix()" (ngModelChange)="autoSuffix.set($event)" class="w-3.5 h-3.5 text-fuchsia-600 rounded border-slate-300 focus:ring-fuchsia-500 transition cursor-pointer">
                             <span class="text-[10px] font-bold text-slate-500 group-hover:text-fuchsia-600 transition">Tự động lấy ngày (dd-1)</span>

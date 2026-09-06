@@ -359,14 +359,14 @@ export class SopEditorComponent {
     const uniqueTargetIds = new Set(validTargetIds);
     
     if (validTargetIds.length !== uniqueTargetIds.size) {
-        this.toast.show('Lỗi: Có mã ID chỉ tiêu bị trùng lặp (hoặc tên giống nhau).', 'error');
+        this.toast.show('Lỗi: Có mã chỉ tiêu bị trùng lặp (hoặc tên giống nhau).', 'error');
         this.currentTab.set('targets');
         this.isLoading.set(false);
         return;
     }
 
     const invalidConsumable = (formVal.consumables as any[]).find((c: any) => !c.name || c.name.trim() === '');
-    if (invalidConsumable) { this.toast.show('Một số hóa chất chưa chọn ID hợp lệ!', 'error'); this.currentTab.set('consumables'); this.isLoading.set(false); return; }
+    if (invalidConsumable) { this.toast.show('Một số hóa chất chưa chọn mã hợp lệ!', 'error'); this.currentTab.set('consumables'); this.isLoading.set(false); return; }
 
     const variables: Record<string, string> = {};
     (formVal.variablesList as any[]).forEach(v => { if (v.key && v.formula) variables[v.key] = v.formula; });

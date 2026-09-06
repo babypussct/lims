@@ -67,16 +67,16 @@ export function buildTagKey(source: StandardTagSource, sourceId: string): string
 }
 
 export function parseTagKeyStrict(key: unknown): ParsedStandardTagKey {
-  if (typeof key !== 'string') throw new Error('Nhãn phải là chuỗi key canonical.');
+  if (typeof key !== 'string') throw new Error('Dữ liệu nhãn không hợp lệ.');
   const trimmed = key.trim();
   const separator = trimmed.indexOf(':');
-  if (separator <= 0) throw new Error(`Key nhãn không hợp lệ: ${key}`);
+  if (separator <= 0) throw new Error(`Định dạng nhãn không hợp lệ: ${key}`);
   const prefix = trimmed.slice(0, separator).toLowerCase();
   if (!(VALID_PREFIXES as readonly string[]).includes(prefix)) {
-    throw new Error(`Prefix nhãn không được phép: ${prefix}`);
+    throw new Error('Nguồn của nhãn không được hỗ trợ.');
   }
   const source = sourceForPrefix(prefix);
-  if (!source) throw new Error(`Prefix nhãn không được phép: ${prefix}`);
+  if (!source) throw new Error('Nguồn của nhãn không được hỗ trợ.');
   const id = assertSafeTagId(trimmed.slice(separator + 1), 'ID nhãn');
   return { source, id, key: `${prefix}:${id}` };
 }
@@ -87,7 +87,7 @@ export function normalizeTagKey(key: unknown): string {
 }
 
 export function normalizeTagKeysStrict(keys: unknown, contextLabel = 'Nhãn'): string[] {
-  if (!Array.isArray(keys)) throw new Error(`${contextLabel} phải là một mảng.`);
+  if (!Array.isArray(keys)) throw new Error(`${contextLabel} có định dạng dữ liệu không hợp lệ.`);
   const result: string[] = [];
   const seen = new Set<string>();
   for (const value of keys) {

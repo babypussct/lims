@@ -85,7 +85,7 @@
             <i class="fa-solid fa-print" aria-hidden="true"></i> In lịch trực
           </app-button>
         }
-        <app-button variant="secondary" size="sm" (click)="exportCsv()" title="Tải file CSV lịch trực">
+        <app-button variant="secondary" size="sm" (click)="exportCsv()" title="Tải tệp CSV lịch trực">
           <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Xuất CSV
         </app-button>
       </div>
@@ -539,7 +539,7 @@
                       <div class="text-xs font-bold text-emerald-700 dark:text-emerald-300">{{ account.displayName || account.email }}</div>
                       <div class="text-[10px] text-slate-400">{{ account.email }}</div>
                     } @else {
-                      <span class="text-xs font-bold text-amber-600">Đã gán UID · chưa tải hồ sơ</span>
+                      <span class="text-xs font-bold text-amber-600">Đã liên kết tài khoản · chưa tải hồ sơ</span>
                     }
                   } @else {
                     <span class="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500 dark:bg-slate-800">Chưa gán tài khoản</span>

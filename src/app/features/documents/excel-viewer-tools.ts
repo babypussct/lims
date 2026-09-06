@@ -255,7 +255,7 @@ export function buildExcelPreviewContextMenu(
 
   if (target === 'navigation') {
     return [
-      item('find', 'Tìm kiếm trong workbook…', 'fa-magnifying-glass', 'navigation', { shortcut: 'Ctrl+F' }),
+      item('find', 'Tìm kiếm trong tệp Excel…', 'fa-magnifying-glass', 'navigation', { shortcut: 'Ctrl+F' }),
       item('go-to', 'Đi tới ô hoặc vùng…', 'fa-location-crosshairs', 'navigation', { shortcut: 'Ctrl+G' }),
       item('select-data-range', 'Chọn toàn bộ vùng dữ liệu', 'fa-border-all', 'navigation', { shortcut: 'Ctrl+A' }),
     ];
@@ -264,25 +264,25 @@ export function buildExcelPreviewContextMenu(
   const navigationItems: ExcelPreviewMenuItem[] = [
     item('fit-selection', 'Vừa vùng đang chọn', 'fa-expand', 'navigation'),
     item('zoom-100', 'Trở về 100%', 'fa-magnifying-glass', 'navigation'),
-    item('previous-sheet', 'Sheet trước', 'fa-chevron-left', 'navigation', {
-      ...disabled(!capabilities.hasMultipleSheets, 'Workbook chỉ có một sheet.'),
+    item('previous-sheet', 'Trang tính trước', 'fa-chevron-left', 'navigation', {
+      ...disabled(!capabilities.hasMultipleSheets, 'Tệp Excel chỉ có một trang tính.'),
     }),
-    item('next-sheet', 'Sheet sau', 'fa-chevron-right', 'navigation', {
-      ...disabled(!capabilities.hasMultipleSheets, 'Workbook chỉ có một sheet.'),
+    item('next-sheet', 'Trang tính sau', 'fa-chevron-right', 'navigation', {
+      ...disabled(!capabilities.hasMultipleSheets, 'Tệp Excel chỉ có một trang tính.'),
     }),
-    item('sheet-list', 'Danh sách sheet…', 'fa-list', 'navigation'),
-    item('copy-sheet-name', 'Sao chép tên sheet', 'fa-copy', 'clipboard'),
+    item('sheet-list', 'Danh sách trang tính…', 'fa-list', 'navigation'),
+    item('copy-sheet-name', 'Sao chép tên trang tính', 'fa-copy', 'clipboard'),
   ];
 
   if (target === 'more') {
     return [
       item('fit-selection', 'Vừa vùng đang chọn', 'fa-expand', 'navigation'),
       item('zoom-100', 'Trở về 100%', 'fa-magnifying-glass', 'navigation'),
-      item('submenu-layout', 'Bố cục sheet…', 'fa-table-columns', 'layout', {
+      item('submenu-layout', 'Bố cục trang tính…', 'fa-table-columns', 'layout', {
         submenu: [
           item('freeze-selection', 'Cố định tới ô đang chọn', 'fa-thumbtack', 'layout'),
           item('cancel-freeze', 'Bỏ cố định hàng/cột', 'fa-unlock', 'layout', {
-            ...disabled(!capabilities.frozen, 'Sheet chưa có hàng hoặc cột đang cố định.'),
+            ...disabled(!capabilities.frozen, 'Trang tính chưa có hàng hoặc cột đang cố định.'),
           }),
           item('show-all-columns', 'Hiện lại tất cả cột', 'fa-eye', 'layout'),
           item('show-all-rows', 'Hiện lại tất cả hàng', 'fa-eye', 'layout'),
@@ -294,8 +294,8 @@ export function buildExcelPreviewContextMenu(
           ),
         ],
       }),
-      item('sheet-list', 'Danh sách sheet…', 'fa-list', 'navigation'),
-      item('copy-sheet-name', 'Sao chép tên sheet', 'fa-copy', 'clipboard'),
+      item('sheet-list', 'Danh sách trang tính…', 'fa-list', 'navigation'),
+      item('copy-sheet-name', 'Sao chép tên trang tính', 'fa-copy', 'clipboard'),
     ];
   }
 

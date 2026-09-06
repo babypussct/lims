@@ -94,11 +94,11 @@ export function reconcileStandardReturn(
 ): StandardReturnReconciliation {
   if (!Number.isFinite(currentStock) || currentStock < 0) throw new Error('Tồn kho hiện tại không hợp lệ.');
   if (!Number.isFinite(previouslyAccounted) || previouslyAccounted < 0) {
-    throw new Error('Tổng lượng đã accounting không hợp lệ.');
+    throw new Error('Tổng lượng đã ghi nhận trước đó không hợp lệ.');
   }
   if (!Number.isFinite(confirmedUsed) || confirmedUsed < 0) throw new Error('Tổng lượng xác nhận không hợp lệ.');
   if (confirmedUsed + 1e-9 < previouslyAccounted) {
-    throw new Error(`Tổng xác nhận không thể nhỏ hơn ${previouslyAccounted} đã accounting.`);
+    throw new Error(`Tổng xác nhận không thể nhỏ hơn ${previouslyAccounted} đã ghi nhận trước đó.`);
   }
   const adjustmentAmount = Math.max(0, confirmedUsed - previouslyAccounted);
   if (adjustmentAmount > currentStock + 1e-9) throw new Error('Không đủ lượng tồn kho để xác nhận trả chuẩn.');

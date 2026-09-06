@@ -106,7 +106,7 @@ type OsType = 'ios_safari_phone' | 'ios_safari_ipad' | 'ios_chrome' | 'mac_safar
                                   <h4 class="font-bold text-gray-700 text-[15px] mb-2">Cài Đặt trên Máy Tính</h4>
                                   <p class="text-[13px] text-gray-500 leading-relaxed">
                                       @if (osType() === 'mac_safari') {
-                                        Từ bản macOS Sonoma, bạn có thể cài app bằng cách chọn <strong>Tệp (File) > Thêm vào Dock</strong> trên menu của Safari.
+                                        Từ macOS Sonoma, bạn có thể cài ứng dụng bằng cách chọn <strong>Tệp > Thêm vào Dock</strong> trong trình đơn Safari.
                                       } @else {
                                         Nhấn biểu tượng màn hình/tải xuống ở góc thanh địa chỉ trình duyệt, hoặc mở <strong>Menu > Cài đặt ứng dụng</strong> để tải LIMS vào máy tính.
                                       }

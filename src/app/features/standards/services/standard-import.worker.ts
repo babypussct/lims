@@ -14,7 +14,7 @@ addEventListener('message', ({ data }: MessageEvent<StandardImportWorkerRequest>
       const range = workbook.Sheets[name]?.['!ref'];
       return Boolean(range);
     });
-    if (!sheetNames.length) throw new Error('Workbook không có sheet dữ liệu.');
+    if (!sheetNames.length) throw new Error('Tệp Excel không có trang tính dữ liệu.');
     const selectedSheet = data.sheetName && sheetNames.includes(data.sheetName)
       ? data.sheetName
       : sheetNames[0];

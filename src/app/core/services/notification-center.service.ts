@@ -86,7 +86,7 @@ export class NotificationCenterService {
 
     if (event.channels.includes('inbox')) {
       if (!event.recipientUid || !event.type) {
-        throw new Error('Notification inbox cần recipientUid và type.');
+        throw new Error('Thông báo Hộp thư thiếu thông tin người nhận hoặc loại thông báo.');
       }
 
       const notification: Omit<AppNotification, 'createdAt' | 'isRead'> = {

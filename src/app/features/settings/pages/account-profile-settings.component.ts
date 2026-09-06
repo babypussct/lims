@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService, PERMISSIONS, PERMISSION_NAMES, getUserRoleLabel } from '../../../core/services/auth.service';
-import { FirebaseService } from '../../../core/services/firebase.service';
 import { StateService } from '../../../core/services/state.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
@@ -55,7 +54,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
             <h2 class="text-sm font-bold text-gray-700 dark:text-white">Thông tin cơ bản</h2>
             <i class="fa-solid fa-user-pen text-xs text-slate-400" aria-hidden="true"></i>
           </div>
-          <p class="mt-1 text-xs leading-relaxed text-slate-400">Thông tin định danh dùng trong audit trail và các thao tác có kiểm soát của hệ thống.</p>
+          <p class="mt-1 text-xs leading-relaxed text-slate-400">Thông tin định danh dùng trong nhật ký truy vết và các thao tác có kiểm soát của hệ thống.</p>
 
           <dl class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <div>
@@ -74,15 +73,14 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
 
           <div class="mt-auto pt-5">
             <div class="rounded-xl bg-gray-50 p-3 dark:bg-slate-800/70">
-              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">User ID (UID)</div>
+              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Mã tài khoản</div>
               <div class="flex items-center gap-2">
-                <code class="min-w-0 flex-1 truncate font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ auth.currentUser()?.uid }}</code>
-                <app-button variant="secondary" size="sm" (click)="copyUid()" title="Sao chép UID">
+                <span class="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ auth.currentUser()?.uid }}</span>
+                <app-button variant="secondary" size="sm" (click)="copyUid()" title="Sao chép mã tài khoản">
                   <i class="fa-regular fa-copy" aria-hidden="true"></i>
                 </app-button>
               </div>
             </div>
-            <div class="mt-3 text-[10px] leading-relaxed text-slate-400">App ID: <span class="font-mono">{{ fb.APP_ID }}</span></div>
           </div>
         </section>
 
@@ -98,7 +96,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                 </div>
                 <div>
                   <div class="text-sm font-bold text-emerald-800 dark:text-emerald-300">Toàn quyền quản trị hệ thống</div>
-                  <div class="mt-1 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">Vận hành, phê duyệt tài khoản, cấu hình dữ liệu và backup.</div>
+                  <div class="mt-1 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">Vận hành, phê duyệt tài khoản, cấu hình dữ liệu và sao lưu.</div>
                 </div>
               </div>
             </div>
@@ -132,7 +130,6 @@ export class AccountProfileSettingsComponent {
   readonly auth = inject(AuthService);
   readonly state = inject(StateService);
   readonly getUserRoleLabel = getUserRoleLabel;
-  readonly fb = inject(FirebaseService);
   private readonly toast = inject(ToastService);
   readonly getAvatarUrl = getAvatarUrl;
 
@@ -150,8 +147,8 @@ export class AccountProfileSettingsComponent {
   copyUid(): void {
     const uid = this.auth.currentUser()?.uid || '';
     navigator.clipboard.writeText(uid)
-      .then(() => this.toast.show('Đã sao chép UID.', 'success'))
-      .catch(() => this.toast.show('Không thể sao chép UID.', 'error'));
+      .then(() => this.toast.show('Đã sao chép mã tài khoản.', 'success'))
+      .catch(() => this.toast.show('Không thể sao chép mã tài khoản.', 'error'));
   }
 
   async saveAvatarStyle(style: string): Promise<void> {

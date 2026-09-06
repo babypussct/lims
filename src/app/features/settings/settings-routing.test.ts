@@ -219,7 +219,7 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(managerSource, /shortcut/i);
   });
 
-  it('removes diagnostics and folds lifecycle tools into Backup & phục hồi', () => {
+  it('removes diagnostics and folds lifecycle tools into Sao lưu & phục hồi', () => {
     const settings = route('settings');
     const shell = readFileSync(new URL('./settings-shell.component.ts', import.meta.url), 'utf8');
     const manager = readFileSync(new URL('./pages/manager-settings.component.ts', import.meta.url), 'utf8');
@@ -231,7 +231,7 @@ describe('Settings routing contract', () => {
     assert.doesNotMatch(manager, /Chẩn đoán|\/settings\/diagnostics/);
     assert.doesNotMatch(general, /Tài Nguyên|Migration Dữ Liệu Hệ Thống|runLastUpdatedMigration/);
     assert.doesNotMatch(generalSource, /runLastUpdatedMigration|isMigrating|migrationLog|storageEstimate|usageBusy/);
-    assert.match(general, /view\(\) === 'backup'[\s\S]*Backup & Phục Hồi/);
+    assert.match(general, /view\(\) === 'backup'[\s\S]*Sao lưu & Phục hồi/);
     assert.doesNotMatch(generalSource, /'data' \| 'diagnostics'/);
   });
 

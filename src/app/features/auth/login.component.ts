@@ -534,7 +534,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           });
 
           if (!createRes.ok) {
-              throw new Error(`Server error: ${createRes.status}`);
+              throw new Error(`Không thể tạo phiên đăng nhập (mã lỗi ${createRes.status}).`);
           }
 
           const { sessionId, nonce, expiresAt } = await createRes.json();

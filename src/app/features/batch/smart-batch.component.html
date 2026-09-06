@@ -131,7 +131,7 @@
                             @if (sampleGroupWizard.allGroupsCompleted()) {
                                 <span class="font-bold text-emerald-700 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Tất cả {{sampleGroupWizard.drafts().length}} nhóm đã hoàn chỉnh.</span>
                             } @else {
-                                <span><i class="fa-solid fa-circle-info mr-1"></i>Optimizer chỉ được chạy khi mọi nhóm đã hoàn tất 2 bước.</span>
+                                <span><i class="fa-solid fa-circle-info mr-1"></i>Chỉ có thể tối ưu kế hoạch khi mọi nhóm đã hoàn tất 2 bước.</span>
                             }
                         </div>
                         <div class="smartbatch-action-dock__actions">
@@ -142,7 +142,7 @@
                                 (click)="sampleGroupWizard.runOptimizer()"
                                 [disabled]="!sampleGroupWizard.allGroupsCompleted()">
                                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-                                Chạy SmartBatch optimizer
+                                Tối ưu kế hoạch SmartBatch
                             </app-button>
                         </div>
                     </div>

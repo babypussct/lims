@@ -17,7 +17,7 @@
           [disabled]="duty.loadingStaff()"
           aria-label="Sao chép toàn bộ prompt Gemini">
           <i class="fa-solid mr-1.5" [class.fa-check]="promptCopied()" [class.fa-copy]="!promptCopied()" aria-hidden="true"></i>
-          {{ promptCopied() ? 'Đã sao chép' : 'Copy Prompt' }}
+          {{ promptCopied() ? 'Đã sao chép' : 'Sao chép nội dung' }}
         </app-button>
       </div>
       <textarea aria-label="Prompt Gemini cố định" readonly [value]="prompt()" rows="12" class="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs dark:border-slate-700 dark:bg-slate-950"></textarea>
@@ -109,7 +109,7 @@
               [disabled]="duty.loadingStaff()"
               aria-label="Sao chép prompt xác minh Gemini độc lập">
               <i class="fa-solid mr-1.5" [class.fa-check]="verificationPromptCopied()" [class.fa-copy]="!verificationPromptCopied()" aria-hidden="true"></i>
-              {{ verificationPromptCopied() ? 'Đã sao chép' : 'Copy Prompt xác minh' }}
+              {{ verificationPromptCopied() ? 'Đã sao chép' : 'Sao chép nội dung xác minh' }}
             </app-button>
           </div>
           <details class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950/50">

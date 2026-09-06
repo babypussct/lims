@@ -410,7 +410,7 @@
                     <i class="fa-solid fa-lock"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Quyền truy cập bị từ chối</h3>
-                <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Bạn không có quyền xem báo cáo quản trị. Vui lòng liên hệ quản lý (Manager) để được cấp quyền.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Bạn không có quyền xem báo cáo quản trị. Vui lòng liên hệ người quản lý để được cấp quyền.</p>
                 <div class="text-xs font-mono bg-slate-100 dark:bg-slate-700 p-2 rounded text-slate-600 dark:text-slate-300">
                     Quyền cần có: <b>REPORT_VIEW</b>
                 </div>
@@ -426,7 +426,7 @@
             [subtitle]="selectedSopId() !== 'all' ? 'SOP: ' + getSelectedSopName() : ''"
             [isExporting]="isExporting()"
             [isCompleted]="exportProgress().cover === 'done'"
-            [footerText]="getSelectedSheetsCount() + ' sheet(s) sẽ được xuất'"
+            [footerText]="getSelectedSheetsCount() + ' trang tính sẽ được xuất'"
             (close)="showGlobalExportModal.set(false)"
             (execute)="runGlobalExport()"
             [isSubmitDisabled]="getSelectedSheetsCount() === 0">
@@ -559,7 +559,7 @@
                                                 @if (excludeMargin()) { <i class="fa-solid fa-check text-[10px]"></i> }
                                             </div>
                                             <div>
-                                                <div class="text-xs font-bold" [class]="excludeMargin() ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'">Bỏ qua hao hụt (Safety Margin)</div>
+                                                <div class="text-xs font-bold" [class]="excludeMargin() ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'">Bỏ qua phần dự phòng hao hụt</div>
                                                 <div class="text-[10px] text-slate-400">Xuất số liệu gốc, không cộng thêm phần hao hụt</div>
                                             </div>
                                         </button>
@@ -573,7 +573,7 @@
                                             </div>
                                             <div>
                                                 <div class="text-xs font-bold" [class]="exportPerSop() ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-600 dark:text-slate-300'">Tách riêng theo từng SOP</div>
-                                                <div class="text-[10px] text-slate-400">Mỗi SOP = 1 sheet riêng biệt trong tệp Excel</div>
+                            <div class="text-[10px] text-slate-400">Mỗi SOP = 1 trang tính riêng biệt trong tệp Excel</div>
                                             </div>
                                         </button>
                                     </div>
@@ -615,7 +615,7 @@
                                     <i [class]="exportLogs() ? 'fa-solid fa-check' : 'fa-solid fa-clock-rotate-left'"></i>
                                 </div>
                                 <div class="flex-1 text-left">
-                                    <div class="text-sm font-black" [class]="exportLogs() ? 'text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'">4. Nhật ký hoạt động (Audit Log)</div>
+                                    <div class="text-sm font-black" [class]="exportLogs() ? 'text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'">4. Nhật ký hoạt động</div>
                                     <div class="text-[11px] text-slate-500">Toàn bộ thao tác trong khoảng thời gian</div>
                                 </div>
                                 @if (exportLogs()) {
@@ -657,7 +657,7 @@
                         @if (!isExporting()) {
                             <div class="flex items-center gap-2 px-4 py-2 mt-1">
                                 <i class="fa-solid fa-file-lines text-slate-300 text-xs"></i>
-                                <span class="text-[10px] text-slate-400 font-medium">Sheet "Trang bìa" với KPIs tóm tắt sẽ tự động được thêm vào file</span>
+                            <span class="text-[10px] text-slate-400 font-medium">Trang tính "Trang bìa" với các chỉ số tóm tắt sẽ tự động được thêm vào tệp</span>
                             </div>
                         }
                     </div>

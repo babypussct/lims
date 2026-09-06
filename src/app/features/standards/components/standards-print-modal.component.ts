@@ -212,7 +212,7 @@ interface RollPreset {
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
                                          <input type="checkbox" [ngModel]="printIncludeLot()" (ngModelChange)="printIncludeLot.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
-                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Số Lot</span>
+                                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Số lô</span>
                                      </label>
                                      <label class="flex items-center gap-2 cursor-pointer group">
                                          <input type="checkbox" [ngModel]="printIncludePurity()" (ngModelChange)="printIncludePurity.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
@@ -299,7 +299,7 @@ interface RollPreset {
                              <!-- A4 Layout Sheet -->
                              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider self-start flex items-center gap-1.5 mt-3 w-full justify-between">
                                  <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-lines text-fuchsia-500"></i> Mô phỏng tấm A4 Decal</span>
-                                 <span class="text-fuchsia-500 dark:text-fuchsia-400 font-bold normal-case text-[9px] cursor-pointer hover:underline">(Click để đổi điểm bắt đầu)</span>
+                                 <span class="text-fuchsia-500 dark:text-fuchsia-400 font-bold normal-case text-[9px] cursor-pointer hover:underline">(Nhấp để đổi điểm bắt đầu)</span>
                              </div>
                              
                              <!-- Scaled A4 preview container -->
@@ -322,7 +322,7 @@ interface RollPreset {
                                                @if (slotIndex < gridStartIndex()) {
                                                    <!-- Skipped cell -->
                                                    <button type="button" (click)="gridStartIndex.set(slotIndex)" [attr.aria-label]="'Chọn ô ' + slotIndex + ' làm ô bắt đầu'"
-                                                        title="Click để chọn làm ô bắt đầu"
+                                                        title="Nhấp để chọn làm ô bắt đầu"
                                                         class="border border-dashed border-slate-250 bg-slate-100 flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-fuchsia-50/50 hover:border-fuchsia-300 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
@@ -347,7 +347,7 @@ interface RollPreset {
                                                } @else {
                                                    <!-- Unused label cell -->
                                                    <button type="button" (click)="gridStartIndex.set(slotIndex)" [attr.aria-label]="'Chọn ô ' + slotIndex + ' làm ô bắt đầu'"
-                                                        title="Click để chọn làm ô bắt đầu"
+                                                        title="Nhấp để chọn làm ô bắt đầu"
                                                         class="border border-dashed border-slate-200 bg-white flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-fuchsia-50 hover:border-fuchsia-300 hover:text-fuchsia-600 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
@@ -393,7 +393,7 @@ interface RollPreset {
                                    {{ std?.name }}
                                </div> 
                            }
-                           @if (printIncludeLot()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Lot: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></div> }
+                           @if (printIncludeLot()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Lô: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></div> }
                            @if (printIncludePurity()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Pur: <span style="font-weight: bold;">{{ std?.purity || 'N/A' }}</span></div> }
                            @if (printIncludeOpened()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Opn: <span style="font-weight: bold;">{{ std?.date_opened ? (std?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></div> }
                            @if (printIncludeExpiry()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Exp: <span style="font-weight: bold;">{{ std?.expiry_date ? (std?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span></div> }
@@ -425,7 +425,7 @@ interface RollPreset {
 
                        @if (printIncludeLot() || printIncludePurity()) {
                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.1mm; overflow: hidden; white-space: nowrap; width: 100%;">
-                               @if (printIncludeLot()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Lot: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></span> }
+                               @if (printIncludeLot()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Lô: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></span> }
                                @if (printIncludePurity()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Pur: <span style="font-weight: bold;">{{ std?.purity || 'N/A' }}</span></span> }
                            </div>
                        }

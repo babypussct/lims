@@ -89,7 +89,7 @@ test('detects MISSING_REFERENCE as a blocking error when top-level request lacks
   assert.equal(issues[0].severity, 'ERROR');
   assert.equal(issues[0].blocking, true);
   assert.equal(issues[0].autoFixable, false);
-  assert.match(issues[0].message, /thiếu trường standardId/);
+  assert.match(issues[0].message, /chưa liên kết tới hồ sơ chất chuẩn/);
 });
 
 test('detects MISSING_REFERENCE as a blocking error when global usage log lacks standardId', () => {
@@ -145,7 +145,7 @@ test('backfills missing standardId in nested logs from parent path as an explici
   assert.equal(safeChanges[0].field, 'standardId');
   assert.equal(safeChanges[0].before, null);
   assert.equal(safeChanges[0].after, 'std-parent-1');
-  assert.match(safeChanges[0].reason, /Bổ sung trường standardId còn thiếu cho nhật ký lồng/);
+  assert.match(safeChanges[0].reason, /Bổ sung liên kết hồ sơ chất chuẩn còn thiếu cho nhật ký thuộc hồ sơ cha/);
 });
 
 test('does not mark a nested standardId repair safe when the parent code is invalid', () => {
@@ -224,7 +224,7 @@ test('flags PARENT_REFERENCE_MISMATCH when nested log standardId points to a dif
   assert.equal(issues[0].autoFixable, false);
   assert.equal(issues[0].parentStandardId, 'std-parent-1');
   assert.equal(issues[0].referencedStandardId, 'std-other-2');
-  assert.match(issues[0].message, /Nhật ký nằm trong chuẩn std-parent-1 nhưng trường standardId lại ghi nhận std-other-2/);
+  assert.match(issues[0].message, /Nhật ký thuộc hồ sơ std-parent-1 nhưng đang liên kết với hồ sơ std-other-2/);
 });
 
 test('repairs nested log legacy internal code when it uniquely resolves to parent standard', () => {
@@ -445,7 +445,7 @@ test('treats migrated raw registry alias plus canonical row as non-blocking hist
   assert.equal(issues.length, 1);
   assert.equal(issues[0].severity, 'INFO');
   assert.equal(issues[0].blocking, false);
-  assert.match(issues[0].message, /alias/);
+  assert.match(issues[0].message, /giữ lại để tham chiếu/);
   assert.equal(safeChanges.length, 0);
 });
 
@@ -581,7 +581,7 @@ test('blocks assigned registry when owner is missing or carries a different code
   assert.equal(result.blockedCodes.has('AA01'), true);
   assert.equal(result.blockedCodes.has('CA01'), true);
   assert.equal(issues.length, 2);
-  assert.match(issues[0].message, /không tồn tại/);
+  assert.match(issues[0].message, /không còn tồn tại/);
   assert.match(issues[1].message, /mã khác/);
   assert.equal(safeChanges.length, 0);
 });
@@ -785,7 +785,7 @@ test('StandardSyncPartialFailureError retains completedBatchIds, completedChange
   const { StandardSyncPartialFailureError } = require('../../../shared/utils/standard-internal-id');
 
   const err = new StandardSyncPartialFailureError(
-    'Đã áp dụng thành công 4/9 batch. Batch 5 bị lỗi mạng.',
+    'Đã áp dụng thành công 4/9 đợt xử lý. Đợt 5 bị lỗi mạng.',
     ['batch-1', 'batch-2', 'batch-3', 'batch-4'],
     996,
     5,
@@ -798,5 +798,5 @@ test('StandardSyncPartialFailureError retains completedBatchIds, completedChange
   assert.equal(err.completedChangesCount, 996);
   assert.equal(err.failedBatchIndex, 5);
   assert.equal(err.totalBatches, 9);
-  assert.match(err.message, /4\/9 batch/);
+  assert.match(err.message, /4\/9 đợt xử lý/);
 });

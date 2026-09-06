@@ -365,11 +365,11 @@ export const ACTIVITY_ACTION_REGISTRY = {
   }),
   IMPORT_ACCREDITATION_TAG_SEED: define('IMPORT_ACCREDITATION_TAG_SEED', {
     module: 'STANDARD', audience: 'STANDARD_OPERATOR', importance: 'IMPORTANT', activityVisible: false,
-    label: 'đã import seed nhãn công nhận', iconKey: 'seedling', defaultActionUrl: standardUrl, notification: none()
+    label: 'đã nhập dữ liệu nhãn phạm vi công nhận', iconKey: 'seedling', defaultActionUrl: standardUrl, notification: none()
   }),
   ARCHIVE_ACCREDITATION_TAG_SEED: define('ARCHIVE_ACCREDITATION_TAG_SEED', {
     module: 'STANDARD', audience: 'STANDARD_OPERATOR', importance: 'IMPORTANT', activityVisible: false,
-    label: 'đã lưu trữ seed nhãn công nhận', iconKey: 'box-archive', defaultActionUrl: standardUrl, notification: none()
+    label: 'đã lưu trữ dữ liệu nhãn phạm vi công nhận', iconKey: 'box-archive', defaultActionUrl: standardUrl, notification: none()
   }),
 
   UPDATE_DUTY_SCHEDULE: define('UPDATE_DUTY_SCHEDULE', {
@@ -406,15 +406,15 @@ export const ACTIVITY_ACTION_REGISTRY = {
   }),
   BACKUP_CREATE: define('BACKUP_CREATE', {
     module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'IMPORTANT', activityVisible: true,
-    label: 'đã tạo backup toàn diện', iconKey: 'cloud-arrow-up', defaultActionUrl: configUrl, notification: none()
+    label: 'đã tạo bản sao lưu toàn diện', iconKey: 'cloud-arrow-up', defaultActionUrl: configUrl, notification: none()
   }),
   BACKUP_VERIFY: define('BACKUP_VERIFY', {
     module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'IMPORTANT', activityVisible: true,
-    label: 'đã kiểm tra integrity backup', iconKey: 'shield-check', defaultActionUrl: configUrl, notification: none()
+    label: 'đã kiểm tra tính toàn vẹn của bản sao lưu', iconKey: 'shield-check', defaultActionUrl: configUrl, notification: none()
   }),
   BACKUP_RESTORE: define('BACKUP_RESTORE', {
     module: 'SYSTEM', audience: 'SYSTEM_ADMIN', importance: 'WARNING', activityVisible: true,
-    label: 'đã restore từ backup', iconKey: 'cloud-arrow-down', defaultActionUrl: configUrl, notification: none()
+    label: 'đã phục hồi từ bản sao lưu', iconKey: 'cloud-arrow-down', defaultActionUrl: configUrl, notification: none()
   }),
 
   PRINT: define('PRINT', {

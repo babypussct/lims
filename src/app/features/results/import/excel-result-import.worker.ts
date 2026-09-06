@@ -13,7 +13,7 @@ addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) => {
   try {
     if (data.type === 'open') {
       workbookBuffer = data.buffer;
-      postMessage({ type: 'progress', percent: 32, message: 'Đang đọc danh sách sheet...' });
+      postMessage({ type: 'progress', percent: 32, message: 'Đang đọc danh sách trang tính...' });
 
       const workbookIndex = XLSX.read(workbookBuffer, {
         type: 'array',
@@ -33,13 +33,13 @@ addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) => {
     }
 
     if (!workbookBuffer) {
-      throw new Error('Dữ liệu Excel không còn khả dụng trong worker.');
+      throw new Error('Dữ liệu Excel không còn khả dụng để tiếp tục xử lý.');
     }
 
     postMessage({
       type: 'progress',
       percent: 55,
-      message: `Đang đọc dữ liệu từ ${data.sheetNames.length} sheet kết quả...`
+      message: `Đang đọc dữ liệu từ ${data.sheetNames.length} trang tính kết quả...`
     });
     const workbook = XLSX.read(workbookBuffer, {
       type: 'array',

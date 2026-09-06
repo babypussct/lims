@@ -326,7 +326,7 @@ export class StandardRequestService {
         );
         const previouslyAccounted = Number(freshRequest.totalAmountUsed || 0);
         if (reportedNormalized + 1e-9 < previouslyAccounted) {
-          throw new Error(`Tổng lượng báo trả không thể nhỏ hơn ${previouslyAccounted} ${stockUnit} đã accounting.`);
+          throw new Error(`Tổng lượng báo trả không thể nhỏ hơn ${previouslyAccounted} ${stockUnit} đã ghi nhận trước đó.`);
         }
         safeUpdates['reportedAmountUsed'] = reportedAmount;
         safeUpdates['reportedUnit'] = reportedUnit;
@@ -801,7 +801,7 @@ export class StandardRequestService {
       const activityEvent = this.activityEvents.build({
         eventId: activityRef.id,
         action: 'HARD_DELETE_REQUEST',
-        details: `Rollback lịch sử yêu cầu: ${freshRequest.standardName} (Người yêu cầu: ${freshRequest.requestedByName})`,
+        details: `Hoàn tác lịch sử yêu cầu: ${freshRequest.standardName} (Người yêu cầu: ${freshRequest.requestedByName})`,
         targetType: 'STANDARD',
         targetId: freshRequest.standardId,
         targetName: freshRequest.standardName,

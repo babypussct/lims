@@ -76,7 +76,7 @@ export class FirebaseService {
 
     const messaging = await this.getMessagingInstance();
     if (!messaging) {
-        throw new Error('Thiết bị không hỗ trợ Firebase Messaging.');
+        throw new Error('Thiết bị không hỗ trợ thông báo đẩy.');
     }
 
     try {
@@ -87,7 +87,7 @@ export class FirebaseService {
             swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         }
         if (!swReg) {
-            throw new Error('Chưa tìm thấy Service Worker. Hãy tải lại trang web.');
+            throw new Error('Thành phần thông báo chưa sẵn sàng. Hãy tải lại trang web.');
         }
 
         const token = await getToken(messaging, {
@@ -97,7 +97,7 @@ export class FirebaseService {
         return token;
     } catch (error: any) {
         console.error('Lỗi lấy FCM token:', error);
-        throw new Error(error?.message || 'Lỗi không xác định khi đăng ký Token.');
+        throw new Error(error?.message || 'Không thể đăng ký nhận thông báo trên thiết bị này.');
     }
   }
 

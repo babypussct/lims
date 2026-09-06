@@ -18,7 +18,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
     @if (isOpen()) {
       <app-modal-shell
         title="Danh mục nhãn trung tâm"
-        description="Nhãn phương pháp hóa học được nạp theo seed có truy vết; nhãn thủ công dùng soft-delete."
+        description="Nhãn phương pháp hóa học từ phạm vi công nhận được đồng bộ có truy vết; nhãn thủ công có thể ẩn và khôi phục."
         size="lg"
         [showFooter]="false"
         (closed)="close.emit()"
@@ -46,9 +46,9 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <h4 class="text-sm font-black text-fuchsia-800 dark:text-fuchsia-200">VLAT-1.1669 · 487/QĐ-AOSC</h4>
-                    <p class="text-xs text-fuchsia-700/80 dark:text-fuchsia-300/80 mt-1">119 mã NAFI6/H-* hóa học, không bao gồm phần sinh học. Thiết bị chỉ là metadata dẫn xuất.</p>
+                    <p class="text-xs text-fuchsia-700/80 dark:text-fuchsia-300/80 mt-1">119 mã NAFI6/H-* hóa học, không bao gồm phần sinh học. Thông tin thiết bị được suy ra tự động từ dữ liệu nguồn.</p>
                   </div>
-                  <button type="button" (click)="loadPreview()" [disabled]="isBusy()" class="shrink-0 rounded-xl border border-fuchsia-300 dark:border-fuchsia-700 px-3 py-2 text-xs font-black text-fuchsia-700 dark:text-fuchsia-200 hover:bg-white/70 disabled:opacity-50">Preview</button>
+                  <button type="button" (click)="loadPreview()" [disabled]="isBusy()" class="shrink-0 rounded-xl border border-fuchsia-300 dark:border-fuchsia-700 px-3 py-2 text-xs font-black text-fuchsia-700 dark:text-fuchsia-200 hover:bg-white/70 disabled:opacity-50">Xem trước</button>
                 </div>
                 @if (preview()) {
                   <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
@@ -60,9 +60,9 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                   </div>
                   <label class="flex items-center gap-2 text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200">
                     <input type="checkbox" [ngModel]="restoreArchivedFromSameSeed()" (ngModelChange)="restoreArchivedFromSameSeed.set($event); loadPreview()" [disabled]="isBusy()">
-                    Khôi phục nhãn đã soft-delete cùng seed nếu còn hiệu lực
+                    Khôi phục nhãn đã ẩn từ cùng nguồn dữ liệu nếu còn hiệu lực
                   </label>
-                  <button type="button" (click)="importSeed()" [disabled]="isBusy() || preview()!.conflictIds.length > 0" class="w-full rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-4 py-2.5 text-sm font-black disabled:opacity-50">Nạp/đồng bộ seed hóa học</button>
+                  <button type="button" (click)="importSeed()" [disabled]="isBusy() || preview()!.conflictIds.length > 0" class="w-full rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-4 py-2.5 text-sm font-black disabled:opacity-50">Nạp/đồng bộ dữ liệu phương pháp</button>
                 }
               </section>
             </div>
@@ -77,11 +77,10 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                   <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-800/60" [class.opacity-60]="option.archived">
                     <div class="flex items-start justify-between gap-2">
                       <div class="min-w-0">
-                        <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate" [title]="option.key">{{option.label}}</div>
+                        <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate" [title]="option.label">{{option.label}}</div>
                         @if (option.methodName) { <div class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2" [title]="option.methodName">{{option.methodName}}</div> }
-                        <div class="text-[10px] font-mono text-slate-400 truncate" [title]="option.key">{{option.key}}</div>
                         <div class="flex flex-wrap gap-1 mt-1">
-                          @if (option.origin === 'ACCREDITATION_SCOPE') { <span class="rounded-full bg-fuchsia-100 text-fuchsia-700 px-1.5 py-0.5 text-[9px] font-black">ACCREDITATION</span> }
+                          @if (option.origin === 'ACCREDITATION_SCOPE') { <span class="rounded-full bg-fuchsia-100 text-fuchsia-700 px-1.5 py-0.5 text-[9px] font-black">PHẠM VI CÔNG NHẬN</span> }
                           @if (option.archived) { <span class="rounded-full bg-slate-100 text-slate-500 px-1.5 py-0.5 text-[9px] font-black">ĐÃ ẨN</span> }
                           @for (device of option.deviceCodes || []; track device) { <span class="rounded-full bg-fuchsia-50 text-fuchsia-700 px-1.5 py-0.5 text-[9px] font-black">{{device}}</span> }
                         </div>
@@ -99,7 +98,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                     </div>
                   </div>
                 } @empty {
-                  <div class="col-span-full text-xs text-slate-400 italic">Chưa có nhãn custom trong danh mục.</div>
+                  <div class="col-span-full text-xs text-slate-400 italic">Chưa có nhãn tùy chỉnh trong danh mục.</div>
                 }
               </div>
             </section>
@@ -196,7 +195,7 @@ export class StandardsTagManagerModalComponent {
       this.preview.set(await this.catalog.previewAccreditationMethodImport({ restoreArchivedFromSameSeed: this.restoreArchivedFromSameSeed() }));
       this.clearMessage();
     } catch (error: any) {
-      this.showMessage(error?.message || 'Không thể đọc preview seed.', 'error');
+      this.showMessage(error?.message || 'Không thể xem trước dữ liệu phương pháp.', 'error');
     } finally {
       this.isBusy.set(false);
     }
@@ -211,10 +210,10 @@ export class StandardsTagManagerModalComponent {
     this.isBusy.set(true);
     try {
       const result = await this.catalog.upsertAccreditationMethodTags({ restoreArchivedFromSameSeed: this.restoreArchivedFromSameSeed() });
-      this.showMessage(`Đã đồng bộ seed: tạo ${result.createIds.length}, cập nhật ${result.updateIds.length}, khôi phục ${result.restoreIds.length}, giữ nguyên ${result.unchangedIds.length}.`, 'success');
+      this.showMessage(`Đã đồng bộ dữ liệu phương pháp: tạo ${result.createIds.length}, cập nhật ${result.updateIds.length}, khôi phục ${result.restoreIds.length}, giữ nguyên ${result.unchangedIds.length}.`, 'success');
       this.preview.set(await this.catalog.previewAccreditationMethodImport({ restoreArchivedFromSameSeed: this.restoreArchivedFromSameSeed() }));
     } catch (error: any) {
-      this.showMessage(error?.message || 'Không thể import seed.', 'error');
+      this.showMessage(error?.message || 'Không thể nhập dữ liệu phương pháp.', 'error');
     } finally {
       this.isBusy.set(false);
     }

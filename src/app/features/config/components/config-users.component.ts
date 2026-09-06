@@ -98,7 +98,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                     <input type="text" 
                            [ngModel]="searchQuery()" 
                            (ngModelChange)="searchQuery.set($event)"
-                           placeholder="Tìm tên, email hoặc UID..." 
+                           placeholder="Tìm tên, email hoặc mã tài khoản..."
                            class="w-full pl-9 pr-9 py-2.5 text-xs md:text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition shadow-xs">
                     @if (searchQuery()) {
                         <button (click)="searchQuery.set('')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
@@ -127,19 +127,19 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                     <button (click)="roleFilter.set('staff')" 
                             class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'staff' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
-                        <i class="fa-solid fa-user-gear text-[10px]"></i> Staff ({{staffCount()}})
+                        <i class="fa-solid fa-user-gear text-[10px]"></i> Nhân viên ({{staffCount()}})
                     </button>
 
                     <button (click)="roleFilter.set('manager')" 
                             class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'manager' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
-                        <i class="fa-solid fa-user-shield text-[10px]"></i> Manager ({{managerCount()}})
+                        <i class="fa-solid fa-user-shield text-[10px]"></i> Quản trị ({{managerCount()}})
                     </button>
 
                     <button (click)="roleFilter.set('viewer')" 
                             class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'viewer' ? 'bg-slate-700 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
-                        <i class="fa-solid fa-eye text-[10px]"></i> Viewer ({{viewerCount()}})
+                        <i class="fa-solid fa-eye text-[10px]"></i> Chỉ xem ({{viewerCount()}})
                     </button>
                 </div>
             </div>
@@ -203,7 +203,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                         <select [ngModel]="batchRole()" (ngModelChange)="batchRole.set($event)" 
                                 class="bg-slate-900 text-xs font-bold text-slate-200 border-none rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
                             <option value="staff">Staff</option>
-                            <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Manager</option>
+                            <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Quản lý</option>
                             <option value="viewer">Viewer</option>
                             <option value="pending">Pending</option>
                         </select>
@@ -293,7 +293,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                 </div>
 
                                 <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">{{u.email}}</div>
-                                <button type="button" class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 w-fit" (click)="copyUid(u.uid)" title="Nhấn để sao chép UID" aria-label="Sao chép UID">
+                                <button type="button" class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 w-fit" (click)="copyUid(u.uid)" title="Nhấn để sao chép mã tài khoản" aria-label="Sao chép mã tài khoản">
                                     <i class="fa-regular fa-copy"></i> {{u.uid.substring(0,8)}}...
                                 </button>
                             </div>
@@ -310,7 +310,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                         class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-fuchsia-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
                                         [class.text-orange-600]="u.role === 'pending'"
                                         [class.dark:text-orange-400]="u.role === 'pending'">
-                                    <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Manager (Toàn quyền)</option>
+                                    <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Quản lý (toàn quyền)</option>
                                     <option value="staff">Staff (Nhân viên)</option>
                                     <option value="viewer">Viewer (Chỉ xem)</option>
                                     <option value="pending">Pending (Chờ duyệt)</option>
@@ -344,7 +344,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                             <label class="md:hidden text-[10px] uppercase font-bold text-slate-400 mb-1.5 block">Phân quyền</label>
                             @if (u.role === 'manager') {
                                 <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 rounded-xl text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
-                                    <i class="fa-solid fa-shield-halved shrink-0 text-emerald-500"></i> <span>Tài khoản Manager có toàn quyền hệ thống.</span>
+                                    <i class="fa-solid fa-shield-halved shrink-0 text-emerald-500"></i> <span>Tài khoản quản lý có toàn quyền hệ thống.</span>
                                 </div>
                             } @else if (u.role === 'viewer') {
                                 <div class="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl text-blue-700 dark:text-blue-400 text-xs font-bold flex items-center gap-2">
@@ -673,7 +673,7 @@ export class ConfigUsersComponent implements OnInit {
       const selected = this.selectedUids();
 
       if (targetRole === 'manager' && this.auth.currentUser()?.role !== 'manager') {
-          this.toast.show('Chỉ Manager mới được cấp vai trò Manager.', 'error');
+          this.toast.show('Chỉ người quản lý mới được cấp vai trò quản lý.', 'error');
           return;
       }
 
@@ -682,7 +682,7 @@ export class ConfigUsersComponent implements OnInit {
           const currentManagers = this.userList().filter(u => u.role === 'manager');
           const remainingManagers = currentManagers.filter(u => !selected.has(u.uid));
           if (remainingManagers.length === 0) {
-              this.toast.show('❌ Thao tác bị từ chối: Không thể hạ cấp toàn bộ Manager của hệ thống!', 'error');
+              this.toast.show('❌ Thao tác bị từ chối: Không thể hạ cấp toàn bộ người quản lý của hệ thống!', 'error');
               return;
           }
       }
@@ -814,7 +814,7 @@ export class ConfigUsersComponent implements OnInit {
 
   updateRole(u: UserProfile, role: 'manager' | 'staff' | 'viewer' | 'pending') { 
       if (this.auth.currentUser()?.role !== 'manager' && (u.role === 'manager' || role === 'manager')) {
-          this.toast.show('Chỉ Manager mới được cấp hoặc thay đổi vai trò Manager.', 'error');
+          this.toast.show('Chỉ người quản lý mới được cấp hoặc thay đổi vai trò quản lý.', 'error');
           return;
       }
 
@@ -904,7 +904,7 @@ export class ConfigUsersComponent implements OnInit {
 
   copyUid(uid: string) {
       navigator.clipboard.writeText(uid)
-          .then(() => this.toast.show('Đã sao chép UID.'))
-          .catch(() => this.toast.show('Không thể sao chép UID.', 'error'));
+          .then(() => this.toast.show('Đã sao chép mã tài khoản.'))
+          .catch(() => this.toast.show('Không thể sao chép mã tài khoản.', 'error'));
   }
 }

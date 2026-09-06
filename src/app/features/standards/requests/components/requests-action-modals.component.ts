@@ -34,7 +34,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
             <div class="space-y-4">
               <div class="flex flex-col">
-                <span class="text-xs font-bold uppercase text-slate-400">Số lô / Lot</span>
+                <span class="text-xs font-bold uppercase text-slate-400">Số lô</span>
                 <span class="text-base font-bold text-slate-700 dark:text-slate-200">{{request.lotNumber || 'N/A'}}</span>
               </div>
               @if(request.standardDetails?.expiry_date) {

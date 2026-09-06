@@ -16,7 +16,7 @@
       </h4>
       <!-- Quick Vial input for Calibration -->
       <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
-        <span class="font-bold text-slate-550 dark:text-slate-400">Vial chuẩn:</span>
+        <span class="font-bold text-slate-550 dark:text-slate-400">Lọ chuẩn:</span>
         <input type="number" 
                [(ngModel)]="bulkCalibVialStart" 
                (ngModelChange)="onBulkCalibVialStartChange()"
@@ -40,7 +40,7 @@
       <!-- Left side settings -->
       <div class="lg:col-span-4 space-y-4">
         <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu trắng</label>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu trắng (blank)</label>
           <input type="text" 
                  [(ngModel)]="draft.page1Data['blankName']" 
                  (ngModelChange)="onDataChanged()"
@@ -50,7 +50,7 @@
         </div>
         
         <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu thêm chuẩn</label>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu thêm chuẩn (spike)</label>
           <input type="text" 
                  [(ngModel)]="draft.page1Data['spikeName']" 
                  (ngModelChange)="onDataChanged()"
@@ -209,7 +209,7 @@
                        [disabled]="row.key === 'QC_FINAL'"
                        (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 1)"
                        (focus)="$any($event.target).select()"
-                       placeholder="Vial..."
+                       placeholder="Lọ..."
                        class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
               </td>
               <td class="py-2.5 px-4">

@@ -159,7 +159,7 @@ export class StandardUsageService {
 
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
-      if (!stdDoc.exists()) throw new Error('Standard does not exist!');
+      if (!stdDoc.exists()) throw new Error('Hồ sơ chất chuẩn không còn tồn tại.');
       const stdData = stdDoc.data() as ReferenceStandard;
       if (!isValidInternalId(stdData.internal_id)) {
         throw new Error('Hồ sơ chuẩn chưa có Mã quản lý nội bộ hợp lệ. Hãy chạy công cụ Đồng bộ trước khi ghi nhật ký.');
@@ -475,7 +475,7 @@ export class StandardUsageService {
   async deleteUsageLog(stdId: string, logId: string, requestId?: string): Promise<void> {
     const currentUser = this.auth.currentUser();
     if (!currentUser || !this.auth.canDeleteStandardLogs()) {
-      throw new Error('Bạn không có quyền rollback nhật ký sử dụng chuẩn.');
+      throw new Error('Bạn không có quyền hoàn tác nhật ký sử dụng chuẩn.');
     }
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${logId}`);
@@ -554,7 +554,7 @@ export class StandardUsageService {
       const activityEvent = this.activityEvents.build({
         eventId: activityRef.id,
         action: 'DELETE_USAGE_LOG',
-        details: `Rollback nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`,
+        details: `Hoàn tác nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`,
         targetType: 'STANDARD',
         targetId: stdId,
         targetName: stdData?.name || logData.standardName,

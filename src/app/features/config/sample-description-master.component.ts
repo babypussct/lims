@@ -186,7 +186,7 @@ export class SampleDescriptionMasterComponent implements OnInit {
       this.importPreview.set(parsed);
       this.toast.show(`Đã đọc ${parsed.length} dòng hợp lệ.`, parsed.length ? 'success' : 'info');
     } catch (error: any) {
-      this.toast.show(`Không thể đọc file: ${error?.message || error}`, 'error');
+      this.toast.show(`Không thể đọc tệp: ${error?.message || error}`, 'error');
     } finally {
       input.value = '';
     }

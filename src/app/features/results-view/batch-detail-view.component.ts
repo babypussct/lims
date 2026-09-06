@@ -304,7 +304,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
                   <table class="w-full text-sm border-collapse text-left whitespace-nowrap min-w-[850px]">
                   <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-10 shadow-sm">
-                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24 min-w-[96px] max-w-[96px] sticky left-0 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700">Vial No.</th>
+                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24 min-w-[96px] max-w-[96px] sticky left-0 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700">Số lọ</th>
                       <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[160px] sticky left-24 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">Mẫu thử</th>
                       
                       @if (hasColumn('khoiLuong')) {
@@ -399,7 +399,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
               <div class="flex items-center gap-3">
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0">
-                  <i class="fa-solid fa-file-pdf mr-2.5 text-red-500"></i> PDF PREVIEW
+                  <i class="fa-solid fa-file-pdf mr-2.5 text-red-500"></i> XEM TRƯỚC PDF
                 </h4>
                 
                 @if (availableReports().length > 1) {
@@ -720,7 +720,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.requestId) {
-      this.toast.show('Không tìm thấy ID mẻ chạy!', 'error');
+      this.toast.show('Không tìm thấy mã mẻ chạy!', 'error');
       this.router.navigate(['/results-view']);
       return;
     }

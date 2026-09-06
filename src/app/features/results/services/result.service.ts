@@ -530,7 +530,7 @@ export class ResultService {
         const sopName = metaData['sopName'] || legacyResult['sopName'] || '';
         await this.logActivity(
           'SAVE_RESULT_DRAFT',
-          `Lưu nháp kết quả phân tích mẻ chạy: ${sopName} (ID: ${requestId})`,
+          `Lưu nháp kết quả phân tích mẻ chạy: ${sopName} (Mã yêu cầu: ${requestId})`,
           requestId,
           sopId,
           sopName,
@@ -570,7 +570,7 @@ export class ResultService {
 
         await this.logActivity(
           'RESTORE_RESULT_BACKUP',
-          `Khôi phục kết quả từ bản backup gần nhất: ${draft.sopName} (ID: ${requestId})`,
+          `Khôi phục kết quả từ bản sao lưu gần nhất: ${draft.sopName} (Mã yêu cầu: ${requestId})`,
           requestId,
           draft.sopId || '',
           draft.sopName || '',
@@ -594,7 +594,7 @@ export class ResultService {
 
         await this.logActivity(
           'RESTORE_RESULT_BACKUP',
-          `Khôi phục kết quả từ history v${latestHistory.version}: ${draft.sopName} (ID: ${requestId})`,
+          `Khôi phục kết quả từ lịch sử v${latestHistory.version}: ${draft.sopName} (Mã yêu cầu: ${requestId})`,
           requestId,
           draft.sopId || '',
           draft.sopName || '',
@@ -704,7 +704,7 @@ export class ResultService {
 
         await this.logActivity(
           'RESTORE_RESULT_VERSION',
-          `Rollback kết quả về bản v${versionNumber}${displayName}: ${draft.sopName} (ID: ${requestId})`,
+          `Khôi phục kết quả về bản v${versionNumber}${displayName}: ${draft.sopName} (Mã yêu cầu: ${requestId})`,
           requestId,
           draft.sopId || '',
           draft.sopName || '',
@@ -979,7 +979,7 @@ export class ResultService {
 
       const publishEventId = await this.logActivity(
         'PUBLISH_RESULT_REPORT',
-        `Xuất bản báo cáo kết quả bản v${nextVersion}${displayName}: ${currentDraft.sopName} (ID: ${requestId})`,
+        `Xuất bản báo cáo kết quả bản v${nextVersion}${displayName}: ${currentDraft.sopName} (Mã yêu cầu: ${requestId})`,
         requestId,
         currentDraft.sopId || '',
         currentDraft.sopName || '',
@@ -1072,7 +1072,7 @@ export class ResultService {
       );
       await this.logActivity(
         'RECONCILE_RESULT_STATUS',
-        `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ draft sang completed (ID: ${requestId})`,
+        `Tự động sửa trạng thái mẻ đã có đủ báo cáo từ nháp sang hoàn tất (Mã yêu cầu: ${requestId})`,
         requestId,
         draft.sopId || '',
         draft.sopName || '',
@@ -1111,7 +1111,7 @@ export class ResultService {
 
       await this.logActivity(
         'UNLOCK_RESULT_EDIT',
-        `Mở khóa chỉnh sửa mẻ chạy (chuẩn bị tăng phiên bản): ${currentDraft.sopName} (ID: ${requestId})`,
+        `Mở khóa chỉnh sửa mẻ chạy (chuẩn bị tăng phiên bản): ${currentDraft.sopName} (Mã yêu cầu: ${requestId})`,
         requestId,
         currentDraft.sopId || '',
         currentDraft.sopName || '',
@@ -1170,7 +1170,7 @@ export class ResultService {
 
       // 2. Gọi sang GAS để dọn dẹp lưu trữ toàn bộ các file này
       if (filesToArchive.length > 0) {
-        this.toast.show('Đang di chuyển toàn bộ file báo cáo liên quan vào thư mục Archived...', 'info');
+        this.toast.show('Đang di chuyển toàn bộ tệp báo cáo liên quan vào thư mục “Archived”...', 'info');
         await this.reportService.archiveReports(filesToArchive, requestId);
       }
 
@@ -1267,7 +1267,7 @@ export class ResultService {
 
       const resetEventId = await this.logActivity(
         'RESET_RESULT_DATA',
-        `Reset toàn bộ dữ liệu kết quả mẻ chạy: ${currentDraft.sopName || reqData['sopName']} (ID: ${requestId})`,
+        `Đặt lại toàn bộ dữ liệu kết quả mẻ chạy: ${currentDraft.sopName || reqData['sopName']} (Mã yêu cầu: ${requestId})`,
         requestId,
         currentDraft.sopId || reqData['sopId'] || '',
         currentDraft.sopName || reqData['sopName'] || '',

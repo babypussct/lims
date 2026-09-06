@@ -402,7 +402,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
                       'Số CAS': log.cas_number || std?.cas_number || '',
                       'Mã quản lý': log.internalId || std?.internal_id || '',
                       'Mã catalog (mã sản phẩm)': std?.product_code || '',
-                      'Lot Number': log.lotNumber || std?.lot_number || '',
+                      'Số lô': log.lotNumber || std?.lot_number || '',
                       'Độ tinh khiết': std?.purity || '',
                       'Hãng sản xuất': log.manufacturer || std?.manufacturer || '',
                       'Quy cách đóng gói': std?.pack_size || '',

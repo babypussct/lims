@@ -30,7 +30,7 @@
             {{ loadingMessage }}
           </p>
           <p class="mt-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-            Chỉ đọc dữ liệu report cần thiết. Hình sắc ký, chart, style và sheet ngoài SOP sẽ được bỏ qua.
+            Chỉ đọc dữ liệu báo cáo cần thiết. Hình sắc ký, biểu đồ, định dạng và trang tính ngoài SOP sẽ được bỏ qua.
           </p>
           <div class="mt-5 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
                role="progressbar"
@@ -82,7 +82,7 @@
                 Lưu lại tệp Excel gốc trên Google Drive
               </span>
               <span class="block mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
-                Tùy chọn · {{ file.name }} ({{ fileSizeLabel }}). Chỉ tải lên khi bấm Áp dụng; tiến trình sẽ được hiển thị trong một modal riêng.
+                Tùy chọn · {{ file.name }} ({{ fileSizeLabel }}). Chỉ tải lên khi bấm Áp dụng; tiến trình sẽ được hiển thị trong một hộp thoại riêng.
               </span>
               @if (hasStoredOriginalFile) {
                 <span class="block mt-1 text-[10px] font-bold text-sky-600 dark:text-sky-400">
@@ -196,7 +196,7 @@
                              (ngModelChange)="toggleAll($event, 'result')"
                              class="w-4 h-4 rounded text-emerald-600">
                     </th>
-                    <th class="px-3 py-3 text-left">Sheet / hoạt chất</th>
+                    <th class="px-3 py-3 text-left">Trang tính / hoạt chất</th>
                     <th class="px-3 py-3 text-left">Mẫu trên Excel</th>
                     <th class="px-3 py-3 text-left">Trường trên UI</th>
                     <th class="px-3 py-3 text-left">Hiện tại</th>

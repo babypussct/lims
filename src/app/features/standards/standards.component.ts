@@ -420,8 +420,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const ids = [...this.selectedIds()];
       if (!ids.length) return;
       if (data.mode === 'REPLACE' && !await this.confirmationService.confirm({
-          message: `REPLACE sẽ thay thế toàn bộ nhãn trên ${ids.length} lọ. Tiếp tục?`,
-          confirmText: 'Xác nhận REPLACE',
+          message: `Chế độ thay thế sẽ ghi lại toàn bộ nhãn trên ${ids.length} lọ. Tiếp tục?`,
+          confirmText: 'Xác nhận thay thế',
           isDangerous: true,
       })) return;
       this.isProcessing.set(true);
@@ -507,7 +507,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
      this.isParsingImport.set(true);
      try {
          const preview = await this.stdService.parseExcelWorkbook(file);
-         if (!preview.items.length) throw new Error('Sheet đã chọn không có dòng dữ liệu.');
+         if (!preview.items.length) throw new Error('Trang tính đã chọn không có dòng dữ liệu.');
          this.pendingImportFile.set(file);
          this.importSheetNames.set(preview.sheetNames);
          this.selectedImportSheet.set(preview.selectedSheet);
@@ -516,12 +516,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
          const invalidCount = preview.items.length - validCount;
          this.toast.show(
            invalidCount > 0
-              ? `Đã đọc ${preview.items.length} dòng từ sheet ${preview.selectedSheet}: ${validCount} hợp lệ, ${invalidCount} cần kiểm tra.`
-              : `Đã đọc ${preview.items.length} dòng hợp lệ từ sheet ${preview.selectedSheet}.`,
+              ? `Đã đọc ${preview.items.length} dòng từ trang tính ${preview.selectedSheet}: ${validCount} hợp lệ, ${invalidCount} cần kiểm tra.`
+              : `Đã đọc ${preview.items.length} dòng hợp lệ từ trang tính ${preview.selectedSheet}.`,
            invalidCount > 0 ? 'warning' : 'info'
          );
      } catch (e: any) {
-         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+         this.toast.show('Lỗi đọc tệp: ' + e.message, 'error');
      } finally {
          this.isParsingImport.set(false);
          event.target.value = ''; // Reset input
@@ -534,11 +534,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isParsingImport.set(true);
       try {
           const preview = await this.stdService.parseExcelWorkbook(file, sheetName);
-          if (!preview.items.length) throw new Error('Sheet đã chọn không có dòng dữ liệu.');
+          if (!preview.items.length) throw new Error('Trang tính đã chọn không có dòng dữ liệu.');
           this.selectedImportSheet.set(preview.selectedSheet);
           this.importPreviewData.set(preview.items);
       } catch (e: any) {
-          this.toast.show('Không thể đọc sheet: ' + e.message, 'error');
+          this.toast.show('Không thể đọc trang tính: ' + e.message, 'error');
       } finally {
           this.isParsingImport.set(false);
       }
@@ -553,7 +553,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
          this.importUsageLogPreviewData.set(data);
          this.toast.show(`Đã đọc ${data.length} dòng nhật ký.`);
      } catch (e: any) {
-         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+         this.toast.show('Lỗi đọc tệp: ' + e.message, 'error');
      } finally {
          this.isLoading.set(false);
          event.target.value = ''; // Reset input
@@ -582,7 +582,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
             result.skippedLogs > 0 ? `không nhập lại ${result.skippedLogs} nhật ký của chuẩn đã có` : '',
             result.skippedInvalid > 0 ? `bỏ qua ${result.skippedInvalid} dòng lỗi` : ''
           ].filter(Boolean);
-          this.toast.show(`Import thành công: ${parts.join(', ')}.`, 'success');
+          this.toast.show(`Nhập dữ liệu thành công: ${parts.join(', ')}.`, 'success');
           this.cancelImport();
       } catch (e: any) {
           this.importPreviewData.update(items => [...items]);
@@ -667,7 +667,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           await this.stdService.completeCoaUpload(siblings.length ? siblings : [std], previewUrl);
 
           if (siblings.length > 1) {
-              this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+              this.toast.show(`Tải lên thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
           } else {
               this.toast.show(`Tải CoA lên thành công! ${fileName}`);
           }
@@ -728,7 +728,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
          this.showBulkCoaModal.set(true);
          this.bulkUploadComplete.set(false);
      } else {
-         this.toast.show('Không tìm thấy file tài liệu hợp lệ trong thư mục/số file đã chọn (yêu cầu .pdf, .jpg, v.v.)', 'error');
+         this.toast.show('Không tìm thấy tệp tài liệu hợp lệ trong thư mục/số tệp đã chọn (yêu cầu .pdf, .jpg, v.v.)', 'error');
      }
      event.target.value = '';
   }
@@ -751,7 +751,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return lot ? `${standard.name.trim().toLowerCase()}|${lot}` : standard.id;
       });
       if (new Set(targetKeys).size !== targetKeys.length) {
-          this.toast.show('Có nhiều file cùng ghép vào một chuẩn/lô. Vui lòng chỉ giữ một file cho mỗi lô.', 'error');
+          this.toast.show('Có nhiều tệp cùng ghép vào một chuẩn/lô. Vui lòng chỉ giữ một tệp cho mỗi lô.', 'error');
           return;
       }
 
@@ -804,7 +804,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   this.toast.show(
                       errorCount > 0
                           ? `Hoàn tất: ${successCount} thành công, ${errorCount} lỗi.`
-                          : `Hoàn tất ${successCount} file CoA.`,
+                          : `Hoàn tất ${successCount} tệp CoA.`,
                       errorCount > 0 ? 'error' : 'success'
                   );
                   this.progressService.complete();

@@ -731,7 +731,7 @@ export class AuthService {
       this.updateAuthProviderState(this.auth.currentUser || firebaseUser);
       throw this.createAuthError(
         'auth/google-email-mismatch',
-        'Tài khoản Google phải dùng đúng email đang là ID đăng nhập LIMS.'
+        'Tài khoản Google phải dùng đúng email đăng nhập LIMS hiện tại.'
       );
     }
 
@@ -745,7 +745,7 @@ export class AuthService {
       case 'auth/credential-already-in-use':
         return 'Tài khoản Google này đã liên kết với một tài khoản LIMS khác.';
       case 'auth/google-email-mismatch':
-        return 'Email Google phải trùng với ID email đang dùng trong LIMS.';
+        return 'Email Google phải trùng với email đăng nhập đang dùng trong LIMS.';
       case 'auth/requires-recent-login':
         return 'Phiên đăng nhập đã cũ. Vui lòng đăng nhập lại rồi thử liên kết Google.';
       case 'auth/popup-closed-by-user':

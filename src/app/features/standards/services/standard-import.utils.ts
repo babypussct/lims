@@ -350,7 +350,7 @@ export function parseStandardImportRows(
   rawRows: Record<string, unknown>[],
   options: ParseStandardImportRowsOptions
 ): ImportPreviewItem[] {
-  if (!rawRows.length) throw new Error('Sheet không có dữ liệu.');
+  if (!rawRows.length) throw new Error('Trang tính không có dữ liệu.');
   const mapping = buildHeaderMap(rawRows);
   const presentFields = [...mapping.keys()] as (keyof ReferenceStandard)[];
   const today = options.today || new Date().toISOString().slice(0, 10);

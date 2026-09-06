@@ -19,10 +19,10 @@ const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.
             LIMS NAFIQPM6 · DEV DEMO
           </div>
           <h1>Trình diễn Excel</h1>
-      <p>Workbook mẫu với nhiều sheet, ô hợp nhất, công thức, ngày giờ và kích thước hàng/cột tùy chỉnh.</p>
+      <p>Tệp Excel mẫu với nhiều trang tính, ô hợp nhất, công thức, ngày giờ và kích thước hàng/cột tùy chỉnh.</p>
         </div>
         <div class="excel-demo-actions">
-          <button type="button" (click)="regenerate()" title="Dựng lại workbook mẫu">
+          <button type="button" (click)="regenerate()" title="Tạo lại tệp Excel mẫu">
             <i class="fa-solid fa-rotate-right"></i>
             <span class="hidden sm:inline">Dựng lại</span>
           </button>
@@ -54,7 +54,7 @@ const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.
         } @else {
           <div class="excel-demo-reloading" aria-live="polite">
             <i class="fa-solid fa-circle-notch fa-spin"></i>
-            <span>Đang dựng lại workbook...</span>
+            <span>Đang dựng lại tệp Excel...</span>
           </div>
         }
       </section>
@@ -308,9 +308,9 @@ export class ExcelDocumentDemoComponent {
       ['TÓM TẮT MẺ PHÂN TÍCH', null, null],
       ['Thông tin', 'Giá trị', 'Ghi chú'],
       ['Số mẫu', 4, 'Đã hoàn tất'],
-      ['Số chỉ tiêu', 4, 'Theo workbook mẫu'],
-      ['Ngày cập nhật', new Date(2026, 7, 22), 'Ngày local'],
-      ['Kết luận', { f: 'IF(\'Kết quả\'!E3="VƯỢT","CẦN XEM XÉT","ĐẠT")', v: 'CẦN XEM XÉT' }, 'Công thức liên sheet'],
+      ['Số chỉ tiêu', 4, 'Theo tệp Excel mẫu'],
+      ['Ngày cập nhật', new Date(2026, 7, 22), 'Ngày trên thiết bị'],
+      ['Kết luận', { f: 'IF(\'Kết quả\'!E3="VƯỢT","CẦN XEM XÉT","ĐẠT")', v: 'CẦN XEM XÉT' }, 'Công thức liên trang tính'],
     ]);
     summary['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
     summary['!cols'] = [{ wpx: 150 }, { wpx: 170 }, { wpx: 160 }];
@@ -321,8 +321,8 @@ export class ExcelDocumentDemoComponent {
       ['HƯỚNG DẪN THAO TÁC', null],
       ['Tác vụ', 'Mô tả'],
       ['Chọn ô', 'Dùng chuột hoặc phím mũi tên để di chuyển trong bảng.'],
-      ['Chọn vùng dữ liệu', 'Nhấn Ctrl+A để chọn nhanh vùng có dữ liệu của sheet.'],
-      ['Filter', 'Nhấn Ctrl+Shift+L để tạo hoặc mở bộ lọc tạm trong bản xem trước.'],
+      ['Chọn vùng dữ liệu', 'Nhấn Ctrl+A để chọn nhanh vùng có dữ liệu của trang tính.'],
+      ['Lọc', 'Nhấn Ctrl+Shift+L để tạo hoặc mở bộ lọc tạm trong bản xem trước.'],
       ['Tìm kiếm', 'Nhấn Ctrl+F để mở công cụ tìm kiếm của Univer.'],
       ['Chỉ đọc', 'Mọi thao tác chỉ diễn ra trong bản xem trước, không ghi lại tệp gốc.'],
     ]);

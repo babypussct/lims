@@ -611,7 +611,7 @@ function calculateSpike(draft: SpikeTaskDraft): PrepCalculationResult<PrepOutput
   let initialSnapshot: ConcentrationSnapshot | null = null;
 
   if (draft.matrix === 'solid') {
-    const target = normalizeConcentration(draft.target, 'target', 'mức spike', issues);
+    const target = normalizeConcentration(draft.target, 'target', 'mức thêm chuẩn (spike)', issues);
     if (!target || target.basis !== 'mass_per_mass') {
       addIssue(issues, 'INCOMPATIBLE_BASIS', 'target', 'Mẫu rắn phải dùng cơ sở khối lượng/khối lượng, ví dụ mg/kg hoặc µg/kg.');
       return calculated(null, issues, {}, trace);
@@ -625,7 +625,7 @@ function calculateSpike(draft: SpikeTaskDraft): PrepCalculationResult<PrepOutput
     spikeVolumeMl = addedMassG / standard.gPerL * 1000;
     trace.push({ label: 'Khối lượng chất thêm', expression: 'C_added(g/kg) × m_sample(kg)', substitution: addedGPerKg + ' g/kg × ' + sampleCanonical / 1000 + ' kg', value: addedMassG, unit: 'g' });
   } else {
-    const target = concentrationForOutput(draft.target, 'target', 'mức spike', issues);
+    const target = concentrationForOutput(draft.target, 'target', 'mức thêm chuẩn (spike)', issues);
     if (!target) return calculated(null, issues, {}, trace);
     const initial = draft.initialConcentration ? concentrationForOutput(draft.initialConcentration, 'initialConcentration', 'nồng độ nền', issues) : null;
     if (draft.initialConcentration && !initial) return calculated(null, issues, {}, trace);
@@ -635,21 +635,21 @@ function calculateSpike(draft: SpikeTaskDraft): PrepCalculationResult<PrepOutput
     if (draft.semantic === 'added_on_initial') {
       spikeVolumeMl = target.gPerL * sampleVolumeMl / standard.gPerL;
       addedMassG = target.gPerL * sampleVolumeMl / 1000;
-      trace.push({ label: 'Thể tích spike trên mẫu ban đầu', expression: 'C_added × V_sample / C_standard', substitution: target.gPerL + ' g/L × ' + sampleVolumeMl + ' mL / ' + standard.gPerL + ' g/L', value: spikeVolumeMl, unit: 'mL' });
+      trace.push({ label: 'Thể tích thêm chuẩn (spike) trên mẫu ban đầu', expression: 'C_added × V_sample / C_standard', substitution: target.gPerL + ' g/L × ' + sampleVolumeMl + ' mL / ' + standard.gPerL + ' g/L', value: spikeVolumeMl, unit: 'mL' });
     } else {
       const initialGPerL = initial?.gPerL ?? 0;
       if (target.gPerL <= initialGPerL) addIssue(issues, 'TARGET_NOT_ABOVE_BACKGROUND', 'target', 'Nồng độ tổng đích phải lớn hơn nồng độ nền để tính thể tích spike dương.');
       if (standard.gPerL <= target.gPerL) addIssue(issues, 'STANDARD_NOT_ABOVE_TARGET', 'standard', 'Nồng độ dung dịch chuẩn phải lớn hơn nồng độ tổng đích.');
       spikeVolumeMl = (target.gPerL - initialGPerL) * sampleVolumeMl / (standard.gPerL - target.gPerL);
       addedMassG = standard.gPerL * spikeVolumeMl / 1000;
-      trace.push({ label: 'Thể tích spike trên thể tích cuối', expression: '(C_final - C_initial) × V_sample / (C_standard - C_final)', substitution: '(' + target.gPerL + ' - ' + initialGPerL + ') g/L × ' + sampleVolumeMl + ' mL / (' + standard.gPerL + ' - ' + target.gPerL + ') g/L', value: spikeVolumeMl, unit: 'mL' });
+      trace.push({ label: 'Thể tích thêm chuẩn (spike) trên thể tích cuối', expression: '(C_final - C_initial) × V_sample / (C_standard - C_final)', substitution: '(' + target.gPerL + ' - ' + initialGPerL + ') g/L × ' + sampleVolumeMl + ' mL / (' + standard.gPerL + ' - ' + target.gPerL + ') g/L', value: spikeVolumeMl, unit: 'mL' });
     }
   }
 
-  if (!Number.isFinite(spikeVolumeMl) || spikeVolumeMl < 0) addIssue(issues, 'INVALID_RESULT', 'spikeVolume', 'Thể tích spike không thể tính thành số không âm hữu hạn.');
+  if (!Number.isFinite(spikeVolumeMl) || spikeVolumeMl < 0) addIssue(issues, 'INVALID_RESULT', 'spikeVolume', 'Thể tích thêm chuẩn (spike) không thể tính thành số không âm hữu hạn.');
   const sampleVolumeMl = draft.matrix === 'solid' ? null : sampleCanonical;
   if (sampleVolumeMl !== null && sampleVolumeMl > 0 && spikeVolumeMl / sampleVolumeMl >= 0.1) {
-    addIssue(issues, 'SPIKE_SIGNIFICANT_VOLUME', 'spikeVolume', 'Thể tích spike chiếm tỷ lệ đáng kể so với mẫu và có thể làm thay đổi nền hoặc thể tích.', 'warning', 'KNV cần xem lại semantic spike và thể tích cuối của phép thử.');
+    addIssue(issues, 'SPIKE_SIGNIFICANT_VOLUME', 'spikeVolume', 'Thể tích thêm chuẩn (spike) chiếm tỷ lệ đáng kể so với mẫu và có thể làm thay đổi nền hoặc thể tích.', 'warning', 'KNV cần xem lại cách xác định mức thêm chuẩn (spike) và thể tích cuối của phép thử.');
   }
   if (issues.some(item => item.severity === 'error')) return calculated(null, issues, {}, trace);
   const pipetteSuggestion = suggestPipette(spikeVolumeMl, 'spikeVolume', issues);
@@ -691,7 +691,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
   const issues: CalculationIssue[] = [];
   const trace: CalculationTraceStep[] = [];
   if (!draft.sources.length) addIssue(issues, 'MISSING_SOURCES', 'sources', 'Thêm ít nhất một dung dịch nguồn thủ công.');
-  if (draft.strategy !== 'multi_component' && !draft.points.length) addIssue(issues, 'MISSING_POINTS', 'points', 'Thêm ít nhất một điểm chuẩn, blank, QC hoặc mẫu.');
+  if (draft.strategy !== 'multi_component' && !draft.points.length) addIssue(issues, 'MISSING_POINTS', 'points', 'Thêm ít nhất một điểm chuẩn, mẫu trắng (blank), mẫu QC hoặc mẫu thử.');
   if (draft.strategy === 'multi_component' && !draft.components.length) addIssue(issues, 'MISSING_COMPONENTS', 'components', 'Thêm ít nhất một thành phần hỗn hợp.');
   const residualPercent = optionalNumber(draft.residualPercent, 'residualPercent', 'phần dư', issues, true) ?? 0;
   if (residualPercent > 100) addIssue(issues, 'RESIDUAL_OUT_OF_RANGE', 'residualPercent', 'Phần dư không nên vượt quá 100%.');
@@ -949,7 +949,7 @@ function calculateResultConversion(draft: ResultConversionTaskDraft): PrepCalcul
       case 'aliquot':
         if (volume === null) addIssue(issues, 'MISSING_INPUT', path + '.volume', 'Nhập thể tích aliquot.');
         else if (currentVolumeMl === null) addIssue(issues, 'MISSING_STAGE_VOLUME', path, 'Không biết thể tích hiện tại để tính tỷ lệ aliquot.');
-        else if (volume > currentVolumeMl) addIssue(issues, 'STAGE_ORDER_INVALID', path + '.volume', 'Aliquot không được lớn hơn thể tích hiện tại.');
+        else if (volume > currentVolumeMl) addIssue(issues, 'STAGE_ORDER_INVALID', path + '.volume', 'Phần mẫu không được lớn hơn thể tích hiện tại.');
         else {
           retentionFraction = volume / currentVolumeMl;
           concentrationFactor = 1 / retentionFraction;
@@ -972,9 +972,9 @@ function calculateResultConversion(draft: ResultConversionTaskDraft): PrepCalcul
         break;
       }
       case 'recovery': {
-        const recovery = requiredNumber(step.recoveryPercent, path + '.recoveryPercent', 'hiệu suất thu hồi', issues);
+        const recovery = requiredNumber(step.recoveryPercent, path + '.recoveryPercent', 'độ thu hồi (recovery)', issues);
         if (recovery !== null) {
-          if (recovery > 100) addIssue(issues, 'RECOVERY_OUT_OF_RANGE', path + '.recoveryPercent', 'Hiệu suất thu hồi không được vượt quá 100%.');
+          if (recovery > 100) addIssue(issues, 'RECOVERY_OUT_OF_RANGE', path + '.recoveryPercent', 'Độ thu hồi (recovery) không được vượt quá 100%.');
           else {
             retentionFraction = recovery / 100;
             concentrationFactor = 1 / retentionFraction;

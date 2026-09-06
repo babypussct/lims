@@ -123,7 +123,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   backupRestoreAuth = signal(true);
 
   readonly firestoreRulesNotice =
-    'Rules triển khai được quản lý trong file firestore.rules của mã nguồn. Màn hình Config không còn nhúng hoặc sao chép bản rules để tránh phát tán cấu hình cũ.';
+    'Quy tắc bảo vệ dữ liệu được quản lý tập trung cùng hệ thống. Màn hình này chỉ hiển thị trạng thái cần thiết cho vận hành.';
 
   newUpdateContent = '';
   newUpdateType = 'info';
@@ -196,7 +196,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
         await this.notificationCenter.deleteBroadcastByGroupId(id);
       } catch (e) {
         console.error('Revoke broadcast error:', e);
-        this.toast.show('Không thể thu hồi thông báo qua API. Bài đăng hệ thống CHƯA bị xóa để bạn có thể thử lại.', 'error');
+        this.toast.show('Không thể thu hồi thông báo. Bài đăng hệ thống CHƯA bị xóa để bạn có thể thử lại.', 'error');
         return;
       }
 
@@ -205,7 +205,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
         this.toast.show('Đã xóa bài đăng hệ thống và thu hồi thông báo trong Hộp thư thành công.', 'success');
       } catch (e: any) {
         console.error('deleteDoc error:', e);
-        this.toast.show(`Đã thu hồi thông báo Hộp thư nhưng không thể xóa bài đăng khỏi Firestore: ${e?.message || e}`, 'error');
+        this.toast.show(`Đã thu hồi thông báo Hộp thư nhưng không thể xóa bài đăng khỏi dữ liệu hệ thống: ${e?.message || e}`, 'error');
       }
   }
 
@@ -302,7 +302,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   private backupErrorMessage(error: any): string {
-    return error?.message || error?.error || 'Không thể thực hiện thao tác backup.';
+    return error?.message || error?.error || 'Không thể thực hiện thao tác sao lưu.';
   }
 
   canBackupCreate(): boolean {
@@ -369,17 +369,17 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
   async createComprehensiveBackup() {
     if (!await this.confirmationService.confirm({
-      message: 'Tạo backup toàn diện gồm Firestore, Firebase Auth, các liên kết Drive, tệp CoA, Google Docs, Google Sheets/Excel, PDF và cấu hình Apps Script. Dữ liệu sẽ được mã hóa trước khi tải lên Drive. Tiếp tục?',
-      confirmText: 'Tạo Backup Toàn Diện'
+      message: 'Tạo bản sao lưu toàn diện gồm dữ liệu nghiệp vụ, tài khoản người dùng, tệp Google Drive, CoA, tài liệu, bảng tính và PDF. Dữ liệu sẽ được mã hóa trước khi lưu. Tiếp tục?',
+      confirmText: 'Tạo bản sao lưu'
     })) return;
     this.backupBusy.set('create');
     try {
       const result = await this.backupService.createBackup(this.state.systemVersion(), undefined, true);
       this.backupLastCreate.set(result);
       await this.refreshBackupList(false);
-      const label = result.status === 'COMPLETED' ? 'Backup toàn diện đã hoàn tất.' : `Backup hoàn tất với trạng thái ${result.status}.`;
+      const label = result.status === 'COMPLETED' ? 'Bản sao lưu toàn diện đã hoàn tất.' : `Sao lưu kết thúc với trạng thái: ${this.backupStatusLabel(result.status)}.`;
       const detail = result.errors?.[0] ? ` Lỗi: ${result.errors[0]}` : '';
-      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.${detail}`, result.status === 'COMPLETED' ? 'success' : result.status === 'FAILED' ? 'error' : 'info');
+      this.toast.show(`${label} Đã xử lý ${result.summary.firestoreDocuments} mục dữ liệu và ${result.summary.driveAssets} tệp Google Drive.${detail}`, result.status === 'COMPLETED' ? 'success' : result.status === 'FAILED' ? 'error' : 'info');
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
     } finally {
@@ -390,7 +390,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   async resumeSelectedBackup() {
     const backupFolderId = this.backupSelectedId();
     if (!backupFolderId) {
-      this.toast.show('Chưa chọn backup dở dang để tiếp tục.', 'info');
+      this.toast.show('Chưa chọn bản sao lưu dở dang để tiếp tục.', 'info');
       return;
     }
     const selectedBackup = this.backupList().find(item => item.backupFolderId === backupFolderId);
@@ -401,18 +401,18 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     ));
     if (!await this.confirmationService.confirm({
       message: rebuildFirestorePayload
-        ? 'Backup đang chọn đã có manifest. Hệ thống sẽ tái dựng payload Firestore ngay trên thư mục hiện có, chỉ loại bản sao hoàn toàn giống nhau và dữ liệu runtime tạm, giữ nguyên dữ liệu nghiệp vụ; sau đó sẽ chốt manifest và kiểm tra integrity lại. Tiếp tục?'
-        : 'Tiếp tục đúng backup đang chọn từ checkpoint đã lưu. Thao tác này không tạo backup mới nếu session đã chọn không thể resume. Tiếp tục?',
-      confirmText: 'Tiếp tục backup dở dang'
+        ? 'Bản sao lưu đang chọn có thể được hoàn thiện trên thư mục hiện có. Hệ thống sẽ loại các bản sao hoàn toàn giống nhau, giữ nguyên dữ liệu nghiệp vụ và kiểm tra tính toàn vẹn lại sau khi hoàn tất. Tiếp tục?'
+        : 'Tiếp tục bản sao lưu đang chọn từ điểm đã lưu gần nhất. Hệ thống sẽ tiếp tục trên bản hiện tại thay vì tạo bản mới. Tiếp tục?',
+      confirmText: 'Tiếp tục sao lưu'
     })) return;
     this.backupBusy.set('create');
     try {
       const result = await this.backupService.createBackup(this.state.systemVersion(), backupFolderId, false, rebuildFirestorePayload);
       this.backupLastCreate.set(result);
       await this.refreshBackupList(false);
-      const label = result.status === 'COMPLETED' ? 'Backup dở dang đã hoàn tất.' : `Backup tiếp tục xong với trạng thái ${result.status}.`;
+      const label = result.status === 'COMPLETED' ? 'Bản sao lưu dở dang đã hoàn tất.' : `Quá trình sao lưu kết thúc với trạng thái: ${this.backupStatusLabel(result.status)}.`;
       const detail = result.errors?.[0] ? ` Lỗi: ${result.errors[0]}` : '';
-      this.toast.show(`${label} Firestore ${result.summary.firestoreDocuments} docs, Drive ${result.summary.driveAssets} tệp.${detail}`, result.status === 'COMPLETED' ? 'success' : result.status === 'FAILED' ? 'error' : 'info');
+      this.toast.show(`${label} Đã xử lý ${result.summary.firestoreDocuments} mục dữ liệu và ${result.summary.driveAssets} tệp Google Drive.${detail}`, result.status === 'COMPLETED' ? 'success' : result.status === 'FAILED' ? 'error' : 'info');
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
     } finally {
@@ -427,14 +427,14 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   async verifySelectedBackup() {
     const backupFolderId = this.selectedBackupFolderId();
     if (!backupFolderId) {
-      this.toast.show('Chưa có backup để kiểm tra.', 'info');
+      this.toast.show('Chưa có bản sao lưu để kiểm tra.', 'info');
       return;
     }
     this.backupBusy.set('verify');
     try {
       const result = await this.backupService.verifyBackup(backupFolderId);
       this.backupLastVerification.set(result);
-      this.toast.show(result.verified ? `Integrity đạt: ${result.checkedParts} phân đoạn, ${result.checkedAssets} tệp Drive.` : `Integrity không đạt: ${result.errors.length} lỗi.`, result.verified ? 'success' : 'error');
+      this.toast.show(result.verified ? `Kiểm tra toàn vẹn đạt: ${result.checkedParts} phần dữ liệu, ${result.checkedAssets} tệp Google Drive.` : `Kiểm tra toàn vẹn không đạt: ${result.errors.length} lỗi.`, result.verified ? 'success' : 'error');
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
     } finally {
@@ -445,7 +445,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   async dryRunSelectedBackup() {
     const backupFolderId = this.selectedBackupFolderId();
     if (!backupFolderId) {
-      this.toast.show('Chưa có backup để đối chiếu.', 'info');
+      this.toast.show('Chưa có bản sao lưu để đối chiếu.', 'info');
       return;
     }
     this.backupBusy.set('dry-run');
@@ -458,7 +458,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       });
       this.backupLastRestore.set(result);
       const report = result.report.firestore;
-      this.toast.show(`Dry-run xong: thiếu ${report.missing}, khác ${report.different}, không đổi ${report.unchanged}.`, 'info');
+      this.toast.show(`Đối chiếu xong: thiếu ${report.missing}, khác ${report.different}, không đổi ${report.unchanged}.`, 'info');
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
     } finally {
@@ -475,14 +475,14 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   async recoverMissingFromSelectedBackup(resumeRestoreId?: string) {
     const backupFolderId = this.selectedBackupFolderId();
     if (!backupFolderId) {
-      this.toast.show('Chưa có backup để restore.', 'info');
+      this.toast.show('Chưa có bản sao lưu để phục hồi.', 'info');
       return;
     }
     if (!await this.confirmationService.confirm({
       message: resumeRestoreId
-        ? 'Tiếp tục restore an toàn từ checkpoint. Hệ thống sẽ chạy lại các bước theo cơ chế idempotent và không ghi đè dữ liệu nghiệp vụ hiện có ngoài việc sửa liên kết Drive bị đổi ID. Tiếp tục?'
-        : 'Restore an toàn sẽ chỉ bổ sung document Firestore, Auth user và tệp Drive đang bị thiếu; dữ liệu hiện có không bị ghi đè. Nên chạy Dry-run trước. Tiếp tục?',
-      confirmText: resumeRestoreId ? 'Tiếp Tục Restore' : 'Khôi Phục Phần Thiếu'
+        ? 'Tiếp tục quá trình phục hồi an toàn từ điểm đã lưu. Hệ thống sẽ kiểm tra lại từng bước và không ghi đè dữ liệu nghiệp vụ hiện có, ngoại trừ việc sửa liên kết tệp bị thay đổi. Tiếp tục?'
+        : 'Phục hồi an toàn chỉ bổ sung dữ liệu, tài khoản và tệp Google Drive đang bị thiếu; dữ liệu hiện có không bị ghi đè. Nên chạy bước đối chiếu trước. Tiếp tục?',
+      confirmText: resumeRestoreId ? 'Tiếp tục phục hồi' : 'Khôi phục phần thiếu'
     })) return;
     this.backupBusy.set('restore');
     try {
@@ -495,7 +495,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       });
       this.backupLastRestore.set(result);
       const report = result.report.firestore;
-      this.toast.show(`Restore xong: thêm ${report.created} Firestore docs, tạo lại ${result.report.drive.recreated} tệp/thư mục Drive, import ${result.report.auth.imported} Auth user.`, result.success ? 'success' : 'error');
+      this.toast.show(`Phục hồi xong: thêm ${report.created} mục dữ liệu, tạo lại ${result.report.drive.recreated} tệp/thư mục Google Drive và phục hồi ${result.report.auth.imported} tài khoản.`, result.success ? 'success' : 'error');
       await this.refreshBackupList(false);
     } catch (error) {
       this.toast.show(this.backupErrorMessage(error), 'error');
@@ -512,11 +512,11 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   backupBusyLabel(): string {
     switch (this.backupBusy()) {
       case 'status': return 'Đang kiểm tra cấu hình...';
-      case 'list': return 'Đang đọc danh sách backup...';
-      case 'create': return 'Đang tạo backup toàn diện...';
-      case 'verify': return 'Đang kiểm tra checksum...';
+      case 'list': return 'Đang đọc danh sách bản sao lưu...';
+      case 'create': return 'Đang tạo bản sao lưu toàn diện...';
+      case 'verify': return 'Đang kiểm tra tính toàn vẹn...';
       case 'dry-run': return 'Đang đối chiếu, chưa ghi dữ liệu...';
-      case 'restore': return 'Đang restore an toàn...';
+      case 'restore': return 'Đang phục hồi an toàn...';
       default: return '';
     }
   }

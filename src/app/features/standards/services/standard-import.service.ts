@@ -104,7 +104,7 @@ export class StandardImportService {
       const XLSX = await import('xlsx');
       const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
       const sheetNames = workbook.SheetNames.filter(name => Boolean(workbook.Sheets[name]?.['!ref']));
-      if (!sheetNames.length) throw new Error('Workbook không có sheet dữ liệu.');
+      if (!sheetNames.length) throw new Error('Tệp Excel không có trang tính dữ liệu.');
       const selectedSheet = sheetName && sheetNames.includes(sheetName) ? sheetName : sheetNames[0];
       return {
         sheetNames,
@@ -125,7 +125,7 @@ export class StandardImportService {
       };
       worker.onerror = event => {
         worker.terminate();
-        reject(new Error(event.message || 'Web Worker không thể đọc workbook.'));
+        reject(new Error(event.message || 'Không thể đọc tệp Excel bằng chế độ xử lý nhanh.'));
       };
       worker.postMessage({ buffer, sheetName }, [buffer]);
     });
@@ -133,7 +133,7 @@ export class StandardImportService {
 
   async saveImportedData(data: ImportPreviewItem[]): Promise<StandardImportSaveResult> {
     if ((data || []).some(item => item.mode === 'CONFLICT')) {
-      throw new Error('Còn dòng xung đột. Hãy xử lý các dòng màu đỏ trước khi import.');
+      throw new Error('Còn dòng xung đột. Hãy xử lý các dòng màu đỏ trước khi nhập dữ liệu.');
     }
     const validItems = (data || []).filter(item => item.isValid);
     const skippedInvalid = (data || []).length - validItems.length;
@@ -196,7 +196,7 @@ export class StandardImportService {
       if (matches.length > 1) {
         item.mode = 'CONFLICT';
         item.isValid = false;
-        item.errorMessage = 'Có nhiều chuẩn đang hoạt động cùng Số nhận diện; cần giải phóng hoặc hợp nhất slot trước khi import.';
+        item.errorMessage = 'Có nhiều chuẩn đang hoạt động cùng Số nhận diện; cần xử lý các hồ sơ đang dùng chung mã trước khi nhập dữ liệu.';
         identityConflicts.push(item);
         return;
       }
@@ -209,7 +209,7 @@ export class StandardImportService {
       }
     });
     if (identityConflicts.length) {
-      throw new Error(`Có ${identityConflicts.length} dòng dùng slot đang bị nhiều chuẩn hoạt động cùng chiếm. Không có dữ liệu nào được ghi.`);
+      throw new Error(`Có ${identityConflicts.length} dòng dùng mã đang được nhiều chuẩn hoạt động cùng sử dụng. Không có dữ liệu nào được ghi.`);
     }
 
     // Import is not a code-reassignment tool. A valid existing physical
@@ -224,7 +224,7 @@ export class StandardImportService {
       codeChanges.forEach(item => {
         item.mode = 'CONFLICT';
         item.isValid = false;
-        item.errorMessage = 'Mã trong hồ sơ đã tồn tại khác với tệp nhập. Hãy dùng công cụ Đồng bộ mã nội bộ để đối chiếu/sửa có audit trước khi import.';
+        item.errorMessage = 'Mã trong hồ sơ đã tồn tại khác với tệp nhập. Hãy mở mục Đồng bộ mã quản lý để đối chiếu và sửa có lưu lịch sử trước khi nhập dữ liệu.';
       });
       throw new Error(`Có ${codeChanges.length} dòng đang cố đổi Mã quản lý nội bộ của hồ sơ vật lý đã tồn tại. Không có dữ liệu nào được ghi.`);
     }
@@ -259,28 +259,28 @@ export class StandardImportService {
       registrySnapshots.set(code, registrySnapshot.exists() ? registrySnapshot.data() : null);
       const registry = registrySnapshot.exists() ? registrySnapshot.data() : null;
       if (registry?.['status'] === 'CONFLICT') {
-        throw new Error(`Mã ${code} đang ở trạng thái xung đột trong ngân hàng mã. Hãy xử lý trước khi import.`);
+        throw new Error(`Mã ${code} đang ở trạng thái xung đột trong sổ mã. Hãy xử lý trước khi nhập dữ liệu.`);
       }
       if (registry?.['status'] === 'ASSIGNED') {
         const ownerId = String(registry['currentStandardId'] || '').trim();
         if (!ownerId) {
-          throw new Error(`Mã ${code} đang ở trạng thái cấp không hợp lệ. Hãy chạy công cụ Đồng bộ trước khi import.`);
+          throw new Error(`Mã ${code} đang ở trạng thái cấp không hợp lệ. Hãy mở mục Đồng bộ mã quản lý và xử lý trước khi nhập dữ liệu.`);
         }
         const ownerSnapshot = await getDoc(doc(
           this.fb.db,
           `artifacts/${this.fb.APP_ID}/reference_standards/${ownerId}`
         ));
         if (!ownerSnapshot.exists()) {
-          throw new Error(`Mã ${code} đang trỏ tới hồ sơ ${ownerId} không còn tồn tại. Hãy chạy công cụ Đồng bộ trước khi import.`);
+          throw new Error(`Mã ${code} đang liên kết với hồ sơ ${ownerId} không còn tồn tại. Hãy mở mục Đồng bộ mã quản lý và xử lý trước khi nhập dữ liệu.`);
         }
         const owner = { id: ownerSnapshot.id, ...ownerSnapshot.data() } as ReferenceStandard;
         if (normalizeInternalId(owner.internal_id) !== code) {
-          throw new Error(`Registry của mã ${code} không khớp hồ sơ ${ownerId}. Hãy chạy công cụ Đồng bộ trước khi import.`);
+          throw new Error(`Sổ mã ${code} không khớp với hồ sơ ${ownerId}. Hãy mở mục Đồng bộ mã quản lý và xử lý trước khi nhập dữ liệu.`);
         }
         if (!canAutoReleaseExpiredStandard(owner)) {
           throw new Error(
             `Mã ${code} đang được cấp cho chuẩn khác chưa đủ điều kiện tái cấp tự động ` +
-            '(chưa hết HSD hoặc còn quy trình mở). Hãy đóng vòng đời cũ hoặc đồng bộ dữ liệu trước khi import.'
+            '(chưa hết HSD hoặc còn quy trình mở). Hãy đóng vòng đời cũ hoặc đồng bộ dữ liệu trước khi nhập dữ liệu.'
           );
         }
         autoReleaseOwners.set(code, owner);
@@ -292,14 +292,14 @@ export class StandardImportService {
       newItemsCount + autoReleaseOwners.size + 1;
     if (plannedWrites > STANDARD_IMPORT_MAX_ATOMIC_WRITES) {
       throw new Error(
-        `Import cần ${plannedWrites} thao tác, vượt giới hạn an toàn ${STANDARD_IMPORT_MAX_ATOMIC_WRITES}. ` +
-        'Vui lòng chia file thành các phần nhỏ hơn; chưa có dữ liệu nào được ghi.'
+        `Lần nhập này cần ${plannedWrites} thao tác, vượt giới hạn an toàn ${STANDARD_IMPORT_MAX_ATOMIC_WRITES}. ` +
+        'Vui lòng chia tệp thành các phần nhỏ hơn; chưa có dữ liệu nào được ghi.'
       );
     }
 
     this.progressService.start(
       'Đang lưu chất chuẩn đối chiếu',
-      'Toàn bộ dữ liệu sẽ được commit trong một giao dịch batch',
+      'Toàn bộ dữ liệu sẽ được lưu cùng lúc để bảo đảm nhất quán',
       validItems.length + 1
     );
     const batch = writeBatch(this.fb.db);
@@ -416,7 +416,7 @@ export class StandardImportService {
       ].filter(Boolean).join(', ');
       const metadataUpdate = this.fb.getMetadataUpdateOp('standards', {
         action: 'IMPORT_STANDARDS',
-        message: `📊 [${importer?.displayName || 'Người dùng'}] Import chuẩn: ${resultSummary}.`,
+        message: `📊 [${importer?.displayName || 'Người dùng'}] Nhập danh mục chuẩn: ${resultSummary}.`,
         actorUid: importer?.uid,
         actorName: importer?.displayName
       });
@@ -425,9 +425,9 @@ export class StandardImportService {
       const activityEvent = this.activityEvents.build({
         eventId: activityRef.id,
         action: 'IMPORT_STANDARDS',
-        details: `Import chuẩn: ${resultSummary || 'không có thay đổi dữ liệu mới'}.`,
+        details: `Nhập danh mục chuẩn: ${resultSummary || 'không có thay đổi dữ liệu mới'}.`,
         targetType: 'STANDARD_IMPORT',
-        targetName: 'Import chất chuẩn đối chiếu',
+        targetName: 'Nhập chất chuẩn đối chiếu',
         metadata: {
           count: validItems.length,
           created,
@@ -437,9 +437,9 @@ export class StandardImportService {
         }
       });
       this.activityEvents.setInBatch(batch, activityRef, activityEvent);
-      this.progressService.update(validItems.length, 'Đang commit toàn bộ batch lên Firestore...');
+      this.progressService.update(validItems.length, 'Đang lưu toàn bộ dữ liệu...');
       await batch.commit();
-      this.progressService.update(validItems.length + 1, 'Đã commit thành công.');
+      this.progressService.update(validItems.length + 1, 'Đã lưu dữ liệu thành công.');
       // Publish ngay vào singleton đang hoạt động. Không hủy listener DeltaSync:
       // hủy ở đây khiến subscription của màn hình hiện tại bị "mồ côi".
       this.cache._mergeAndSave(optimisticChanges, []);
@@ -462,7 +462,7 @@ export class StandardImportService {
           const workbook = XLSX.read(data, { type: 'array', cellDates: false });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
-          if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
+          if (!rawRows || rawRows.length === 0) throw new Error('Tệp không có dữ liệu.');
 
           const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
           const getVal = (row: any, aliases: string[]) => {
@@ -673,7 +673,7 @@ export class StandardImportService {
             const activityEvent = this.activityEvents.build({
               eventId: activityRef.id,
               action: 'IMPORT_STANDARD_USAGE_LOGS',
-              details: `Import ${accepted.length} nhật ký sử dụng chuẩn: ${freshStandard.name}.`,
+              details: `Nhập ${accepted.length} nhật ký sử dụng chuẩn: ${freshStandard.name}.`,
               targetType: 'STANDARD',
               targetId: stdId,
               targetName: freshStandard.name,
@@ -692,7 +692,7 @@ export class StandardImportService {
       const importer = this.auth.currentUser();
       await this.fb.updateMetadata('standards', {
         action: 'IMPORT_STANDARD_USAGE_LOGS',
-        message: `📊 [${importer?.displayName || 'Người dùng'}] Import ${validItems.length} nhật ký sử dụng chuẩn.`,
+        message: `📊 [${importer?.displayName || 'Người dùng'}] Nhập ${validItems.length} nhật ký sử dụng chuẩn.`,
         actorUid: importer?.uid,
         actorName: importer?.displayName
       });

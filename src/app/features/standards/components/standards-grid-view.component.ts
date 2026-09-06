@@ -78,21 +78,21 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                <!-- Identity -->
                                <button type="button" class="mb-4 w-full cursor-pointer text-left group/identity" (click)="navigateToDetail.emit(std)">
                                    <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base leading-snug mb-1 group-hover/identity:text-fuchsia-600 dark:group-hover/identity:text-fuchsia-400 transition break-words">{{std.name}}</h3>
-                                   @if(std.chemical_name) { <p class="text-xs text-slate-500 dark:text-slate-400 italic font-medium break-words"><span class="font-bold mr-1 text-slate-400">Synonyms:</span>{{std.chemical_name}}</p> }
+                                   @if(std.chemical_name) { <p class="text-xs text-slate-500 dark:text-slate-400 italic font-medium break-words"><span class="font-bold mr-1 text-slate-400">Tên đồng nghĩa:</span>{{std.chemical_name}}</p> }
                                </button>
 
                                <!-- Data Grid (Click to copy) -->
                                <div class="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 mb-4 text-[11px]">
-                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.lot_number || '', event: $event})" [attr.aria-label]="'Sao chép Lot ' + (std.lot_number || 'trống')" title="Copy Lot">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lot <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.lot_number || '', event: $event})" [attr.aria-label]="'Sao chép lô ' + (std.lot_number || 'trống')" title="Sao chép lô">
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lô <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
                                        <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.lot_number || '-'}}</div>
                                    </button>
-                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.product_code || '', event: $event})" [attr.aria-label]="'Sao chép Code ' + (std.product_code || 'trống')" title="Copy Code">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Code <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.product_code || '', event: $event})" [attr.aria-label]="'Sao chép mã ' + (std.product_code || 'trống')" title="Sao chép mã">
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Mã <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
                                        <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.product_code || '-'}}</div>
                                    </button>
                                    <div class="bg-white dark:bg-slate-800 p-2">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">Mfg</div>
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">NSX</div>
                                        <div class="font-bold text-slate-700 dark:text-slate-300 truncate" [title]="std.manufacturer">{{std.manufacturer || '-'}}</div>
                                    </div>
                                    <div class="bg-white dark:bg-slate-800 p-2">
@@ -147,7 +147,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <i class="fa-solid fa-file-pdf text-xs"></i>
                                            </button>
                                        } @else if(currentUser()?.role === 'manager') {
-                                           <button (click)="$event.stopPropagation(); triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Upload CoA qua Google Drive">
+                                           <button (click)="$event.stopPropagation(); triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Tải CoA lên Google Drive">
                                                @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin text-xs"></i> } @else { <i class="fa-brands fa-google-drive text-xs"></i> }
                                            </button>
                                        }

@@ -58,7 +58,7 @@ import { formatNum } from '../../../../shared/utils/utils';
                                         <!-- Standard Meta Grid (Rich Identity) -->
                                         <div class="grid grid-cols-2 gap-2 mt-1">
                                             <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
-                                                <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số Lô (LOT)</span>
+                                                <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số lô</span>
                                                 <span class="text-sm font-black text-blue-600 dark:text-blue-400 truncate">{{req.lotNumber || 'N/A'}}</span>
                                             </div>
                                             <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">

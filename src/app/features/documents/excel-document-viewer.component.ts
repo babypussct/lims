@@ -197,7 +197,7 @@ interface ExcelPreviewFilterSummary {
         <button type="button"
                 class="excel-view-tool"
                 [disabled]="loading()"
-                title="Khôi phục nội dung và cách xem ban đầu từ file gốc"
+                title="Khôi phục nội dung và cách xem ban đầu từ tệp gốc"
                 aria-label="Đặt lại cách xem"
                 (click)="resetPreviewView()">
           <i class="fa-solid fa-rotate-left"></i>
@@ -228,16 +228,16 @@ interface ExcelPreviewFilterSummary {
         }
         @if (metadataLimited()) {
           <span class="excel-metadata-warning"
-                title="Định dạng Excel cũ chưa hỗ trợ đầy đủ freeze pane và metadata nâng cao">
+                title="Định dạng Excel cũ chưa hỗ trợ đầy đủ cố định hàng/cột và thông tin nâng cao">
             <i class="fa-solid fa-circle-info"></i>
-            <span class="hidden sm:inline">Metadata giới hạn</span>
+            <span class="hidden sm:inline">Thông tin giới hạn</span>
           </span>
         }
         @if (unsupportedFeatures().length) {
           <span class="excel-unsupported-warning"
                 [title]="unsupportedFeatureWarning()">
             <i class="fa-solid fa-triangle-exclamation"></i>
-            <span class="hidden sm:inline">Metadata chưa hỗ trợ</span>
+            <span class="hidden sm:inline">Thông tin chưa hỗ trợ</span>
           </span>
         }
         @if (truncatedSheets().length) {
@@ -260,7 +260,7 @@ interface ExcelPreviewFilterSummary {
           <div class="excel-view-state-list">
             @for (change of temporaryViewChanges(); track change.id) {
               <button type="button"
-                      [title]="canClearViewChangeIndividually(change) ? 'Xóa riêng trạng thái này' : 'Khôi phục snapshot nguồn để xóa trạng thái này'"
+                      [title]="canClearViewChangeIndividually(change) ? 'Xóa riêng trạng thái này' : 'Khôi phục bản gốc để xóa trạng thái này'"
                       (click)="clearViewChange(change)">
                 <i class="fa-solid {{ viewChangeIcon(change.kind) }}"></i>
                 <span>
@@ -488,16 +488,16 @@ interface ExcelPreviewFilterSummary {
       @if (sheetListOpen()) {
         <div class="excel-mini-dialog-backdrop" (pointerdown)="closeSheetList()">
           <div class="excel-mini-dialog excel-sheet-list" role="dialog" aria-modal="true"
-               aria-label="Danh sách sheet"
+               aria-label="Danh sách trang tính"
                (pointerdown)="$event.stopPropagation()"
                (keydown.escape)="closeSheetList(); $event.stopPropagation()">
             <header>
-              <strong>Danh sách sheet</strong>
+              <strong>Danh sách trang tính</strong>
               <button type="button" aria-label="Đóng danh sách sheet" (click)="closeSheetList()">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </header>
-            <div role="listbox" aria-label="Chọn sheet để xem">
+            <div role="listbox" aria-label="Chọn trang tính để xem">
               @for (sheet of previewSheetNames(); track sheet) {
                 <button type="button" role="option"
                         [attr.aria-selected]="sheet === activePreviewSheetName()"
@@ -519,7 +519,7 @@ interface ExcelPreviewFilterSummary {
         <div class="excel-loading-layer" aria-live="polite">
           <i class="fa-solid fa-circle-notch fa-spin"></i>
           <strong>Đang dựng bảng tính...</strong>
-          <span>Đang tải công thức, định dạng và các công cụ spreadsheet.</span>
+          <span>Đang tải công thức, định dạng và các công cụ bảng tính.</span>
         </div>
       }
     </div>
@@ -1794,7 +1794,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       ? workbook.getSheetByName(target.sheetName)
       : workbook.getActiveSheet();
     if (!worksheet) {
-      this.goToError.set(`Không tìm thấy sheet “${target.sheetName}”.`);
+      this.goToError.set(`Không tìm thấy trang tính “${target.sheetName}”.`);
       return;
     }
 
@@ -1989,7 +1989,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         () => selection.worksheet.zoom(previousZoom),
       );
     } catch {
-      this.toast.show('Không thể tính vừa chiều rộng cho sheet này.', 'warning');
+      this.toast.show('Không thể tính vừa chiều rộng cho trang tính này.', 'warning');
     }
   }
 
@@ -2034,7 +2034,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       selection.worksheet.zoom(1);
       this.removeTemporaryViewChange('zoom', selection.worksheet.getSheetName());
     } catch {
-      this.toast.show('Không thể đưa sheet về zoom 100%.', 'warning');
+      this.toast.show('Không thể đưa trang tính về mức thu phóng 100%.', 'warning');
     }
   }
 
@@ -2043,7 +2043,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.closeContextMenu();
     this.closeGoTo();
     this.cellInfo.set(null);
-    this.toast.show('Đang khôi phục cách xem ban đầu từ file gốc.', 'info');
+    this.toast.show('Đang khôi phục cách xem ban đầu từ tệp gốc.', 'info');
     void this.resetWorkbookFromSource();
   }
 
@@ -2144,7 +2144,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       cell: 'Công cụ xem ô hoặc vùng',
       column: 'Công cụ xem cột',
       row: 'Công cụ xem hàng',
-      sheet: 'Công cụ xem sheet',
+      sheet: 'Công cụ xem trang tính',
       navigation: 'Điều hướng bảng tính',
       more: 'Thêm công cụ xem',
     };
@@ -3260,7 +3260,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     const sourceSnapshot = this.sourceSnapshot;
     const sourceMetadata = this.sourceMetadata;
     if (!univerAPI || !sourceSnapshot || !sourceMetadata) {
-      this.toast.show('Chưa có snapshot nguồn để đặt lại cách xem.', 'warning');
+      this.toast.show('Chưa có bản gốc để đặt lại cách xem.', 'warning');
       return;
     }
 
@@ -3304,7 +3304,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
       this.loading.set(false);
     } catch {
       this.loading.set(false);
-      this.toast.show('Không thể đặt lại cách xem. Hãy đóng và mở lại file.', 'warning');
+      this.toast.show('Không thể đặt lại cách xem. Hãy đóng và mở lại tệp.', 'warning');
     }
   }
 
@@ -3564,7 +3564,7 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         sheetStubs: true,
         dense: false,
       });
-      if (!workbook.SheetNames.length) throw new Error('Workbook không có worksheet.');
+      if (!workbook.SheetNames.length) throw new Error('Tệp Excel không có trang tính.');
 
       const converted = convertSheetJsWorkbookToUniver(workbook, xlsx, this.fileName);
       if (token !== this.loadToken) return;

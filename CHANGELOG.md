@@ -2,7 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.06-b01
+## Phiên bản hiện tại: v26.09.06-b02
+
+### v26.09.06-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Dashboard Lịch trực được sắp xếp lại để thấy ngay người trực hôm nay, ca kế tiếp của bạn và mức phân bổ lượt trực trong tháng.
+- Ngôn ngữ trên nhiều màn hình được chuẩn hóa sang tiếng Việt dễ hiểu hơn, giảm các thuật ngữ kỹ thuật trong thông báo, cấu hình, sao lưu, kết quả và thao tác hằng ngày.
+- Các khu vực Sao lưu & Phục hồi, Chất chuẩn, Kết quả, SOP và Cấu hình được làm rõ hơn để người dùng biết trạng thái, bước tiếp theo và phạm vi thao tác trước khi xác nhận.
+
+#### ✨ Tính Năng Mới
+
+- Lịch trực có thẻ nhanh Trực hôm nay và Lịch của bạn, kèm số lượt tháng, ca kế tiếp, số ngày còn lại và tiến độ so với bình quân.
+- Thống kê theo người bổ sung nhận diện nhanh, số ca Thứ 2, cuối tuần, số lần chủ trì, độ lệch so với bình quân, tỷ trọng tháng và ca sắp tới.
+- SmartBatch hiển thị rõ trạng thái tối ưu kế hoạch và kiểm tra độ bao phủ trước khi duyệt đồng thời nhiều mẻ.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Các thẻ, lịch tháng, nút hành động và trạng thái trên Dashboard được đồng bộ theo phong cách Soft UI, giảm viền cứng và tăng phân cấp thông tin.
+- Nhập kết quả Excel, xem trước PDF, in nhãn Brother/A4 và các hướng dẫn thao tác được viết lại rõ hơn, đồng thời giảm tải phần xem trước với dữ liệu lớn.
+- Các màn hình sao lưu, Google Drive, thông báo, phân quyền và quyền riêng tư dùng cách diễn đạt gần với nghiệp vụ phòng kiểm nghiệm hơn.
+- Công cụ tính chuẩn bị mẫu và thêm chuẩn làm rõ cách tính, đơn vị, phần mẫu, độ thu hồi và các cảnh báo khi thể tích hoặc tỷ lệ không hợp lý.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Nhiều thông báo lỗi và cảnh báo trước đây dùng từ kỹ thuật khó hiểu đã được thay bằng hướng dẫn có thể xử lý trực tiếp.
+- Các nhãn và mô tả không thống nhất giữa một số màn hình đã được chuẩn hóa để tránh hiểu sai khi nhập dữ liệu, in nhãn, khôi phục hoặc quản lý tài khoản.
 
 ### v26.09.06-b01
 

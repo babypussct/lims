@@ -165,7 +165,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-700 dark:text-slate-300 z-10">
                   @if (isUpdateWaitingForSafety()) {
                     <i class="fa-solid fa-shield-halved text-2xl md:text-3xl text-amber-400"></i>
-                    <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 text-amber-400">SAFE</span>
+                    <span class="text-[9px] md:text-[10px] font-bold mt-1 md:mt-2 text-amber-400">AN TOÀN</span>
                   } @else {
                     <i class="fa-solid fa-cloud-arrow-down text-2xl md:text-3xl"></i>
                     <span class="text-[9px] md:text-[10px] font-mono mt-1 md:mt-2 opacity-60">{{ updateCountdown() }}s</span>
@@ -254,7 +254,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
               
               <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed select-none">
                  &copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
-                 <span>NAFIQPM6 Laboratory Information Management System Cloud &bull; {{state.systemVersion()}}</span>
+                 <span>Hệ thống quản lý thông tin phòng thí nghiệm NAFIQPM6 &bull; {{state.systemVersion()}}</span>
               </div>
            </div>
         </div>
@@ -295,8 +295,8 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
                    <h2 class="text-2xl font-black text-slate-800 mb-2">Đang Chờ Phê Duyệt</h2>
                    <p class="text-slate-500 mb-6 text-sm leading-relaxed">Xin chào <b>{{user.displayName}}</b>,<br>Tài khoản của bạn đã được tạo nhưng cần quản trị viên cấp quyền truy cập vào hệ thống.</p>
                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-left">
-                      <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">UID của bạn (Gửi cho Admin):</div>
-                      <div class="flex gap-2 items-center"><code class="text-sm font-mono font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 flex-1 truncate select-all">{{user.uid}}</code></div>
+                      <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Mã tài khoản (gửi quản trị viên khi cần hỗ trợ):</div>
+                      <div class="flex gap-2 items-center"><span class="text-sm font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 flex-1 truncate select-all">{{user.uid}}</span></div>
                    </div>
                    <button (click)="auth.logout()" class="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition active:scale-95"><i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Đăng Xuất</button>
                 </div>

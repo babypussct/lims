@@ -153,7 +153,7 @@ interface CasIssueRecord {
                               <span class="px-2 py-0.5 rounded-full text-[10px] font-black" [ngClass]="batch.status === 'APPLIED' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'">{{batch.status === 'APPLIED' ? 'Có thể hoàn tác' : 'Đã hoàn tác'}}</span>
                             </div>
                             <p class="text-xs font-bold text-slate-700 dark:text-slate-200">{{batch.recordCount}} hồ sơ · {{batch.createdByName || 'Người dùng'}} · {{formatBatchDate(batch.createdAt)}}</p>
-                            <p class="text-[10px] text-slate-400 mt-1 font-mono">Phiên {{batch.id}}</p>
+                            <p class="text-[10px] text-slate-400 mt-1 font-mono">Lần xử lý {{batch.id}}</p>
                           </div>
                           <button (click)="undoBatch(batch)" [disabled]="batch.status !== 'APPLIED' || undoingBatchId() !== null" class="px-3 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40 disabled:cursor-not-allowed">
                             @if (undoingBatchId() === batch.id) { <i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang hoàn tác }
@@ -219,8 +219,8 @@ interface CasIssueRecord {
                     <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
                       <div class="flex flex-wrap items-center gap-2 mb-2">
                         <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{issue.standard.internal_id || issue.standard.id}}</span>
-                        @if (issue.standard.product_code) { <span class="text-[10px] text-slate-400 font-mono">Catalog {{issue.standard.product_code}}</span> }
-                        @if (issue.standard.lot_number) { <span class="text-[10px] text-slate-400 font-mono">Lot {{issue.standard.lot_number}}</span> }
+                        @if (issue.standard.product_code) { <span class="text-[10px] text-slate-400 font-mono">Mã sản phẩm {{issue.standard.product_code}}</span> }
+                        @if (issue.standard.lot_number) { <span class="text-[10px] text-slate-400 font-mono">Lô {{issue.standard.lot_number}}</span> }
                       </div>
                       <h4 class="font-black text-base text-slate-800 dark:text-slate-100 break-words">{{issue.standard.name}}</h4>
                       <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{issueGuidance(issue.kind)}}</p>
@@ -673,8 +673,8 @@ export class StandardsDataCleanupModalComponent {
   async undoBatch(batch: StandardCleanupBatch): Promise<void> {
     if (batch.status !== 'APPLIED' || this.undoingBatchId()) return;
     if (!await this.confirmation.confirm({
-      message: `Hoàn tác phiên ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về CAS, tên và metadata trước khi chuẩn hóa.`,
-      confirmText: 'Hoàn tác phiên',
+      message: `Hoàn tác lần xử lý ${batch.id}?\n\n${batch.recordCount} hồ sơ CAS ${batch.cas} sẽ được khôi phục về CAS, tên và thông tin trước khi chuẩn hóa.`,
+      confirmText: 'Hoàn tác lần xử lý',
       isDangerous: true
     })) return;
 
@@ -684,7 +684,7 @@ export class StandardsDataCleanupModalComponent {
       const freshStandards = await this.standardService.fetchAllAndCache();
       this.scanData(freshStandards);
       await this.loadCleanupHistory();
-      this.toast.show(`Đã hoàn tác phiên ${batch.id}.`, 'success');
+      this.toast.show(`Đã hoàn tác lần xử lý ${batch.id}.`, 'success');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Không thể hoàn tác phiên chuẩn hóa.';
       this.toast.show(message, 'error');
@@ -835,7 +835,7 @@ export class StandardsDataCleanupModalComponent {
       const nextIndex = goNext ? pageBeforeSave : Math.min(pageBeforeSave, Math.max(0, this.currentPageCount() - 1));
       this.pageIndex.set(Math.min(nextIndex, Math.max(0, this.currentPageCount() - 1)));
       await this.loadCleanupHistory();
-      this.toast.show(`Đã sửa CAS thành ${normalizedCas} · phiên ${batchId}.`, 'success');
+      this.toast.show(`Đã sửa CAS thành ${normalizedCas} · lần xử lý ${batchId}.`, 'success');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Không thể lưu CAS đã sửa.';
       this.toast.show(message, 'error');
@@ -953,7 +953,7 @@ export class StandardsDataCleanupModalComponent {
       ? '\nĐây là nhóm rủi ro cao; mỗi hồ sơ sẽ giữ đề xuất tên riêng.'
       : '';
     if (!await this.confirmation.confirm({
-      message: `Lưu ${selected.length} hồ sơ trong nhóm CAS ${group.cas}?${riskWarning}\n\nChỉ trường danh pháp và metadata chuẩn hóa được cập nhật.`,
+      message: `Lưu ${selected.length} hồ sơ trong nhóm CAS ${group.cas}?${riskWarning}\n\nChỉ thông tin danh pháp và dữ liệu chuẩn hóa liên quan được cập nhật.`,
       confirmText: 'Lưu chuẩn hóa',
       isDangerous: true
     })) return;
@@ -1004,7 +1004,7 @@ export class StandardsDataCleanupModalComponent {
         };
       });
       await this.loadCleanupHistory();
-      this.toast.show(`Đã lưu ${selected.length} hồ sơ trong CAS ${group.cas} · phiên ${batchId}.`, 'success');
+      this.toast.show(`Đã lưu ${selected.length} hồ sơ trong CAS ${group.cas} · lần xử lý ${batchId}.`, 'success');
       if (goNext) {
         const stillVisible = this.filteredGroups().some(item => item.id === group.id);
         const targetPage = stillVisible ? pageBeforeSave + 1 : pageBeforeSave;

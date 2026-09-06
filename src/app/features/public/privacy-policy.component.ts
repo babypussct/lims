@@ -70,27 +70,20 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
             <!-- Section 1 -->
             <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 my-6">
               <h3 class="text-lg font-extrabold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-folder-open text-blue-600"></i> 1. Thu Thập Dữ Liệu và Phạm Vi Truy Cập Google API
+                <i class="fa-solid fa-folder-open text-blue-600"></i> 1. Thu Thập Dữ Liệu và Quyền Truy Cập Google
               </h3>
               <p class="mb-3">
-                Hệ thống của chúng tôi tích hợp dịch vụ Google Drive API để phục vụ tính năng lưu trữ báo cáo kiểm nghiệm. Cụ thể:
+                Hệ thống tích hợp Google Drive để phục vụ việc lưu trữ báo cáo kiểm nghiệm. Cụ thể:
               </p>
               <ul class="list-disc pl-5 space-y-3">
                 <li>
-                  <strong>Phạm vi truy cập (OAuth Scope):</strong> Ứng dụng chỉ yêu cầu quyền 
-                  <code class="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-mono font-bold border border-blue-200 dark:border-blue-800">https://www.googleapis.com/auth/drive.file</code>. 
-                  Quyền này <strong>KHÔNG</strong> cho phép ứng dụng đọc hoặc xem toàn bộ Google Drive của bạn, mà <strong>chỉ giới hạn</strong> đọc, ghi và cập nhật các tệp tin được tạo bởi chính ứng dụng này.
+                  <strong>Quyền truy cập thông thường:</strong> Ứng dụng chỉ được đọc, ghi và cập nhật các tệp do chính ứng dụng tạo hoặc được người dùng chủ động chọn. Quyền này <strong>KHÔNG</strong> cho phép ứng dụng tự ý đọc toàn bộ Google Drive của bạn.
                 </li>
                 <li>
-                  <strong>Backup quản trị (tùy chọn):</strong> Chỉ khi quản trị viên chủ động chọn chức năng Backup Toàn Diện, hệ thống mới yêu cầu OAuth scope
-                  <code class="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-mono font-bold border border-amber-200 dark:border-amber-800">https://www.googleapis.com/auth/drive</code>
-                  để kiểm kê và sao lưu cả các tệp CoA, PDF, Google Docs, Google Sheets/Excel và thư mục mẫu đã có sẵn trên Drive. Quyền mở rộng này chỉ dùng cho tài khoản quản trị backup, payload được mã hóa trước khi tải lên thư mục backup riêng và không được cấp cho người dùng nghiệp vụ thông thường.
+                  <strong>Sao lưu quản trị (tùy chọn):</strong> Chỉ khi quản trị viên chủ động chọn chức năng sao lưu toàn diện, hệ thống mới yêu cầu quyền truy cập rộng hơn để kiểm kê và sao lưu các tệp CoA, PDF, Google Docs, Google Sheets/Excel và thư mục mẫu đã có sẵn trên Drive. Quyền mở rộng này chỉ dùng cho tài khoản quản trị sao lưu; dữ liệu sao lưu được mã hóa trước khi tải lên thư mục lưu trữ riêng và không được cấp cho người dùng nghiệp vụ thông thường.
                 </li>
                 <li>
-                  Luồng backup quản trị cũng yêu cầu hai quyền Apps Script chỉ đọc
-                  <code class="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-mono font-bold border border-amber-200 dark:border-amber-800">script.projects.readonly</code>
-                  và <code class="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-mono font-bold border border-amber-200 dark:border-amber-800">script.deployments.readonly</code>
-                  để kiểm tra source/project và deployment đang sống; hệ thống không dùng quyền Apps Script để sửa hoặc redeploy project.
+                  Chức năng sao lưu quản trị cũng có thể yêu cầu quyền chỉ đọc đối với Apps Script để kiểm tra cấu hình và trạng thái triển khai hiện có; hệ thống không dùng quyền này để sửa mã nguồn hoặc thay đổi bản triển khai.
                 </li>
                 <li>
                   <strong>Loại tệp tin tương tác:</strong> Ứng dụng chỉ tạo và làm việc với các tệp tin báo cáo kết quả thí nghiệm, chứng chỉ chất lượng (CoA) hoặc biểu mẫu SOP dưới dạng tệp Excel/PDF do người dùng chọn xuất.
@@ -104,12 +97,12 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
                 <i class="fa-solid fa-gears text-blue-600"></i> 2. Mục Đích Sử Dụng Dữ Liệu
               </h3>
               <p>
-                Dữ liệu truy cập thông qua Google OAuth chỉ được sử dụng phục vụ các chức năng nghiệp vụ cốt lõi sau:
+                Dữ liệu được Google cho phép truy cập chỉ được sử dụng phục vụ các chức năng nghiệp vụ cốt lõi sau:
               </p>
               <ul class="list-disc pl-5 mt-2 space-y-2">
                 <li>Tải các mẫu báo cáo tiêu chuẩn từ Google Drive xuống ứng dụng để xử lý tính toán.</li>
                 <li>Lưu trữ các kết quả phân tích phòng thí nghiệm dưới dạng tệp Excel hoặc PDF trực tiếp vào thư mục dùng chung của phòng thí nghiệm được phân quyền để phục vụ mục đích in ấn, tra cứu và lưu trữ hồ sơ.</li>
-                <li>Đọc cấu hình tiêu chuẩn dạng JSON trên Drive để đồng bộ quy trình phân tích.</li>
+                <li>Đọc tệp cấu hình tiêu chuẩn trên Drive để đồng bộ quy trình phân tích.</li>
               </ul>
             </div>
 
@@ -123,7 +116,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
               </p>
               <ul class="list-disc pl-5 space-y-2">
                 <li>
-                  <strong>Mã thông báo truy cập (Access Token):</strong> Mã truy cập Google OAuth được xử lý trực tiếp trong trình duyệt của người dùng (Client-Side) hoặc cookie bảo mật mã hóa. Chúng tôi <strong>KHÔNG</strong> truyền, lưu trữ hay chia sẻ mã này trên bất kỳ máy chủ trung gian nào của bên thứ ba.
+                  <strong>Mã truy cập Google:</strong> Mã truy cập được xử lý trực tiếp trong trình duyệt của người dùng hoặc trong vùng lưu trữ bảo mật đã mã hóa. Chúng tôi <strong>KHÔNG</strong> truyền, lưu trữ hay chia sẻ mã này trên bất kỳ máy chủ trung gian nào của bên thứ ba.
                 </li>
                 <li>
                   <strong>Dữ liệu tệp tin:</strong> Toàn bộ tài liệu báo cáo của bạn được lưu trực tiếp vào thư mục lưu trữ dùng chung của phòng thí nghiệm được cấp quyền. Ứng dụng không sao lưu dữ liệu này ở các máy chủ khác ngoại trừ các cơ sở dữ liệu nội bộ được bảo mật phục vụ vận hành.
@@ -151,7 +144,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
               </p>
               <ul class="list-disc pl-5 space-y-2 mb-4">
                 <li><strong>Thông tin được ẩn danh hoá:</strong> Địa chỉ email và ảnh đại diện.</li>
-                <li><strong>Thông tin được giữ lại:</strong> Tên hiển thị và UID được giữ để phục vụ audit trail và tính toàn vẹn dữ liệu kết quả kiểm nghiệm.</li>
+                <li><strong>Thông tin được giữ lại:</strong> Tên hiển thị và mã tài khoản được giữ để phục vụ lịch sử truy vết và tính toàn vẹn của dữ liệu kết quả kiểm nghiệm.</li>
                 <li><strong>Cách thực hiện:</strong> Vào <strong>Trang cá nhân → Quản lý Tài Khoản</strong> và bấm nút “Ẩn danh hoá thông tin cá nhân”.</li>
                 <li><strong>Hiệu lực tức thì:</strong> Sau khi xác nhận, hệ thống sẽ thực hiện trong vòng 60 giây.</li>
               </ul>
@@ -167,10 +160,10 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
               </h3>
               <p class="mb-3">Hệ thống sử dụng các dịch vụ Google Firebase:</p>
               <ul class="list-disc pl-5 space-y-2">
-                <li><strong>Firebase Authentication:</strong> Hỗ trợ đăng nhập bằng Google hoặc Gmail/email và mật khẩu LIMS. Hai phương thức được liên kết về cùng một UID; mật khẩu LIMS được Firebase bảo vệ dưới dạng hash và không phải mật khẩu Google.</li>
-                <li><strong>Cloud Firestore:</strong> Lưu trữ dữ liệu nghiệp vụ (kết quả kiểm nghiệm, số lượng, SOP). Toàn bộ dữ liệu thuộc sở hữu của phòng thí nghiệm NAFIQPM6.</li>
-                <li><strong>Firebase Cloud Messaging (FCM):</strong> Gửi thông báo đẩy nội bộ (cảnh báo hết hạn, yêu cầu duyệt). FCM token được lưu trên thiết bị và Firestore, chỉ dùng để gửi thông báo nội bộ, không chia sẻ bên ngoài.</li>
-                <li><strong>Vercel (hosting):</strong> Ứng dụng được triển khai trên Vercel. Vercel có thể lưu access log (IP, user agent) trong tối đa 30 ngày theo chính sách riêng của họ.</li>
+                <li><strong>Firebase Authentication:</strong> Hỗ trợ đăng nhập bằng Google hoặc Gmail/email và mật khẩu LIMS. Hai phương thức được liên kết về cùng một mã tài khoản; mật khẩu LIMS được Firebase bảo vệ bằng cơ chế băm một chiều và không phải mật khẩu Google.</li>
+                <li><strong>Cloud Firestore:</strong> Lưu trữ dữ liệu nghiệp vụ như kết quả kiểm nghiệm, số lượng và SOP. Toàn bộ dữ liệu thuộc sở hữu của phòng thí nghiệm NAFIQPM6.</li>
+                <li><strong>Firebase Cloud Messaging:</strong> Gửi thông báo đẩy nội bộ như cảnh báo hết hạn hoặc yêu cầu duyệt. Mã nhận thông báo được lưu trên thiết bị và trong cơ sở dữ liệu Firebase, chỉ dùng để gửi thông báo nội bộ và không chia sẻ bên ngoài.</li>
+                <li><strong>Vercel:</strong> Cung cấp hạ tầng triển khai ứng dụng. Vercel có thể lưu nhật ký truy cập, gồm địa chỉ IP và thông tin trình duyệt hoặc thiết bị, trong tối đa 30 ngày theo chính sách riêng của họ.</li>
               </ul>
             </div>
 
@@ -185,7 +178,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
               <ol class="list-decimal pl-5 mt-2 space-y-2">
                 <li>Truy cập trang cài đặt bảo mật tài khoản Google của bạn tại: <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener" class="text-blue-600 font-bold hover:underline">My Account Permissions</a>.</li>
                 <li>Chọn ứng dụng <strong>NAFIQPM6 LIMS Cloud</strong>.</li>
-                <li>Nhấn nút <strong>Xóa quyền truy cập (Remove Access)</strong>.</li>
+                <li>Nhấn nút <strong>Xóa quyền truy cập</strong>.</li>
               </ol>
             </div>
 

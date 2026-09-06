@@ -219,7 +219,7 @@ interface WizardSopSuggestion {
                                 }
                               </div>
                               <button type="button" (click)="copyDescriptionToAll(sample)" [disabled]="!descriptionFor(group, sample)" class="shrink-0 px-2 py-1.5 rounded-lg border border-fuchsia-200 dark:border-fuchsia-900 text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 disabled:opacity-35 disabled:cursor-not-allowed" [attr.aria-label]="'Sao chép mô tả của ' + sample + ' cho tất cả'" title="Sao chép mô tả này cho tất cả mẫu">
-                                <i class="fa-regular fa-copy mr-1"></i><span class="hidden sm:inline">Copy tất cả</span>
+                                <i class="fa-regular fa-copy mr-1"></i><span class="hidden sm:inline">Sao chép tất cả</span>
                               </button>
                             </div>
                           } @empty {
@@ -305,7 +305,7 @@ interface WizardSopSuggestion {
                             <p class="mt-3 text-[11px] text-orange-600 dark:text-orange-400 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Không tìm thấy SOP tương thích nền mẫu và các chỉ tiêu đã chọn.</p>
                           } @else {
                             @if (sopSuggestions(group)[0].isPartial) {
-                              <p class="mt-3 text-[10px] text-orange-600 dark:text-orange-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Chưa có SOP đơn lẻ phủ đủ. Các SOP dưới đây là gợi ý gần nhất; SmartBatch vẫn có thể gom/tách nhiều batch khi để tự phân phối.</p>
+                              <p class="mt-3 text-[10px] text-orange-600 dark:text-orange-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Chưa có SOP đơn lẻ phủ đủ. Các SOP dưới đây là gợi ý gần nhất; SmartBatch vẫn có thể tự gom hoặc tách thành nhiều mẻ khi để chế độ tự phân phối.</p>
                             }
                             <div class="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-2">
                               @for (suggestion of sopSuggestions(group); track suggestion.sop.id) {

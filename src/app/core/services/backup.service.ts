@@ -209,7 +209,7 @@ export class BackupService {
 
   private async request<T>(url: string, init: RequestInit = {}): Promise<T> {
     const token = await this.auth.getIdToken(false);
-    if (!token) throw new Error('Phiên Firebase đã hết hạn. Hãy đăng nhập lại.');
+    if (!token) throw new Error('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.');
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${token}`);
     headers.set('Content-Type', 'application/json');
@@ -263,7 +263,7 @@ export class BackupService {
           body: JSON.stringify(payload),
         });
         if (step.done === true) return step as BackupCreateResponse;
-        if (!step.backupFolderId) throw new Error('Backup session không trả về thư mục để tiếp tục.');
+        if (!step.backupFolderId) throw new Error('Quá trình sao lưu không xác định được thư mục để tiếp tục.');
         backupFolderId = step.backupFolderId;
         requestRebuild = false;
         transientRetries = 0;
@@ -292,7 +292,7 @@ export class BackupService {
         throw error;
       }
     }
-    throw new Error('Backup vượt quá số pha an toàn cho phép.');
+    throw new Error('Quá trình sao lưu vượt quá số bước an toàn cho phép.');
   }
 
   async verifyBackup(backupFolderId: string): Promise<BackupVerificationResponse> {
@@ -330,7 +330,7 @@ export class BackupService {
         throw error;
       }
     }
-    throw new Error('Kiểm tra integrity vượt quá số đợt an toàn cho phép.');
+    throw new Error('Kiểm tra tính toàn vẹn vượt quá số lần thử an toàn cho phép.');
   }
 
   restoreBackup(options: {

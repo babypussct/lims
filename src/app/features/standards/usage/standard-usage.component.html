@@ -21,7 +21,7 @@
           <!-- Sử dụng (input) thay vì ngModelChange để debounce -->
           <input type="text" [ngModel]="searchTerm()" (input)="onSearchInput($event)"
             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none"
-            placeholder="Tên, lô, người dùng, ID...">
+            placeholder="Tên, lô, người dùng, mã...">
         </div>
       </div>
 
@@ -212,7 +212,7 @@
                           </button>
                           <div class="flex flex-wrap gap-1.5 mt-1">
                             @if(log.lotNumber) {
-                              <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold text-slate-500">Lot: {{log.lotNumber}}</span>
+                              <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold text-slate-500">Lô: {{log.lotNumber}}</span>
                             }
                             @if(log.internalId) {
                               <span class="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded text-[9px] font-bold text-blue-600 dark:text-blue-400">{{log.internalId}}</span>

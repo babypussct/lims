@@ -139,7 +139,7 @@
               </label>
               <div class="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu trắng</label>
+                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu trắng (blank)</label>
                   <input type="text"
                     [(ngModel)]="draft.page1Data['blankName']"
                     (ngModelChange)="onDataChanged()"
@@ -147,7 +147,7 @@
                     class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
                   </div>
                   <div>
-                    <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu thêm chuẩn</label>
+                    <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu thêm chuẩn (spike)</label>
                     <input type="text"
                       [(ngModel)]="draft.page1Data['spikeName']"
                       (ngModelChange)="onDataChanged()"
@@ -176,7 +176,7 @@
                 title="5 Điểm Đường chuẩn (Calibration Curve Points)"
                 [calibPoints]="draft.page1Data['calibPoints']"
                 [pointLabels]="['0 ppb', '5 ppb', '10 ppb', '20 ppb', '50 ppb']"
-                pointPrefix="Point C"
+                pointPrefix="Điểm C"
                 suffixText="IS: 20 ppb"
                 [isSuffixVisible]="true"
                 [isFuchsiaRing]="true"
@@ -372,32 +372,32 @@
                     <div class="flex items-center gap-2 bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
                       <span class="font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-widest">Nhập nhanh số lọ:</span>
                       <div class="flex items-center gap-1.5">
-                        <span class="text-slate-450 dark:text-slate-500 font-bold">Rack:</span>
+                        <span class="text-slate-450 dark:text-slate-500 font-bold">Khay:</span>
                         <input type="number"
                           [(ngModel)]="bulkRackStart"
-                          title="Khay chạy máy (Rack)"
-                          placeholder="Rack"
+                          title="Khay chạy máy"
+                          placeholder="Khay"
                           class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
                         </div>
                         <div class="flex items-center gap-1.5">
-                          <span class="text-slate-450 dark:text-slate-500 font-bold">Vial đầu:</span>
+                          <span class="text-slate-450 dark:text-slate-500 font-bold">Lọ đầu:</span>
                           <input type="number"
                             [(ngModel)]="bulkVialStartFip"
-                            title="Vial bắt đầu"
-                            placeholder="Vial"
+                            title="Số lọ bắt đầu"
+                            placeholder="Lọ"
                             class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
                           </div>
                           <div class="flex items-center gap-1.5">
-                            <span class="text-slate-450 dark:text-slate-500 font-bold">Size:</span>
+                            <span class="text-slate-450 dark:text-slate-500 font-bold">Số lọ/khay:</span>
                             <input type="number"
                               [(ngModel)]="bulkVialsPerRack"
-                              title="Số ống vial tối đa trên một khay (Rack)"
+                              title="Số lọ tối đa trên một khay"
                               placeholder="Tối đa"
                               class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
                             </div>
                             <button (click)="applyBulkVials()"
                               class="px-3 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
-                              title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
+                              title="Điền tự động số khay và số lọ cho toàn bộ danh sách mẫu">
                             <i class="fa-solid fa-magic text-[10px]"></i>
                             <span>Điền Nhanh</span>
                           </button>
@@ -409,7 +409,7 @@
                       <table class="w-full text-sm border-collapse">
                         <thead>
                           <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-250/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
-                            <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Vial No.</th>
+                            <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Số lọ</th>
                             <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[140px]">Mẫu thử</th>
                             <!-- Dynamic active columns -->
                             @for (col of activeColumns; track col) {

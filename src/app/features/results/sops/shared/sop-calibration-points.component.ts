@@ -61,7 +61,7 @@ import { FormsModule } from '@angular/forms';
                        [(ngModel)]="pt['vialNo']"
                        (ngModelChange)="onPointsChanged()"
                        (focus)="$any($event.target).select()"
-                       placeholder="Vial…"
+                       placeholder="Lọ…"
                        [disabled]="isReadOnly"
                        [class]="vialInputClass">
               </div>

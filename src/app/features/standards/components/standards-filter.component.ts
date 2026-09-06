@@ -15,7 +15,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
               <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-fuchsia-500 dark:group-focus-within:text-fuchsia-400 transition-colors"></i>
               <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
                      class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
-                     placeholder="Tìm kiếm chuẩn, mã số, số lô... (Real-time)">
+                     placeholder="Tìm kiếm chuẩn, mã số, số lô...">
            </div>
            
            <!-- FILTER DROPDOWN -->

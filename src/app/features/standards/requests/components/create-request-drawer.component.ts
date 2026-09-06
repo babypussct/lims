@@ -102,7 +102,7 @@ function removeAccents(str: string): string {
                                                 <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.product_code || 'N/A'}}</span>
                                             </div>
                                             <div class="flex items-center gap-1 truncate" [title]="std.lot_number || 'N/A'">
-                                                <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Lot:</span>
+                                                <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Lô:</span>
                                                 <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.lot_number || 'N/A'}}</span>
                                             </div>
                                             <div class="flex items-center gap-1 truncate" [title]="std.cas_number || 'N/A'">
@@ -217,7 +217,7 @@ function removeAccents(str: string): string {
                                 @if (selectedStandardsList().length === 0) {
                                     <div class="py-3 px-4 flex items-center gap-2 text-slate-400 dark:text-slate-500">
                                         <i class="fa-regular fa-hand-pointer text-sm"></i>
-                                        <span class="text-xs font-medium italic">Click chọn chuẩn ở danh sách bên trái.</span>
+                                        <span class="text-xs font-medium italic">Chọn chuẩn ở danh sách bên trái.</span>
                                     </div>
                                 } @else {
                                     <div class="p-2.5 max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5">
@@ -227,7 +227,7 @@ function removeAccents(str: string): string {
                                                     <span class="text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300 truncate max-w-[130px] leading-tight" [title]="std.name">{{std.name}}</span>
                                                     @if (std.internal_id || std.lot_number) {
                                                         <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate mt-px">
-                                                            {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lot ' + std.lot_number : ''}}
+                                                            {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lô ' + std.lot_number : ''}}
                                                         </span>
                                                     }
                                                 </div>

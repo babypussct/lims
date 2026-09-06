@@ -81,7 +81,7 @@ export function parseMassHunterResultWorkbook(XLSX: any, workbook: any): ParsedE
   }
 
   if (compounds.length === 0) {
-    warnings.push('Không tìm thấy sheet nào có cột Sample name và Final-Conc.');
+    warnings.push('Không tìm thấy trang tính nào có cột Sample name và Final-Conc.');
   }
 
   return { compounds, warnings };

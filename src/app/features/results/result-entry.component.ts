@@ -388,7 +388,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.requestId) {
-      this.toast.show('Không tìm thấy ID mẻ chạy!', 'error');
+      this.toast.show('Không tìm thấy mã mẻ chạy!', 'error');
       this.router.navigate(['/results']);
       return;
     }

@@ -84,7 +84,7 @@ type MasterCounts = {
             <a routerLink="/settings/data/backups" class="flex items-start justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 transition hover:-translate-y-0.5 hover:shadow-soft-md dark:border-amber-900/50 dark:bg-amber-950/20">
               <div class="flex items-start gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                <div><div class="text-xs font-black text-amber-800 dark:text-amber-300">Backup cần chú ý</div><div class="mt-1 text-[11px] text-amber-700/70 dark:text-amber-300/70">{{ backupAttentionText() }}</div></div>
+                <div><div class="text-xs font-black text-amber-800 dark:text-amber-300">Sao lưu cần chú ý</div><div class="mt-1 text-[11px] text-amber-700/70 dark:text-amber-300/70">{{ backupAttentionText() }}</div></div>
               </div>
               <span class="shrink-0 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">Kiểm tra <i class="fa-solid fa-arrow-right ml-1"></i></span>
             </a>
@@ -118,9 +118,9 @@ type MasterCounts = {
 
         @if (hasBackupAccess()) {
           <a routerLink="/settings/data/backups" class="rounded-2xl bg-white p-4 shadow-soft-xl transition hover:-translate-y-0.5 dark:bg-slate-900">
-            <div class="flex items-center justify-between"><span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Backup</span><i class="fa-solid fa-shield-halved text-emerald-500"></i></div>
+            <div class="flex items-center justify-between"><span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Sao lưu</span><i class="fa-solid fa-shield-halved text-emerald-500"></i></div>
             <div class="mt-2 text-sm font-black text-slate-800 dark:text-slate-100">{{ latestBackup() ? backupDate(latestBackup()?.completedAt || latestBackup()?.createdTime) : 'Chưa có bản sao lưu' }}</div>
-            <div class="mt-1 text-[11px] font-semibold" [class.text-emerald-600]="latestBackup()?.verified" [class.text-amber-600]="!latestBackup()?.verified">{{ latestBackup()?.verified ? 'Integrity: Đạt' : 'Integrity: Chưa xác nhận' }}</div>
+            <div class="mt-1 text-[11px] font-semibold" [class.text-emerald-600]="latestBackup()?.verified" [class.text-amber-600]="!latestBackup()?.verified">{{ latestBackup()?.verified ? 'Tính toàn vẹn: Đạt' : 'Tính toàn vẹn: Chưa xác nhận' }}</div>
           </a>
         }
 
@@ -152,7 +152,7 @@ type MasterCounts = {
           @if (canManageSystem()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Hệ thống</span> }
           @if (canManageMasterData()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Dữ liệu nền</span> }
           @if (canManageUsers()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Người dùng & quyền</span> }
-          @if (hasBackupAccess()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Backup</span> }
+          @if (hasBackupAccess()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Sao lưu</span> }
           @if (canManagePolicy()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Chính sách hao hụt</span> }
         </div>
       </section>
@@ -209,11 +209,11 @@ export class ManagerSettingsComponent implements OnInit {
   }
 
   backupAttentionText(): string {
-    if (this.backupSummaryAvailable() === false || !this.backupStatus()) return 'Không đọc được trạng thái backup.';
-    if (!this.backupStatus()?.ready) return 'Hạ tầng backup chưa sẵn sàng.';
+    if (this.backupSummaryAvailable() === false || !this.backupStatus()) return 'Không đọc được trạng thái sao lưu.';
+    if (!this.backupStatus()?.ready) return 'Hệ thống sao lưu chưa sẵn sàng.';
     if (!this.latestBackup()) return 'Chưa có bản sao lưu hoàn tất.';
-    if (!this.latestBackup()?.verified) return 'Bản sao lưu gần nhất chưa đạt hoặc chưa chạy integrity check.';
-    return 'Cần kiểm tra trạng thái backup.';
+    if (!this.latestBackup()?.verified) return 'Bản sao lưu gần nhất chưa được kiểm tra tính toàn vẹn hoặc chưa đạt yêu cầu.';
+    return 'Cần kiểm tra trạng thái sao lưu.';
   }
 
   backupDate(value?: string | null): string {

@@ -139,7 +139,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
 
                             <!-- Role ID -->
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Mã nhận dạng (ID)</label>
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Mã nhận dạng</label>
                                 <input type="text" formControlName="id"
                                        class="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-600 dark:text-slate-400 outline-none cursor-not-allowed"
                                        readonly>

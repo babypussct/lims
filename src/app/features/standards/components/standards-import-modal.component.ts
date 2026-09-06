@@ -10,7 +10,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
       <!-- IMPORT PREVIEW MODAL -->
       @if (data().length > 0) {
          <app-modal-shell
-            title="Xác nhận import"
+            title="Xác nhận nhập dữ liệu"
             description="Vui lòng kiểm tra kỹ ngày tháng trước khi lưu."
             size="2xl"
             [closeOnBackdrop]="false"
@@ -38,10 +38,10 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <thead class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
                             <tr>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700">Tên chất chuẩn</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Lô (Lot)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Số lô</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 w-32">Ngày nhận (Gốc)</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 w-32">Kết quả (Hệ thống hiểu)</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Hạn dùng (Parsed)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Hạn dùng</th>
                                 <th class="p-2 border border-slate-200 dark:border-slate-700">Trạng thái</th>
                             </tr>
                         </thead>
@@ -79,7 +79,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                     <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
                     <button (click)="onConfirm()" [disabled]="isImporting() || validCount() === 0" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                         @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
-                        @else { <i class="fa-solid fa-check"></i> Xác nhận import }
+                        @else { <i class="fa-solid fa-check"></i> Xác nhận nhập }
                     </button>
                 </div>
          </app-modal-shell>
@@ -112,7 +112,7 @@ export class StandardsImportDataModalComponent {
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
       @if (data().length > 0) {
          <app-modal-shell
-            title="Xác nhận import nhật ký"
+            title="Xác nhận nhập nhật ký"
             description="Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua."
             size="2xl"
             [closeOnBackdrop]="false"
@@ -151,7 +151,7 @@ export class StandardsImportDataModalComponent {
                                         <div class="font-bold text-slate-700 dark:text-slate-200 break-words" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
                                         <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">Lô: {{item.raw['Lô']}}</div>
                                         @if(item.standard) {
-                                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-check-circle"></i> Map: {{item.standard.internal_id || 'OK'}}</div>
+                                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-check-circle"></i> Đã khớp: {{item.standard.internal_id || 'OK'}}</div>
                                         }
                                     </td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.raw['Ngày']}} <br> <span class="text-xs text-slate-400 dark:text-slate-500">{{item.log.date | date:'dd/MM/yyyy'}}</span></td>
@@ -190,7 +190,7 @@ export class StandardsImportDataModalComponent {
                         <button (click)="onCancel()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
                         <button (click)="onConfirm()" [disabled]="isImporting() || validCount() === 0" class="px-6 py-2.5 bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                             @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
-                            @else { <i class="fa-solid fa-check"></i> Import hợp lệ }
+                            @else { <i class="fa-solid fa-check"></i> Nhập các dòng hợp lệ }
                         </button>
                     </div>
                 </div>

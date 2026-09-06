@@ -33,7 +33,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <div class="space-y-4 fade-in">
                             <h4 class="text-sm font-bold text-fuchsia-600 dark:text-fuchsia-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">1. Thông Tin Chung</h4>
                             <div>
-                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên thương mại (Commercial Name) <span class="text-red-500 dark:text-red-400">*</span></label>
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên thương mại <span class="text-red-500 dark:text-red-400">*</span></label>
                                 <input id="stdNameInput" formControlName="name" (input)="onNameChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500 dark:focus:ring-fuchsia-500/50" placeholder="VD: Sulfadiazine Standard">
                             </div>
                             <!-- NEW: Chemical Name Field -->
@@ -43,14 +43,14 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
+              <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
                                 <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
                                 <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
                                 <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800" placeholder="VD: 99.5%"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <div><label class="text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-400 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500 dark:focus:ring-fuchsia-500/50" placeholder="VD: 10mg"></div>
-                                <div><label class="text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-400 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500 dark:focus:ring-fuchsia-500/50" placeholder="VD: BCBW1234"></div>
+              <div><label class="text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-400 uppercase block mb-1">Quy cách</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500 dark:focus:ring-fuchsia-500/50" placeholder="VD: 10mg"></div>
+                                <div><label class="text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-400 uppercase block mb-1">Số lô</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500 dark:focus:ring-fuchsia-500/50" placeholder="VD: BCBW1234"></div>
                             </div>
 
                             <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -125,8 +125,8 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                 <div class="flex gap-2">
                                     <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
                                     @if(auth.currentUser()?.role === 'manager') {
-                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
-                                            @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
+                <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Tải lên Google Drive (15 GB miễn phí, tự đặt tên)">
+                                            @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên... } @else { <i class="fa-brands fa-google-drive"></i> Google Drive }
                                         </button>
                                         <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
                                     }
@@ -292,7 +292,7 @@ export class StandardsFormModalComponent {
             s.id !== this.form.get('id')?.value
         );
         if (existing) {
-            this.toast.show(`Mã quản lý ${val.internal_id} đang được dùng ở chuẩn "${existing.name}". Hệ thống sẽ kiểm tra lại trong giao dịch.`, 'error');
+            this.toast.show(`Mã quản lý ${val.internal_id} đang được dùng ở chuẩn "${existing.name}". Hệ thống sẽ kiểm tra lại khi lưu.`, 'error');
         }
     }
 

@@ -29,12 +29,12 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                 </app-button>
                 <!-- Export Button -->
                 <app-button variant="secondary" size="sm" (click)="exportToExcel()" [disabled]="isProcessing() || isLoading() || items().length === 0">
-                    <i class="fa-solid fa-file-export" aria-hidden="true"></i> Export Excel
+                    <i class="fa-solid fa-file-export" aria-hidden="true"></i> Xuất Excel
                 </app-button>
 
                 <!-- Import Button -->
                 <app-button variant="secondary" size="sm" (click)="fileInput.click()">
-                    <i class="fa-solid fa-file-excel" aria-hidden="true"></i> Import Excel
+                    <i class="fa-solid fa-file-excel" aria-hidden="true"></i> Nhập Excel
                 </app-button>
                 <input #fileInput type="file" class="hidden" accept=".xlsx, .csv" (change)="onFileSelected($event)">
 
@@ -63,7 +63,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                         <table class="w-full text-sm text-left border-collapse">
                             <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/70 sticky top-0 z-10 font-bold">
                                 <tr>
-                                    <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">Tên chỉ tiêu / ID</th>
+                                    <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">Tên chỉ tiêu / Mã</th>
                                     <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">Thông tin hóa học</th>
                                     <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 text-center">Đơn vị Chuẩn</th>
                                     <th class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 text-right">Tác vụ</th>
@@ -149,7 +149,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             </div>
 
                             <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên khác / Alias khi import</label>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên khác khi nhập dữ liệu</label>
                                 <textarea formControlName="aliasesText" rows="3"
                                           class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition resize-none"
                                           placeholder="Mỗi alias một dòng hoặc phân cách bằng dấu chấm phẩy"></textarea>
@@ -177,7 +177,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                     <div class="rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-xs text-yellow-800 dark:border-yellow-900/60 dark:bg-yellow-950/30 dark:text-yellow-200 flex items-start gap-2">
                         <i class="fa-solid fa-circle-info mt-0.5" aria-hidden="true"></i>
                         <div>
-                            Kiểm tra dữ liệu bên dưới. Các dòng có <b>ID</b> trùng sẽ bị ghi đè.
+                            Kiểm tra dữ liệu bên dưới. Các dòng có <b>mã</b> trùng sẽ bị ghi đè.
                             <br>Tổng cộng: <b>{{importPreview().length}}</b> chỉ tiêu hợp lệ.
                         </div>
                     </div>
@@ -389,7 +389,7 @@ export class MasterTargetManagerComponent implements OnInit {
           reader.readAsArrayBuffer(file);
           
       } catch(e: any) {
-          this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+          this.toast.show('Lỗi đọc tệp: ' + e.message, 'error');
           this.isLoading.set(false);
       }
   }
@@ -437,7 +437,7 @@ export class MasterTargetManagerComponent implements OnInit {
           this.importPreview.set(parsed);
           this.toast.show(`Tìm thấy ${parsed.length} dòng hợp lệ.`);
       } else {
-          this.toast.show('Không tìm thấy dữ liệu hợp lệ trong file.', 'info');
+          this.toast.show('Không tìm thấy dữ liệu hợp lệ trong tệp.', 'info');
       }
   }
 
@@ -494,7 +494,7 @@ export class MasterTargetManagerComponent implements OnInit {
           XLSX.writeFile(wb, fileName);
           this.toast.show('Xuất tệp Excel thành công!', 'success');
       } catch (e: any) {
-          this.toast.show('Lỗi xuất file: ' + e.message, 'error');
+          this.toast.show('Lỗi xuất tệp: ' + e.message, 'error');
       } finally {
           this.isProcessing.set(false);
       }

@@ -245,7 +245,7 @@ export class StandardCrudService {
       if (tagsToPersist !== undefined) persistedMetadata['sop_tags'] = tagsToPersist;
       transaction.update(ref, sanitizeForFirebase(persistedMetadata));
     });
-    await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
+    await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (Mã: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
   }
 
@@ -614,7 +614,7 @@ export class StandardCrudService {
           for (const id of chunkSuccessIds) {
             const successIndex = successIds.indexOf(id);
             if (successIndex >= 0) successIds.splice(successIndex, 1);
-            failed.push({ standardId: id, reason: error?.message || 'Batch commit thất bại.' });
+            failed.push({ standardId: id, reason: error?.message || 'Không thể lưu đợt thay đổi này.' });
           }
         }
       }
@@ -732,7 +732,7 @@ export class StandardCrudService {
       senderName: user?.displayName || 'Người dùng',
       type: 'COA_REQUEST',
       title: 'Yêu cầu bổ sung CoA',
-      message: `${user?.displayName || 'Ai đó'} vừa yêu cầu cập nhật file CoA cho lô chuẩn ${std.name} (Lô: ${std.lot_number || 'N/A'}).`,
+      message: `${user?.displayName || 'Ai đó'} vừa yêu cầu cập nhật tệp CoA cho lô chuẩn ${std.name} (Lô: ${std.lot_number || 'N/A'}).`,
       targetId: std.id,
       actionUrl: `/standards/${std.id}`,
       channels: ['inbox', 'push']
@@ -799,7 +799,7 @@ export class StandardCrudService {
       senderName: admin?.displayName || 'Quản trị viên',
       type: 'SYSTEM_INFO' as const,
       title: 'Đã cập nhật CoA',
-      message: `File CoA của chuẩn "${freshStandards[0].name}" đã được tải lên thành công.`,
+      message: `Tệp CoA của chuẩn "${freshStandards[0].name}" đã được tải lên thành công.`,
       targetId: freshStandards[0].id,
       actionUrl: `/standards/${freshStandards[0].id}`,
       channels: ['inbox', 'push']

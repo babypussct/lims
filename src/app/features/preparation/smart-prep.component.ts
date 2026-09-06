@@ -199,7 +199,7 @@ const TASKS: readonly TaskDefinition[] = [
   },
   {
     id: 'spike',
-    label: 'Tính lượng dung dịch thêm chuẩn',
+    label: 'Tính lượng dung dịch thêm chuẩn (spike)',
     question: 'Cần thêm bao nhiêu dung dịch chuẩn vào mẫu?',
     description: 'Xác định lượng dung dịch chuẩn và vị trí áp dụng trên mẫu ban đầu hoặc thể tích cuối.',
     icon: 'fa-vial',
@@ -217,7 +217,7 @@ const TASKS: readonly TaskDefinition[] = [
     id: 'result_conversion',
     label: 'Quy đổi kết quả theo xử lý mẫu',
     question: 'Kết quả đo được quy đổi về mẫu ban đầu như thế nào?',
-    description: 'Mô hình hóa các bước chiết, chia mẫu, cô đặc, hoàn nguyên, pha loãng và hiệu suất thu hồi.',
+    description: 'Mô hình hóa các bước chiết, chia mẫu, cô đặc, hoàn nguyên, pha loãng và độ thu hồi (recovery).',
     icon: 'fa-route',
     activeClass: 'border-rose-500 bg-rose-600 text-white shadow-lg shadow-rose-200 dark:shadow-none'
   }
@@ -330,7 +330,7 @@ export class SmartPrepComponent {
   readonly resultUnit = signal<ResultConcentrationUnit>('mg/kg');
   readonly resultSteps = signal<UiStep[]>([
     { id: 'step-extract', label: 'Chiết và định mức', type: 'extract', volume: 50, volumeUnit: 'mL', fraction: null, recoveryPercent: null },
-    { id: 'step-aliquot', label: 'Lấy aliquot', type: 'aliquot', volume: 5, volumeUnit: 'mL', fraction: null, recoveryPercent: null },
+    { id: 'step-aliquot', label: 'Lấy aliquot (phần mẫu)', type: 'aliquot', volume: 5, volumeUnit: 'mL', fraction: null, recoveryPercent: null },
     { id: 'step-concentrate', label: 'Cô', type: 'concentration', volume: 1, volumeUnit: 'mL', fraction: null, recoveryPercent: null },
     { id: 'step-reconstitute', label: 'Hoàn nguyên', type: 'reconstitution', volume: 1, volumeUnit: 'mL', fraction: null, recoveryPercent: null }
   ]);
@@ -474,11 +474,11 @@ export class SmartPrepComponent {
   }
 
   spikeMatrixLabel(matrix: SpikeMatrix): string {
-    return matrix === 'solid' ? 'Mẫu rắn theo khối lượng' : matrix === 'liquid' ? 'Mẫu lỏng theo thể tích' : matrix === 'extract' ? 'Dịch chiết theo thể tích' : 'Vial/dung dịch cuối';
+    return matrix === 'solid' ? 'Mẫu rắn theo khối lượng' : matrix === 'liquid' ? 'Mẫu lỏng theo thể tích' : matrix === 'extract' ? 'Dịch chiết theo thể tích' : 'Lọ/dung dịch cuối';
   }
 
   spikeLocationLabel(location: SpikeLocation): string {
-    return location === 'sample_initial' ? 'Mẫu ban đầu trước xử lý' : location === 'extract' ? 'Dịch chiết' : location === 'after_cleanup' ? 'Sau làm sạch' : 'Vial hoặc dung dịch cuối';
+    return location === 'sample_initial' ? 'Mẫu ban đầu trước xử lý' : location === 'extract' ? 'Dịch chiết' : location === 'after_cleanup' ? 'Sau làm sạch' : 'Lọ hoặc dung dịch cuối';
   }
 
   spikeSemanticLabel(semantic: SpikeSemantic): string {
@@ -498,13 +498,13 @@ export class SmartPrepComponent {
       concentration: 'Cô',
       reconstitution: 'Hoàn nguyên',
       split: 'Chia dòng',
-      recovery: 'Điều chỉnh recovery'
+      recovery: 'Điều chỉnh độ thu hồi (recovery)'
     };
     return labels[type];
   }
 
   objectTypeLabel(type: SeriesObjectType): string {
-    return type === 'standard' ? 'Chuẩn' : type === 'blank' ? 'Blank' : type === 'qc' ? 'QC' : 'Mẫu';
+    return type === 'standard' ? 'Chuẩn' : type === 'blank' ? 'Mẫu trắng (blank)' : type === 'qc' ? 'QC' : 'Mẫu thử';
   }
 
   additionTypeLabel(type: AdditionDraft['type']): string {
@@ -865,7 +865,7 @@ export class SmartPrepComponent {
       case 'target':
         return ['Nội dung: Xác định lượng cần lấy', 'Tên chất/dung dịch: ' + output.name, 'Lượng dự kiến: ' + this.displayQuantity(output.plannedQuantity), 'Hướng dẫn thao tác: ' + output.operation, output.actualConcentration ? 'Nồng độ xác định theo lượng thực tế: ' + this.displayConcentration(output.actualConcentration.massPerVolumeGPerL) : ''].filter(Boolean).join('\n');
       case 'spike':
-        return ['Nội dung: Tính lượng dung dịch thêm chuẩn', 'Tên mẫu: ' + output.sampleName, 'Thể tích dung dịch chuẩn: ' + this.displayVolume(output.spikeVolumeMl), 'Hướng dẫn thao tác: ' + output.operation].join('\n');
+        return ['Nội dung: Tính lượng dung dịch thêm chuẩn (spike)', 'Tên mẫu: ' + output.sampleName, 'Thể tích dung dịch chuẩn: ' + this.displayVolume(output.spikeVolumeMl), 'Hướng dẫn thao tác: ' + output.operation].join('\n');
       case 'series':
         return ['Nội dung: Chuẩn bị dãy chuẩn và QC', ...output.intermediateRows.map(row => row.name + ': ' + this.displayConcentration(row.concentrationGPerL) + ' · thể tích pha ' + this.displayVolume(row.preparedVolumeMl)), ...output.pointRows.map(row => row.label + ': từ ' + this.sourceDisplayName(row.sourceId) + ' · ' + this.displayVolume(row.sourceVolumeMl)), ...output.additionRows.map(row => row.pointLabel + ': thêm ' + this.displayVolume(row.volumeMl) + ' ' + row.name), ...output.sourceDemand.map(row => 'Nhu cầu chuẩn bị ' + row.name + ': ' + this.displayVolume(row.requiredWithResidualMl))].join('\n');
       case 'result_conversion':

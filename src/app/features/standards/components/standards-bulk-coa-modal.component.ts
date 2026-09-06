@@ -26,7 +26,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                <!-- Summary Stats -->
                <div class="flex gap-4 mb-4">
                   <div class="bg-white dark:bg-slate-800 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 shadow-sm flex items-center justify-between">
-                     <span class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Tổng số file</span>
+                     <span class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Tổng số tệp</span>
                      <span class="text-xl font-black text-slate-800 dark:text-slate-100">{{items.length}}</span>
                   </div>
                   <div class="bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/30 flex-1 shadow-sm flex items-center justify-between">
@@ -127,7 +127,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                            <!-- Readonly Mode During Upload -->
                                            @if(item.matchedStandard) {
                                                <div class="bg-slate-50 dark:bg-slate-900 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex justify-between items-center">
-                                                   <span class="truncate">{{item.matchedStandard.name}} (LOT: {{item.matchedStandard.lot_number || 'N/A'}})</span>
+                                                   <span class="truncate">{{item.matchedStandard.name}} (Lô: {{item.matchedStandard.lot_number || 'N/A'}})</span>
                                                    @if(item.matchScore !== undefined) {
                                                        <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded ml-1 shrink-0">{{item.matchScore}}đ</span>
                                                    }
@@ -166,7 +166,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             <!-- Footer -->
         <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
                <div class="text-xs text-slate-500 font-medium">
-                  Tính năng sử dụng Upload Queue của Google Drive API. Các file không được ghép chuẩn sẽ bị bỏ qua.
+                  Hệ thống tải lần lượt các tệp lên Google Drive. Các tệp không ghép được với hồ sơ chất chuẩn sẽ bị bỏ qua.
                </div>
                
                <div class="flex gap-3">

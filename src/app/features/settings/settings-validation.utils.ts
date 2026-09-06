@@ -30,7 +30,7 @@ export function validateCategoriesDraft(items: CategoryItem[]): SettingsValidati
   if (incompleteIndex >= 0) {
     return {
       ok: false,
-      message: `Phân loại dòng ${incompleteIndex + 1} chưa đủ Mã ID và Tên hiển thị.`,
+      message: `Phân loại dòng ${incompleteIndex + 1} chưa đủ mã và tên hiển thị.`,
     };
   }
 

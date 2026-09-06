@@ -75,13 +75,13 @@ import { StateService } from '../../../core/services/state.service';
                        <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
                           <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
                           <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                              <span class="font-bold text-slate-400 dark:text-slate-500">LOT:</span><button type="button" class="text-left font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Nhấn để sao chép" (click)="copyText.emit({text: std.lot_number || '', event: $event})">{{std.lot_number || '-'}}</button>
-                              <span class="font-bold text-slate-400 dark:text-slate-500">CODE:</span><button type="button" class="text-left font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Nhấn để sao chép" (click)="copyText.emit({text: std.product_code || '', event: $event})">{{std.product_code || '-'}}</button>
+                              <span class="font-bold text-slate-400 dark:text-slate-500">LÔ:</span><button type="button" class="text-left font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Nhấn để sao chép" (click)="copyText.emit({text: std.lot_number || '', event: $event})">{{std.lot_number || '-'}}</button>
+                              <span class="font-bold text-slate-400 dark:text-slate-500">MÃ:</span><button type="button" class="text-left font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Nhấn để sao chép" (click)="copyText.emit({text: std.product_code || '', event: $event})">{{std.product_code || '-'}}</button>
                               @if(std.cas_number) { <span class="font-bold text-slate-400 dark:text-slate-500">CAS:</span><span class="font-mono text-slate-700 dark:text-slate-300">{{std.cas_number}}</span> }
                           </div>
                           <div class="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] flex items-center gap-2 text-slate-500 dark:text-slate-400">
                               @if(std.purity) { <span>Pur: <b class="text-slate-700 dark:text-slate-300">{{std.purity}}</b></span> }
-                              @if(std.pack_size) { <span>Pack: <b class="text-slate-700 dark:text-slate-300">{{std.pack_size}}</b></span> }
+                              @if(std.pack_size) { <span>Quy cách: <b class="text-slate-700 dark:text-slate-300">{{std.pack_size}}</b></span> }
                           </div>
                        </td>
                        <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
@@ -104,8 +104,8 @@ import { StateService } from '../../../core/services/state.service';
                           </div>
                           <div class="flex flex-col gap-1.5">
                               @if(std.certificate_ref) { <button (click)="openCoaPreview.emit({url: std.certificate_ref, event: $event})" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition w-fit"><i class="fa-solid fa-file-pdf"></i> CoA</button> }
-                              @else if(currentUser()?.role === 'manager') { <button (click)="triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition w-fit" title="Upload CoA nhanh qua Google Drive">
-                                  @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin"></i> Đang upload... } @else { <i class="fa-brands fa-google-drive"></i> Upload CoA }
+                              @else if(currentUser()?.role === 'manager') { <button (click)="triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition w-fit" title="Tải nhanh CoA lên Google Drive">
+                              @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên... } @else { <i class="fa-brands fa-google-drive"></i> Tải CoA lên }
                               </button> }
                               @if(std.contract_ref) { <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng"><i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}</div> }
                           </div>

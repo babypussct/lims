@@ -270,7 +270,7 @@ export function calculateInternalIdApplySummary(
           status: 'ASSIGNED',
           currentStandardId: id,
         },
-        reason: 'Đồng bộ ngân hàng mã sau khi sửa thủ công hồ sơ.',
+        reason: 'Đồng bộ sổ mã sau khi sửa thủ công hồ sơ.',
       });
     }
   }

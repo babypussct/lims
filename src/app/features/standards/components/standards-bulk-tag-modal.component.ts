@@ -13,7 +13,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
     @if (isOpen()) {
       <app-modal-shell
         title="Gán nhãn hàng loạt"
-        [description]="selectedCount() + ' lọ được chọn · ADD là mặc định an toàn'"
+        [description]="selectedCount() + ' lọ được chọn · Thêm nhãn là chế độ mặc định an toàn'"
         size="sm"
         (closed)="cancel.emit()"
       >
@@ -21,12 +21,12 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             <div>
               <label class="block text-xs font-black text-slate-500 uppercase mb-2">Chế độ</label>
               <select [ngModel]="mode()" (ngModelChange)="mode.set($event)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-bold">
-                <option value="ADD">ADD · Thêm vào nhãn hiện có</option>
-                <option value="REMOVE">REMOVE · Gỡ nhãn đã chọn</option>
-                <option value="REPLACE">REPLACE · Thay thế toàn bộ</option>
+                <option value="ADD">Thêm · Giữ nhãn hiện có</option>
+                <option value="REMOVE">Gỡ · Xóa các nhãn đã chọn</option>
+                <option value="REPLACE">Thay thế · Ghi lại toàn bộ nhãn</option>
               </select>
             </div>
-            @if (mode() === 'REPLACE') { <div class="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs font-bold text-red-700 dark:text-red-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i>REPLACE sẽ xóa các nhãn cũ khỏi từng lọ. Hãy xác nhận kỹ.</div> }
+            @if (mode() === 'REPLACE') { <div class="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs font-bold text-red-700 dark:text-red-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Chế độ thay thế sẽ xóa các nhãn cũ khỏi từng lọ. Hãy xác nhận kỹ.</div> }
             <div>
               <label class="block text-xs font-black text-slate-500 uppercase mb-2">Nhãn trong danh mục</label>
               <div class="flex gap-2">
@@ -41,7 +41,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
               @for (key of tags(); track key) {
                 <span class="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-800 px-3 py-1 text-xs font-bold" [title]="resolveLabel(key)">{{resolveLabel(key)}}<button (click)="removeTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
               }
-              @if (tags().length === 0) { <span class="text-xs text-slate-400 italic">Chưa chọn nhãn (REPLACE rỗng = xóa toàn bộ).</span> }
+              @if (tags().length === 0) { <span class="text-xs text-slate-400 italic">Chưa chọn nhãn (thay thế bằng danh sách rỗng sẽ xóa toàn bộ nhãn).</span> }
             </div>
           </div>
           <div modalFooter class="flex gap-2">

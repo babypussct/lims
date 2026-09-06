@@ -52,7 +52,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                         [ngModel]="recipeSearchTerm()"
                         (ngModelChange)="recipeSearchTerm.set($event)"
                         class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 shadow-sm transition focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                        placeholder="Tìm công thức theo tên, ID hoặc thành phần..."
+                        placeholder="Tìm công thức theo tên, mã hoặc thành phần..."
                         aria-label="Tìm công thức">
                 </div>
                 @if (recipeSearchTerm()) {
@@ -82,7 +82,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             }
                         </div>
                         
-                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-lg mb-4 line-clamp-2 leading-snug" [title]="'ID: ' + recipe.id">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-lg mb-4 line-clamp-2 leading-snug" [title]="'Mã: ' + recipe.id">
                             {{recipe.name}}
                         </h3>
                         
@@ -135,7 +135,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">ID (Slug)</label>
+                                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Mã định danh</label>
                                         <input formControlName="id" [readonly]="isEditing()" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs bg-slate-100 dark:bg-slate-700 outline-none font-mono text-slate-600 dark:text-slate-300">
                                     </div>
                                     <div>

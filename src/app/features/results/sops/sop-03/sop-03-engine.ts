@@ -4,10 +4,10 @@ export interface Sop03Row {
 }
 
 /**
- * Tính toán hiệu suất thu hồi (Recovery %) cho Trifluralin.
+ * Tính toán độ thu hồi (recovery, %) cho Trifluralin.
  * @param row Bản ghi dữ liệu của dòng mẫu thử
  * @param sampleCode Mã số mẫu thử hoặc key dòng mẫu
- * @param spikeName Tên mẫu thêm chuẩn cấu hình (mặc định là 'Spike')
+ * @param spikeName Tên mẫu thêm chuẩn (spike) cấu hình (mặc định là 'Spike')
  * @returns Chuỗi ghi chú phần trăm thu hồi (ví dụ: "95%") hoặc chuỗi rỗng
  */
 export function calculateSop03Recovery(row: Sop03Row, sampleCode: string, spikeName = 'Spike'): string {

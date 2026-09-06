@@ -78,21 +78,21 @@ export type { CorrectionValidationResult };
                   type="button"
                   (click)="exportJson()"
                   [disabled]="!report() || isBusy()"
-                  title="Xuất kết quả quét ra file JSON"
-                  aria-label="Xuất kết quả quét ra file JSON"
+                  title="Xuất dữ liệu chi tiết của lần quét"
+                  aria-label="Xuất dữ liệu chi tiết của lần quét"
                   class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold disabled:opacity-40 shadow-xs transition-all"
                 >
-                  <i class="fa-solid fa-file-code mr-1.5 text-amber-600 dark:text-amber-400" aria-hidden="true"></i>Xuất JSON
+                  <i class="fa-solid fa-file-code mr-1.5 text-amber-600 dark:text-amber-400" aria-hidden="true"></i>Xuất dữ liệu chi tiết
                 </button>
                 <button
                   type="button"
                   (click)="exportCsv()"
                   [disabled]="!report() || isBusy()"
-                  title="Xuất bảng dữ liệu ra file CSV"
-                  aria-label="Xuất bảng dữ liệu ra file CSV"
+                  title="Xuất bảng dữ liệu ra tệp CSV"
+                  aria-label="Xuất bảng dữ liệu ra tệp CSV"
                   class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold disabled:opacity-40 shadow-xs transition-all"
                 >
-                  <i class="fa-solid fa-file-csv mr-1.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>Xuất CSV
+                  <i class="fa-solid fa-file-csv mr-1.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>Xuất bảng dữ liệu
                 </button>
                 <button
                   type="button"
@@ -159,9 +159,9 @@ export type { CorrectionValidationResult };
                   <div class="flex items-start gap-3">
                     <i class="fa-solid fa-triangle-exclamation text-amber-600 dark:text-amber-400 text-lg mt-0.5" aria-hidden="true"></i>
                     <div class="min-w-0 flex-1">
-                      <h4 class="text-sm font-black text-amber-900 dark:text-amber-100">Đồng bộ hoàn thành một phần (Partial Completion)</h4>
+                      <h4 class="text-sm font-black text-amber-900 dark:text-amber-100">Đồng bộ hoàn thành một phần</h4>
                       <p class="text-xs text-amber-800/90 dark:text-amber-200/90 mt-1">
-                        Đã áp dụng thành công <strong>{{pf.completedBatchIds.length}}/{{pf.totalBatches}} batch</strong> (<strong>{{pf.completedChangesCount}} thay đổi</strong>). Quá trình bị gián đoạn ở batch {{pf.failedBatchIndex}}:
+                        Đã áp dụng thành công <strong>{{pf.completedBatchIds.length}}/{{pf.totalBatches}} đợt xử lý</strong> (<strong>{{pf.completedChangesCount}} thay đổi</strong>). Quá trình bị gián đoạn ở đợt {{pf.failedBatchIndex}}:
                       </p>
                       <p class="text-[11px] font-mono text-red-700 dark:text-red-300 mt-1 bg-white/60 dark:bg-slate-900/60 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50 break-words">
                         {{errorMessage() || pf.message}}
@@ -182,7 +182,7 @@ export type { CorrectionValidationResult };
                       (click)="setView('history')"
                       class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-black"
                     >
-                      <i class="fa-solid fa-clock-rotate-left mr-1.5" aria-hidden="true"></i>Xem lịch sử các batch đã ghi
+                      <i class="fa-solid fa-clock-rotate-left mr-1.5" aria-hidden="true"></i>Xem lịch sử các đợt đã ghi
                     </button>
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export type { CorrectionValidationResult };
                   <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                     <span>{{progress.completedChanges}} / {{progress.totalChanges}} thay đổi</span>
                     @if (progress.totalBatches > 0) {
-                      <span>Batch {{progress.currentBatch}} / {{progress.totalBatches}}</span>
+                      <span>Đợt {{progress.currentBatch}} / {{progress.totalBatches}}</span>
                     }
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export type { CorrectionValidationResult };
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h4 class="text-sm font-black text-fuchsia-900 dark:text-fuchsia-100"><i class="fa-solid fa-list-check mr-2" aria-hidden="true"></i>Phạm vi sẽ đồng bộ</h4>
-                      <p class="text-[11px] text-fuchsia-800/80 dark:text-fuchsia-200/80 mt-1">Chọn theo tài liệu nghiệp vụ. Các trường của cùng một tài liệu luôn được giữ cùng batch; bộ lọc phía trên chỉ thay đổi phần hiển thị.</p>
+                      <p class="text-[11px] text-fuchsia-800/80 dark:text-fuchsia-200/80 mt-1">Chọn theo tài liệu nghiệp vụ. Các thay đổi của cùng một tài liệu luôn được xử lý trong cùng một đợt; bộ lọc phía trên chỉ thay đổi phần hiển thị.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                       @if (quickBatchTarget(); as batch) {
@@ -241,9 +241,9 @@ export type { CorrectionValidationResult };
                           (click)="selectQuickBatch()"
                           [disabled]="isBusy()"
                           class="px-2.5 py-1.5 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-[11px] font-black shadow-sm disabled:opacity-40 transition-colors"
-                          [title]="'Chọn batch ' + batch.batchIndex + ' gồm ' + batch.changeCount + ' thay đổi hợp lệ; không tách cluster Standard–Registry'"
+                          [title]="'Chọn đợt ' + batch.batchIndex + ' gồm ' + batch.changeCount + ' thay đổi hợp lệ; các dữ liệu liên quan luôn được xử lý cùng nhau'"
                         >
-                          <i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Chọn nhanh batch {{batch.batchIndex}} ({{batch.changeCount}})
+                          <i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Chọn nhanh đợt {{batch.batchIndex}} ({{batch.changeCount}})
                         </button>
                       }
                       <button type="button" (click)="toggleAllSafeChanges(true)" [disabled]="isBusy() || safeChanges().length === 0" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-fuchsia-200 dark:border-fuchsia-800 text-[11px] font-black text-fuchsia-700 dark:text-fuchsia-300 disabled:opacity-40">Chọn tất cả</button>
@@ -254,10 +254,10 @@ export type { CorrectionValidationResult };
                     <span class="rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/50 px-2.5 py-1 text-fuchsia-800 dark:text-fuchsia-200">Đã chọn {{selectedSafeChangeCount()}}/{{safeChanges().length}} thay đổi</span>
                     <span class="rounded-full bg-white/80 dark:bg-slate-900/70 px-2.5 py-1 text-slate-600 dark:text-slate-300">{{selectedSafeDocumentCount()}} tài liệu</span>
                     @if (quickBatchTarget(); as batch) {
-                      <span class="text-fuchsia-700 dark:text-fuchsia-300">Batch kế tiếp {{batch.batchIndex}}/{{quickBatchPlan().totalBatches}} · {{batch.changeCount}} thay đổi hợp lệ</span>
+                      <span class="text-fuchsia-700 dark:text-fuchsia-300">Đợt kế tiếp {{batch.batchIndex}}/{{quickBatchPlan().totalBatches}} · {{batch.changeCount}} thay đổi hợp lệ</span>
                     }
                     @if (applySummary().estimatedBatches > 1) {
-                      <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} batch theo giới hạn an toàn Firestore Security Rules</span>
+                      <span class="text-amber-700 dark:text-amber-300"><i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i>Sẽ tự chia thành {{applySummary().estimatedBatches}} đợt theo giới hạn an toàn của hệ thống</span>
                     }
                     @if (selectedSafeChangeCount() === 0 && validCorrectionCount() === 0) {
                       <span class="text-red-700 dark:text-red-300">Chưa có mục nào được chọn để đồng bộ.</span>
@@ -279,15 +279,15 @@ export type { CorrectionValidationResult };
                               <span class="font-mono text-xs font-black text-slate-700 dark:text-slate-200">{{issue.documentId}}</span>
                               @if (issue.internalId) { <span class="font-mono text-[10px] text-red-600 dark:text-red-300">Mã hiện tại: {{issue.internalId}}</span> }
                               @else { <span class="font-mono text-[10px] text-amber-700 dark:text-amber-300">Mã hiện tại: (trống)</span> }
-                              <span class="rounded-full px-2 py-0.5 text-[9px] font-black bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">{{issue.kind}}</span>
-                              <button type="button" (click)="copyTechnicalId(issue.documentId)" title="Sao chép ID kỹ thuật" aria-label="Sao chép ID kỹ thuật" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5">
+                              <span class="rounded-full px-2 py-0.5 text-[9px] font-black bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">{{issueKindLabel(issue.kind)}}</span>
+                              <button type="button" (click)="copyTechnicalId(issue.documentId)" title="Sao chép mã tham chiếu" aria-label="Sao chép mã tham chiếu" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5">
                                 <i class="fa-regular fa-copy" aria-hidden="true"></i>
                               </button>
                             </div>
                             <p class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1">{{issue.message}}</p>
                             @if (issue.detail) { <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1"><strong>Chi tiết:</strong> {{issue.detail}}</p> }
                             @if (issue.suggestion) { <p class="text-[11px] text-amber-800 dark:text-amber-200 mt-1"><strong>Gợi ý sửa:</strong> {{issue.suggestion}}</p> }
-                            <p class="text-[10px] text-slate-400 mt-1">Bản ghi kỹ thuật: {{issue.collection}}/{{issue.documentId}}</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Nguồn dữ liệu: {{collectionLabel(issue.collection)}}</p>
                           </div>
                           <div class="space-y-1">
                             <label class="block">
@@ -327,7 +327,7 @@ export type { CorrectionValidationResult };
                     <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                       <div>
                         <h4 class="text-sm font-black text-slate-800 dark:text-slate-100">Thay đổi có thể đồng bộ tự động</h4>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Chuẩn hóa chữ hoa/khoảng trắng, sửa registry khi chỉ có đúng một chủ sở hữu, và cập nhật snapshot lịch sử.</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Chuẩn hóa chữ hoa/khoảng trắng, sửa sổ mã khi chỉ có đúng một chủ sở hữu và cập nhật các bản lưu lịch sử.</p>
                       </div>
                       <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">{{filteredSafeChanges().length}}</span>
                     </div>
@@ -338,11 +338,11 @@ export type { CorrectionValidationResult };
                             <input type="checkbox" [checked]="isSafeDocumentSelected(group.key)" (change)="toggleSafeDocument(group.key, $any($event.target).checked)" [disabled]="isBusy()" class="mt-0.5 w-4 h-4 accent-fuchsia-600 shrink-0" [attr.aria-label]="'Chọn thay đổi của ' + group.key">
                             <span class="min-w-0 flex-1">
                               <span class="flex flex-wrap items-center gap-2">
-                                <span class="font-mono font-black text-slate-600 dark:text-slate-300 truncate" [title]="group.key">{{group.key}}</span>
+                                <span class="font-black text-slate-600 dark:text-slate-300 truncate">{{documentDisplayLabel(group.changes[0])}}</span>
                                 <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-black text-slate-500 dark:text-slate-400">{{group.changes.length}} thay đổi</span>
                               </span>
                               @for (change of group.changes; track change.field) {
-                                <span class="mt-1 block text-slate-500 dark:text-slate-400 break-words"><strong class="text-slate-700 dark:text-slate-200">{{change.field}}</strong>: {{formatValue(change.before)}} → <strong class="text-emerald-700 dark:text-emerald-300">{{formatValue(change.after)}}</strong><span class="block text-[10px] text-slate-400">{{change.reason}}</span></span>
+                                <span class="mt-1 block text-slate-500 dark:text-slate-400 break-words"><strong class="text-slate-700 dark:text-slate-200">{{fieldLabel(change.field)}}</strong>: {{formatValue(change.before)}} → <strong class="text-emerald-700 dark:text-emerald-300">{{formatValue(change.after)}}</strong><span class="block text-[10px] text-slate-400">{{change.reason}}</span></span>
                               }
                             </span>
                           </label>
@@ -364,7 +364,7 @@ export type { CorrectionValidationResult };
                     <div class="max-h-[32rem] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                       @for (issue of visibleConflicts(); track issue.id) {
                         <div class="px-4 py-3 text-xs">
-                          <div class="flex flex-wrap gap-2 items-center"><span class="font-black text-slate-700 dark:text-slate-200">{{issue.collection}}/{{issue.documentId}}</span><span class="font-mono text-[10px] text-red-600 dark:text-red-300">{{issue.kind}}</span>@if (issue.internalId) { <span class="font-mono text-[10px] text-slate-500 dark:text-slate-400">Mã: {{issue.internalId}}</span> }</div>
+                          <div class="flex flex-wrap gap-2 items-center"><span class="font-black text-slate-700 dark:text-slate-200">{{collectionLabel(issue.collection)}}</span><span class="text-[10px] text-red-600 dark:text-red-300">{{issueKindLabel(issue.kind)}}</span>@if (issue.internalId) { <span class="font-mono text-[10px] text-slate-500 dark:text-slate-400">Mã: {{issue.internalId}}</span> }</div>
                           <p class="text-slate-700 dark:text-slate-300 mt-1">{{issue.message}}</p>
                           @if (issue.detail) { <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1"><strong>Chi tiết:</strong> {{issue.detail}}</p> }
                           @if (issue.suggestion) { <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-1"><strong>Gợi ý xử lý:</strong> {{issue.suggestion}}</p> }
@@ -396,9 +396,9 @@ export type { CorrectionValidationResult };
               <div class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/30 p-3.5 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5">
                 <i class="fa-solid fa-shield-halved text-base mt-0.5 shrink-0" aria-hidden="true"></i>
                 <div>
-                  <strong class="font-bold">Lịch sử kiểm toán bất biến (Immutable Audit Trail)</strong>
+                  <strong class="font-bold">Lịch sử truy vết không thể chỉnh sửa</strong>
                   <p class="text-[11px] text-amber-700/90 dark:text-amber-300/90 mt-0.5">
-                    Các đợt đồng bộ mã được ghi lại vĩnh viễn kèm snapshot Before/After của từng tài liệu (hiển thị tối đa 20 đợt gần nhất). Hệ thống không cho phép chỉnh sửa hoặc xóa trực tiếp các bản ghi này để bảo đảm tính toàn vẹn dữ liệu.
+                    Các đợt đồng bộ mã được ghi lại vĩnh viễn kèm giá trị trước và sau của từng tài liệu (hiển thị tối đa 20 đợt gần nhất). Hệ thống không cho phép chỉnh sửa hoặc xóa trực tiếp các bản ghi này để bảo đảm tính toàn vẹn dữ liệu.
                   </p>
                 </div>
               </div>
@@ -426,7 +426,7 @@ export type { CorrectionValidationResult };
                           class="flex-1 min-w-0 text-left flex flex-wrap items-center justify-between gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 rounded-lg p-1 -m-1"
                         >
                           <div class="flex flex-wrap items-center gap-2.5">
-                            <span class="font-mono text-xs font-black text-slate-800 dark:text-slate-100">{{batch.id}}</span>
+                            <span class="text-xs font-black text-slate-800 dark:text-slate-100">Đợt đồng bộ</span>
                             @if (batch.status === 'APPLIED') {
                               <span class="rounded-full px-2 py-0.5 text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
                                 <i class="fa-solid fa-circle-check mr-1" aria-hidden="true"></i>Đã áp dụng
@@ -451,8 +451,8 @@ export type { CorrectionValidationResult };
                         <button
                           type="button"
                           (click)="copyTechnicalId(batch.id)"
-                          title="Sao chép Batch ID"
-                          aria-label="Sao chép Batch ID"
+                          title="Sao chép mã tham chiếu đợt đồng bộ"
+                          aria-label="Sao chép mã tham chiếu đợt đồng bộ"
                           class="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 text-xs"
                         >
                           <i class="fa-regular fa-copy" aria-hidden="true"></i>
@@ -461,14 +461,14 @@ export type { CorrectionValidationResult };
 
                       @if (expandedBatchId() === batch.id) {
                         <div [id]="'audit-batch-details-' + batch.id" class="border-t border-slate-100 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
-                          <h5 class="text-[11px] font-black uppercase tracking-wide text-slate-500">Chi tiết {{batch.changes.length}} thay đổi trong batch:</h5>
+                          <h5 class="text-[11px] font-black uppercase tracking-wide text-slate-500">Chi tiết {{batch.changes.length}} thay đổi trong đợt:</h5>
                           <div class="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                             @for (change of batch.changes; track change.collection + '/' + change.documentId + '/' + change.field + $index) {
                               <div class="px-3.5 py-2.5 grid md:grid-cols-[160px_110px_1fr] gap-2 text-[11px]">
                                 <span class="font-mono text-slate-600 dark:text-slate-400 truncate" [title]="change.collection + '/' + change.documentId">
-                                  {{change.collection}}/{{change.documentId}}
+                                  {{documentDisplayLabel(change)}}
                                 </span>
-                                <span class="font-black text-slate-700 dark:text-slate-200">{{change.field}}</span>
+                                <span class="font-black text-slate-700 dark:text-slate-200">{{fieldLabel(change.field)}}</span>
                                 <div class="text-slate-600 dark:text-slate-300 break-words">
                                   <div>{{formatValue(change.before)}} → <strong class="text-emerald-600 dark:text-emerald-400">{{formatValue(change.after)}}</strong></div>
                                   <p class="text-[10px] text-slate-400 mt-0.5">{{change.reason}}</p>
@@ -490,13 +490,13 @@ export type { CorrectionValidationResult };
         <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
           @if (activeView() === 'scan') {
             <div class="flex flex-col gap-0.5 max-w-2xl">
-              <p class="text-[10px] text-slate-400"><i class="fa-solid fa-lock mr-1"></i>Batch được ghi kèm người thực hiện, thời điểm và before/after snapshot. Hệ thống re-scan trước khi commit.</p>
+              <p class="text-[10px] text-slate-400"><i class="fa-solid fa-lock mr-1"></i>Mỗi đợt được ghi kèm người thực hiện, thời điểm và giá trị trước/sau. Hệ thống kiểm tra lại dữ liệu ngay trước khi ghi.</p>
               @if (applySummary(); as summary) {
                 @if (summary.physicalStandardsCount > 0 || summary.safeCount > 0 || summary.manualCount > 0) {
                   <div aria-live="polite" class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-2 mt-0.5">
-                    <span class="text-amber-700 dark:text-amber-300">Dự kiến ghi ({{summary.estimatedBatches}} batch):</span>
+                    <span class="text-amber-700 dark:text-amber-300">Dự kiến ghi ({{summary.estimatedBatches}} đợt):</span>
                     <span>{{summary.physicalStandardsCount}} chuẩn vật lý</span>
-                    <span>• {{summary.registryCount}} registry</span>
+                    <span>• {{summary.registryCount}} mục sổ mã</span>
                     <span>• {{summary.requestsCount}} yêu cầu</span>
                     <span>• {{summary.usageCount}} nhật ký</span>
                     @if (summary.manualCount > 0) { <span class="text-emerald-600 dark:text-emerald-400">• {{summary.manualCount}} mã sửa</span> }
@@ -515,7 +515,7 @@ export type { CorrectionValidationResult };
               </button>
             </div>
           } @else {
-            <p class="text-[10px] text-slate-400"><i class="fa-solid fa-shield-halved mr-1"></i>Lịch sử audit batch chỉ xem, bảo đảm tính bất biến.</p>
+            <p class="text-[10px] text-slate-400"><i class="fa-solid fa-shield-halved mr-1"></i>Lịch sử các đợt đồng bộ chỉ xem để bảo đảm khả năng truy vết.</p>
             <div class="flex gap-2">
               <button type="button" (click)="close.emit()" [disabled]="isLoadingHistory()" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black disabled:opacity-40">Đóng</button>
               <button type="button" (click)="loadHistory()" [disabled]="isLoadingHistory()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-black disabled:opacity-40 shadow-xs transition-colors">
@@ -564,10 +564,10 @@ export class StandardsInternalIdSyncModalComponent {
   }[] = [
     { key: 'all', label: 'Tất cả', icon: 'fa-solid fa-layer-group', description: 'Hiển thị mọi nhóm cần xem xét.' },
     { key: 'manual', label: 'Cần nhập mã', icon: 'fa-solid fa-pen-to-square', description: 'Hồ sơ vật lý thiếu hoặc sai định dạng mã.' },
-    { key: 'safe', label: 'Thay đổi an toàn', icon: 'fa-solid fa-circle-check', description: 'Các thay đổi deterministic có thể ghi trong batch.' },
+    { key: 'safe', label: 'Thay đổi an toàn', icon: 'fa-solid fa-circle-check', description: 'Các thay đổi xác định rõ có thể ghi tự động.' },
     { key: 'duplicate', label: 'Trùng mã', icon: 'fa-solid fa-clone', description: 'Nhiều hồ sơ hiện tại cùng sở hữu một mã.' },
-    { key: 'registry', label: 'Registry', icon: 'fa-solid fa-database', description: 'Mã và sổ sở hữu kỹ thuật không khớp.' },
-    { key: 'reference', label: 'Tham chiếu', icon: 'fa-solid fa-link', description: 'Request hoặc nhật ký không khớp hồ sơ vật lý.' },
+    { key: 'registry', label: 'Sổ mã', icon: 'fa-solid fa-database', description: 'Mã và thông tin sở hữu trong sổ mã không khớp.' },
+    { key: 'reference', label: 'Tham chiếu', icon: 'fa-solid fa-link', description: 'Yêu cầu hoặc nhật ký không khớp hồ sơ vật lý.' },
   ];
 
   manualIssues = computed(() => (this.report()?.issues || []).filter(issue =>
@@ -813,8 +813,56 @@ export class StandardsInternalIdSyncModalComponent {
   copyTechnicalId(id: string): void {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(id);
-      this.toast.show(`Đã sao chép ID kỹ thuật: ${id}`, 'info');
+      this.toast.show('Đã sao chép mã tham chiếu.', 'info');
     }
+  }
+
+  collectionLabel(collection: string): string {
+    const labels: Record<string, string> = {
+      reference_standards: 'Hồ sơ chất chuẩn',
+      reference_standard_logs: 'Nhật ký sử dụng chất chuẩn',
+      standard_requests: 'Yêu cầu chất chuẩn',
+      purchase_requests: 'Yêu cầu mua chất chuẩn',
+      standard_usages: 'Nhật ký sử dụng',
+      standard_code_registry: 'Sổ mã chất chuẩn',
+    };
+    return labels[collection] || 'Dữ liệu chất chuẩn';
+  }
+
+  fieldLabel(field: string): string {
+    const labels: Record<string, string> = {
+      internal_id: 'Mã quản lý nội bộ',
+      internalId: 'Mã quản lý nội bộ',
+      standardId: 'Hồ sơ chất chuẩn',
+      usageLogs: 'Nhật ký sử dụng',
+      __document__: 'Hồ sơ',
+      migrationStatus: 'Trạng thái chuyển đổi',
+      migratedTo: 'Mã đích',
+      status: 'Trạng thái',
+      ownerStandardId: 'Hồ sơ sở hữu',
+      ownerStandardInternalId: 'Mã của hồ sơ sở hữu',
+    };
+    return labels[field] || 'Thông tin hồ sơ';
+  }
+
+  issueKindLabel(kind: string): string {
+    const labels: Record<string, string> = {
+      MISSING: 'Thiếu mã',
+      INVALID_FORMAT: 'Sai định dạng mã',
+      DUPLICATE_ACTIVE: 'Trùng mã đang dùng',
+      REGISTRY_MISMATCH: 'Sổ mã không khớp',
+      REGISTRY_KEY_MISMATCH: 'Sổ mã cần đối chiếu',
+      REQUEST_REFERENCE: 'Yêu cầu chưa khớp hồ sơ',
+      USAGE_REFERENCE: 'Nhật ký chưa khớp hồ sơ',
+      MISSING_REFERENCE: 'Thiếu liên kết hồ sơ',
+      PARENT_REFERENCE_MISMATCH: 'Liên kết hồ sơ không khớp',
+    };
+    return labels[kind] || 'Cần đối chiếu';
+  }
+
+  documentDisplayLabel(change: Pick<StandardInternalIdSyncChange, 'collection' | 'documentId'>): string {
+    const id = String(change.documentId || '').trim();
+    return id ? `${this.collectionLabel(change.collection)} · ${id}` : this.collectionLabel(change.collection);
   }
 
   setFilter(filter: SyncFilter): void {
@@ -846,7 +894,7 @@ export class StandardsInternalIdSyncModalComponent {
       batch.changes.map(change => this.safeDocumentKey(change))
     ));
     this.toast.show(
-      `Đã chọn batch ${batch.batchIndex}: ${batch.changeCount} thay đổi hợp lệ trên ${batch.documentCount} tài liệu.`,
+      `Đã chọn đợt ${batch.batchIndex}: ${batch.changeCount} thay đổi hợp lệ trên ${batch.documentCount} tài liệu.`,
       'info',
     );
   }
@@ -983,27 +1031,27 @@ export class StandardsInternalIdSyncModalComponent {
 
     const summary = this.applySummary();
     const batchText = summary.estimatedBatches > 1
-      ? `(Ước tính chia thành ${summary.estimatedBatches} batch)`
-      : `(1 batch duy nhất)`;
+      ? `(Ước tính chia thành ${summary.estimatedBatches} đợt xử lý)`
+      : `(1 đợt xử lý)`;
 
     const confirmMessage = [
       `TỔNG QUAN THAY ĐỔI ${batchText}:`,
       `• Tổng cộng ${summary.totalChanges} thay đổi trên ${summary.totalDocuments} tài liệu nghiệp vụ`,
-      `• Thao tác ghi thực tế: ${summary.actualWrites} writes (bao gồm các bản ghi sổ kiểm toán audit)`,
+      `• Thao tác ghi thực tế: ${summary.actualWrites} lần ghi dữ liệu (bao gồm nhật ký truy vết)`,
       ``,
       `PHẠM VI ÁP DỤNG:`,
       `• ${summary.physicalStandardsCount} chuẩn vật lý (${summary.manualCount} mã đối chiếu thủ công, ${summary.byChangeType?.codeNormalization || 0} mã chuẩn hóa)`,
-      `• ${summary.registryCount} bản ghi ngân hàng mã (registry) đồng bộ`,
-      `• ${summary.requestsCount} yêu cầu mượn & mua cập nhật snapshot`,
+      `• ${summary.registryCount} mục trong sổ mã được đồng bộ`,
+      `• ${summary.requestsCount} yêu cầu mượn và mua được cập nhật bản lưu mã`,
       `• ${summary.usageCount} nhật ký sử dụng & nhật ký lồng cập nhật`,
       ``,
       `PHẠM VI LOẠI TRỪ & CẢNH BÁO:`,
       summary.blockingIssuesCount > 0
-        ? `• ${summary.blockingIssuesCount} lỗi blocking sẽ KHÔNG được áp dụng trong đợt này (cần xử lý riêng).`
-        : `• Không có lỗi blocking nào.`,
-      `• Các cảnh báo snapshot lịch sử sẽ KHÔNG bị ghi đè tự động.`,
+        ? `• ${summary.blockingIssuesCount} lỗi nghiêm trọng sẽ KHÔNG được áp dụng trong đợt này (cần xử lý riêng).`
+        : `• Không có lỗi nghiêm trọng nào.`,
+      `• Các cảnh báo về bản lưu lịch sử sẽ KHÔNG bị ghi đè tự động.`,
       ``,
-      `Hệ thống sẽ tự động quét lại (re-scan) toàn bộ dữ liệu trước khi ghi để bảo đảm an toàn tuyệt đối.`,
+      `Hệ thống sẽ tự động quét lại toàn bộ dữ liệu ngay trước khi ghi để bảo đảm an toàn.`,
     ].join('\n');
 
     if (!await this.confirmation.confirm({
@@ -1028,13 +1076,13 @@ export class StandardsInternalIdSyncModalComponent {
         },
       );
       appliedBatchIds = batchIds;
-      this.toast.show(`Đã đồng bộ mã nội bộ qua ${batchIds.length} batch.`, 'success');
+      this.toast.show(`Đã đồng bộ mã nội bộ qua ${batchIds.length} đợt xử lý.`, 'success');
       this.corrections.set({});
     } catch (error: any) {
       if (error instanceof StandardSyncPartialFailureError || error?.name === 'StandardSyncPartialFailureError') {
         this.partialFailure.set(error);
         this.errorMessage.set(error.message);
-        this.toast.show(`Đồng bộ dở dang: đã ghi ${error.completedBatchIds?.length || 0} batch.`, 'warning');
+        this.toast.show(`Đồng bộ dở dang: đã ghi ${error.completedBatchIds?.length || 0} đợt xử lý.`, 'warning');
       } else {
         this.errorMessage.set(error?.message || 'Không thể áp dụng đồng bộ mã nội bộ.');
       }
@@ -1052,13 +1100,13 @@ export class StandardsInternalIdSyncModalComponent {
       totalChanges: summary.totalChanges,
       percent: 100,
       phase: 'ALL_COMPLETED' as const,
-      message: `Đã đồng bộ thành công toàn bộ ${appliedBatchIds.length} batch (${summary.totalChanges} thay đổi).`,
+      message: `Đã đồng bộ thành công toàn bộ ${appliedBatchIds.length} đợt xử lý (${summary.totalChanges} thay đổi).`,
     };
 
     this.applyProgress.set({
       ...completedProgress,
       phase: 'RE_SCANNING',
-      message: `Đã ghi xong ${appliedBatchIds.length}/${appliedBatchIds.length} batch. Đang quét xác minh dữ liệu sau đồng bộ...`,
+      message: `Đã ghi xong ${appliedBatchIds.length}/${appliedBatchIds.length} đợt xử lý. Đang quét xác minh dữ liệu sau đồng bộ...`,
     });
 
     // A committed sync must never leave the modal permanently busy just
@@ -1070,7 +1118,7 @@ export class StandardsInternalIdSyncModalComponent {
       this.applyProgress.set({
         ...completedProgress,
         phase: 'ALL_COMPLETED',
-        message: `Đồng bộ đã hoàn tất ${appliedBatchIds.length} batch; chưa làm mới được dữ liệu hiển thị. Có thể bấm “Quét lại” để xác minh lại.`,
+        message: `Đồng bộ đã hoàn tất ${appliedBatchIds.length} đợt xử lý; chưa làm mới được dữ liệu hiển thị. Có thể bấm “Quét lại” để xác minh lại.`,
       });
       this.toast.show('Đồng bộ đã hoàn tất, nhưng bước quét xác minh sau đồng bộ chưa thành công.', 'warning');
       return;
@@ -1079,7 +1127,7 @@ export class StandardsInternalIdSyncModalComponent {
     this.applyProgress.set({
       ...completedProgress,
       phase: 'ALL_COMPLETED',
-      message: `Hoàn tất đồng bộ ${appliedBatchIds.length} batch (${completedProgress.totalChanges} thay đổi). Dữ liệu đã được quét xác minh và làm mới.`,
+      message: `Hoàn tất đồng bộ ${appliedBatchIds.length} đợt xử lý (${completedProgress.totalChanges} thay đổi). Dữ liệu đã được quét xác minh và làm mới.`,
     });
   }
 

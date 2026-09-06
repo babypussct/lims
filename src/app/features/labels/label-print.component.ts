@@ -951,7 +951,7 @@ export class LabelPrintComponent implements AfterViewInit {
         }
       `;
 
-      let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
+      let htmlContent = `<html><head><title>In nhãn Brother</title><style>${css}</style></head><body>`;
       
       for (const page of pages) {
           htmlContent += `<div class="page-container">`;
@@ -1068,7 +1068,7 @@ export class LabelPrintComponent implements AfterViewInit {
         }
       `;
 
-      let htmlContent = `<html><head><title>Print A4 Labels</title><style>${css}</style></head><body>`;
+      let htmlContent = `<html><head><title>In nhãn A4</title><style>${css}</style></head><body>`;
       
       for (const page of validPages) {
           htmlContent += `<div class="page"><div class="grid">`;

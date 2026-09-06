@@ -196,7 +196,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                   </div>
                   <p class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                     Trên phiếu in, xem <b class="text-slate-600 dark:text-slate-300">góc phải phần đầu trang</b>,
-                    cạnh mã QR, tại nhãn <b class="text-slate-600 dark:text-slate-300">MÃ TRUY XUẤT (ID)</b>.
+                    cạnh mã QR, tại nhãn <b class="text-slate-600 dark:text-slate-300">MÃ TRUY XUẤT</b>.
                   </p>
                 </div>
               </li>
@@ -274,10 +274,10 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 2">
                             @if(verifyStep() >= 2) {
                                 <i class="fa-solid fa-circle-check text-fuchsia-500"></i>
-                                <span class="text-slate-600">Kiểm tra tính toàn vẹn dữ liệu (Data Integrity)...</span>
+                                <span class="text-slate-600">Kiểm tra tính toàn vẹn dữ liệu...</span>
                             } @else {
                                 <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
-                                <span class="text-slate-500">Kiểm tra tính toàn vẹn dữ liệu (Data Integrity)...</span>
+                                <span class="text-slate-500">Kiểm tra tính toàn vẹn dữ liệu...</span>
                             }
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 3">
@@ -319,7 +319,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                         <div>
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider">
-                                    Transaction ID
+                                    Mã giao dịch
                                 </span>
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
                                     <i class="fa-solid fa-database"></i> Hệ thống LIMS
@@ -898,7 +898,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           'SAVE_RESULT_DRAFT': 'Lưu nháp kết quả',
           'PUBLISH_RESULT_REPORT': 'Xuất bản báo cáo kết quả',
           'REVERT_RESULT_DRAFT': 'Hủy xuất bản báo cáo',
-          'RESET_RESULT_DATA': 'Reset số liệu kết quả',
+          'RESET_RESULT_DATA': 'Đặt lại số liệu kết quả',
           'RESTORE_RESULT_BACKUP': 'Khôi phục số liệu lưu trữ',
           'RESTORE_RESULT_VERSION': 'Khôi phục phiên bản cũ',
           

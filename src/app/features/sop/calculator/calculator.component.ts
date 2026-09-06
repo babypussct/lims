@@ -261,7 +261,7 @@ export class CalculatorComponent implements OnDestroy {
           addChange(`Thông số: ${key}`, oldInputs[key], payload[key]);
       });
 
-      addChange('Safety margin', req.margin ?? oldInputs.safetyMargin ?? '', payload.safetyMargin ?? '');
+      addChange('Hệ số dự phòng', req.margin ?? oldInputs.safetyMargin ?? '', payload.safetyMargin ?? '');
       return changes;
   });
   editInventoryDiff = computed<EditInventoryDiff[]>(() => {
@@ -833,7 +833,7 @@ export class CalculatorComponent implements OnDestroy {
           URL.revokeObjectURL(url);
           this.toast.show('Đã tải xuống SOP.');
       } catch (e) {
-          this.toast.show('Không thể xuất JSON', 'error');
+          this.toast.show('Không thể xuất tệp cấu hình.', 'error');
       }
   }
 
@@ -845,7 +845,7 @@ export class CalculatorComponent implements OnDestroy {
       reader.onload = async (e: any) => {
           try {
               const data = JSON.parse(e.target.result);
-              if (!data.name || !data.consumables) throw new Error("File JSON không hợp lệ (thiếu name/consumables)");
+              if (!data.name || !data.consumables) throw new Error('Tệp cấu hình không hợp lệ hoặc thiếu dữ liệu bắt buộc.');
               
               data.id = generateSlug(data.name + '_' + Date.now());
               data.version = 1;

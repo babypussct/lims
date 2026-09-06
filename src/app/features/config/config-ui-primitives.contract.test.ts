@@ -70,7 +70,7 @@ describe('config shared UI primitive integration', () => {
     assert.match(template, /view\(\) === 'backup'/);
     assert.doesNotMatch(template, /view\(\) === 'diagnostics'/);
     assert.doesNotMatch(template, /view\(\) === 'data'/);
-    assert.match(template, /view\(\) === 'backup'[\s\S]*Backup & Phục Hồi/);
+    assert.match(template, /view\(\) === 'backup'[\s\S]*Sao lưu & Phục hồi/);
     assert.doesNotMatch(template, /Migration Dữ Liệu Hệ Thống|Tài Nguyên/);
     assert.match(template, /createComprehensiveBackup\(\)/);
     assert.match(template, /verifySelectedBackup\(\)/);

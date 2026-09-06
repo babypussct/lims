@@ -164,7 +164,7 @@ export class StandardCodeRegistryService {
       const code = normalizeInternalId(standard.internal_id);
       if (!isValidInternalId(code)) throw new Error('Hồ sơ chưa có Mã quản lý nội bộ hợp lệ để trả.');
       if (standard.lifecycle_status === 'RELEASED' || standard.lifecycle_status === 'CLOSED') {
-        throw new Error(`Mã ${code} đã được trả về ngân hàng trước đó.`);
+        throw new Error(`Mã ${code} đã được trả về sổ mã trước đó.`);
       }
       if (standard.status === 'IN_USE' || standard.current_holder || standard.current_holder_uid || standard.current_request_id || standard.has_pending_request) {
         throw new Error('Không thể trả mã khi chất chuẩn còn người giữ, yêu cầu mượn hoặc quy trình đang mở.');
@@ -175,10 +175,10 @@ export class StandardCodeRegistryService {
       if (registrySnapshot.exists()) {
         const registry = registrySnapshot.data() as StandardCodeRegistry;
         if (registry.status === 'ASSIGNED' && registry.currentStandardId !== standardId) {
-          throw new Error(`Mã ${code} đang được registry ghi nhận cho một chuẩn khác.`);
+          throw new Error(`Sổ mã đang ghi nhận mã ${code} cho một hồ sơ chất chuẩn khác.`);
         }
         if (registry.status === 'CONFLICT') {
-          throw new Error(`Mã ${code} đang xung đột; hãy xử lý trong công cụ Đồng bộ mã nội bộ.`);
+          throw new Error(`Mã ${code} đang xung đột; hãy xử lý trong mục Đồng bộ mã quản lý.`);
         }
       }
 

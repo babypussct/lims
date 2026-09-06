@@ -586,7 +586,7 @@
 
                       @if(canEditSop() || state.showLockedFeatures()) {
                         <div toolbarActions class="flex gap-2">
-                          <app-button variant="secondary" size="sm" [appLockPermission]="'sop_edit'" (click)="importFileInput.click()" title="Nhập SOP từ tệp JSON">
+                          <app-button variant="secondary" size="sm" [appLockPermission]="'sop_edit'" (click)="importFileInput.click()" title="Nhập SOP từ tệp cấu hình">
                             <i class="fa-solid fa-file-import"></i> <span class="hidden md:inline">Nhập</span>
                           </app-button>
                           <input #importFileInput type="file" class="hidden" accept=".json" (change)="importSop($event)">
@@ -612,7 +612,7 @@
                               <button (click)="toggleMenu(sop.id, $event)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition relative z-20 -mr-2 -mt-2"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                               @if (activeMenuSopId() === sop.id) {
                                 <div class="absolute top-8 right-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 w-48 z-30 animate-slide-up overflow-hidden" (click)="$event.stopPropagation()">
-                                  <button (click)="exportSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-download text-emerald-500 w-4"></i> Xuất JSON</button>
+                                  <button (click)="exportSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-download text-emerald-500 w-4"></i> Xuất cấu hình</button>
                                   @if(canEditSop() || state.showLockedFeatures()) {
                                     <button [appLockPermission]="'sop_edit'" (click)="duplicateSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-copy text-fuchsia-500 w-4"></i> Nhân Bản</button>
                                     <button [appLockPermission]="'sop_edit'" (click)="editDirect(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition"><i class="fa-solid fa-pen text-blue-500 w-4"></i> Chỉnh Sửa</button>

@@ -51,14 +51,14 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
 
         <main class="mx-auto grid max-w-6xl gap-6 p-4 sm:p-6 lg:grid-cols-2">
           <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Button variants</h2>
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Các kiểu nút</h2>
             <div class="mt-4 flex flex-wrap items-center gap-3">
-              <app-button>Primary</app-button>
-              <app-button variant="secondary">Secondary</app-button>
-              <app-button variant="danger">Danger</app-button>
-              <app-button variant="ghost">Ghost</app-button>
+              <app-button>Chính</app-button>
+              <app-button variant="secondary">Phụ</app-button>
+              <app-button variant="danger">Nguy hiểm</app-button>
+              <app-button variant="ghost">Trong suốt</app-button>
               <app-button [loading]="true">Đang lưu</app-button>
-              <app-button [disabled]="true">Disabled</app-button>
+              <app-button [disabled]="true">Đã vô hiệu hóa</app-button>
             </div>
           </section>
 
@@ -66,7 +66,7 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
             <app-empty-state
               icon="fa-flask"
               title="Chưa có mẫu thử"
-              message="Empty state dùng chung giữ icon, khoảng cách và typography nhất quán."
+              message="Trạng thái trống dùng chung giữ biểu tượng, khoảng cách và kiểu chữ nhất quán."
             >
               <div emptyStateActions>
                 <app-button size="sm">Tạo mẫu thử</app-button>
@@ -75,10 +75,10 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
           </section>
 
           <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
-            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Modal shell</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Kiểm tra focus, Escape, backdrop, footer và light/dark.</p>
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Khung hộp thoại</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Kiểm tra vùng lấy nét, phím Escape, nền phủ, chân trang và chế độ sáng/tối.</p>
             <div class="mt-4">
-              <app-button (click)="modalOpen.set(true)">Mở modal demo</app-button>
+              <app-button (click)="modalOpen.set(true)">Mở hộp thoại mẫu</app-button>
             </div>
           </section>
         </main>
@@ -86,7 +86,7 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
         @if (modalOpen()) {
           <app-modal-shell
             title="Xác nhận cập nhật"
-            description="Modal demo dùng shell và hợp đồng accessibility chung."
+            description="Hộp thoại mẫu dùng khung và quy tắc trợ năng chung."
             size="md"
             (closed)="modalOpen.set(false)"
           >

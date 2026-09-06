@@ -15,8 +15,8 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
   template: `
     @if (data().length > 0) {
       <app-modal-shell
-        title="Xác nhận import chuẩn"
-        description="Kiểm tra khóa nhận diện, số lượng, đơn vị, ngày và các thay đổi metadata trước khi commit."
+        title="Xác nhận nhập danh mục chuẩn"
+        description="Kiểm tra mã nhận diện, số lượng, đơn vị, ngày và các thay đổi thông tin trước khi lưu."
         size="2xl"
         [closeOnBackdrop]="false"
         [closeDisabled]="isImporting() || isParsing()"
@@ -26,9 +26,9 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
           <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto custom-scrollbar p-3 sm:p-6">
             <section class="grid grid-cols-1 lg:grid-cols-[minmax(220px,320px)_1fr] gap-3 mb-4">
               <label class="text-xs font-bold text-slate-600 dark:text-slate-300">
-                Worksheet
+                Trang tính
                 <select
-                  aria-label="Chọn worksheet để import"
+                  aria-label="Chọn trang tính để nhập dữ liệu"
                   [value]="selectedSheet()"
                   [disabled]="isParsing() || isImporting() || sheetNames().length <= 1"
                   (change)="onSheetChange($event)"
@@ -56,7 +56,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             @if (blockingCount() > 0) {
               <div role="alert" class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-3 flex gap-3 text-sm text-red-800 dark:text-red-300">
                 <i class="fa-solid fa-circle-xmark mt-0.5"></i>
-                <div><strong>Đang bị chặn:</strong> Có {{blockingCount()}} dòng xung đột. Nút Import chỉ được mở sau khi sửa dữ liệu nguồn hoặc xử lý bản ghi trùng/đang mượn.</div>
+                <div><strong>Đang bị chặn:</strong> Có {{blockingCount()}} dòng xung đột. Chỉ có thể nhập sau khi sửa dữ liệu nguồn hoặc xử lý bản ghi trùng/đang mượn.</div>
               </div>
             } @else if (skippableInvalidCount() > 0) {
               <div class="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-300">
@@ -73,7 +73,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
 
             <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
               <p class="text-xs text-slate-500">
-                Hiển thị {{visibleRows().length}}/{{data().length}} dòng. Dữ liệu cập nhật không ghi đè trường trống và không thay đổi tồn kho/workflow.
+                Hiển thị {{visibleRows().length}}/{{data().length}} dòng. Dữ liệu cập nhật không ghi đè trường trống và không thay đổi tồn kho hoặc quy trình đang xử lý.
               </p>
               @if (invalidCount() > 0) {
                 <button type="button" (click)="downloadErrors()" class="text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2 rounded-lg">
@@ -132,7 +132,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                             <div class="text-blue-600">+{{(item.changes || []).length - 3}} thay đổi khác</div>
                           }
                         } @else {
-                          <div class="text-slate-400">Không đổi metadata</div>
+                          <div class="text-slate-400">Không thay đổi thông tin</div>
                         }
                         @for (warning of item.warnings || []; track warning) {
                           <div class="text-amber-700 dark:text-amber-400 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>{{warning}}</div>
@@ -146,7 +146,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         } @else if (item.mode === 'RESTORE') {
                           <span class="font-bold text-amber-600">Khôi phục chuẩn đã ẩn</span>
                         } @else if (item.mode === 'UPDATE_SAFE') {
-                          <span class="font-bold text-blue-600 dark:text-blue-400">Cập nhật metadata an toàn</span>
+                          <span class="font-bold text-blue-600 dark:text-blue-400">Cập nhật thông tin an toàn</span>
                         } @else {
                           <span class="font-bold text-emerald-600 dark:text-emerald-400">Tạo mới</span>
                         }
@@ -174,11 +174,11 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
               [disabled]="!canConfirm()"
               class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               @if (isParsing()) {
-                <i class="fa-solid fa-spinner fa-spin"></i> Đang đọc sheet...
+                <i class="fa-solid fa-spinner fa-spin"></i> Đang đọc trang tính...
               } @else if (isImporting()) {
-                <i class="fa-solid fa-spinner fa-spin"></i> Đang commit...
+                <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu dữ liệu...
               } @else {
-                <i class="fa-solid fa-check"></i> Xác nhận import {{validCount()}} dòng
+                <i class="fa-solid fa-check"></i> Xác nhận nhập {{validCount()}} dòng
               }
             </button>
           </div>
@@ -276,7 +276,7 @@ export class StandardsImportDataModalComponent {
       ]);
     const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [
-      ['Sheet', 'Dòng', 'Tên chuẩn', 'Số nhận diện', 'Số lô', 'Lỗi'],
+      ['Trang tính', 'Dòng', 'Tên chuẩn', 'Số nhận diện', 'Số lô', 'Lỗi'],
       ...rows
     ].map(row => row.map(escape).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
