@@ -2,7 +2,32 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.06-b02
+## Phiên bản hiện tại: v26.09.06-b03
+
+### v26.09.06-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Wizard Nhóm mẻ của SmartBatch được thu gọn để hiển thị nhiều thông tin hơn trong cùng một màn hình và chuyển bước nhanh hơn.
+- Nhập nhanh mã mẫu nay có thể gắn cùng một mô tả cho toàn bộ dãy mã, đồng thời gợi ý mô tả từ danh mục mẫu đã cấu hình.
+- Nền mẫu được xác định ngay khi bắt đầu lập mẻ, ưu tiên Thực phẩm khi có trong danh mục để giảm thao tác chọn lặp lại.
+
+#### ✨ Tính Năng Mới
+
+- Công cụ Nhập nhanh trong SmartBatch tạo dãy mã mẫu kèm mô tả theo dạng mã và mô tả, sau đó tự đưa vào nhóm đang thao tác.
+- Mô tả mẫu được chọn từ danh mục có sẵn hoặc nhập tự do, và có thể tiếp tục chỉnh riêng từng mẫu sau khi chèn.
+- SmartBatch tải dữ liệu thiết lập cần thiết trước khi mở wizard để nền mẫu mặc định và các danh mục liên quan sẵn sàng ngay từ đầu.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Header, danh sách nhóm, vùng nhập liệu và thanh hành động SmartBatch được thu gọn khoảng cách và kích thước nút để giảm cuộn trên màn hình nhỏ.
+- Trạng thái hoàn tất được rút gọn thành số nhóm hợp lệ trên tổng số nhóm, giúp nhận biết nhanh khi nào có thể tối ưu kế hoạch.
+- Nút quay lại được chuyển lên header với nhãn Đổi cách lập mẻ, giữ vùng wizard tập trung vào dữ liệu của nhóm hiện tại.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ trạng thái nền mẫu Bất kỳ trong wizard để tránh mở bước SOP khi chưa có nền mẫu cụ thể.
+- Đồng bộ kiểm tra giao diện SmartBatch với bố cục mới và luồng nhập nhanh có mô tả mẫu.
 
 ### v26.09.06-b02
 

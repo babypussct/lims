@@ -358,10 +358,10 @@
   z-index: 40;
   width: 100%;
   flex: 0 0 auto;
-  padding: 0.625rem 1rem;
+  padding: 0.375rem 0.75rem;
   border-top: 1px solid #c7d2fe;
   background: rgba(238, 242, 255, 0.96);
-  box-shadow: 0 -6px 22px rgba(79, 70, 229, 0.14);
+  box-shadow: 0 -4px 16px rgba(79, 70, 229, 0.10);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -373,7 +373,7 @@
   margin: 0 auto;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.625rem;
 }
 
 .smartbatch-action-dock__actions {
@@ -387,7 +387,7 @@
 
 @media (max-width: 767px) {
   .smartbatch-action-dock {
-    padding: 0.625rem 0.75rem;
+    padding: 0.375rem 0.5rem;
   }
 
   .smartbatch-action-dock__inner {

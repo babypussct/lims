@@ -5,9 +5,6 @@ import { getSampleDescriptionSnapshot } from '../../shared/utils/sample-descript
 import { getCanonicalId, normalizeSampleCode } from '../results/shared/compound-id-resolver';
 import { getForcedSopAssignmentIssue } from './smart-batch.utils';
 
-export const ANY_MATRIX_SELECTION = '__any__';
-export const ANY_MATRIX_LABEL = 'Bất kỳ (không lọc SOP)';
-
 export interface SampleGroupWizardSource {
   id: string;
   name: string;

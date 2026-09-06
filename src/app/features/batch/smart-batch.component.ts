@@ -1145,12 +1145,12 @@ export class SmartBatchComponent {
       void this.analyzePlan();
   }
 
-  selectMode(mode: 'multiple' | 'single') {
+  async selectMode(mode: 'multiple' | 'single'): Promise<void> {
       this.smartBatchMode.set(mode);
+      await this.ensureSetupDataLoaded();
       this.sampleGroupWizardGroups.set(cloneSampleGroupWizardGroups(this.buildSampleGroupWizardGroups()));
       this.showSampleGroupWizard.set(true);
       this.step.set(1);
-      void this.ensureSetupDataLoaded();
   }
 
   openSopCalculator() {

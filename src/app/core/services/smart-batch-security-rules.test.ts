@@ -104,8 +104,10 @@ test('activity log creation validates V2 classification, actor identity and serv
   assert.match(rules, /data\.timestamp == request\.time/);
 });
 
-test('an unselected matrix remains any and the obsolete parent split filter stays removed', () => {
-  assert.doesNotMatch(smartBatchSource, /find\([^\n]*isDefault/);
+test('SmartBatch wizard defaults to the food matrix and the obsolete parent split filter stays removed', () => {
+  assert.match(sampleGroupWizardSource, /normalize\(matrix\.id\) === 'food'/);
+  assert.match(sampleGroupWizardSource, /normalize\(matrix\.name\) === 'thuc pham'/);
+  assert.doesNotMatch(sampleGroupWizardSource, /Bất kỳ \(không lọc SOP\)|__any__/);
   assert.doesNotMatch(smartBatchSource, /filteredSopsForSplit\s*=/);
   assert.match(smartBatchSource, /createEmptyBlock\(`Nhóm mẫu #\$\{b\.length \+ 1\}`\)/);
 });
@@ -149,16 +151,20 @@ test('SmartBatch Step 2 uses a bounded two-step group wizard without adding a di
   assert.match(sampleGroupWizardSource, /slice\(0, 5\)/);
   assert.match(sampleGroupWizardSource, /showSampleDescriptions/);
   assert.match(sampleGroupWizardSource, /copyDescriptionToAll/);
-  assert.match(sampleGroupWizardSource, /matrixConfirmed: true/);
+  assert.match(sampleGroupWizardSource, /QuickGenerateSampleModalComponent/);
+  assert.match(sampleGroupWizardSource, /Nhập nhanh/);
+  assert.match(sampleGroupWizardSource, /\[includeDescription\]="true"/);
+  assert.match(sampleGroupWizardSource, /handleGeneratedSamples/);
+  assert.match(sampleGroupWizardSource, /normalize\(matrix\.name\) === 'thuc pham'/);
+  assert.doesNotMatch(sampleGroupWizardSource, /ANY_MATRIX_SELECTION|ANY_MATRIX_LABEL|anyMatrixValue|anyMatrixLabel/);
   assert.doesNotMatch(sampleGroupWizardSource, /Khai báo nhiều nhóm mẻ trên cùng một trang|Mỗi nhóm có wizard 2 bước/);
   assert.doesNotMatch(sampleGroupWizardSource, /Mở wizard nhóm/);
   assert.match(sampleGroupWizardSource, /Thêm nhóm mới/);
   assert.match(sampleGroupWizardSource, /AppButtonComponent/);
   assert.match(sampleGroupWizardSource, /AppEmptyStateComponent/);
-  assert.match(sampleGroupWizardSource, /<app-button variant="secondary" size="sm" class="whitespace-nowrap" \(click\)="close\.emit\(\)"/);
   assert.match(sampleGroupWizardSource, /<app-button variant="secondary" size="sm" \[fullWidth\]="true" \(click\)="addGroup\(\)" \[disabled\]="singleMode"/);
-  assert.match(sampleGroupWizardSource, /<app-button variant="secondary" \(click\)="previousStep\(\)" \[disabled\]="activeStep\(\) === 1"/);
-  assert.match(sampleGroupWizardSource, /<app-button variant="primary" \(click\)="nextStep\(\)"/);
+  assert.match(sampleGroupWizardSource, /<app-button variant="secondary" size="sm" \(click\)="previousStep\(\)" \[disabled\]="activeStep\(\) === 1"/);
+  assert.match(sampleGroupWizardSource, /<app-button variant="primary" size="sm" \(click\)="nextStep\(\)" \[disabled\]="!canEnterStep2\(group\)"/);
   assert.match(sampleGroupWizardSource, /<app-empty-state[\s\S]*title="Các nhóm mẻ đã được lưu trong bước 2"/);
   assert.match(sampleGroupWizardSource, /<button type="button" \(click\)="openGroup\(group\.id\)"/);
   assert.match(sampleGroupWizardSource, /<button type="button" \(click\)="removeGroup\(group\.id\); \$event\.stopPropagation\(\)"/);

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.06-b02",
-    "title": "Giao diện rõ hơn, lịch trực công bằng hơn và thao tác dữ liệu an toàn hơn",
+    "version": "v26.09.06-b03",
+    "title": "SmartBatch gọn hơn, nhập mẫu nhanh hơn và chọn nền mẫu rõ ràng hơn",
     "features": [
-      "Dashboard Lịch trực được sắp xếp lại để thấy ngay người trực hôm nay, ca kế tiếp của bạn và mức phân bổ lượt trực trong tháng.",
-      "Ngôn ngữ trên nhiều màn hình được chuẩn hóa sang tiếng Việt dễ hiểu hơn, giảm các thuật ngữ kỹ thuật trong thông báo, cấu hình, sao lưu, kết quả và thao tác hằng ngày.",
-      "Các khu vực Sao lưu & Phục hồi, Chất chuẩn, Kết quả, SOP và Cấu hình được làm rõ hơn để người dùng biết trạng thái, bước tiếp theo và phạm vi thao tác trước khi xác nhận.",
-      "Lịch trực có thẻ nhanh Trực hôm nay và Lịch của bạn, kèm số lượt tháng, ca kế tiếp, số ngày còn lại và tiến độ so với bình quân.",
-      "Thống kê theo người bổ sung nhận diện nhanh, số ca Thứ 2, cuối tuần, số lần chủ trì, độ lệch so với bình quân, tỷ trọng tháng và ca sắp tới."
+      "Wizard Nhóm mẻ của SmartBatch được thu gọn để hiển thị nhiều thông tin hơn trong cùng một màn hình và chuyển bước nhanh hơn.",
+      "Nhập nhanh mã mẫu nay có thể gắn cùng một mô tả cho toàn bộ dãy mã, đồng thời gợi ý mô tả từ danh mục mẫu đã cấu hình.",
+      "Nền mẫu được xác định ngay khi bắt đầu lập mẻ, ưu tiên Thực phẩm khi có trong danh mục để giảm thao tác chọn lặp lại.",
+      "Công cụ Nhập nhanh trong SmartBatch tạo dãy mã mẫu kèm mô tả theo dạng mã và mô tả, sau đó tự đưa vào nhóm đang thao tác.",
+      "Mô tả mẫu được chọn từ danh mục có sẵn hoặc nhập tự do, và có thể tiếp tục chỉnh riêng từng mẫu sau khi chèn."
     ]
   },
   "assetGroups": [

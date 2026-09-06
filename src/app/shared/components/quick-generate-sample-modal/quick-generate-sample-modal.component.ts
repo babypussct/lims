@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SampleDescriptionMaster } from '../../../core/models/sample-description.model';
 
 @Component({
   selector: 'app-quick-generate-sample-modal',
@@ -49,6 +50,24 @@ import { FormsModule } from '@angular/forms';
                     </div>
                     <input type="text" [ngModel]="autoSuffix() ? currentDaySuffix : suffix()" (ngModelChange)="!autoSuffix() && suffix.set($event)" [disabled]="autoSuffix()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100" placeholder="VD: 24">
                 </div>
+
+                @if (includeDescription) {
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Mô tả mẫu</label>
+                        <input type="text"
+                               [attr.list]="descriptionListId"
+                               [ngModel]="description()"
+                               (ngModelChange)="description.set($event)"
+                               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition"
+                               placeholder="VD: Cá tra nguyên con">
+                        <p class="text-[9px] text-slate-400 mt-1">Áp dụng cho toàn bộ mã được tạo; có thể sửa riêng từng mẫu sau khi chèn.</p>
+                        <datalist [id]="descriptionListId">
+                            @for (item of availableSampleDescriptions; track item.id) {
+                                <option [value]="item.name">{{item.description || item.aliases?.join(', ') || ''}}</option>
+                            }
+                        </datalist>
+                    </div>
+                }
                 
                 <div class="bg-fuchsia-50 p-4 rounded-xl border border-fuchsia-100 mt-4">
                     <div class="text-[10px] font-bold text-fuchsia-400 uppercase mb-2">Xem trước kết quả</div>
@@ -69,6 +88,8 @@ import { FormsModule } from '@angular/forms';
   `
 })
 export class QuickGenerateSampleModalComponent {
+  @Input() includeDescription = false;
+  @Input() availableSampleDescriptions: SampleDescriptionMaster[] = [];
   @Output() close = new EventEmitter<void>();
   @Output() generated = new EventEmitter<string[]>();
 
@@ -77,6 +98,8 @@ export class QuickGenerateSampleModalComponent {
   toStr = signal('');
   suffix = signal('');
   autoSuffix = signal(true);
+  description = signal('');
+  readonly descriptionListId = `quick-sample-description-${Math.random().toString(36).slice(2)}`;
 
   get currentDaySuffix(): string {
       const d = new Date();
@@ -111,10 +134,12 @@ export class QuickGenerateSampleModalComponent {
       const results: string[] = [];
       const end = !isNaN(to) ? to : from;
       const currentSuffix = this.effectiveSuffix;
+      const description = this.includeDescription ? this.description().trim() : '';
       
       for (let i = from; i <= end; i++) {
           const numStr = i.toString().padStart(padding, '0');
-          results.push(`${this.prefix()}${numStr}${currentSuffix}`);
+          const code = `${this.prefix()}${numStr}${currentSuffix}`;
+          results.push(description ? `${code}\t${description}` : code);
       }
       
       return results;
@@ -123,10 +148,11 @@ export class QuickGenerateSampleModalComponent {
   previewResult(): string {
       const list = this.generateList();
       if (list.length === 0) return '';
+      const preview = list.map(item => item.replace(/\t/g, ' · '));
       if (list.length > 5) {
-          return list.slice(0, 5).join(', ') + ` ... (và ${list.length - 5} mẫu khác)`;
+          return preview.slice(0, 5).join(', ') + ` ... (và ${list.length - 5} mẫu khác)`;
       }
-      return list.join(', ');
+      return preview.join(', ');
   }
 
   generate() {

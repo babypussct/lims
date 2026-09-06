@@ -8,14 +8,13 @@ import {
   SampleDescriptionSnapshot
 } from '../../../core/models/sample-description.model';
 import { SampleGroupWizardGroup } from '../../../core/models/sample-group.model';
+import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { getSampleDescriptionSnapshot } from '../../../shared/utils/sample-description.utils';
 import { getCanonicalId } from '../../results/shared/compound-id-resolver';
 import { getForcedSopAssignmentIssue, isSopMatrixCompatible } from '../smart-batch.utils';
 import {
-  ANY_MATRIX_LABEL,
-  ANY_MATRIX_SELECTION,
   canonicalTargetIds,
   cloneSampleGroupWizardGroups,
   normalizeWizardSamples,
@@ -53,44 +52,35 @@ interface WizardSopSuggestion {
 @Component({
   selector: 'app-sample-group-step2-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, QuickGenerateSampleModalComponent],
   template: `
-    <section class="smartbatch-group-wizard w-full h-full min-h-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm overflow-hidden flex flex-col">
-      <header class="shrink-0 min-h-[40px] px-3 sm:px-5 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="text-[9px] uppercase tracking-[0.14em] font-black text-fuchsia-600 dark:text-fuchsia-400 whitespace-nowrap">
-            <i class="fa-solid fa-list-check mr-1"></i>SmartBatch · Nhóm mẻ
-          </span>
-          <span class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[9px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">
-            {{completedGroupCount()}}/{{drafts().length}} hoàn tất
-          </span>
-        </div>
-        <app-button variant="secondary" size="sm" class="whitespace-nowrap" (click)="close.emit()">
-          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-          Đổi cách lập mẻ
-        </app-button>
+    <section class="smartbatch-group-wizard w-full h-full min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm overflow-hidden flex flex-col">
+      <header class="shrink-0 px-3 sm:px-4 py-1 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center gap-2 min-h-[30px]">
+        <span class="text-[9px] uppercase tracking-[0.12em] font-black text-fuchsia-600 dark:text-fuchsia-400 whitespace-nowrap">
+          <i class="fa-solid fa-list-check mr-1"></i>Nhóm mẻ
+        </span>
+        <span class="text-[9px] font-black text-slate-500 dark:text-slate-300 whitespace-nowrap">
+          {{completedGroupCount()}}/{{drafts().length}} hoàn tất
+        </span>
       </header>
 
-      <div class="flex-1 min-h-0 p-3 sm:p-4 grid grid-cols-1 grid-rows-[minmax(170px,0.3fr)_minmax(0,1fr)] lg:grid-cols-[minmax(250px,0.32fr)_minmax(0,1fr)] lg:grid-rows-1 gap-4 overflow-hidden">
-        <aside class="min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-3">
-          <div class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950 pb-2 flex items-center justify-between gap-2">
-            <div>
-              <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Danh sách nhóm mẻ</h3>
-              <p class="mt-0.5 text-[10px] text-slate-400">Mỗi thẻ là một nhóm độc lập.</p>
-            </div>
+      <div class="flex-1 min-h-0 p-2 sm:p-2.5 grid grid-cols-1 grid-rows-[minmax(135px,0.24fr)_minmax(0,1fr)] lg:grid-cols-[minmax(220px,0.27fr)_minmax(0,1fr)] lg:grid-rows-1 gap-2.5 overflow-hidden">
+        <aside class="min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+          <div class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950 pb-1 flex items-center justify-between gap-2">
+            <h3 class="text-xs font-black text-slate-700 dark:text-slate-100">Danh sách nhóm</h3>
           </div>
 
           @for (group of drafts(); track group.id; let i = $index) {
-            <article class="rounded-2xl border bg-white dark:bg-slate-800 transition shadow-sm"
+            <article class="rounded-xl border bg-white dark:bg-slate-800 transition shadow-sm"
                      [class.border-fuchsia-400]="activeGroupId() === group.id"
                      [class.ring-2]="activeGroupId() === group.id"
                      [class.ring-fuchsia-100]="activeGroupId() === group.id"
                      [class.border-emerald-300]="isGroupCompleted(group.id) && activeGroupId() !== group.id"
                      [class.border-slate-200]="!isGroupCompleted(group.id) && activeGroupId() !== group.id"
                      [class.dark:border-slate-700]="!isGroupCompleted(group.id) && activeGroupId() !== group.id">
-              <button type="button" (click)="openGroup(group.id)" class="w-full text-left p-3.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
-                <div class="flex items-start gap-3">
-                  <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0"
+              <button type="button" (click)="openGroup(group.id)" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
+                <div class="flex items-start gap-2">
+                  <span class="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-black shrink-0"
                         [class.bg-emerald-100]="isGroupCompleted(group.id)"
                         [class.text-emerald-700]="isGroupCompleted(group.id)"
                         [class.bg-fuchsia-100]="!isGroupCompleted(group.id)"
@@ -102,7 +92,7 @@ interface WizardSopSuggestion {
                       <span class="truncate text-xs font-black text-slate-800 dark:text-slate-100">{{group.name}}</span>
                       <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 transition-transform" [class.rotate-90]="activeGroupId() === group.id"></i>
                     </span>
-                    <span class="mt-1 flex flex-wrap gap-1.5 text-[9px] text-slate-400">
+                    <span class="mt-0.5 flex flex-wrap gap-1 text-[9px] text-slate-400">
                       <span>{{sampleCodes(group).length}} mã</span><span>·</span><span>{{group.selectedTargets.size}} chỉ tiêu</span>
                       <span class="ml-auto font-black" [class.text-emerald-600]="isGroupCompleted(group.id)" [class.text-amber-600]="!isGroupCompleted(group.id)">
                         {{isGroupCompleted(group.id) ? 'Đã hoàn tất' : 'Chưa hoàn tất'}}
@@ -112,7 +102,7 @@ interface WizardSopSuggestion {
                 </div>
               </button>
               @if (!singleMode && drafts().length > 1) {
-                <div class="px-3.5 pb-3 flex justify-end">
+                <div class="px-2.5 pb-2 flex justify-end">
                   <button type="button" (click)="removeGroup(group.id); $event.stopPropagation()" class="text-[10px] font-black text-slate-400 hover:text-red-600 transition"><i class="fa-solid fa-trash mr-1"></i>Xóa</button>
                 </div>
               }
@@ -127,99 +117,87 @@ interface WizardSopSuggestion {
 
         <main class="min-w-0 min-h-0">
           @if (activeGroup(); as group) {
-            <div class="h-full min-h-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm flex flex-col">
-              <div class="shrink-0 px-4 sm:px-5 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
-                <h3 class="text-sm font-black text-slate-900 dark:text-slate-100 truncate">{{group.name}}</h3>
-                <div class="px-2.5 py-1 rounded-lg bg-fuchsia-600 text-white text-[10px] font-black shadow-sm whitespace-nowrap">Bước {{activeStep()}}/2</div>
-              </div>
-
-              <div class="shrink-0 px-3 sm:px-5 py-1.5 border-b border-slate-200 dark:border-slate-700">
-                <div class="grid grid-cols-2 gap-2">
+            <div class="h-full min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm flex flex-col">
+              <div class="shrink-0 px-3 sm:px-4 py-1.5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-xs font-black text-slate-900 dark:text-slate-100 truncate">{{group.name}}</h3>
+                <div class="grid grid-cols-2 gap-1 min-w-[250px] max-w-[420px] flex-1 sm:flex-none">
                   @for (label of stepLabels; track label; let i = $index) {
-                    <button type="button" (click)="goToStep((i + 1) === 1 ? 1 : 2)" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black transition text-left"
-                            [class.bg-fuchsia-50]="activeStep() >= i + 1" [class.dark:bg-fuchsia-950]="activeStep() >= i + 1"
-                            [class.text-fuchsia-700]="activeStep() >= i + 1" [class.dark:text-fuchsia-300]="activeStep() >= i + 1"
-                            [class.text-slate-400]="activeStep() < i + 1">
-                      <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                            [class.bg-fuchsia-600]="activeStep() >= i + 1" [class.text-white]="activeStep() >= i + 1"
-                            [class.bg-slate-100]="activeStep() < i + 1" [class.dark:bg-slate-700]="activeStep() < i + 1">{{i + 1}}</span>
+                    <button type="button"
+                            (click)="goToStep((i + 1) === 1 ? 1 : 2)"
+                            [disabled]="i === 1 && !canEnterStep2(group)"
+                            class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black transition text-left disabled:cursor-not-allowed"
+                            [class.bg-fuchsia-50]="activeStep() === i + 1"
+                            [class.dark:bg-fuchsia-950]="activeStep() === i + 1"
+                            [class.text-fuchsia-700]="activeStep() === i + 1 || (i === 1 && canEnterStep2(group))"
+                            [class.dark:text-fuchsia-300]="activeStep() === i + 1 || (i === 1 && canEnterStep2(group))"
+                            [class.text-slate-400]="i === 1 && !canEnterStep2(group)">
+                      <span class="w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[8px]"
+                            [class.bg-fuchsia-600]="activeStep() === i + 1"
+                            [class.text-white]="activeStep() === i + 1"
+                            [class.bg-slate-100]="activeStep() !== i + 1"
+                            [class.dark:bg-slate-700]="activeStep() !== i + 1">{{i + 1}}</span>
                       <span>{{label}}</span>
                     </button>
                   }
                 </div>
               </div>
 
-              <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20">
+              <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-950/20">
                 @if (activeStep() === 1) {
-                  <section class="max-w-5xl mx-auto space-y-4 animate-fade-in">
-                    <div class="rounded-xl border border-fuchsia-100 dark:border-fuchsia-900/50 bg-fuchsia-50/70 dark:bg-fuchsia-950/20 px-3 py-2.5">
-                      <h4 class="text-xs font-black text-fuchsia-900 dark:text-fuchsia-200 flex items-center gap-2"><i class="fa-solid fa-vials"></i> 1. Thông tin mẫu</h4>
-                      <p class="mt-0.5 text-[10px] text-fuchsia-800/80 dark:text-fuchsia-300/80">Nhập mã mẫu · xác nhận nền mẫu · kiểm tra mô tả từ <b>mã[TAB]mô tả</b>.</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(260px,0.7fr)] gap-4 items-start">
-                      <label class="block">
-                        <span class="block text-[10px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400 mb-1.5">Danh sách mã số mẫu <span class="text-red-500">*</span></span>
-                        <textarea rows="5" [ngModel]="group.rawSamples" (ngModelChange)="updateSamples($event)" aria-label="Danh sách mã số mẫu *"
-                                  class="w-full min-h-[132px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 dark:focus:ring-fuchsia-900/50 focus:border-fuchsia-500"
-                                  placeholder="VD:&#10;0311&#9;Cá tra&#10;0411&#9;Cá tra"></textarea>
-                        <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-                          <span><i class="fa-solid fa-circle-info mr-1"></i>{{sampleCodes(group).length}} mã mẫu hợp lệ</span>
-                          @if (singleMode) { <span class="font-bold text-fuchsia-600 dark:text-fuchsia-400">Chế độ một mẫu</span> }
-                        </div>
-                      </label>
-
-                      <label class="block">
-                        <span class="block text-[10px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400 mb-1.5">Nền mẫu <span class="text-red-500">*</span></span>
-                        <select [ngModel]="matrixSelectionValue(group)" (ngModelChange)="updateMatrix($event)" aria-label="Nền mẫu *"
-                                class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-                          <option [value]="anyMatrixValue">{{anyMatrixLabel}} — mặc định</option>
-                          @for (matrix of availableMatrices; track matrix.id) { <option [value]="matrix.id">{{matrix.name}}</option> }
-                        </select>
-                        <div class="mt-2 rounded-xl border px-3 py-2 text-[10px]"
-                             [class.border-cyan-200]="isMatrixConfirmed(group.id)" [class.bg-cyan-50]="isMatrixConfirmed(group.id)"
-                             [class.text-cyan-800]="isMatrixConfirmed(group.id)" [class.border-amber-200]="!isMatrixConfirmed(group.id)"
-                             [class.bg-amber-50]="!isMatrixConfirmed(group.id)" [class.text-amber-700]="!isMatrixConfirmed(group.id)">
-                          @if (isMatrixConfirmed(group.id)) {
-                            <i class="fa-solid fa-filter mr-1"></i>Đã chọn: <b>{{matrixName(group.matrixType)}}</b>
-                          } @else {
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i>Cần chọn nền mẫu trước khi tiếp tục.
-                          }
-                        </div>
-                      </label>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
-                      <div class="px-3.5 py-2.5 bg-fuchsia-50/70 dark:bg-fuchsia-950/20 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
-                        <div>
-                          <div class="text-xs font-black text-fuchsia-800 dark:text-fuchsia-300"><i class="fa-solid fa-tags mr-1"></i>Mô tả từng mẫu</div>
-                          <div class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Mô tả dán bằng TAB hiển thị ngay để kiểm tra.</div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                          <span class="text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-300">{{describedSampleCount(group)}}/{{sampleCodes(group).length}}</span>
-                          <button type="button" (click)="toggleSampleDescriptions()" class="px-2 py-1 rounded-lg border border-fuchsia-200 dark:border-fuchsia-900 text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40" [attr.aria-expanded]="showSampleDescriptions()" aria-label="Thu gọn hoặc mở rộng mô tả từng mẫu">
-                            <i class="fa-solid mr-1" [class.fa-chevron-up]="showSampleDescriptions()" [class.fa-chevron-down]="!showSampleDescriptions()"></i>{{showSampleDescriptions() ? 'Thu gọn' : 'Mở rộng'}}
+                  <section class="max-w-5xl mx-auto space-y-2.5 animate-fade-in">
+                    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(220px,0.65fr)] gap-2.5 items-start">
+                      <div class="block">
+                        <div class="mb-1 flex items-center justify-between gap-2">
+                          <span class="text-[9px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400">Danh sách mã số mẫu <span class="text-red-500">*</span></span>
+                          <button type="button" (click)="openQuickGenerateModal()" class="px-2 py-1 rounded-md border border-fuchsia-200 dark:border-fuchsia-900 text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/40">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Nhập nhanh
                           </button>
                         </div>
+                        <textarea rows="4" [ngModel]="group.rawSamples" (ngModelChange)="updateSamples($event)" aria-label="Danh sách mã số mẫu *"
+                                  class="w-full min-h-[98px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 dark:focus:ring-fuchsia-900/50 focus:border-fuchsia-500"
+                                  placeholder="VD:&#10;0311&#9;Cá tra&#10;0411&#9;Cá tra"></textarea>
+                        <div class="mt-1 flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400">
+                          <span>{{sampleCodes(group).length}} mã hợp lệ · hỗ trợ mã[TAB]mô tả</span>
+                          @if (singleMode) { <span class="font-bold text-fuchsia-600 dark:text-fuchsia-400">Chế độ một mẫu</span> }
+                        </div>
+                      </div>
+
+                      <label class="block">
+                        <span class="block text-[9px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400 mb-1">Nền mẫu <span class="text-red-500">*</span></span>
+                        <select [ngModel]="matrixSelectionValue(group)" (ngModelChange)="updateMatrix($event)" aria-label="Nền mẫu *"
+                                class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                          <option value="" disabled>Chọn nền mẫu</option>
+                          @for (matrix of availableMatrices; track matrix.id) { <option [value]="matrix.id">{{matrix.name}}</option> }
+                        </select>
+                        <div class="mt-1 text-[9px] text-slate-400">Mặc định: <b class="text-slate-600 dark:text-slate-300">Thực phẩm</b></div>
+                      </label>
+                    </div>
+
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+                      <div class="px-3 py-1.5 bg-fuchsia-50/70 dark:bg-fuchsia-950/20 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                        <div class="text-[10px] font-black text-fuchsia-800 dark:text-fuchsia-300"><i class="fa-solid fa-tags mr-1"></i>Mô tả từng mẫu</div>
+                        <button type="button" (click)="toggleSampleDescriptions()" class="px-2 py-1 rounded-md text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40" [attr.aria-expanded]="showSampleDescriptions()" aria-label="Thu gọn hoặc mở rộng mô tả từng mẫu">
+                          {{describedSampleCount(group)}}/{{sampleCodes(group).length}} · {{showSampleDescriptions() ? 'Thu gọn' : 'Mở'}}
+                        </button>
                       </div>
                       @if (showSampleDescriptions()) {
-                        <div class="grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[9px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400">
+                        <div class="grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[8px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400">
                           <span>Mã số mẫu</span><span>Mô tả mẫu <span class="text-red-500">*</span></span><span>Thao tác</span>
                         </div>
-                        <div class="max-h-[250px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
+                        <div class="max-h-[220px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
                           @for (sample of sampleCodes(group); track sample) {
-                            <div class="grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 items-center px-3.5 py-2">
-                              <span class="font-mono text-sm font-black text-slate-800 dark:text-slate-100 break-all">{{sample}}</span>
+                            <div class="grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 items-center px-3 py-1.5">
+                              <span class="font-mono text-xs font-black text-slate-800 dark:text-slate-100 break-all">{{sample}}</span>
                               <div class="flex items-center gap-2 min-w-0">
                                 <input [attr.list]="descriptionListId" [ngModel]="descriptionFor(group, sample)" (ngModelChange)="updateDescription(sample, $event)"
-                                       class="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100"
+                                       class="flex-1 min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100"
                                        placeholder="VD: Cá tra nguyên con" [attr.aria-label]="'Mô tả mẫu ' + sample">
                                 @if (descriptionFor(group, sample)) {
                                   <span class="shrink-0 text-[9px] font-black text-emerald-600" title="Đã có mô tả"><i class="fa-solid fa-circle-check"></i></span>
                                 }
                               </div>
-                              <button type="button" (click)="copyDescriptionToAll(sample)" [disabled]="!descriptionFor(group, sample)" class="shrink-0 px-2 py-1.5 rounded-lg border border-fuchsia-200 dark:border-fuchsia-900 text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 disabled:opacity-35 disabled:cursor-not-allowed" [attr.aria-label]="'Sao chép mô tả của ' + sample + ' cho tất cả'" title="Sao chép mô tả này cho tất cả mẫu">
-                                <i class="fa-regular fa-copy mr-1"></i><span class="hidden sm:inline">Sao chép tất cả</span>
+                              <button type="button" (click)="copyDescriptionToAll(sample)" [disabled]="!descriptionFor(group, sample)" class="shrink-0 px-2 py-1 rounded-md border border-fuchsia-200 dark:border-fuchsia-900 text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 disabled:opacity-35 disabled:cursor-not-allowed" [attr.aria-label]="'Sao chép mô tả của ' + sample + ' cho tất cả'" title="Sao chép mô tả này cho tất cả mẫu">
+                                <i class="fa-regular fa-copy"></i><span class="sr-only">Sao chép tất cả</span>
                               </button>
                             </div>
                           } @empty {
@@ -235,13 +213,8 @@ interface WizardSopSuggestion {
                 }
 
                 @if (activeStep() === 2) {
-                  <section class="max-w-6xl mx-auto space-y-4 animate-fade-in">
-                    <div class="rounded-2xl border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/70 dark:bg-emerald-950/20 p-4">
-                      <h4 class="font-black text-emerald-900 dark:text-emerald-200 flex items-center gap-2"><i class="fa-solid fa-route"></i> 2. Chỉ tiêu kiểm nghiệm và phân phối SOP</h4>
-                      <p class="mt-1 text-xs text-emerald-800/80 dark:text-emerald-300/80">Tất cả mẫu trong nhóm dùng chung bộ chỉ tiêu. SOP chỉ định phải đúng nền và phủ đủ toàn bộ bộ chỉ tiêu này.</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 2xl:grid-cols-[minmax(360px,0.9fr)_minmax(420px,1.1fr)] gap-4 items-start">
+                  <section class="max-w-6xl mx-auto space-y-2.5 animate-fade-in">
+                    <div class="grid grid-cols-1 2xl:grid-cols-[minmax(360px,0.9fr)_minmax(420px,1.1fr)] gap-3 items-start">
                       <div class="space-y-3">
                         <div class="flex flex-wrap items-center gap-2">
                           <div class="relative flex-1 min-w-[180px]">
@@ -387,29 +360,22 @@ interface WizardSopSuggestion {
                 }
 
                 @if (stepError()) {
-                  <div class="max-w-5xl mx-auto mt-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 px-4 py-3 text-xs font-bold text-red-700 dark:text-red-300"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{stepError()}}</div>
+                  <div class="max-w-5xl mx-auto mt-2 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 px-3 py-1.5 text-[10px] font-bold text-red-700 dark:text-red-300"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{stepError()}}</div>
                 }
               </div>
 
-              <footer class="sticky bottom-0 z-20 shrink-0 px-4 sm:px-6 py-2.5 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur flex flex-wrap items-center justify-between gap-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)]">
-                <app-button variant="secondary" (click)="previousStep()" [disabled]="activeStep() === 1">
+              <footer class="sticky bottom-0 z-20 shrink-0 px-3 sm:px-4 py-1.5 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur flex items-center justify-between gap-2 shadow-[0_-3px_12px_rgba(15,23,42,0.06)]">
+                <app-button variant="secondary" size="sm" (click)="previousStep()" [disabled]="activeStep() === 1">
                   <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                   Quay lại
                 </app-button>
-                <div class="text-[10px] text-center hidden sm:block"
-                     [class.text-emerald-600]="activeGroupIsCompleted()"
-                     [class.text-slate-400]="!activeGroupIsCompleted()">
-                  @if (activeStep() === 2 && activeGroupIsCompleted()) {
-                    <span><i class="fa-solid fa-circle-check mr-1"></i>Đã đủ thông tin; optimizer đã sẵn sàng.</span>
-                  } @else {
-                    <span>Nhập đủ thông tin để SmartBatch tự hoàn tất nhóm.</span>
-                  }
-                </div>
                 @if (activeStep() === 1) {
-                  <app-button variant="primary" (click)="nextStep()">
+                  <app-button variant="primary" size="sm" (click)="nextStep()" [disabled]="!canEnterStep2(group)">
                     Tiếp tục: Chỉ tiêu &amp; SOP
                     <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                   </app-button>
+                } @else if (activeGroupIsCompleted()) {
+                  <span class="text-[9px] font-black text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Nhóm hợp lệ</span>
                 }
               </footer>
             </div>
@@ -424,6 +390,15 @@ interface WizardSopSuggestion {
           }
         </main>
       </div>
+
+      @if (quickGenerateOpen()) {
+        <app-quick-generate-sample-modal
+          [includeDescription]="true"
+          [availableSampleDescriptions]="availableSampleDescriptions"
+          (close)="closeQuickGenerateModal()"
+          (generated)="handleGeneratedSamples($event)">
+        </app-quick-generate-sample-modal>
+      }
 
     </section>
   `
@@ -441,8 +416,6 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
   @Output() complete = new EventEmitter<SampleGroupWizardGroup[]>();
 
-  readonly anyMatrixValue = ANY_MATRIX_SELECTION;
-  readonly anyMatrixLabel = ANY_MATRIX_LABEL;
   readonly descriptionListId = `sample-group-description-options-${Math.random().toString(36).slice(2)}`;
   readonly stepLabels = ['Thông tin mẫu', 'Chỉ tiêu & SOP'];
 
@@ -452,6 +425,7 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   targetGroupSearch = signal('');
   showTargetGroupPicker = signal(false);
   showSampleDescriptions = signal(true);
+  quickGenerateOpen = signal(false);
   previewSopId = signal<string | null>(null);
   sopSelectionError = signal('');
   groupStates = signal<Record<string, GroupWizardState>>({});
@@ -460,15 +434,28 @@ export class SampleGroupStep2WizardComponent implements OnInit {
 
   activeGroup = computed(() => this.drafts().find(group => group.id === this.activeGroupId()) || null);
 
+  private defaultMatrixId(): string | undefined {
+    const normalize = (value: string) => String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('vi')
+      .trim();
+    const food = this.availableMatrices.find(matrix =>
+      normalize(matrix.id) === 'food' || normalize(matrix.name) === 'thuc pham'
+    );
+    return food?.id;
+  }
+
   ngOnInit(): void {
     const groups = cloneSampleGroupWizardGroups(this.initialGroups);
-    const initial = groups.length > 0 ? groups : [this.newGroup('Nhóm mẻ 1')];
+    const defaultMatrixId = this.defaultMatrixId();
+    const initial = (groups.length > 0 ? groups : [this.newGroup('Nhóm mẻ 1')])
+      .map(group => ({ ...group, matrixType: group.matrixType || defaultMatrixId }));
     const states: Record<string, GroupWizardState> = {};
     initial.forEach(group => states[group.id] = {
       step: 1,
       completed: false,
-      // Any matrix is the safe default and means "do not filter SOP by matrix".
-      matrixConfirmed: true
+      matrixConfirmed: Boolean(group.matrixType)
     });
     this.drafts.set(initial);
     this.groupStates.set(states);
@@ -499,7 +486,7 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   }
 
   isMatrixConfirmed(groupId: string): boolean {
-    return this.groupStates()[groupId]?.matrixConfirmed !== false;
+    return Boolean(this.drafts().find(group => group.id === groupId)?.matrixType);
   }
 
   private completionIssuesForGroup(group: SampleGroupWizardGroup): string[] {
@@ -527,7 +514,7 @@ export class SampleGroupStep2WizardComponent implements OnInit {
       id: `wizard-group-${Date.now()}-${this.groupSequence++}`,
       name,
       rawSamples: '',
-      matrixType: undefined,
+      matrixType: this.defaultMatrixId(),
       sampleDescriptionMap: {},
       selectedTargets: new Set(),
       forcedSopId: undefined,
@@ -542,7 +529,7 @@ export class SampleGroupStep2WizardComponent implements OnInit {
     this.drafts.update(groups => [...groups, group]);
     this.groupStates.update(states => ({
       ...states,
-      [group.id]: { step: 1, completed: false, matrixConfirmed: true }
+      [group.id]: { step: 1, completed: false, matrixConfirmed: Boolean(group.matrixType) }
     }));
     this.openGroup(group.id);
   }
@@ -583,11 +570,11 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   matrixName(matrixType?: string): string {
     return matrixType
       ? this.availableMatrices.find(matrix => matrix.id === matrixType)?.name || matrixType
-      : this.anyMatrixLabel;
+      : 'Chưa chọn';
   }
 
   matrixSelectionValue(group: SampleGroupWizardGroup): string {
-    return group.matrixType || this.anyMatrixValue;
+    return group.matrixType || this.defaultMatrixId() || '';
   }
 
   forcedSopIssue(group: SampleGroupWizardGroup): string | null {
@@ -648,7 +635,7 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   updateMatrix(value: string): void {
     const groupId = this.activeGroupId();
     if (!groupId || !value) return;
-    const matrixType = value === this.anyMatrixValue ? undefined : value;
+    const matrixType = value;
     this.updateActiveGroup(group => {
       const forcedSop = group.forcedSopId
         ? this.availableSops.find(sop => sop.id === group.forcedSopId)
@@ -661,6 +648,28 @@ export class SampleGroupStep2WizardComponent implements OnInit {
     });
     this.updateGroupState(groupId, { matrixConfirmed: true });
     this.sopSelectionError.set('');
+  }
+
+  openQuickGenerateModal(): void {
+    this.quickGenerateOpen.set(true);
+  }
+
+  closeQuickGenerateModal(): void {
+    this.quickGenerateOpen.set(false);
+  }
+
+  handleGeneratedSamples(samples: string[]): void {
+    const group = this.activeGroup();
+    if (!group || samples.length === 0) {
+      this.closeQuickGenerateModal();
+      return;
+    }
+    const merged = group.rawSamples.trim()
+      ? `${group.rawSamples.trim()}\n${samples.join('\n')}`
+      : samples.join('\n');
+    this.updateSamples(merged);
+    this.showSampleDescriptions.set(true);
+    this.closeQuickGenerateModal();
   }
 
   toggleSampleDescriptions(): void {
@@ -899,23 +908,31 @@ export class SampleGroupStep2WizardComponent implements OnInit {
     this.updateActiveGroup(current => ({ ...current, forcedSopId: sopId }));
   }
 
+  private stepOneIssues(group: SampleGroupWizardGroup): string[] {
+    const issues = sampleGroupCompletionIssues(group, {
+      singleMode: this.singleMode,
+      step: 3
+    });
+    if (!group.matrixType) issues.unshift('Cần chọn nền mẫu trước khi tiếp tục.');
+    return issues;
+  }
+
+  canEnterStep2(group: SampleGroupWizardGroup): boolean {
+    return this.stepOneIssues(group).length === 0;
+  }
+
   stepError(): string {
     const group = this.activeGroup();
     if (!group) return '';
-    if (this.activeStep() === 1) {
-      if (!this.isMatrixConfirmed(group.id)) return 'Cần chọn nền mẫu trước khi tiếp tục.';
-      return sampleGroupCompletionIssues(group, {
-        singleMode: this.singleMode,
-        step: 3
-      })[0] || '';
-    }
+    if (this.activeStep() === 1) return this.stepOneIssues(group)[0] || '';
     return this.completionIssuesForGroup(group)[0] || '';
   }
 
   goToStep(step: WizardStep): void {
     const groupId = this.activeGroupId();
     if (!groupId || step === this.activeStep()) return;
-    if (step === 2 && this.activeStep() === 1 && this.stepError()) return;
+    const group = this.activeGroup();
+    if (step === 2 && (!group || !this.canEnterStep2(group))) return;
     this.updateGroupState(groupId, { step });
     this.sopSelectionError.set('');
   }

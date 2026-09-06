@@ -6,21 +6,20 @@
         </datalist>
         <!-- HEADER -->
         <app-page-header
-            class="mb-4 block shrink-0"
+            class="mb-2 block shrink-0"
             variant="workspace"
             [sticky]="true"
-            title="Lập mẻ phân tích tự động"
-            subtitle="Tự động ghép SOP theo chỉ tiêu và tối ưu lượng hóa chất sử dụng.">
+            title="Lập Mẻ Phân Tích">
             @if (step() === 1) {
                 <app-button
                     pageHeaderLeading
                     variant="ghost"
                     size="sm"
                     (click)="goBackToStep0()"
-                    title="Quay lại chọn chế độ">
+                    title="Đổi cách lập mẻ">
                     <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-                    <span class="hidden sm:inline">Đổi chế độ</span>
-                    <span class="sr-only sm:hidden">Quay lại chọn chế độ</span>
+                    <span class="hidden sm:inline">Đổi cách lập mẻ</span>
+                    <span class="sr-only sm:hidden">Đổi cách lập mẻ</span>
                 </app-button>
             }
             @if (step() === 2) {
@@ -121,23 +120,23 @@
                         [inventoryMap]="state.inventoryMap()"
                         [availableSampleDescriptions]="availableSampleDescriptions()"
                         [singleMode]="smartBatchMode() === 'single'"
-                        (close)="goBackToStep0()"
                         (complete)="completeSampleGroupWizard($event)">
                     </app-sample-group-step2-wizard>
                 </div>
                 <div class="smartbatch-action-dock">
                     <div class="smartbatch-action-dock__inner">
-                        <div class="text-xs text-slate-500 dark:text-slate-400">
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400">
                             @if (sampleGroupWizard.allGroupsCompleted()) {
-                                <span class="font-bold text-emerald-700 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Tất cả {{sampleGroupWizard.drafts().length}} nhóm đã hoàn chỉnh.</span>
+                                <span class="font-bold text-emerald-700 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>{{sampleGroupWizard.completedGroupCount()}}/{{sampleGroupWizard.drafts().length}} nhóm hợp lệ</span>
                             } @else {
-                                <span><i class="fa-solid fa-circle-info mr-1"></i>Chỉ có thể tối ưu kế hoạch khi mọi nhóm đã hoàn tất 2 bước.</span>
+                                <span>{{sampleGroupWizard.completedGroupCount()}}/{{sampleGroupWizard.drafts().length}} nhóm hợp lệ</span>
                             }
                         </div>
                         <div class="smartbatch-action-dock__actions">
                             <app-button
-                                class="w-full md:w-[280px]"
+                                class="w-full md:w-[235px]"
                                 variant="primary"
+                                size="sm"
                                 [fullWidth]="true"
                                 (click)="sampleGroupWizard.runOptimizer()"
                                 [disabled]="!sampleGroupWizard.allGroupsCompleted()">
@@ -889,6 +888,8 @@
         @if (quickGenerateModalOpen()) {
             @defer {
                 <app-quick-generate-sample-modal
+                    [includeDescription]="true"
+                    [availableSampleDescriptions]="availableSampleDescriptions()"
                     (close)="closeQuickGenerateModal()"
                     (generated)="handleGeneratedSamples($event)">
                 </app-quick-generate-sample-modal>
