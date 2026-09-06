@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, effect, OnDestroy, Injector } from '@angular/core';
 import { FirebaseService } from './firebase.service';
-import { AuthService } from './auth.service';
+import { AuthService, type UserProfile } from './auth.service';
 import {
   collection, onSnapshot, doc, getDoc, runTransaction,
   addDoc, updateDoc, query, orderBy, limit, where,
@@ -135,13 +135,19 @@ export class StateService implements OnDestroy {
     return map;
   });
 
-  // NEW: Avatar Style Preference (Default: bottts-neutral for modern look)
+  // Global avatar style chosen by the protected Superadmin.
+  // Individual users may override it for their own profile only.
   avatarStyle = signal<string>('bottts-neutral');
 
-  // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
-  usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
+  // Keep only persisted per-user overrides here. Never copy the global style
+  // into the cache, otherwise a fallback can be mistaken for a personal choice.
+  usersInfoCache = signal<Map<string, {
+    avatarStyle: string | null;
+    photoURL: string;
+    protectedAdmin: boolean;
+  }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.06-b03');
+  systemVersion = signal<string>('v26.09.06-b04');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -786,13 +792,20 @@ export class StateService implements OnDestroy {
           { phase: isFirstUsersSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache }
         );
         isFirstUsersSnapshot = false;
-        const cacheMap = new Map<string, {avatarStyle: string, photoURL: string}>();
+        const cacheMap = new Map<string, {
+          avatarStyle: string | null;
+          photoURL: string;
+          protectedAdmin: boolean;
+        }>();
         s.forEach(d => {
             const data = d.data();
             if (data['displayName']) {
                 cacheMap.set(data['displayName'], {
-                    avatarStyle: data['avatarStyle'] || this.avatarStyle(),
-                    photoURL: data['photoURL'] || ''
+                    avatarStyle: typeof data['avatarStyle'] === 'string' && data['avatarStyle'].trim()
+                      ? data['avatarStyle'].trim()
+                      : null,
+                    photoURL: data['photoURL'] || '',
+                    protectedAdmin: data['protectedAdmin'] === true,
                 });
             }
         });
@@ -1120,8 +1133,16 @@ export class StateService implements OnDestroy {
   }
 
   async saveAvatarStyle(style: string) {
+    const user = this.auth.currentUser();
+    if (!user || user.protectedAdmin !== true) {
+      throw new Error('Chỉ Superadmin được thay đổi avatar mặc định toàn hệ thống.');
+    }
+    const normalizedStyle = style?.trim();
+    if (!normalizedStyle) {
+      throw new Error('Avatar mặc định toàn hệ thống không được để trống.');
+    }
     const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
-    await setDoc(ref, { avatarStyle: style }, { merge: true });
+    await setDoc(ref, { avatarStyle: normalizedStyle }, { merge: true });
     await this.updateConfigMetadata();
     await this.loadConfig();
   }
@@ -1130,17 +1151,57 @@ export class StateService implements OnDestroy {
     const user = this.auth.currentUser();
     if (!user) return;
     const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'users', user.uid);
-    await updateDoc(ref, { avatarStyle: style });
+
+    // Superadmin's choice is the system-wide default. Remove any legacy
+    // personal override so the protected account follows the global setting too.
+    if (user.protectedAdmin === true) {
+      await this.saveAvatarStyle(style);
+      if (user.avatarStyle) {
+        await updateDoc(ref, { avatarStyle: deleteField() });
+      }
+      return;
+    }
+
+    const normalizedStyle = style?.trim();
+    await updateDoc(ref, {
+      avatarStyle: normalizedStyle || deleteField(),
+    });
     // currentUser signal is updated automatically by AuthService's listener
   }
 
   getUserAvatarOptions(displayName: string | undefined | null): { style: string, photoURL: string | null } {
     if (!displayName) return { style: this.avatarStyle(), photoURL: null };
+    const currentUser = this.auth.currentUser();
+    if (currentUser?.displayName === displayName) {
+      return this.getAvatarOptionsForProfile(currentUser);
+    }
     const cache = this.usersInfoCache().get(displayName);
     if (cache) {
-        return { style: cache.avatarStyle, photoURL: cache.photoURL || null };
+        return {
+          style: this.resolveAvatarStyle(cache.avatarStyle, cache.protectedAdmin),
+          photoURL: cache.photoURL || null,
+        };
     }
     return { style: this.avatarStyle(), photoURL: null };
+  }
+
+  getAvatarOptionsForProfile(
+    user: Pick<UserProfile, 'avatarStyle' | 'photoURL' | 'protectedAdmin'> | null | undefined,
+  ): { style: string, photoURL: string | null } {
+    return {
+      style: this.resolveAvatarStyle(user?.avatarStyle, user?.protectedAdmin === true),
+      photoURL: user?.photoURL || null,
+    };
+  }
+
+  getCurrentUserAvatarOptions(): { style: string, photoURL: string | null } {
+    return this.getAvatarOptionsForProfile(this.auth.currentUser());
+  }
+
+  private resolveAvatarStyle(userStyle: string | null | undefined, protectedAdmin: boolean): string {
+    if (protectedAdmin) return this.avatarStyle();
+    const override = typeof userStyle === 'string' ? userStyle.trim() : '';
+    return override || this.avatarStyle();
   }
 
   async saveMaintenanceConfig(mode: boolean, message: string, scheduledTime: string | null = null) {

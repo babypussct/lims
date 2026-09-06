@@ -99,7 +99,7 @@ interface VisitedPage {
           aria-label="Mở cấu hình tài khoản"
           (click)="navTo('/settings/account/profile')">
           <img
-            [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+            [src]="getAvatarUrl(auth.currentUser()?.displayName, state.getCurrentUserAvatarOptions().style, state.getCurrentUserAvatarOptions().photoURL)"
             class="w-11 h-11 rounded-full border-2 border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 object-cover"
             alt="Ảnh đại diện">
           <span class="flex-1 min-w-0">

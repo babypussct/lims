@@ -20,6 +20,9 @@ describe('traceability shared UI primitive integration', () => {
     assert.match(source, /<app-empty-state\b/);
     assert.match(source, /\(ngSubmit\)="submitLookup\(\)"/);
     assert.match(source, /#lookupInput/);
+    assert.match(source, /@if \(!id\) \{\s*<section/);
+    assert.match(source, /getDistinctAssociatedRequestId\(\)/);
+    assert.match(source, /min-h-full[^"]*shrink-0/);
     assert.match(source, /max-w-7xl/);
     assert.match(source, /p-4 md:p-6/);
     assert.doesNotMatch(source, /<app-page-header[^>]*border/);

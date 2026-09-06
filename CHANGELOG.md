@@ -2,7 +2,32 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.06-b03
+## Phiên bản hiện tại: v26.09.06-b04
+
+### v26.09.06-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Superadmin nay kiểm soát avatar mặc định global cho toàn LIMS, trong khi mỗi nhân viên chỉ có thể ghi đè avatar của chính mình.
+- Avatar của người dùng được hiển thị thống nhất giữa header, dashboard, cài đặt, danh sách người dùng và các nhật ký truy xuất.
+- Trang truy xuất hồ sơ được tinh gọn khi mở trực tiếp bằng mã, giảm các thành phần tra cứu dư thừa và làm rõ thông tin hồ sơ.
+
+#### ✨ Tính Năng Mới
+
+- Nhân viên có thể chọn avatar riêng hoặc quay lại chế độ Theo mặc định hệ thống; lựa chọn cá nhân không làm thay đổi avatar global.
+- Superadmin có thể đặt avatar mặc định toàn hệ thống trực tiếp từ trang hồ sơ hoặc cấu hình hệ thống.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bộ phân giải avatar dùng chung tách rõ cấu hình global và override cá nhân, tránh cache nhầm giá trị mặc định thành lựa chọn riêng.
+- Trang Người dùng & quyền hiển thị đúng avatar riêng của từng tài khoản thay vì ép tất cả dùng avatar global.
+- Header truy xuất bổ sung nhãn Mã truy xuất, Ghi nhận và Hồ sơ liên quan; mã hồ sơ liên quan trùng mã truy xuất sẽ không bị lặp.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khóa Firestore để chỉ protected Superadmin được thay đổi hoặc xóa avatarStyle global; manager thường và quyền system_manage không thể vượt phạm vi này.
+- Chặn protected Superadmin tạo override avatar cá nhân mới, đồng thời cho phép xóa dữ liệu override cũ để tài khoản này luôn theo global.
+- Khi mở trang truy xuất trực tiếp bằng ID, khối nhập mã không còn xuất hiện sai ngữ cảnh và hành động lỗi được rút gọn còn Thử lại.
 
 ### v26.09.06-b03
 

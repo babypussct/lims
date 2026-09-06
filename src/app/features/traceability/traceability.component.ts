@@ -29,7 +29,7 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
   standalone: true,
   imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent],
   template: `
-    <div class="relative mx-auto w-full max-w-7xl p-4 md:p-6 pb-20 fade-in">
+    <div class="relative mx-auto min-h-full w-full max-w-7xl shrink-0 p-4 md:p-6 pb-20 fade-in">
         <app-page-header
           [variant]="id ? 'detail' : 'page'"
           [sticky]="!!id"
@@ -63,18 +63,27 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                   <i class="fa-solid fa-shield-halved text-[10px]" aria-hidden="true"></i>
                   Đã xác thực
                 </span>
-                <span class="inline-flex min-w-0 items-center gap-1.5">
+                <span class="inline-flex min-w-0 items-center gap-2">
                   <i class="fa-solid fa-fingerprint text-slate-400" aria-hidden="true"></i>
-                  <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ headerLog.id }}</span>
+                  <span class="min-w-0">
+                    <span class="mr-1 text-[9px] font-black uppercase tracking-wider text-slate-400">Mã truy xuất</span>
+                    <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ headerLog.id }}</span>
+                  </span>
                 </span>
                 <span class="inline-flex items-center gap-1.5">
                   <i class="fa-regular fa-clock text-slate-400" aria-hidden="true"></i>
-                  {{ formatDate(headerLog.timestamp) }}
+                  <span>
+                    <span class="mr-1 text-[9px] font-black uppercase tracking-wider text-slate-400">Ghi nhận</span>
+                    {{ formatDate(headerLog.timestamp) }}
+                  </span>
                 </span>
-                @if (getAssociatedRequestId(); as requestId) {
+                @if (getDistinctAssociatedRequestId(); as requestId) {
                   <span class="inline-flex items-center gap-1.5">
                     <i class="fa-solid fa-barcode text-slate-400" aria-hidden="true"></i>
-                    <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ requestId }}</span>
+                    <span>
+                      <span class="mr-1 text-[9px] font-black uppercase tracking-wider text-slate-400">Hồ sơ liên quan</span>
+                      <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ requestId }}</span>
+                    </span>
                   </span>
                 }
             </div>
@@ -82,18 +91,16 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
         </app-page-header>
 
         <!-- SMART LOOKUP -->
+        @if (!id) {
         <section
-          class="mb-6 transition-all duration-300"
-          [ngClass]="!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()
-            ? 'max-w-2xl mx-auto pt-8 md:pt-14'
-            : 'w-full'">
+          class="mx-auto mb-6 w-full max-w-2xl pt-8 transition-all duration-300 md:pt-14">
           <div
             class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
-            [ngClass]="!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()
+            [ngClass]="!isLoading() && !isVerifying() && !logData() && !errorMsg()
               ? 'rounded-2xl p-5 md:p-6'
               : 'rounded-xl p-3'">
 
-            @if (!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()) {
+            @if (!isLoading() && !isVerifying() && !logData() && !errorMsg()) {
               <div class="mb-4">
                 <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100">Tra cứu hồ sơ LIMS</h3>
                 <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
@@ -163,13 +170,14 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                 <i class="fa-solid fa-circle-exclamation text-[10px]"></i>
                 {{ inputError() }}
               </p>
-            } @else if (!id && !logData() && !errorMsg()) {
+            } @else if (!logData() && !errorMsg()) {
               <p class="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
                 Có thể dán trực tiếp liên kết chứa <span class="font-mono">#/traceability/...</span>
               </p>
             }
           </div>
         </section>
+        }
 
         @if (!id && !isLoading() && !isVerifying() && !logData() && !errorMsg()) {
           <aside class="max-w-2xl mx-auto mb-6 rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/20 overflow-hidden">
@@ -298,13 +306,24 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                   icon="fa-magnifying-glass-minus"
                   title="Không tìm thấy hồ sơ"
                   [message]="errorMsg()">
-                  <app-button emptyStateActions size="sm" (click)="focusLookupInput()">Sửa mã</app-button>
-                  <app-button emptyStateActions variant="secondary" size="sm" (click)="startQrScan()">
-                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Quét QR
-                  </app-button>
-                  <app-button emptyStateActions variant="secondary" size="sm" (click)="submitLookup()">
-                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Tìm lại
-                  </app-button>
+                  @if (id) {
+                    <app-button emptyStateActions size="sm" (click)="submitLookup()">
+                      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Thử lại
+                    </app-button>
+                  }
+                  @if (!id) {
+                    <app-button emptyStateActions size="sm" (click)="focusLookupInput()">Sửa mã</app-button>
+                  }
+                  @if (!id) {
+                    <app-button emptyStateActions variant="secondary" size="sm" (click)="startQrScan()">
+                      <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Quét QR
+                    </app-button>
+                  }
+                  @if (!id) {
+                    <app-button emptyStateActions variant="secondary" size="sm" (click)="submitLookup()">
+                      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Tìm lại
+                    </app-button>
+                  }
                 </app-empty-state>
             </div>
         } @else if(logData()) {
@@ -866,6 +885,12 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       if ((log.printData as any)?.requestId) return (log.printData as any).requestId;
       if (log.printData?.inputs?.['batchCode']) return log.printData.inputs['batchCode'];
       return log.id || null;
+  }
+
+  getDistinctAssociatedRequestId(): string | null {
+      const requestId = this.getAssociatedRequestId();
+      const logId = this.logData()?.id;
+      return requestId && requestId !== logId ? requestId : null;
   }
 
   viewBatchResults(requestId: string) {

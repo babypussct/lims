@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.06-b03",
-    "title": "SmartBatch gọn hơn, nhập mẫu nhanh hơn và chọn nền mẫu rõ ràng hơn",
+    "version": "v26.09.06-b04",
+    "title": "Avatar toàn hệ thống đúng phạm vi và trang truy xuất rõ ràng hơn",
     "features": [
-      "Wizard Nhóm mẻ của SmartBatch được thu gọn để hiển thị nhiều thông tin hơn trong cùng một màn hình và chuyển bước nhanh hơn.",
-      "Nhập nhanh mã mẫu nay có thể gắn cùng một mô tả cho toàn bộ dãy mã, đồng thời gợi ý mô tả từ danh mục mẫu đã cấu hình.",
-      "Nền mẫu được xác định ngay khi bắt đầu lập mẻ, ưu tiên Thực phẩm khi có trong danh mục để giảm thao tác chọn lặp lại.",
-      "Công cụ Nhập nhanh trong SmartBatch tạo dãy mã mẫu kèm mô tả theo dạng mã và mô tả, sau đó tự đưa vào nhóm đang thao tác.",
-      "Mô tả mẫu được chọn từ danh mục có sẵn hoặc nhập tự do, và có thể tiếp tục chỉnh riêng từng mẫu sau khi chèn."
+      "Superadmin nay kiểm soát avatar mặc định global cho toàn LIMS, trong khi mỗi nhân viên chỉ có thể ghi đè avatar của chính mình.",
+      "Avatar của người dùng được hiển thị thống nhất giữa header, dashboard, cài đặt, danh sách người dùng và các nhật ký truy xuất.",
+      "Trang truy xuất hồ sơ được tinh gọn khi mở trực tiếp bằng mã, giảm các thành phần tra cứu dư thừa và làm rõ thông tin hồ sơ.",
+      "Nhân viên có thể chọn avatar riêng hoặc quay lại chế độ Theo mặc định hệ thống; lựa chọn cá nhân không làm thay đổi avatar global.",
+      "Superadmin có thể đặt avatar mặc định toàn hệ thống trực tiếp từ trang hồ sơ hoặc cấu hình hệ thống."
     ]
   },
   "assetGroups": [

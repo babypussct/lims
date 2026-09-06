@@ -501,6 +501,53 @@ test('delegated Settings permissions write only their intended configuration dom
   await assertFails(setDoc(doc(dbFor(users.customPolicyManage), `artifacts/${APP_ID}/master_analytes/policy-nope`), { id: 'policy-nope' }));
 });
 
+test('avatar global is protected-admin-only while staff avatar overrides remain self-scoped', async () => {
+  const protectedAdmin = {
+    uid: 'protected-avatar-admin',
+    email: 'protected-avatar-admin@example.test',
+    displayName: 'Protected Avatar Admin',
+  };
+  const systemPath = `artifacts/${APP_ID}/config/system`;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, `artifacts/${APP_ID}/users/${protectedAdmin.uid}`), {
+      email: protectedAdmin.email,
+      displayName: protectedAdmin.displayName,
+      role: 'manager',
+      roleId: 'role_manager',
+      permissions: [],
+      customPermissions: [],
+      protectedAdmin: true,
+      avatarStyle: 'fun-emoji',
+    });
+    await setDoc(doc(db, systemPath), {
+      maintenanceMode: false,
+      avatarStyle: 'bottts-neutral',
+    });
+  });
+
+  const protectedDb = env.authenticatedContext(protectedAdmin.uid, { email: protectedAdmin.email }).firestore();
+  const managerDb = dbFor(users.manager);
+  const delegatedDb = dbFor(users.customSystemManage);
+  const staffDb = dbFor(users.staffDefault);
+
+  await assertFails(updateDoc(doc(managerDb, systemPath), { avatarStyle: 'micah' }));
+  await assertFails(updateDoc(doc(delegatedDb, systemPath), { avatarStyle: 'micah' }));
+  await assertFails(deleteDoc(doc(managerDb, systemPath)));
+  await assertSucceeds(updateDoc(doc(managerDb, systemPath), { maintenanceMode: true }));
+  await assertSucceeds(updateDoc(doc(protectedDb, systemPath), { avatarStyle: 'micah' }));
+
+  const protectedProfileRef = doc(protectedDb, `artifacts/${APP_ID}/users/${protectedAdmin.uid}`);
+  await assertFails(updateDoc(protectedProfileRef, { avatarStyle: 'initials' }));
+  await assertSucceeds(updateDoc(protectedProfileRef, { avatarStyle: deleteField() }));
+
+  const staffProfileRef = doc(staffDb, `artifacts/${APP_ID}/users/${users.staffDefault.uid}`);
+  await assertSucceeds(updateDoc(staffProfileRef, { avatarStyle: 'notionists' }));
+  await assertSucceeds(updateDoc(staffProfileRef, { avatarStyle: deleteField() }));
+  await assertFails(updateDoc(doc(staffDb, `artifacts/${APP_ID}/users/${users.manager.uid}`), { avatarStyle: 'initials' }));
+});
+
 test('user_manage cannot grant, demote, or delete Manager accounts while Manager retains non-protected control', async () => {
   const userManagerDb = dbFor(users.customUserManage);
   const managerPath = `artifacts/${APP_ID}/users/${users.manager.uid}`;

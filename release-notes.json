@@ -1,22 +1,22 @@
 {
-  "title": "SmartBatch gọn hơn, nhập mẫu nhanh hơn và chọn nền mẫu rõ ràng hơn",
+  "title": "Avatar toàn hệ thống đúng phạm vi và trang truy xuất rõ ràng hơn",
   "highlights": [
-    "Wizard Nhóm mẻ của SmartBatch được thu gọn để hiển thị nhiều thông tin hơn trong cùng một màn hình và chuyển bước nhanh hơn.",
-    "Nhập nhanh mã mẫu nay có thể gắn cùng một mô tả cho toàn bộ dãy mã, đồng thời gợi ý mô tả từ danh mục mẫu đã cấu hình.",
-    "Nền mẫu được xác định ngay khi bắt đầu lập mẻ, ưu tiên Thực phẩm khi có trong danh mục để giảm thao tác chọn lặp lại."
+    "Superadmin nay kiểm soát avatar mặc định global cho toàn LIMS, trong khi mỗi nhân viên chỉ có thể ghi đè avatar của chính mình.",
+    "Avatar của người dùng được hiển thị thống nhất giữa header, dashboard, cài đặt, danh sách người dùng và các nhật ký truy xuất.",
+    "Trang truy xuất hồ sơ được tinh gọn khi mở trực tiếp bằng mã, giảm các thành phần tra cứu dư thừa và làm rõ thông tin hồ sơ."
   ],
   "features": [
-    "Công cụ Nhập nhanh trong SmartBatch tạo dãy mã mẫu kèm mô tả theo dạng mã và mô tả, sau đó tự đưa vào nhóm đang thao tác.",
-    "Mô tả mẫu được chọn từ danh mục có sẵn hoặc nhập tự do, và có thể tiếp tục chỉnh riêng từng mẫu sau khi chèn.",
-    "SmartBatch tải dữ liệu thiết lập cần thiết trước khi mở wizard để nền mẫu mặc định và các danh mục liên quan sẵn sàng ngay từ đầu."
+    "Nhân viên có thể chọn avatar riêng hoặc quay lại chế độ Theo mặc định hệ thống; lựa chọn cá nhân không làm thay đổi avatar global.",
+    "Superadmin có thể đặt avatar mặc định toàn hệ thống trực tiếp từ trang hồ sơ hoặc cấu hình hệ thống."
   ],
   "improvements": [
-    "Header, danh sách nhóm, vùng nhập liệu và thanh hành động SmartBatch được thu gọn khoảng cách và kích thước nút để giảm cuộn trên màn hình nhỏ.",
-    "Trạng thái hoàn tất được rút gọn thành số nhóm hợp lệ trên tổng số nhóm, giúp nhận biết nhanh khi nào có thể tối ưu kế hoạch.",
-    "Nút quay lại được chuyển lên header với nhãn Đổi cách lập mẻ, giữ vùng wizard tập trung vào dữ liệu của nhóm hiện tại."
+    "Bộ phân giải avatar dùng chung tách rõ cấu hình global và override cá nhân, tránh cache nhầm giá trị mặc định thành lựa chọn riêng.",
+    "Trang Người dùng & quyền hiển thị đúng avatar riêng của từng tài khoản thay vì ép tất cả dùng avatar global.",
+    "Header truy xuất bổ sung nhãn Mã truy xuất, Ghi nhận và Hồ sơ liên quan; mã hồ sơ liên quan trùng mã truy xuất sẽ không bị lặp."
   ],
   "fixes": [
-    "Loại bỏ trạng thái nền mẫu Bất kỳ trong wizard để tránh mở bước SOP khi chưa có nền mẫu cụ thể.",
-    "Đồng bộ kiểm tra giao diện SmartBatch với bố cục mới và luồng nhập nhanh có mô tả mẫu."
+    "Khóa Firestore để chỉ protected Superadmin được thay đổi hoặc xóa avatarStyle global; manager thường và quyền system_manage không thể vượt phạm vi này.",
+    "Chặn protected Superadmin tạo override avatar cá nhân mới, đồng thời cho phép xóa dữ liệu override cũ để tài khoản này luôn theo global.",
+    "Khi mở trang truy xuất trực tiếp bằng ID, khối nhập mã không còn xuất hiện sai ngữ cảnh và hành động lỗi được rút gọn còn Thử lại."
   ]
 }

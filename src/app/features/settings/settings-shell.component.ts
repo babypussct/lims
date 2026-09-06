@@ -44,7 +44,7 @@ const ADMIN_PERMISSIONS = [
               <div class="flex min-w-0 flex-1 items-center gap-4">
                 <div class="h-16 w-16 shrink-0 rounded-xl bg-white p-1 shadow-soft-sm dark:bg-slate-800 sm:h-20 sm:w-20">
                   <img
-                    [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+                    [src]="getAvatarUrl(auth.currentUser()?.displayName, state.getCurrentUserAvatarOptions().style, state.getCurrentUserAvatarOptions().photoURL)"
                     alt="Ảnh đại diện tài khoản"
                     class="h-full w-full rounded-lg bg-slate-100 object-cover dark:bg-slate-700">
                 </div>
@@ -84,7 +84,7 @@ const ADMIN_PERMISSIONS = [
               <div class="flex min-w-0 shrink-0 items-center gap-3 xl:w-64">
                 <a routerLink="/settings/account/profile" title="Về cài đặt cá nhân" class="h-10 w-10 shrink-0 rounded-xl bg-white p-0.5 shadow-soft-sm transition hover:-translate-y-0.5 dark:bg-slate-800">
                   <img
-                    [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+                    [src]="getAvatarUrl(auth.currentUser()?.displayName, state.getCurrentUserAvatarOptions().style, state.getCurrentUserAvatarOptions().photoURL)"
                     alt="Ảnh đại diện tài khoản"
                     class="h-full w-full rounded-[10px] bg-slate-100 object-cover dark:bg-slate-700">
                 </a>

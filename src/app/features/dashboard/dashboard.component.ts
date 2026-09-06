@@ -562,14 +562,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getAvatar(name: string | undefined | null): string {
       const opts = this.state.getUserAvatarOptions(name);
-      let photoUrl = opts.photoURL;
-      let style = opts.style;
-      
-      if (name === this.auth.currentUser()?.displayName) {
-          photoUrl = this.auth.currentUser()?.photoURL || photoUrl;
-          style = this.auth.currentUser()?.avatarStyle || style;
-      }
-      return this.getAvatarUrl(name, style, photoUrl);
+      return this.getAvatarUrl(name, opts.style, opts.photoURL);
   }
 
   ngOnDestroy(): void {

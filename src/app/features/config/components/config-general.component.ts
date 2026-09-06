@@ -214,7 +214,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       if (style) {
           try {
             await this.state.saveAvatarStyle(style);
-            this.toast.show('Đã cập nhật kiểu avatar.', 'success');
+            this.toast.show('Đã cập nhật avatar mặc định toàn hệ thống.', 'success');
           } catch (e: any) {
             this.toast.show(`Không thể cập nhật kiểu avatar: ${e?.message || e}`, 'error');
           }

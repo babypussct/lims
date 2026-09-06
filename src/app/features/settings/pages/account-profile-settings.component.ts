@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService, PERMISSIONS, PERMISSION_NAMES, getUserRoleLabel } from '../../../core/services/auth.service';
 import { StateService } from '../../../core/services/state.service';
@@ -19,13 +19,17 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
           <p class="mt-1 text-xs leading-relaxed text-slate-400">Điều chỉnh cách tài khoản của bạn xuất hiện trong LIMS.</p>
 
           <div class="mt-5">
-            <label for="account-avatar-style" class="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kiểu ảnh đại diện</label>
+            <label for="account-avatar-style" class="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {{ isSuperAdmin() ? 'Avatar mặc định toàn hệ thống' : 'Kiểu ảnh đại diện của tôi' }}
+            </label>
             <select
               id="account-avatar-style"
-              [ngModel]="auth.currentUser()?.avatarStyle || ''"
+              [ngModel]="avatarStyleValue()"
               (ngModelChange)="saveAvatarStyle($event)"
               class="h-10 w-full rounded-xl border-0 bg-gray-50 px-3 text-sm font-semibold text-slate-600 shadow-soft-md outline-none transition focus:ring-2 focus:ring-fuchsia-500/15 dark:bg-slate-800 dark:text-slate-200">
-              <option value="">Mặc định hệ thống</option>
+              @if (!isSuperAdmin()) {
+                <option value="">Theo mặc định hệ thống</option>
+              }
               <option value="google">📷 Ảnh Google cá nhân</option>
               <option value="bottts-neutral">🤖 Robot (Bottts)</option>
               <option value="fun-emoji">😊 Biểu cảm (Fun Emoji)</option>
@@ -33,6 +37,13 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
               <option value="notionists">✏️ Vẽ tay (Notionists)</option>
               <option value="initials">🔤 Chữ cái tên</option>
             </select>
+            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+              @if (isSuperAdmin()) {
+                Lựa chọn của Superadmin là mặc định global cho mọi nhân viên chưa có avatar riêng.
+              } @else {
+                Lựa chọn này chỉ ghi đè avatar của tài khoản bạn. Chọn “Theo mặc định hệ thống” để quay lại global.
+              }
+            </p>
           </div>
 
           <div class="mt-6 rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
@@ -132,6 +143,10 @@ export class AccountProfileSettingsComponent {
   readonly getUserRoleLabel = getUserRoleLabel;
   private readonly toast = inject(ToastService);
   readonly getAvatarUrl = getAvatarUrl;
+  readonly isSuperAdmin = computed(() => this.auth.currentUser()?.protectedAdmin === true);
+  readonly avatarStyleValue = computed(() => this.isSuperAdmin()
+    ? this.state.avatarStyle()
+    : (this.auth.currentUser()?.avatarStyle || ''));
 
   readonly permissionGroups = [
     { label: 'Kho & vận hành', permissions: [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.INVENTORY_EDIT, PERMISSIONS.BATCH_RUN] },
@@ -154,7 +169,12 @@ export class AccountProfileSettingsComponent {
   async saveAvatarStyle(style: string): Promise<void> {
     try {
       await this.state.saveMyAvatarStyle(style);
-      this.toast.show('Đã cập nhật ảnh đại diện.', 'success');
+      this.toast.show(
+        this.isSuperAdmin()
+          ? 'Đã cập nhật avatar mặc định toàn hệ thống.'
+          : (style ? 'Đã cập nhật avatar riêng của bạn.' : 'Đã quay lại avatar mặc định hệ thống.'),
+        'success',
+      );
     } catch (error: any) {
       this.toast.show(`Không thể cập nhật ảnh đại diện: ${error?.message || error}`, 'error');
     }

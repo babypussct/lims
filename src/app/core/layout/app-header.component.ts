@@ -120,7 +120,7 @@ interface PaletteItem {
           title="Tài khoản">
           <span class="relative h-7 w-7 shrink-0" [title]="isOnline() ? 'Đang trực tuyến' : 'Đang ngoại tuyến'">
             <img
-              [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+              [src]="getAvatarUrl(auth.currentUser()?.displayName, state.getCurrentUserAvatarOptions().style, state.getCurrentUserAvatarOptions().photoURL)"
               class="h-7 w-7 rounded-full border border-slate-200/50 bg-white object-cover dark:border-slate-700/50 dark:bg-slate-800"
               alt="User">
             <span class="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800"
@@ -141,7 +141,7 @@ interface PaletteItem {
             <div class="flex items-center gap-3 px-4 py-3">
               <span class="relative w-10 h-10 shrink-0">
                 <img
-                  [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)"
+                  [src]="getAvatarUrl(auth.currentUser()?.displayName, state.getCurrentUserAvatarOptions().style, state.getCurrentUserAvatarOptions().photoURL)"
                   class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
                   alt="User">
                 <span class="absolute right-0 bottom-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900"

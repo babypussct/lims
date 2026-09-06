@@ -108,6 +108,10 @@ service cloud.firestore {
       return userExists(appId) && getUserProfile(appId).get('role', 'pending') == 'manager';
     }
 
+    function isProtectedAdmin(appId) {
+      return userExists(appId) && getUserProfile(appId).get('protectedAdmin', false) == true;
+    }
+
     // Release notes dùng chung cho toàn bộ ứng dụng. APP_ID production hiện tại
     // là lims-cloud-fixed; chỉ Manager của app này được phép publish/cập nhật.
     function isReleaseManager() {
@@ -873,6 +877,10 @@ service cloud.firestore {
         ]) && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastPasswordChangedAt']) ||
           request.resource.data.lastPasswordChangedAt == request.time
+        ) && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarStyle']) ||
+          resource.data.get('protectedAdmin', false) == false ||
+          !request.resource.data.keys().hasAny(['avatarStyle'])
         )
       );
       allow delete: if (
@@ -908,7 +916,8 @@ service cloud.firestore {
     }
     match /artifacts/{appId}/config/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) ||
+      allow create: if (
+        isManager(appId) ||
         (docId == 'system' && hasPermission(appId, 'system_manage')) ||
         (docId == 'print' && hasPermission(appId, 'system_manage')) ||
         (docId == 'categories' && hasPermission(appId, 'master_data_manage')) ||
@@ -917,7 +926,42 @@ service cloud.firestore {
           hasPermission(appId, 'system_manage') ||
           hasPermission(appId, 'master_data_manage') ||
           hasPermission(appId, 'policy_manage')
-        ));
+        ))
+      ) && (
+        docId != 'system' ||
+        !request.resource.data.keys().hasAny(['avatarStyle']) ||
+        isProtectedAdmin(appId)
+      );
+      allow update: if (
+        isManager(appId) ||
+        (docId == 'system' && hasPermission(appId, 'system_manage')) ||
+        (docId == 'print' && hasPermission(appId, 'system_manage')) ||
+        (docId == 'categories' && hasPermission(appId, 'master_data_manage')) ||
+        (docId == 'safety' && hasPermission(appId, 'policy_manage')) ||
+        (docId == '_metadata' && (
+          hasPermission(appId, 'system_manage') ||
+          hasPermission(appId, 'master_data_manage') ||
+          hasPermission(appId, 'policy_manage')
+        ))
+      ) && (
+        docId != 'system' ||
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarStyle']) ||
+        isProtectedAdmin(appId)
+      );
+      allow delete: if (
+        isManager(appId) ||
+        (docId == 'system' && hasPermission(appId, 'system_manage')) ||
+        (docId == 'print' && hasPermission(appId, 'system_manage')) ||
+        (docId == 'categories' && hasPermission(appId, 'master_data_manage')) ||
+        (docId == 'safety' && hasPermission(appId, 'policy_manage')) ||
+        (docId == '_metadata' && (
+          hasPermission(appId, 'system_manage') ||
+          hasPermission(appId, 'master_data_manage') ||
+          hasPermission(appId, 'policy_manage')
+        ))
+      ) && (
+        docId != 'system' || isProtectedAdmin(appId)
+      );
     }
     match /artifacts/{appId}/sample_description_master/{itemId} {
       allow read: if isSignedIn();

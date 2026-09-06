@@ -8,6 +8,7 @@ const rolesSource = readFileSync(new URL('../config/components/config-roles.comp
 const generalSource = readFileSync(new URL('../config/components/config-general.component.ts', import.meta.url), 'utf8');
 const profileSource = readFileSync(new URL('./pages/account-profile-settings.component.ts', import.meta.url), 'utf8');
 const authSource = readFileSync(new URL('../../core/services/auth.service.ts', import.meta.url), 'utf8');
+const stateSource = readFileSync(new URL('../../core/services/state.service.ts', import.meta.url), 'utf8');
 const masterTargetSource = readFileSync(new URL('../targets/master-target-manager.component.ts', import.meta.url), 'utf8');
 const confirmationSource = readFileSync(new URL('../../core/services/confirmation.service.ts', import.meta.url), 'utf8');
 const confirmationModalSource = readFileSync(new URL('../../shared/components/confirmation-modal/confirmation-modal.component.ts', import.meta.url), 'utf8');
@@ -55,6 +56,16 @@ describe('Settings production hardening contracts', () => {
     assert.match(generalSource, /Không thể lưu danh mục phân loại/);
     assert.match(generalSource, /Không thể lưu cấu hình bảo trì/);
     assert.match(generalSource, /Không thể lưu cấu hình hiển thị tính năng khóa/);
+  });
+
+  it('keeps avatar global owned by protected Superadmin and personal overrides user-scoped', () => {
+    assert.match(stateSource, /user\.protectedAdmin !== true/);
+    assert.match(stateSource, /await this\.saveAvatarStyle\(style\)/);
+    assert.match(stateSource, /avatarStyle: normalizedStyle \|\| deleteField\(\)/);
+    assert.match(stateSource, /resolveAvatarStyle\(cache\.avatarStyle, cache\.protectedAdmin\)/);
+    assert.match(usersSource, /state\.getAvatarOptionsForProfile\(u\)/);
+    assert.match(profileSource, /Avatar mặc định toàn hệ thống/);
+    assert.match(profileSource, /Theo mặc định hệ thống/);
   });
 
   it('keeps one shared permission catalog as the complete editor source of truth', () => {

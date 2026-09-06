@@ -267,7 +267,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                    (change)="toggleSelectUser(u.uid)" 
                                    class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-fuchsia-600 shrink-0">
                             
-                            <img [src]="getAvatarUrl(u.displayName, state.avatarStyle(), u.photoURL)" class="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 object-cover" alt="Avatar">
+                            <img [src]="getAvatarUrl(u.displayName, state.getAvatarOptionsForProfile(u).style, state.getAvatarOptionsForProfile(u).photoURL)" class="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 object-cover" alt="Avatar">
                             
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2 flex-wrap">
