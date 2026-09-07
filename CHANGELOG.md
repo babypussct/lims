@@ -2,7 +2,34 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.06-b04
+## Phiên bản hiện tại: v26.09.07-b01
+
+### v26.09.07-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chuẩn bị dung dịch nay có 5 tác vụ ngang hàng: Pha dung dịch, Kiểm tra nồng độ đã pha, Pha dãy chuẩn & QC, Thêm chuẩn vào mẫu và Quy đổi kết quả mẫu.
+- Luồng pha dung dịch hiển thị trực tiếp lượng thực tế đã cân hoặc hút để tính nồng độ đạt được và độ lệch so với mục tiêu.
+- Bổ sung công cụ thao tác nhanh cho pipet, hóa chất đậm đặc, dãy chuẩn, hệ số muối/ngậm nước và tự động lưu nháp trên trình duyệt.
+
+#### ✨ Tính Năng Mới
+
+- Thêm 6 lựa chọn nhanh HNO₃ 65%, HCl 37%, H₂SO₄ 98%, CH₃COOH băng 99,8%, NH₃ 25% và H₃PO₄ 85% với hàm lượng, khối lượng riêng và khối lượng mol danh định.
+- Tạo nhanh nhiều điểm chuẩn từ chuỗi nồng độ, thể tích định mức và nguồn dùng chung.
+- Tính hệ số muối/ngậm nước theo khối lượng mol hoạt chất hoặc ion, dạng muối/ngậm nước và hệ số stoichiometry.
+- Tự động lưu và khôi phục phiếu tính đang làm dở bằng localStorage; Phiếu tính mới xóa sạch bản nháp.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hiển thị gợi ý micropipet phù hợp cạnh thể tích hút và cảnh báo khi thể tích dưới 10 µL, kèm gợi ý cân nhắc chuẩn trung gian 1/10.
+- Tối ưu bảng dãy chuẩn và xử lý mẫu để thao tác gọn hơn trên màn hình laptop và máy tính bảng.
+- Giữ calculation engine thuần tính toán, không phụ thuộc kho hóa chất, Firestore hoặc giao dịch tồn kho.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa hiển thị khối lượng cân sang mg trước khi làm tròn theo độ đọc tham chiếu 0,01 mg.
+- Bản nháp dãy chuẩn chấp nhận danh sách chất thêm rỗng và giữ tham chiếu nguồn cũ để KNV có thể sửa thay vì âm thầm thay đổi dữ liệu.
+- Chất rắn yêu cầu khai báo độ tinh khiết hoặc hàm lượng thay vì tự mặc định 100%.
 
 ### v26.09.06-b04
 

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.06-b04",
-    "title": "Avatar toàn hệ thống đúng phạm vi và trang truy xuất rõ ràng hơn",
+    "version": "v26.09.07-b01",
+    "title": "Chuẩn bị dung dịch nhanh và an toàn hơn tại bàn thí nghiệm",
     "features": [
-      "Superadmin nay kiểm soát avatar mặc định global cho toàn LIMS, trong khi mỗi nhân viên chỉ có thể ghi đè avatar của chính mình.",
-      "Avatar của người dùng được hiển thị thống nhất giữa header, dashboard, cài đặt, danh sách người dùng và các nhật ký truy xuất.",
-      "Trang truy xuất hồ sơ được tinh gọn khi mở trực tiếp bằng mã, giảm các thành phần tra cứu dư thừa và làm rõ thông tin hồ sơ.",
-      "Nhân viên có thể chọn avatar riêng hoặc quay lại chế độ Theo mặc định hệ thống; lựa chọn cá nhân không làm thay đổi avatar global.",
-      "Superadmin có thể đặt avatar mặc định toàn hệ thống trực tiếp từ trang hồ sơ hoặc cấu hình hệ thống."
+      "Chuẩn bị dung dịch nay có 5 tác vụ ngang hàng: Pha dung dịch, Kiểm tra nồng độ đã pha, Pha dãy chuẩn & QC, Thêm chuẩn vào mẫu và Quy đổi kết quả mẫu.",
+      "Luồng pha dung dịch hiển thị trực tiếp lượng thực tế đã cân hoặc hút để tính nồng độ đạt được và độ lệch so với mục tiêu.",
+      "Bổ sung công cụ thao tác nhanh cho pipet, hóa chất đậm đặc, dãy chuẩn, hệ số muối/ngậm nước và tự động lưu nháp trên trình duyệt.",
+      "Thêm 6 lựa chọn nhanh HNO₃ 65%, HCl 37%, H₂SO₄ 98%, CH₃COOH băng 99,8%, NH₃ 25% và H₃PO₄ 85% với hàm lượng, khối lượng riêng và khối lượng mol danh định.",
+      "Tạo nhanh nhiều điểm chuẩn từ chuỗi nồng độ, thể tích định mức và nguồn dùng chung."
     ]
   },
   "assetGroups": [

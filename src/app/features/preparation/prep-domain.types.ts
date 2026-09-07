@@ -377,3 +377,12 @@ export type PrepOutput =
   | SpikeOutput
   | SeriesOutput
   | ResultConversionOutput;
+
+/** Reference values only; the operator must use the actual label/CoA and temperature. */
+export interface QuickChemicalPreset {
+  readonly id: string;
+  readonly name: string;
+  readonly massPercent: number;
+  readonly densityGPerMl: number;
+  readonly molarMass: number;
+}

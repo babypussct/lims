@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   calculatePrep,
+  PRESET_CHEMICALS,
+  calculateSaltHydrateFactor,
   concentrationToGPerL,
   suggestPipette,
   suggestVolumetricFlask
@@ -235,7 +237,7 @@ test('instrument catalog selects stable pipettes at overlap boundaries', () => {
   for (const [volumeMl, expected] of cases) {
     const issues: CalculationIssue[] = [];
     assert.equal(suggestPipette(volumeMl, 'test', issues)?.id, expected);
-    assert.equal(issues.length, 0);
+    assert.equal(issues.length, volumeMl < 0.01 ? 1 : 0);
   }
   const underIssues: CalculationIssue[] = [];
   assert.equal(suggestPipette(0.0015, 'test', underIssues), null);
@@ -486,4 +488,64 @@ test('engine rejects incompatible bases, negative values and missing denominator
   const zero = calculatePrep({ mode: 'target', sourceType: 'solution', substance: solidSubstance(), targetConcentration: ppm(1), sourceConcentration: ppm(1), finalVolume: volume(0) });
   assert.equal(zero.status, 'incomplete');
   assert.ok(zero.issues.some(issue => issue.code === 'MISSING_INPUT'));
+});
+
+
+test('benchtop: actual 10.35 mg produces 1035 mg/L and preserves mg balance display', () => {
+  const result = calculatePrep({ mode: 'target', sourceType: 'solid', substance: solidSubstance(),
+    targetConcentration: c(1000, 'mg/L', 'mass_per_volume'), finalVolume: volume(10), actualQuantity: mass(10.35, 'mg') });
+  assert.ok(result.output?.kind === 'target');
+  assert.equal(result.output.balanceDisplayMg, 10);
+  assert.ok(Math.abs(result.output.actualConcentration!.massPerVolumeGPerL * 1000 - 1035) < 1e-9);
+  assert.ok(Math.abs((result.output.actualConcentration!.massPerVolumeGPerL / result.output.plannedConcentration.massPerVolumeGPerL - 1) * 100 - 3.5) < 1e-9);
+  const checked = calculatePrep({ mode: 'concentration', sourceType: 'solid', substance: solidSubstance(),
+    plannedQuantity: mass(10.35, 'mg'), finalVolume: volume(10) });
+  assert.ok(checked.output?.kind === 'concentration');
+  assert.equal(checked.output.balanceDisplayMg, 10.35);
+  assert.ok(!checked.issues.some(issue => issue.code === 'MASS_BELOW_READABILITY'));
+});
+
+test('benchtop: masses below 0.01 mg warn even when rounding upwards', () => {
+  const result = calculatePrep({ mode: 'concentration', sourceType: 'solid', substance: solidSubstance(),
+    plannedQuantity: mass(0.009, 'mg'), finalVolume: volume(10) });
+  assert.ok(result.output?.kind === 'concentration');
+  assert.equal(result.output.balanceDisplayMg, 0.01);
+  assert.equal(result.issues.filter(issue => issue.code === 'MASS_BELOW_READABILITY').length, 1);
+});
+
+test('benchtop: small volume warnings, usable badge and tenfold intermediate example', () => {
+  for (const ul of [2.5, 5, 9.999, 10, 25, 250]) {
+    const issues: CalculationIssue[] = [];
+    const pipette = suggestPipette(ul / 1000, 'test', issues);
+    assert.equal(issues.some(issue => issue.code === 'PIPET_SMALL_VOLUME'), ul < 10);
+    if (ul === 2.5) assert.match(issues[0].suggestedAction!, /25 µL \(P100\)/);
+    if (ul === 25) assert.equal(pipette?.id, 'P100');
+    if (ul === 250) assert.equal(pipette?.id, 'P1000');
+  }
+  for (const value of [0, -1, NaN, Infinity]) assert.equal(suggestPipette(value, 'test', []), null);
+});
+
+test('benchtop: six concentrate presets normalize %w/w once using source density', () => {
+  assert.equal(PRESET_CHEMICALS.length, 6);
+  assert.equal(new Set(PRESET_CHEMICALS.map(item => item.id)).size, 6);
+  for (const preset of PRESET_CHEMICALS) {
+    const result = calculatePrep({ mode: 'target', sourceType: 'concentrate',
+      substance: { name: preset.name, molecularWeight: preset.molarMass, densityGPerMl: preset.densityGPerMl },
+      sourceConcentration: c(preset.massPercent, '% w/w', 'mass_fraction', { densityGPerMl: preset.densityGPerMl }),
+      targetConcentration: c(0.1, 'M', 'molar', { molecularWeight: preset.molarMass }), finalVolume: volume(100) });
+    assert.equal(result.status, 'valid', preset.name);
+    assert.ok(result.output?.kind === 'target');
+    assert.match(result.output.operation, /SOP\/SDS.*nhiệt độ định mức/);
+    assert.doesNotMatch(result.output.operation, /vào bình; thêm dung môi/);
+    const expectedMl = 0.1 * 0.1 * preset.molarMass / (preset.massPercent / 100 * preset.densityGPerMl);
+    assert.ok(Math.abs(result.output.plannedQuantity.canonicalValue - expectedMl) < 1e-12, preset.name);
+  }
+});
+
+test('benchtop: salt factor supports stoichiometry and rejects invalid mass fractions', () => {
+  assert.ok(Math.abs(calculateSaltHydrateFactor(63.546, 249.68)! - 0.2545097725088113) < 1e-12);
+  assert.ok(Math.abs(calculateSaltHydrateFactor(22.99, 142.04, 2)! - 45.98 / 142.04) < 1e-12);
+  for (const args of [[0, 100], [10, 0], [-1, 100], [NaN, 100], [10, Infinity], [101, 100], [10, 100, 1.5], [10, 100, 0]]) {
+    assert.equal(calculateSaltHydrateFactor(args[0], args[1], args[2]), null);
+  }
 });

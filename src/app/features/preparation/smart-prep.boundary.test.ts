@@ -99,3 +99,10 @@ test('prep UI prioritizes KNV operation units and fixes units when dimension cha
   assert.match(templateSource, /setResultSampleBase/);
   assert.match(componentSource, /keepDimensionUnit/);
 });
+
+
+test('calculation engine and domain remain free of browser draft storage side effects', () => {
+  const sideEffects = /localStorage|sessionStorage|window\.|document\.|fetch\s*\(|XMLHttpRequest/;
+  assert.doesNotMatch(engineSource, sideEffects);
+  assert.doesNotMatch(domainSource, sideEffects);
+});

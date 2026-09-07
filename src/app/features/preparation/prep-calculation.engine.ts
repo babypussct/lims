@@ -25,8 +25,27 @@ import {
   TargetOutput,
   TargetTaskDraft,
   VolumetricFlaskSuggestion,
-  PipetteSuggestion
+  PipetteSuggestion,
+  QuickChemicalPreset
 } from './prep-domain.types';
+
+/** Nominal quick-entry values, not certified lot-specific concentrations. */
+export const PRESET_CHEMICALS: readonly QuickChemicalPreset[] = [
+  { id: 'hno3-65', name: 'HNO₃ 65%', massPercent: 65, densityGPerMl: 1.40, molarMass: 63.01 },
+  { id: 'hcl-37', name: 'HCl 37%', massPercent: 37, densityGPerMl: 1.19, molarMass: 36.46 },
+  { id: 'h2so4-98', name: 'H₂SO₄ 98%', massPercent: 98, densityGPerMl: 1.84, molarMass: 98.08 },
+  { id: 'acetic-99-8', name: 'CH₃COOH băng 99,8%', massPercent: 99.8, densityGPerMl: 1.05, molarMass: 60.05 },
+  { id: 'nh3-25', name: 'NH₃ 25%', massPercent: 25, densityGPerMl: 0.91, molarMass: 17.03 },
+  { id: 'h3po4-85', name: 'H₃PO₄ 85%', massPercent: 85, densityGPerMl: 1.685, molarMass: 98.00 }
+];
+
+/** Mass fraction of the measured species in one formula unit of salt/hydrate. */
+export function calculateSaltHydrateFactor(baseMolarMass: number, saltMolarMass: number, stoichiometricCount = 1): number | null {
+  if (![baseMolarMass, saltMolarMass, stoichiometricCount].every(value => Number.isFinite(value) && value > 0)
+      || !Number.isInteger(stoichiometricCount)) return null;
+  const factor = baseMolarMass * stoichiometricCount / saltMolarMass;
+  return Number.isFinite(factor) && factor > 0 && factor <= 1 ? factor : null;
+}
 
 export const PIPETTE_RANGES: readonly PipetteSuggestion[] = [
   { id: 'P20', minUl: 2, maxUl: 20, volumeUl: 0 },
@@ -308,7 +327,7 @@ export function concentrationToGPerL(
       const molecularWeight = requiredNumber(
         concentration.molecularWeight,
         path + '.molecularWeight',
-        'phân tử lượng để đổi nồng độ molar',
+        'khối lượng mol để đổi nồng độ mol/L',
         issues
       );
       return molecularWeight === null ? null : normalized.canonicalValue * molecularWeight;
@@ -317,7 +336,7 @@ export function concentrationToGPerL(
       const density = requiredNumber(
         concentration.densityGPerMl,
         path + '.densityGPerMl',
-        'khối lượng riêng để đổi mass/mass sang mass/volume',
+        'khối lượng riêng để đổi nồng độ theo khối lượng sang nồng độ theo thể tích',
         issues
       );
       return density === null ? null : normalized.canonicalValue * density;
@@ -375,7 +394,15 @@ function quantityResult(value: number, dimension: 'mass' | 'volume'): QuantityRe
 
 export function suggestPipette(volumeMl: number, path: string, issues: CalculationIssue[]): PipetteSuggestion | null {
   const volumeUl = volumeMl * 1000;
-  if (volumeUl === 0) return null;
+  if (!Number.isFinite(volumeUl) || volumeUl <= 0) return null;
+  if (volumeUl < 10) {
+    const dilutedVolumeUl = volumeUl * 10;
+    const dilutedRange = PIPETTE_RANGES.find(item => dilutedVolumeUl >= item.minUl && dilutedVolumeUl <= item.maxUl);
+    addIssue(issues, 'PIPET_SMALL_VOLUME', path,
+      'Thể tích hút ' + Number(volumeUl.toPrecision(6)) + ' µL nhỏ hơn 10 µL' + (volumeUl < 5 ? ' (dưới 5 µL)' : '') + ', cần kiểm tra độ phù hợp của pipet và thao tác.',
+      'warning',
+      'Cân nhắc chuẩn trung gian có nồng độ bằng 1/10 để lượng hút tương đương tăng lên ' + Number(dilutedVolumeUl.toPrecision(6)) + ' µL' + (dilutedRange ? ' (' + dilutedRange.id + ')' : '') + '. Tính lại phương án để kiểm tra thể tích cuối, nền mẫu và độ ổn định; đối chiếu SOP và dải hiệu chuẩn của pipet.');
+  }
   if (volumeUl < 2) {
     addIssue(issues, 'PIPET_UNDER_RANGE', path, 'Thể tích cần hút nhỏ hơn dải làm việc nhỏ nhất 2 µL.', 'warning', 'Đề xuất pha dung dịch trung gian hoặc đổi quy mô pha.');
     return null;
@@ -404,9 +431,10 @@ export function suggestVolumetricFlask(volumeMl: number, path: string, issues: C
 }
 
 function balanceDisplayMg(massG: number, path: string, issues: CalculationIssue[]): number {
-  const display = Math.round(massG * 100) / 100;
-  if (display === 0) {
-    addIssue(issues, 'MASS_BELOW_READABILITY', path, 'Khối lượng sau biểu diễn theo độ đọc 0,01 mg trở thành 0,00 mg.', 'warning', 'Không cân trực tiếp theo độ đọc hiện có; đề xuất pha dung dịch trung gian.');
+  const massMg = massG * 1000;
+  const display = Math.round(massMg * 100) / 100;
+  if (massMg < 0.01) {
+    addIssue(issues, 'MASS_BELOW_READABILITY', path, 'Khối lượng cần cân nhỏ hơn độ đọc tham chiếu 0,01 mg.', 'warning', 'Cân nhắc tăng quy mô hoặc pha chuẩn trung gian. Kiểm tra khối lượng cân tối thiểu theo SOP; độ đọc không thay thế giới hạn này.');
   }
   return display;
 }
@@ -418,9 +446,10 @@ function checkPurityAndFactor(
   path: string,
   issues: CalculationIssue[]
 ): { potency: number; conversionFactor: number } {
-  const effectivePotency = sourceType === 'solid' ? (potency ?? 100) : 100;
+  const declaredPotency = sourceType === 'solid' ? requiredNumber(potency, path + '.potencyPercent', 'độ tinh khiết / hàm lượng theo chứng chỉ (%)', issues) : 100;
+  const effectivePotency = declaredPotency ?? 100; // Placeholder only; missing purity prevents any output.
   const effectiveFactor = conversionFactor ?? 1;
-  if (effectivePotency <= 0 || effectivePotency > 100) addIssue(issues, 'POTENCY_OUT_OF_RANGE', path + '.potencyPercent', 'Potency/độ tinh khiết phải lớn hơn 0 và không vượt quá 100%.');
+  if (!Number.isFinite(effectivePotency) || effectivePotency <= 0 || effectivePotency > 100) addIssue(issues, 'POTENCY_OUT_OF_RANGE', path + '.potencyPercent', 'Độ tinh khiết / hàm lượng phải lớn hơn 0 và không vượt quá 100%.');
   if (effectiveFactor <= 0 || !Number.isFinite(effectiveFactor)) addIssue(issues, 'CONVERSION_FACTOR_INVALID', path + '.conversionFactor', 'Hệ số quy đổi phải là số dương hữu hạn.');
   return { potency: effectivePotency, conversionFactor: effectiveFactor };
 }
@@ -454,10 +483,10 @@ function calculateConcentration(draft: ConcentrationTaskDraft): PrepCalculationR
   const name = requireName(draft.substance.name, 'substance.name', 'tên chất/dung dịch', issues);
   const finalVolumeMl = requiredQuantity(draft.finalVolume, 'finalVolume', 'thể tích định mức', 'volume', VOLUME_TO_ML, issues);
   const expectedDimension = draft.sourceType === 'solid' ? 'mass' : 'volume';
-  const planned = requiredQuantity(draft.plannedQuantity, 'plannedQuantity', 'lượng kế hoạch', expectedDimension, expectedDimension === 'mass' ? MASS_TO_G : VOLUME_TO_ML, issues);
+  const planned = requiredQuantity(draft.plannedQuantity, 'plannedQuantity', 'lượng đã cân / hút', expectedDimension, expectedDimension === 'mass' ? MASS_TO_G : VOLUME_TO_ML, issues);
   const actualProvided = optionalQuantity(draft.actualQuantity, 'actualQuantity', 'lượng thực tế', expectedDimension, expectedDimension === 'mass' ? MASS_TO_G : VOLUME_TO_ML, issues);
   const { potency, conversionFactor } = checkPurityAndFactor(draft.sourceType, draft.substance.potencyPercent, draft.substance.conversionFactor, 'substance', issues);
-  const molecularWeight = optionalNumber(draft.substance.molecularWeight, 'substance.molecularWeight', 'phân tử lượng', issues);
+  const molecularWeight = optionalNumber(draft.substance.molecularWeight, 'substance.molecularWeight', 'khối lượng mol', issues);
   const actual = actualProvided ?? planned;
 
   if (finalVolumeMl === null || planned === null || actual === null || name === '') return calculated(null, issues, {}, trace);
@@ -473,7 +502,6 @@ function calculateConcentration(draft: ConcentrationTaskDraft): PrepCalculationR
     actualActiveMassG = actual * potency / 100 * conversionFactor;
     plannedGPerL = activeMassG / (finalVolumeMl / 1000);
     actualGPerL = actualActiveMassG / (finalVolumeMl / 1000);
-    balanceDisplayMg(actualActiveMassG, 'actualQuantity', issues);
     trace.push(
       { label: 'Khối lượng hoạt chất kế hoạch', expression: 'm_planned × potency / 100 × conversion_factor', substitution: planned + ' g × ' + potency + ' / 100 × ' + conversionFactor, value: activeMassG, unit: 'g' },
       { label: 'Khối lượng hoạt chất thực tế', expression: 'm_actual × potency / 100 × conversion_factor', substitution: actual + ' g × ' + potency + ' / 100 × ' + conversionFactor, value: actualActiveMassG, unit: 'g' },
@@ -499,6 +527,8 @@ function calculateConcentration(draft: ConcentrationTaskDraft): PrepCalculationR
   const quantityUnit = draft.sourceType === 'solid' ? 'g' : 'mL';
   const operation = draft.sourceType === 'solid'
     ? 'Cân ' + quantityResult(actual, 'mass').displayValue + ' ' + quantityResult(actual, 'mass').displayUnit + ' ' + name + '; hòa tan và định mức đến ' + finalVolumeMl + ' mL.'
+    : draft.sourceType === 'concentrate'
+      ? 'Lấy ' + Number(quantityResult(actual, 'volume').displayValue.toPrecision(6)) + ' ' + quantityResult(actual, 'volume').displayUnit + ' ' + name + '; pha loãng theo thứ tự và điều kiện an toàn trong SOP/SDS. Đưa về nhiệt độ định mức trước khi định mức đến ' + finalVolumeMl + ' mL.'
     : 'Hút ' + quantityResult(actual, 'volume').displayValue + ' ' + quantityResult(actual, 'volume').displayUnit + ' ' + name + ' vào bình; thêm dung môi và định mức đến ' + finalVolumeMl + ' mL.';
   return calculated({
     kind: 'concentration',
@@ -534,7 +564,7 @@ function calculateTarget(draft: TargetTaskDraft): PrepCalculationResult<PrepOutp
   const finalVolumeMl = requiredQuantity(draft.finalVolume, 'finalVolume', 'thể tích định mức', 'volume', VOLUME_TO_ML, issues);
   const target = concentrationForOutput(draft.targetConcentration, 'targetConcentration', 'nồng độ đích', issues, true);
   const { potency, conversionFactor } = checkPurityAndFactor(draft.sourceType, draft.substance.potencyPercent, draft.substance.conversionFactor, 'substance', issues);
-  const molecularWeight = optionalNumber(draft.substance.molecularWeight, 'substance.molecularWeight', 'phân tử lượng', issues);
+  const molecularWeight = optionalNumber(draft.substance.molecularWeight, 'substance.molecularWeight', 'khối lượng mol', issues);
   const actualProvided = optionalQuantity(draft.actualQuantity, 'actualQuantity', 'lượng thực tế', draft.sourceType === 'solid' ? 'mass' : 'volume', draft.sourceType === 'solid' ? MASS_TO_G : VOLUME_TO_ML, issues);
   if (finalVolumeMl === null || target === null || name === '') return calculated(null, issues, {}, trace);
   const flask = suggestVolumetricFlask(finalVolumeMl, 'finalVolume', issues);
@@ -551,6 +581,7 @@ function calculateTarget(draft: TargetTaskDraft): PrepCalculationResult<PrepOutp
     balanceDisplay = balanceDisplayMg(plannedQuantity, 'plannedQuantity', issues);
     if (actualProvided !== null) {
       actualQuantity = quantityResult(actualProvided, 'mass');
+      balanceDisplayMg(actualProvided, 'actualQuantity', issues);
       const actualActiveMassG = actualProvided * potency / 100 * conversionFactor;
       const actualGPerL = actualActiveMassG / (finalVolumeMl / 1000);
       actualConcentration = snapshot(actualGPerL, molecularWeight);
@@ -566,6 +597,7 @@ function calculateTarget(draft: TargetTaskDraft): PrepCalculationResult<PrepOutp
     pipette = suggestPipette(plannedQuantity, 'plannedQuantity', issues);
     if (actualProvided !== null) {
       actualQuantity = quantityResult(actualProvided, 'volume');
+      suggestPipette(actualProvided, 'actualQuantity', issues);
       const actualGPerL = source.gPerL * actualProvided / finalVolumeMl;
       actualConcentration = snapshot(actualGPerL, molecularWeight);
       trace.push({ label: 'Nồng độ thực tế', expression: 'C_source × V_actual / V_final', substitution: source.gPerL + ' g/L × ' + actualProvided + ' mL / ' + finalVolumeMl + ' mL', value: actualGPerL, unit: 'g/L' });
@@ -577,6 +609,8 @@ function calculateTarget(draft: TargetTaskDraft): PrepCalculationResult<PrepOutp
   const plannedQuantityResult = quantityResult(plannedQuantity, draft.sourceType === 'solid' ? 'mass' : 'volume');
   const operation = draft.sourceType === 'solid'
     ? 'Cân ' + plannedQuantityResult.displayValue + ' ' + plannedQuantityResult.displayUnit + ' ' + name + '; hòa tan và định mức đến ' + finalVolumeMl + ' mL.'
+    : draft.sourceType === 'concentrate'
+      ? 'Lấy ' + Number(plannedQuantityResult.displayValue.toPrecision(6)) + ' ' + plannedQuantityResult.displayUnit + ' ' + name + '; pha loãng theo thứ tự và điều kiện an toàn trong SOP/SDS. Đưa về nhiệt độ định mức trước khi định mức đến ' + finalVolumeMl + ' mL.'
     : 'Hút ' + plannedQuantityResult.displayValue + ' ' + plannedQuantityResult.displayUnit + ' ' + name + ' vào bình; thêm dung môi và định mức đến ' + finalVolumeMl + ' mL.';
   return calculated({
     kind: 'target',
@@ -616,9 +650,9 @@ function calculateSpike(draft: SpikeTaskDraft): PrepCalculationResult<PrepOutput
       addIssue(issues, 'INCOMPATIBLE_BASIS', 'target', 'Mẫu rắn phải dùng cơ sở khối lượng/khối lượng, ví dụ mg/kg hoặc µg/kg.');
       return calculated(null, issues, {}, trace);
     }
-    const initial = draft.initialConcentration ? normalizeConcentration(draft.initialConcentration, 'initialConcentration', 'nồng độ nền', issues) : null;
+    const initial = draft.initialConcentration ? normalizeConcentration(draft.initialConcentration, 'initialConcentration', 'nồng độ nền', issues, true) : null;
     if (draft.initialConcentration && !initial) return calculated(null, issues, {}, trace);
-    if (initial && initial.basis !== 'mass_per_mass') addIssue(issues, 'INCOMPATIBLE_BASIS', 'initialConcentration', 'Nồng độ nền của mẫu rắn phải là mass/mass.');
+    if (initial && initial.basis !== 'mass_per_mass') addIssue(issues, 'INCOMPATIBLE_BASIS', 'initialConcentration', 'Nồng độ nền của mẫu rắn phải tính theo khối lượng mẫu.');
     const addedGPerKg = draft.semantic === 'final_total' ? target.canonicalValue - (initial?.canonicalValue ?? 0) : target.canonicalValue;
     if (addedGPerKg < 0) addIssue(issues, 'BACKGROUND_EXCEEDS_TARGET', 'target', 'Nồng độ nền lớn hơn nồng độ tổng đích; không thể tính lượng thêm.');
     addedMassG = addedGPerKg * (sampleCanonical / 1000);
@@ -627,7 +661,7 @@ function calculateSpike(draft: SpikeTaskDraft): PrepCalculationResult<PrepOutput
   } else {
     const target = concentrationForOutput(draft.target, 'target', 'mức thêm chuẩn (spike)', issues);
     if (!target) return calculated(null, issues, {}, trace);
-    const initial = draft.initialConcentration ? concentrationForOutput(draft.initialConcentration, 'initialConcentration', 'nồng độ nền', issues) : null;
+    const initial = draft.initialConcentration ? concentrationForOutput(draft.initialConcentration, 'initialConcentration', 'nồng độ nền', issues, true) : null;
     if (draft.initialConcentration && !initial) return calculated(null, issues, {}, trace);
     targetSnapshot = target.snapshot;
     initialSnapshot = initial?.snapshot ?? null;
@@ -714,7 +748,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
       return null;
     }
     if (resolving.has(id)) {
-      addIssue(issues, 'SOURCE_CYCLE', 'sources[' + id + ']', 'Cây dung dịch nguồn có vòng lặp.');
+      addIssue(issues, 'SOURCE_CYCLE', 'sources[' + id + ']', 'Các dung dịch đang tham chiếu ngược về nhau; kiểm tra lại dung dịch dùng để pha.');
       return null;
     }
     resolving.add(id);
@@ -733,7 +767,9 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
   };
   for (const source of draft.sources) {
     const concentrationGPerL = resolveSource(source.id);
-    const preparedVolumeMl = requiredQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích pha của ' + source.name, 'volume', VOLUME_TO_ML, issues);
+    const preparedVolumeMl = source.sourceId
+      ? requiredQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích pha của ' + source.name, 'volume', VOLUME_TO_ML, issues)
+      : optionalQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích dung dịch có sẵn', 'volume', VOLUME_TO_ML, issues) ?? 0;
     const actualSourceVolumeMl = optionalQuantity(source.actualSourceQuantity, 'sources[' + source.id + '].actualSourceQuantity', 'thể tích nguồn thực tế', 'volume', VOLUME_TO_ML, issues);
     if (concentrationGPerL === null || preparedVolumeMl === null) continue;
     sourceRows.push(source);
@@ -744,10 +780,9 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
       ? parentConcentration * actualSourceVolumeMl / preparedVolumeMl
       : null;
     if (sourceVolumeMl !== null) {
-      suggestPipette(sourceVolumeMl, 'sources[' + source.id + '].sourceVolume', issues);
       trace.push({ label: 'Nguồn trực tiếp của ' + source.name, expression: 'C_target × V_prepared / C_source', substitution: concentrationGPerL + ' g/L × ' + preparedVolumeMl + ' mL / ' + parentConcentration + ' g/L', value: sourceVolumeMl, unit: 'mL' });
     }
-    trace.push({ label: 'Chuẩn bị ' + source.name, expression: 'định mức đến V_prepared', substitution: preparedVolumeMl + ' mL', value: preparedVolumeMl, unit: 'mL' });
+    if (source.sourceId) trace.push({ label: 'Chuẩn bị ' + source.name, expression: 'định mức đến V_prepared', substitution: preparedVolumeMl + ' mL', value: preparedVolumeMl, unit: 'mL' });
   }
 
   const pointRows: SeriesPointOutput[] = [];
@@ -847,7 +882,8 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
       if (fixedVolumeMl === null && !targetLevel) addIssue(issues, 'MISSING_ADDITION_LEVEL', 'additions[' + additionIndex + ']', 'Nhập thể tích cố định hoặc nồng độ đích cho nội chuẩn/surrogate.');
       continue;
     }
-    const scope = addition.applicationScope.length ? addition.applicationScope : ['standard', 'blank', 'qc', 'sample'];
+    const scope = addition.applicationScope;
+    if (!scope.length) addIssue(issues, 'MISSING_ADDITION_SCOPE', 'additions[' + additionIndex + '].applicationScope', 'Chọn ít nhất một loại mẫu cần thêm chuẩn hoặc bỏ dòng chuẩn thêm này.');
     const exceptions = new Set(addition.exceptions ?? []);
     for (const point of pointRows) {
       if (!scope.includes(point.objectType) || exceptions.has(point.objectType)) continue;
@@ -874,7 +910,9 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
 
   const sourceDemand = sourceRows.map(source => {
     const directRequiredVolumeMl = demand.get(source.id) ?? 0;
-    const preparedVolumeMl = requiredQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích pha', 'volume', VOLUME_TO_ML, issues);
+    const preparedVolumeMl = source.sourceId
+      ? requiredQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích pha', 'volume', VOLUME_TO_ML, issues)
+      : optionalQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích dung dịch có sẵn', 'volume', VOLUME_TO_ML, issues);
     const requiredWithResidualMl = directRequiredVolumeMl * (1 + residualPercent / 100);
     if (preparedVolumeMl !== null && requiredWithResidualMl > preparedVolumeMl) addIssue(issues, 'SOURCE_VOLUME_INSUFFICIENT', 'sources[' + source.id + ']', 'Thể tích chuẩn bị của ' + source.name + ' không đủ sau khi cộng phần dư nhập tay.', 'warning', 'Tăng quy mô pha hoặc giảm phần dư sau khi KNV xem xét.');
     return { sourceId: source.id, name: source.name.trim(), directRequiredVolumeMl, requiredVolumeMl: directRequiredVolumeMl, residualPercent, requiredWithResidualMl, preparedVolumeMl };
@@ -883,7 +921,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
     addIssue(issues, 'SERIAL_DILUTION_RISK', 'points', 'Dãy pha loãng nối tiếp có nhiều bước hoặc hệ số pha loãng một bước quá lớn.', 'warning', 'Cân nhắc thêm dung dịch trung gian để giảm tích lũy sai số.');
   }
   const instructions = [
-    ...sourceRows.map(source => 'Chuẩn bị ' + source.name.trim() + ' theo nguồn trực tiếp rồi định mức đến thể tích đã nhập.'),
+    ...sourceRows.map(source => source.sourceId ? 'Chuẩn bị ' + source.name.trim() + ' theo nguồn trực tiếp rồi định mức đến thể tích đã nhập.' : 'Sử dụng dung dịch có sẵn: ' + source.name.trim()),
     ...pointRows.map(point => point.operation),
     ...additionRows.map(addition => addition.operation)
   ];
@@ -893,7 +931,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
     strategy: draft.strategy,
     intermediateRows: sourceRows.map(source => {
       const concentrationGPerL = sourceConcentrationById.get(source.id) ?? 0;
-      const preparedVolumeMl = requiredQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích pha', 'volume', VOLUME_TO_ML, issues) ?? 0;
+      const preparedVolumeMl = source.sourceId ? requiredQuantity(source.preparedVolume, 'sources[' + source.id + '].preparedVolume', 'thể tích pha', 'volume', VOLUME_TO_ML, issues) ?? 0 : 0;
       const parent = source.sourceId ? sourceConcentrationById.get(source.sourceId) ?? null : null;
       const sourceVolumeMl = parent === null ? null : concentrationGPerL * preparedVolumeMl / parent;
       const actualSourceVolumeMl = optionalQuantity(source.actualSourceQuantity, 'sources[' + source.id + '].actualSourceQuantity', 'thể tích nguồn thực tế', 'volume', VOLUME_TO_ML, issues);
@@ -908,7 +946,7 @@ function calculateSeries(draft: SeriesTaskDraft): PrepCalculationResult<PrepOutp
         actualConcentrationGPerL: parent === null || actualSourceVolumeMl === null ? null : parent * actualSourceVolumeMl / preparedVolumeMl,
         operation: sourceVolumeMl === null ? 'Sử dụng ' + source.name.trim() + ' làm nguồn do người thực hiện khai báo trực tiếp.' : 'Hút ' + quantityResult(sourceVolumeMl, 'volume').displayValue + ' ' + quantityResult(sourceVolumeMl, 'volume').displayUnit + ' từ nguồn trực tiếp; định mức đến ' + preparedVolumeMl + ' mL.',
         pipette: sourceVolumeMl === null ? null : suggestPipette(sourceVolumeMl, 'sources[' + source.id + '].sourceVolume', issues),
-        flask: suggestVolumetricFlask(preparedVolumeMl, 'sources[' + source.id + '].preparedVolume', issues)
+        flask: source.sourceId ? suggestVolumetricFlask(preparedVolumeMl, 'sources[' + source.id + '].preparedVolume', issues) : null
       };
     }),
     pointRows,

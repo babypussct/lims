@@ -6,6 +6,23 @@
 > Tài liệu nguồn: trao đổi trực tiếp với người phụ trách nghiệp vụ
 > Quan hệ tài liệu: tài liệu này thay thế mô hình sáu mode và các giả định công thức trong `PREP_STATION_REDESIGN_CHECKLIST.md`; ranh giới loại bỏ Kho và mọi giao dịch tồn vẫn được giữ nguyên.
 
+## Điều chỉnh giao diện ngày 2026-09-06
+
+Theo yêu cầu giảm ô nhập và dùng ngôn ngữ nghiệp vụ hóa học:
+
+- Mở mặc định ở **Pha dung dịch**. Bốn thao tác chính là pha dung dịch, tính nồng độ đã pha, pha dãy chuẩn/QC và thêm chuẩn vào mẫu; quy đổi kết quả nằm ở mục tính toán bổ trợ.
+- Luồng pha loãng thông thường có năm nhóm thông tin: loại nguồn, tên, nồng độ nguồn, nồng độ cần pha và thể tích định mức. Đơn vị nằm cạnh giá trị.
+- Khối lượng mol chỉ xuất hiện khi dùng đơn vị mol; khối lượng riêng chỉ xuất hiện khi phép quy đổi cần đến, tách nguồn và dung dịch đích. Với % v/v, khối lượng riêng dùng cho quy đổi sang khối lượng là của chất nguyên chất; với % w/w là của dung dịch.
+- Chất rắn phải có độ tinh khiết/hàm lượng được khai báo theo chứng chỉ và SOP. Không tự điền 100%. Quy đổi dạng muối/ngậm nước chỉ có hiệu lực khi người dùng chọn áp dụng.
+- Tính nồng độ đã pha chỉ yêu cầu một lượng đã cân/hút. Tính lượng cần pha có tùy chọn riêng để nhập thực tế, tính lại nồng độ và độ lệch; giá trị trong tùy chọn đã tắt không tham gia phép tính.
+- Không tự điền số liệu ví dụ. Dãy chuẩn bắt đầu bằng một dung dịch gốc và một điểm chuẩn; nội chuẩn/chuẩn đồng hành chỉ được thêm khi cần. Nguồn có sẵn không cần khai báo thể tích pha; dung dịch trung gian vẫn phải có thể tích định mức.
+- Phiếu tính có mục thông tin bổ sung thu gọn: SOP/phiên bản, nguồn/lô/chứng chỉ, dung môi, mã dụng cụ, người pha, ngày pha, hạn dùng, bảo quản và ghi chú kiểm tra. Các trường này phục vụ phiếu xuất, không cản trở tính nhanh.
+- Chỉ cho in, sao chép hoặc xuất khi số liệu cho phép tính được kết quả. Phiếu bao gồm thông tin đã nhập, căn cứ phép tính và cảnh báo; chưa mang ý nghĩa hồ sơ pha được phê duyệt.
+
+Căn cứ thiết kế: [ISO/IEC 17025:2017](https://www.iso.org/standard/66912.html) và [Eurachem/CITAC, Guide to Quality in Analytical Chemistry, bản 4 (2026)](https://eurachem.org/images/stories/Guides/pdf/Eurachem_CITAC_QAC_2026_EN.pdf), đặc biệt các phần 12 (thuốc thử), 13 (chuẩn/vật liệu chuẩn), 22 (liên kết chuẩn đo lường), 30–31 (hệ thống máy tính và dữ liệu). Đây là cách triển khai hỗ trợ nghiệp vụ, không phải tuyên bố ứng dụng được công nhận phù hợp ISO/IEC 17025. Quy trình rà soát, xác nhận hạn dùng, tiêu chí chấp nhận và quản lý hồ sơ chính thức vẫn theo SOP phòng thí nghiệm.
+
+Phần điều chỉnh này cập nhật cách tổ chức giao diện của các mục dưới đây; giữ ranh giới công cụ tính toán không tạo giao dịch hay ghi hồ sơ nghiệp vụ.
+
 ## 1. Mục tiêu nghiệp vụ
 
 Trạm Pha Chế là công cụ tính toán tại chỗ cho kiểm nghiệm viên (KNV), được tổ chức theo câu hỏi thực tế trong quá trình pha chuẩn, pha dung dịch, thêm chuẩn và chuẩn bị dãy hiệu chuẩn.
@@ -884,3 +901,20 @@ Các điểm dưới đây chưa phải blocker cho việc thiết kế domain, 
 - Quy tắc chữ số có nghĩa và cách làm tròn kết quả.
 - Các loại blank/QC đang dùng và quy tắc thêm nội chuẩn cho từng loại.
 - Một hoặc hai SOP đại diện để xác nhận stage model của nghiệp vụ Quy đổi kết quả.
+
+
+## 18. Nâng cấp thao tác tại bàn thí nghiệm (07/09/2026)
+
+Yêu cầu bổ sung của KNV thay thế cách xếp tác vụ ở vòng trước: hiển thị năm tác vụ ngang hàng, gồm Pha dung dịch, Kiểm tra nồng độ đã pha, Pha dãy chuẩn & QC, Thêm chuẩn vào mẫu (Spike), Quy đổi kết quả mẫu. Ô lượng thực tế trong Pha dung dịch luôn hiển thị nhưng không bắt buộc; để trống vẫn tính được lượng lý thuyết.
+
+- Hiển thị gợi ý pipet từ kết quả engine và cảnh báo dưới 10 µL (nhấn mạnh dưới 5 µL). Ví dụ 2,5 µL có thể cân nhắc chuẩn trung gian 1/10 để tăng lượng hút tương đương lên 25 µL; phải tính lại phương án và kiểm tra thể tích cuối, nền mẫu, độ ổn định. Không tự động thay phương án, không coi ngưỡng 10 µL là điều khoản ISO hay giới hạn chung của mọi pipet.
+- Sáu lựa chọn nhanh HNO₃, HCl, H₂SO₄, CH₃COOH, NH₃, H₃PO₄ dùng giá trị danh định do KNV cung cấp. Hàm lượng là % w/w, khối lượng riêng g/mL, khối lượng mol g/mol. KNV sửa lại theo nhãn/CoA và nhiệt độ; không nhân thêm độ tinh khiết vào hàm lượng nguồn lần thứ hai.
+- Hệ số muối/ngậm nước là f = n × M(hoạt chất/ion) / M(muối/ngậm nước); n mặc định 1, phải là số nguyên dương. Hệ số phải trong (0,1]. Khi tính mol hoạt chất, M dùng để chuyển đổi phải tương ứng với chính hoạt chất/ion đó.
+- Nhập nhanh dãy có đơn vị nồng độ, thể tích và nguồn chung; xác thực toàn bộ trước khi tạo để tránh dãy bị cập nhật một phần.
+- Chỉ UI lưu nháp có phiên bản trong trình duyệt; engine vẫn thuần tính toán. Dữ liệu sai cấu trúc hoặc trình duyệt chặn bộ nhớ không được làm hỏng trang. Phiếu tính mới xóa trạng thái và nháp đã lưu.
+- Sửa đơn vị hiển thị cân: chuyển g sang mg trước khi làm tròn 0,01 mg. Cảnh báo dựa trên khối lượng thực sự cần cân, không dựa trên khối lượng hoạt chất sau hiệu chỉnh. Độ đọc không thay thế minimum weight theo SOP.
+
+Nguồn đối chiếu nghiệp vụ:
+- [Eppendorf — dải thể tích và lựa chọn pipet](https://www.eppendorf.com/gb-en/Products/Liquid-Handling/All-Pipettes-Dispensers-Automated-Liquid-Handlers/Eppendorf-Research-plus-p-PF-534798): có thiết bị chuyên dụng cho thể tích dưới 10 µL; gợi ý trong helper không thay chứng nhận thiết bị.
+- [Sigma-Aldrich — HNO₃ 65–66%, khối lượng riêng 1,40](https://www.sigmaaldrich.com/US/en/product/saj/211640).
+- [Merck — danh mục axit, nồng độ và khối lượng riêng ở 20 °C](https://www.sigmaaldrich.com/deepweb/assets/sigmaaldrich/product/documents/234/086/026483-merc140069-w281750-inorganic-reagents-2014-ms.pdf).

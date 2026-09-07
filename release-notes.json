@@ -1,22 +1,24 @@
 {
-  "title": "Avatar toàn hệ thống đúng phạm vi và trang truy xuất rõ ràng hơn",
+  "title": "Chuẩn bị dung dịch nhanh và an toàn hơn tại bàn thí nghiệm",
   "highlights": [
-    "Superadmin nay kiểm soát avatar mặc định global cho toàn LIMS, trong khi mỗi nhân viên chỉ có thể ghi đè avatar của chính mình.",
-    "Avatar của người dùng được hiển thị thống nhất giữa header, dashboard, cài đặt, danh sách người dùng và các nhật ký truy xuất.",
-    "Trang truy xuất hồ sơ được tinh gọn khi mở trực tiếp bằng mã, giảm các thành phần tra cứu dư thừa và làm rõ thông tin hồ sơ."
+    "Chuẩn bị dung dịch nay có 5 tác vụ ngang hàng: Pha dung dịch, Kiểm tra nồng độ đã pha, Pha dãy chuẩn & QC, Thêm chuẩn vào mẫu và Quy đổi kết quả mẫu.",
+    "Luồng pha dung dịch hiển thị trực tiếp lượng thực tế đã cân hoặc hút để tính nồng độ đạt được và độ lệch so với mục tiêu.",
+    "Bổ sung công cụ thao tác nhanh cho pipet, hóa chất đậm đặc, dãy chuẩn, hệ số muối/ngậm nước và tự động lưu nháp trên trình duyệt."
   ],
   "features": [
-    "Nhân viên có thể chọn avatar riêng hoặc quay lại chế độ Theo mặc định hệ thống; lựa chọn cá nhân không làm thay đổi avatar global.",
-    "Superadmin có thể đặt avatar mặc định toàn hệ thống trực tiếp từ trang hồ sơ hoặc cấu hình hệ thống."
+    "Thêm 6 lựa chọn nhanh HNO₃ 65%, HCl 37%, H₂SO₄ 98%, CH₃COOH băng 99,8%, NH₃ 25% và H₃PO₄ 85% với hàm lượng, khối lượng riêng và khối lượng mol danh định.",
+    "Tạo nhanh nhiều điểm chuẩn từ chuỗi nồng độ, thể tích định mức và nguồn dùng chung.",
+    "Tính hệ số muối/ngậm nước theo khối lượng mol hoạt chất hoặc ion, dạng muối/ngậm nước và hệ số stoichiometry.",
+    "Tự động lưu và khôi phục phiếu tính đang làm dở bằng localStorage; Phiếu tính mới xóa sạch bản nháp."
   ],
   "improvements": [
-    "Bộ phân giải avatar dùng chung tách rõ cấu hình global và override cá nhân, tránh cache nhầm giá trị mặc định thành lựa chọn riêng.",
-    "Trang Người dùng & quyền hiển thị đúng avatar riêng của từng tài khoản thay vì ép tất cả dùng avatar global.",
-    "Header truy xuất bổ sung nhãn Mã truy xuất, Ghi nhận và Hồ sơ liên quan; mã hồ sơ liên quan trùng mã truy xuất sẽ không bị lặp."
+    "Hiển thị gợi ý micropipet phù hợp cạnh thể tích hút và cảnh báo khi thể tích dưới 10 µL, kèm gợi ý cân nhắc chuẩn trung gian 1/10.",
+    "Tối ưu bảng dãy chuẩn và xử lý mẫu để thao tác gọn hơn trên màn hình laptop và máy tính bảng.",
+    "Giữ calculation engine thuần tính toán, không phụ thuộc kho hóa chất, Firestore hoặc giao dịch tồn kho."
   ],
   "fixes": [
-    "Khóa Firestore để chỉ protected Superadmin được thay đổi hoặc xóa avatarStyle global; manager thường và quyền system_manage không thể vượt phạm vi này.",
-    "Chặn protected Superadmin tạo override avatar cá nhân mới, đồng thời cho phép xóa dữ liệu override cũ để tài khoản này luôn theo global.",
-    "Khi mở trang truy xuất trực tiếp bằng ID, khối nhập mã không còn xuất hiện sai ngữ cảnh và hành động lỗi được rút gọn còn Thử lại."
+    "Sửa hiển thị khối lượng cân sang mg trước khi làm tròn theo độ đọc tham chiếu 0,01 mg.",
+    "Bản nháp dãy chuẩn chấp nhận danh sách chất thêm rỗng và giữ tham chiếu nguồn cũ để KNV có thể sửa thay vì âm thầm thay đổi dữ liệu.",
+    "Chất rắn yêu cầu khai báo độ tinh khiết hoặc hàm lượng thay vì tự mặc định 100%."
   ]
 }
