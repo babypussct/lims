@@ -105,6 +105,9 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(component, /aggregateDutyRosterById/);
   assert.match(component, /readonly personStats = computed/);
   assert.match(component, /readonly averageAssignments = computed/);
+  assert.match(component, /this\.state\.ensureUserInfoCacheListener\(\)/);
+  assert.match(component, /getUserAvatarOptionsByUid\(linkedUserUid, displayName\)/);
+  assert.match(component, /getAvatarUrl\(options\.displayName \|\| displayName, options\.style, options\.photoURL\)/);
 
   assert.match(template, /Lịch tháng/);
   assert.match(template, /grid-cols-7/);
@@ -113,6 +116,8 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /Người tham gia/);
   assert.match(template, /Bình quân\/người/);
   assert.match(template, /@for \(stat of personStats\(\); track stat\.staffId/);
+  assert.match(template, /avatarFor\(stat\.displayName, stat\.linkedUserUid\)/);
+  assert.doesNotMatch(template, /initialsFor\(stat\.displayName\)/);
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
   assert.match(template, /so bình quân/);
 });

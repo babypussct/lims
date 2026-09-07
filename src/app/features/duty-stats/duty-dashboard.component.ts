@@ -2,7 +2,9 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { StateService } from '../../core/services/state.service';
 import { AppEmptyStateComponent } from '../../shared/components/ui';
+import { getAvatarUrl } from '../../shared/utils/utils';
 import type { DutyScheduleEntry } from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
 import {
@@ -33,6 +35,7 @@ interface DutyDashboardCalendarCell {
 export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly duty = inject(DutyScheduleService);
   private readonly auth = inject(AuthService);
+  private readonly state = inject(StateService);
   private readonly router = inject(Router);
 
   readonly todayKey = currentDutyDateKey();
@@ -130,6 +133,7 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.state.ensureUserInfoCacheListener();
     const sevenDayEnd = shiftDutyDateKey(this.todayKey, 6);
     this.duty.watchRange(this.currentMonthRange.start, sevenDayEnd > this.currentMonthRange.end ? sevenDayEnd : this.currentMonthRange.end);
   }
@@ -185,11 +189,9 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     return this.nextAssignmentByStaffId().get(staffId);
   }
 
-  initialsFor(displayName: string): string {
-    const parts = displayName.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toLocaleUpperCase('vi');
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toLocaleUpperCase('vi');
+  avatarFor(displayName: string, linkedUserUid?: string | null): string {
+    const options = this.state.getUserAvatarOptionsByUid(linkedUserUid, displayName);
+    return getAvatarUrl(options.displayName || displayName, options.style, options.photoURL);
   }
 
   daysUntil(dateKey: string): number {

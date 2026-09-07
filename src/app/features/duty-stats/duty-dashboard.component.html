@@ -322,7 +322,10 @@
             @for (stat of personStats(); track stat.staffId; let index = $index) {
               <article class="mb-2 rounded-2xl bg-slate-50/80 p-3 last:mb-0 dark:bg-slate-800/50" [ngClass]="linkedStaff()?.id === stat.staffId ? ['ring-1', 'ring-blue-200', 'dark:ring-blue-800'] : []">
                 <div class="flex items-start gap-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white shadow-sm" style="background: var(--soft-ui-gradient-info)">{{ initialsFor(stat.displayName) }}</span>
+                  <img
+                    [src]="avatarFor(stat.displayName, stat.linkedUserUid)"
+                    [alt]="'Avatar ' + stat.displayName"
+                    class="h-9 w-9 shrink-0 rounded-full border border-slate-200 bg-white object-cover shadow-sm dark:border-slate-700 dark:bg-slate-800">
                   <div class="min-w-0 flex-1">
                     <div class="flex min-w-0 items-center gap-1.5">
                       <div class="truncate text-xs font-black text-slate-700 dark:text-slate-200">{{ stat.displayName }}</div>

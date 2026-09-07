@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.07-b01",
-    "title": "Chuẩn bị dung dịch nhanh và an toàn hơn tại bàn thí nghiệm",
+    "version": "v26.09.07-b02",
+    "title": "Tra cứu nguồn gốc nhanh hơn và nhận diện người trực rõ ràng hơn",
     "features": [
-      "Chuẩn bị dung dịch nay có 5 tác vụ ngang hàng: Pha dung dịch, Kiểm tra nồng độ đã pha, Pha dãy chuẩn & QC, Thêm chuẩn vào mẫu và Quy đổi kết quả mẫu.",
-      "Luồng pha dung dịch hiển thị trực tiếp lượng thực tế đã cân hoặc hút để tính nồng độ đạt được và độ lệch so với mục tiêu.",
-      "Bổ sung công cụ thao tác nhanh cho pipet, hóa chất đậm đặc, dãy chuẩn, hệ số muối/ngậm nước và tự động lưu nháp trên trình duyệt.",
-      "Thêm 6 lựa chọn nhanh HNO₃ 65%, HCl 37%, H₂SO₄ 98%, CH₃COOH băng 99,8%, NH₃ 25% và H₃PO₄ 85% với hàm lượng, khối lượng riêng và khối lượng mol danh định.",
-      "Tạo nhanh nhiều điểm chuẩn từ chuỗi nồng độ, thể tích định mức và nguồn dùng chung."
+      "Nhập mã hoặc dán liên kết truy xuất ngay trong ô tìm kiếm để mở hồ sơ.",
+      "Xem ảnh đại diện của người tham gia trong thống kê lịch trực.",
+      "Mở Truy Xuất Nguồn Gốc từ danh sách hành động nhanh trong ô tìm kiếm.",
+      "Ưu tiên hồ sơ truy xuất khi nhập mã phù hợp, đồng thời giữ tìm kiếm chức năng quen thuộc.",
+      "Bổ sung nút tìm kiếm thuận tiện trên máy tính bảng."
     ]
   },
   "assetGroups": [

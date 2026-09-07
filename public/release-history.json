@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.09.07-b02",
+    "date": "7/9/2026",
+    "title": "Tra cứu nguồn gốc nhanh hơn và nhận diện người trực rõ ràng hơn",
+    "highlights": [
+      "Nhập mã hoặc dán liên kết truy xuất ngay trong ô tìm kiếm để mở hồ sơ.",
+      "Xem ảnh đại diện của người tham gia trong thống kê lịch trực."
+    ],
+    "features": [
+      "Mở Truy Xuất Nguồn Gốc từ danh sách hành động nhanh trong ô tìm kiếm."
+    ],
+    "improvements": [
+      "Ưu tiên hồ sơ truy xuất khi nhập mã phù hợp, đồng thời giữ tìm kiếm chức năng quen thuộc.",
+      "Bổ sung nút tìm kiếm thuận tiện trên máy tính bảng.",
+      "Hiển thị ảnh đại diện theo tài khoản liên kết của người trực để nhận diện chính xác hơn."
+    ],
+    "fixes": [
+      "Sửa tình trạng không cuộn được trang Truy Xuất Nguồn Gốc khi mở ngoài giao diện chính.",
+      "Giữ nguyên chữ hoa, chữ thường của mã khi tra cứu từ liên kết hoặc ô tìm kiếm."
+    ],
+    "releaseOrder": 26090700002
+  },
+  {
     "version": "v26.09.07-b01",
     "date": "7/9/2026",
     "title": "Chuẩn bị dung dịch nhanh và an toàn hơn tại bàn thí nghiệm",

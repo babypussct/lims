@@ -17,6 +17,7 @@ import { TargetService } from '../targets/target.service';
 import { TargetGroup } from '../../core/models/sop.model';
 import { classifyTargetScope, buildTargetScopePresentation, TargetScopePresentation } from '../targets/target-scope-classifier';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
+import { normalizeTraceabilityLookup } from '../../shared/utils/traceability-lookup';
 import { QrGlobalService } from '../../core/services/qr-global.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
@@ -830,36 +831,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   }
 
   private normalizeLookupValue(rawValue: string): string {
-      let value = rawValue.trim();
-      if (!value) return '';
-
-      try {
-          const parsedUrl = new URL(value, window.location.origin);
-          const hashMatch = parsedUrl.hash.match(/#\/traceability\/([^/?#]+)/i);
-          const pathMatch = parsedUrl.pathname.match(/\/traceability\/([^/?#]+)/i);
-          const queryId = parsedUrl.searchParams.get('id');
-
-          if (hashMatch?.[1]) {
-              value = hashMatch[1];
-          } else if (pathMatch?.[1]) {
-              value = pathMatch[1];
-          } else if (queryId) {
-              value = queryId;
-          }
-      } catch {
-          const routeMatch = value.match(/(?:#\/)?traceability\/([^/?#]+)/i);
-          if (routeMatch?.[1]) {
-              value = routeMatch[1];
-          }
-      }
-
-      try {
-          value = decodeURIComponent(value);
-      } catch {
-          // Keep the original value when it is not valid URI-encoded text.
-      }
-
-      return value.trim();
+      return normalizeTraceabilityLookup(rawValue);
   }
 
   private stopVerificationTimers() {

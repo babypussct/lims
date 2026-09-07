@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.07-b01
+## Phiên bản hiện tại: v26.09.07-b02
+
+### v26.09.07-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nhập mã hoặc dán liên kết truy xuất ngay trong ô tìm kiếm để mở hồ sơ.
+- Xem ảnh đại diện của người tham gia trong thống kê lịch trực.
+
+#### ✨ Tính Năng Mới
+
+- Mở Truy Xuất Nguồn Gốc từ danh sách hành động nhanh trong ô tìm kiếm.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Ưu tiên hồ sơ truy xuất khi nhập mã phù hợp, đồng thời giữ tìm kiếm chức năng quen thuộc.
+- Bổ sung nút tìm kiếm thuận tiện trên máy tính bảng.
+- Hiển thị ảnh đại diện theo tài khoản liên kết của người trực để nhận diện chính xác hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa tình trạng không cuộn được trang Truy Xuất Nguồn Gốc khi mở ngoài giao diện chính.
+- Giữ nguyên chữ hoa, chữ thường của mã khi tra cứu từ liên kết hoặc ô tìm kiếm.
 
 ### v26.09.07-b01
 

@@ -146,8 +146,14 @@ export class StateService implements OnDestroy {
     photoURL: string;
     protectedAdmin: boolean;
   }>>(new Map());
+  usersInfoByUidCache = signal<Map<string, {
+    displayName: string;
+    avatarStyle: string | null;
+    photoURL: string;
+    protectedAdmin: boolean;
+  }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.07-b01');
+  systemVersion = signal<string>('v26.09.07-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -326,6 +332,7 @@ export class StateService implements OnDestroy {
     this.standards.set([]);
     this.requests.set([]); this.approvedRequests.set([]); this.standardRequests.set([]); this.allStandardRequests.set([]);
     this.usersInfoCache.set(new Map());
+    this.usersInfoByUidCache.set(new Map());
   }
 
   ngOnDestroy() { this.cleanupListeners(); }
@@ -797,20 +804,32 @@ export class StateService implements OnDestroy {
           photoURL: string;
           protectedAdmin: boolean;
         }>();
+        const uidCacheMap = new Map<string, {
+          displayName: string;
+          avatarStyle: string | null;
+          photoURL: string;
+          protectedAdmin: boolean;
+        }>();
         s.forEach(d => {
             const data = d.data();
             if (data['displayName']) {
-                cacheMap.set(data['displayName'], {
-                    avatarStyle: typeof data['avatarStyle'] === 'string' && data['avatarStyle'].trim()
-                      ? data['avatarStyle'].trim()
-                      : null,
-                    photoURL: data['photoURL'] || '',
-                    protectedAdmin: data['protectedAdmin'] === true,
+                const avatarStyle = typeof data['avatarStyle'] === 'string' && data['avatarStyle'].trim()
+                  ? data['avatarStyle'].trim()
+                  : null;
+                const photoURL = data['photoURL'] || '';
+                const protectedAdmin = data['protectedAdmin'] === true;
+                cacheMap.set(data['displayName'], { avatarStyle, photoURL, protectedAdmin });
+                uidCacheMap.set(d.id, {
+                  displayName: data['displayName'],
+                  avatarStyle,
+                  photoURL,
+                  protectedAdmin,
                 });
             }
         });
         if (!isCurrentInit()) return;
         this.usersInfoCache.set(cacheMap);
+        this.usersInfoByUidCache.set(uidCacheMap);
       }, (error: any) => {
       if (!isCurrentInit()) return;
       console.warn('Users Cache listener error:', error.message);
@@ -1183,6 +1202,33 @@ export class StateService implements OnDestroy {
         };
     }
     return { style: this.avatarStyle(), photoURL: null };
+  }
+
+  getUserAvatarOptionsByUid(
+    uid: string | undefined | null,
+    fallbackDisplayName?: string | null,
+  ): { displayName: string, style: string, photoURL: string | null } {
+    if (!uid) {
+      const options = this.getUserAvatarOptions(fallbackDisplayName);
+      return { displayName: fallbackDisplayName || '', ...options };
+    }
+    const currentUser = this.auth.currentUser();
+    if (currentUser?.uid === uid) {
+      return {
+        displayName: currentUser.displayName || fallbackDisplayName || '',
+        ...this.getAvatarOptionsForProfile(currentUser),
+      };
+    }
+    const cache = this.usersInfoByUidCache().get(uid);
+    if (cache) {
+      return {
+        displayName: cache.displayName,
+        style: this.resolveAvatarStyle(cache.avatarStyle, cache.protectedAdmin),
+        photoURL: cache.photoURL || null,
+      };
+    }
+    const options = this.getUserAvatarOptions(fallbackDisplayName);
+    return { displayName: fallbackDisplayName || '', ...options };
   }
 
   getAvatarOptionsForProfile(

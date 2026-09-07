@@ -66,7 +66,15 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
   ],
   template: `
     @if (isPrintMode()) {
-       <router-outlet></router-outlet>
+       @if (isTraceabilityRoute()) {
+         <div
+           data-traceability-scroll-owner
+           class="h-[100dvh] min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y bg-slate-50 dark:bg-slate-950 custom-scrollbar">
+           <router-outlet></router-outlet>
+         </div>
+       } @else {
+         <router-outlet></router-outlet>
+       }
     } 
     @else {
       <!-- Global route feedback: instant progress, skeleton only for genuinely slow lazy chunks. -->
@@ -583,6 +591,8 @@ export class AppComponent implements OnDestroy {
     const url = this.currentUrl();
     return url.includes('/mobile-login') || url.includes('/labels') || url.includes('/traceability');
   });
+
+  isTraceabilityRoute = computed(() => this.currentUrl().includes('/traceability'));
 
   // --- PULL TO REFRESH & UPDATE LOGIC ---
   private touchStartY = 0;

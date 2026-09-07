@@ -124,7 +124,6 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       { id: 'smart-batch', name: 'Lập Mẻ Phân Tích', icon: 'fa-layer-group', path: 'smart-batch', activeMatch: ['/smart-batch'], access: PERMISSIONS.BATCH_RUN, lockPermission: PERMISSIONS.BATCH_RUN },
       { id: 'prep', name: 'Chuẩn bị dung dịch', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'] },
       { id: 'daily-checklist', name: 'Theo Dõi Mẫu Ngày', icon: 'fa-calendar-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, menuHidden: true },
-      { id: 'traceability', name: 'Truy Xuất Nguồn Gốc', icon: 'fa-route', path: 'traceability', activeMatch: ['/traceability'] },
       { id: 'results', name: 'Kết Quả Phân Tích', icon: 'fa-square-poll-vertical', path: 'results', activeMatch: ['/results', '/results-view'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW }
     ]
   },

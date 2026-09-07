@@ -10,6 +10,7 @@ import { ChangelogService } from '../services/changelog.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 import { ROUTE_ACCESS, ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
+import { getTraceabilitySearchCandidate } from '../../shared/utils/traceability-lookup';
 
 interface PaletteItem {
   id: string;
@@ -48,7 +49,7 @@ interface PaletteItem {
       <!-- ── Command Palette Trigger: centered in the desktop navbar ── -->
       <button
         (click)="openPalette()"
-        aria-label="Mở tìm kiếm chức năng"
+        aria-label="Mở tìm kiếm chức năng hoặc mã truy xuất"
         class="absolute left-1/2 top-1/2 hidden h-9 w-56 -translate-x-1/2 -translate-y-1/2 shrink-0 items-center gap-2.5 rounded-lg px-3 lg:flex xl:w-64
                bg-white dark:bg-slate-950
                border border-gray-300 dark:border-slate-700 shadow-none
@@ -56,9 +57,9 @@ interface PaletteItem {
                hover:border-fuchsia-300 dark:hover:border-fuchsia-700
                hover:text-fuchsia-600 dark:hover:text-fuchsia-400
                transition-all duration-200 group cursor-pointer"
-        title="Tìm kiếm trang hoặc quét mã (Ctrl+K)">
+        title="Tìm chức năng hoặc mã truy xuất (Ctrl+K)">
         <i class="fa-solid fa-magnifying-glass text-[11px] group-hover:scale-110 transition-transform"></i>
-        <span class="flex-1 truncate text-left text-xs font-medium">Tìm chức năng...</span>
+        <span class="flex-1 truncate text-left text-xs font-medium">Tìm chức năng, mã truy xuất...</span>
         <kbd class="hidden xl:inline-flex items-center gap-0.5 h-5 px-1.5 rounded-md
                     bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600
                     text-[10px] font-bold text-slate-400 dark:text-slate-500 shadow-sm">
@@ -67,6 +68,11 @@ interface PaletteItem {
       </button>
 
       <div class="flex min-w-0 items-center justify-end gap-1.5">
+        <button type="button" (click)="openPalette()"
+                class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:text-fuchsia-600 dark:text-slate-400 dark:hover:text-fuchsia-400 md:flex lg:hidden"
+                aria-label="Tìm chức năng hoặc mã truy xuất" title="Tìm chức năng hoặc mã truy xuất">
+          <i class="fa-solid fa-magnifying-glass text-sm" aria-hidden="true"></i>
+        </button>
         <!-- ── System Info (mirrors Soft UI utility affordance) ── -->
         <button
           type="button"
@@ -190,8 +196,8 @@ interface PaletteItem {
         type="button"
         (click)="openPalette()"
         class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-        aria-label="Tìm kiếm chức năng"
-        title="Tìm kiếm chức năng">
+        aria-label="Tìm chức năng hoặc mã truy xuất"
+        title="Tìm chức năng hoặc mã truy xuất">
         <i class="fa-solid fa-magnifying-glass text-xs" aria-hidden="true"></i>
       </button>
       <app-notification-bell [headerMode]="true"></app-notification-bell>
@@ -211,7 +217,7 @@ interface PaletteItem {
                   bg-slate-900/60 backdrop-blur-sm fade-in"
            role="dialog"
            aria-modal="true"
-           aria-label="Tìm kiếm chức năng"
+           aria-label="Tìm chức năng hoặc mã truy xuất"
            (click)="closePalette()">
 
         <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden fade-in"
@@ -223,14 +229,18 @@ interface PaletteItem {
             <input
               #paletteInput
               type="text"
-              aria-label="Tìm trang hoặc chức năng"
+              aria-label="Tìm chức năng hoặc nhập mã truy xuất"
               [ngModel]="searchQuery()"
               (ngModelChange)="onSearchInput($event)"
               (keydown)="onPaletteKeydown($event)"
-              placeholder="Tìm trang, tính năng hoặc quét mã..."
-              class="flex-1 bg-transparent text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none">
+              placeholder="Tìm chức năng hoặc nhập mã truy xuất..."
+              class="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none">
             <kbd class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">ESC</kbd>
           </div>
+
+          <p class="px-4 pt-3 text-xs text-slate-400 dark:text-slate-500">
+            Nhập mã hoặc dán liên kết truy xuất, nhấn Enter để mở hồ sơ.
+          </p>
 
           <!-- Results -->
           <div class="max-h-[50vh] overflow-y-auto custom-scrollbar py-2">
@@ -309,6 +319,13 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
     // Special actions first
     items.push({
+      id: 'route-traceability',
+      name: ROUTE_TITLES['traceability'],
+      icon: ROUTE_ICONS['traceability'],
+      path: '/traceability',
+      category: 'Hành động nhanh'
+    });
+    items.push({
       id: 'qr-scan',
       name: 'Quét Mã QR / Barcode',
       icon: 'fa-qrcode',
@@ -325,7 +342,7 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
 
     // Route-based pages, filtered with the same access contract as route guards.
     for (const [segment, title] of Object.entries(ROUTE_TITLES)) {
-      if (segment === 'printing' || segment === 'results-view') continue; // internal routes
+      if (segment === 'printing' || segment === 'results-view' || segment === 'traceability') continue; // internal routes or existing quick actions
       if (!this.canAccessRoute(segment)) continue;
       items.push({
         id: `route-${segment}`,
@@ -350,11 +367,22 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   filteredItems = computed<PaletteItem[]>(() => {
     const q = this.normalizeSearchText(this.searchQuery());
     if (!q) return this.allPaletteItems();
-    return this.allPaletteItems().filter(item =>
+    const matches = this.allPaletteItems().filter(item =>
       this.normalizeSearchText(item.name).includes(q) ||
       this.normalizeSearchText(item.category).includes(q) ||
       (item.path && this.normalizeSearchText(item.path).includes(q))
     );
+    const lookup = getTraceabilitySearchCandidate(this.searchQuery());
+    if (!lookup) return matches;
+
+    const traceItem: PaletteItem = {
+      id: 'traceability-lookup',
+      name: `Truy xuất mã: ${lookup.code}`,
+      icon: ROUTE_ICONS['traceability'],
+      action: () => { void this.router.navigate(['/traceability', lookup.code]); },
+      category: 'Truy xuất nguồn gốc · Enter để mở hồ sơ'
+    };
+    return lookup.preferred ? [traceItem, ...matches] : [...matches, traceItem];
   });
 
   private normalizeSearchText(value: string): string {
@@ -423,10 +451,11 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   }
 
   onPaletteKeydown(event: KeyboardEvent) {
+    if (event.isComposing) return;
     const items = this.filteredItems();
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.activeIndex.update(i => Math.min(i + 1, items.length - 1));
+      this.activeIndex.update(i => Math.max(0, Math.min(i + 1, items.length - 1)));
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.activeIndex.update(i => Math.max(i - 1, 0));
