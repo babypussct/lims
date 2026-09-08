@@ -27,3 +27,14 @@ test('canary UID config is normalized without accepting malformed values', () =>
   );
   assert.deepEqual(normalizeFeatureCanaryUids('uid-manager'), []);
 });
+
+test('canonical activity defaults on for legacy config while explicit disable and malformed values stay off', async () => {
+  const { resolveActivityFeedEnabled } = await import('./feature-rollout');
+  assert.equal(resolveActivityFeedEnabled(undefined), true);
+  assert.equal(resolveActivityFeedEnabled(true), true);
+  for (const value of [false, null, 'true', 'false', 1, {}, []]) {
+    assert.equal(resolveActivityFeedEnabled(value), false);
+  }
+  assert.equal(isFeatureEnabledForUser(resolveActivityFeedEnabled(undefined), [], null), false);
+  assert.equal(isFeatureEnabledForUser(resolveActivityFeedEnabled(false), ['canary'], 'canary'), true);
+});

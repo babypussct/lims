@@ -1,3 +1,4 @@
+import { readExportHistory } from '../../../core/services/export-history';
 import { Injectable, inject, effect } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -165,6 +166,21 @@ export class StandardRequestService {
       snapshot.forEach((d: any) => reqs.push({ ...d.data(), id: d.id } as PurchaseRequest));
       callback(reqs);
     });
+  }
+
+  async getRequestsForExport(): Promise<StandardRequest[]> {
+    const uid = this.auth.currentUser()?.uid;
+    const isApprover = this.auth.canAssignStandards();
+    if (!uid) throw new Error('Phiên đăng nhập không còn hợp lệ.');
+    const path = `artifacts/${this.fb.APP_ID}/standard_requests`;
+    const requests = await readExportHistory<StandardRequest>(this.fb.db, path,
+      isApprover ? [] : [where('requestedBy', '==', uid)],
+      size => this.readMonitor.record('getDocs', path, size));
+    if (this.auth.currentUser()?.uid !== uid || this.auth.canAssignStandards() !== isApprover) {
+      throw new Error('Phiên đăng nhập đã thay đổi. Vui lòng xuất lại.');
+    }
+    return requests.filter(r => !r._isDeleted)
+      .map(r => ({ ...r, status: normalizeLegacyStandardRequestStatus(r.status) }));
   }
 
   async createRequest(request: StandardRequest, isAssign = false): Promise<void> {

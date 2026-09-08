@@ -2,13 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.08-b01",
-    "title": "Ổn định Hoạt Động Gần Đây trên Windows",
+    "version": "v26.09.08-b02",
+    "title": "Hoàn thiện Hoạt Động Gần Đây và xuất dữ liệu",
     "features": [
-      "Khắc phục tình trạng Hoạt Động Gần Đây có thể tải mãi trên Chrome hoặc Edge ở Windows.",
-      "Để Firebase tự chọn cơ chế kết nối Firestore phù hợp với từng trình duyệt và mạng.",
-      "Tự tải dữ liệu trực tiếp từ máy chủ nếu kết nối realtime chưa trả snapshot ban đầu sau 8 giây.",
-      "Loại bỏ cấu hình ép long-polling toàn cục có thể làm listener Activity Feed bị treo trên một số môi trường Windows."
+      "Tăng độ ổn định của Hoạt Động Gần Đây khi kết nối chậm hoặc gián đoạn; có thể thử tải lại ngay trên bảng hoạt động.",
+      "Bổ sung bộ lọc và nhãn Lịch trực trong Hoạt Động Gần Đây.",
+      "Phân biệt rõ bảng hoạt động đang tạm tắt, chưa có dữ liệu và gặp lỗi kết nối.",
+      "Cải thiện xuất dữ liệu lưu trữ với nhiều trang lịch sử, bảo toàn nội dung chi tiết dài và tránh trùng tên sheet báo cáo.",
+      "Sửa cơ chế tải dự phòng để không phụ thuộc kết nối cập nhật trực tiếp đang gặp sự cố."
     ]
   },
   "assetGroups": [

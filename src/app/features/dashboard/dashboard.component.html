@@ -305,18 +305,25 @@
                     </div>
 
                     <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2" [attr.aria-busy]="activityFeedLoading()">
-                        @if (activityFeedDenied()) {
+                        @if (!activityFeedV2Enabled()) {
+                            <app-empty-state
+                                icon="fa-pause"
+                                title="Hoạt động đang tạm tắt"
+                                message="Bảng hoạt động chưa được bật cho tài khoản hiện tại.">
+                            </app-empty-state>
+                        } @else if (activityFeedDenied()) {
                             <app-empty-state
                                 icon="fa-lock"
                                 title="Không có quyền xem hoạt động"
-                                message="Tài khoản hiện tại không có audience Activity Feed được cấp phép.">
+                                message="Tài khoản hiện tại chưa được cấp quyền xem bảng hoạt động.">
                             </app-empty-state>
                         } @else if (activityFeedError()) {
                             <app-empty-state
                                 icon="fa-triangle-exclamation"
                                 title="Không thể tải hoạt động"
-                                message="Truy vấn Activity Feed gặp lỗi. Vui lòng tải lại hoặc báo quản trị viên nếu lỗi tiếp diễn.">
+                                message="Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối và thử lại.">
                             </app-empty-state>
+                            <button type="button" class="soft-ui-control mx-auto mt-2 block px-4 py-2 text-xs font-semibold" (click)="activityFeed.retry()">Thử tải lại hoạt động</button>
                         } @else if (activityFeedLoading()) {
                             <div class="space-y-3 py-2">
                                 <app-skeleton width="100%" height="68px"></app-skeleton>

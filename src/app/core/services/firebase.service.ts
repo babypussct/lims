@@ -1,3 +1,5 @@
+import { collectExportPages } from './export-history';
+import { getDocsFromServer, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { Injectable, inject } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { 
@@ -281,18 +283,12 @@ export class FirebaseService {
     const cutoff = Timestamp.fromDate(cutoffDate);
     
     const colRef = collection(this.db, `artifacts/${this.APP_ID}/${collectionName}`);
-    const q = query(colRef, where('timestamp', '<', cutoff), limit(10000));
-    
-    const snap = await getDocs(q);
-    this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/${collectionName}`, snap.size);
-    
-    return snap.docs.map(d => {
-        const data = d.data();
-        // Convert timestamp to readable string for Export
-        if (data['timestamp'] && data['timestamp'].toDate) {
-            data['timestamp'] = data['timestamp'].toDate().toISOString();
-        }
-        return { id: d.id, ...data };
+    return collectExportPages<any, QueryDocumentSnapshot>(async cursor => {
+      const snap = await getDocsFromServer(query(colRef, where('timestamp', '<', cutoff),
+        orderBy('timestamp'), limit(500), ...(cursor ? [startAfter(cursor)] : [])));
+      this.readMonitor.record('getDocs', `artifacts/${this.APP_ID}/${collectionName}`, snap.size);
+      return { items: snap.docs.map(d => ({ ...d.data(), id: d.id })),
+        cursor: snap.docs[snap.docs.length - 1] ?? null, hasMore: snap.size === 500 };
     });
   }
 

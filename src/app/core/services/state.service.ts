@@ -31,7 +31,7 @@ import { getCanonicalId } from '../../features/results/shared/compound-id-resolv
 import { resolveMetadataSyncToast } from './notification-policy';
 import { ActivityEventService } from './activity-event.service';
 import { NotificationService } from './notification.service';
-import { isFeatureEnabledForUser, normalizeFeatureCanaryUids } from './feature-rollout';
+import { isFeatureEnabledForUser, normalizeFeatureCanaryUids, resolveActivityFeedEnabled } from './feature-rollout';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -153,7 +153,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.08-b01');
+  systemVersion = signal<string>('v26.09.08-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -163,7 +163,10 @@ export class StateService implements OnDestroy {
    * fail-closed for unauthenticated users and support a UID-scoped canary
    * while the global switch remains false.
    */
-  private activityFeedV2Configured = signal<boolean>(false);
+  // The Activity Feed reader is now the canonical Dashboard source. Keep it
+  // enabled by default so a missing/stale config document does not silently
+  // leave the Dashboard "Hoạt Động Gần Đây" panel empty.
+  private activityFeedV2Configured = signal<boolean>(true);
   private activityFeedV2CanaryUids = signal<string[]>([]);
   private notificationEventSyncV2Configured = signal<boolean>(false);
   private notificationEventSyncV2CanaryUids = signal<string[]>([]);
@@ -849,7 +852,7 @@ export class StateService implements OnDestroy {
   private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
 
   private applyFeatureRolloutConfig(config: Record<string, unknown>): void {
-    this.activityFeedV2Configured.set(config['activityFeedV2'] === true);
+    this.activityFeedV2Configured.set(resolveActivityFeedEnabled(config['activityFeedV2']));
     this.activityFeedV2CanaryUids.set(
       normalizeFeatureCanaryUids(config['activityFeedV2CanaryUids']),
     );

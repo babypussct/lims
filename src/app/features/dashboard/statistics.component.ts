@@ -1,3 +1,4 @@
+import { uniqueSheetName } from '../../shared/utils/excel-export';
 import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -600,10 +601,9 @@ export class StatisticsComponent {
                           XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`TIÊU HAO - ${sopName}`]], { origin: "A1" });
                           XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
                           this.formatSheet(ws, XLSX, 8, data.length, [6, 22, 35, 14, 10]);
-                          // Sanitize sheet name (max 31 chars, no special chars)
-                          const safeName = sopName.replace(/[\\\/\?\*\[\]]/g, '').substring(0, 28);
-                          XLSX.utils.book_append_sheet(wb, ws, `SOP_${safeName}`);
-                          sheetsAdded.push(`SOP_${safeName}`);
+                          const sheetName = uniqueSheetName(`SOP_${sopName}`, wb.SheetNames);
+                          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                          sheetsAdded.push(sheetName);
                       }
                   });
               }

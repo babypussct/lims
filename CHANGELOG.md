@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.08-b01
+## Phiên bản hiện tại: v26.09.08-b02
+
+### v26.09.08-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tăng độ ổn định của Hoạt Động Gần Đây khi kết nối chậm hoặc gián đoạn; có thể thử tải lại ngay trên bảng hoạt động.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung bộ lọc và nhãn Lịch trực trong Hoạt Động Gần Đây.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Phân biệt rõ bảng hoạt động đang tạm tắt, chưa có dữ liệu và gặp lỗi kết nối.
+- Cải thiện xuất dữ liệu lưu trữ với nhiều trang lịch sử, bảo toàn nội dung chi tiết dài và tránh trùng tên sheet báo cáo.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa cơ chế tải dự phòng để không phụ thuộc kết nối cập nhật trực tiếp đang gặp sự cố.
+- Không kết luận bảng hoạt động đã tải xong khi mới nhận dữ liệu lưu trên máy; giới hạn thời gian chờ và bỏ qua phản hồi cũ.
+- Giữ bảng hoạt động được bật với cấu hình cũ chưa có tùy chọn này, đồng thời tôn trọng cấu hình tắt rõ ràng.
+- Sửa lỗi biên dịch ở chức năng xuất dữ liệu Excel.
 
 ### v26.09.08-b01
 

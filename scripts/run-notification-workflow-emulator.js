@@ -3,7 +3,7 @@ const { resolve } = require('node:path');
 
 const ROOT = resolve(__dirname, '..');
 const PROJECT_ID = 'demo-lims-notification';
-const TEST_COMMAND = 'npx tsx --test scripts/notification-workflow.emulator.test.ts';
+const TEST_COMMAND = 'npx tsx --test scripts/notification-workflow.emulator.test.ts scripts/activity-http.emulator.test.ts';
 const FIREBASE_CLI = require.resolve('firebase-tools/lib/bin/firebase.js');
 
 const result = spawnSync(

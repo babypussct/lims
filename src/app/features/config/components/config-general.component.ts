@@ -1,3 +1,4 @@
+import { archiveExportRows } from '../../../shared/utils/excel-export';
 import { Component, inject, signal, OnInit, OnDestroy, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -252,37 +253,43 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async fetchArchiverData() {
+    if (['fetching', 'exporting'].includes(this.archiverStatus())) return;
+    const days = this.archiverDays();
     this.archiverStatus.set('fetching');
     try {
-      const logs = await this.fb.fetchOldData('logs', this.archiverDays());
-      const requests = await this.fb.fetchOldData('requests', this.archiverDays());
+      const logs = await this.fb.fetchOldData('logs', days);
+      const requests = await this.fb.fetchOldData('requests', days);
       this.archiverData.set({logs, requests});
       if (logs.length === 0 && requests.length === 0) {
         this.toast.show('Không có dữ liệu cũ nào được tìm thấy.', 'info');
         this.archiverStatus.set('idle');
         return;
       }
-      await this.exportArchiverToExcel(logs, requests);
+      await this.exportArchiverToExcel(logs, requests, days);
     } catch (e) {
       this.toast.show('Lỗi khi tải dữ liệu cũ.', 'error');
       this.archiverStatus.set('idle');
     }
   }
 
-  private async exportArchiverToExcel(logs: any[], requests: any[]) {
+  private async exportArchiverToExcel(logs: any[], requests: any[], days: number) {
     this.archiverStatus.set('exporting');
     try {
       const XLSX = await this.loadXlsx();
       const wb = XLSX.utils.book_new();
       if (logs.length > 0) {
-        const wsLogs = XLSX.utils.json_to_sheet(logs);
+        const serialized = archiveExportRows(logs);
+        const wsLogs = XLSX.utils.json_to_sheet(serialized.rows);
+        if (serialized.details.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(serialized.details), "Logs_JSON");
         XLSX.utils.book_append_sheet(wb, wsLogs, "Logs");
       }
       if (requests.length > 0) {
-        const wsReqs = XLSX.utils.json_to_sheet(requests);
+        const serialized = archiveExportRows(requests);
+        const wsReqs = XLSX.utils.json_to_sheet(serialized.rows);
+        if (serialized.details.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(serialized.details), "Requests_JSON");
         XLSX.utils.book_append_sheet(wb, wsReqs, "Requests");
       }
-      const fileName = `LIMS_Archive_${this.archiverDays()}days_${new Date().getTime()}.xlsx`;
+      const fileName = `LIMS_Archive_${days}days_${new Date().getTime()}.xlsx`;
       XLSX.writeFile(wb, fileName);
       this.archiverStatus.set('ready');
     } catch (e) {

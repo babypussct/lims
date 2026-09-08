@@ -163,6 +163,10 @@ export class StandardService {
   // ═══════════════════════════════════════════════════════════════════════════
   // USAGE LOGS
   // ═══════════════════════════════════════════════════════════════════════════
+  getUsageLogsForExport(): Promise<UsageLog[]> {
+    return this.usage.getUsageLogsForExport();
+  }
+
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
     return this.usage.listenToGlobalUsageLogs(callback);
   }

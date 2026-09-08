@@ -13,7 +13,8 @@ test('ActivityFeedService uses bounded audience-scoped listeners and canonical r
   assert.match(source, /stopListenersAndClear\(\)/);
   assert.match(source, /user_preferences\/\$\{uid\}/);
   assert.match(source, /lastActivitySeenAt: serverTimestamp\(\)/);
-  assert.match(source, /getDocsFromServer\(/);
+  assert.match(source, /readActivityFeedFromHttp\(/);
+  assert.doesNotMatch(source, /getDocsFromServer\(/);
   assert.match(source, /initialSnapshotFallbackMs/);
   assert.doesNotMatch(source, /isRead/);
 });
@@ -75,4 +76,22 @@ test('Activity Feed invalidates a torn-down Dashboard view synchronously', () =>
   assert.match(service, /if \(!enabled && this\.enabled\(\)\)/);
   assert.match(service, /this\.stopListenersAndClear\(\);\s*this\.status\.set\('disabled'\);/);
   assert.doesNotMatch(service, /recordedViewScope/);
+});
+
+test('bootstrap HTTP transport uses authenticated Firestore Lite and the same bounded audience query', () => {
+  const source = readFileSync('src/app/core/activity/activity-feed-http.ts', 'utf8');
+  assert.match(source, /import\('firebase\/firestore\/lite'\)/);
+  assert.match(source, /getFirestore\(app\)/);
+  assert.match(source, /where\('audience', '==', audience\)/);
+  assert.match(source, /where\('activityVisible', '==', true\)/);
+  assert.match(source, /limit\(maxItems\)/);
+});
+
+test('Dashboard includes duty filters and labels and distinguishes disabled from empty', () => {
+  const component = readFileSync('src/app/features/dashboard/dashboard.component.ts', 'utf8');
+  const template = readFileSync('src/app/features/dashboard/dashboard.component.html', 'utf8');
+  assert.match(component, /includes\('DUTY_OPERATOR'\)\) options.push\('DUTY'\)/);
+  assert.match(component, /module === 'DUTY'/);
+  assert.match(template, /Hoạt động đang tạm tắt/);
+  assert.match(template, /activityFeed.retry\(\)/);
 });

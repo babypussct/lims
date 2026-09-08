@@ -158,6 +158,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   activityFilterOptions = computed<ActivityFeedModuleFilter[]>(() => {
       const options: ActivityFeedModuleFilter[] = ['ALL', 'RESULT', 'INVENTORY', 'STANDARD'];
       const canViewSystem = this.activityFeed.allowedAudiences().includes('SYSTEM_ADMIN');
+      if (this.activityFeed.allowedAudiences().includes('DUTY_OPERATOR')) options.push('DUTY');
       if (canViewSystem) options.push('SYSTEM');
       return options;
   });
@@ -620,7 +621,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getActivityModuleText(module: unknown): string {
-      return module === 'RESULT' || module === 'INVENTORY' || module === 'STANDARD' || module === 'SYSTEM'
+      return module === 'RESULT' || module === 'INVENTORY' || module === 'STANDARD' || module === 'DUTY' || module === 'SYSTEM'
           ? getActivityModuleLabel(module)
           : '';
   }

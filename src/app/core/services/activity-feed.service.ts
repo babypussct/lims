@@ -3,7 +3,6 @@ import {
   collection,
   doc,
   getDoc,
-  getDocsFromServer,
   limit,
   onSnapshot,
   orderBy,
@@ -11,8 +10,6 @@ import {
   serverTimestamp,
   setDoc,
   where,
-  type DocumentData,
-  type Query,
   type Unsubscribe
 } from 'firebase/firestore';
 import type { ActivityAudience, ActivityEvent } from '../activity/activity-event.model';
@@ -21,6 +18,7 @@ import {
   parseActivityFeedEvent,
   resolveActivityFeedScope
 } from '../activity/activity-feed.utils';
+import { readActivityFeedFromHttp } from '../activity/activity-feed-http';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
@@ -39,6 +37,7 @@ export class ActivityFeedService {
   private generation = 0;
   private readonly perAudienceLimit = 75;
   private readonly initialSnapshotFallbackMs = 8_000;
+  private readonly serverFallbackTimeoutMs = 12_000;
 
   readonly events = signal<ActivityEvent[]>([]);
   readonly status = signal<ActivityFeedStatus>('disabled');
@@ -67,6 +66,13 @@ export class ActivityFeedService {
       this.status.set('disabled');
     }
     this.enabled.set(enabled);
+  }
+
+  retry(): void {
+    if (!this.enabled()) return;
+    this.stopListenersAndClear();
+    const profile = this.auth.currentUser();
+    this.reconcileScope(true, profile?.uid, profile?.role, this.auth.userPermissions());
   }
 
   /**
@@ -142,9 +148,8 @@ export class ActivityFeedService {
       limit(this.perAudienceLimit)
     );
     let isInitial = true;
-    const unsubscribe = onSnapshot(feedQuery, snapshot => {
+    const unsubscribe = onSnapshot(feedQuery, { includeMetadataChanges: true }, snapshot => {
       if (generation !== this.generation) return;
-      this.clearInitialFallbackTimer(audience);
       this.readMonitor.record(
         'onSnapshot',
         path,
@@ -152,6 +157,10 @@ export class ActivityFeedService {
         { phase: isInitial ? 'initial' : 'delta', fromCache: snapshot.metadata.fromCache }
       );
       isInitial = false;
+      // Cache is not server confirmation. Keep the bootstrap deadline alive,
+      // including for empty cache, and never overwrite an HTTP result with it.
+      if (snapshot.metadata.fromCache) return;
+      this.clearInitialFallbackTimer(audience);
 
       const events = snapshot.docs
         .map(document => parseActivityFeedEvent(document.id, document.data()))
@@ -176,20 +185,24 @@ export class ActivityFeedService {
     const fallbackTimer = setTimeout(() => {
       if (generation !== this.generation || !pendingInitial.has(audience)) return;
       console.warn('Activity Feed realtime bootstrap timed out; trying a server read.', { audience });
-      void this.bootstrapAudienceFromServer(audience, feedQuery, generation, pendingInitial);
+      void this.bootstrapAudienceFromServer(audience, generation, pendingInitial);
     }, this.initialSnapshotFallbackMs);
     this.initialFallbackTimers.set(audience, fallbackTimer);
   }
 
   private async bootstrapAudienceFromServer(
     audience: ActivityAudience,
-    feedQuery: Query<DocumentData>,
     generation: number,
     pendingInitial: Set<ActivityAudience>
   ): Promise<void> {
     const path = `artifacts/${this.fb.APP_ID}/logs`;
+    this.clearInitialFallbackTimer(audience);
+    this.initialFallbackTimers.set(audience, setTimeout(() => {
+      if (generation !== this.generation || !pendingInitial.has(audience)) return;
+      this.failScope('error', new Error('Không thể kết nối máy chủ hoạt động. Vui lòng thử lại.'));
+    }, this.serverFallbackTimeoutMs));
     try {
-      const snapshot = await getDocsFromServer(feedQuery);
+      const snapshot = await readActivityFeedFromHttp(this.fb.app, path, audience, this.perAudienceLimit);
       if (generation !== this.generation || !pendingInitial.has(audience)) return;
 
       this.readMonitor.record('getDocs', path, snapshot.size, { phase: 'initial' });

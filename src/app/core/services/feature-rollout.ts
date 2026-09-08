@@ -26,3 +26,11 @@ export function isFeatureEnabledForUser(
   if (!uid) return false;
   return globallyEnabled || canaryUids.includes(uid);
 }
+
+/** The canonical Activity reader is enabled for legacy config with no switch.
+ * Explicit false and malformed values stay disabled; authentication/audience
+ * checks remain independent of this default.
+ */
+export function resolveActivityFeedEnabled(value: unknown): boolean {
+  return value === undefined || value === true;
+}

@@ -1,3 +1,4 @@
+import { readExportHistory } from '../../../core/services/export-history';
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -54,6 +55,16 @@ export class StandardUsageService {
       orderByField: 'timestamp',
       orderDirection: 'desc'
     }, logs => callback(logs.filter(log => !log._isDeleted)));
+  }
+
+  async getUsageLogsForExport(): Promise<UsageLog[]> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) throw new Error('Phiên đăng nhập không còn hợp lệ.');
+    const path = `artifacts/${this.fb.APP_ID}/standard_usages`;
+    const logs = await readExportHistory<UsageLog>(this.fb.db, path, [],
+      size => this.readMonitor.record('getDocs', path, size));
+    if (this.auth.currentUser()?.uid !== uid) throw new Error('Phiên đăng nhập đã thay đổi.');
+    return logs.filter(log => !log._isDeleted);
   }
 
   // ─── Paginated Queries ────────────────────────────────────────────────────────
