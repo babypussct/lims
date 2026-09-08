@@ -41,7 +41,11 @@ export class FirebaseService {
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager()
       }),
-      experimentalForceLongPolling: true
+      // Firebase 10.14 already auto-detects when long-polling is required.
+      // Forcing it for every browser can leave Chromium/Edge sessions behind
+      // certain Windows network stacks waiting on a realtime WebChannel even
+      // though normal Firestore reads still work.
+      experimentalAutoDetectLongPolling: true
     });
 
     this.APP_ID = localStorage.getItem(this.APP_ID_KEY) || 'lims-cloud-fixed';

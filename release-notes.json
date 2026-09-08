@@ -1,19 +1,14 @@
 {
-  "title": "Tra cứu nguồn gốc nhanh hơn và nhận diện người trực rõ ràng hơn",
+  "title": "Ổn định Hoạt Động Gần Đây trên Windows",
   "highlights": [
-    "Nhập mã hoặc dán liên kết truy xuất ngay trong ô tìm kiếm để mở hồ sơ.",
-    "Xem ảnh đại diện của người tham gia trong thống kê lịch trực."
+    "Khắc phục tình trạng Hoạt Động Gần Đây có thể tải mãi trên Chrome hoặc Edge ở Windows."
   ],
-  "features": [
-    "Mở Truy Xuất Nguồn Gốc từ danh sách hành động nhanh trong ô tìm kiếm."
-  ],
+  "features": [],
   "improvements": [
-    "Ưu tiên hồ sơ truy xuất khi nhập mã phù hợp, đồng thời giữ tìm kiếm chức năng quen thuộc.",
-    "Bổ sung nút tìm kiếm thuận tiện trên máy tính bảng.",
-    "Hiển thị ảnh đại diện theo tài khoản liên kết của người trực để nhận diện chính xác hơn."
+    "Để Firebase tự chọn cơ chế kết nối Firestore phù hợp với từng trình duyệt và mạng.",
+    "Tự tải dữ liệu trực tiếp từ máy chủ nếu kết nối realtime chưa trả snapshot ban đầu sau 8 giây."
   ],
   "fixes": [
-    "Sửa tình trạng không cuộn được trang Truy Xuất Nguồn Gốc khi mở ngoài giao diện chính.",
-    "Giữ nguyên chữ hoa, chữ thường của mã khi tra cứu từ liên kết hoặc ô tìm kiếm."
+    "Loại bỏ cấu hình ép long-polling toàn cục có thể làm listener Activity Feed bị treo trên một số môi trường Windows."
   ]
 }

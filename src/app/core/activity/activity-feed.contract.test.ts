@@ -13,7 +13,15 @@ test('ActivityFeedService uses bounded audience-scoped listeners and canonical r
   assert.match(source, /stopListenersAndClear\(\)/);
   assert.match(source, /user_preferences\/\$\{uid\}/);
   assert.match(source, /lastActivitySeenAt: serverTimestamp\(\)/);
+  assert.match(source, /getDocsFromServer\(/);
+  assert.match(source, /initialSnapshotFallbackMs/);
   assert.doesNotMatch(source, /isRead/);
+});
+
+test('Firestore transport auto-detects long-polling instead of forcing it on every Windows browser', () => {
+  const source = readFileSync('src/app/core/services/firebase.service.ts', 'utf8');
+  assert.match(source, /experimentalAutoDetectLongPolling:\s*true/);
+  assert.doesNotMatch(source, /experimentalForceLongPolling:\s*true/);
 });
 
 test('ActivityFeedService reacts to realtime identity/permission signals and clears before publishing a changed scope', () => {

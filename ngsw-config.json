@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.07-b02",
-    "title": "Tra cứu nguồn gốc nhanh hơn và nhận diện người trực rõ ràng hơn",
+    "version": "v26.09.08-b01",
+    "title": "Ổn định Hoạt Động Gần Đây trên Windows",
     "features": [
-      "Nhập mã hoặc dán liên kết truy xuất ngay trong ô tìm kiếm để mở hồ sơ.",
-      "Xem ảnh đại diện của người tham gia trong thống kê lịch trực.",
-      "Mở Truy Xuất Nguồn Gốc từ danh sách hành động nhanh trong ô tìm kiếm.",
-      "Ưu tiên hồ sơ truy xuất khi nhập mã phù hợp, đồng thời giữ tìm kiếm chức năng quen thuộc.",
-      "Bổ sung nút tìm kiếm thuận tiện trên máy tính bảng."
+      "Khắc phục tình trạng Hoạt Động Gần Đây có thể tải mãi trên Chrome hoặc Edge ở Windows.",
+      "Để Firebase tự chọn cơ chế kết nối Firestore phù hợp với từng trình duyệt và mạng.",
+      "Tự tải dữ liệu trực tiếp từ máy chủ nếu kết nối realtime chưa trả snapshot ban đầu sau 8 giây.",
+      "Loại bỏ cấu hình ép long-polling toàn cục có thể làm listener Activity Feed bị treo trên một số môi trường Windows."
     ]
   },
   "assetGroups": [

@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocsFromServer,
   limit,
   onSnapshot,
   orderBy,
@@ -10,6 +11,8 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  type DocumentData,
+  type Query,
   type Unsubscribe
 } from 'firebase/firestore';
 import type { ActivityAudience, ActivityEvent } from '../activity/activity-event.model';
@@ -32,8 +35,10 @@ export class ActivityFeedService {
   private readonly enabled = signal(false);
   private readonly audienceSnapshots = new Map<ActivityAudience, ActivityEvent[]>();
   private readonly listeners = new Map<ActivityAudience, Unsubscribe>();
+  private readonly initialFallbackTimers = new Map<ActivityAudience, ReturnType<typeof setTimeout>>();
   private generation = 0;
   private readonly perAudienceLimit = 75;
+  private readonly initialSnapshotFallbackMs = 8_000;
 
   readonly events = signal<ActivityEvent[]>([]);
   readonly status = signal<ActivityFeedStatus>('disabled');
@@ -139,6 +144,7 @@ export class ActivityFeedService {
     let isInitial = true;
     const unsubscribe = onSnapshot(feedQuery, snapshot => {
       if (generation !== this.generation) return;
+      this.clearInitialFallbackTimer(audience);
       this.readMonitor.record(
         'onSnapshot',
         path,
@@ -156,10 +162,51 @@ export class ActivityFeedService {
       if (pendingInitial.size === 0) this.status.set('ready');
     }, error => {
       if (generation !== this.generation) return;
+      this.clearInitialFallbackTimer(audience);
       const code = String((error as { code?: unknown })?.code || '');
       this.failScope(code === 'permission-denied' ? 'denied' : 'error', error);
     });
     this.listeners.set(audience, unsubscribe);
+
+    // A small subset of Chromium/Edge installations can leave the realtime
+    // WebChannel waiting indefinitely while ordinary Firestore reads still
+    // succeed. Do not leave Dashboard on a permanent skeleton in that case:
+    // bootstrap this audience once from the server and keep the listener alive
+    // so realtime updates can resume as soon as the channel recovers.
+    const fallbackTimer = setTimeout(() => {
+      if (generation !== this.generation || !pendingInitial.has(audience)) return;
+      console.warn('Activity Feed realtime bootstrap timed out; trying a server read.', { audience });
+      void this.bootstrapAudienceFromServer(audience, feedQuery, generation, pendingInitial);
+    }, this.initialSnapshotFallbackMs);
+    this.initialFallbackTimers.set(audience, fallbackTimer);
+  }
+
+  private async bootstrapAudienceFromServer(
+    audience: ActivityAudience,
+    feedQuery: Query<DocumentData>,
+    generation: number,
+    pendingInitial: Set<ActivityAudience>
+  ): Promise<void> {
+    const path = `artifacts/${this.fb.APP_ID}/logs`;
+    try {
+      const snapshot = await getDocsFromServer(feedQuery);
+      if (generation !== this.generation || !pendingInitial.has(audience)) return;
+
+      this.readMonitor.record('getDocs', path, snapshot.size, { phase: 'initial' });
+      const events = snapshot.docs
+        .map(document => parseActivityFeedEvent(document.id, document.data()))
+        .filter((event): event is ActivityEvent => event !== null);
+      this.audienceSnapshots.set(audience, events);
+      this.publishMergedEvents();
+      pendingInitial.delete(audience);
+      this.clearInitialFallbackTimer(audience);
+      if (pendingInitial.size === 0) this.status.set('ready');
+    } catch (error) {
+      if (generation !== this.generation || !pendingInitial.has(audience)) return;
+      this.clearInitialFallbackTimer(audience);
+      const code = String((error as { code?: unknown })?.code || '');
+      this.failScope(code === 'permission-denied' ? 'denied' : 'error', error);
+    }
   }
 
   private publishMergedEvents(): void {
@@ -177,8 +224,16 @@ export class ActivityFeedService {
     this.generation += 1;
     for (const unsubscribe of this.listeners.values()) unsubscribe();
     this.listeners.clear();
+    for (const timer of this.initialFallbackTimers.values()) clearTimeout(timer);
+    this.initialFallbackTimers.clear();
     this.audienceSnapshots.clear();
     this.events.set([]);
     this.lastActivitySeenAt.set(null);
+  }
+
+  private clearInitialFallbackTimer(audience: ActivityAudience): void {
+    const timer = this.initialFallbackTimers.get(audience);
+    if (timer) clearTimeout(timer);
+    this.initialFallbackTimers.delete(audience);
   }
 }

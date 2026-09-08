@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.09.08-b01",
+    "date": "8/9/2026",
+    "title": "Ổn định Hoạt Động Gần Đây trên Windows",
+    "highlights": [
+      "Khắc phục tình trạng Hoạt Động Gần Đây có thể tải mãi trên Chrome hoặc Edge ở Windows."
+    ],
+    "features": [],
+    "improvements": [
+      "Để Firebase tự chọn cơ chế kết nối Firestore phù hợp với từng trình duyệt và mạng.",
+      "Tự tải dữ liệu trực tiếp từ máy chủ nếu kết nối realtime chưa trả snapshot ban đầu sau 8 giây."
+    ],
+    "fixes": [
+      "Loại bỏ cấu hình ép long-polling toàn cục có thể làm listener Activity Feed bị treo trên một số môi trường Windows."
+    ],
+    "releaseOrder": 26090800001
+  },
+  {
     "version": "v26.09.07-b02",
     "date": "7/9/2026",
     "title": "Tra cứu nguồn gốc nhanh hơn và nhận diện người trực rõ ràng hơn",

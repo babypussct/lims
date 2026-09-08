@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.07-b02
+## Phiên bản hiện tại: v26.09.08-b01
+
+### v26.09.08-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khắc phục tình trạng Hoạt Động Gần Đây có thể tải mãi trên Chrome hoặc Edge ở Windows.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Để Firebase tự chọn cơ chế kết nối Firestore phù hợp với từng trình duyệt và mạng.
+- Tự tải dữ liệu trực tiếp từ máy chủ nếu kết nối realtime chưa trả snapshot ban đầu sau 8 giây.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ cấu hình ép long-polling toàn cục có thể làm listener Activity Feed bị treo trên một số môi trường Windows.
 
 ### v26.09.07-b02
 
