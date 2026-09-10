@@ -27,6 +27,7 @@ export interface TargetGroup {
   description?: string;
   targets: SopTarget[];
   lastUpdated?: any;
+  _isDeleted?: boolean;
 }
 
 export interface MasterDevice {
@@ -56,6 +57,7 @@ export interface MasterAnalyte {
   default_unit?: string; // e.g., 'ppb' or 'µg/kg'
   description?: string;
   lastUpdated?: any;
+  _isDeleted?: boolean;
 }
 
 export interface Ingredient {

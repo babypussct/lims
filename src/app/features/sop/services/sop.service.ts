@@ -1,13 +1,15 @@
 
 import { Injectable, inject } from '@angular/core';
-import { doc, deleteDoc, runTransaction, serverTimestamp, collection, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp, collection, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
 import { Sop, Consumable } from '../../../core/models/sop.model';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { generateSlug } from '../../../shared/utils/utils';
+import { StateService } from '../../../core/services/state.service';
 
 @Injectable({ providedIn: 'root' })
 export class SopService {
   private firebaseService = inject(FirebaseService);
+  private state = inject(StateService);
 
   async saveSop(sop: Sop): Promise<void> {
     const appId = this.firebaseService.APP_ID;
@@ -53,6 +55,11 @@ export class SopService {
       console.warn("SOP Save Transaction Failed (handled in UI):", e);
       throw e;
     }
+    this.state.publishSopChanges([{
+      ...sop,
+      isArchived: false,
+      lastUpdated: Date.now()
+    }]);
     await this.firebaseService.updateMetadata('sops');
   }
 
@@ -65,13 +72,19 @@ export class SopService {
           archivedAt: serverTimestamp(),
           lastUpdated: serverTimestamp() // Required for DeltaSync cursor
       });
+      this.state.publishSopChanges([], [id]);
       await this.firebaseService.updateMetadata('sops');
   }
 
-  // Hard Delete (Admin only)
+  // DeltaSync-safe delete: retain a tombstone so every client can observe it.
   async deleteSop(id: string): Promise<void> {
     const appId = this.firebaseService.APP_ID;
-    await deleteDoc(doc(this.firebaseService.db, `artifacts/${appId}/sops/${id}`));
+    await updateDoc(doc(this.firebaseService.db, `artifacts/${appId}/sops/${id}`), {
+      isArchived: true,
+      archivedAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    });
+    this.state.publishSopChanges([], [id]);
     await this.firebaseService.updateMetadata('sops');
   }
 
@@ -99,6 +112,7 @@ export class SopService {
       
       const batch = writeBatch(this.firebaseService.db);
       let updatedCount = 0;
+      const changedSops: Sop[] = [];
 
       snapshot.forEach(docSnap => {
           const sop = docSnap.data() as Sop;
@@ -129,7 +143,13 @@ export class SopService {
               batch.update(docSnap.ref, { 
                   version: sop.version,
                   variables: sop.variables,
-                  consumables: newConsumables 
+                  consumables: newConsumables,
+                  lastUpdated: serverTimestamp()
+              });
+              changedSops.push({
+                ...sop,
+                consumables: newConsumables,
+                lastUpdated: Date.now()
               });
               updatedCount++;
           }
@@ -137,6 +157,7 @@ export class SopService {
 
       if (updatedCount > 0) {
           await batch.commit();
+          this.state.publishSopChanges(changedSops);
           await this.firebaseService.updateMetadata('sops');
       }
       return updatedCount;

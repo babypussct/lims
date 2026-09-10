@@ -1,7 +1,28 @@
 [
   {
+    "version": "v26.09.11-b01",
+    "date": "11/9/2026",
+    "title": "Hoàn thiện DeltaSync cho dữ liệu canary",
+    "highlights": [
+      "Đồng bộ delta theo phạm vi người dùng cho các luồng dữ liệu inventory, SOP, request và target.",
+      "Cải thiện cập nhật realtime sau thao tác tạo, sửa, xóa để giảm tải đọc Firestore."
+    ],
+    "features": [
+      "Bổ sung cơ chế publish mutation sau ghi thành công để trạng thái giao diện cập nhật ngay trong canary."
+    ],
+    "improvements": [
+      "Giảm truy vấn đọc lặp lại bằng DeltaSync singleton cache.",
+      "Cải thiện chuyển đổi phiên đăng nhập và làm sạch cache theo scope người dùng.",
+      "Ổn định đồng bộ realtime khi reconnect và cập nhật mutation cục bộ."
+    ],
+    "fixes": [
+      "Sửa luồng cập nhật dữ liệu sau mutation để tránh chờ vòng đọc Firestore mới."
+    ],
+    "releaseOrder": 26091100001
+  },
+  {
     "version": "v26.09.10-b01",
-    "date": "10/9/2026",
+    "date": "11/9/2026",
     "title": "Củng cố sao lưu, Thùng rác và đồng bộ dữ liệu",
     "highlights": [
       "Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.",

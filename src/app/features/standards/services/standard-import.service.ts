@@ -13,6 +13,7 @@ import { ProgressService } from '../../../core/services/progress.service';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
+import { StandardUsageService } from './standard-usage.service';
 import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import {
@@ -53,6 +54,7 @@ export class StandardImportService {
   private cache = inject(StandardCacheService);
   private crud = inject(StandardCrudService);
   private codeRegistry = inject(StandardCodeRegistryService);
+  private usage = inject(StandardUsageService);
   private progressService = inject(ProgressService);
   private activityEvents = inject(ActivityEventService);
 
@@ -594,6 +596,8 @@ export class StandardImportService {
         const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
         for (let offset = 0; offset < logs.length; offset += 100) {
           const activityRef = this.activityEvents.createRef();
+          let committedProjection: ReferenceStandard | null = null;
+          let committedUsageLogs: UsageLog[] = [];
           const chunk = logs.slice(offset, offset + 100).map(log => {
             const normalized = log.normalized_unit === standard.unit && Number.isFinite(log.normalized_amount)
               ? Number(log.normalized_amount)
@@ -624,6 +628,8 @@ export class StandardImportService {
           });
 
           await runTransaction(this.fb.db, async transaction => {
+            committedProjection = null;
+            committedUsageLogs = [];
             const stdDoc = await transaction.get(stdRef);
             if (!stdDoc.exists()) throw new Error(`Chuẩn ${standard.name} không còn tồn tại.`);
             const freshStandard = { id: stdDoc.id, ...stdDoc.data() } as ReferenceStandard;
@@ -661,6 +667,17 @@ export class StandardImportService {
               stdUpdates['date_opened'] = earliestDate;
             }
             transaction.update(stdRef, stdUpdates);
+            committedProjection = {
+              ...freshStandard,
+              current_amount: Math.max(0, newAmount),
+              status: newAmount <= 0 ? 'DEPLETED' : (freshStandard.status || 'AVAILABLE'),
+              ...(stdUpdates['date_opened'] ? { date_opened: stdUpdates['date_opened'] } : {}),
+              lastUpdated: Date.now()
+            };
+            committedUsageLogs = accepted.map(entry => ({
+              ...entry.log,
+              lastUpdated: Date.now()
+            }));
 
             accepted.forEach(entry => {
               transaction.set(entry.localRef, entry.log);
@@ -687,6 +704,8 @@ export class StandardImportService {
             });
             this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
           });
+          if (committedProjection) this.cache._mergeAndSave([committedProjection], []);
+          if (committedUsageLogs.length) this.usage.publishUsageChanges(committedUsageLogs);
         }
       }
       const importer = this.auth.currentUser();
@@ -696,7 +715,6 @@ export class StandardImportService {
         actorUid: importer?.uid,
         actorName: importer?.displayName
       });
-      this.cache.invalidateLocalStandardsCache();
       this.progressService.complete();
     } catch (err) {
       this.progressService.stop();

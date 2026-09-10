@@ -39,17 +39,30 @@ export class StandardUsageService {
   private readMonitor = inject(FirestoreReadMonitor);
   private activityEvents = inject(ActivityEventService);
 
+  private get usageCacheKey(): string {
+    return buildScopedDeltaKey(
+      'lims_usage_cache_' + this.fb.APP_ID,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+
+  private get usageCursorKey(): string {
+    return buildScopedDeltaKey(
+      'lims_usage_sync_seconds_' + this.fb.APP_ID,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+
+  publishUsageChanges(changed: UsageLog[], deletedIds: string[] = []): void {
+    if (!this.deltaSync.getSingletonStatus(this.usageCacheKey)) return;
+    this.deltaSync.mergeSingletonCache<UsageLog>(this.usageCacheKey, changed, deletedIds);
+  }
+
   // ─── Listen to Global Usage Logs ─────────────────────────────────────────────
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
-    return this.deltaSync.startListener<UsageLog>({
-      cacheKey: buildScopedDeltaKey(
-        'lims_usage_cache_' + this.fb.APP_ID,
-        this.auth.getDeltaCacheScope()
-      ),
-      cursorKey: buildScopedDeltaKey(
-        'lims_usage_sync_seconds_' + this.fb.APP_ID,
-        this.auth.getDeltaCacheScope()
-      ),
+    return this.deltaSync.startSingletonListener<UsageLog>({
+      cacheKey: this.usageCacheKey,
+      cursorKey: this.usageCursorKey,
       collectionPath: `artifacts/${this.fb.APP_ID}/standard_usages`,
       maxCacheSize: 1000,
       orderByField: 'timestamp',

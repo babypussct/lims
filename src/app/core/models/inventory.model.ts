@@ -18,6 +18,8 @@ export interface InventoryItem {
   precautionaryStatements?: string[]; // Arrays of P codes e.g. 'P210: Keep away from heat'
   lastUpdated?: any;
   notes?: string;
+  _isDeleted?: boolean;
+  status?: string;
 }
 
 export interface StockHistoryItem {

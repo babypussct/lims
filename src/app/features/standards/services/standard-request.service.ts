@@ -84,6 +84,28 @@ export class StandardRequestService {
     return isApprover ? 'admin' : 'user';
   }
 
+  private publishRequestChanges(changed: StandardRequest[], deletedIds: string[] = []): void {
+    const roleKey = this._getRoleKey();
+    const uid = this.auth.currentUser()?.uid;
+    const visibleChanges = roleKey === 'admin'
+      ? changed
+      : changed.filter(request => request.requestedBy === uid);
+    this.deltaSync.mergeSingletonCache<StandardRequest>(
+      this._getCacheKey(roleKey),
+      visibleChanges,
+      deletedIds
+    );
+  }
+
+  private publishUsageChanges(changed: UsageLog[], deletedIds: string[] = []): void {
+    const cacheKey = buildScopedDeltaKey(
+      `lims_usage_cache_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
+    if (!this.deltaSync.getSingletonStatus(cacheKey)) return;
+    this.deltaSync.mergeSingletonCache<UsageLog>(cacheKey, changed, deletedIds);
+  }
+
   // ─── Singleton Listener via DeltaSync v2 ───────────────────────────────────
 
   /**

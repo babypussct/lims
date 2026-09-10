@@ -1,19 +1,18 @@
 {
-  "title": "Củng cố sao lưu, Thùng rác và đồng bộ dữ liệu",
+  "title": "Hoàn thiện DeltaSync cho dữ liệu canary",
   "highlights": [
-    "Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.",
-    "Nâng cấp Thùng rác để xem toàn bộ dữ liệu bản ghi đã xóa trước khi khôi phục hoặc xóa vĩnh viễn."
+    "Đồng bộ delta theo phạm vi người dùng cho các luồng dữ liệu inventory, SOP, request và target.",
+    "Cải thiện cập nhật realtime sau thao tác tạo, sửa, xóa để giảm tải đọc Firestore."
   ],
   "features": [
-    "Cho phép xóa vĩnh viễn từng bản ghi trong Thùng rác bằng bước xác nhận bắt buộc riêng."
+    "Bổ sung cơ chế publish mutation sau ghi thành công để trạng thái giao diện cập nhật ngay trong canary."
   ],
   "improvements": [
-    "Kiểm soát tài nguyên dành cho sao lưu để dành dung lượng xử lý cho công việc hằng ngày.",
-    "Giảm phần lưu trữ phụ cho nội dung biểu mẫu, kết quả và bản in.",
-    "Ngừng theo dõi dữ liệu khi màn hình không còn sử dụng, tránh duy trì kết nối cập nhật không cần thiết.",
-    "Cải thiện độ ổn định của luồng Hoạt Động Gần Đây và đồng bộ dữ liệu khi thay đổi màn hình."
+    "Giảm truy vấn đọc lặp lại bằng DeltaSync singleton cache.",
+    "Cải thiện chuyển đổi phiên đăng nhập và làm sạch cache theo scope người dùng.",
+    "Ổn định đồng bộ realtime khi reconnect và cập nhật mutation cục bộ."
   ],
   "fixes": [
-    "Bổ sung dữ liệu lịch trực còn thiếu trong phạm vi sao lưu và khôi phục."
+    "Sửa luồng cập nhật dữ liệu sau mutation để tránh chờ vòng đọc Firestore mới."
   ]
 }

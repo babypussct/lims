@@ -147,8 +147,12 @@ export class MasterTargetService {
   async save(item: MasterAnalyte): Promise<void> {
     const ref = doc(this.fb.db, `${this.collectionPath}/${item.id}`);
     await setDoc(ref, { ...item, _isDeleted: false, lastUpdated: serverTimestamp() });
+    this.deltaSync.mergeSingletonCache<MasterAnalyte>(
+      this._deltaCacheKey,
+      [{ ...item, _isDeleted: false, lastUpdated: Date.now() }],
+      []
+    );
     await this.fb.updateMetadata('master_analytes');
-    // DeltaSync listener sẽ tự nhận thay đổi và cập nhật analytes signal
   }
 
   async saveBatch(items: MasterAnalyte[]): Promise<void> {
@@ -171,14 +175,18 @@ export class MasterTargetService {
     if (opCount > 0) {
         await currentBatch.commit();
     }
+    this.deltaSync.mergeSingletonCache<MasterAnalyte>(
+      this._deltaCacheKey,
+      items.map(item => ({ ...item, _isDeleted: false, lastUpdated: Date.now() })),
+      []
+    );
     await this.fb.updateMetadata('master_analytes');
-    // DeltaSync listener sẽ tự nhận thay đổi
   }
 
   async delete(id: string): Promise<void> {
     const ref = doc(this.fb.db, `${this.collectionPath}/${id}`);
     await updateDoc(ref, { _isDeleted: true, lastUpdated: serverTimestamp() });
+    this.deltaSync.mergeSingletonCache<MasterAnalyte>(this._deltaCacheKey, [], [id]);
     await this.fb.updateMetadata('master_analytes');
-    // DeltaSync listener sẽ tự nhận thay đổi
   }
 }

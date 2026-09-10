@@ -52,6 +52,30 @@ export class StandardCrudService {
   private tagCatalog = inject(StandardTagCatalogService);
   private codeRegistry = inject(StandardCodeRegistryService);
 
+  private publishStandardPatch(stdId: string, patch: Partial<ReferenceStandard>): void {
+    const current = this.cache.getAllStandardsFromCache().find(item => item.id === stdId);
+    if (!current) return;
+    this.cache._mergeAndSave([{
+      ...current,
+      ...patch,
+      lastUpdated: patch.lastUpdated ?? Date.now()
+    }], []);
+  }
+
+  private async publishFreshStandard(stdId: string): Promise<void> {
+    const snapshot = await getDoc(doc(
+      this.fb.db,
+      `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`
+    ));
+    if (!snapshot.exists()) {
+      this.cache._mergeAndSave([], [stdId]);
+      return;
+    }
+    const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
+    if (fresh._isDeleted || fresh.status === 'DELETED') this.cache._mergeAndSave([], [stdId]);
+    else this.cache._mergeAndSave([fresh], []);
+  }
+
   // ─── Search Key ──────────────────────────────────────────────────────────────
   generateSearchKey(std: ReferenceStandard): string {
     const parts = [
@@ -141,6 +165,7 @@ export class StandardCrudService {
         .filter(candidate => candidate.lifecycle_status !== 'RELEASED' && candidate.lifecycle_status !== 'CLOSED')
         .map(candidate => candidate.id);
     }
+    let createdProjection: ReferenceStandard | null = null;
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (snapshot.exists()) throw new Error('Mã chuẩn đã tồn tại; không thể ghi đè bằng thao tác thêm mới.');
@@ -152,7 +177,15 @@ export class StandardCrudService {
         _isDeleted: false,
         lastUpdated: serverTimestamp()
       }));
+      createdProjection = {
+        ...persistedStandard,
+        ...lifecycleFields,
+        status: std.current_amount <= 0 ? 'DEPLETED' : 'AVAILABLE',
+        _isDeleted: false,
+        lastUpdated: Date.now()
+      } as ReferenceStandard;
     });
+    if (createdProjection) this.cache._mergeAndSave([createdProjection], []);
     await this.logGlobalActivity('CREATE_STANDARD', `Thêm chuẩn mới: ${std.name} (Lô: ${std.lot_number})`, std.id);
     await this.fb.updateMetadata('standards');
   }
@@ -174,6 +207,7 @@ export class StandardCrudService {
     }
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+    let updatedProjection: ReferenceStandard | null = null;
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
@@ -244,7 +278,13 @@ export class StandardCrudService {
       };
       if (tagsToPersist !== undefined) persistedMetadata['sop_tags'] = tagsToPersist;
       transaction.update(ref, sanitizeForFirebase(persistedMetadata));
+      updatedProjection = {
+        ...fresh,
+        ...persistedMetadata,
+        lastUpdated: Date.now()
+      } as ReferenceStandard;
     });
+    if (updatedProjection) this.cache._mergeAndSave([updatedProjection], []);
     await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (Mã: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
   }
@@ -257,7 +297,7 @@ export class StandardCrudService {
       standardId
     );
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
+    await this.publishFreshStandard(standardId);
   }
 
   /**
@@ -288,6 +328,7 @@ export class StandardCrudService {
     );
     const batchRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches`));
     const currentUser = this.auth.currentUser();
+    let updatedProjections: ReferenceStandard[] = [];
 
     await runTransaction(this.fb.db, async transaction => {
       const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
@@ -322,12 +363,19 @@ export class StandardCrudService {
           ...fresh,
           ...after,
         };
+        const searchKey = this.generateSearchKey(updated);
         transaction.update(refs[index], sanitizeForFirebase({
           ...after,
           normalized_at: serverTimestamp(),
-          search_key: this.generateSearchKey(updated),
+          search_key: searchKey,
           lastUpdated: serverTimestamp(),
         }));
+        updatedProjections.push({
+          ...updated,
+          search_key: searchKey,
+          normalized_at: Date.now(),
+          lastUpdated: Date.now()
+        } as ReferenceStandard);
         changes.push({
           standardId: fresh.id,
           internalId: fresh.internal_id,
@@ -352,7 +400,7 @@ export class StandardCrudService {
       }));
     });
 
-    this.cache.invalidateLocalStandardsCache();
+    if (updatedProjections.length) this.cache._mergeAndSave(updatedProjections, []);
     const maintenanceResults = await Promise.allSettled([
       this.logGlobalActivity(
         'NORMALIZE_STANDARD_NAMES',
@@ -379,6 +427,7 @@ export class StandardCrudService {
 
     const batchRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches/${batchId}`);
     const currentUser = this.auth.currentUser();
+    let restoredProjections: ReferenceStandard[] = [];
     await runTransaction(this.fb.db, async transaction => {
       const batchSnapshot = await transaction.get(batchRef);
       if (!batchSnapshot.exists()) throw new Error('Không tìm thấy phiên chuẩn hóa.');
@@ -438,6 +487,11 @@ export class StandardCrudService {
         };
         if (hasCasSnapshot) restoreData['cas_number'] = before.cas_number ?? deleteField();
         transaction.update(refs[index], sanitizeForFirebase(restoreData));
+        restoredProjections.push({
+          ...restored,
+          search_key: restoreData['search_key'],
+          lastUpdated: Date.now()
+        });
       });
 
       transaction.update(batchRef, {
@@ -448,7 +502,7 @@ export class StandardCrudService {
       });
     });
 
-    this.cache.invalidateLocalStandardsCache();
+    if (restoredProjections.length) this.cache._mergeAndSave(restoredProjections, []);
     const maintenanceResults = await Promise.allSettled([
       this.logGlobalActivity('UNDO_NORMALIZE_STANDARD_NAMES', `Hoàn tác phiên chuẩn hóa tên ${batchId}.`),
       this.fb.updateMetadata('standards'),
@@ -494,6 +548,7 @@ export class StandardCrudService {
     if (invalidKey) throw new Error(`Trường không được phép cập nhật nhanh: ${invalidKey}.`);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
+    this.publishStandardPatch(stdId, { ...fields, lastUpdated: Date.now() });
     await this.fb.updateMetadata('standards');
   }
 
@@ -502,10 +557,11 @@ export class StandardCrudService {
     if (!Number.isFinite(newAmount) || newAmount < 0) throw new Error('Tồn kho mới phải là số không âm.');
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     const activityRef = this.activityEvents.createRef();
+    let updatedProjection: ReferenceStandard | null = null;
     await runTransaction(this.fb.db, async transaction => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists()) throw new Error('Chuẩn không tồn tại.');
-      const fresh = snapshot.data() as ReferenceStandard;
+      const fresh = { id: snapshot.id, ...snapshot.data() } as ReferenceStandard;
       if (fresh.current_request_id || fresh.current_holder_uid || fresh.status === 'IN_USE') {
         throw new Error('Không thể chỉnh tồn kho thủ công khi chuẩn đang được mượn.');
       }
@@ -514,6 +570,12 @@ export class StandardCrudService {
         status: newAmount <= 0 ? 'DEPLETED' : 'AVAILABLE',
         lastUpdated: serverTimestamp()
       });
+      updatedProjection = {
+        ...fresh,
+        current_amount: newAmount,
+        status: newAmount <= 0 ? 'DEPLETED' : 'AVAILABLE',
+        lastUpdated: Date.now()
+      };
       const activityEvent = this.activityEvents.build({
         eventId: activityRef.id,
         action: 'UPDATE_STOCK',
@@ -530,6 +592,7 @@ export class StandardCrudService {
       });
       this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
+    if (updatedProjection) this.cache._mergeAndSave([updatedProjection], []);
     await this.fb.updateMetadata('standards');
   }
 
@@ -553,6 +616,7 @@ export class StandardCrudService {
     const successIds: string[] = [];
     const failed: { standardId: string; reason: string }[] = [];
     const skippedIds: string[] = [];
+    const committedProjections: ReferenceStandard[] = [];
     for (let offset = 0; offset < uniqueIds.length; offset += MAX_BULK_WRITES) {
       const chunk = uniqueIds.slice(offset, offset + MAX_BULK_WRITES);
       const refs = chunk.map(id => doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
@@ -560,6 +624,7 @@ export class StandardCrudService {
       const batch = writeBatch(this.fb.db);
       let writeCount = 0;
       const chunkSuccessIds: string[] = [];
+      const chunkProjections: ReferenceStandard[] = [];
       snapshots.forEach((snapshot, index) => {
         const id = chunk[index];
         if (!snapshot.exists()) {
@@ -602,6 +667,11 @@ export class StandardCrudService {
           }
           successIds.push(id);
           chunkSuccessIds.push(id);
+          chunkProjections.push({
+            ...fresh,
+            sop_tags: next,
+            lastUpdated: Date.now()
+          });
           writeCount++;
         } catch (error: any) {
           failed.push({ standardId: id, reason: error?.message || 'Không thể tính tập nhãn mới.' });
@@ -610,6 +680,7 @@ export class StandardCrudService {
       if (writeCount > 0) {
         try {
           await batch.commit();
+          committedProjections.push(...chunkProjections);
         } catch (error: any) {
           for (const id of chunkSuccessIds) {
             const successIndex = successIds.indexOf(id);
@@ -619,7 +690,7 @@ export class StandardCrudService {
         }
       }
     }
-    this.cache.invalidateLocalStandardsCache();
+    if (committedProjections.length) this.cache._mergeAndSave(committedProjections, []);
     await this.logGlobalActivity('BULK_UPDATE_STANDARD_TAGS', `Gán nhãn ${mode} cho ${successIds.length} lô chuẩn.`);
     return { successIds, failed, skippedIds };
   }
@@ -655,7 +726,7 @@ export class StandardCrudService {
     });
     await this.logGlobalActivity('SOFT_DELETE_BATCH', `Đã xóa lô ${ids.length} chuẩn đối chiếu.`);
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
+    this.cache._mergeAndSave([], uniqueIds);
   }
 
   async restoreStandard(id: string, name = ''): Promise<void> {
@@ -672,6 +743,7 @@ export class StandardCrudService {
           .filter(snapshot => snapshot.id !== id)
           .map(snapshot => snapshot.ref)
       : [];
+    let restoredProjection: ReferenceStandard | null = null;
 
     await runTransaction(this.fb.db, async transaction => {
       const [freshSnapshot, ...candidateSnapshots] = await Promise.all([
@@ -695,10 +767,16 @@ export class StandardCrudService {
         status: Number(fresh.current_amount || 0) <= 0 ? 'DEPLETED' : 'AVAILABLE',
         lastUpdated: serverTimestamp()
       });
+      restoredProjection = {
+        ...fresh,
+        _isDeleted: false,
+        status: Number(fresh.current_amount || 0) <= 0 ? 'DEPLETED' : 'AVAILABLE',
+        lastUpdated: Date.now()
+      };
     });
+    if (restoredProjection) this.cache._mergeAndSave([restoredProjection], []);
     await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
   }
 
   // ─── CoA Request ─────────────────────────────────────────────────────────────
@@ -709,12 +787,19 @@ export class StandardCrudService {
     }
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
     const activityRef = this.activityEvents.createRef();
+    let requestedProjection: ReferenceStandard | null = null;
     await runTransaction(this.fb.db, async transaction => {
       const snap = await transaction.get(ref);
       if (!snap.exists()) throw new Error('Chuẩn không tồn tại.');
       if (snap.data()['certificate_ref']) throw new Error('Chuẩn đã có CoA.');
       if (snap.data()['coa_requested_by']) throw new Error('Yêu cầu CoA cho chuẩn này đã được gửi trước đó.');
       transaction.update(ref, { coa_requested_by: user.uid, lastUpdated: serverTimestamp() });
+      requestedProjection = {
+        id: snap.id,
+        ...snap.data(),
+        coa_requested_by: user.uid,
+        lastUpdated: Date.now()
+      } as ReferenceStandard;
       const activityEvent = this.activityEvents.build({
         eventId: activityRef.id,
         action: 'REQUEST_COA',
@@ -726,6 +811,7 @@ export class StandardCrudService {
       });
       this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
+    if (requestedProjection) this.cache._mergeAndSave([requestedProjection], []);
     await this.notificationCenter.publishActivityProjection(activityRef.id, {
       recipientUid: 'role:admin',
       senderUid: user?.uid,
@@ -789,7 +875,23 @@ export class StandardCrudService {
     this.activityEvents.setInBatch(batch, activityRef, activityEvent);
     await batch.commit();
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
+
+    // Publish the mutation to the active DeltaSync singleton immediately.
+    // Firestore's snapshot listener will eventually deliver the same change,
+    // but the current user should see an uploaded CoA without waiting for the
+    // listener round-trip or reloading the page.
+    this.cache._mergeAndSave(
+      freshStandards.map(standard => ({
+        ...standard,
+        certificate_ref: certificateUrl,
+        coa_requested_by: undefined,
+        lastCoaNotificationEventId: standard.coa_requested_by
+          ? activityRef.id
+          : standard.lastCoaNotificationEventId,
+        lastCoaRequestedByUid: standard.coa_requested_by || standard.lastCoaRequestedByUid
+      })),
+      []
+    );
 
     const admin = this.auth.currentUser();
     const legacyEventFor = (recipientUid: string): NotificationEvent => ({

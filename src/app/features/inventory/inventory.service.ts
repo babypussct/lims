@@ -48,7 +48,6 @@ export class InventoryService {
     localStorage.removeItem('lims_inv_sync_seconds_' + this.fb.APP_ID);
   }
 
-
   // ─── OPTIMIZED READ Operations ──────────────────────────────────────────────
 
   async getInventoryCount(): Promise<number> {
@@ -341,6 +340,11 @@ export class InventoryService {
     if (crossedLowStockThreshold) {
       await this.notificationCenter.dispatchActivityProjectionIfEnabled(lowStockActivityRef.id);
     }
+    this.state.publishInventoryChanges([{
+      ...item,
+      _isDeleted: false,
+      lastUpdated: Date.now()
+    }]);
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
@@ -379,6 +383,7 @@ export class InventoryService {
     this.activityEvents.setInBatch(finalBatch, globalLogRef, activityEvent);
 
     await finalBatch.commit();
+    this.state.publishInventoryChanges([], [id]);
     this.invalidateLocalInventoryCache();
     // Delta Sync doesn't require updateMetadata if we listen to onSnapshot, but keeping it for legacy components
     await this.fb.updateMetadata('inventory');
@@ -388,6 +393,9 @@ export class InventoryService {
       const currentUser = this.state.getCurrentUserName();
       const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
       const globalLogRef = this.activityEvents.createRef();
+      const currentSnapshot = await getDoc(invRef);
+      if (!currentSnapshot.exists()) throw new Error(`Không tìm thấy vật tư "${id}" để khôi phục.`);
+      const currentItem = { id: currentSnapshot.id, ...currentSnapshot.data() } as InventoryItem;
       
       const finalBatch = writeBatch(this.fb.db);
       finalBatch.update(invRef, {
@@ -406,6 +414,12 @@ export class InventoryService {
       this.activityEvents.setInBatch(finalBatch, globalLogRef, activityEvent);
   
       await finalBatch.commit();
+      this.state.publishInventoryChanges([{
+        ...currentItem,
+        _isDeleted: false,
+        status: 'ACTIVE',
+        lastUpdated: Date.now()
+      }]);
       this.invalidateLocalInventoryCache();
   }
 
@@ -418,6 +432,7 @@ export class InventoryService {
     const globalLogRef = this.activityEvents.createRef();
     const lowStockActivityRef = this.activityEvents.createRef();
     let crossedLowStockThreshold = false;
+    let committedItem: InventoryItem | null = null;
 
     await runTransaction(this.fb.db, async (transaction) => {
         const snapshot = await transaction.get(invRef);
@@ -429,6 +444,12 @@ export class InventoryService {
             throw new Error(`Tồn kho "${id}" không đủ hoặc kết quả điều chỉnh không hợp lệ.`);
         }
         crossedLowStockThreshold = crossedInventoryLowStockThreshold(freshStock, newStock, threshold);
+        committedItem = {
+          id: snapshot.id,
+          ...snapshot.data(),
+          stock: newStock,
+          lastUpdated: Date.now()
+        } as InventoryItem;
 
         // A. Update Stock
         transaction.update(invRef, { stock: newStock, lastUpdated: serverTimestamp() });
@@ -488,6 +509,7 @@ export class InventoryService {
     if (crossedLowStockThreshold) {
       await this.notificationCenter.dispatchActivityProjectionIfEnabled(lowStockActivityRef.id);
     }
+    if (committedItem) this.state.publishInventoryChanges([committedItem]);
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
@@ -497,12 +519,14 @@ export class InventoryService {
     const currentUser = this.state.getCurrentUserName();
     const globalLogRef = this.activityEvents.createRef();
     const uniqueIds = [...new Set(ids)];
+    let committedItems: InventoryItem[] = [];
 
     await runTransaction(this.fb.db, async transaction => {
       const rows: Array<{
         id: string;
         invRef: ReturnType<typeof doc>;
         stock: number;
+        item: InventoryItem;
         historyRef: ReturnType<typeof doc>;
       }> = [];
       for (const id of uniqueIds) {
@@ -513,6 +537,7 @@ export class InventoryService {
           id,
           invRef,
           stock: Number(snapshot.data()['stock'] || 0),
+          item: { id: snapshot.id, ...snapshot.data() } as InventoryItem,
           historyRef: doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history'))
         });
       }
@@ -542,8 +567,14 @@ export class InventoryService {
         legacyFields: { reason, inventoryDeltas }
       });
       this.activityEvents.setInTransaction(transaction, globalLogRef, activityEvent);
+      committedItems = rows.map(row => ({
+        ...row.item,
+        stock: 0,
+        lastUpdated: Date.now()
+      }));
     });
     await this.notificationCenter.dispatchActivityProjectionIfEnabled(globalLogRef.id);
+    if (committedItems.length) this.state.publishInventoryChanges(committedItems);
     this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }

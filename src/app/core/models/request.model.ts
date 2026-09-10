@@ -84,4 +84,5 @@ export interface Request {
   lockedByName?: string;
   lockedAt?: any;
   lastActiveAt?: any;
+  _isDeleted?: boolean;
 }

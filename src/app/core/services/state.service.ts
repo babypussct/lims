@@ -108,6 +108,102 @@ export class StateService implements OnDestroy {
   allStandardRequests = signal<StandardRequest[]>([]);
   approvedRequests = signal<Request[]>([]);
 
+  private get inventoryDeltaCacheKey(): string {
+    return buildScopedDeltaKey(
+      `lims_inventory_cache_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+
+  private get sopDeltaCacheKey(): string {
+    return buildScopedDeltaKey(
+      `lims_sops_cache_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+
+  private get approvedRequestsDeltaCacheKey(): string {
+    return buildScopedDeltaKey(
+      `lims_approved_requests_recent_cache_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+
+  /** Publish a committed inventory mutation to the active DeltaSync projection. */
+  publishInventoryChanges(changed: InventoryItem[], deletedIds: string[] = []): void {
+    const key = this.inventoryDeltaCacheKey;
+    if (this.deltaSync.getSingletonStatus(key)) {
+      this.deltaSync.mergeSingletonCache<InventoryItem>(key, changed, deletedIds);
+      return;
+    }
+
+    const deleted = new Set(deletedIds);
+    const merged = new Map(this.inventory().map(item => [item.id, item]));
+    deleted.forEach(id => merged.delete(id));
+    changed.forEach(item => {
+      if (item._isDeleted) merged.delete(item.id);
+      else merged.set(item.id, item);
+    });
+    this.inventory.set(Array.from(merged.values()));
+  }
+
+  /** Publish a committed SOP mutation to the active DeltaSync projection. */
+  publishSopChanges(changed: Sop[], deletedIds: string[] = []): void {
+    const key = this.sopDeltaCacheKey;
+    if (this.deltaSync.getSingletonStatus(key)) {
+      this.deltaSync.mergeSingletonCache<Sop>(key, changed, deletedIds);
+      return;
+    }
+
+    const deleted = new Set(deletedIds);
+    const merged = new Map(this.sops().map(item => [item.id, item]));
+    deleted.forEach(id => merged.delete(id));
+    changed.forEach(item => {
+      if (item.isArchived) merged.delete(item.id);
+      else merged.set(item.id, item);
+    });
+    this.sops.set(Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
+  /**
+   * Keep pending and approved request projections coherent immediately after a
+   * successful mutation. The recent approved DeltaSync cache is updated only
+   * when its singleton is active; report history remains independently loaded.
+   */
+  publishRequestChanges(changed: Request[], deletedIds: string[] = []): void {
+    const changedIds = new Set(changed.map(request => request.id));
+    const deleted = new Set(deletedIds);
+
+    const pending = this.requests()
+      .filter(request => !changedIds.has(request.id) && !deleted.has(request.id));
+    changed.forEach(request => {
+      if (request.status === 'pending' && !request._isDeleted) pending.push(request);
+    });
+    this.requests.set(pending.sort((a, b) =>
+      (timestampToMillis(b.timestamp ?? b.lastUpdated) ?? 0) -
+      (timestampToMillis(a.timestamp ?? a.lastUpdated) ?? 0)
+    ));
+
+    deleted.forEach(id => {
+      this.approvedRecentRequests.delete(id);
+      this.approvedHistoryRequests.delete(id);
+    });
+    changed.forEach(request => {
+      if (this.isApprovedRequest(request) && !request._isDeleted) {
+        this.approvedRecentRequests.set(request.id, request);
+      } else {
+        this.approvedRecentRequests.delete(request.id);
+        this.approvedHistoryRequests.delete(request.id);
+      }
+    });
+    this.publishApprovedRequests();
+
+    const key = this.approvedRequestsDeltaCacheKey;
+    if (this.deltaSync.getSingletonStatus(key)) {
+      this.deltaSync.mergeSingletonCache<Request>(key, changed, deletedIds);
+    }
+  }
+
   stats = signal<{ totalSopsRun: number; totalItemsUsed: number }>({ totalSopsRun: 0, totalItemsUsed: 0 });
 
   printConfig = signal<PrintConfig>({
@@ -153,7 +249,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.10-b01');
+  systemVersion = signal<string>('v26.09.11-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -371,10 +467,7 @@ export class StateService implements OnDestroy {
     // Trước: đọc toàn bộ collection mỗi lần login (~200+ reads)
     // Sau: initial fetch 1 lần, sau đó chỉ delta kể từ cursor (~5-10 reads/lần)
     if (this.auth.hasPermission('inventory_view')) {
-      const invCacheKey = buildScopedDeltaKey(
-        `lims_inventory_cache_${this.fb.APP_ID}`,
-        this.auth.getDeltaCacheScope()
-      );
+      const invCacheKey = this.inventoryDeltaCacheKey;
       const invSub = this.deltaSync.startSingletonListener<InventoryItem>({
         cacheKey: invCacheKey,
         cursorKey: buildScopedDeltaKey(
@@ -398,10 +491,7 @@ export class StateService implements OnDestroy {
     // Sau: initial fetch 1 lần, sau đó chỉ delta. isArchived=true bị lọc ra khỏi cache.
     if (this.auth.hasPermission('sop_view')) {
       const sopSub = this.deltaSync.startSingletonListener<Sop>({
-        cacheKey: buildScopedDeltaKey(
-          `lims_sops_cache_${this.fb.APP_ID}`,
-          this.auth.getDeltaCacheScope()
-        ),
+        cacheKey: this.sopDeltaCacheKey,
         cursorKey: buildScopedDeltaKey(
           `lims_sops_cursor_${this.fb.APP_ID}`,
           this.auth.getDeltaCacheScope()
@@ -601,7 +691,7 @@ export class StateService implements OnDestroy {
     const approvedRunsConfig: DeltaSyncConfig = {
       // The listener is intentionally a recent feed. Older history is loaded
       // explicitly by date below, so a cold start cannot scan requests forever.
-      cacheKey: buildScopedDeltaKey(`lims_approved_requests_recent_cache_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
+      cacheKey: this.approvedRequestsDeltaCacheKey,
       cursorKey: buildScopedDeltaKey(`lims_approved_requests_recent_cursor_${this.fb.APP_ID}`, this.auth.getDeltaCacheScope()),
       collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
       maxCacheSize: this.APPROVED_REQUEST_RECENT_LIMIT,

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.10-b01",
-    "title": "Củng cố sao lưu, Thùng rác và đồng bộ dữ liệu",
+    "version": "v26.09.11-b01",
+    "title": "Hoàn thiện DeltaSync cho dữ liệu canary",
     "features": [
-      "Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.",
-      "Nâng cấp Thùng rác để xem toàn bộ dữ liệu bản ghi đã xóa trước khi khôi phục hoặc xóa vĩnh viễn.",
-      "Cho phép xóa vĩnh viễn từng bản ghi trong Thùng rác bằng bước xác nhận bắt buộc riêng.",
-      "Kiểm soát tài nguyên dành cho sao lưu để dành dung lượng xử lý cho công việc hằng ngày.",
-      "Giảm phần lưu trữ phụ cho nội dung biểu mẫu, kết quả và bản in."
+      "Đồng bộ delta theo phạm vi người dùng cho các luồng dữ liệu inventory, SOP, request và target.",
+      "Cải thiện cập nhật realtime sau thao tác tạo, sửa, xóa để giảm tải đọc Firestore.",
+      "Bổ sung cơ chế publish mutation sau ghi thành công để trạng thái giao diện cập nhật ngay trong canary.",
+      "Giảm truy vấn đọc lặp lại bằng DeltaSync singleton cache.",
+      "Cải thiện chuyển đổi phiên đăng nhập và làm sạch cache theo scope người dùng."
     ]
   },
   "assetGroups": [

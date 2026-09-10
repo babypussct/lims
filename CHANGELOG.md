@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.10-b01
+## Phiên bản hiện tại: v26.09.11-b01
+
+### v26.09.11-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đồng bộ delta theo phạm vi người dùng cho các luồng dữ liệu inventory, SOP, request và target.
+- Cải thiện cập nhật realtime sau thao tác tạo, sửa, xóa để giảm tải đọc Firestore.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung cơ chế publish mutation sau ghi thành công để trạng thái giao diện cập nhật ngay trong canary.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giảm truy vấn đọc lặp lại bằng DeltaSync singleton cache.
+- Cải thiện chuyển đổi phiên đăng nhập và làm sạch cache theo scope người dùng.
+- Ổn định đồng bộ realtime khi reconnect và cập nhật mutation cục bộ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa luồng cập nhật dữ liệu sau mutation để tránh chờ vòng đọc Firestore mới.
 
 ### v26.09.10-b01
 
