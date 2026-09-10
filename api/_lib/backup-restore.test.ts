@@ -7,6 +7,7 @@ import {
   advanceBackupVerification,
   isDriveOnlyRecoveryDifference,
   listRestoreCheckpoints,
+  runRestore,
   verifyBackup,
 } from './backup-restore.js';
 
@@ -55,7 +56,11 @@ describe('LIMS backup integrity verification', () => {
     const firestore = encryptedPart(
       'firestore-00000.ndjson.enc',
       'firestore',
-      '{"path":"artifacts/lims-cloud-fixed/sops/sop-1","collection":"sops","documentId":"sop-1","data":{}}\n',
+      [
+        '{"path":"artifacts/lims-cloud-fixed/sops/sop-1","collection":"sops","documentId":"sop-1","data":{}}',
+        '{"path":"artifacts/lims-cloud-fixed/duty_schedules/2026-09-01","collection":"duty_schedules","documentId":"2026-09-01","data":{"staffId":"staff-1"}}',
+        '{"path":"artifacts/lims-cloud-fixed/duty_staff/staff-1","collection":"duty_staff","documentId":"staff-1","data":{"displayName":"Test staff"}}',
+      ].join('\n') + '\n',
     );
     const auth = encryptedPart('auth-users-00000.ndjson.enc', 'auth', '{"uid":"user-1","data":{}}\n');
     const deployment = encryptedPart('apps-script-deployment.json.enc', 'deployment', '{}');
@@ -71,11 +76,17 @@ describe('LIMS backup integrity verification', () => {
       completedAt: new Date().toISOString(),
       driveBackupFolderId: 'backup-folder',
       firestore: {
-        topLevelCollections: [...FIRESTORE_COLLECTION_CATALOG],
+        // Keep these names explicit in the fixture so restore validation fails
+        // if production collections drift out of the catalog again.
+        topLevelCollections: [...new Set([...FIRESTORE_COLLECTION_CATALOG, 'duty_schedules', 'duty_staff'])],
         rootCollections: [...FIRESTORE_ROOT_COLLECTION_CATALOG],
         nestedPatterns: FIRESTORE_SUBCOLLECTION_CATALOG.map(item => `${item.parentCollection}/{id}/${item.collection}`),
-        pathCounts: [{ path: 'sops', collection: 'sops', documentCount: 1, bytes: 2 }],
-        totalDocuments: 1,
+        pathCounts: [
+          { path: 'sops', collection: 'sops', documentCount: 1, bytes: 2 },
+          { path: 'duty_schedules', collection: 'duty_schedules', documentCount: 1, bytes: 2 },
+          { path: 'duty_staff', collection: 'duty_staff', documentCount: 1, bytes: 2 },
+        ],
+        totalDocuments: 3,
         excludedCollections: [],
         unknownCollections: [],
         orphanSubcollectionCount: 0,
@@ -134,6 +145,48 @@ describe('LIMS backup integrity verification', () => {
     assert.equal(checkpoints.length, 1);
     assert.equal(checkpoints[0].restoreId, 'rst_test');
     assert.equal(checkpoints[0].phase, 'FAILED');
+
+    const restoreWrites: Array<{ path: string; data: unknown }> = [];
+    let committedBatches = 0;
+    const restoreDb = {
+      doc: (path: string) => ({ path }),
+      getAll: async (...refs: Array<{ path: string }>) => refs.map(ref => ({ exists: false, ref })),
+      batch: () => ({
+        set: (ref: { path: string }, data: unknown) => restoreWrites.push({ path: ref.path, data }),
+        delete: () => { throw new Error('The selected restore fixture should not delete documents.'); },
+        commit: async () => { committedBatches++; },
+      }),
+    } as any;
+    client.uploadBytes = async (name: string) => ({ id: 'restore-checkpoint-id', name, mimeType: 'application/octet-stream' });
+    client.updateBytes = async (id: string) => ({ id, name: 'restore-checkpoint.json.enc', mimeType: 'application/octet-stream' });
+
+    const restore = await runRestore({
+      db: restoreDb,
+      client,
+      backupFolderId: 'backup-folder',
+      mode: 'RESTORE_SELECTED',
+      selectedPaths: [
+        'artifacts/lims-cloud-fixed/duty_schedules',
+        'artifacts/lims-cloud-fixed/duty_staff',
+      ],
+      projectId: 'demo-project',
+      key,
+      restoreDrive: false,
+      restoreAuth: false,
+    });
+
+    assert.equal(restore.verified, true);
+    assert.equal(restore.firestore.scanned, 2);
+    assert.equal(restore.firestore.missing, 2);
+    assert.equal(restore.firestore.created, 2);
+    assert.equal(restore.firestore.plannedWrites, 2);
+    assert.equal(restore.checkpoint?.firestoreWritesCommitted, 2);
+    assert.equal(committedBatches, 1);
+    assert.deepEqual(restoreWrites.map(item => item.path).sort(), [
+      'artifacts/lims-cloud-fixed/duty_schedules/2026-09-01',
+      'artifacts/lims-cloud-fixed/duty_staff/staff-1',
+    ]);
+    assert.equal(restoreWrites.some(item => item.path === 'artifacts/lims-cloud-fixed/sops/sop-1'), false);
   });
 
   it('resumes verification from a persisted checkpoint and finalises after ACL batches', async () => {

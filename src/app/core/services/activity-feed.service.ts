@@ -180,8 +180,10 @@ export class ActivityFeedService {
     // A small subset of Chromium/Edge installations can leave the realtime
     // WebChannel waiting indefinitely while ordinary Firestore reads still
     // succeed. Do not leave Dashboard on a permanent skeleton in that case:
-    // bootstrap this audience once from the server and keep the listener alive
-    // so realtime updates can resume as soon as the channel recovers.
+    // bootstrap this audience once from the server. If that read succeeds it
+    // becomes the sole initial source for this audience; the stalled listener
+    // is unsubscribed so it cannot replay the same initial page as another
+    // billed snapshot. A later retry starts a fresh realtime listener.
     const fallbackTimer = setTimeout(() => {
       if (generation !== this.generation || !pendingInitial.has(audience)) return;
       console.warn('Activity Feed realtime bootstrap timed out; trying a server read.', { audience });
@@ -205,6 +207,7 @@ export class ActivityFeedService {
       const snapshot = await readActivityFeedFromHttp(this.fb.app, path, audience, this.perAudienceLimit);
       if (generation !== this.generation || !pendingInitial.has(audience)) return;
 
+      this.stopAudienceListener(audience);
       this.readMonitor.record('getDocs', path, snapshot.size, { phase: 'initial' });
       const events = snapshot.docs
         .map(document => parseActivityFeedEvent(document.id, document.data()))
@@ -242,6 +245,13 @@ export class ActivityFeedService {
     this.audienceSnapshots.clear();
     this.events.set([]);
     this.lastActivitySeenAt.set(null);
+  }
+
+  private stopAudienceListener(audience: ActivityAudience): void {
+    const unsubscribe = this.listeners.get(audience);
+    if (!unsubscribe) return;
+    unsubscribe();
+    this.listeners.delete(audience);
   }
 
   private clearInitialFallbackTimer(audience: ActivityAudience): void {

@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.08-b02
+## Phiên bản hiện tại: v26.09.10-b01
+
+### v26.09.10-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.
+- Nâng cấp Thùng rác để xem toàn bộ dữ liệu bản ghi đã xóa trước khi khôi phục hoặc xóa vĩnh viễn.
+
+#### ✨ Tính Năng Mới
+
+- Cho phép xóa vĩnh viễn từng bản ghi trong Thùng rác bằng bước xác nhận bắt buộc riêng.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Kiểm soát tài nguyên dành cho sao lưu để dành dung lượng xử lý cho công việc hằng ngày.
+- Giảm phần lưu trữ phụ cho nội dung biểu mẫu, kết quả và bản in.
+- Ngừng theo dõi dữ liệu khi màn hình không còn sử dụng, tránh duy trì kết nối cập nhật không cần thiết.
+- Cải thiện độ ổn định của luồng Hoạt Động Gần Đây và đồng bộ dữ liệu khi thay đổi màn hình.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Bổ sung dữ liệu lịch trực còn thiếu trong phạm vi sao lưu và khôi phục.
 
 ### v26.09.08-b02
 

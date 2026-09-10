@@ -17,7 +17,8 @@ service cloud.firestore {
 
     // Keep one post-write lookup per referenced standard. Repeating the same
     // getAfter() expression is not a safe way to rely on emulator caching in
-    // a large atomic batch.
+    // a large atomic batch. Callers must guard missing parents explicitly so
+    // malformed writes are denied without a Rules evaluation error.
     function standardAfterHasInternalId(standardPath, expectedInternalId) {
       let standardAfter = getAfter(standardPath).data;
       return validInternalId(standardAfter.get('internal_id', '')) &&
@@ -137,6 +138,14 @@ service cloud.firestore {
       let hasCustom =
         (directPerms is list && directPerms.hasAny([permission])) ||
         (overridePerms is list && overridePerms.hasAny([permission]));
+      let roleConfigPath = /databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId);
+      // Preserve the original permission short circuit: a direct/custom
+      // permission does not need a roles_config lookup. The conditional keeps
+      // both the existence check and the subsequent read out of that path.
+      let hasRoleConfig = role == 'staff' && !hasCustom
+        ? exists(roleConfigPath)
+        : false;
+      let configuredPerms = hasRoleConfig ? get(roleConfigPath).data.get('permissions', []) : [];
       
       return role == 'manager' ||
         (
@@ -149,15 +158,14 @@ service cloud.firestore {
             hasCustom ||
             // 1. Uu tien cao nhat: Neu manager da cau hinh roles_config thi lay theo cau hinh do
             (
-              exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
-              'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
-              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions is list &&
-              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
+              hasRoleConfig &&
+              configuredPerms is list &&
+              configuredPerms.hasAny([permission])
             )
             ||
             // 2. Fallback: CHI AP DUNG khi roles_config chua duoc tao (bi trong)
             (
-              !exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
+              !hasRoleConfig &&
               (
                 ['inventory_view', 'standard_view', 'sop_view', 'recipe_view', 'standard_request'].hasAny([permission]) ||
                 (roleId == 'role_lab_technician' && ['inventory_edit', 'batch_run'].hasAny([permission])) ||
@@ -174,11 +182,16 @@ service cloud.firestore {
     }
 
     // Audited standard synchronization is already restricted to the
-    // standard_edit capability. A direct profile read is sufficient here:
-    // get() fails closed when the profile is missing and saves one document
-    // access call per atomic batch compared with exists()+get().
+    // standard_edit capability. The existence guard is deliberate: an Auth
+    // user may exist before its Firestore profile is provisioned, and calling
+    // .data on that missing profile would turn a normal denial into a Rules
+    // evaluation error. The guard adds a profile lookup on this path; it is
+    // kept for the safer failure mode rather than treated as a read reduction.
     function hasAuditedStandardEdit(appId) {
-      return isSignedIn() && evaluateUserPermission(appId, getUserProfile(appId), 'standard_edit');
+      // A signed-in Auth user can exist before its Firestore profile is
+      // provisioned. Prove the profile exists before dereferencing .data so a
+      // denied repair is a normal false result rather than a Rules error.
+      return userExists(appId) && evaluateUserPermission(appId, getUserProfile(appId), 'standard_edit');
     }
 
     // Operational data must follow the same active-role boundary as the client.
@@ -298,8 +311,7 @@ service cloud.firestore {
       );
     }
 
-    function canCreateAuditLog(appId) {
-      let profile = getUserProfile(appId);
+    function canCreateAuditLogForProfile(appId, profile) {
       let role = profile.get('role', 'pending');
       let rawRoleId = profile.get('roleId', 'role_staff_default');
       let roleId = (rawRoleId == null || rawRoleId == '') ? 'role_staff_default' : rawRoleId;
@@ -325,6 +337,13 @@ service cloud.firestore {
           )
         )
       );
+    }
+
+    function canCreateAuditLog(appId) {
+      // Keep the profile lookup behind the existence guard. Activity writes
+      // from a newly authenticated user must fail closed without generating a
+      // missing-document evaluation error.
+      return userExists(appId) && canCreateAuditLogForProfile(appId, getUserProfile(appId));
     }
 
     // Activity V2 action groups mirror ACTIVITY_ACTION_REGISTRY. Keep these

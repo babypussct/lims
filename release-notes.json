@@ -1,19 +1,19 @@
 {
-  "title": "Hoàn thiện Hoạt Động Gần Đây và xuất dữ liệu",
+  "title": "Củng cố sao lưu, Thùng rác và đồng bộ dữ liệu",
   "highlights": [
-    "Tăng độ ổn định của Hoạt Động Gần Đây khi kết nối chậm hoặc gián đoạn; có thể thử tải lại ngay trên bảng hoạt động."
+    "Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.",
+    "Nâng cấp Thùng rác để xem toàn bộ dữ liệu bản ghi đã xóa trước khi khôi phục hoặc xóa vĩnh viễn."
   ],
   "features": [
-    "Bổ sung bộ lọc và nhãn Lịch trực trong Hoạt Động Gần Đây."
+    "Cho phép xóa vĩnh viễn từng bản ghi trong Thùng rác bằng bước xác nhận bắt buộc riêng."
   ],
   "improvements": [
-    "Phân biệt rõ bảng hoạt động đang tạm tắt, chưa có dữ liệu và gặp lỗi kết nối.",
-    "Cải thiện xuất dữ liệu lưu trữ với nhiều trang lịch sử, bảo toàn nội dung chi tiết dài và tránh trùng tên sheet báo cáo."
+    "Kiểm soát tài nguyên dành cho sao lưu để dành dung lượng xử lý cho công việc hằng ngày.",
+    "Giảm phần lưu trữ phụ cho nội dung biểu mẫu, kết quả và bản in.",
+    "Ngừng theo dõi dữ liệu khi màn hình không còn sử dụng, tránh duy trì kết nối cập nhật không cần thiết.",
+    "Cải thiện độ ổn định của luồng Hoạt Động Gần Đây và đồng bộ dữ liệu khi thay đổi màn hình."
   ],
   "fixes": [
-    "Sửa cơ chế tải dự phòng để không phụ thuộc kết nối cập nhật trực tiếp đang gặp sự cố.",
-    "Không kết luận bảng hoạt động đã tải xong khi mới nhận dữ liệu lưu trên máy; giới hạn thời gian chờ và bỏ qua phản hồi cũ.",
-    "Giữ bảng hoạt động được bật với cấu hình cũ chưa có tùy chọn này, đồng thời tôn trọng cấu hình tắt rõ ràng.",
-    "Sửa lỗi biên dịch ở chức năng xuất dữ liệu Excel."
+    "Bổ sung dữ liệu lịch trực còn thiếu trong phạm vi sao lưu và khôi phục."
   ]
 }

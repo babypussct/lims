@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.09.10-b01",
+    "date": "10/9/2026",
+    "title": "Củng cố sao lưu, Thùng rác và đồng bộ dữ liệu",
+    "highlights": [
+      "Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.",
+      "Nâng cấp Thùng rác để xem toàn bộ dữ liệu bản ghi đã xóa trước khi khôi phục hoặc xóa vĩnh viễn."
+    ],
+    "features": [
+      "Cho phép xóa vĩnh viễn từng bản ghi trong Thùng rác bằng bước xác nhận bắt buộc riêng."
+    ],
+    "improvements": [
+      "Kiểm soát tài nguyên dành cho sao lưu để dành dung lượng xử lý cho công việc hằng ngày.",
+      "Giảm phần lưu trữ phụ cho nội dung biểu mẫu, kết quả và bản in.",
+      "Ngừng theo dõi dữ liệu khi màn hình không còn sử dụng, tránh duy trì kết nối cập nhật không cần thiết.",
+      "Cải thiện độ ổn định của luồng Hoạt Động Gần Đây và đồng bộ dữ liệu khi thay đổi màn hình."
+    ],
+    "fixes": [
+      "Bổ sung dữ liệu lịch trực còn thiếu trong phạm vi sao lưu và khôi phục."
+    ],
+    "releaseOrder": 26091000001
+  },
+  {
     "version": "v26.09.08-b02",
     "date": "8/9/2026",
     "title": "Hoàn thiện Hoạt Động Gần Đây và xuất dữ liệu",

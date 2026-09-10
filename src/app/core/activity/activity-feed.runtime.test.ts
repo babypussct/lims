@@ -94,12 +94,14 @@ test('server snapshot, including empty server data, finishes bootstrap without H
   }
 });
 
-test('HTTP result recovers a stalled listener and subsequent realtime data replaces it', async () => {
+test('HTTP result takes over a stalled listener without replaying its initial page', async () => {
   const h = harness(); h.fire(8_000); h.reads[0].resolve(snapshot(false, ['http'])); await flush();
   assert.equal(h.service.status(), 'ready'); assert.equal(h.service.events()[0].id, 'http');
+  assert.equal(h.listeners[0].stopped, true);
   h.listeners[0].next(snapshot(true, ['stale-cache']));
   assert.equal(h.service.events()[0].id, 'http');
-  h.listeners[0].next(snapshot(false, ['realtime']));
+  h.service.retry();
+  h.listeners[1].next(snapshot(false, ['realtime']));
   assert.equal(h.service.events()[0].id, 'realtime'); assert.equal(h.timers.size, 0);
 });
 

@@ -252,6 +252,11 @@ export function isDeltaGenerationActive(
   return !destroyed && currentGeneration === capturedGeneration;
 }
 
+/**
+ * A singleton has no consumer once its last callback is removed. Dispose it
+ * immediately so the Firestore listener does not outlive the route/component
+ * that registered it.
+ */
 interface SingletonEntry<T = any> {
   key: string;
   unsub: () => void;
@@ -296,7 +301,13 @@ export class DeltaSyncService {
         existing.retryAttempt = 0;
         this._startSingleton(existing);
       }
-      return () => existing.callbacks.delete(onData);
+      return () => {
+        const current = this._singletons.get(key);
+        if (current !== existing || !current.callbacks.delete(onData)) return;
+        if (current.callbacks.size === 0) {
+          this.destroySingleton(key);
+        }
+      };
     }
 
     this._registerStorageKeys(config.cacheKey, config.cursorKey, this._syncAtKey(config.cursorKey));
@@ -332,7 +343,10 @@ export class DeltaSyncService {
 
     return () => {
       const current = this._singletons.get(key);
-      if (current === entry) current.callbacks.delete(onData as any);
+      if (current !== entry || !current.callbacks.delete(onData as any)) return;
+      if (current.callbacks.size === 0) {
+        this.destroySingleton(key);
+      }
     };
   }
 

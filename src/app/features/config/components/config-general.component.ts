@@ -17,6 +17,16 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { validateCategoriesDraft } from '../../settings/settings-validation.utils';
 
+type RecycleItemType = 'inventory' | 'standard';
+
+interface RecycleItem {
+  type: RecycleItemType;
+  id: string;
+  name: string;
+  lastUpdated: any;
+  data: Record<string, any>;
+}
+
 @Component({
   selector: 'app-config-general',
   standalone: true,
@@ -110,7 +120,8 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   });
   isRecycling = signal(false);
   showRecycleBin = signal(false);
-  recycleItems = signal<any[]>([]);
+  recycleItems = signal<RecycleItem[]>([]);
+  selectedRecycleItem = signal<RecycleItem | null>(null);
   private xlsxLoader?: Promise<typeof import('xlsx')>;
 
   backupStatus = signal<BackupStatusResponse | null>(null);
@@ -579,6 +590,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.isRecycling.set(true);
       this.showRecycleBin.set(true);
       this.recycleItems.set([]);
+      this.selectedRecycleItem.set(null);
 
       try {
           const inventoryRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/inventory`);
@@ -589,9 +601,27 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
               getDocs(query(standardsRef, where('_isDeleted', '==', true)))
           ]);
 
-          const results: any[] = [];
-          invSnap.forEach((d: any) => results.push({ type: 'inventory', id: d.id, name: d.data()['name'] || '', lastUpdated: d.data()['lastUpdated'] || null }));
-          stdSnap.forEach((d: any) => results.push({ type: 'standard', id: d.id, name: d.data()['name'] || '', lastUpdated: d.data()['lastUpdated'] || null }));
+          const results: RecycleItem[] = [];
+          invSnap.forEach((d: any) => {
+              const data = d.data();
+              results.push({
+                  type: 'inventory',
+                  id: d.id,
+                  name: data['name'] || '',
+                  lastUpdated: data['lastUpdated'] || null,
+                  data,
+              });
+          });
+          stdSnap.forEach((d: any) => {
+              const data = d.data();
+              results.push({
+                  type: 'standard',
+                  id: d.id,
+                  name: data['name'] || '',
+                  lastUpdated: data['lastUpdated'] || null,
+                  data,
+              });
+          });
 
           results.sort((a, b) => {
               const ta = a.lastUpdated?.toMillis() || 0;
@@ -600,11 +630,86 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           });
 
           this.recycleItems.set(results);
+          this.selectedRecycleItem.set(results[0] || null);
       } catch (e) {
           console.error("Lỗi khi tải dữ liệu thùng rác:", e);
           this.toast.show('Không thể tải thùng rác do Firebase từ chối truy vấn. Cần index!', 'error');
       } finally {
           this.isRecycling.set(false);
+      }
+  }
+
+  recycleItemKey(item: RecycleItem): string {
+      return `${item.type}:${item.id}`;
+  }
+
+  recycleTypeLabel(item: RecycleItem): string {
+      return item.type === 'inventory' ? 'Hóa chất trong kho' : 'Chất chuẩn đối chiếu';
+  }
+
+  selectRecycleItem(item: RecycleItem): void {
+      this.selectedRecycleItem.set(item);
+  }
+
+  recycleDetailEntries(item: RecycleItem): Array<{ key: string; value: string }> {
+      return Object.entries(item.data).map(([key, value]) => ({
+          key,
+          value: this.formatRecycleFieldValue(value),
+      }));
+  }
+
+  formatRecycleTimestamp(value: any): string {
+      if (!value) return 'Không có';
+      try {
+          const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value);
+          if (!Number.isNaN(date.getTime())) return date.toLocaleString('vi-VN');
+      } catch {
+          // Fall through to the raw value when the stored value is not date-like.
+      }
+      return this.formatRecycleFieldValue(value);
+  }
+
+  private formatRecycleFieldValue(value: any): string {
+      const normalized = this.normalizeRecycleValue(value);
+      if (typeof normalized === 'string') return normalized || '""';
+      if (normalized === undefined) return 'undefined';
+      return JSON.stringify(normalized, null, 2);
+  }
+
+  private normalizeRecycleValue(value: any): any {
+      if (value === null || value === undefined || typeof value !== 'object') return value;
+      if (value instanceof Date) return value.toISOString();
+
+      if (typeof value?.toDate === 'function') {
+          try {
+              const timestamp: Record<string, any> = { date: value.toDate().toISOString() };
+              if (typeof value.seconds === 'number') timestamp['seconds'] = value.seconds;
+              if (typeof value.nanoseconds === 'number') timestamp['nanoseconds'] = value.nanoseconds;
+              return timestamp;
+          } catch {
+              // Continue with normal object serialization below.
+          }
+      }
+
+      if (Array.isArray(value)) return value.map(entry => this.normalizeRecycleValue(entry));
+
+      return Object.fromEntries(
+          Object.entries(value).map(([key, entry]) => [key, this.normalizeRecycleValue(entry)])
+      );
+  }
+
+  private recycleDocumentPath(item: RecycleItem): string {
+      return item.type === 'inventory'
+          ? `artifacts/${this.fb.APP_ID}/inventory/${item.id}`
+          : `artifacts/${this.fb.APP_ID}/reference_standards/${item.id}`;
+  }
+
+  private removeRecycleItemFromState(item: RecycleItem): void {
+      const nextItems = this.recycleItems().filter(entry => this.recycleItemKey(entry) !== this.recycleItemKey(item));
+      this.recycleItems.set(nextItems);
+
+      if (this.selectedRecycleItem() && this.recycleItemKey(this.selectedRecycleItem()!) === this.recycleItemKey(item)) {
+          this.selectedRecycleItem.set(nextItems[0] || null);
       }
   }
 
@@ -629,7 +734,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.toast.show('Đã xóa thời gian hẹn giờ bảo trì. Nhấn Lưu để áp dụng.', 'info');
   }
 
-  async restoreRecycleItem(item: any) {
+  async restoreRecycleItem(item: RecycleItem) {
       if (!await this.confirmationService.confirm({ message: `Bạn muốn khôi phục dữ liệu: ${item.name}?`, confirmText: 'Khôi phục' })) return;
       this.isRecycling.set(true);
       try {
@@ -639,13 +744,39 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
               await this.standardService.restoreStandard(item.id, item.name);
           }
           this.toast.show('Đã khôi phục thành công!');
-          this.recycleItems.update(list => list.filter(i => i !== item));
+          this.removeRecycleItemFromState(item);
 
           if (item.type === 'inventory') await this.fb.updateMetadata('inventory');
           if (item.type === 'standard') await this.fb.updateMetadata('standards');
       } catch (e) {
           console.error(e);
           this.toast.show('Lỗi khi khôi phục.', 'error');
+      } finally {
+          this.isRecycling.set(false);
+      }
+  }
+
+  async permanentlyDeleteRecycleItem(item: RecycleItem) {
+      if (!await this.confirmationService.confirm({
+        title: 'Xóa vĩnh viễn bản ghi',
+        message: `Bạn đang xóa vĩnh viễn “${item.name || item.id}” (${this.recycleTypeLabel(item)}). Thao tác này KHÔNG THỂ PHỤC HỒI.`,
+        confirmText: 'XÓA VĨNH VIỄN',
+        isDangerous: true,
+        requiredText: 'XAC NHAN XOA',
+      })) return;
+
+      this.isRecycling.set(true);
+      try {
+          await deleteDoc(doc(this.fb.db, this.recycleDocumentPath(item)));
+          await this.fb.adminForceSyncCache();
+          if (item.type === 'inventory') await this.fb.updateMetadata('inventory');
+          if (item.type === 'standard') await this.fb.updateMetadata('standards');
+
+          this.removeRecycleItemFromState(item);
+          this.toast.show(`Đã xóa vĩnh viễn “${item.name || item.id}”.`, 'success');
+      } catch (e) {
+          console.error(e);
+          this.toast.show('Không thể xóa vĩnh viễn bản ghi.', 'error');
       } finally {
           this.isRecycling.set(false);
       }
@@ -668,8 +799,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
           const items = this.recycleItems();
           for (const item of items) {
-              const path = item.type === 'inventory' ? `artifacts/${this.fb.APP_ID}/inventory/${item.id}` : `artifacts/${this.fb.APP_ID}/reference_standards/${item.id}`;
-              batch.delete(doc(this.fb.db, path));
+              batch.delete(doc(this.fb.db, this.recycleDocumentPath(item)));
               opCount++;
 
               if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
@@ -680,11 +810,13 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
 
           this.toast.show('Đã xóa vĩnh viễn rác và phát tín hiệu F5.');
           this.recycleItems.set([]);
+          this.selectedRecycleItem.set(null);
           setTimeout(() => this.showRecycleBin.set(false), 500);
 
       } catch (e) {
           console.error(e);
           this.toast.show('Lỗi dọn rác.', 'error');
+      } finally {
           this.isRecycling.set(false);
       }
   }

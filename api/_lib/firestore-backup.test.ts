@@ -63,6 +63,8 @@ describe('Firestore backup discovery catalog', () => {
       doc: (path: string) => ({
         listCollections: async () => path === appRoot ? [
           { id: 'daily_checks', path: `${appRoot}/daily_checks` },
+          { id: 'duty_schedules', path: `${appRoot}/duty_schedules` },
+          { id: 'duty_staff', path: `${appRoot}/duty_staff` },
           { id: 'public', path: `${appRoot}/public` },
           { id: 'stats_aggregates', path: `${appRoot}/stats_aggregates` },
           { id: 'backup_locks', path: `${appRoot}/backup_locks` },
@@ -79,6 +81,10 @@ describe('Firestore backup discovery catalog', () => {
 
     assert.equal(queue.queue.some(item => item.path === `${appRoot}/daily_checks`), true);
     assert.equal(queue.unknownCollections.includes(`${appRoot}/daily_checks`), false);
+    assert.equal(queue.queue.some(item => item.path === `${appRoot}/duty_schedules`), true);
+    assert.equal(queue.unknownCollections.includes(`${appRoot}/duty_schedules`), false);
+    assert.equal(queue.queue.some(item => item.path === `${appRoot}/duty_staff`), true);
+    assert.equal(queue.unknownCollections.includes(`${appRoot}/duty_staff`), false);
     assert.equal(queue.queue.some(item => item.path === `${appRoot}/public`), true);
     assert.equal(queue.unknownCollections.includes(`${appRoot}/public`), false);
     assert.equal(queue.queue.some(item => item.path === `${appRoot}/stats_aggregates`), true);

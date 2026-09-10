@@ -153,6 +153,11 @@ describe('config shared UI primitive integration', () => {
     assert.match(template, /\[closeOnBackdrop\]=\"false\"/);
     assert.match(template, /\(closed\)=\"showRecycleBin\.set\(false\)\"/);
     assert.match(template, /\(click\)=\"restoreRecycleItem\(item\)\"/);
+    assert.match(template, /recycleDetailEntries\(selected\)/);
+    assert.match(template, /\(click\)=\"permanentlyDeleteRecycleItem\(item\)\"/);
+    assert.match(source, /data: Record<string, any>/);
+    assert.match(source, /data,\s*\}\);/);
+    assert.match(source, /async permanentlyDeleteRecycleItem\(item: RecycleItem\)/);
     assert.match(template, /variant=\"danger\" \[disabled\]=\"recycleItems\(\)\.length === 0\" \(click\)=\"emptyRecycleBin\(\)\"/);
     assert.match(template, /@if\(isRecycling\(\)\)/);
     assert.doesNotMatch(template, /class=\"[^\"]*fixed inset-0/);

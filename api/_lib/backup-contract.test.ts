@@ -14,15 +14,19 @@ import { isRestoreablePath } from './firestore-backup.js';
 
 describe('LIMS backup coverage contract', () => {
   it('keeps the audited Firestore catalog explicit and unique', () => {
-    assert.equal(FIRESTORE_COLLECTION_CATALOG.length, 32);
-    assert.equal(new Set(FIRESTORE_COLLECTION_CATALOG).size, 32);
+    assert.equal(FIRESTORE_COLLECTION_CATALOG.length, 34);
+    assert.equal(new Set(FIRESTORE_COLLECTION_CATALOG).size, 34);
+    assert.deepEqual(FIRESTORE_COLLECTION_CATALOG.filter(collection => collection.startsWith('duty_')), [
+      'duty_schedules',
+      'duty_staff',
+    ]);
     assert.deepEqual(FIRESTORE_RETAINED_LEGACY_COLLECTION_CATALOG, [
       'daily_checks',
       'public',
       'stats_aggregates',
     ]);
-    assert.equal(FIRESTORE_BACKUP_COLLECTION_CATALOG.length, 35);
-    assert.equal(new Set(FIRESTORE_BACKUP_COLLECTION_CATALOG).size, 35);
+    assert.equal(FIRESTORE_BACKUP_COLLECTION_CATALOG.length, 37);
+    assert.equal(new Set(FIRESTORE_BACKUP_COLLECTION_CATALOG).size, 37);
     assert.deepEqual(FIRESTORE_ROOT_COLLECTION_CATALOG, ['releases']);
     assert.deepEqual(FIRESTORE_SUBCOLLECTION_CATALOG, [
       { parentCollection: 'inventory', collection: 'history' },
@@ -37,6 +41,8 @@ describe('LIMS backup coverage contract', () => {
     assert.equal(pathBelongsToApp('artifacts/lims-cloud-fixed/sops/sop-1', 'lims-cloud-fixed'), true);
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/sops/sop-1', 'lims-cloud-fixed'), true);
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/sops/sop-1/history/h-1', 'lims-cloud-fixed'), true);
+    assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/duty_schedules/2026-09-01', 'lims-cloud-fixed'), true);
+    assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/duty_staff/staff-1', 'lims-cloud-fixed'), true);
     assert.equal(isRestoreablePath('releases/v1', 'lims-cloud-fixed'), true);
     assert.equal(isRestoreablePath('artifacts/other-app/sops/sop-1', 'lims-cloud-fixed'), false);
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/auth_sessions/session-1', 'lims-cloud-fixed'), false);

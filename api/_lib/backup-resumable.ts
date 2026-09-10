@@ -53,6 +53,10 @@ import {
   type AppsScriptLiveSnapshot,
 } from './apps-script-backup.js';
 import { maxAuthUsersPerPage, resolvedBackupSourceFolderIds, resolvedBackupTemplateIds } from './backup-engine.js';
+import {
+  configuredBackupDailyFirestoreReadBudget,
+  reserveBackupFirestoreReads,
+} from './backup-read-budget.js';
 import type { BackupVerificationCheckpoint } from './backup-restore.js';
 
 const SESSION_FILE_NAME = 'backup-session-v1.json.enc';
@@ -812,6 +816,28 @@ async function runFirestorePhase(
     );
     await store.save(session);
   }
+  if (session.firestore.queue.phase === 'COMPLETE') {
+    session.firestore.complete = true;
+    session.phase = 'AUTH';
+    await store.save(session);
+    return;
+  }
+  const firestoreReadLimit = maxFirestoreReads();
+  const configuredChunkSize = firestoreDocumentsPerRequest();
+  const dailyReadBudget = configuredBackupDailyFirestoreReadBudget();
+  const remainingRunReads = firestoreReadLimit - session.firestore.firestoreReads;
+  if (remainingRunReads < 1) {
+    throw new Error(
+      `Backup Firestore đã đạt trần ${firestoreReadLimit} document reads cho một session; `
+      + 'session vẫn chưa hoàn tất và không được đánh dấu thành công. Điều chỉnh LIMS_BACKUP_MAX_FIRESTORE_READS có kiểm soát trước khi tiếp tục.',
+    );
+  }
+  // Reserve the whole bounded chunk before issuing any document query. The
+  // reservation is intentionally conservative: if the request dies after
+  // reading but before its Drive checkpoint is saved, the reservation stays
+  // consumed for this Pacific day and prevents a retry from undercounting.
+  const chunkReadLimit = Math.min(configuredChunkSize, dailyReadBudget, remainingRunReads);
+  await reserveBackupFirestoreReads(db, session.appId, chunkReadLimit, { dailyLimit: dailyReadBudget });
   const parts: BackupPartManifest[] = [];
   const profileIds = new Set(session.firestore.profileIds);
   const referenceMap = new Map<string, { fileId: string; referencedBy: Set<string> }>(
@@ -843,11 +869,11 @@ async function runFirestorePhase(
         referenceMap.set(reference.fileId, existing);
       }
     },
-    maxFirestoreReads: maxFirestoreReads(),
+    maxFirestoreReads: firestoreReadLimit,
     initialFirestoreReads: session.firestore.firestoreReads,
     queue: session.firestore.queue,
-    maxDocumentsPerChunk: firestoreDocumentsPerRequest(),
-    pageSize: Math.min(50, firestoreDocumentsPerRequest()),
+    maxDocumentsPerChunk: chunkReadLimit,
+    pageSize: Math.min(50, chunkReadLimit),
   });
   await writer.finish();
   const stats = chunk.stats;

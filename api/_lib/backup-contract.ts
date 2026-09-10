@@ -12,6 +12,8 @@ export const FIRESTORE_COLLECTION_CATALOG = [
   'auth_sessions',
   'config',
   'daily_checklists',
+  'duty_schedules',
+  'duty_staff',
   'inventory',
   'logs',
   'master_analytes',

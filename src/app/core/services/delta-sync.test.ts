@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  DeltaSyncService,
   buildDeltaAuthScope,
   buildScopedDeltaKey,
   computeDeltaRetryDelay,
@@ -168,4 +169,52 @@ test('rejects stale generations after destroy or restart', () => {
   assert.equal(isDeltaGenerationActive(3, 3, false), true);
   assert.equal(isDeltaGenerationActive(4, 3, false), false);
   assert.equal(isDeltaGenerationActive(3, 3, true), false);
+});
+
+test('singleton releases dispose only the last live subscriber and clear retry state', async () => {
+  const service = Object.create(DeltaSyncService.prototype) as any;
+  const singletonEntries = new Map<string, any>();
+  const listenerCloses: number[] = [];
+  const retryFires: number[] = [];
+  let listenerId = 0;
+
+  service._singletons = singletonEntries;
+  service._registerStorageKeys = () => {};
+  service._loadCursor = () => 0;
+  service._loadSyncAt = () => 0;
+  service._loadFromCache = () => [];
+  service._startSingleton = (entry: any) => {
+    const id = ++listenerId;
+    entry.unsub = () => listenerCloses.push(id);
+    entry.retryTimer = setTimeout(() => retryFires.push(id), 25);
+  };
+
+  const config = {
+    cacheKey: 'test-singleton',
+    cursorKey: 'test-singleton-cursor',
+    collectionPath: 'artifacts/test/items'
+  };
+  const firstRelease = service.startSingletonListener(config, () => {});
+  const secondRelease = service.startSingletonListener(config, () => {});
+
+  assert.equal(singletonEntries.size, 1);
+  firstRelease();
+  assert.equal(singletonEntries.size, 1);
+  assert.deepEqual(listenerCloses, []);
+
+  secondRelease();
+  secondRelease();
+  assert.equal(singletonEntries.size, 0);
+  assert.deepEqual(listenerCloses, [1]);
+
+  const recreatedRelease = service.startSingletonListener(config, () => {});
+  firstRelease();
+  assert.equal(singletonEntries.size, 1);
+  assert.deepEqual(listenerCloses, [1]);
+
+  recreatedRelease();
+  assert.equal(singletonEntries.size, 0);
+  assert.deepEqual(listenerCloses, [1, 2]);
+  await new Promise(resolve => setTimeout(resolve, 40));
+  assert.deepEqual(retryFires, []);
 });

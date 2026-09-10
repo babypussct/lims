@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.08-b02",
-    "title": "Hoàn thiện Hoạt Động Gần Đây và xuất dữ liệu",
+    "version": "v26.09.10-b01",
+    "title": "Củng cố sao lưu, Thùng rác và đồng bộ dữ liệu",
     "features": [
-      "Tăng độ ổn định của Hoạt Động Gần Đây khi kết nối chậm hoặc gián đoạn; có thể thử tải lại ngay trên bảng hoạt động.",
-      "Bổ sung bộ lọc và nhãn Lịch trực trong Hoạt Động Gần Đây.",
-      "Phân biệt rõ bảng hoạt động đang tạm tắt, chưa có dữ liệu và gặp lỗi kết nối.",
-      "Cải thiện xuất dữ liệu lưu trữ với nhiều trang lịch sử, bảo toàn nội dung chi tiết dài và tránh trùng tên sheet báo cáo.",
-      "Sửa cơ chế tải dự phòng để không phụ thuộc kết nối cập nhật trực tiếp đang gặp sự cố."
+      "Bảo vệ đầy đủ dữ liệu lịch trực và danh sách nhân sự trực trong sao lưu và khôi phục.",
+      "Nâng cấp Thùng rác để xem toàn bộ dữ liệu bản ghi đã xóa trước khi khôi phục hoặc xóa vĩnh viễn.",
+      "Cho phép xóa vĩnh viễn từng bản ghi trong Thùng rác bằng bước xác nhận bắt buộc riêng.",
+      "Kiểm soát tài nguyên dành cho sao lưu để dành dung lượng xử lý cho công việc hằng ngày.",
+      "Giảm phần lưu trữ phụ cho nội dung biểu mẫu, kết quả và bản in."
     ]
   },
   "assetGroups": [

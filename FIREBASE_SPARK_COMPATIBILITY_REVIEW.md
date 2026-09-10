@@ -1,5 +1,7 @@
 # Đánh giá khả năng chạy LIMS trên Firebase Spark
 
+> **Lưu ý:** Đây là checkpoint lịch sử ngày 10/08/2026. Không dùng các kết luận hoặc trạng thái hạ tầng bên dưới thay cho số liệu vận hành và cấu hình production hiện tại. Báo cáo usage production được lưu riêng tại máy vận hành, không phát hành trong repository công khai.
+
 **Ngày đánh giá:** 2026-08-10
 **Commit nền được kiểm tra:** e66d0f5 (main, đồng bộ origin/main) + working-tree remediation ngày 2026-08-10
 **Phiên bản ứng dụng:** 26.08.10-b01
