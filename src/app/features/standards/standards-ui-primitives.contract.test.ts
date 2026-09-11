@@ -9,9 +9,16 @@ function read(relativePath: string): string {
 describe('standards shared UI primitive integration', () => {
   it('uses the shared page header and buttons while preserving the standards function-menu contract', () => {
     const toolbar = read('./components/standards-toolbar.component.ts');
+    const filter = read('./components/standards-filter.component.ts');
     const page = read('./standards.component.html');
+    const component = read('./standards.component.ts');
 
     assert.match(page, /<app-standards-toolbar\b/);
+    assert.match(filter, /flex flex-col gap-2 lg:flex-row/);
+    assert.match(filter, /relative min-w-0 flex-1 group/);
+    assert.match(page, /Vuốt ngang để xem đầy đủ bảng chuẩn/);
+    assert.match(component, /window\.matchMedia\('\(max-width: 767px\), \(hover: none\) and \(pointer: coarse\)'\)/);
+    assert.match(component, /this\.mobileMediaQuery\.matches \? 'grid' : \(this\.stdService\.listState\.viewMode \|\| 'list'\)/);
     assert.match(toolbar, /AppButtonComponent/);
     assert.match(toolbar, /AppPageHeaderComponent/);
     assert.match(toolbar, /<app-page-header\b/);
@@ -119,6 +126,8 @@ describe('standards shared UI primitive integration', () => {
     assert.match(template, /<app-button\b/);
     assert.match(template, /<app-empty-state\b/);
     assert.match(template, /title="Nhật ký dùng chuẩn"/);
+    assert.match(template, /Vuốt ngang để xem đầy đủ nhật ký sử dụng/);
+    assert.match(template, /role="region" aria-label="Bảng nhật ký sử dụng chuẩn" tabindex="0"/);
     assert.match(template, />\s*Xóa lọc\s*</);
     assert.match(template, /1\. Nhật ký chi tiết/);
     assert.match(template, /2\. Tổng hợp theo hóa chất/);

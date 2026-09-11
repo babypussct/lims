@@ -10,8 +10,8 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
   imports: [CommonModule, FormsModule],
   template: `
     <div class="p-2 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-2 bg-slate-50/30 dark:bg-slate-800/50">
-       <div class="flex flex-col md:flex-row gap-2">
-           <div class="relative flex-1 group">
+       <div class="flex flex-col gap-2 lg:flex-row">
+           <div class="relative min-w-0 flex-1 group">
               <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-fuchsia-500 dark:group-focus-within:text-fuchsia-400 transition-colors"></i>
               <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
                      class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"

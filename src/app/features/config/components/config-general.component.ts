@@ -651,11 +651,54 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
       this.selectedRecycleItem.set(item);
   }
 
-  recycleDetailEntries(item: RecycleItem): Array<{ key: string; value: string }> {
-      return Object.entries(item.data).map(([key, value]) => ({
-          key,
-          value: this.formatRecycleFieldValue(value),
-      }));
+  recycleDetailEntries(item: RecycleItem): { key: string; value: string }[] {
+      return this.recycleDisplayEntries(item);
+  }
+
+  /**
+   * Hiển thị dữ liệu thùng rác theo ngữ nghĩa nghiệp vụ.
+   * Không render trực tiếp object Firestore vì người quản trị cần thấy thông tin
+   * của bản ghi (tên, mã, tồn kho, hạn dùng...) thay vì tên field kỹ thuật.
+   */
+  recycleDisplayEntries(item: RecycleItem): { key: string; value: string }[] {
+      const data = item.data || {};
+      const entries: { key: string; value: string }[] = [];
+
+      const field = (...keys: string[]) => keys.map(key => data[key]).find(value => value !== undefined && value !== null && value !== '');
+
+      const add = (key: string, value: any) => {
+          if (value !== undefined && value !== null && value !== '') {
+              entries.push({ key, value: this.formatRecycleFieldValue(value) });
+          }
+      };
+
+      if (item.type === 'inventory') {
+          add('Tên hóa chất / vật tư', field('name'));
+          add('Mã vật tư', field('code', 'ref_code', 'itemCode'));
+          add('Số lô', field('lotNumber', 'lot', 'batch'));
+          add('Số lượng tồn', field('stock'));
+          add('Đơn vị tính', field('unit'));
+          add('Ngày hết hạn', field('expiryDate', 'expiry'));
+          add('Vị trí lưu trữ', field('location'));
+          add('Nhà cung cấp', field('supplier', 'vendor'));
+          add('Ghi chú', field('note', 'notes'));
+      } else {
+          add('Tên chất chuẩn', field('name'));
+          add('Mã chất chuẩn', field('code', 'internalId', 'standardCode'));
+          add('Số CAS', field('cas', 'casNumber'));
+          add('Hãng sản xuất', field('manufacturer', 'brand'));
+          add('Số lô', field('lotNumber', 'lot', 'batch'));
+          add('Nồng độ', field('concentration'));
+          add('Đơn vị nồng độ', field('concentrationUnit'));
+          add('Ngày hết hạn', field('expiryDate', 'expiry'));
+          add('Ghi chú', field('note', 'notes'));
+      }
+
+      add('Người xóa', field('deletedBy', '_deletedBy'));
+      add('Thời điểm xóa', field('deletedAt', '_deletedAt'));
+      add('Cập nhật gần nhất', field('lastUpdated'));
+
+      return entries.length ? entries : [{ key: 'Thông tin', value: 'Không có dữ liệu hiển thị.' }];
   }
 
   formatRecycleTimestamp(value: any): string {

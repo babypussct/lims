@@ -19,13 +19,15 @@ import {
 } from '../../../core/models/standard.model';
 import {
   isCurrentStandardLifecycle,
+  isSpecialInternalId,
   isValidInternalId,
   normalizeInternalId,
 } from '../../../shared/utils/standard-internal-id';
 import { canAutoReleaseExpiredStandard } from '../../../shared/utils/standard-fefo';
 
 /**
- * Protects ownership of the laboratory's single reusable internal_id code.
+ * Protects ownership of the laboratory's reusable A/B/C internal_id codes.
+ * SDHET is a business marker and intentionally bypasses this exclusive ledger.
  * The registry document is a technical lock/ledger, not a second business ID.
  */
 @Injectable({ providedIn: 'root' })
@@ -52,6 +54,18 @@ export class StandardCodeRegistryService {
     const code = normalizeInternalId(standard.internal_id);
     if (!isValidInternalId(code)) {
       throw new Error('Mã quản lý nội bộ phải có 4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.');
+    }
+
+    // SDHET identifies a business operation, not an exclusive physical-code
+    // slot. Do not create/read a single registry row that would incorrectly
+    // make one SDHET record own the code for all other SDHET records.
+    if (isSpecialInternalId(code)) {
+      return {
+        internal_id: code,
+        lifecycle_status: 'ACTIVE' as StandardLifecycleStatus,
+        internal_id_assigned_at: serverTimestamp(),
+        internal_id_assignment_sequence: 1,
+      };
     }
 
     const registryRef = this.getRegistryRef(code);
@@ -135,6 +149,30 @@ export class StandardCodeRegistryService {
     const initialStandard = { id: initialSnapshot.id, ...initialSnapshot.data() } as ReferenceStandard;
     const initialCode = normalizeInternalId(initialStandard.internal_id);
     if (!isValidInternalId(initialCode)) throw new Error('Hồ sơ chưa có Mã quản lý nội bộ hợp lệ để trả.');
+
+    if (isSpecialInternalId(initialCode)) {
+      await runTransaction(this.fb.db, async transaction => {
+        const standardSnapshot = await transaction.get(standardRef);
+        if (!standardSnapshot.exists()) throw new Error('Không tìm thấy chất chuẩn.');
+        const standard = { id: standardSnapshot.id, ...standardSnapshot.data() } as ReferenceStandard;
+        const code = normalizeInternalId(standard.internal_id);
+        if (!isSpecialInternalId(code)) throw new Error('Mã nghiệp vụ SDHET đã thay đổi đồng thời.');
+        if (standard.lifecycle_status === 'RELEASED' || standard.lifecycle_status === 'CLOSED') {
+          throw new Error(`Mã ${code} đã được trả về trước đó.`);
+        }
+        if (standard.status === 'IN_USE' || standard.current_holder || standard.current_holder_uid || standard.current_request_id || standard.has_pending_request) {
+          throw new Error('Không thể trả mã khi chất chuẩn còn người giữ, yêu cầu mượn hoặc quy trình đang mở.');
+        }
+        transaction.update(standardRef, {
+          lifecycle_status: 'RELEASED',
+          internal_id_released_at: serverTimestamp(),
+          internal_id_release_reason: normalizedReason,
+          lastUpdated: serverTimestamp(),
+        });
+      });
+      return;
+    }
+
     const initialRegistryRef = this.getRegistryRef(initialCode);
     const initialRegistrySnapshot = await getDoc(initialRegistryRef);
     const registryOwnsTarget = initialRegistrySnapshot.exists() &&

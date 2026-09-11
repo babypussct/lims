@@ -23,7 +23,7 @@ import { NotificationEvent } from '../../../core/models/notification.model';
 import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { StandardTagCatalogService } from './standard-tag-catalog.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
-import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
+import { isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import {
   applyTagMode,
   assertTagLimit,
@@ -146,9 +146,12 @@ export class StandardCrudService {
     std.search_key = this.generateSearchKey(std);
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
     const { derivedDeviceCodes: _derivedDeviceCodes, derivedMethodLabels: _derivedMethodLabels, ...persistedStandard } = std;
-    const registrySnapshot = await getDoc(this.codeRegistry.getRegistryRef(std.internal_id));
+    const specialBusinessCode = isSpecialInternalId(std.internal_id);
+    const registrySnapshot = specialBusinessCode
+      ? null
+      : await getDoc(this.codeRegistry.getRegistryRef(std.internal_id));
     let legacyOwnerIds: string[] = [];
-    if (!registrySnapshot.exists() || registrySnapshot.data()?.['status'] === 'AVAILABLE') {
+    if (!specialBusinessCode && registrySnapshot && (!registrySnapshot.exists() || registrySnapshot.data()?.['status'] === 'AVAILABLE')) {
       // A missing/AVAILABLE registry is precisely the legacy-repair boundary:
       // an old row may contain lower-case or surrounding whitespace, which an
       // equality query on the canonical code would not find. This fallback is

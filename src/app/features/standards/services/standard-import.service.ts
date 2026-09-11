@@ -15,7 +15,7 @@ import { StandardCrudService } from './standard-crud.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
 import { StandardUsageService } from './standard-usage.service';
 import { ActivityEventService } from '../../../core/services/activity-event.service';
-import { isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
+import { isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import {
   STANDARD_IMPORT_MAX_ATOMIC_WRITES,
   buildSafeImportMetadata,
@@ -160,7 +160,7 @@ export class StandardImportService {
     const internalIds = [...new Set(
       validItems
         .map(item => normalizeInternalId(item.parsed.internal_id))
-        .filter((value): value is string => Boolean(value))
+        .filter((value): value is string => Boolean(value) && !isSpecialInternalId(value))
     )];
     const activeByInternalId = new Map<string, ReferenceStandard[]>();
     for (let offset = 0; offset < internalIds.length; offset += 10) {
@@ -183,7 +183,7 @@ export class StandardImportService {
       ? this.cache._memStandards
       : await this.cache.fetchAllAndCache();
     knownStandards.forEach(standard => {
-      if (!isActiveStandardIdentity(standard) || !standard.internal_id) return;
+      if (!isActiveStandardIdentity(standard) || !standard.internal_id || isSpecialInternalId(standard.internal_id)) return;
       const key = normalizeInternalId(standard.internal_id);
       const bucket = activeByInternalId.get(key) || [];
       if (!bucket.some(candidate => candidate.id === standard.id)) {
@@ -195,14 +195,14 @@ export class StandardImportService {
     validItems.forEach(item => {
       const internalKey = normalizeInternalId(item.parsed.internal_id);
       const matches = internalKey ? activeByInternalId.get(internalKey) || [] : [];
-      if (matches.length > 1) {
+      if (!isSpecialInternalId(internalKey) && matches.length > 1) {
         item.mode = 'CONFLICT';
         item.isValid = false;
         item.errorMessage = 'Có nhiều chuẩn đang hoạt động cùng Số nhận diện; cần xử lý các hồ sơ đang dùng chung mã trước khi nhập dữ liệu.';
         identityConflicts.push(item);
         return;
       }
-      if (matches.length === 1) {
+      if (!isSpecialInternalId(internalKey) && matches.length === 1) {
         const matched = matches[0];
         item.parsed.id = matched.id;
         item.mode = 'UPDATE_SAFE';
@@ -254,7 +254,7 @@ export class StandardImportService {
       validItems
         .filter(item => item.mode === 'CREATE')
         .map(item => normalizeInternalId(item.parsed.internal_id))
-        .filter(code => isValidInternalId(code))
+        .filter(code => isValidInternalId(code) && !isSpecialInternalId(code))
     )];
     for (const code of registryCodes) {
       const registrySnapshot = await getDoc(this.codeRegistry.getRegistryRef(code));
@@ -290,8 +290,11 @@ export class StandardImportService {
     }
 
     const newItemsCount = validItems.filter(item => item.mode === 'CREATE').length;
+    const registryItemsCount = validItems.filter(item =>
+      item.mode === 'CREATE' && !isSpecialInternalId(item.parsed.internal_id)
+    ).length;
     const plannedWrites = countAtomicStandardImportWrites(validItems, new Set(existing.keys())) +
-      newItemsCount + autoReleaseOwners.size + 1;
+      registryItemsCount + autoReleaseOwners.size + 1;
     if (plannedWrites > STANDARD_IMPORT_MAX_ATOMIC_WRITES) {
       throw new Error(
         `Lần nhập này cần ${plannedWrites} thao tác, vượt giới hạn an toàn ${STANDARD_IMPORT_MAX_ATOMIC_WRITES}. ` +
@@ -363,19 +366,21 @@ export class StandardImportService {
           });
         }
         batch.set(stdRef, { ...item.parsed, ...lifecycleFields, _isDeleted: false, lastUpdated: serverTimestamp() });
-        batch.set(this.codeRegistry.getRegistryRef(code), {
-          id: code,
-          internal_id: code,
-          status: 'ASSIGNED',
-          currentStandardId: item.parsed.id,
-          assignmentCount: assignmentSequence,
-          lastAssignedAt: serverTimestamp(),
-          ...(expiredOwner ? {
-            lastReleasedAt: serverTimestamp(),
-            lastReleasedStandardId: expiredOwner.id,
-          } : {}),
-          lastUpdated: serverTimestamp(),
-        }, { merge: true });
+        if (!isSpecialInternalId(code)) {
+          batch.set(this.codeRegistry.getRegistryRef(code), {
+            id: code,
+            internal_id: code,
+            status: 'ASSIGNED',
+            currentStandardId: item.parsed.id,
+            assignmentCount: assignmentSequence,
+            lastAssignedAt: serverTimestamp(),
+            ...(expiredOwner ? {
+              lastReleasedAt: serverTimestamp(),
+              lastReleasedStandardId: expiredOwner.id,
+            } : {}),
+            lastUpdated: serverTimestamp(),
+          }, { merge: true });
+        }
         optimisticChanges.push({ ...item.parsed, ...lifecycleFields, _isDeleted: false });
         created++;
         for (const [logIndex, rawLog] of (item.logs || []).entries()) {

@@ -10,6 +10,7 @@ import { generateSlug } from '../../../shared/utils/utils';
 import {
   assessInternalId,
   isCurrentStandardLifecycle,
+  isSpecialInternalId,
   normalizeInternalId,
 } from '../../../shared/utils/standard-internal-id';
 
@@ -331,7 +332,7 @@ function existingCandidates(
   lot: string
 ): ReferenceStandard[] {
   const activeStandards = existingStandards.filter(isActiveStandardIdentity);
-  if (internalId) {
+  if (internalId && !isSpecialInternalId(internalId)) {
     return activeStandards.filter(
       standard => normalizeIdentity(standard.internal_id) === normalizeIdentity(internalId)
     );
@@ -448,7 +449,7 @@ export function parseStandardImportRows(
     const candidates = existingCandidates(options.existingStandards, internalId, name, lot);
     if (candidates.length > 1) errors.push('Có nhiều chuẩn hiện hữu trùng khóa nhận diện; cần xử lý dữ liệu trùng trước khi import.');
     const existing = candidates.length === 1 ? candidates[0] : undefined;
-    const identity = internalId
+    const identity = internalId && !isSpecialInternalId(internalId)
       ? `internal:${normalizeIdentity(internalId)}`
       : `name-lot:${normalizeIdentity(name)}:${normalizeIdentity(lot)}`;
     const generatedId = createStandardDocumentId(options, internalId, name, lot, rowNumber);

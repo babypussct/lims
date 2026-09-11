@@ -3,9 +3,11 @@ import test from 'node:test';
 import {
   assessInternalId,
   isCurrentStandardLifecycle,
+  isSpecialInternalId,
   isValidInternalId,
   normalizeInternalId,
   SPECIAL_INTERNAL_ID,
+  validateInternalIdCorrections,
 } from './standard-internal-id';
 
 test('accepts exactly four-character A/B/C internal IDs and the SDHET business exception', () => {
@@ -15,6 +17,7 @@ test('accepts exactly four-character A/B/C internal IDs and the SDHET business e
   assert.equal(SPECIAL_INTERNAL_ID, 'SDHET');
   assert.equal(isValidInternalId('SDHET'), true);
   assert.equal(isValidInternalId('sdhet'), true);
+  assert.equal(isSpecialInternalId(' sdhet '), true);
   assert.equal(isValidInternalId('DA01'), false);
   assert.equal(isValidInternalId('A0010'), false);
   assert.equal(isValidInternalId('A-01'), false);
@@ -34,6 +37,27 @@ test('does not guess missing or malformed codes', () => {
   assert.equal(assessInternalId('').kind, 'MISSING');
   assert.equal(assessInternalId('SDHET1').kind, 'INVALID_FORMAT');
   assert.equal(assessInternalId('A 01').kind, 'INVALID_FORMAT');
+});
+
+test('SDHET is exempt from exclusive-owner correction warnings', () => {
+  const report = {
+    conflicts: [
+      {
+        kind: 'DUPLICATE_ACTIVE',
+        internalId: 'SDHET',
+      },
+      {
+        kind: 'REGISTRY_MISMATCH',
+        internalId: 'sdhet',
+      },
+    ],
+  } as any;
+
+  const validations = validateInternalIdCorrections({ first: 'SDHET', second: ' sdhet ' }, report);
+  assert.equal(validations.get('first')?.level, 'valid');
+  assert.equal(validations.get('second')?.level, 'valid');
+  assert.equal(validations.get('first')?.valid, true);
+  assert.equal(validations.get('second')?.valid, true);
 });
 
 test('released physical records are not current borrow candidates', () => {

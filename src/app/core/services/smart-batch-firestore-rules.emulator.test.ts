@@ -1643,7 +1643,7 @@ test('nested log normalization can read a parent normalized in the same atomic b
 
 test('the SDHET business code is accepted while unrelated malformed codes remain denied', async () => {
   const managerDb = dbFor(users.manager);
-  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), {
+  const sdhetStandard = {
     id: 'std-sdhet',
     name: 'SDHET business standard',
     internal_id: 'SDHET',
@@ -1651,6 +1651,18 @@ test('the SDHET business code is accepted while unrelated malformed codes remain
     current_amount: 10,
     unit: 'mg',
     status: 'AVAILABLE',
+    lastUpdated: serverTimestamp(),
+  };
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), sdhetStandard));
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet-second`), {
+    ...sdhetStandard,
+    id: 'std-sdhet-second',
+    name: 'Second SDHET business standard',
+  }));
+  await assertSucceeds(updateDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-sdhet`), {
+    lifecycle_status: 'RELEASED',
+    internal_id_released_at: serverTimestamp(),
+    internal_id_release_reason: 'business marker release',
     lastUpdated: serverTimestamp(),
   }));
   await assertFails(setDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/std-malformed-special`), {

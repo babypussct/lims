@@ -102,6 +102,16 @@ test('marks duplicate identities in one workbook as blocking conflicts', () => {
   assert.equal(items.every(item => !item.isValid && item.mode === 'CONFLICT'), true);
 });
 
+test('does not treat SDHET as an exclusive import identity', () => {
+  const items = parse([
+    { 'Tên chuẩn': 'SDHET lot one', 'Số lô': 'LOT-01', 'Khối lượng chai': '1 mg', 'Số nhận diện': 'SDHET' },
+    { 'Tên chuẩn': 'SDHET lot two', 'Số lô': 'LOT-02', 'Khối lượng chai': '1 mg', 'Số nhận diện': 'SDHET' },
+  ]);
+
+  assert.equal(items.every(item => item.isValid && item.mode === 'CREATE'), true);
+  assert.equal(new Set(items.map(item => item.parsed.id)).size, 2);
+});
+
 test('uses internal id to resolve a legacy document id and exposes field diffs', () => {
   const existing: ReferenceStandard = {
     id: 'legacy-name-lot-id',

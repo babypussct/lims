@@ -333,6 +333,94 @@ test('preserves historical snapshot mismatch as a non-blocking warning without a
   assert.equal(issues[0].suggestedInternalId, 'AA01');
 });
 
+test('does not warn when a historical snapshot is compared with the SDHET business marker', () => {
+  const inspect = (standardCode: string, snapshotCode: string) => {
+    const { service, issues, safeChanges, addIssue, addChange } = createService();
+    const standard: ReferenceStandard = {
+      id: 'std-sdhet',
+      name: 'SDHET standard',
+      internal_id: standardCode,
+      status: 'AVAILABLE',
+    } as ReferenceStandard;
+    const byId = new Map([['std-sdhet', standard]]);
+    const byCode = new Map([[standardCode, [standard]]]);
+
+    service.inspectReferenceSnapshot(
+      'standard_usages',
+      `usage-${standardCode}-${snapshotCode}`,
+      { id: 'usage-1', standardId: 'std-sdhet', internalId: snapshotCode },
+      byId,
+      byCode,
+      addIssue,
+      addChange,
+      'internalId',
+    );
+
+    return { issues, safeChanges };
+  };
+
+  assert.equal(inspect('SDHET', 'BA99').issues.length, 0);
+  assert.equal(inspect('AA01', 'SDHET').issues.length, 0);
+});
+
+test('does not inspect SDHET registry rows as exclusive ownership data', () => {
+  const { service, issues, safeChanges, addIssue, addChange } = createService();
+  const standards = [
+    { id: 'std-sdhet-1', name: 'SDHET one', internal_id: 'SDHET', status: 'AVAILABLE' },
+    { id: 'std-sdhet-2', name: 'SDHET two', internal_id: 'SDHET', status: 'AVAILABLE' },
+  ] as ReferenceStandard[];
+  const byId = new Map(standards.map(standard => [standard.id, standard]));
+  const byCode = new Map([['SDHET', standards]]);
+
+  const result = service.inspectRegistryEntries(
+    [{
+      rawDocumentId: 'SDHET',
+      canonicalCode: 'SDHET',
+      registry: {
+        id: 'SDHET',
+        internal_id: 'SDHET',
+        status: 'CONFLICT',
+        currentStandardId: 'std-sdhet-1',
+        assignmentCount: 2,
+      },
+    }],
+    byId,
+    byCode,
+    addIssue,
+    addChange,
+  );
+
+  assert.equal(issues.length, 0);
+  assert.equal(safeChanges.length, 0);
+  assert.equal(result.blockedCodes.has('SDHET'), false);
+  assert.equal(result.registries.has('SDHET'), false);
+});
+
+test('does not warn for an SDHET mismatch inside embedded usage snapshots', () => {
+  const { service, issues, safeChanges, addIssue, addChange } = createService();
+  const standard = {
+    id: 'std-sdhet-embedded',
+    name: 'SDHET embedded standard',
+    internal_id: 'SDHET',
+    status: 'AVAILABLE',
+  } as ReferenceStandard;
+
+  service.inspectEmbeddedUsageLogs(
+    {
+      id: 'request-sdhet',
+      standardId: standard.id,
+      usageLogs: [{ id: 'log-1', standardId: standard.id, internalId: 'BA01' }],
+    } as StandardRequest,
+    new Map([[standard.id, standard]]),
+    new Map([['SDHET', [standard]]]),
+    addIssue,
+    addChange,
+  );
+
+  assert.equal(issues.length, 0);
+  assert.equal(safeChanges.length, 0);
+});
+
 test('preserves lowercase raw registry ID and plans canonical migration without delete', () => {
   const { service, issues, safeChanges, addIssue, addChange } = createService();
   const owner: ReferenceStandard = {

@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.11-b01
+## Phiên bản hiện tại: v26.09.11-b02
+
+### v26.09.11-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mã nghiệp vụ SDHET được xử lý độc lập, không còn phát cảnh báo trùng mã hoặc xung đột quyền sở hữu.
+- Các màn hình dữ liệu dày trên thiết bị di động được bảo vệ khỏi tràn ngang và dễ thao tác hơn.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung ngoại lệ SDHET xuyên suốt tạo mới, import, đồng bộ mã, snapshot, registry và Firestore Rules.
+- Hiển thị thông tin bản ghi Thùng rác theo nhãn nghiệp vụ thay vì tên trường kỹ thuật.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Cải thiện chế độ danh sách/lưới và bộ lọc màn hình Chất chuẩn theo kích thước viewport.
+- Bổ sung hướng dẫn cuộn ngang cho nhật ký sử dụng trên màn hình nhỏ.
+- Giữ quy tắc độc quyền A/B/C nguyên vẹn trong khi loại bỏ kiểm tra độc quyền không phù hợp với SDHET.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ cảnh báo false-positive do nhiều hồ sơ nghiệp vụ cùng sử dụng mã SDHET.
+- Sửa các bố cục mobile có thể bị đẩy rộng bởi bảng, mã dài hoặc nhóm thao tác.
 
 ### v26.09.11-b01
 

@@ -76,7 +76,7 @@
 
 - [x] Modal có bộ lọc chọn được theo nhóm: cần nhập mã, thay đổi an toàn, trùng mã, registry và tham chiếu; có tìm kiếm để xử lý từng nhóm.
 - [x] Cảnh báo có trường chi tiết vấn đề và gợi ý xử lý; các thay đổi an toàn hiển thị lý do before/after.
-- [x] `SDHET` được coi là mã nghiệp vụ riêng hợp lệ, không phát cảnh báo sai định dạng; các kiểm tra trùng chủ sở hữu/registry/snapshot vẫn được giữ.
+- [x] `SDHET` được coi là mã nghiệp vụ riêng không độc quyền: không phát cảnh báo định dạng, trùng chủ sở hữu, registry hoặc snapshot chỉ vì mã này.
 - [x] Regression bao phủ mã `SDHET`, filter modal, nội dung cảnh báo chi tiết và Rules.
 - [x] Chạy test/build cục bộ: `test:standards` 104/104, Rules emulator 19/19 và production build pass.
 - [ ] Xác minh UI có xác thực trên dữ liệu thật; để mở nếu chưa có phiên/quyền được phê duyệt.

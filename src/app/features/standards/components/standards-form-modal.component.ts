@@ -10,7 +10,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 import { StandardTagCatalogService } from '../services/standard-tag-catalog.service';
 import { sanitizeLegacyTagKeys } from '../services/standard-tag.utils';
 import { StandardTagPickerComponent } from './standard-tag-picker.component';
-import { isCurrentStandardLifecycle, normalizeInternalId, STANDARD_INTERNAL_ID_PATTERN } from '../../../shared/utils/standard-internal-id';
+import { isCurrentStandardLifecycle, isSpecialInternalId, normalizeInternalId, STANDARD_INTERNAL_ID_PATTERN } from '../../../shared/utils/standard-internal-id';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
@@ -285,7 +285,7 @@ export class StandardsFormModalComponent {
         return;
     }
 
-    if (val.internal_id) {
+    if (val.internal_id && !isSpecialInternalId(val.internal_id)) {
         const existing = this.allStandards().find(s => 
             normalizeInternalId(s.internal_id) === val.internal_id &&
             isCurrentStandardLifecycle(s) &&

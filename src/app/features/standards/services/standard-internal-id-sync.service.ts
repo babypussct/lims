@@ -26,6 +26,7 @@ import {
   INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH,
   INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST,
   isCurrentStandardLifecycle,
+  isSpecialInternalId,
   isValidInternalId,
   normalizeInternalId,
   planInternalIdBatches,
@@ -147,7 +148,7 @@ export class StandardInternalIdSyncService {
 
       const code = assessment.normalized;
       byCode.set(code, [...(byCode.get(code) || []), standard]);
-      if (assessment.kind === 'NORMALIZABLE') {
+      if (assessment.kind === 'NORMALIZABLE' && !isSpecialInternalId(code)) {
         addChange({
           collection: 'reference_standards', documentId: standard.id, field: 'internal_id',
           before: assessment.raw, after: code, reason: 'Chuẩn hóa chữ hoa và khoảng trắng của mã hợp lệ.',
@@ -168,6 +169,10 @@ export class StandardInternalIdSyncService {
     );
 
     for (const [code, records] of byCode.entries()) {
+      // SDHET is a business marker rather than an exclusive physical-code
+      // slot. Keep it in byCode for legacy reference resolution, but do not
+      // produce duplicate-owner or registry warnings for it.
+      if (isSpecialInternalId(code)) continue;
       const currentRecords = records.filter(isCurrentStandardLifecycle);
       const registry = registries.get(code);
       if (currentRecords.length > 1) {
@@ -271,6 +276,7 @@ export class StandardInternalIdSyncService {
     // Also report structurally valid registry rows that have no physical-code
     // record at all. Invalid/mismatched rows were already classified above.
     for (const [code, registry] of registries.entries()) {
+      if (isSpecialInternalId(code)) continue;
       if (blockedRegistryCodes.has(code) || registry.status !== 'ASSIGNED' || byCode.has(code)) continue;
       const owner = registry.currentStandardId ? byId.get(registry.currentStandardId) : undefined;
       addIssue({
@@ -400,7 +406,7 @@ export class StandardInternalIdSyncService {
     }
 
     for (const [targetCode, stdIds] of targetToStandards.entries()) {
-      if (stdIds.length > 1) {
+      if (!isSpecialInternalId(targetCode) && stdIds.length > 1) {
         throw new Error(`Mã ${targetCode} bị nhập trùng cho ${stdIds.length} hồ sơ (${stdIds.join(', ')}); mỗi hồ sơ phải có một mã duy nhất.`);
       }
     }
@@ -440,7 +446,7 @@ export class StandardInternalIdSyncService {
       if (isValidInternalId(currentCode) && currentCode !== targetCode) {
         throw new Error(`Hồ sơ ${standardId} đã có mã hợp lệ ${currentCode}; công cụ chỉ tự sửa mã thiếu/sai định dạng để tránh đổi nhầm lịch sử.`);
       }
-      if (freshReport.conflicts.some(issue =>
+      if (!isSpecialInternalId(targetCode) && freshReport.conflicts.some(issue =>
         issue.kind === 'DUPLICATE_ACTIVE' && normalizeInternalId(issue.internalId) === targetCode
       )) {
         throw new Error(`Mã ${targetCode} đang có nhiều chủ sở hữu hiện tại; không thể gán thủ công cho đến khi xử lý xung đột.`);
@@ -449,13 +455,15 @@ export class StandardInternalIdSyncService {
       // The correction path repairs legacy values, so an equality query on
       // the canonical code could miss a lower-case/whitespace owner. This is
       // intentionally a full read only for an explicit manual correction.
-      const duplicateSnapshot = await getDocs(standardsCollection);
-      const duplicateCurrent = duplicateSnapshot.docs
-        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
-        .filter(candidate => candidate.id !== standardId && isCurrentStandardLifecycle(candidate))
-        .filter(candidate => normalizeInternalId(candidate.internal_id) === targetCode);
-      if (duplicateCurrent.length > 0) {
-        throw new Error(`Mã ${targetCode} đã có chuẩn hiện tại khác; không thể gán tự động.`);
+      if (!isSpecialInternalId(targetCode)) {
+        const duplicateSnapshot = await getDocs(standardsCollection);
+        const duplicateCurrent = duplicateSnapshot.docs
+          .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
+          .filter(candidate => candidate.id !== standardId && isCurrentStandardLifecycle(candidate))
+          .filter(candidate => normalizeInternalId(candidate.internal_id) === targetCode);
+        if (duplicateCurrent.length > 0) {
+          throw new Error(`Mã ${targetCode} đã có chuẩn hiện tại khác; không thể gán tự động.`);
+        }
       }
 
       changes.push({
@@ -466,7 +474,7 @@ export class StandardInternalIdSyncService {
         collection: 'reference_standards', documentId: standardId, field: 'search_key',
         before: standard.search_key ?? null, after: this.buildSearchKey(standard, targetCode), reason: 'Cập nhật khóa tìm kiếm theo mã sửa thủ công.',
       });
-      if (isCurrentStandardLifecycle(standard)) {
+      if (isCurrentStandardLifecycle(standard) && !isSpecialInternalId(targetCode)) {
         const registrySnapshot = await getDoc(doc(this.fb.db, `${base}/standard_code_registry/${targetCode}`));
         const registry = registrySnapshot.exists() ? registrySnapshot.data() as StandardCodeRegistry : null;
         if (registry?.status === 'ASSIGNED' && registry.currentStandardId !== standardId) {
@@ -754,6 +762,7 @@ export class StandardInternalIdSyncService {
               reason: 'Sửa liên kết cũ trong nhật ký về đúng hồ sơ chất chuẩn duy nhất đã đối chiếu.',
             };
           } else {
+            if (isSpecialInternalId(rawStandardId)) return;
             // StandardId inside nested document differs from parent standard!
             addIssue({
               kind: 'PARENT_REFERENCE_MISMATCH',
@@ -775,6 +784,10 @@ export class StandardInternalIdSyncService {
     } else {
       // Top-level reference without parent fallback (standard_requests, purchase_requests, standard_usages)
       if (!rawStandardId) {
+        // A shared SDHET marker cannot identify one physical standard. Do not
+        // turn that business marker into a missing-reference warning; normal
+        // A/B/C references still use the strict link check below.
+        if (isSpecialInternalId(data[internalField])) return;
         addIssue({
           kind: 'MISSING_REFERENCE',
           severity: 'ERROR',
@@ -801,6 +814,7 @@ export class StandardInternalIdSyncService {
             reason: 'Sửa liên kết cũ về đúng hồ sơ chất chuẩn; chỉ áp dụng khi đối chiếu được duy nhất một hồ sơ.',
           };
         } else {
+          if (isSpecialInternalId(rawStandardId)) return;
           addIssue({
             kind: 'REQUEST_REFERENCE',
             severity: 'ERROR',
@@ -873,6 +887,10 @@ export class StandardInternalIdSyncService {
         });
       }
     } else {
+      // SDHET is intentionally not a historical ownership/snapshot key. A
+      // stale snapshot may carry another code (or vice versa) without making
+      // the SDHET business record actionable, so do not surface a warning.
+      if (isSpecialInternalId(expectedCode) || isSpecialInternalId(assessment.normalized)) return;
       addIssue({
         kind: collectionName === 'standard_usages' || collectionName === 'reference_standard_logs' ? 'USAGE_REFERENCE' : 'REQUEST_REFERENCE',
         severity: 'WARNING',
@@ -913,6 +931,7 @@ export class StandardInternalIdSyncService {
         const embeddedMatch = byId.get(log.standardId);
         const isMismatch = !embeddedMatch || embeddedMatch.id !== standard!.id;
         if (isMismatch) {
+          if (isSpecialInternalId(log.standardId)) return log;
           addIssue({
             kind: 'PARENT_REFERENCE_MISMATCH',
             severity: 'ERROR',
@@ -937,6 +956,7 @@ export class StandardInternalIdSyncService {
       }
       if (assessment.kind === 'VALID' || assessment.kind === 'NORMALIZABLE') {
         if (assessment.normalized !== expectedCode) {
+          if (isSpecialInternalId(expectedCode) || isSpecialInternalId(assessment.normalized)) return log;
           addIssue({
             kind: 'USAGE_REFERENCE',
             severity: 'WARNING',
@@ -983,6 +1003,10 @@ export class StandardInternalIdSyncService {
     }
 
     for (const [canonicalCode, group] of groups.entries()) {
+      // There may be legacy ledger rows for SDHET from before it became a
+      // non-exclusive business marker. Leave those rows untouched and silent;
+      // SDHET must not create registry migration or ownership warnings.
+      if (isSpecialInternalId(canonicalCode)) continue;
       const migratedAliases = group.filter(entry => this.isMigratedRegistryAlias(entry, canonicalCode));
       const activeEntries = group.filter(entry => !this.isMigratedRegistryAlias(entry, canonicalCode));
 

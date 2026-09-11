@@ -11,10 +11,10 @@ import {
 // always canonical upper-case.
 export const STANDARD_INTERNAL_ID_PATTERN = /^(?:[ABC][A-Z0-9]{3}|SDHET)$/iu;
 export const STANDARD_INTERNAL_ID_LENGTH = 4;
-/** A legacy business operation uses this code outside the reusable A/B/C sequence. */
+/** A system business operation uses this code outside the reusable A/B/C sequence. */
 export const SPECIAL_INTERNAL_ID = 'SDHET';
 export const STANDARD_INTERNAL_ID_RULE_DESCRIPTION =
-  '4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận.';
+  '4 ký tự bắt đầu bằng A, B hoặc C; riêng mã nghiệp vụ SDHET được chấp nhận và không áp dụng cảnh báo mã độc quyền.';
 
 /**
  * Firestore still accepts far more writes than this, but the sync audit keeps
@@ -55,9 +55,18 @@ export function normalizeInternalId(value: unknown): string {
     .toUpperCase();
 }
 
+/**
+ * SDHET is a business marker, not one of the reusable physical-code slots.
+ * Keep this predicate next to normalization so every caller applies the same
+ * case/whitespace handling before deciding whether the exception applies.
+ */
+export function isSpecialInternalId(value: unknown): boolean {
+  return normalizeInternalId(value) === SPECIAL_INTERNAL_ID;
+}
+
 export function isValidInternalId(value: unknown): value is string {
   const normalized = normalizeInternalId(value);
-  return normalized === SPECIAL_INTERNAL_ID || STANDARD_INTERNAL_ID_PATTERN.test(normalized);
+  return isSpecialInternalId(normalized) || STANDARD_INTERNAL_ID_PATTERN.test(normalized);
 }
 
 export function assessInternalId(value: unknown): StandardInternalIdAssessment {
@@ -143,7 +152,7 @@ export function validateInternalIdCorrections(
       });
       continue;
     }
-    if ((counts.get(normalized) || 0) > 1) {
+    if (!isSpecialInternalId(normalized) && (counts.get(normalized) || 0) > 1) {
       map.set(docId, {
         level: 'duplicate_in_batch',
         message: `Mã “${normalized}” bị nhập trùng cho nhiều hồ sơ trong cùng lần sửa này.`,
@@ -151,7 +160,7 @@ export function validateInternalIdCorrections(
       });
       continue;
     }
-    if (report?.conflicts.some(c =>
+    if (!isSpecialInternalId(normalized) && report?.conflicts.some(c =>
       (c.kind === 'DUPLICATE_ACTIVE' || c.kind === 'REGISTRY_MISMATCH') &&
       normalizeInternalId(c.internalId) === normalized
     )) {
@@ -253,7 +262,7 @@ export function calculateInternalIdApplySummary(
     const issue = manualIssuesMap.get(id);
     const isCurrent = issue?.isCurrentLifecycle !== false;
 
-    if (isCurrent) {
+    if (isCurrent && !isSpecialInternalId(normalized)) {
       documentKeys.add(`standard_code_registry/${normalized}`);
       byCollection['standard_code_registry'] = (byCollection['standard_code_registry'] || 0) + 1;
       registrySync += 1;

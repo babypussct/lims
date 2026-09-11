@@ -137,6 +137,13 @@ describe('Soft UI application layout contract', () => {
     assert.doesNotMatch(login, /animate-blob|animate-laser/);
   });
 
+  it('preserves explicit mobile table widths for component-owned horizontal scrolling', () => {
+    const styles = read('../../../styles.css');
+
+    assert.match(styles, /\.soft-ui-app-shell \*:not\(\[class\*='min-w-'\]\)/);
+    assert.match(styles, /\.soft-ui-app-shell table\s*\{\s*max-width: 100%;/);
+  });
+
   it('keeps production surfaces on the Soft UI radius and removes the prior Mosaic namespace', () => {
     const production = readProductionTree('../../');
 

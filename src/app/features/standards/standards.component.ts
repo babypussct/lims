@@ -70,8 +70,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   showTagManagerModal = signal(false);
 
   // Responsive view mode: mobile (touch device) defaults to grid, desktop defaults to list
-  private mobileMediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
-  viewMode = signal<'list' | 'grid'>(this.stdService.listState.viewMode || (this.mobileMediaQuery.matches ? 'grid' : 'list'));
+  private mobileMediaQuery = window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse)');
+  viewMode = signal<'list' | 'grid'>(this.mobileMediaQuery.matches ? 'grid' : (this.stdService.listState.viewMode || 'list'));
   private onMediaChange = (e: MediaQueryListEvent) => this.viewMode.set(e.matches ? 'grid' : 'list');
   searchTerm = signal(this.stdService.listState.searchTerm || '');
   sortOption = signal<string>(this.stdService.listState.sortOption || 'received_desc');

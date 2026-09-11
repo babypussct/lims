@@ -10,7 +10,8 @@ service cloud.firestore {
     // The laboratory's only business identifier for a standard. The
     // technical Firestore document id is deliberately not used as a visible
     // replacement for this code. SDHET is a separate business operation and
-    // is intentionally outside the reusable four-character sequence.
+    // is intentionally outside the reusable four-character sequence and
+    // ownership ledger.
     function validInternalId(value) {
       return value is string && (value == 'SDHET' || value.matches('^[ABC][A-Z0-9]{3}$'));
     }
@@ -1116,7 +1117,7 @@ service cloud.firestore {
           changed.hasOnly(['internal_id', 'search_key', 'lastUpdated']) &&
           validInternalId(code) &&
           request.resource.data.lastUpdated == request.time &&
-          (!remainsCurrent || assignedRegistryAfterMatches(registryPath, code, stdId));
+          (!remainsCurrent || code == 'SDHET' || assignedRegistryAfterMatches(registryPath, code, stdId));
       }
 
       function noOpenStandardWorkflow(data) {
@@ -1140,7 +1141,7 @@ service cloud.firestore {
           request.resource.data.get('lifecycle_status', '') == 'RELEASED' &&
           noOpenStandardWorkflow(request.resource.data) &&
           request.resource.data.lastUpdated == request.time &&
-          releasableRegistryAfterMatches(registryPath, stdId);
+          (code == 'SDHET' || releasableRegistryAfterMatches(registryPath, stdId));
       }
 
       function canUpdateReferenceStandard(appId) {
