@@ -57,13 +57,19 @@ export const routes: Routes = [
     path: 'standards',
     loadComponent: () => import('./features/standards/standards.component').then(m => m.StandardsComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_VIEW }
+    data: { permissionsAny: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW] }
+  },
+  {
+    path: 'standards/audit/:id',
+    loadComponent: () => import('./features/standards/standard-audit-detail.component').then(m => m.StandardAuditDetailComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.STANDARD_AUDIT_VIEW }
   },
   {
     path: 'standards/:id',
     loadComponent: () => import('./features/standards/standard-detail.component').then(m => m.StandardDetailComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_VIEW }
+    data: { permission: PERMISSIONS.STANDARD_VIEW, denyStandardAuditMode: true }
   },
   {
     path: 'daily-checklist',
@@ -75,13 +81,20 @@ export const routes: Routes = [
     path: 'standard-requests',
     loadComponent: () => import('./features/standards/requests/standard-requests.component').then(m => m.StandardRequestsComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_VIEW }
+    data: {
+      permissionsAny: [
+        PERMISSIONS.STANDARD_REQUEST,
+        PERMISSIONS.STANDARD_EDIT,
+        PERMISSIONS.STANDARD_APPROVE,
+      ],
+      denyStandardAuditMode: true,
+    }
   },
   {
     path: 'standard-usage',
     loadComponent: () => import('./features/standards/usage/standard-usage.component').then(m => m.StandardUsageComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_LOG_VIEW }
+    data: { permission: PERMISSIONS.STANDARD_LOG_VIEW, denyStandardAuditMode: true }
   },
   {
     path: 'recipes',

@@ -1,5 +1,19 @@
     <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-4 md:p-6">
 
+      @if (isAuditMode()) {
+        <app-standards-audit-view
+          [items]="auditVisibleItems()"
+          [totalCount]="auditFilteredItems().length"
+          [isLoading]="isLoading()"
+          [hasMore]="auditHasMore()"
+          [searchTerm]="searchTerm()"
+          [sortOption]="auditSortOption()"
+          (searchTermChange)="onAuditSearchInput($event)"
+          (sortOptionChange)="onAuditSortChange($event)"
+          (navigateToDetail)="navigateToDetail($event)"
+          (loadMore)="loadMoreAudit()">
+        </app-standards-audit-view>
+      } @else {
       <!-- Header -->
       <app-standards-toolbar
           [selectedCount]="selectedIds().size"
@@ -329,6 +343,8 @@
           </div>
           </app-export-modal>
         }
+      }
+
       }
 
     </div>

@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.11-b02
+## Phiên bản hiện tại: v26.09.11-b03
+
+### v26.09.11-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tài khoản Audit chỉ xem các trường Chất chuẩn đã được phê duyệt, phù hợp nhu cầu kiểm tra và truy vết.
+- Có thể mở trực tiếp chứng chỉ phân tích (CoA) từ danh sách hoặc chi tiết chất chuẩn trong chế độ Audit.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung quyền standard_audit_view và route chi tiết Audit riêng, không mở các thao tác nghiệp vụ của chất chuẩn.
+- Bổ sung nút xem CoA dùng lại preview hiện hữu và chỉ xuất hiện khi bản ghi có tài liệu đính kèm.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Ánh xạ rõ Khối lượng chai vào initial_amount và Quy cách vào unit trong bề mặt Audit.
+- Giữ Audit sử dụng cache/DeltaSync hiện có, không tạo projection, collection, API hoặc localStorage mới.
+- Ẩn các menu, route, lịch sử và thao tác ngoài phạm vi Audit; CoA được mở mà không hiển thị URL certificate_ref.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn tài khoản Audit rơi vào trang chi tiết chất chuẩn đầy đủ hoặc các luồng yêu cầu/sử dụng chuẩn.
+- Bảo đảm thao tác CoA không kích hoạt nhầm điều hướng dòng dữ liệu trong bảng Audit.
 
 ### v26.09.11-b02
 

@@ -1,6 +1,9 @@
 import { PERMISSIONS } from '../services/auth.service';
 
-export type NavigationAccess = string | 'role:manager';
+export type NavigationAccess = string | readonly string[] | 'role:manager';
+
+/** Routes that remain operational and must stay hidden from Audit-only UI mode. */
+export const STANDARD_AUDIT_RESTRICTED_ROUTES = ['standard-requests', 'standard-usage'] as const;
 
 export interface NavigationItem {
   id: string;
@@ -9,7 +12,8 @@ export interface NavigationItem {
   path: string;
   activeMatch: string[];
   access?: NavigationAccess;
-  lockPermission?: string;
+  lockPermission?: NavigationAccess;
+  denyStandardAuditMode?: boolean;
   badgeKey?: 'requests';
   menuHidden?: boolean;
 }
@@ -86,9 +90,9 @@ export const ROUTE_ACCESS: Partial<Record<string, NavigationAccess>> = {
   'calculator': PERMISSIONS.SOP_VIEW,
   'smart-batch': PERMISSIONS.BATCH_RUN,
   'inventory': PERMISSIONS.INVENTORY_VIEW,
-  'standards': PERMISSIONS.STANDARD_VIEW,
+  'standards': [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW],
   'daily-checklist': PERMISSIONS.SOP_VIEW,
-  'standard-requests': PERMISSIONS.STANDARD_VIEW,
+  'standard-requests': [PERMISSIONS.STANDARD_REQUEST, PERMISSIONS.STANDARD_EDIT, PERMISSIONS.STANDARD_APPROVE],
   'standard-usage': PERMISSIONS.STANDARD_LOG_VIEW,
   'recipes': PERMISSIONS.RECIPE_VIEW,
   'target-groups': 'role:manager',
@@ -133,9 +137,9 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     icon: 'fa-boxes-stacked',
     items: [
       { id: 'inventory', name: 'Kho Hóa Chất', icon: 'fa-boxes-stacked', path: 'inventory', activeMatch: ['/inventory', '/labels'], access: PERMISSIONS.INVENTORY_VIEW, lockPermission: PERMISSIONS.INVENTORY_VIEW },
-      { id: 'standards', name: 'Chất Chuẩn Đối Chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], access: PERMISSIONS.STANDARD_VIEW, lockPermission: PERMISSIONS.STANDARD_VIEW },
-      { id: 'standard-requests', name: 'Yêu Cầu Chất Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], access: PERMISSIONS.STANDARD_VIEW, lockPermission: PERMISSIONS.STANDARD_VIEW },
-      { id: 'standard-usage', name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], access: PERMISSIONS.STANDARD_LOG_VIEW, lockPermission: PERMISSIONS.STANDARD_LOG_VIEW },
+      { id: 'standards', name: 'Chất Chuẩn Đối Chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], access: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW], lockPermission: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW] },
+      { id: 'standard-requests', name: 'Yêu Cầu Chất Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], access: [PERMISSIONS.STANDARD_REQUEST, PERMISSIONS.STANDARD_EDIT, PERMISSIONS.STANDARD_APPROVE], lockPermission: [PERMISSIONS.STANDARD_REQUEST, PERMISSIONS.STANDARD_EDIT, PERMISSIONS.STANDARD_APPROVE], denyStandardAuditMode: true },
+      { id: 'standard-usage', name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], access: PERMISSIONS.STANDARD_LOG_VIEW, lockPermission: PERMISSIONS.STANDARD_LOG_VIEW, denyStandardAuditMode: true },
       { id: 'recipes', name: 'Thư Viện Công Thức', icon: 'fa-book-bookmark', path: 'recipes', activeMatch: ['/recipes'], access: PERMISSIONS.RECIPE_VIEW, lockPermission: PERMISSIONS.RECIPE_VIEW }
     ]
   },

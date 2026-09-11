@@ -5,7 +5,7 @@ import { AuthService } from '../services/auth.service';
 import { StateService } from '../services/state.service';
 import { ToastService } from '../services/toast.service';
 import { LogoComponent } from '../../shared/components/logo.component';
-import { NavigationItem, NAVIGATION_GROUPS } from './navigation.config';
+import { NavigationAccess, NavigationItem, NAVIGATION_GROUPS } from './navigation.config';
 
 interface ResolvedNavigationItem extends NavigationItem {
   isLocked: boolean;
@@ -208,14 +208,23 @@ export class NavigationPanelComponent {
   }
 
   private isItemLocked(item: NavigationItem): boolean {
-    if (!item.access) return false;
-    if (item.access === 'role:manager') return !this.state.isAdmin();
-    return !this.auth.hasPermission(item.access);
+    if (item.denyStandardAuditMode && this.auth.isStandardAuditMode()) return true;
+    return !this.canAccess(item.access);
   }
 
-  private getPermissionLabel(permission?: string): string {
+  private canAccess(access?: NavigationAccess): boolean {
+    if (!access) return true;
+    if (access === 'role:manager') return this.state.isAdmin();
+    if (typeof access !== 'string') return access.some(permission => this.auth.hasPermission(permission));
+    return this.auth.hasPermission(access);
+  }
+
+  private getPermissionLabel(permission?: NavigationAccess): string {
     if (!permission) return 'đặc biệt';
     if (permission === 'role:manager') return 'Quản trị viên';
+    if (typeof permission !== 'string') {
+      return permission.map(item => this.auth.getPermissionName(item) || item).join(' / ');
+    }
     return this.auth.getPermissionName(permission) || permission;
   }
 }

@@ -9,7 +9,7 @@ import { QrGlobalService } from '../services/qr-global.service';
 import { ChangelogService } from '../services/changelog.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
-import { ROUTE_ACCESS, ROUTE_TITLES, ROUTE_ICONS } from './navigation.config';
+import { ROUTE_ACCESS, ROUTE_TITLES, ROUTE_ICONS, STANDARD_AUDIT_RESTRICTED_ROUTES } from './navigation.config';
 import { getTraceabilitySearchCandidate } from '../../shared/utils/traceability-lookup';
 
 interface PaletteItem {
@@ -357,9 +357,11 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   });
 
   private canAccessRoute(segment: string): boolean {
+    if (STANDARD_AUDIT_RESTRICTED_ROUTES.some(route => route === segment) && this.auth.isStandardAuditMode()) return false;
     const access = ROUTE_ACCESS[segment];
     if (!access) return true;
     if (access === 'role:manager') return this.state.isAdmin();
+    if (typeof access !== 'string') return access.some(permission => this.auth.hasPermission(permission));
     return this.auth.hasPermission(access);
   }
 

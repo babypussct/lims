@@ -1154,6 +1154,7 @@ service cloud.firestore {
       }
 
       allow read: if hasPermission(appId, 'standard_view') ||
+        hasPermission(appId, 'standard_audit_view') ||
         (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if hasPermission(appId, 'standard_edit') &&
         validStandardTagArray(request.resource.data) &&
@@ -1367,7 +1368,7 @@ service cloud.firestore {
           request.resource.data.lastUpdated == request.time;
       }
 
-      function validRequesterReturnSubmission(appId) {
+      function validRequesterReturnSubmission() {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
         return resource.data.requestedBy == request.auth.uid &&
           request.resource.data.requestedBy == resource.data.requestedBy &&
@@ -1388,7 +1389,7 @@ service cloud.firestore {
           request.resource.data.lastUpdated == request.time;
       }
 
-      function validRequesterResumeUsage(appId) {
+      function validRequesterResumeUsage() {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
         let resumable = ['PENDING_RETURN', 'PENDING_DEPLETION'].hasAny([resource.data.status]);
         return resource.data.requestedBy == request.auth.uid &&
@@ -1407,7 +1408,7 @@ service cloud.firestore {
           request.resource.data.lastUpdated == request.time;
       }
 
-      function validRequesterProposalUpdate(appId) {
+      function validRequesterProposalUpdate() {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
         return resource.data.requestedBy == request.auth.uid &&
           request.resource.data.requestedBy == resource.data.requestedBy &&
@@ -1425,9 +1426,9 @@ service cloud.firestore {
         return (changed.hasAny(['totalAmountUsed']) && validRequesterUsageAccounting(appId)) ||
           (hasPermission(appId, 'standard_request') &&
           !changed.hasAny(['totalAmountUsed', 'usageLogs']) && (
-            validRequesterReturnSubmission(appId) ||
-            validRequesterResumeUsage(appId) ||
-            validRequesterProposalUpdate(appId)
+            validRequesterReturnSubmission() ||
+            validRequesterResumeUsage() ||
+            validRequesterProposalUpdate()
           ));
       }
 

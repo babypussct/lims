@@ -1044,6 +1044,16 @@ export class AuthService {
   canEditStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_EDIT); }
   canAssignStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_EDIT) || this.hasPermission(PERMISSIONS.STANDARD_APPROVE); }
   canViewStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_VIEW); }
+  canViewStandardAudit(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_AUDIT_VIEW); }
+  /**
+   * UI-only mode marker for accounts explicitly assigned the Audit permission.
+   * Managers keep the normal full module because `hasPermission` intentionally
+   * treats the manager wildcard as all permissions.
+   */
+  isStandardAuditMode(): boolean {
+    const user = this.currentUser();
+    return user?.role !== 'manager' && this.canViewStandardAudit();
+  }
   canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
   canManageDutySchedule(): boolean { return this.hasPermission(PERMISSIONS.DUTY_MANAGE); }
   canManageSystem(): boolean { return this.hasPermission(PERMISSIONS.USER_MANAGE); }

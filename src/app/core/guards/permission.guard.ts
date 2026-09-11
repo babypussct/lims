@@ -27,6 +27,14 @@ export const permissionGuard: CanActivateFn = (route, state) => {
   // 2. Check Admin Override
   if (user.role === 'manager') return true;
 
+  // Audit mode is intentionally exclusive for operational standard routes,
+  // even when the account still inherits an older standard role permission.
+  if (route.data['denyStandardAuditMode'] === true && auth.isStandardAuditMode()) {
+    toast.show('Tài khoản Audit chỉ được xem danh mục chất chuẩn đã giới hạn.', 'warning');
+    router.navigate(['/standards']);
+    return false;
+  }
+
   // 3. Check Role Requirement
   if (requiredRole && user.role !== requiredRole) {
     toast.show('Bạn không có quyền truy cập trang này.', 'error');

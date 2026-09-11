@@ -7,6 +7,46 @@ function read(relativePath: string): string {
 }
 
 describe('standards shared UI primitive integration', () => {
+  it('keeps the Audit surface to the approved ten-field whitelist and reuses the dedicated permission route', () => {
+    const auditView = read('./components/standards-audit-view.component.ts');
+    const auditDetail = read('./standard-audit-detail.component.ts');
+    const page = read('./standards.component.html');
+    const component = read('./standards.component.ts');
+    const routes = read('../../app.routes.ts');
+    const catalog = read('../../core/auth/permission-catalog.ts');
+
+    for (const label of [
+      'Tên chuẩn',
+      'Khối lượng chai',
+      'Quy cách',
+      'Mã số sản phẩm',
+      'Số lô',
+      'Hãng',
+      'CAS Number',
+      'Hạn sử dụng',
+      'Điều kiện bảo quản',
+      'Số nhận diện',
+    ]) {
+      assert.match(auditView, new RegExp(label));
+      assert.match(auditDetail, new RegExp(label));
+    }
+
+    assert.match(auditView, /standard\.initial_amount/);
+    assert.match(auditView, /standard\.unit/);
+    assert.match(auditView, /certificate_ref/);
+    assert.match(auditView, /Xem CoA/);
+    assert.match(auditView, /openCoaPreview/);
+    assert.match(auditDetail, /certificate_ref/);
+    assert.match(auditDetail, /Xem CoA/);
+    assert.match(auditDetail, /openCoaPreview/);
+    assert.doesNotMatch(auditView, /current_amount|purity|chemical_name|sop_tags/);
+    assert.match(component, /isAuditMode\(\)/);
+    assert.match(page, /<app-standards-audit-view\b/);
+    assert.match(routes, /path: 'standards\/audit\/:id'/);
+    assert.match(routes, /PERMISSIONS\.STANDARD_AUDIT_VIEW/);
+    assert.match(catalog, /STANDARD_AUDIT_VIEW: 'standard_audit_view'/);
+  });
+
   it('uses the shared page header and buttons while preserving the standards function-menu contract', () => {
     const toolbar = read('./components/standards-toolbar.component.ts');
     const filter = read('./components/standards-filter.component.ts');

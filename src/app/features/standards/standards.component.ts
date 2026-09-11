@@ -35,13 +35,14 @@ import { StandardsDataCleanupModalComponent } from './components/standards-data-
 import { StandardsBackfillModalComponent, BackfillData } from './components/standards-backfill-modal.component';
 import { StandardsBulkTagModalComponent } from './components/standards-bulk-tag-modal.component';
 import { StandardsTagManagerModalComponent } from './components/standards-tag-manager-modal.component';
+import { StandardAuditSort, StandardsAuditViewComponent } from './components/standards-audit-view.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 import { StandardTagCatalogService } from './services/standard-tag-catalog.service';
 import { StandardBulkTagMode, formatMethodOptionLabel, summarizeStockByUnit, StockSummaryResult } from './services/standard-tag.utils';
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, StandardsAuditViewComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -80,6 +81,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // --- CHANGED: CLIENT-SIDE STATE ---
   allStandards = signal<ReferenceStandard[]>([]); // Holds ALL data from Firebase stream
   displayLimit = signal<number>(50); // Virtual scroll limit
+  readonly isAuditMode = computed(() => this.auth.isStandardAuditMode());
+  auditSortOption = signal<StandardAuditSort>('name_asc');
+  auditDisplayLimit = signal<number>(50);
   activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>('all');
   activeMethodTagFilter = signal<string | null>(null);
   activeDeviceFilter = signal<StandardDeviceCode | 'all'>('all');
@@ -252,6 +256,61 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   hasMore = computed(() => this.visibleItems().length < this.filteredItems().length);
 
+  /**
+   * Audit search/sort deliberately uses only the ten approved fields. This
+   * keeps the normal all-field search and its derived operational facets out
+   * of the Audit surface while reusing the same in-memory DeltaSync result.
+   */
+  auditFilteredItems = computed(() => {
+      let data = this.allStandards().filter(item => !item._isDeleted && (item.status as any) !== 'DELETED');
+      const normalize = (value: unknown) => String(value ?? '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+      const term = normalize(this.searchTerm().trim());
+      const searchTerms = term.split('+').map(value => value.trim()).filter(Boolean);
+
+      if (searchTerms.length > 0) {
+          data = data.filter(item => {
+              const expiry = item.expiry_date || '';
+              const expiryDisplay = expiry.match(/^\d{4}-\d{2}-\d{2}/)
+                  ? expiry.slice(0, 10).split('-').reverse().join('/')
+                  : '';
+              const searchable = normalize([
+                  item.name,
+                  formatNum(item.initial_amount),
+                  item.unit,
+                  item.product_code,
+                  item.lot_number,
+                  item.manufacturer,
+                  item.cas_number,
+                  expiry,
+                  expiryDisplay,
+                  item.storage_condition,
+                  item.internal_id,
+              ].join(' '));
+              return searchTerms.every(value => searchable.includes(value));
+          });
+      }
+
+      const compareText = (left: unknown, right: unknown) => normalize(left).localeCompare(normalize(right));
+      const option = this.auditSortOption();
+      return data.sort((left, right) => {
+          switch (option) {
+              case 'name_desc': return compareText(right.name, left.name);
+              case 'expiry_asc': return compareText(left.expiry_date || '9999-12-31', right.expiry_date || '9999-12-31');
+              case 'expiry_desc': return compareText(right.expiry_date || '', left.expiry_date || '');
+              case 'manufacturer': return compareText(left.manufacturer, right.manufacturer) || compareText(left.name, right.name);
+              case 'internal_id': return compareText(left.internal_id, right.internal_id) || compareText(left.name, right.name);
+              case 'name_asc':
+              default: return compareText(left.name, right.name);
+          }
+      });
+  });
+
+  auditVisibleItems = computed(() => this.auditFilteredItems().slice(0, this.auditDisplayLimit()));
+  auditHasMore = computed(() => this.auditVisibleItems().length < this.auditFilteredItems().length);
+
   selectedIds = signal<Set<string>>(new Set());
   showBulkTagModal = signal(false);
 
@@ -363,7 +422,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
   ngOnInit() {
       this.isLoading.set(true);
       // Pre-load Google Drive SDK script in background so when user interacts, we don't block for network request
-      this.googleDriveService.ensureInitialized().catch(e => console.warn('GIS preload deferred:', e));
+      if (!this.isAuditMode()) {
+          this.googleDriveService.ensureInitialized().catch(e => console.warn('GIS preload deferred:', e));
+      }
       // Reactive view mode listener (updates on window resize / device rotation)
       this.mobileMediaQuery.addEventListener('change', this.onMediaChange);
       // Setup Real-time Listener (Load All)
@@ -452,6 +513,19 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   onSearchInput(val: string) { this.searchSubject.next(val); }
   onSortChange(val: string) { this.sortOption.set(val); }
+
+  onAuditSearchInput(val: string) {
+      this.auditDisplayLimit.set(50);
+      this.searchSubject.next(val);
+  }
+
+  onAuditSortChange(val: StandardAuditSort) {
+      this.auditSortOption.set(val);
+  }
+
+  loadMoreAudit() {
+      this.auditDisplayLimit.update(limit => limit + 50);
+  }
 
   openAddModal() {
       this.isEditing.set(false);
@@ -921,7 +995,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   navigateToDetail(std: ReferenceStandard) {
-      this.router.navigate(['/standards', std.id]);
+      this.router.navigate(this.isAuditMode() ? ['/standards/audit', std.id] : ['/standards', std.id]);
   }
 
   async viewHistory(std: ReferenceStandard) {

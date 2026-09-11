@@ -46,6 +46,17 @@ test('reference standard update branches are named helpers instead of one compou
   assert.match(standardsBlock, /function canUpdateReferenceStandard\(appId\)/);
 });
 
+test('audit accounts can read the existing standard cache but cannot enter usage logs through the audit permission', () => {
+  const standardsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/reference_standards/{stdId}'),
+    rules.indexOf('match /artifacts/{appId}/standard_cleanup_batches/{batchId}')
+  );
+  const logsBlock = standardsBlock.slice(standardsBlock.indexOf('match /logs/{logId}'));
+  assert.match(standardsBlock, /allow read: if hasPermission\(appId, 'standard_view'\) \|\|\s+hasPermission\(appId, 'standard_audit_view'\)/);
+  assert.match(logsBlock, /match \/logs\/\{logId\} \{\s+allow read: if hasPermission\(appId, 'standard_view'\)/);
+  assert.doesNotMatch(logsBlock, /standard_audit_view/);
+});
+
 test('internal-id lifecycle writes are bound to the canonical code and audited sync paths', () => {
   assert.match(rules, /function validInternalId\(value\)/);
   assert.match(rules, /value == 'SDHET'/);
@@ -96,7 +107,7 @@ test('requester request mutations keep admin fields and legacy accounting outsid
     requestsBlock.indexOf('function validStandardRequestCreate(appId)')
   );
   const requesterLifecycle = requestsBlock.slice(
-    requestsBlock.indexOf('function validRequesterReturnSubmission(appId)'),
+    requestsBlock.indexOf('function validRequesterReturnSubmission()'),
     requestsBlock.indexOf('function validRequesterStandardRequestUpdate(appId)')
   );
   assert.match(requesterCreate, /data\.keys\(\)\.hasOnly/);

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.11-b02",
-    "title": "Hoàn thiện giao diện di động và mã nghiệp vụ SDHET",
+    "version": "v26.09.11-b03",
+    "title": "Giới hạn quyền xem Chất chuẩn cho Audit và hỗ trợ xem CoA",
     "features": [
-      "Mã nghiệp vụ SDHET được xử lý độc lập, không còn phát cảnh báo trùng mã hoặc xung đột quyền sở hữu.",
-      "Các màn hình dữ liệu dày trên thiết bị di động được bảo vệ khỏi tràn ngang và dễ thao tác hơn.",
-      "Bổ sung ngoại lệ SDHET xuyên suốt tạo mới, import, đồng bộ mã, snapshot, registry và Firestore Rules.",
-      "Hiển thị thông tin bản ghi Thùng rác theo nhãn nghiệp vụ thay vì tên trường kỹ thuật.",
-      "Cải thiện chế độ danh sách/lưới và bộ lọc màn hình Chất chuẩn theo kích thước viewport."
+      "Tài khoản Audit chỉ xem các trường Chất chuẩn đã được phê duyệt, phù hợp nhu cầu kiểm tra và truy vết.",
+      "Có thể mở trực tiếp chứng chỉ phân tích (CoA) từ danh sách hoặc chi tiết chất chuẩn trong chế độ Audit.",
+      "Bổ sung quyền standard_audit_view và route chi tiết Audit riêng, không mở các thao tác nghiệp vụ của chất chuẩn.",
+      "Bổ sung nút xem CoA dùng lại preview hiện hữu và chỉ xuất hiện khi bản ghi có tài liệu đính kèm.",
+      "Ánh xạ rõ Khối lượng chai vào initial_amount và Quy cách vào unit trong bề mặt Audit."
     ]
   },
   "assetGroups": [

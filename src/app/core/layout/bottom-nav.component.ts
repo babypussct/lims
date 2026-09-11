@@ -17,6 +17,7 @@ import {
   NavigationAccess,
   NavigationItem,
   ROUTE_ACCESS,
+  STANDARD_AUDIT_RESTRICTED_ROUTES,
   ROUTE_TITLES
 } from './navigation.config';
 
@@ -27,7 +28,7 @@ interface MenuItem {
   path?: string;
   action?: () => void;
   isLocked: boolean;
-  lockPermission?: string;
+  lockPermission?: NavigationAccess;
   badgeKey?: 'requests';
   activeMatch?: string[];
   kind?: 'install';
@@ -393,7 +394,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     const permission = item.lockPermission || 'đặc biệt';
     const permissionName = permission === 'role:manager'
       ? 'Quản trị viên'
-      : (this.auth.getPermissionName(permission) || permission);
+      : typeof permission !== 'string'
+        ? permission.map(item => this.auth.getPermissionName(item) || item).join(' / ')
+        : (this.auth.getPermissionName(permission) || permission);
     this.toast.show(`Cần quyền "${permissionName}" · Liên hệ quản trị viên để được cấp`, 'warning');
   }
 
@@ -458,6 +461,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   canAccessPath(path: string): boolean {
     const segment = path.replace(/^\//, '').split(/[/?#]/)[0];
+    if (STANDARD_AUDIT_RESTRICTED_ROUTES.some(route => route === segment) && this.auth.isStandardAuditMode()) return false;
     return this.canAccess(ROUTE_ACCESS[segment]);
   }
 
@@ -544,7 +548,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       path: `/${item.path}`,
       activeMatch: item.activeMatch,
       badgeKey: item.badgeKey,
-      isLocked: !this.canAccess(item.access),
+      isLocked: item.denyStandardAuditMode === true && this.auth.isStandardAuditMode()
+        ? true
+        : !this.canAccess(item.access),
       lockPermission: item.lockPermission || item.access
     };
   }
@@ -552,6 +558,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   private canAccess(access?: NavigationAccess): boolean {
     if (!access) return true;
     if (access === 'role:manager') return this.state.isAdmin();
+    if (typeof access !== 'string') return access.some(permission => this.auth.hasPermission(permission));
     return this.auth.hasPermission(access);
   }
 
