@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.12-b02
+## Phiên bản hiện tại: v26.09.12-b03
+
+### v26.09.12-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Giảm Firestore reads lặp lại khi cùng một khoảng lịch sử phiếu đã duyệt được mở từ báo cáo, xuất dữ liệu hoặc danh sách yêu cầu.
+- Bổ sung Referrer-Policy và Permissions-Policy cho ứng dụng production mà vẫn giữ quyền camera cần thiết cho quét QR.
+
+#### ✨ Tính Năng Mới
+
+- Cache báo cáo chỉ tái sử dụng kết quả đã tải đầy đủ trong 30 giây, tự vô hiệu hóa khi có mutation hoặc realtime update để tránh giữ dữ liệu cũ.
+- Thêm contract test cho cache lịch sử phiếu và security headers, đưa kiểm tra cấu hình Vercel vào release test suite.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ nguyên ba trường ngày fallback để tương thích dữ liệu lịch sử, nhưng tránh phát sinh ba nhóm query mới khi cùng một cửa sổ báo cáo vừa được tải.
+- Giữ Permissions-Policy ở mức tối thiểu: cho phép camera same-origin và tắt các quyền microphone, geolocation, payment, USB và cảm biến không dùng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn các lần render/chuyển màn hình liên tiếp đọc lại cùng một lịch sử đã hoàn tất trong thời gian ngắn.
+- Bảo vệ cấu hình header khỏi bị sửa lệch mà không có test phát hiện trước khi deploy.
 
 ### v26.09.12-b02
 

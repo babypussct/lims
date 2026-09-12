@@ -54,6 +54,20 @@ test('report-only approved-request history stays on the bounded range loader ins
   assert.match(rangeLoaderBody, /canViewReports\(\)/);
 });
 
+test('approved-request range reads reuse only fresh complete loads and invalidate on changes', () => {
+  const state = readFileSync('src/app/core/services/state.service.ts', 'utf8');
+  const rangeLoaderStart = state.indexOf('async loadApprovedRequestsForDateRange');
+  const rangeLoaderEnd = state.indexOf('private isApprovedRequest', rangeLoaderStart);
+  const rangeLoaderBody = state.slice(rangeLoaderStart, rangeLoaderEnd);
+
+  assert.match(state, /APPROVED_REQUEST_HISTORY_CACHE_TTL_MS = 30_000/);
+  assert.match(rangeLoaderBody, /approvedHistoryRangeCache\.get\(key\)/);
+  assert.match(rangeLoaderBody, /Date\.now\(\) - cached\.loadedAt < this\.APPROVED_REQUEST_HISTORY_CACHE_TTL_MS/);
+  assert.match(rangeLoaderBody, /result\.complete && cacheRevision === this\.approvedHistoryCacheRevision/);
+  assert.match(state, /publishRequestChanges\(changed: Request\[\], deletedIds: string\[\] = \[\]\): void \{\n\s*this\.invalidateApprovedHistoryRangeCache\(\);/);
+  assert.match(state, /private invalidateApprovedHistoryRangeCache\(\): void/);
+});
+
 test('Dashboard consumes only the canonical ActivityFeedService after PR9 cleanup', () => {
   const dashboard = readFileSync('src/app/features/dashboard/dashboard.component.ts', 'utf8');
   assert.match(dashboard, /ActivityFeedService/);

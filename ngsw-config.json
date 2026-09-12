@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.12-b02",
-    "title": "Củng cố gate phát hành và cập nhật bộ đọc tài liệu",
+    "version": "v26.09.12-b03",
+    "title": "Tối ưu cache báo cáo và chính sách trình duyệt",
     "features": [
-      "Release verification nay bao gồm lint, giúp chặn sớm lỗi chất lượng mã trước khi build và deploy.",
-      "Cập nhật jsPDF và PDF.js lên bản mới hơn để giảm các cảnh báo bảo mật trực tiếp của bộ đọc và xuất PDF.",
-      "Bổ sung kiểm tra kiểu dữ liệu và cấu trúc interface nhất quán cho các bề mặt quản trị, sao lưu, cài đặt và đồng bộ header.",
-      "Giữ nguyên quy trình phát hành qua GitHub Release Gate và Vercel Git Integration, đồng thời ghi nhận đầy đủ release metadata cho build mới.",
-      "Chuẩn hóa khai báo mảng, regex kiểm thử, const và inject() theo lint policy mà không thay đổi nghiệp vụ."
+      "Giảm Firestore reads lặp lại khi cùng một khoảng lịch sử phiếu đã duyệt được mở từ báo cáo, xuất dữ liệu hoặc danh sách yêu cầu.",
+      "Bổ sung Referrer-Policy và Permissions-Policy cho ứng dụng production mà vẫn giữ quyền camera cần thiết cho quét QR.",
+      "Cache báo cáo chỉ tái sử dụng kết quả đã tải đầy đủ trong 30 giây, tự vô hiệu hóa khi có mutation hoặc realtime update để tránh giữ dữ liệu cũ.",
+      "Thêm contract test cho cache lịch sử phiếu và security headers, đưa kiểm tra cấu hình Vercel vào release test suite.",
+      "Giữ nguyên ba trường ngày fallback để tương thích dữ liệu lịch sử, nhưng tránh phát sinh ba nhóm query mới khi cùng một cửa sổ báo cáo vừa được tải."
     ]
   },
   "assetGroups": [

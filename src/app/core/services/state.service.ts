@@ -51,6 +51,11 @@ export interface ApprovedRequestsHistoryLoadResult {
   reads: number;
 }
 
+interface ApprovedRequestsHistoryCacheEntry {
+  result: ApprovedRequestsHistoryLoadResult;
+  loadedAt: number;
+}
+
 export interface ReportCollectionLoadResult {
   complete: boolean;
   loaded: number;
@@ -87,11 +92,14 @@ export class StateService implements OnDestroy {
   private readonly APPROVED_REQUEST_RECENT_LIMIT = 300;
   private readonly APPROVED_REQUEST_HISTORY_PAGE_SIZE = 100;
   private readonly APPROVED_REQUEST_HISTORY_MAX_PAGES = 1000;
+  private readonly APPROVED_REQUEST_HISTORY_CACHE_TTL_MS = 30_000;
   private readonly REPORT_COLLECTION_PAGE_SIZE = 250;
   private readonly MAX_DIRECT_REQUEST_PAYLOAD_BYTES = 900_000;
   private approvedRecentRequests = new Map<string, Request>();
   private approvedHistoryRequests = new Map<string, Request>();
   private approvedHistoryLoads = new Map<string, Promise<ApprovedRequestsHistoryLoadResult>>();
+  private approvedHistoryRangeCache = new Map<string, ApprovedRequestsHistoryCacheEntry>();
+  private approvedHistoryCacheRevision = 0;
 
   // --- DATA SIGNALS ---
   inventory = signal<InventoryItem[]>([]);
@@ -171,6 +179,7 @@ export class StateService implements OnDestroy {
    * when its singleton is active; report history remains independently loaded.
    */
   publishRequestChanges(changed: Request[], deletedIds: string[] = []): void {
+    this.invalidateApprovedHistoryRangeCache();
     const changedIds = new Set(changed.map(request => request.id));
     const deleted = new Set(deletedIds);
 
@@ -249,7 +258,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.12-b02');
+  systemVersion = signal<string>('v26.09.12-b03');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -415,6 +424,7 @@ export class StateService implements OnDestroy {
     this.approvedRecentRequests.clear();
     this.approvedHistoryRequests.clear();
     this.approvedHistoryLoads.clear();
+    this.invalidateApprovedHistoryRangeCache();
     if (this.sysConfigSub) {
       this.sysConfigSub();
       this.sysConfigSub = undefined;
@@ -705,6 +715,7 @@ export class StateService implements OnDestroy {
       // Bộ lọc status trước đây bao phủ gần như mọi trạng thái và buộc Firestore
       // yêu cầu một composite index không cần thiết.
       this.approvedRecentRequests.clear();
+      this.invalidateApprovedHistoryRangeCache();
       runs.forEach(run => {
         if (this.isApprovedRequest(run)) {
           this.approvedRecentRequests.set(run.id, run);
@@ -752,7 +763,16 @@ export class StateService implements OnDestroy {
     const existing = this.approvedHistoryLoads.get(key);
     if (existing) return existing;
 
+    const cached = this.approvedHistoryRangeCache.get(key);
+    if (cached) {
+      if (Date.now() - cached.loadedAt < this.APPROVED_REQUEST_HISTORY_CACHE_TTL_MS) {
+        return cached.result;
+      }
+      this.approvedHistoryRangeCache.delete(key);
+    }
+
     const initGeneration = this.initGeneration;
+    const cacheRevision = this.approvedHistoryCacheRevision;
     const load = (async (): Promise<ApprovedRequestsHistoryLoadResult> => {
       try {
         const [analysisDateResult, approvedAtResult, timestampResult] = await Promise.all([
@@ -776,11 +796,15 @@ export class StateService implements OnDestroy {
         merged.forEach((request, id) => this.approvedHistoryRequests.set(id, request));
         this.publishApprovedRequests();
 
-        return {
+        const result = {
           complete: analysisDateResult.complete && approvedAtResult.complete && timestampResult.complete,
           loaded: merged.size,
           reads: analysisDateResult.reads + approvedAtResult.reads + timestampResult.reads
         };
+        if (result.complete && cacheRevision === this.approvedHistoryCacheRevision) {
+          this.approvedHistoryRangeCache.set(key, { result, loadedAt: Date.now() });
+        }
+        return result;
       } catch (error) {
         console.warn('[StateService] approved history range load failed:', error);
         return { complete: false, loaded: 0, reads: 0 };
@@ -793,6 +817,11 @@ export class StateService implements OnDestroy {
     } finally {
       if (this.approvedHistoryLoads.get(key) === load) this.approvedHistoryLoads.delete(key);
     }
+  }
+
+  private invalidateApprovedHistoryRangeCache(): void {
+    this.approvedHistoryCacheRevision++;
+    this.approvedHistoryRangeCache.clear();
   }
 
   private isApprovedRequest(request: Request): boolean {
