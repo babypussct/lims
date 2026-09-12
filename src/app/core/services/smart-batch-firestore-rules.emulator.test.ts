@@ -19,6 +19,7 @@ import {
   getDocs,
   query,
   serverTimestamp,
+  setLogLevel,
   setDoc,
   updateDoc,
   writeBatch,
@@ -28,6 +29,10 @@ import { StatsService } from './stats.service';
 import { persistDutyMonthImport } from '../../features/duty-stats/duty-tsv-import.persistence';
 import { DUTY_TSV_HEADER, parseDutyTsv } from '../../features/duty-stats/duty-tsv-import';
 import type { DutyScheduleEntry } from '../../features/duty-stats/duty-schedule.model';
+
+// These tests intentionally exercise denied reads/writes. Keep expected Rules
+// denials out of the test output so real warnings remain visible.
+setLogLevel('silent');
 
 const PROJECT_ID = 'demo-lims-smart-batch-rules';
 const APP_ID = 'lims-rules-test-app';

@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../../_lib/vercel-types.js';
 import {
   callbackUrl, clearCookieHeader, decryptCookie, GOOGLE_STATE_COOKIE,
   OAuthState, oauthClientId, oauthClientSecret, readCookie, requestOrigin,

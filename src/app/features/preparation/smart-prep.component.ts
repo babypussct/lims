@@ -373,6 +373,10 @@ export class SmartPrepComponent {
     effect(() => {
       this.persistDraft(this.snapshotDraftState());
     });
+    // Persist once synchronously as well as through the reactive effect. This
+    // keeps restored blank drafts clean even when a custom test injector has
+    // not flushed the effect scheduler's initial pass yet.
+    this.persistDraft(this.snapshotDraftState());
   }
 
   needsMolar(...choices: string[]): boolean {

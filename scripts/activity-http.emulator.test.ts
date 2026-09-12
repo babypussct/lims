@@ -8,7 +8,7 @@ import { readActivityFeedFromHttp } from '../src/app/core/activity/activity-feed
 test('Activity HTTP recovery reuses authentication, enforces audience Rules, ordering and limits', async () => {
   const { initializeApp, deleteApp } = await import('firebase/app');
   const { getAuth, connectAuthEmulator, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
-  const { getFirestore, connectFirestoreEmulator, terminate } = await import('firebase/firestore/lite');
+  const { getFirestore, connectFirestoreEmulator, setLogLevel, terminate } = await import('firebase/firestore/lite');
   const projectId = process.env['GCLOUD_PROJECT'] || 'demo-lims-notification';
   const authHost = process.env['FIREBASE_AUTH_EMULATOR_HOST'];
   const firestoreHost = process.env['FIRESTORE_EMULATOR_HOST'];
@@ -17,6 +17,7 @@ test('Activity HTTP recovery reuses authentication, enforces audience Rules, ord
   const app = initializeApp({ projectId, apiKey: 'demo-api-key' }, 'activity-http-fixture');
   const auth = getAuth(app);
   connectAuthEmulator(auth, `http://${authHost}`, { disableWarnings: true });
+  setLogLevel('silent');
   const [host, port] = firestoreHost!.split(':');
   const lite = getFirestore(app);
   connectFirestoreEmulator(lite, host, Number(port));

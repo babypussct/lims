@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.13-b01",
-    "title": "Gia cố an toàn và độ ổn định khi xử lý Excel",
+    "version": "v26.09.13-b02",
+    "title": "Dọn sạch cảnh báo dependency và ổn định runtime LIMS",
     "features": [
-      "Các luồng nhập và xem Excel được chặn tệp rỗng, sai phần mở rộng hoặc vượt giới hạn kích thước trước khi parser chạy.",
-      "Luồng nhập kết quả MassHunter vẫn nhận workbook lớn hơn với giới hạn 50 MB và giữ xử lý trong Web Worker khi trình duyệt hỗ trợ.",
-      "Bổ sung helper bảo mật dùng chung cho kiểm tra kích thước/phần mở rộng và cấu hình SheetJS tối thiểu cho dữ liệu Excel không tin cậy.",
-      "Áp dụng cấu hình đọc an toàn cho nhập danh mục chất chuẩn, nhật ký sử dụng, mô tả mẫu, chỉ tiêu gốc và kết quả MassHunter.",
-      "Excel Viewer giới hạn workbook 50 MB, vẫn giữ công thức/style cần cho chế độ chỉ xem nhưng tắt VBA, file phụ, HTML và dependency metadata không cần thiết."
+      "npm audit toàn bộ dependency và audit production đều về 0 vulnerability; Angular, Firebase và công cụ build đã được nâng lên nhánh tương thích hiện hành.",
+      "Lint, typecheck, build production và toàn bộ test suite LIMS đều đạt sau khi cài sạch từ package-lock.json.",
+      "Tách Firebase CLI khỏi dependency tree ứng dụng và cố định phiên bản CLI trong các lệnh deploy/emulator, tránh xung đột stream-json trong harness.",
+      "Thay contract type-only của Vercel bằng type contract nội bộ để API typecheck không kéo theo package dev đã lỗi thời.",
+      "Chuẩn hóa Date từ workbook đã parse theo wall-clock Excel và giữ ngày không có giờ ổn định giữa các timezone."
     ]
   },
   "assetGroups": [

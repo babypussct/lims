@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.09.13-b01",
+  "version": "26.09.13-b02",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -22,7 +22,7 @@
     "vercel:pull": "npx --yes vercel@59.11.0 pull --yes",
     "vercel:env:pull": "npx --yes vercel@59.11.0 env pull .env.local --yes",
     "deploy:preview": "npm run release:predeploy && npx --yes vercel@59.11.0",
-    "deploy:rules": "npm run release:predeploy && npx firebase-tools deploy --only firestore:rules --project lims-cloud-by-otada",
+    "deploy:rules": "npm run release:predeploy && npx --yes --package firebase-tools@14.27.0 firebase deploy --only firestore:rules --project lims-cloud-by-otada",
     "deploy:prod": "npm run release:predeploy && npx --yes vercel@59.11.0 --prod",
     "ng": "ng",
     "start": "ng serve",
@@ -81,19 +81,61 @@
     "audit:standard-request-security": "tsx scripts/audit-standard-request-security.ts",
     "lint": "ng lint",
     "typecheck:api": "tsc -p tsconfig.api.json --noEmit",
-    "deploy:indexes": "npm run release:predeploy && npx firebase-tools deploy --only firestore:indexes --project lims-cloud-by-otada --non-interactive"
+    "deploy:indexes": "npm run release:predeploy && npx --yes --package firebase-tools@14.27.0 firebase deploy --only firestore:indexes --project lims-cloud-by-otada --non-interactive"
   },
   "private": true,
+  "overrides": {
+    "nanoid": "5.1.16",
+    "brace-expansion@1.1.17": "1.1.18",
+    "brace-expansion@2.1.1": "2.1.4",
+    "brace-expansion@2.1.3": "2.1.4",
+    "brace-expansion@5.0.7": "5.0.9",
+    "fast-uri": "3.1.6",
+    "uuid@8.3.2": "11.1.1",
+    "uuid@9.0.1": "11.1.1",
+    "tar@6.2.1": "7.5.22",
+    "tar@7.5.19": "7.5.22",
+    "undici@5.28.4": "6.28.0",
+    "minimatch@10.1.1": "10.2.3",
+    "path-to-regexp@6.1.0": "6.3.0",
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.18"
+    },
+    "minimatch@5.1.9": {
+      "brace-expansion": "2.1.4"
+    },
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.1.4"
+    },
+    "minimatch@10.2.5": {
+      "brace-expansion": "5.0.9"
+    },
+    "@xmldom/xmldom": "0.9.12",
+    "body-parser@1.20.5": "1.20.6",
+    "esbuild": "0.28.1",
+    "esbuild@0.27.0": "0.28.1",
+    "esbuild@0.27.7": "0.28.1",
+    "hono": "4.13.7",
+    "ip-address": "10.7.0",
+    "js-yaml@4.1.1": "4.3.2",
+    "morgan": "1.12.1",
+    "qs": "6.16.0",
+    "smol-toml": "1.8.0",
+    "express": {
+      "body-parser": "1.20.6",
+      "qs": "6.16.0"
+    }
+  },
   "dependencies": {
-    "@angular/animations": "^19.0.0",
-    "@angular/common": "^19.0.0",
-    "@angular/compiler": "^19.0.0",
-    "@angular/core": "^19.0.0",
-    "@angular/fire": "^19.0.0",
-    "@angular/forms": "^19.0.0",
-    "@angular/platform-browser": "^19.0.0",
-    "@angular/router": "^19.0.0",
-    "@angular/service-worker": "^19.0.0",
+    "@angular/common": "^20.3.31",
+    "@angular/compiler": "^20.3.31",
+    "@angular/core": "^20.3.31",
+    "@angular/fire": "^20.0.1",
+    "@angular/forms": "^20.3.31",
+    "@angular/platform-browser": "^20.3.31",
+    "@angular/platform-browser-dynamic": "^20.3.31",
+    "@angular/router": "^20.3.31",
+    "@angular/service-worker": "^20.3.31",
     "@capacitor/core": "^6.2.1",
     "@capacitor/filesystem": "^6.0.4",
     "@capacitor/ios": "^6.2.1",
@@ -122,8 +164,8 @@
     "ag-grid-community": "^35.3.1",
     "chart.js": "^4.4.1",
     "exceljs": "^4.4.0",
-    "firebase": "^10.12.0",
-    "firebase-admin": "^13.9.0",
+    "firebase": "^11.10.0",
+    "firebase-admin": "^14.4.0",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "jsbarcode": "^3.11.6",
@@ -134,28 +176,26 @@
     "react-dom": "^19.1.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "npm:@e965/xlsx@0.20.3",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^19.0.0",
-    "@angular/cli": "^19.0.0",
-    "@angular/compiler-cli": "^19.0.0",
+    "@angular-devkit/build-angular": "^20.3.15",
+    "@angular/cli": "^20.3.15",
+    "@angular/compiler-cli": "^20.3.31",
     "@capacitor/cli": "^6.2.1",
     "@firebase/rules-unit-testing": "^5.0.1",
     "@types/jsbarcode": "^3.11.4",
     "@types/node": "^18.0.0",
     "@types/qrcode": "^1.5.6",
-    "@vercel/node": "^5.7.17",
-    "angular-eslint": "21.0.1",
+    "angular-eslint": "20.4.0",
     "autoprefixer": "^10.4.19",
     "eslint": "^9.39.1",
-    "firebase-tools": "^15.26.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "~5.5.3",
+    "tsx": "^4.23.13",
+    "typescript": "~5.9.3",
     "typescript-eslint": "8.46.4"
   }
 }

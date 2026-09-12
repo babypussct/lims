@@ -5,7 +5,8 @@ const ROOT = resolve(__dirname, '..');
 const PROJECT_ID = 'demo-lims-smart-batch-rules';
 const FIRESTORE_PORT = 8080;
 const TEST_COMMAND = 'npx tsx --test src/app/core/services/smart-batch-firestore-rules.emulator.test.ts';
-const FIREBASE_CLI = require.resolve('firebase-tools/lib/bin/firebase.js');
+const FIREBASE_CLI_VERSION = '14.27.0';
+const FIREBASE_CLI = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 function listWindowsPortListeners() {
   if (process.platform !== 'win32') return [];
@@ -96,9 +97,12 @@ try {
   ensureFirestorePortAvailable();
 
   const result = spawnSync(
-    process.execPath,
+    FIREBASE_CLI,
     [
-      FIREBASE_CLI,
+      '--yes',
+      '--package',
+      `firebase-tools@${FIREBASE_CLI_VERSION}`,
+      'firebase',
       '--project',
       PROJECT_ID,
       'emulators:exec',
@@ -109,7 +113,11 @@ try {
     {
       cwd: ROOT,
       stdio: 'inherit',
-      windowsHide: true
+      windowsHide: true,
+      env: {
+        ...process.env,
+        METADATA_SERVER_DETECTION: 'none'
+      }
     }
   );
 

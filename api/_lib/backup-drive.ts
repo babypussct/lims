@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './vercel-types.js';
 import { createHash } from 'node:crypto';
 import { BACKUP_APPS_SCRIPT_SCOPES, getValidGoogleSession } from './google-oauth.js';
 import { safeBackupName } from './backup-contract.js';
@@ -301,7 +301,7 @@ export class DriveBackupClient {
     const metadata = { name: safeBackupName(name), parents: [parentId], mimeType };
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    form.append('file', new Blob([content], { type: mimeType }));
+    form.append('file', new Blob([toArrayBuffer(content)], { type: mimeType }));
     this.stats.apiRequests++;
     const response = await fetch(`${DRIVE_UPLOAD_API}?uploadType=multipart&supportsAllDrives=true&fields=${encodeURIComponent('id,name,mimeType,parents,size,md5Checksum,modifiedTime')}`, {
       method: 'POST',
@@ -324,7 +324,7 @@ export class DriveBackupClient {
         Authorization: `Bearer ${this.accessToken}`,
         'Content-Type': mimeType,
       },
-      body: content,
+      body: toArrayBuffer(content),
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');
@@ -349,6 +349,12 @@ export class DriveBackupClient {
     if (mimeType === 'application/vnd.google-apps.drawing') return { mimeType: 'image/png', extension: 'png' };
     return null;
   }
+}
+
+function toArrayBuffer(content: Buffer): ArrayBuffer {
+  const copy = new ArrayBuffer(content.byteLength);
+  new Uint8Array(copy).set(content);
+  return copy;
 }
 
 export function sha256Buffer(value: Buffer): string {

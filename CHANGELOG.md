@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.13-b01
+## Phiên bản hiện tại: v26.09.13-b02
+
+### v26.09.13-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- npm audit toàn bộ dependency và audit production đều về 0 vulnerability; Angular, Firebase và công cụ build đã được nâng lên nhánh tương thích hiện hành.
+- Lint, typecheck, build production và toàn bộ test suite LIMS đều đạt sau khi cài sạch từ package-lock.json.
+
+#### ✨ Tính Năng Mới
+
+- Tách Firebase CLI khỏi dependency tree ứng dụng và cố định phiên bản CLI trong các lệnh deploy/emulator, tránh xung đột stream-json trong harness.
+- Thay contract type-only của Vercel bằng type contract nội bộ để API typecheck không kéo theo package dev đã lỗi thời.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa Date từ workbook đã parse theo wall-clock Excel và giữ ngày không có giờ ổn định giữa các timezone.
+- Persist bản nháp pha chế một lượt đồng bộ khi khởi tạo để bản nháp rỗng được dọn ổn định ngay cả khi effect scheduler chưa flush.
+- Harness emulator tắt các dò metadata/diagnostic log dự kiến, giữ output test tập trung vào lỗi thật.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa template Angular 20 dùng pipe date với fallback rõ ràng, loại bỏ cảnh báo compiler strict template.
+- Sửa chuyển đổi Buffer sang ArrayBuffer trong luồng Google Drive backup để tương thích TypeScript/Node fetch hiện hành.
+- Loại bỏ các advisory transitive còn lại bằng nâng cấp/override có kiểm soát và xác nhận lại bằng npm ci sạch.
 
 ### v26.09.13-b01
 

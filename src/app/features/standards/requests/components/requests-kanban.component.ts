@@ -215,7 +215,7 @@ import { formatNum } from '../../../../shared/utils/utils';
           </div>
           <div class="flex flex-col">
               <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hạn dùng (EXP)</span>
-              <span class="text-xs font-bold text-slate-600 dark:text-slate-300 truncate" [class.text-rose-500]="isExpOverdue(req.standardDetails?.expiry_date)">{{req.standardDetails?.expiry_date | date:'dd/MM/yyyy' || 'N/A'}}</span>
+              <span class="text-xs font-bold text-slate-600 dark:text-slate-300 truncate" [class.text-rose-500]="isExpOverdue(req.standardDetails?.expiry_date)">{{req.standardDetails?.expiry_date ? (req.standardDetails?.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</span>
           </div>
           <div class="flex flex-col col-span-2 mt-1">
               <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kho / Vị trí</span>

@@ -4,12 +4,16 @@ const { resolve } = require('node:path');
 const ROOT = resolve(__dirname, '..');
 const PROJECT_ID = 'demo-lims-notification';
 const TEST_COMMAND = 'npx tsx --test scripts/notification-workflow.emulator.test.ts scripts/activity-http.emulator.test.ts';
-const FIREBASE_CLI = require.resolve('firebase-tools/lib/bin/firebase.js');
+const FIREBASE_CLI_VERSION = '14.27.0';
+const FIREBASE_CLI = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const result = spawnSync(
-  process.execPath,
+  FIREBASE_CLI,
   [
-    FIREBASE_CLI,
+    '--yes',
+    '--package',
+    `firebase-tools@${FIREBASE_CLI_VERSION}`,
+    'firebase',
     '--project',
     PROJECT_ID,
     'emulators:exec',
@@ -20,7 +24,11 @@ const result = spawnSync(
   {
     cwd: ROOT,
     stdio: 'inherit',
-    windowsHide: true
+    windowsHide: true,
+    env: {
+      ...process.env,
+      METADATA_SERVER_DETECTION: 'none'
+    }
   }
 );
 

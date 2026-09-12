@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './_lib/vercel-types.js';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeFirebaseAdminIfNeeded } from './_lib/firebase-admin.js';
 import {

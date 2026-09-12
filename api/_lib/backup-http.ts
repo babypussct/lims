@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './vercel-types.js';
 import {
   configuredBackupAppId,
   FIRESTORE_COLLECTION_CATALOG,

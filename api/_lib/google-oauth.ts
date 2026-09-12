@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './vercel-types.js';
 
 export const GOOGLE_SESSION_COOKIE = 'lims_google_oauth';
 export const GOOGLE_STATE_COOKIE = 'lims_google_oauth_state';

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../../_lib/vercel-types.js';
 import {
   BACKUP_OAUTH_SCOPES, callbackUrl, codeChallenge, cookieHeader, DRIVE_SCOPES, encryptCookie,
   getValidGoogleSession, GOOGLE_STATE_COOKIE, OAuthState, oauthClientId, safeReturnTo

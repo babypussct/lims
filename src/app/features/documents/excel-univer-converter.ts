@@ -170,18 +170,49 @@ function mapCellStyle(cell: CellObject): IStyleData | undefined {
   return Object.keys(style).length ? style : undefined;
 }
 
-export function excelDateSerial(value: Date): number {
+function excelDateSerialFromParts(value: Date, useUtc: boolean, includeTime: boolean): number {
   const epoch = Date.UTC(1899, 11, 30);
   const localWallClockAsUtc = Date.UTC(
-    value.getFullYear(),
-    value.getMonth(),
-    value.getDate(),
-    value.getHours(),
-    value.getMinutes(),
-    value.getSeconds(),
-    value.getMilliseconds(),
+    useUtc ? value.getUTCFullYear() : value.getFullYear(),
+    useUtc ? value.getUTCMonth() : value.getMonth(),
+    useUtc ? value.getUTCDate() : value.getDate(),
+    includeTime ? (useUtc ? value.getUTCHours() : value.getHours()) : 0,
+    includeTime ? (useUtc ? value.getUTCMinutes() : value.getMinutes()) : 0,
+    includeTime ? (useUtc ? value.getUTCSeconds() : value.getSeconds()) : 0,
+    includeTime ? (useUtc ? value.getUTCMilliseconds() : value.getMilliseconds()) : 0,
   );
   return (localWallClockAsUtc - epoch) / 86_400_000;
+}
+
+export function excelDateSerial(value: Date): number {
+  return excelDateSerialFromParts(value, false, true);
+}
+
+function numberFormatHasTime(value: unknown): boolean {
+  if (typeof value !== 'string' || !value.trim()) return false;
+
+  const format = value
+    .replace(/"(?:[^"]|"")*"/g, '')
+    .replace(/\\./g, '')
+    .replace(/\[[^\]]*\]/g, '');
+  return /(?:h+|s+|am\/pm)/i.test(format);
+}
+
+function dateSerialForCell(cell: CellObject, value: Date): { serial: number; hasTime: boolean } {
+  const hasExplicitFormat = typeof cell.z === 'string' && cell.z.trim().length > 0;
+  const hasTime = hasExplicitFormat
+    ? numberFormatHasTime(cell.z)
+    : value.getHours() !== 0 || value.getMinutes() !== 0 ||
+      value.getSeconds() !== 0 || value.getMilliseconds() !== 0;
+
+  // SheetJS represents parsed Excel dates as UTC Date objects and keeps the
+  // formatted display value in `w`. Use UTC components for those cells so a
+  // local timezone offset cannot move the workbook's wall-clock time.
+  const isParsedSheetDate = cell.w !== undefined;
+  return {
+    serial: excelDateSerialFromParts(value, isParsedSheetDate, hasTime),
+    hasTime,
+  };
 }
 
 function mapCell(cell: CellObject): ICellData {
@@ -192,13 +223,14 @@ function mapCell(cell: CellObject): ICellData {
   if (cell.f) mapped.f = cell.f.startsWith('=') ? cell.f : `=${cell.f}`;
 
   if (cell.v instanceof Date) {
-    mapped.v = excelDateSerial(cell.v);
+    const dateSerial = dateSerialForCell(cell, cell.v);
+    mapped.v = dateSerial.serial;
     mapped.t = CELL_TYPE_NUMBER;
     if (!mapped.s) mapped.s = {};
     if (typeof mapped.s === 'object' && !mapped.s.n) {
-      const hasTime = cell.v.getHours() !== 0 || cell.v.getMinutes() !== 0 ||
-        cell.v.getSeconds() !== 0 || cell.v.getMilliseconds() !== 0;
-      mapped.s.n = { pattern: hasTime ? 'yyyy-mm-dd hh:mm:ss.000' : 'yyyy-mm-dd' };
+      mapped.s.n = {
+        pattern: dateSerial.hasTime ? 'yyyy-mm-dd hh:mm:ss.000' : 'yyyy-mm-dd',
+      };
     }
     return mapped;
   }
