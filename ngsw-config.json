@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.13-b02",
-    "title": "Dọn sạch cảnh báo dependency và ổn định runtime LIMS",
+    "version": "v26.09.13-b03",
+    "title": "Giảm tiếp cảnh báo dependency và ổn định pipeline Excel",
     "features": [
       "npm audit toàn bộ dependency và audit production đều về 0 vulnerability; Angular, Firebase và công cụ build đã được nâng lên nhánh tương thích hiện hành.",
+      "Cài sạch npm ci đã loại thêm các cảnh báo deprecated cũ của ExcelJS mà không làm thay đổi API ứng dụng.",
       "Lint, typecheck, build production và toàn bộ test suite LIMS đều đạt sau khi cài sạch từ package-lock.json.",
       "Tách Firebase CLI khỏi dependency tree ứng dụng và cố định phiên bản CLI trong các lệnh deploy/emulator, tránh xung đột stream-json trong harness.",
-      "Thay contract type-only của Vercel bằng type contract nội bộ để API typecheck không kéo theo package dev đã lỗi thời.",
-      "Chuẩn hóa Date từ workbook đã parse theo wall-clock Excel và giữ ngày không có giờ ổn định giữa các timezone."
+      "Thay contract type-only của Vercel bằng type contract nội bộ để API typecheck không kéo theo package dev đã lỗi thời."
     ]
   },
   "assetGroups": [
