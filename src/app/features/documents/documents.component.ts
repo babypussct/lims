@@ -385,8 +385,24 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
 
     </div>
 
-    @if (previewItem(); as item) {
-      <app-document-preview-modal [item]="item" (closed)="closePreview()"></app-document-preview-modal>
+    @defer (when previewItem() !== null) {
+      @if (previewItem(); as item) {
+        <app-document-preview-modal [item]="item" (closed)="closePreview()"></app-document-preview-modal>
+      }
+    } @loading (after 100ms; minimum 200ms) {
+      <div class="absolute inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm animate-fade-in" role="status" aria-live="polite">
+        <div class="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-xl dark:bg-slate-900 dark:text-slate-200">
+          <i class="fa-solid fa-circle-notch fa-spin text-fuchsia-600" aria-hidden="true"></i>
+          <span>Đang mở xem trước...</span>
+        </div>
+      </div>
+    } @error {
+      <div class="absolute inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm animate-fade-in" role="alert">
+        <div class="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-red-700 shadow-xl dark:bg-slate-900 dark:text-red-300">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>Không thể mở xem trước tài liệu.</span>
+        </div>
+      </div>
     }
   `,
   styles: [`

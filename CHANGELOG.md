@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.12-b04
+## Phiên bản hiện tại: v26.09.12-b05
+
+### v26.09.12-b05
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Trang Phiếu giao nhận mẫu vào nhanh hơn vì bộ xem trước Excel/PDF chỉ tải khi người dùng thực sự mở tài liệu.
+- Luồng xem trước có trạng thái đang tải và lỗi rõ ràng, không làm chặn lần render đầu của danh sách tài liệu.
+
+#### ✨ Tính Năng Mới
+
+- Dùng Angular defer block cho DocumentPreviewModalComponent để tách phần preview nặng khỏi lazy chunk chính của route documents.
+- Giữ nguyên hành vi mở, đóng và xem trước các định dạng PDF, Excel, ảnh, video, audio, text và tài liệu Google Drive.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giảm công việc JavaScript cần tải trước khi người dùng có thể duyệt thư mục và danh sách tài liệu.
+- Hiển thị overlay loading ngắn trong lúc tải lần đầu bộ xem trước để thao tác mở tài liệu có phản hồi rõ ràng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn lỗi tải module preview làm biến mất phản hồi của màn hình tài liệu bằng trạng thái lỗi có thể nhìn thấy.
+- Giữ route tài liệu nhẹ hơn trong lần truy cập đầu mà không bỏ các viewer đang được sử dụng trong modal.
 
 ### v26.09.12-b04
 

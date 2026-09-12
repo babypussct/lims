@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.12-b04",
-    "title": "Tinh chỉnh cache báo cáo và hậu kiểm production",
+    "version": "v26.09.12-b05",
+    "title": "Tối ưu tải trang phiếu giao nhận mẫu",
     "features": [
-      "Cache hit của lịch sử phiếu đã duyệt được ghi nhận đúng là 0 Firestore reads, giúp telemetry không phóng đại chi phí.",
-      "Hậu kiểm production xác nhận service worker b03, security headers mới và toàn bộ ma trận UI zero-jump đều xanh.",
-      "Giữ cache báo cáo chỉ tái sử dụng kết quả đã tải đầy đủ trong 30 giây, tự vô hiệu hóa khi có mutation hoặc realtime update để tránh giữ dữ liệu cũ.",
-      "Bổ sung contract test cho read accounting của cache, security headers và hậu kiểm release production.",
-      "Giữ nguyên ba trường ngày fallback để tương thích dữ liệu lịch sử, nhưng tránh phát sinh ba nhóm query mới khi cùng một cửa sổ báo cáo vừa được tải."
+      "Trang Phiếu giao nhận mẫu vào nhanh hơn vì bộ xem trước Excel/PDF chỉ tải khi người dùng thực sự mở tài liệu.",
+      "Luồng xem trước có trạng thái đang tải và lỗi rõ ràng, không làm chặn lần render đầu của danh sách tài liệu.",
+      "Dùng Angular defer block cho DocumentPreviewModalComponent để tách phần preview nặng khỏi lazy chunk chính của route documents.",
+      "Giữ nguyên hành vi mở, đóng và xem trước các định dạng PDF, Excel, ảnh, video, audio, text và tài liệu Google Drive.",
+      "Giảm công việc JavaScript cần tải trước khi người dùng có thể duyệt thư mục và danh sách tài liệu."
     ]
   },
   "assetGroups": [

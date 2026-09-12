@@ -23,6 +23,9 @@ describe('documents shared UI primitive integration', () => {
     assert.match(component, /<app-button\b[^>]*emptyStateActions/);
     assert.match(component, /<app-empty-state\b/);
     assert.match(component, /<app-skeleton\b/);
+    assert.match(component, /@defer \(when previewItem\(\) !== null\)/);
+    assert.match(component, /@loading \(after 100ms; minimum 200ms\)/);
+    assert.match(component, /class="absolute inset-0 z-\[100\]/);
 
     // Spatial anchor, borderless header, and soft-ui-segmented control
     assert.match(component, /class="[^"]*p-4 md:p-6[^"]*"/);

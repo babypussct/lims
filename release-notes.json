@@ -1,19 +1,19 @@
 {
-  "title": "Tinh chỉnh cache báo cáo và hậu kiểm production",
+  "title": "Tối ưu tải trang phiếu giao nhận mẫu",
   "highlights": [
-    "Cache hit của lịch sử phiếu đã duyệt được ghi nhận đúng là 0 Firestore reads, giúp telemetry không phóng đại chi phí.",
-    "Hậu kiểm production xác nhận service worker b03, security headers mới và toàn bộ ma trận UI zero-jump đều xanh."
+    "Trang Phiếu giao nhận mẫu vào nhanh hơn vì bộ xem trước Excel/PDF chỉ tải khi người dùng thực sự mở tài liệu.",
+    "Luồng xem trước có trạng thái đang tải và lỗi rõ ràng, không làm chặn lần render đầu của danh sách tài liệu."
   ],
   "features": [
-    "Giữ cache báo cáo chỉ tái sử dụng kết quả đã tải đầy đủ trong 30 giây, tự vô hiệu hóa khi có mutation hoặc realtime update để tránh giữ dữ liệu cũ.",
-    "Bổ sung contract test cho read accounting của cache, security headers và hậu kiểm release production."
+    "Dùng Angular defer block cho DocumentPreviewModalComponent để tách phần preview nặng khỏi lazy chunk chính của route documents.",
+    "Giữ nguyên hành vi mở, đóng và xem trước các định dạng PDF, Excel, ảnh, video, audio, text và tài liệu Google Drive."
   ],
   "improvements": [
-    "Giữ nguyên ba trường ngày fallback để tương thích dữ liệu lịch sử, nhưng tránh phát sinh ba nhóm query mới khi cùng một cửa sổ báo cáo vừa được tải.",
-    "Giữ Permissions-Policy ở mức tối thiểu: cho phép camera same-origin và tắt các quyền microphone, geolocation, payment, USB và cảm biến không dùng."
+    "Giảm công việc JavaScript cần tải trước khi người dùng có thể duyệt thư mục và danh sách tài liệu.",
+    "Hiển thị overlay loading ngắn trong lúc tải lần đầu bộ xem trước để thao tác mở tài liệu có phản hồi rõ ràng."
   ],
   "fixes": [
-    "Ngăn các lần render/chuyển màn hình liên tiếp đọc lại cùng một lịch sử đã hoàn tất trong thời gian ngắn.",
-    "Sửa trường reads trên cache hit để phản ánh đúng số query Firestore phát sinh trong lần gọi hiện tại."
+    "Ngăn lỗi tải module preview làm biến mất phản hồi của màn hình tài liệu bằng trạng thái lỗi có thể nhìn thấy.",
+    "Giữ route tài liệu nhẹ hơn trong lần truy cập đầu mà không bỏ các viewer đang được sử dụng trong modal."
   ]
 }

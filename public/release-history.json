@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.09.12-b05",
+    "date": "12/9/2026",
+    "title": "Tối ưu tải trang phiếu giao nhận mẫu",
+    "highlights": [
+      "Trang Phiếu giao nhận mẫu vào nhanh hơn vì bộ xem trước Excel/PDF chỉ tải khi người dùng thực sự mở tài liệu.",
+      "Luồng xem trước có trạng thái đang tải và lỗi rõ ràng, không làm chặn lần render đầu của danh sách tài liệu."
+    ],
+    "features": [
+      "Dùng Angular defer block cho DocumentPreviewModalComponent để tách phần preview nặng khỏi lazy chunk chính của route documents.",
+      "Giữ nguyên hành vi mở, đóng và xem trước các định dạng PDF, Excel, ảnh, video, audio, text và tài liệu Google Drive."
+    ],
+    "improvements": [
+      "Giảm công việc JavaScript cần tải trước khi người dùng có thể duyệt thư mục và danh sách tài liệu.",
+      "Hiển thị overlay loading ngắn trong lúc tải lần đầu bộ xem trước để thao tác mở tài liệu có phản hồi rõ ràng."
+    ],
+    "fixes": [
+      "Ngăn lỗi tải module preview làm biến mất phản hồi của màn hình tài liệu bằng trạng thái lỗi có thể nhìn thấy.",
+      "Giữ route tài liệu nhẹ hơn trong lần truy cập đầu mà không bỏ các viewer đang được sử dụng trong modal."
+    ],
+    "releaseOrder": 26091200005
+  },
+  {
     "version": "v26.09.12-b04",
     "date": "12/9/2026",
     "title": "Tinh chỉnh cache báo cáo và hậu kiểm production",
