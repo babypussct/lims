@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, EventEmitter, input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, EventEmitter, inject, input, Output } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 
 export type HeaderSyncStatus = 'synced' | 'modified' | 'saving' | 'error';
@@ -58,7 +58,7 @@ export class AppHeaderSyncComponent {
 
   @Output() retry = new EventEmitter<void>();
 
-  constructor(private datePipe: DatePipe) {}
+  private readonly datePipe = inject(DatePipe);
 
   displaySavedText = computed(() => {
     const date = this.lastSavedAt();

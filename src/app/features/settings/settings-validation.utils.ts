@@ -4,10 +4,10 @@ export type SettingsValidationResult<T> =
   | { ok: true; value: T }
   | { ok: false; message: string };
 
-type SafetyRuleDraft = {
+interface SafetyRuleDraft {
   category: string;
   margin: number;
-};
+}
 
 function finitePercentage(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;

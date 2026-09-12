@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.12-b01
+## Phiên bản hiện tại: v26.09.12-b02
+
+### v26.09.12-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Release verification nay bao gồm lint, giúp chặn sớm lỗi chất lượng mã trước khi build và deploy.
+- Cập nhật jsPDF và PDF.js lên bản mới hơn để giảm các cảnh báo bảo mật trực tiếp của bộ đọc và xuất PDF.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung kiểm tra kiểu dữ liệu và cấu trúc interface nhất quán cho các bề mặt quản trị, sao lưu, cài đặt và đồng bộ header.
+- Giữ nguyên quy trình phát hành qua GitHub Release Gate và Vercel Git Integration, đồng thời ghi nhận đầy đủ release metadata cho build mới.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa khai báo mảng, regex kiểm thử, const và inject() theo lint policy mà không thay đổi nghiệp vụ.
+- Dựng số liệu master data bằng cấu trúc MasterCounts đầy đủ để tăng an toàn kiểu khi tổng hợp dữ liệu quản trị.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại toàn bộ lỗi lint hiện hữu và đưa lint thành một bước bắt buộc trong release:verify.
+- Xác nhận lại test suite, typecheck API/app và production build sau khi nâng phụ thuộc tài liệu.
 
 ### v26.09.12-b01
 

@@ -41,7 +41,7 @@ function createBuildFilesystem(): Filesystem {
 test('generated Angular service-worker manifest versions index.html with the app shell', async () => {
   const manifest = await new Generator(createBuildFilesystem(), '/').process(ngswConfig) as {
     hashTable: Record<string, string>;
-    assetGroups: Array<{ name: string; urls: string[] }>;
+    assetGroups: { name: string; urls: string[] }[];
   };
 
   assert.equal(manifest.hashTable['/index.html'], 'hash:/index.html');

@@ -42,7 +42,7 @@ function log(overrides: Partial<Log> = {}): Log {
   };
 }
 
-function printData(items: Array<Record<string, unknown>>, sopId = 'sop-a'): PrintData {
+function printData(items: Record<string, unknown>[], sopId = 'sop-a'): PrintData {
   return {
     sop: { id: sopId, name: `SOP ${sopId}` } as PrintData['sop'],
     inputs: {},

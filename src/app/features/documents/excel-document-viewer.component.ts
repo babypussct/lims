@@ -86,7 +86,7 @@ import '@univerjs/ui/facade';
 import '@univerjs/docs-ui/facade';
 import '@univerjs/sheets-ui/facade';
 
-type UniverBundle = { univer: Univer; univerAPI: FUniver };
+interface UniverBundle { univer: Univer; univerAPI: FUniver }
 type UniverWorkbook = ReturnType<UniverBundle['univerAPI']['createWorkbook']>;
 type UniverWorkbookSnapshot = Parameters<UniverBundle['univerAPI']['createWorkbook']>[0];
 

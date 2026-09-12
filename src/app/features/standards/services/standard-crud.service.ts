@@ -331,7 +331,7 @@ export class StandardCrudService {
     );
     const batchRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches`));
     const currentUser = this.auth.currentUser();
-    let updatedProjections: ReferenceStandard[] = [];
+    const updatedProjections: ReferenceStandard[] = [];
 
     await runTransaction(this.fb.db, async transaction => {
       const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
@@ -430,7 +430,7 @@ export class StandardCrudService {
 
     const batchRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_cleanup_batches/${batchId}`);
     const currentUser = this.auth.currentUser();
-    let restoredProjections: ReferenceStandard[] = [];
+    const restoredProjections: ReferenceStandard[] = [];
     await runTransaction(this.fb.db, async transaction => {
       const batchSnapshot = await transaction.get(batchRef);
       if (!batchSnapshot.exists()) throw new Error('Không tìm thấy phiên chuẩn hóa.');

@@ -266,13 +266,13 @@ export function recoverLegacyNxtApprovalLogsFromRequests(
   printDataByLog: ReadonlyMap<string, PrintData>,
   requestsById: ReadonlyMap<string, Request>
 ): Log[] {
-  type LegacyEditRecovery = {
+  interface LegacyEditRecovery {
     logId: string;
     time: number | null;
     valid: boolean;
     oldAmounts?: Record<string, number>;
     deltas?: Record<string, number>;
-  };
+  }
 
   const parseInventorySummary = (value: unknown): Record<string, number> | null => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;

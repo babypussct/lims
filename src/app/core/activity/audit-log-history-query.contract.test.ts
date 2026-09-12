@@ -5,7 +5,7 @@ import test from 'node:test';
 const source = readFileSync('src/app/core/services/audit-log.service.ts', 'utf8');
 
 test('audit history query uses the deployed BUSINESS/timestamp-desc index while returning chronological rows', () => {
-  const method = source.match(/async getLogsByDateRange\([\s\S]*?\n  }\n}/)?.[0] ?? '';
+  const method = source.match(/async getLogsByDateRange\([\s\S]*?\n {2}}\n}/)?.[0] ?? '';
 
   assert.match(method, /where\('auditClass',\s*'==',\s*'BUSINESS'\)/);
   assert.match(method, /where\('timestamp',\s*'>=',\s*start\)/);

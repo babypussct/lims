@@ -102,8 +102,8 @@ export interface BackupCreateResponse {
     applied: boolean;
     keepBackupFolderId: string;
     scanned: number;
-    trashed: Array<{ id: string; name: string }>;
-    failed: Array<{ id: string; name: string; error: string }>;
+    trashed: { id: string; name: string }[];
+    failed: { id: string; name: string; error: string }[];
     warnings: string[];
   };
   warnings: string[];

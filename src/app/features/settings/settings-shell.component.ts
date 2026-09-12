@@ -8,13 +8,13 @@ import { StateService } from '../../core/services/state.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { calculateCenteredScrollLeft } from './settings-scroll.utils';
 
-type SettingsNavItem = {
+interface SettingsNavItem {
   label: string;
   description: string;
   icon: string;
   path: string;
   permissionsAny?: string[];
-};
+}
 
 const ADMIN_PERMISSIONS = [
   PERMISSIONS.SYSTEM_MANAGE,

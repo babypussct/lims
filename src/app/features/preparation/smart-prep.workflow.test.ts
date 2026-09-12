@@ -120,7 +120,7 @@ test('unfinished series draft keeps a stale source reference so the user can rep
     await flushEffects();
     const saved = storage.getItem('lims.smart-prep.draft.v1');
     assert.ok(saved);
-    const savedState = JSON.parse(saved).state as { seriesPoints: Array<{ sourceId: string }> };
+    const savedState = JSON.parse(saved).state as { seriesPoints: { sourceId: string }[] };
     assert.equal(savedState.seriesPoints[0].sourceId, 'source-deleted');
   });
 });

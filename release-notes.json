@@ -1,20 +1,19 @@
 {
-  "title": "Giới hạn quyền xem Chất chuẩn cho Audit và hỗ trợ xem CoA",
+  "title": "Củng cố gate phát hành và cập nhật bộ đọc tài liệu",
   "highlights": [
-    "Tài khoản Audit chỉ xem các trường Chất chuẩn đã được phê duyệt, phù hợp nhu cầu kiểm tra và truy vết.",
-    "Có thể mở trực tiếp chứng chỉ phân tích (CoA) từ danh sách hoặc chi tiết chất chuẩn trong chế độ Audit."
+    "Release verification nay bao gồm lint, giúp chặn sớm lỗi chất lượng mã trước khi build và deploy.",
+    "Cập nhật jsPDF và PDF.js lên bản mới hơn để giảm các cảnh báo bảo mật trực tiếp của bộ đọc và xuất PDF."
   ],
   "features": [
-    "Bổ sung quyền standard_audit_view và dùng chung giao diện Chất chuẩn hiện có, chỉ hiển thị các trường được phê duyệt và không mở các thao tác nghiệp vụ.",
-    "Bổ sung nút xem CoA dùng lại preview hiện hữu và chỉ xuất hiện khi bản ghi có tài liệu đính kèm."
+    "Bổ sung kiểm tra kiểu dữ liệu và cấu trúc interface nhất quán cho các bề mặt quản trị, sao lưu, cài đặt và đồng bộ header.",
+    "Giữ nguyên quy trình phát hành qua GitHub Release Gate và Vercel Git Integration, đồng thời ghi nhận đầy đủ release metadata cho build mới."
   ],
   "improvements": [
-    "Ánh xạ rõ Khối lượng chai vào initial_amount và Quy cách vào unit trong bề mặt Audit.",
-    "Đồng bộ danh sách, lưới và chi tiết Audit bằng điều kiện ẩn/hiện trên UI hiện hữu; tiếp tục dùng cache/DeltaSync, không tạo projection, collection, API hoặc localStorage mới.",
-    "Ẩn các menu, route, lịch sử và thao tác ngoài phạm vi Audit; CoA được mở mà không hiển thị URL certificate_ref."
+    "Chuẩn hóa khai báo mảng, regex kiểm thử, const và inject() theo lint policy mà không thay đổi nghiệp vụ.",
+    "Dựng số liệu master data bằng cấu trúc MasterCounts đầy đủ để tăng an toàn kiểu khi tổng hợp dữ liệu quản trị."
   ],
   "fixes": [
-    "Ngăn tài khoản Audit truy cập các luồng yêu cầu/sử dụng chuẩn hoặc thao tác vận hành; trang chi tiết dùng chung nhưng chỉ hiển thị whitelist.",
-    "Bảo đảm thao tác CoA không kích hoạt nhầm điều hướng dòng dữ liệu trong bảng Audit."
+    "Loại toàn bộ lỗi lint hiện hữu và đưa lint thành một bước bắt buộc trong release:verify.",
+    "Xác nhận lại test suite, typecheck API/app và production build sau khi nâng phụ thuộc tài liệu."
   ]
 }

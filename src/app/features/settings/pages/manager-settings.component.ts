@@ -7,13 +7,13 @@ import { BackupService, type BackupListItem, type BackupStatusResponse } from '.
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { StateService } from '../../../core/services/state.service';
 
-type MasterCounts = {
+interface MasterCounts {
   analytes: number;
   targetGroups: number;
   matrices: number;
   sampleDescriptions: number;
   devices: number;
-};
+}
 
 @Component({
   selector: 'app-manager-settings',
@@ -238,7 +238,7 @@ export class ManagerSettingsComponent implements OnInit {
 
   private async loadMasterCounts(): Promise<void> {
     const base = `artifacts/${this.fb.APP_ID}`;
-    const names: Array<[keyof MasterCounts, string]> = [
+    const names: [keyof MasterCounts, string][] = [
       ['analytes', 'master_analytes'],
       ['targetGroups', 'target_groups'],
       ['matrices', 'matrix_types'],
@@ -249,7 +249,15 @@ export class ManagerSettingsComponent implements OnInit {
       const snapshot = await getCountFromServer(collection(this.fb.db, `${base}/${collectionName}`));
       return [key, snapshot.data().count] as const;
     }));
-    this.masterCounts.set(Object.fromEntries(results) as MasterCounts);
+    const counts: MasterCounts = {
+      analytes: 0,
+      targetGroups: 0,
+      matrices: 0,
+      sampleDescriptions: 0,
+      devices: 0,
+    };
+    results.forEach(([key, count]) => counts[key] = count);
+    this.masterCounts.set(counts);
   }
 
   private async loadWithAvailability(

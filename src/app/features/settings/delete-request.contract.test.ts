@@ -6,7 +6,7 @@ const source = readFileSync(new URL('../../../../api/account/delete-request.ts',
 
 describe('account anonymization contract', () => {
   it('does not modify Firestore when Firebase Auth anonymization fails', () => {
-    const authUpdateBlock = source.match(/try \{\s*await auth\.updateUser[\s\S]*?\n    \} catch \(authErr: any\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const authUpdateBlock = source.match(/try \{\s*await auth\.updateUser[\s\S]*?\n {4}\} catch \(authErr: any\) \{[\s\S]*?\n {4}\}/)?.[0] || '';
     assert.match(authUpdateBlock, /status\(502\)/);
     assert.match(authUpdateBlock, /AUTH_UPDATE_FAILED/);
     assert.doesNotMatch(authUpdateBlock, /userRef\.update/);
@@ -20,7 +20,7 @@ describe('account anonymization contract', () => {
   });
 
   it('does not report a successful anonymization after a partial failure', () => {
-    const failureSection = source.match(/\} catch \(firestoreErr: any\) \{[\s\S]*?\n    \}\n\n    console\.log/)?.[0] || '';
+    const failureSection = source.match(/\} catch \(firestoreErr: any\) \{[\s\S]*?\n {4}\}\n\n {4}console\.log/)?.[0] || '';
     assert.match(failureSection, /status\(502\)/);
     assert.doesNotMatch(failureSection, /status\(200\)/);
   });

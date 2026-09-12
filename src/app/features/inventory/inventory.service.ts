@@ -522,13 +522,13 @@ export class InventoryService {
     let committedItems: InventoryItem[] = [];
 
     await runTransaction(this.fb.db, async transaction => {
-      const rows: Array<{
+      const rows: {
         id: string;
         invRef: ReturnType<typeof doc>;
         stock: number;
         item: InventoryItem;
         historyRef: ReturnType<typeof doc>;
-      }> = [];
+      }[] = [];
       for (const id of uniqueIds) {
         const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
         const snapshot = await transaction.get(invRef);

@@ -29,13 +29,13 @@ export const PERMISSIONS = {
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 export type PermissionRisk = 'normal' | 'elevated' | 'high' | 'critical';
 
-export type PermissionDefinition = {
+export interface PermissionDefinition {
   code: PermissionCode;
   label: string;
   description: string;
   group: 'inventory' | 'standards' | 'sop' | 'reporting' | 'system' | 'master-data' | 'policy' | 'backup';
   risk: PermissionRisk;
-};
+}
 
 export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
   { code: PERMISSIONS.INVENTORY_VIEW, label: 'Xem kho', description: 'Xem dữ liệu hóa chất và tồn kho.', group: 'inventory', risk: 'normal' },

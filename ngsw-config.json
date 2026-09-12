@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.12-b01",
-    "title": "Giới hạn quyền xem Chất chuẩn cho Audit và hỗ trợ xem CoA",
+    "version": "v26.09.12-b02",
+    "title": "Củng cố gate phát hành và cập nhật bộ đọc tài liệu",
     "features": [
-      "Tài khoản Audit chỉ xem các trường Chất chuẩn đã được phê duyệt, phù hợp nhu cầu kiểm tra và truy vết.",
-      "Có thể mở trực tiếp chứng chỉ phân tích (CoA) từ danh sách hoặc chi tiết chất chuẩn trong chế độ Audit.",
-      "Bổ sung quyền standard_audit_view và dùng chung giao diện Chất chuẩn hiện có, chỉ hiển thị các trường được phê duyệt và không mở các thao tác nghiệp vụ.",
-      "Bổ sung nút xem CoA dùng lại preview hiện hữu và chỉ xuất hiện khi bản ghi có tài liệu đính kèm.",
-      "Ánh xạ rõ Khối lượng chai vào initial_amount và Quy cách vào unit trong bề mặt Audit."
+      "Release verification nay bao gồm lint, giúp chặn sớm lỗi chất lượng mã trước khi build và deploy.",
+      "Cập nhật jsPDF và PDF.js lên bản mới hơn để giảm các cảnh báo bảo mật trực tiếp của bộ đọc và xuất PDF.",
+      "Bổ sung kiểm tra kiểu dữ liệu và cấu trúc interface nhất quán cho các bề mặt quản trị, sao lưu, cài đặt và đồng bộ header.",
+      "Giữ nguyên quy trình phát hành qua GitHub Release Gate và Vercel Git Integration, đồng thời ghi nhận đầy đủ release metadata cho build mới.",
+      "Chuẩn hóa khai báo mảng, regex kiểm thử, const và inject() theo lint policy mà không thay đổi nghiệp vụ."
     ]
   },
   "assetGroups": [

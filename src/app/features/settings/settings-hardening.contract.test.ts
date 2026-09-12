@@ -31,7 +31,7 @@ describe('Settings production hardening contracts', () => {
   });
 
   it('does not persist the default staff role id onto viewer, pending, or manager accounts', () => {
-    const persistBlock = usersSource.match(/private async persistUser[\s\S]*?\n  async saveUser/)?.[0] || '';
+    const persistBlock = usersSource.match(/private async persistUser[\s\S]*?\n {2}async saveUser/)?.[0] || '';
     assert.match(persistBlock, /let roleId = ''/);
     assert.match(persistBlock, /else if \(u\.role === 'staff'\)/);
     assert.match(persistBlock, /roleId = u\.roleId \|\| 'role_staff_default'/);
@@ -39,7 +39,7 @@ describe('Settings production hardening contracts', () => {
   });
 
   it('blocks role deletion while any user still references that role', () => {
-    const deleteBlock = rolesSource.match(/async deleteRole\(role: any\)[\s\S]*?\n  }\n}/)?.[0] || '';
+    const deleteBlock = rolesSource.match(/async deleteRole\(role: any\)[\s\S]*?\n {2}}\n}/)?.[0] || '';
     assert.match(deleteBlock, /getAllUsers\(true\)/);
     assert.match(deleteBlock, /findUsersReferencingRole\(users, role\.id\)/);
     assert.match(deleteBlock, /referencedUsers\.length > 0/);

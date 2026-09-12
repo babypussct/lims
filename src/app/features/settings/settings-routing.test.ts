@@ -45,7 +45,7 @@ describe('Settings routing contract', () => {
   });
 
   it('protects administrative Settings pages with granular delegated permissions and manager override', () => {
-    const singlePermissionRoutes: Array<[string, string]> = [
+    const singlePermissionRoutes: [string, string][] = [
       ['system', 'system_manage'],
       ['data/master/analytes', 'master_data_manage'],
       ['data/master/target-groups', 'master_data_manage'],
