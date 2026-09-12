@@ -258,7 +258,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.12-b03');
+  systemVersion = signal<string>('v26.09.12-b04');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -766,7 +766,7 @@ export class StateService implements OnDestroy {
     const cached = this.approvedHistoryRangeCache.get(key);
     if (cached) {
       if (Date.now() - cached.loadedAt < this.APPROVED_REQUEST_HISTORY_CACHE_TTL_MS) {
-        return cached.result;
+        return { ...cached.result, reads: 0 };
       }
       this.approvedHistoryRangeCache.delete(key);
     }

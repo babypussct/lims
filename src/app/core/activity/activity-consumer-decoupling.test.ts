@@ -63,6 +63,7 @@ test('approved-request range reads reuse only fresh complete loads and invalidat
   assert.match(state, /APPROVED_REQUEST_HISTORY_CACHE_TTL_MS = 30_000/);
   assert.match(rangeLoaderBody, /approvedHistoryRangeCache\.get\(key\)/);
   assert.match(rangeLoaderBody, /Date\.now\(\) - cached\.loadedAt < this\.APPROVED_REQUEST_HISTORY_CACHE_TTL_MS/);
+  assert.match(rangeLoaderBody, /return \{ \.\.\.cached\.result, reads: 0 \};/);
   assert.match(rangeLoaderBody, /result\.complete && cacheRevision === this\.approvedHistoryCacheRevision/);
   assert.match(state, /publishRequestChanges\(changed: Request\[\], deletedIds: string\[\] = \[\]\): void \{\n\s*this\.invalidateApprovedHistoryRangeCache\(\);/);
   assert.match(state, /private invalidateApprovedHistoryRangeCache\(\): void/);

@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.12-b03
+## Phiên bản hiện tại: v26.09.12-b04
+
+### v26.09.12-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Cache hit của lịch sử phiếu đã duyệt được ghi nhận đúng là 0 Firestore reads, giúp telemetry không phóng đại chi phí.
+- Hậu kiểm production xác nhận service worker b03, security headers mới và toàn bộ ma trận UI zero-jump đều xanh.
+
+#### ✨ Tính Năng Mới
+
+- Giữ cache báo cáo chỉ tái sử dụng kết quả đã tải đầy đủ trong 30 giây, tự vô hiệu hóa khi có mutation hoặc realtime update để tránh giữ dữ liệu cũ.
+- Bổ sung contract test cho read accounting của cache, security headers và hậu kiểm release production.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ nguyên ba trường ngày fallback để tương thích dữ liệu lịch sử, nhưng tránh phát sinh ba nhóm query mới khi cùng một cửa sổ báo cáo vừa được tải.
+- Giữ Permissions-Policy ở mức tối thiểu: cho phép camera same-origin và tắt các quyền microphone, geolocation, payment, USB và cảm biến không dùng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn các lần render/chuyển màn hình liên tiếp đọc lại cùng một lịch sử đã hoàn tất trong thời gian ngắn.
+- Sửa trường reads trên cache hit để phản ánh đúng số query Firestore phát sinh trong lần gọi hiện tại.
 
 ### v26.09.12-b03
 
