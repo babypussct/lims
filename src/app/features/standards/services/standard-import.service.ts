@@ -16,6 +16,7 @@ import { StandardCodeRegistryService } from './standard-code-registry.service';
 import { StandardUsageService } from './standard-usage.service';
 import { ActivityEventService } from '../../../core/services/activity-event.service';
 import { isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
+import { SAFE_XLSX_IMPORT_READ_OPTIONS } from '../../../shared/utils/spreadsheet-file-security';
 import {
   STANDARD_IMPORT_MAX_ATOMIC_WRITES,
   buildSafeImportMetadata,
@@ -104,7 +105,7 @@ export class StandardImportService {
   ): Promise<{ sheetNames: string[]; selectedSheet: string; rows: Record<string, unknown>[] }> {
     if (typeof Worker === 'undefined') {
       const XLSX = await import('xlsx');
-      const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
+      const workbook = XLSX.read(buffer, SAFE_XLSX_IMPORT_READ_OPTIONS);
       const sheetNames = workbook.SheetNames.filter(name => Boolean(workbook.Sheets[name]?.['!ref']));
       if (!sheetNames.length) throw new Error('Tệp Excel không có trang tính dữ liệu.');
       const selectedSheet = sheetName && sheetNames.includes(sheetName) ? sheetName : sheetNames[0];
@@ -460,13 +461,14 @@ export class StandardImportService {
 
   // ─── Parse Usage Log Excel ────────────────────────────────────────────────────
   async parseUsageLogExcelData(file: File): Promise<ImportUsageLogPreviewItem[]> {
+    validateStandardImportFile(file);
     const XLSX = await import('xlsx');
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e: any) => {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+          const workbook = XLSX.read(data, SAFE_XLSX_IMPORT_READ_OPTIONS);
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
           if (!rawRows || rawRows.length === 0) throw new Error('Tệp không có dữ liệu.');

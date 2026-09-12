@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import * as XLSX from 'xlsx';
+import { SAFE_XLSX_IMPORT_READ_OPTIONS } from '../../../shared/utils/spreadsheet-file-security';
 import { parseMassHunterResultWorkbook } from './excel-result-import';
 
 type WorkerRequest =
@@ -16,14 +17,8 @@ addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) => {
       postMessage({ type: 'progress', percent: 32, message: 'Đang đọc danh sách trang tính...' });
 
       const workbookIndex = XLSX.read(workbookBuffer, {
-        type: 'array',
+        ...SAFE_XLSX_IMPORT_READ_OPTIONS,
         bookSheets: true,
-        cellFormula: false,
-        cellHTML: false,
-        cellStyles: false,
-        bookDeps: false,
-        bookFiles: false,
-        bookVBA: false
       });
       postMessage({
         type: 'sheet-names',
@@ -42,17 +37,8 @@ addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) => {
       message: `Đang đọc dữ liệu từ ${data.sheetNames.length} trang tính kết quả...`
     });
     const workbook = XLSX.read(workbookBuffer, {
-      type: 'array',
-      cellDates: false,
+      ...SAFE_XLSX_IMPORT_READ_OPTIONS,
       cellText: true,
-      cellFormula: false,
-      cellHTML: false,
-      cellNF: false,
-      cellStyles: false,
-      sheetStubs: false,
-      bookDeps: false,
-      bookFiles: false,
-      bookVBA: false,
       sheets: data.sheetNames
     });
 

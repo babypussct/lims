@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.12-b05",
-    "title": "Tối ưu tải trang phiếu giao nhận mẫu",
+    "version": "v26.09.13-b01",
+    "title": "Gia cố an toàn và độ ổn định khi xử lý Excel",
     "features": [
-      "Trang Phiếu giao nhận mẫu vào nhanh hơn vì bộ xem trước Excel/PDF chỉ tải khi người dùng thực sự mở tài liệu.",
-      "Luồng xem trước có trạng thái đang tải và lỗi rõ ràng, không làm chặn lần render đầu của danh sách tài liệu.",
-      "Dùng Angular defer block cho DocumentPreviewModalComponent để tách phần preview nặng khỏi lazy chunk chính của route documents.",
-      "Giữ nguyên hành vi mở, đóng và xem trước các định dạng PDF, Excel, ảnh, video, audio, text và tài liệu Google Drive.",
-      "Giảm công việc JavaScript cần tải trước khi người dùng có thể duyệt thư mục và danh sách tài liệu."
+      "Các luồng nhập và xem Excel được chặn tệp rỗng, sai phần mở rộng hoặc vượt giới hạn kích thước trước khi parser chạy.",
+      "Luồng nhập kết quả MassHunter vẫn nhận workbook lớn hơn với giới hạn 50 MB và giữ xử lý trong Web Worker khi trình duyệt hỗ trợ.",
+      "Bổ sung helper bảo mật dùng chung cho kiểm tra kích thước/phần mở rộng và cấu hình SheetJS tối thiểu cho dữ liệu Excel không tin cậy.",
+      "Áp dụng cấu hình đọc an toàn cho nhập danh mục chất chuẩn, nhật ký sử dụng, mô tả mẫu, chỉ tiêu gốc và kết quả MassHunter.",
+      "Excel Viewer giới hạn workbook 50 MB, vẫn giữ công thức/style cần cho chế độ chỉ xem nhưng tắt VBA, file phụ, HTML và dependency metadata không cần thiết."
     ]
   },
   "assetGroups": [

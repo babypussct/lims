@@ -6,6 +6,11 @@ import {
   getRelevantExcelImportSheetNames,
   parseMassHunterResultWorkbook
 } from './excel-result-import';
+import {
+  LARGE_SPREADSHEET_MAX_FILE_SIZE,
+  SAFE_XLSX_IMPORT_READ_OPTIONS,
+  validateSpreadsheetFile
+} from '../../../shared/utils/spreadsheet-file-security';
 
 export type ExcelImportReadStage =
   | 'reading-file'
@@ -21,6 +26,10 @@ export interface ExcelImportReadProgress {
 }
 
 type ProgressCallback = (progress: ExcelImportReadProgress) => void;
+
+// MassHunter workbooks can contain chromatogram artifacts, so this cap is
+// intentionally higher than the 10 MB cap used by small master-data imports.
+export const EXCEL_RESULT_IMPORT_MAX_FILE_SIZE = LARGE_SPREADSHEET_MAX_FILE_SIZE;
 
 interface WorkerResponse {
   type: 'progress' | 'sheet-names' | 'result' | 'error';
@@ -41,6 +50,11 @@ export async function readExcelResultFile(
   onProgress: ProgressCallback,
   signal?: AbortSignal
 ): Promise<ParsedExcelWorkbook> {
+  validateSpreadsheetFile(file, {
+    allowedExtensions: ['xlsx', 'xls'],
+    maxFileSize: EXCEL_RESULT_IMPORT_MAX_FILE_SIZE,
+    maxFileSizeLabel: '50 MB'
+  });
   const buffer = await readFileAsArrayBuffer(file, onProgress, signal);
   throwIfAborted(signal);
 
@@ -178,14 +192,8 @@ async function readOnMainThread(
   throwIfAborted(signal);
 
   const workbookIndex = XLSX.read(buffer, {
-    type: 'array',
+    ...SAFE_XLSX_IMPORT_READ_OPTIONS,
     bookSheets: true,
-    cellFormula: false,
-    cellHTML: false,
-    cellStyles: false,
-    bookDeps: false,
-    bookFiles: false,
-    bookVBA: false
   });
   const allSheetNames = workbookIndex.SheetNames || [];
   const relevantSheetNames = getRelevantExcelImportSheetNames(allSheetNames, context);
@@ -202,17 +210,8 @@ async function readOnMainThread(
   throwIfAborted(signal);
 
   const workbook = XLSX.read(buffer, {
-    type: 'array',
-    cellDates: false,
+    ...SAFE_XLSX_IMPORT_READ_OPTIONS,
     cellText: true,
-    cellFormula: false,
-    cellHTML: false,
-    cellNF: false,
-    cellStyles: false,
-    sheetStubs: false,
-    bookDeps: false,
-    bookFiles: false,
-    bookVBA: false,
     sheets: selectedSheetNames
   });
   throwIfAborted(signal);

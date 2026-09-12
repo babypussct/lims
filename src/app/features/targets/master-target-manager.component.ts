@@ -7,6 +7,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { MasterAnalyte } from '../../core/models/sop.model';
 import { generateSlug, formatDate } from '../../shared/utils/utils';
+import {
+  SAFE_XLSX_IMPORT_READ_OPTIONS,
+  validateSpreadsheetFile
+} from '../../shared/utils/spreadsheet-file-security';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormLabelA11yDirective } from '../../shared/directives/form-label-a11y.directive';
 import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
@@ -367,30 +371,29 @@ export class MasterTargetManagerComponent implements OnInit {
 
   // --- EXCEL IMPORT LOGIC ---
 
-  async onFileSelected(event: any) {
-      const file = event.target.files[0];
+  async onFileSelected(event: Event) {
+      const input = event.target as HTMLInputElement;
+      const file = input.files?.[0];
       if (!file) return;
 
       this.isLoading.set(true);
       try {
+          validateSpreadsheetFile(file, {
+              allowedExtensions: ['xlsx', 'csv'],
+              maxFileSizeLabel: '10 MB'
+          });
           const XLSX = await import('xlsx');
-          const reader = new FileReader();
-          
-          reader.onload = (e: any) => {
-              const data = new Uint8Array(e.target.result);
-              const workbook = XLSX.read(data, { type: 'array' });
-              const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-              const rawData: any[] = XLSX.utils.sheet_to_json(firstSheet);
-              
-              this.parseImportData(rawData);
-              this.isLoading.set(false);
-              event.target.value = ''; // Reset input
-          };
-          reader.readAsArrayBuffer(file);
-          
+          const data = new Uint8Array(await file.arrayBuffer());
+          const workbook = XLSX.read(data, SAFE_XLSX_IMPORT_READ_OPTIONS);
+          if (!workbook.SheetNames.length) throw new Error('Tệp Excel không có trang tính dữ liệu.');
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawData: any[] = XLSX.utils.sheet_to_json(firstSheet);
+          this.parseImportData(rawData);
       } catch(e: any) {
           this.toast.show('Lỗi đọc tệp: ' + e.message, 'error');
+      } finally {
           this.isLoading.set(false);
+          input.value = '';
       }
   }
 

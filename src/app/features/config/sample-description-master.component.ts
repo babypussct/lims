@@ -7,6 +7,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { ToastService } from '../../core/services/toast.service';
 import { generateSlug } from '../../shared/utils/utils';
+import {
+  SAFE_XLSX_IMPORT_READ_OPTIONS,
+  validateSpreadsheetFile
+} from '../../shared/utils/spreadsheet-file-security';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
@@ -177,9 +181,14 @@ export class SampleDescriptionMasterComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
     try {
+      validateSpreadsheetFile(file, {
+        allowedExtensions: ['xlsx', 'xls', 'csv'],
+        maxFileSizeLabel: '10 MB'
+      });
       const XLSX = await import('xlsx');
       const data = new Uint8Array(await file.arrayBuffer());
-      const workbook = XLSX.read(data, { type: 'array' });
+      const workbook = XLSX.read(data, SAFE_XLSX_IMPORT_READ_OPTIONS);
+      if (!workbook.SheetNames.length) throw new Error('Tệp Excel không có trang tính dữ liệu.');
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
       const parsed = rows.map(row => this.parseImportRow(row)).filter((item): item is SampleDescriptionMaster => Boolean(item));

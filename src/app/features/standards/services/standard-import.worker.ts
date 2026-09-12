@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import * as XLSX from 'xlsx';
+import { SAFE_XLSX_IMPORT_READ_OPTIONS } from '../../../shared/utils/spreadsheet-file-security';
 
 interface StandardImportWorkerRequest {
   buffer: ArrayBuffer;
@@ -9,7 +10,7 @@ interface StandardImportWorkerRequest {
 
 addEventListener('message', ({ data }: MessageEvent<StandardImportWorkerRequest>) => {
   try {
-    const workbook = XLSX.read(data.buffer, { type: 'array', cellDates: false });
+    const workbook = XLSX.read(data.buffer, SAFE_XLSX_IMPORT_READ_OPTIONS);
     const sheetNames = workbook.SheetNames.filter(name => {
       const range = workbook.Sheets[name]?.['!ref'];
       return Boolean(range);

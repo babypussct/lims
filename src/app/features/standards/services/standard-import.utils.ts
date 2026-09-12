@@ -6,6 +6,7 @@ import {
 } from '../../../core/models/standard.model';
 import { parseStandardQuantity } from '../../../shared/utils/standard-amount';
 import { parseStandardDate } from '../../../shared/utils/standard-fefo';
+import { SPREADSHEET_MAX_FILE_SIZE, validateSpreadsheetFile } from '../../../shared/utils/spreadsheet-file-security';
 import { generateSlug } from '../../../shared/utils/utils';
 import {
   assessInternalId,
@@ -14,7 +15,7 @@ import {
   normalizeInternalId,
 } from '../../../shared/utils/standard-internal-id';
 
-export const STANDARD_IMPORT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const STANDARD_IMPORT_MAX_FILE_SIZE = SPREADSHEET_MAX_FILE_SIZE;
 export const STANDARD_IMPORT_ALLOWED_EXTENSIONS = ['xlsx', 'xlsm', 'csv'] as const;
 export const STANDARD_IMPORT_MAX_ATOMIC_WRITES = 450;
 
@@ -122,14 +123,11 @@ export function normalizeImportHeader(value: unknown): string {
 }
 
 export function validateStandardImportFile(file: Pick<File, 'name' | 'size'>): void {
-  const extension = file.name.split('.').pop()?.toLowerCase() || '';
-  if (!STANDARD_IMPORT_ALLOWED_EXTENSIONS.includes(extension as typeof STANDARD_IMPORT_ALLOWED_EXTENSIONS[number])) {
-    throw new Error('Chỉ hỗ trợ tệp .xlsx, .xlsm hoặc .csv.');
-  }
-  if (file.size <= 0) throw new Error('Tệp rỗng.');
-  if (file.size > STANDARD_IMPORT_MAX_FILE_SIZE) {
-    throw new Error('Tệp vượt quá 10 MB. Vui lòng chia thành các tệp nhỏ hơn.');
-  }
+  validateSpreadsheetFile(file, {
+    allowedExtensions: STANDARD_IMPORT_ALLOWED_EXTENSIONS,
+    maxFileSize: STANDARD_IMPORT_MAX_FILE_SIZE,
+    maxFileSizeLabel: '10 MB'
+  });
 }
 
 export function parseExcelDateDetailed(value: unknown): StandardImportDateResult {

@@ -43,6 +43,10 @@ import uiViVN from '@univerjs/ui/locale/vi-VN';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
+import {
+  LARGE_SPREADSHEET_MAX_FILE_SIZE,
+  validateSpreadsheetFileSize
+} from '../../shared/utils/spreadsheet-file-security';
 import { convertSheetJsWorkbookToUniver } from './excel-univer-converter';
 import {
   applyExcelAutoFilterSafely,
@@ -3551,6 +3555,10 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
     this.disposeUniver();
 
     try {
+      validateSpreadsheetFileSize(this.blob.size, {
+        maxFileSize: LARGE_SPREADSHEET_MAX_FILE_SIZE,
+        maxFileSizeLabel: '50 MB'
+      });
       const xlsx = await import('xlsx');
       const buffer = await this.blob.arrayBuffer();
       if (token !== this.loadToken) return;
@@ -3560,8 +3568,13 @@ export class ExcelDocumentViewerComponent implements AfterViewInit, OnChanges, O
         cellDates: true,
         cellNF: true,
         cellText: true,
+        cellFormula: true,
         cellStyles: true,
         sheetStubs: true,
+        cellHTML: false,
+        bookDeps: false,
+        bookFiles: false,
+        bookVBA: false,
         dense: false,
       });
       if (!workbook.SheetNames.length) throw new Error('Tệp Excel không có trang tính.');

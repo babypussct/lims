@@ -1,19 +1,21 @@
 {
-  "title": "Tối ưu tải trang phiếu giao nhận mẫu",
+  "title": "Gia cố an toàn và độ ổn định khi xử lý Excel",
   "highlights": [
-    "Trang Phiếu giao nhận mẫu vào nhanh hơn vì bộ xem trước Excel/PDF chỉ tải khi người dùng thực sự mở tài liệu.",
-    "Luồng xem trước có trạng thái đang tải và lỗi rõ ràng, không làm chặn lần render đầu của danh sách tài liệu."
+    "Các luồng nhập và xem Excel được chặn tệp rỗng, sai phần mở rộng hoặc vượt giới hạn kích thước trước khi parser chạy.",
+    "Luồng nhập kết quả MassHunter vẫn nhận workbook lớn hơn với giới hạn 50 MB và giữ xử lý trong Web Worker khi trình duyệt hỗ trợ."
   ],
   "features": [
-    "Dùng Angular defer block cho DocumentPreviewModalComponent để tách phần preview nặng khỏi lazy chunk chính của route documents.",
-    "Giữ nguyên hành vi mở, đóng và xem trước các định dạng PDF, Excel, ảnh, video, audio, text và tài liệu Google Drive."
+    "Bổ sung helper bảo mật dùng chung cho kiểm tra kích thước/phần mở rộng và cấu hình SheetJS tối thiểu cho dữ liệu Excel không tin cậy.",
+    "Áp dụng cấu hình đọc an toàn cho nhập danh mục chất chuẩn, nhật ký sử dụng, mô tả mẫu, chỉ tiêu gốc và kết quả MassHunter."
   ],
   "improvements": [
-    "Giảm công việc JavaScript cần tải trước khi người dùng có thể duyệt thư mục và danh sách tài liệu.",
-    "Hiển thị overlay loading ngắn trong lúc tải lần đầu bộ xem trước để thao tác mở tài liệu có phản hồi rõ ràng."
+    "Excel Viewer giới hạn workbook 50 MB, vẫn giữ công thức/style cần cho chế độ chỉ xem nhưng tắt VBA, file phụ, HTML và dependency metadata không cần thiết.",
+    "Luồng import chỉ tiêu gốc chuyển sang async/await và luôn dọn trạng thái loading, kể cả khi đọc tệp hoặc parse workbook thất bại.",
+    "Bổ sung test hồi quy cho giới hạn tệp, phần mở rộng và các tùy chọn parser được phép dùng."
   ],
   "fixes": [
-    "Ngăn lỗi tải module preview làm biến mất phản hồi của màn hình tài liệu bằng trạng thái lỗi có thể nhìn thấy.",
-    "Giữ route tài liệu nhẹ hơn trong lần truy cập đầu mà không bỏ các viewer đang được sử dụng trong modal."
+    "Ngăn các luồng Excel phụ bỏ qua giới hạn 10 MB đã áp dụng cho nhập danh mục chuẩn.",
+    "Ngăn tệp quá lớn hoặc workbook rỗng đi vào SheetJS/ExcelJS, giảm nguy cơ treo giao diện và giảm bề mặt xử lý dữ liệu thừa.",
+    "Giữ lại giới hạn 50 MB riêng cho workbook MassHunter để không làm hỏng các tệp có chromatogram artifact."
   ]
 }
