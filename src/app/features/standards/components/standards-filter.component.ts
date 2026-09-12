@@ -18,30 +18,41 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                      placeholder="Tìm kiếm chuẩn, mã số, số lô...">
            </div>
            
-           <!-- FILTER DROPDOWN -->
-           <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
-               <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-filter mr-1"></i> Lọc:</span>
-               <select [ngModel]="activeWidgetFilter()" (ngModelChange)="onWidgetFilterChange($event)" 
-                       class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
-                   <option value="all" class="dark:bg-slate-800">Tất cả ({{stats().total}})</option>
-                   <option value="expired" class="dark:bg-slate-800">Đã hết hạn ({{stats().expired}})</option>
-                   <option value="expiring_soon" class="dark:bg-slate-800">Sắp hết hạn 30 ngày ({{stats().expiringSoon}})</option>
-                   <option value="expiring_3months" class="dark:bg-slate-800">Sắp hết hạn 3 tháng tới ({{stats().expiring3Months}})</option>
-                   <option value="low_stock" class="dark:bg-slate-800">Sắp hết hàng ({{stats().lowStock}})</option>
-               </select>
-           </div>
+           @if (!isAuditMode()) {
+             <!-- FILTER DROPDOWN -->
+             <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
+                 <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-filter mr-1"></i> Lọc:</span>
+                 <select [ngModel]="activeWidgetFilter()" (ngModelChange)="onWidgetFilterChange($event)"
+                         class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
+                     <option value="all" class="dark:bg-slate-800">Tất cả ({{stats().total}})</option>
+                     <option value="expired" class="dark:bg-slate-800">Đã hết hạn ({{stats().expired}})</option>
+                     <option value="expiring_soon" class="dark:bg-slate-800">Sắp hết hạn 30 ngày ({{stats().expiringSoon}})</option>
+                     <option value="expiring_3months" class="dark:bg-slate-800">Sắp hết hạn 3 tháng tới ({{stats().expiring3Months}})</option>
+                     <option value="low_stock" class="dark:bg-slate-800">Sắp hết hàng ({{stats().lowStock}})</option>
+                 </select>
+             </div>
+           }
            
            <!-- SORT DROPDOWN -->
            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
                <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
                <select [ngModel]="sortOption()" (ngModelChange)="onSortChange($event)" 
                        class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
-                   <option value="received_desc" class="dark:bg-slate-800">Ngày nhận (Mới nhất)</option>
-                   <option value="updated_desc" class="dark:bg-slate-800">Mới cập nhật</option>
-                   <option value="name_asc" class="dark:bg-slate-800">Tên (A-Z)</option>
-                   <option value="name_desc" class="dark:bg-slate-800">Tên (Z-A)</option>
-                   <option value="expiry_asc" class="dark:bg-slate-800">Hạn dùng (Gần nhất)</option>
-                   <option value="expiry_desc" class="dark:bg-slate-800">Hạn dùng (Xa nhất)</option>
+                   @if (isAuditMode()) {
+                       <option value="name_asc" class="dark:bg-slate-800">Tên (A-Z)</option>
+                       <option value="name_desc" class="dark:bg-slate-800">Tên (Z-A)</option>
+                       <option value="expiry_asc" class="dark:bg-slate-800">Hạn dùng (Gần nhất)</option>
+                       <option value="expiry_desc" class="dark:bg-slate-800">Hạn dùng (Xa nhất)</option>
+                       <option value="manufacturer" class="dark:bg-slate-800">Hãng</option>
+                       <option value="internal_id" class="dark:bg-slate-800">Số nhận diện</option>
+                   } @else {
+                       <option value="received_desc" class="dark:bg-slate-800">Ngày nhận (Mới nhất)</option>
+                       <option value="updated_desc" class="dark:bg-slate-800">Mới cập nhật</option>
+                       <option value="name_asc" class="dark:bg-slate-800">Tên (A-Z)</option>
+                       <option value="name_desc" class="dark:bg-slate-800">Tên (Z-A)</option>
+                       <option value="expiry_asc" class="dark:bg-slate-800">Hạn dùng (Gần nhất)</option>
+                       <option value="expiry_desc" class="dark:bg-slate-800">Hạn dùng (Xa nhất)</option>
+                   }
                </select>
            </div>
 
@@ -55,6 +66,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
            </div>
        </div>
 
+       @if (!isAuditMode()) {
        <!-- METHOD FILTER: device is a facet used to navigate the method catalog, not a parallel data field. -->
        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
            <div data-method-picker class="relative min-w-0 sm:w-[340px] md:w-[420px]">
@@ -189,6 +201,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                </button>
            }
        </div>
+       }
        
        <!-- Search Stats -->
        <div class="flex justify-between items-center px-1">
@@ -196,15 +209,18 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                Hiển thị: {{visibleCount()}} / {{filteredCount()}} kết quả 
                @if(searchTerm()) { <span class="text-fuchsia-500 dark:text-fuchsia-400">(Lọc theo "{{searchTerm()}}")</span> }
            </span>
-           <span class="text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300 text-right" title="Tồn kho được cộng riêng theo từng đơn vị, không quy đổi chéo">
-               Tồn: {{stockSummaryText()}}
-           </span>
+           @if (!isAuditMode()) {
+             <span class="text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-300 text-right" title="Tồn kho được cộng riêng theo từng đơn vị, không quy đổi chéo">
+                 Tồn: {{stockSummaryText()}}
+             </span>
+           }
            @if(isLoading()) { <span class="text-[9px] text-blue-500 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
        </div>
     </div>
   `
 })
 export class StandardsFilterComponent {
+  isAuditMode = input<boolean>(false);
   searchTerm = input<string>('');
   activeWidgetFilter = input<'all' | 'expired' | 'expiring_soon' | 'expiring_3months' | 'low_stock'>('all');
   sortOption = input<string>('received_desc');

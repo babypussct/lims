@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.11-b03
+## Phiên bản hiện tại: v26.09.12-b01
+
+### v26.09.12-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tài khoản Audit chỉ xem các trường Chất chuẩn đã được phê duyệt, phù hợp nhu cầu kiểm tra và truy vết.
+- Có thể mở trực tiếp chứng chỉ phân tích (CoA) từ danh sách hoặc chi tiết chất chuẩn trong chế độ Audit.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung quyền standard_audit_view và dùng chung giao diện Chất chuẩn hiện có, chỉ hiển thị các trường được phê duyệt và không mở các thao tác nghiệp vụ.
+- Bổ sung nút xem CoA dùng lại preview hiện hữu và chỉ xuất hiện khi bản ghi có tài liệu đính kèm.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Ánh xạ rõ Khối lượng chai vào initial_amount và Quy cách vào unit trong bề mặt Audit.
+- Đồng bộ danh sách, lưới và chi tiết Audit bằng điều kiện ẩn/hiện trên UI hiện hữu; tiếp tục dùng cache/DeltaSync, không tạo projection, collection, API hoặc localStorage mới.
+- Ẩn các menu, route, lịch sử và thao tác ngoài phạm vi Audit; CoA được mở mà không hiển thị URL certificate_ref.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn tài khoản Audit truy cập các luồng yêu cầu/sử dụng chuẩn hoặc thao tác vận hành; trang chi tiết dùng chung nhưng chỉ hiển thị whitelist.
+- Bảo đảm thao tác CoA không kích hoạt nhầm điều hướng dòng dữ liệu trong bảng Audit.
 
 ### v26.09.11-b03
 
@@ -13,18 +36,18 @@ Lịch sử phiên bản đầy đủ được hiển thị tại mục [/change
 
 #### ✨ Tính Năng Mới
 
-- Bổ sung quyền standard_audit_view và route chi tiết Audit riêng, không mở các thao tác nghiệp vụ của chất chuẩn.
+- Bổ sung quyền standard_audit_view và dùng chung giao diện Chất chuẩn hiện có, chỉ hiển thị các trường được phê duyệt và không mở các thao tác nghiệp vụ.
 - Bổ sung nút xem CoA dùng lại preview hiện hữu và chỉ xuất hiện khi bản ghi có tài liệu đính kèm.
 
 #### ⚡ Cải Tiến & Tối Ưu
 
 - Ánh xạ rõ Khối lượng chai vào initial_amount và Quy cách vào unit trong bề mặt Audit.
-- Giữ Audit sử dụng cache/DeltaSync hiện có, không tạo projection, collection, API hoặc localStorage mới.
+- Đồng bộ danh sách, lưới và chi tiết Audit bằng điều kiện ẩn/hiện trên UI hiện hữu; tiếp tục dùng cache/DeltaSync, không tạo projection, collection, API hoặc localStorage mới.
 - Ẩn các menu, route, lịch sử và thao tác ngoài phạm vi Audit; CoA được mở mà không hiển thị URL certificate_ref.
 
 #### 🐛 Sửa Lỗi Hệ Thống
 
-- Ngăn tài khoản Audit rơi vào trang chi tiết chất chuẩn đầy đủ hoặc các luồng yêu cầu/sử dụng chuẩn.
+- Ngăn tài khoản Audit truy cập các luồng yêu cầu/sử dụng chuẩn hoặc thao tác vận hành; trang chi tiết dùng chung nhưng chỉ hiển thị whitelist.
 - Bảo đảm thao tác CoA không kích hoạt nhầm điều hướng dòng dữ liệu trong bảng Audit.
 
 ### v26.09.11-b02

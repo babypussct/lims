@@ -7,42 +7,54 @@ function read(relativePath: string): string {
 }
 
 describe('standards shared UI primitive integration', () => {
-  it('keeps the Audit surface to the approved ten-field whitelist and reuses the dedicated permission route', () => {
-    const auditView = read('./components/standards-audit-view.component.ts');
-    const auditDetail = read('./standard-audit-detail.component.ts');
+  it('keeps the Audit whitelist inside the existing list, grid and detail surfaces', () => {
+    const list = read('./components/standards-list-view.component.ts');
+    const grid = read('./components/standards-grid-view.component.ts');
+    const filter = read('./components/standards-filter.component.ts');
+    const detail = read('./standard-detail.component.ts');
+    const detailTemplate = read('./standard-detail.component.html');
     const page = read('./standards.component.html');
     const component = read('./standards.component.ts');
     const routes = read('../../app.routes.ts');
     const catalog = read('../../core/auth/permission-catalog.ts');
 
-    for (const label of [
-      'Tên chuẩn',
-      'Khối lượng chai',
-      'Quy cách',
-      'Mã số sản phẩm',
-      'Số lô',
-      'Hãng',
-      'CAS Number',
-      'Hạn sử dụng',
-      'Điều kiện bảo quản',
-      'Số nhận diện',
-    ]) {
-      assert.match(auditView, new RegExp(label));
-      assert.match(auditDetail, new RegExp(label));
+    for (const surface of [list, grid, detailTemplate]) {
+      assert.match(surface, /isAuditMode\(\)/);
+      for (const field of [
+        'name',
+        'initial_amount',
+        'unit',
+        'product_code',
+        'lot_number',
+        'manufacturer',
+        'cas_number',
+        'expiry_date',
+        'storage_condition',
+        'internal_id',
+      ]) {
+        assert.match(surface, new RegExp(`std\\.${field}`));
+      }
     }
 
-    assert.match(auditView, /standard\.initial_amount/);
-    assert.match(auditView, /standard\.unit/);
-    assert.match(auditView, /certificate_ref/);
-    assert.match(auditView, /Xem CoA/);
-    assert.match(auditView, /openCoaPreview/);
-    assert.match(auditDetail, /certificate_ref/);
-    assert.match(auditDetail, /Xem CoA/);
-    assert.match(auditDetail, /openCoaPreview/);
-    assert.doesNotMatch(auditView, /current_amount|purity|chemical_name|sop_tags/);
+    assert.match(list, /certificate_ref/);
+    assert.match(grid, /certificate_ref/);
+    assert.match(list, /openCoaPreview/);
+    assert.match(grid, /openCoaPreview/);
+    assert.match(detailTemplate, /certificate_ref/);
+    assert.match(detailTemplate, /openCoaPreview/);
+    assert.match(filter, /isAuditMode = input/);
+    assert.match(filter, /@if \(!isAuditMode\(\)\)/);
+    assert.match(list, /\[class\.hidden\]="isAuditMode\(\)"/);
+    assert.match(list, /!isAuditMode\(\) && std\.chemical_name/);
+    assert.match(grid, /@if \(!isAuditMode\(\)\)/);
+    assert.match(detailTemplate, /@if \(!isAuditMode\(\)\)/);
     assert.match(component, /isAuditMode\(\)/);
-    assert.match(page, /<app-standards-audit-view\b/);
-    assert.match(routes, /path: 'standards\/audit\/:id'/);
+    assert.match(component, /auditFilteredItems/);
+    assert.match(page, /\[isAuditMode\]="isAuditMode\(\)"/);
+    assert.doesNotMatch(page, /app-standards-audit-view/);
+    assert.doesNotMatch(routes, /standards\/audit\/:id/);
+    assert.match(routes, /path: 'standards\/:id'/);
+    assert.match(routes, /permissionsAny: \[PERMISSIONS\.STANDARD_VIEW, PERMISSIONS\.STANDARD_AUDIT_VIEW\]/);
     assert.match(routes, /PERMISSIONS\.STANDARD_AUDIT_VIEW/);
     assert.match(catalog, /STANDARD_AUDIT_VIEW: 'standard_audit_view'/);
   });

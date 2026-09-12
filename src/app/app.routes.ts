@@ -60,16 +60,10 @@ export const routes: Routes = [
     data: { permissionsAny: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW] }
   },
   {
-    path: 'standards/audit/:id',
-    loadComponent: () => import('./features/standards/standard-audit-detail.component').then(m => m.StandardAuditDetailComponent),
-    canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_AUDIT_VIEW }
-  },
-  {
     path: 'standards/:id',
     loadComponent: () => import('./features/standards/standard-detail.component').then(m => m.StandardDetailComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_VIEW, denyStandardAuditMode: true }
+    data: { permissionsAny: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW] }
   },
   {
     path: 'daily-checklist',

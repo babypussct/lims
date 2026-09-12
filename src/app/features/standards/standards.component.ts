@@ -35,14 +35,15 @@ import { StandardsDataCleanupModalComponent } from './components/standards-data-
 import { StandardsBackfillModalComponent, BackfillData } from './components/standards-backfill-modal.component';
 import { StandardsBulkTagModalComponent } from './components/standards-bulk-tag-modal.component';
 import { StandardsTagManagerModalComponent } from './components/standards-tag-manager-modal.component';
-import { StandardAuditSort, StandardsAuditViewComponent } from './components/standards-audit-view.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 import { StandardTagCatalogService } from './services/standard-tag-catalog.service';
 import { StandardBulkTagMode, formatMethodOptionLabel, summarizeStockByUnit, StockSummaryResult } from './services/standard-tag.utils';
+
+type StandardAuditSort = 'name_asc' | 'name_desc' | 'expiry_asc' | 'expiry_desc' | 'manufacturer' | 'internal_id';
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, StandardsAuditViewComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -513,6 +514,21 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   onSearchInput(val: string) { this.searchSubject.next(val); }
   onSortChange(val: string) { this.sortOption.set(val); }
+
+  onSearchInputForMode(val: string) {
+      if (this.isAuditMode()) this.onAuditSearchInput(val);
+      else this.onSearchInput(val);
+  }
+
+  onSortChangeForMode(val: string) {
+      if (this.isAuditMode()) this.onAuditSortChange(val as StandardAuditSort);
+      else this.onSortChange(val);
+  }
+
+  loadMoreForMode() {
+      if (this.isAuditMode()) this.loadMoreAudit();
+      else this.loadMore();
+  }
 
   onAuditSearchInput(val: string) {
       this.auditDisplayLimit.set(50);
@@ -995,7 +1011,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   navigateToDetail(std: ReferenceStandard) {
-      this.router.navigate(this.isAuditMode() ? ['/standards/audit', std.id] : ['/standards', std.id]);
+      this.router.navigate(['/standards', std.id]);
   }
 
   async viewHistory(std: ReferenceStandard) {

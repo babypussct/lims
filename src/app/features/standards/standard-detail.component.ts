@@ -74,6 +74,8 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     currentUserUid = computed(() => this.auth.currentUser()?.uid || '');
     currentUserName = computed(() => this.auth.currentUser()?.displayName || '');
+    /** Audit accounts reuse this detail surface with non-approved fields/actions hidden. */
+    isAuditMode = computed(() => this.auth.isStandardAuditMode());
 
     standardId = signal<string>('');
     standard = signal<ReferenceStandard | null>(null);
@@ -156,7 +158,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     canReturnStandard = computed(() => {
         const std = this.standard();
-        if (!std) return false;
+        if (!std || this.isAuditMode()) return false;
         const isEditor = this.auth.canAssignStandards();
         const isHolder = std.current_holder_uid === this.auth.currentUser()?.uid;
         return isEditor || isHolder;
@@ -164,16 +166,16 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     canRequestCoa = computed(() => {
         const std = this.standard();
-        if (!std) return false;
+        if (!std || this.isAuditMode()) return false;
         return !std.certificate_ref &&
           this.auth.hasPermission('standard_request') &&
           !this.auth.canAssignStandards();
     });
 
-    canAssignStandards = computed(() => this.auth.canAssignStandards());
-    canRequestStandards = computed(() => this.auth.hasPermission('standard_request'));
+    canAssignStandards = computed(() => !this.isAuditMode() && this.auth.canAssignStandards());
+    canRequestStandards = computed(() => !this.isAuditMode() && this.auth.hasPermission('standard_request'));
     canRequestPurchase = computed(() => this.canRequestStandards() || this.canAssignStandards());
-    canDeleteStandardLogs = computed(() => this.auth.canDeleteStandardLogs());
+    canDeleteStandardLogs = computed(() => !this.isAuditMode() && this.auth.canDeleteStandardLogs());
 
     relatedStandards = computed(() => {
         const std = this.standard();
@@ -236,7 +238,11 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             const std = await this.stdService.getStandardById(id);
             if (std) {
                 this.standard.set(std);
-                this.loadHistory(id);
+                if (this.isAuditMode()) {
+                    this.usageLogs.set([]);
+                } else {
+                    this.loadHistory(id);
+                }
                 this.refreshAllStandards();
             } else {
                 this.notFound.set(true);
@@ -260,6 +266,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async loadHistory(id: string) {
+        if (this.isAuditMode()) {
+            this.usageLogs.set([]);
+            this.loadingHistory.set(false);
+            this.hasMoreHistory.set(false);
+            return;
+        }
         this.loadingHistory.set(true);
         this.historyLastDoc = null;
         this.hasMoreHistory.set(false);
@@ -291,7 +303,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async loadMoreHistory() {
         const id = this.standardId();
-        if (!id || !this.hasMoreHistory() || !this.historyLastDoc || this.loadingMoreHistory()) return;
+        if (this.isAuditMode() || !id || !this.hasMoreHistory() || !this.historyLastDoc || this.loadingMoreHistory()) return;
 
         this.loadingMoreHistory.set(true);
         try {
@@ -317,6 +329,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async autoHealDateOpened(id: string, date: string) {
+        if (this.isAuditMode()) return;
         try {
             const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, id);
             await updateDoc(ref, { date_opened: date, lastUpdated: serverTimestamp() });
@@ -336,11 +349,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     navigateToRelated(id: string) {
+        if (this.isAuditMode()) return;
         this.router.navigate(['/standards', id]);
     }
 
     async openAssignModal(isAssign = true) {
-        if (this.isProcessing() || !this.standard()) return;
+        if (this.isAuditMode() || this.isProcessing() || !this.standard()) return;
         this.isAssignMode.set(isAssign);
         this.showAssignModal.set(true);
 
@@ -409,19 +423,20 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     goToReturn() {
+        if (this.isAuditMode()) return;
         this.router.navigate(['/standard-requests']);
         this.toast.show('Chuyển đến trang Yêu cầu chất chuẩn để hoàn trả', 'info');
     }
 
     openEditModal() {
-        if (this.auth.hasPermission('standard_edit') && this.standard()) {
+        if (!this.isAuditMode() && this.auth.hasPermission('standard_edit') && this.standard()) {
             this.showEditModal.set(true);
         }
     }
 
     async releaseInternalId() {
         const std = this.standard();
-        if (!std || !std.internal_id || this.isProcessing() || !this.auth.canEditStandards()) return;
+        if (this.isAuditMode() || !std || !std.internal_id || this.isProcessing() || !this.auth.canEditStandards()) return;
         if (std.lifecycle_status === 'RELEASED' || std.lifecycle_status === 'CLOSED') {
             this.toast.show('Mã này đã được trả về sổ mã.', 'info');
             return;
@@ -454,15 +469,15 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     openPrintModal() {
-        if (this.standard()) this.showPrintModal.set(true);
+        if (!this.isAuditMode() && this.standard()) this.showPrintModal.set(true);
     }
 
     openPurchaseModal() {
-        if (this.standard() && this.canRequestPurchase()) this.showPurchaseModal.set(true);
+        if (!this.isAuditMode() && this.standard() && this.canRequestPurchase()) this.showPurchaseModal.set(true);
     }
 
     async requestCoa(std: ReferenceStandard) {
-        if (this.isProcessing() || std.coa_requested_by || !this.canRequestCoa()) return;
+        if (this.isAuditMode() || this.isProcessing() || std.coa_requested_by || !this.canRequestCoa()) return;
 
         this.confirmation.confirm({
             message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
@@ -508,7 +523,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
 
     async deleteLog(log: UsageLog, stdId: string) {
-        if (!log.id) return;
+        if (this.isAuditMode() || !log.id) return;
         if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
             try {
                 await this.stdService.deleteUsageLog(stdId, log.id);
@@ -521,6 +536,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
     // --- Quick Upload CoA ---
     triggerQuickDriveUpload() {
+        if (this.isAuditMode()) return;
         if (this.googleDriveService.hasValidToken) {
             const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
             if (input) {
@@ -542,6 +558,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async handleQuickDriveUpload(event: any) {
+        if (this.isAuditMode()) return;
         const file = event.target.files[0];
         if (!file) return;
 

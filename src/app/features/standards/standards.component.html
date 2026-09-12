@@ -1,21 +1,8 @@
     <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-4 md:p-6">
 
-      @if (isAuditMode()) {
-        <app-standards-audit-view
-          [items]="auditVisibleItems()"
-          [totalCount]="auditFilteredItems().length"
-          [isLoading]="isLoading()"
-          [hasMore]="auditHasMore()"
-          [searchTerm]="searchTerm()"
-          [sortOption]="auditSortOption()"
-          (searchTermChange)="onAuditSearchInput($event)"
-          (sortOptionChange)="onAuditSortChange($event)"
-          (navigateToDetail)="navigateToDetail($event)"
-          (loadMore)="loadMoreAudit()">
-        </app-standards-audit-view>
-      } @else {
-      <!-- Header -->
-      <app-standards-toolbar
+      @if (!isAuditMode()) {
+        <!-- Header -->
+        <app-standards-toolbar
           [selectedCount]="selectedIds().size"
           [isProcessing]="isProcessing() || isParsingImport()"
           [canEditStandards]="auth.canEditStandards()"
@@ -30,28 +17,30 @@
           (openExportModal)="openExportModal()"
           (openCleanupModal)="showDataCleanupModal.set(true)"
           (openInternalIdSync)="showInternalIdSyncModal.set(true)">
-      </app-standards-toolbar>
+        </app-standards-toolbar>
+      }
 
       <!-- Main Content -->
       <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
           
           <app-standards-filter
+              [isAuditMode]="isAuditMode()"
               [searchTerm]="searchTerm()"
               [activeWidgetFilter]="activeWidgetFilter()"
-              [sortOption]="sortOption()"
+              [sortOption]="isAuditMode() ? auditSortOption() : sortOption()"
               [viewMode]="viewMode()"
               [stats]="groupFilteredStats()"
-              [visibleCount]="visibleItems().length"
-              [filteredCount]="filteredItems().length"
+              [visibleCount]="isAuditMode() ? auditVisibleItems().length : visibleItems().length"
+              [filteredCount]="isAuditMode() ? auditFilteredItems().length : filteredItems().length"
               [isLoading]="isLoading()"
               [tagOptions]="tagCatalog.selectableOptions()"
               [methodTagFilter]="activeMethodTagFilter()"
               [deviceOptions]="tagCatalog.deviceOptions"
               [deviceFilter]="activeDeviceFilter()"
               [stockSummary]="filteredStockSummary()"
-              (searchTermChange)="onSearchInput($event)"
+              (searchTermChange)="onSearchInputForMode($event)"
               (activeWidgetFilterChange)="activeWidgetFilter.set($event)"
-              (sortOptionChange)="onSortChange($event)"
+              (sortOptionChange)="onSortChangeForMode($event)"
               (viewModeChange)="viewMode.set($event)"
               (methodTagFilterChange)="activeMethodTagFilter.set($event)"
               (deviceFilterChange)="activeDeviceFilter.set($event)">
@@ -65,7 +54,8 @@
              
              @if (viewMode() === 'list') {
                  <app-standards-list-view
-                    [items]="visibleItems()"
+                    [items]="isAuditMode() ? auditVisibleItems() : visibleItems()"
+                    [isAuditMode]="isAuditMode()"
                     [isLoading]="isLoading()"
                     [allStandardsLength]="allStandards().length"
                     [selectedIds]="selectedIds()"
@@ -90,7 +80,8 @@
                  </app-standards-list-view>
              } @else {
                  <app-standards-grid-view
-                    [items]="visibleItems()"
+                    [items]="isAuditMode() ? auditVisibleItems() : visibleItems()"
+                    [isAuditMode]="isAuditMode()"
                     [isLoading]="isLoading()"
                     [allStandardsLength]="allStandards().length"
                     [selectedIds]="selectedIds()"
@@ -113,11 +104,13 @@
              }
              
              <!-- Hidden input for quick Drive upload from list/grid -->
-             <input id="quickDriveInput" #quickDriveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="handleQuickDriveUpload($event)">
+             @if (!isAuditMode()) {
+               <input id="quickDriveInput" #quickDriveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="handleQuickDriveUpload($event)">
+             }
 
-             @if (hasMore() && !isLoading()) {
+             @if ((isAuditMode() ? auditHasMore() : hasMore()) && !isLoading()) {
                 <div class="text-center p-4">
-                    <button (click)="loadMore()" class="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-full shadow-sm dark:shadow-none">
+                    <button (click)="loadMoreForMode()" class="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-full shadow-sm dark:shadow-none">
                         Xem Thêm...
                     </button>
                 </div>
@@ -125,6 +118,7 @@
           </div>
       </div>
 
+      @if (!isAuditMode()) {
       <!-- ADD/EDIT MODAL -->
       @if (showModal()) {
         @defer {
