@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.13-b04
+## Phiên bản hiện tại: v26.09.13-b05
+
+### v26.09.13-b05
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Danh sách chất chuẩn, dashboard và các tra cứu vận hành chỉ tải các chuẩn đang hoạt động.
+- Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.
+- Không thay đổi cách hiển thị hoặc quy trình sử dụng chất chuẩn của nhân viên.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đưa điều kiện trạng thái hoạt động vào truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.
+- Bổ sung các chỉ mục cần thiết cho truy vấn danh sách, FEFO, dashboard và báo cáo vận hành.
+- Bổ sung telemetry cho các đường đọc chất chuẩn trước đây chưa được theo dõi đầy đủ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn chuẩn có trạng thái DELETED lọt vào kết quả query vận hành trước khi client lọc dữ liệu.
+- Giữ lớp lọc client-side để bảo vệ giao diện khi dữ liệu trạng thái và cờ xóa mềm không nhất quán.
 
 ### v26.09.13-b04
 

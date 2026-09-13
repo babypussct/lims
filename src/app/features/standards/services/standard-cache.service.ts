@@ -10,6 +10,7 @@ import {
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { isFefoCandidate, parseStandardDate } from '../../../shared/utils/standard-fefo';
+import { ACTIVE_STANDARD_STATUSES } from '../../../shared/utils/standard-query';
 import { timestampToMillis } from '../../../shared/utils/timestamp';
 
 /**
@@ -76,6 +77,12 @@ export class StandardCacheService {
       // localStorage có thể từ chối ở quy mô lớn, nhưng DeltaSync vẫn giữ L1 và
       // tự phục hồi từ Firestore thay vì âm thầm cắt danh mục ở 3.000 bản ghi.
       maxCacheSize: 10000,
+      // Operational consumers never need historical soft-deleted standards.
+      // Keep the client-side isDeletedFn below as defense in depth for
+      // inconsistent legacy documents whose status and delete flag disagree.
+      queryConstraints: [
+        where('status', 'in', [...ACTIVE_STANDARD_STATUSES])
+      ],
       // OPTIMIZED (sau migration lastUpdated): cursor-based delta sync
       // Lần đầu: fetch toàn collection 1 lần → ghi cursor lastUpdated
       // Các lần sau: chỉ fetch docs có lastUpdated > cursor (~95% tiết kiệm reads)
@@ -191,6 +198,7 @@ export class StandardCacheService {
     try {
       for (let page = 0; page < this.FEFO_MAX_PAGES; page++) {
         const constraints = [
+          where('status', 'in', [...ACTIVE_STANDARD_STATUSES]),
           where('expiry_date', '>=', todayKey),
           orderBy('expiry_date', 'asc'),
           limit(this.FEFO_PAGE_SIZE)
@@ -255,6 +263,12 @@ export class StandardCacheService {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
     // Querying with orderBy excludes legacy documents that do not have received_date.
     const snap = await getDocs(colRef);
+    this.readMonitor.record(
+      'getDocs',
+      `artifacts/${this.fb.APP_ID}/reference_standards`,
+      snap.size,
+      { phase: 'initial', fromCache: snap.metadata.fromCache }
+    );
     const items: ReferenceStandard[] = snap.docs
       .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
       .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))

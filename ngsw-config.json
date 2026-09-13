@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.13-b04",
-    "title": "Thông báo và cập nhật ứng dụng ổn định hơn",
+    "version": "v26.09.13-b05",
+    "title": "Giảm lượt đọc dư thừa khi vận hành chất chuẩn",
     "features": [
-      "Thông báo được tạo và hiển thị ổn định hơn trong các quy trình xử lý của phòng kiểm nghiệm.",
-      "Mở ứng dụng sau khi có bản cập nhật nhẹ nhàng hơn, giảm các cảnh báo không cần thiết.",
-      "Thông tin của từng tài khoản được giữ đúng hơn khi đăng nhập lại hoặc chuyển phiên làm việc.",
-      "Giảm cảnh báo lặp lại khi ứng dụng kiểm tra và hoàn tất cập nhật.",
-      "Dọn thông báo cũ an toàn hơn mà không ảnh hưởng đến danh sách thông báo hiện tại."
+      "Danh sách chất chuẩn, dashboard và các tra cứu vận hành chỉ tải các chuẩn đang hoạt động.",
+      "Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.",
+      "Không thay đổi cách hiển thị hoặc quy trình sử dụng chất chuẩn của nhân viên.",
+      "Đưa điều kiện trạng thái hoạt động vào truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.",
+      "Bổ sung các chỉ mục cần thiết cho truy vấn danh sách, FEFO, dashboard và báo cáo vận hành."
     ]
   },
   "assetGroups": [

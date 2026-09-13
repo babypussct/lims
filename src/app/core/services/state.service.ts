@@ -24,6 +24,7 @@ import { Log, PrintData } from '../models/log.model';
 import { PrintConfig, SafetyConfig, CategoryItem } from '../models/config.model';
 import { ReferenceStandard, StandardRequest } from '../models/standard.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
+import { ACTIVE_STANDARD_STATUSES } from '../../shared/utils/standard-query';
 import { timestampToMillis } from '../../shared/utils/timestamp';
 import { TargetService } from '../../features/targets/target.service';
 import { buildTargetScopeSnapshots } from '../../features/targets/target-scope-classifier';
@@ -258,7 +259,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.13-b04');
+  systemVersion = signal<string>('v26.09.13-b05');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -1203,7 +1204,12 @@ export class StateService implements OnDestroy {
         let cursor: QueryDocumentSnapshot | null = null;
         let reads = 0;
         while (true) {
-          const constraints: QueryConstraint[] = [orderBy(documentId())];
+          const constraints: QueryConstraint[] = [
+            // Dashboard/report collection loads use the current operational
+            // set. Audit and restore tools have separate full-scan paths.
+            where('status', 'in', [...ACTIVE_STANDARD_STATUSES]),
+            orderBy(documentId())
+          ];
           if (cursor) constraints.push(startAfter(cursor));
           constraints.push(limit(this.REPORT_COLLECTION_PAGE_SIZE));
           const snap = await getDocs(query(colRef, ...constraints));

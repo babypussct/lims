@@ -21,9 +21,11 @@ import { StandardCacheService } from './standard-cache.service';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
 import { NotificationEvent } from '../../../core/models/notification.model';
 import { ActivityEventService } from '../../../core/services/activity-event.service';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { StandardTagCatalogService } from './standard-tag-catalog.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
 import { isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
+import { ACTIVE_STANDARD_STATUSES } from '../../../shared/utils/standard-query';
 import {
   applyTagMode,
   assertTagLimit,
@@ -49,6 +51,7 @@ export class StandardCrudService {
   private cache = inject(StandardCacheService);
   private notificationCenter = inject(NotificationCenterService);
   private activityEvents = inject(ActivityEventService);
+  private readMonitor = inject(FirestoreReadMonitor);
   private tagCatalog = inject(StandardTagCatalogService);
   private codeRegistry = inject(StandardCodeRegistryService);
 
@@ -95,7 +98,12 @@ export class StandardCrudService {
     sortOption = 'received_desc'
   ): Promise<StandardsPage> {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-    const constraints: QueryConstraint[] = [];
+    // This method is an operational paginated read. Historical/admin scans
+    // intentionally use fetchAllAndCache() instead so soft-deleted standards
+    // remain available to restore/audit workflows.
+    const constraints: QueryConstraint[] = [
+      where('status', 'in', [...ACTIVE_STANDARD_STATUSES])
+    ];
 
     if (searchTerm) {
       const term = searchTerm.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -122,6 +130,15 @@ export class StandardCrudService {
     constraints.push(limit(pageSize));
 
     const snapshot = await getDocs(query(colRef, ...constraints));
+    this.readMonitor.record(
+      'getDocs',
+      `artifacts/${this.fb.APP_ID}/reference_standards`,
+      snapshot.size,
+      {
+        phase: lastDoc ? 'page' : 'initial',
+        fromCache: snapshot.metadata.fromCache
+      }
+    );
     return {
       items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard)),
       lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,

@@ -1,19 +1,18 @@
 {
-  "title": "Thông báo và cập nhật ứng dụng ổn định hơn",
+  "title": "Giảm lượt đọc dư thừa khi vận hành chất chuẩn",
   "highlights": [
-    "Thông báo được tạo và hiển thị ổn định hơn trong các quy trình xử lý của phòng kiểm nghiệm.",
-    "Mở ứng dụng sau khi có bản cập nhật nhẹ nhàng hơn, giảm các cảnh báo không cần thiết.",
-    "Thông tin của từng tài khoản được giữ đúng hơn khi đăng nhập lại hoặc chuyển phiên làm việc."
+    "Danh sách chất chuẩn, dashboard và các tra cứu vận hành chỉ tải các chuẩn đang hoạt động.",
+    "Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.",
+    "Không thay đổi cách hiển thị hoặc quy trình sử dụng chất chuẩn của nhân viên."
   ],
   "features": [],
   "improvements": [
-    "Giảm cảnh báo lặp lại khi ứng dụng kiểm tra và hoàn tất cập nhật.",
-    "Dọn thông báo cũ an toàn hơn mà không ảnh hưởng đến danh sách thông báo hiện tại.",
-    "Giữ nội dung hiển thị đúng tài khoản đang sử dụng khi chuyển đổi phiên đăng nhập."
+    "Đưa điều kiện trạng thái hoạt động vào truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.",
+    "Bổ sung các chỉ mục cần thiết cho truy vấn danh sách, FEFO, dashboard và báo cáo vận hành.",
+    "Bổ sung telemetry cho các đường đọc chất chuẩn trước đây chưa được theo dõi đầy đủ."
   ],
   "fixes": [
-    "Sửa lỗi một số thông báo không được tạo hoặc không hiển thị do lỗi xử lý phía máy chủ.",
-    "Sửa lỗi cảnh báo quyền truy cập xuất hiện lặp lại khi dọn các thông báo đã hết hạn.",
-    "Sửa cảnh báo preload xuất hiện khi mở các phần nội dung được cập nhật của ứng dụng."
+    "Ngăn chuẩn có trạng thái DELETED lọt vào kết quả query vận hành trước khi client lọc dữ liệu.",
+    "Giữ lớp lọc client-side để bảo vệ giao diện khi dữ liệu trạng thái và cờ xóa mềm không nhất quán."
   ]
 }
