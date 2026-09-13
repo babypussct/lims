@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.09.13-b06",
+    "date": "13/9/2026",
+    "title": "Hoàn tất cấu hình triển khai tối ưu lượt đọc chất chuẩn",
+    "highlights": [
+      "Bộ lọc chuẩn đang hoạt động đã được triển khai đồng bộ trên các luồng vận hành.",
+      "Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.",
+      "Cấu hình index production đã được tinh chỉnh theo phản hồi kiểm tra của Firestore."
+    ],
+    "features": [],
+    "improvements": [
+      "Giữ điều kiện trạng thái hoạt động trong truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.",
+      "Tinh chỉnh bộ composite index chỉ còn các tổ hợp thực sự cần cho danh sách, FEFO, dashboard và báo cáo vận hành.",
+      "Giữ telemetry cho các đường đọc chất chuẩn trước đây chưa được theo dõi đầy đủ."
+    ],
+    "fixes": [
+      "Loại bỏ composite index status + mã tài liệu không cần thiết theo kiểm tra cấu hình Firestore.",
+      "Giữ lớp lọc client-side để bảo vệ giao diện khi dữ liệu trạng thái và cờ xóa mềm không nhất quán."
+    ],
+    "releaseOrder": 26091300006
+  },
+  {
     "version": "v26.09.13-b05",
     "date": "13/9/2026",
     "title": "Giảm lượt đọc dư thừa khi vận hành chất chuẩn",

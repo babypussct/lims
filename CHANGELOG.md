@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.13-b05
+## Phiên bản hiện tại: v26.09.13-b06
+
+### v26.09.13-b06
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bộ lọc chuẩn đang hoạt động đã được triển khai đồng bộ trên các luồng vận hành.
+- Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.
+- Cấu hình index production đã được tinh chỉnh theo phản hồi kiểm tra của Firestore.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ điều kiện trạng thái hoạt động trong truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.
+- Tinh chỉnh bộ composite index chỉ còn các tổ hợp thực sự cần cho danh sách, FEFO, dashboard và báo cáo vận hành.
+- Giữ telemetry cho các đường đọc chất chuẩn trước đây chưa được theo dõi đầy đủ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ composite index status + mã tài liệu không cần thiết theo kiểm tra cấu hình Firestore.
+- Giữ lớp lọc client-side để bảo vệ giao diện khi dữ liệu trạng thái và cờ xóa mềm không nhất quán.
 
 ### v26.09.13-b05
 
