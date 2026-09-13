@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.13-b03
+## Phiên bản hiện tại: v26.09.13-b04
+
+### v26.09.13-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thông báo được tạo và hiển thị ổn định hơn trong các quy trình xử lý của phòng kiểm nghiệm.
+- Mở ứng dụng sau khi có bản cập nhật nhẹ nhàng hơn, giảm các cảnh báo không cần thiết.
+- Thông tin của từng tài khoản được giữ đúng hơn khi đăng nhập lại hoặc chuyển phiên làm việc.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giảm cảnh báo lặp lại khi ứng dụng kiểm tra và hoàn tất cập nhật.
+- Dọn thông báo cũ an toàn hơn mà không ảnh hưởng đến danh sách thông báo hiện tại.
+- Giữ nội dung hiển thị đúng tài khoản đang sử dụng khi chuyển đổi phiên đăng nhập.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi một số thông báo không được tạo hoặc không hiển thị do lỗi xử lý phía máy chủ.
+- Sửa lỗi cảnh báo quyền truy cập xuất hiện lặp lại khi dọn các thông báo đã hết hạn.
+- Sửa cảnh báo preload xuất hiện khi mở các phần nội dung được cập nhật của ứng dụng.
 
 ### v26.09.13-b03
 

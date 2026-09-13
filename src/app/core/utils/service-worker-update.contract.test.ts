@@ -50,6 +50,36 @@ test('generated Angular service-worker manifest versions index.html with the app
   assert.ok(appShell.urls.includes('/index.html'), 'app-shell must prefetch index.html');
 });
 
+test('production index disables Angular modulepreload hints for service-worker controlled chunks', () => {
+  const angularConfig = JSON.parse(
+    readFileSync(new URL('angular.json', root), 'utf8')
+  ) as {
+    projects: {
+      'lims-cloud-pro': {
+        architect: {
+          build: {
+            options: {
+              index: { input: string; preloadInitial?: boolean };
+            };
+          };
+        };
+      };
+    };
+  };
+  const index = angularConfig.projects['lims-cloud-pro'].architect.build.options.index;
+
+  assert.equal(index.preloadInitial, false);
+});
+
+test('notification cleanup waits for a server snapshot and guards auth-session changes', () => {
+  const source = readFileSync(new URL('src/app/core/services/notification.service.ts', root), 'utf8');
+
+  assert.match(source, /if \(!snapshot\.metadata\.fromCache\)/);
+  assert.match(source, /isActiveListener\(listenerGeneration, listenerUserId\)/);
+  assert.match(source, /this\.listenerGeneration\+\+/);
+  assert.match(source, /code !== 'permission-denied'/);
+});
+
 test('VERSION_READY contract still exposes the modal and activates the pending version before reload', () => {
   const source = readFileSync(new URL('src/app/app.component.ts', root), 'utf8');
   const versionReadyStart = source.indexOf("e.type === 'VERSION_READY'");

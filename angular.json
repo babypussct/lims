@@ -14,7 +14,10 @@
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/lims-cloud-pro",
-            "index": "src/index.html",
+            "index": {
+              "input": "src/index.html",
+              "preloadInitial": false
+            },
             "browser": "src/main.ts",
             "polyfills": [],
             "tsConfig": "tsconfig.app.json",

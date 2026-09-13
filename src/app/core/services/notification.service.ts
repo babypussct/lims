@@ -43,6 +43,7 @@ export class NotificationService {
 
     private unsub?: Unsubscribe;
     private fcmUnsub?: () => void;
+    private listenerGeneration = 0;
     private foregroundGeneration = 0;
     private _allItems: AppNotification[] = [];
     private pushTokenRegistration?: Promise<string | null>;
@@ -107,6 +108,8 @@ export class NotificationService {
 
         const user = this.auth.currentUser();
         if (!user) return;
+        const listenerGeneration = this.listenerGeneration;
+        const listenerUserId = user.uid;
 
         const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
 
@@ -119,6 +122,10 @@ export class NotificationService {
 
         let isFirstSnapshot = true;
         this.unsub = onSnapshot(q, (snapshot) => {
+            // A pending callback from a previous auth session can arrive after
+            // unsubscribe(). Do not publish or clean data outside this session.
+            if (!this.isActiveListener(listenerGeneration, listenerUserId)) return;
+
             this.readMonitor.record(
                 'onSnapshot',
                 `artifacts/${this.fb.APP_ID}/notifications`,
@@ -148,8 +155,13 @@ export class NotificationService {
             this.notifications.set(items.slice(0, this.displayLimit()));
 
             // Backend cleanup is authoritative; remove any stale documents
-            // already returned by this listener as a low-cost fallback.
-            this._cleanupOldNotifications(staleItems);
+            // already returned by a server-confirmed snapshot as a low-cost
+            // fallback. A cache snapshot may contain documents that another
+            // tab or the backend has already deleted; sending those IDs back
+            // through Rules would produce a misleading permission warning.
+            if (!snapshot.metadata.fromCache) {
+                void this._cleanupOldNotifications(staleItems, listenerGeneration, listenerUserId);
+            }
 
         }, (error) => {
             console.error('[NotificationService] Listener error:', error.message);
@@ -193,6 +205,7 @@ export class NotificationService {
     }
 
     stopListener() {
+        this.listenerGeneration++;
         this.foregroundGeneration++;
         if (this.unsub) { this.unsub(); this.unsub = undefined; }
         if (this.fcmUnsub) { this.fcmUnsub(); this.fcmUnsub = undefined; }
@@ -325,9 +338,14 @@ export class NotificationService {
     // ── Best-effort client cleanup; backend cron is authoritative ────────────
     private _isCleaningUp = false;
 
-    private async _cleanupOldNotifications(stale: AppNotification[]) {
+    private async _cleanupOldNotifications(
+        stale: AppNotification[],
+        listenerGeneration: number,
+        listenerUserId: string
+    ) {
         if (this._isCleaningUp) return;
         if (stale.length === 0) return;
+        if (!this.isActiveListener(listenerGeneration, listenerUserId)) return;
 
         this._isCleaningUp = true;
         try {
@@ -336,13 +354,28 @@ export class NotificationService {
                 const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`, n.id!);
                 batch.delete(docRef);
             });
+            if (!this.isActiveListener(listenerGeneration, listenerUserId)) return;
             await batch.commit();
             console.log(`[NotificationService] Best-effort cleaned ${stale.length} notifications older than ${NOTIFICATION_RETENTION_DAYS} days.`);
         } catch (e) {
-            console.warn('[NotificationService] Cleanup failed (non-critical):', e);
+            // The server snapshot can race with the retention job or another
+            // tab deleting the same document. Under the owner-only Rules this
+            // is reported as permission-denied and is safe to ignore because
+            // cleanup is only a client-side fallback.
+            const code = typeof e === 'object' && e !== null && 'code' in e
+                ? (e as { code?: unknown }).code
+                : undefined;
+            if (code !== 'permission-denied') {
+                console.warn('[NotificationService] Cleanup failed (non-critical):', e);
+            }
         } finally {
             this._isCleaningUp = false;
         }
+    }
+
+    private isActiveListener(generation: number, userId: string): boolean {
+        return generation === this.listenerGeneration
+            && this.auth.currentUser()?.uid === userId;
     }
 
     private isExpired(createdAt: unknown, now: number): boolean {
