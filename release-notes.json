@@ -1,18 +1,22 @@
 {
-  "title": "Hoàn tất cấu hình triển khai tối ưu lượt đọc chất chuẩn",
+  "title": "Tái cấu trúc và hardening SmartBatch một mẫu",
   "highlights": [
-    "Bộ lọc chuẩn đang hoạt động đã được triển khai đồng bộ trên các luồng vận hành.",
-    "Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.",
-    "Cấu hình index production đã được tinh chỉnh theo phản hồi kiểm tra của Firestore."
+    "Chế độ Một mẫu duy nhất có workspace split-view với preview phân rã mẻ theo thời gian thực.",
+    "Planner dùng chung phân bổ target theo SOP, matrix, tồn kho và forced assignment một cách nhất quán.",
+    "Luồng commit chỉ tạo mẻ khi toàn bộ target đã được bao phủ và tài nguyên đã được kiểm tra."
   ],
-  "features": [],
+  "features": [
+    "Bổ sung SingleSampleDispatchWorkspaceComponent độc lập cho chế độ Một mẫu duy nhất.",
+    "Bổ sung chẩn đoán target chưa được phân phối và candidate SOP thay thế khi forced SOP không hợp lệ."
+  ],
   "improvements": [
-    "Giữ điều kiện trạng thái hoạt động trong truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.",
-    "Tinh chỉnh bộ composite index chỉ còn các tổ hợp thực sự cần cho danh sách, FEFO, dashboard và báo cáo vận hành.",
-    "Giữ telemetry cho các đường đọc chất chuẩn trước đây chưa được theo dõi đầy đủ."
+    "Debounce preview, fingerprint draft và sequence guard để loại bỏ preview cũ trong các thao tác nhập nhanh.",
+    "Đồng bộ draft hai chiều, hỗ trợ mô tả mẫu từ master/alias và cho phép matrix tùy chọn khi SOP không yêu cầu lọc nền.",
+    "Tách UI chế độ Một mẫu duy nhất khỏi wizard Ghép nhiều mẫu và bổ sung các contract/guardrail test tương ứng."
   ],
   "fixes": [
-    "Loại bỏ composite index status + mã tài liệu không cần thiết theo kiểm tra cấu hình Firestore.",
-    "Giữ lớp lọc client-side để bảo vệ giao diện khi dữ liệu trạng thái và cờ xóa mềm không nhất quán."
+    "Chặn commit kế hoạch còn target chưa được phân phối, thiếu tồn kho, lỗi công thức hoặc đang tính toán.",
+    "Không còn fallback âm thầm khi forced SOP không tồn tại, không chứa target hoặc xung đột matrix.",
+    "Khôi phục masterId cho snapshot mô tả mẫu và thay thế icon fa-times không còn phù hợp với UI guardrails."
   ]
 }

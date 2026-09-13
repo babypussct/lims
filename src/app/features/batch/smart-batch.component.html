@@ -107,7 +107,29 @@
                 </div>
             }
 
-            @if (step() === 1 && showSampleGroupWizard()) {
+            @if (step() === 1 && smartBatchMode() === 'single') {
+                <div class="w-full flex-1 min-h-0 flex flex-col animate-fade-in">
+                    <app-single-sample-dispatch-workspace
+                        class="block h-full min-h-0"
+                        [draft]="singleSampleDraft()"
+                        [availableMatrices]="availableMatrices()"
+                        [availableTargets]="allAvailableTargets()"
+                        [availableSops]="activeSops()"
+                        [availableTargetGroups]="availableGroups()"
+                        [availableSampleDescriptions]="availableSampleDescriptions()"
+                        [preview]="singleSamplePreview()"
+                        [isCalculating]="isSingleSampleCalculating()"
+                        [isCommitting]="isSingleSampleCommitting()"
+                        (draftChange)="onSingleSampleDraftChange($event)"
+                        (forcedSopSelect)="onSingleSampleForcedSopSelect($event)"
+                        (forcedSopClear)="onSingleSampleForcedSopClear($event)"
+                        (commit)="handleSingleSampleCommit()"
+                        (cancel)="goBackToStep0()">
+                    </app-single-sample-dispatch-workspace>
+                </div>
+            }
+
+            @if (step() === 1 && showSampleGroupWizard() && smartBatchMode() === 'multiple') {
                 <div class="w-full flex-1 min-h-0 flex flex-col animate-fade-in">
                     <app-sample-group-step2-wizard
                         #sampleGroupWizard
@@ -119,7 +141,6 @@
                         [availableTargetGroups]="availableGroups()"
                         [inventoryMap]="state.inventoryMap()"
                         [availableSampleDescriptions]="availableSampleDescriptions()"
-                        [singleMode]="smartBatchMode() === 'single'"
                         (complete)="completeSampleGroupWizard($event)">
                     </app-sample-group-step2-wizard>
                 </div>

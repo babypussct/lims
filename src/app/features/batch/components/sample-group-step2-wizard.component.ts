@@ -101,7 +101,7 @@ interface WizardSopSuggestion {
                   </span>
                 </div>
               </button>
-              @if (!singleMode && drafts().length > 1) {
+              @if (drafts().length > 1) {
                 <div class="px-2.5 pb-2 flex justify-end">
                   <button type="button" (click)="removeGroup(group.id); $event.stopPropagation()" class="text-[10px] font-black text-slate-400 hover:text-red-600 transition"><i class="fa-solid fa-trash mr-1"></i>Xóa</button>
                 </div>
@@ -109,7 +109,7 @@ interface WizardSopSuggestion {
             </article>
           }
 
-          <app-button variant="secondary" size="sm" [fullWidth]="true" (click)="addGroup()" [disabled]="singleMode">
+          <app-button variant="secondary" size="sm" [fullWidth]="true" (click)="addGroup()">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
             Thêm nhóm mới
           </app-button>
@@ -158,7 +158,6 @@ interface WizardSopSuggestion {
                                   placeholder="VD:&#10;0311&#9;Cá tra&#10;0411&#9;Cá tra"></textarea>
                         <div class="mt-1 flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400">
                           <span>{{sampleCodes(group).length}} mã hợp lệ · hỗ trợ mã[TAB]mô tả</span>
-                          @if (singleMode) { <span class="font-bold text-fuchsia-600 dark:text-fuchsia-400">Chế độ một mẫu</span> }
                         </div>
                       </div>
 
@@ -411,7 +410,6 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   @Input() availableTargetGroups: TargetGroup[] = [];
   @Input() availableSampleDescriptions: SampleDescriptionMaster[] = [];
   @Input() inventoryMap: Record<string, { stock?: number }> = {};
-  @Input() singleMode = false;
 
   @Output() close = new EventEmitter<void>();
   @Output() complete = new EventEmitter<SampleGroupWizardGroup[]>();
@@ -498,7 +496,6 @@ export class SampleGroupStep2WizardComponent implements OnInit {
       ? this.availableSops.find(sop => sop.id === group.forcedSopId)
       : undefined;
     issues.push(...sampleGroupCompletionIssues(group, {
-      singleMode: this.singleMode,
       step: 5,
       forcedSop
     }));
@@ -524,7 +521,6 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   }
 
   addGroup(): void {
-    if (this.singleMode) return;
     const group = this.newGroup(`Nhóm mẻ ${this.drafts().length + 1}`);
     this.drafts.update(groups => [...groups, group]);
     this.groupStates.update(states => ({
@@ -535,7 +531,7 @@ export class SampleGroupStep2WizardComponent implements OnInit {
   }
 
   removeGroup(groupId: string): void {
-    if (this.singleMode || this.drafts().length <= 1) return;
+    if (this.drafts().length <= 1) return;
     this.drafts.update(groups => groups.filter(group => group.id !== groupId));
     this.groupStates.update(states => {
       const next = { ...states };
@@ -910,7 +906,6 @@ export class SampleGroupStep2WizardComponent implements OnInit {
 
   private stepOneIssues(group: SampleGroupWizardGroup): string[] {
     const issues = sampleGroupCompletionIssues(group, {
-      singleMode: this.singleMode,
       step: 3
     });
     if (!group.matrixType) issues.unshift('Cần chọn nền mẫu trước khi tiếp tục.');

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.13-b06",
-    "title": "Hoàn tất cấu hình triển khai tối ưu lượt đọc chất chuẩn",
+    "version": "v26.09.14-b01",
+    "title": "Tái cấu trúc và hardening SmartBatch một mẫu",
     "features": [
-      "Bộ lọc chuẩn đang hoạt động đã được triển khai đồng bộ trên các luồng vận hành.",
-      "Các chuẩn đã xóa mềm vẫn được giữ nguyên cho khôi phục, audit và các nghiệp vụ lịch sử.",
-      "Cấu hình index production đã được tinh chỉnh theo phản hồi kiểm tra của Firestore.",
-      "Giữ điều kiện trạng thái hoạt động trong truy vấn Firestore để không đọc lại các chuẩn đã xóa mềm trong luồng thường ngày.",
-      "Tinh chỉnh bộ composite index chỉ còn các tổ hợp thực sự cần cho danh sách, FEFO, dashboard và báo cáo vận hành."
+      "Chế độ Một mẫu duy nhất có workspace split-view với preview phân rã mẻ theo thời gian thực.",
+      "Planner dùng chung phân bổ target theo SOP, matrix, tồn kho và forced assignment một cách nhất quán.",
+      "Luồng commit chỉ tạo mẻ khi toàn bộ target đã được bao phủ và tài nguyên đã được kiểm tra.",
+      "Bổ sung SingleSampleDispatchWorkspaceComponent độc lập cho chế độ Một mẫu duy nhất.",
+      "Bổ sung chẩn đoán target chưa được phân phối và candidate SOP thay thế khi forced SOP không hợp lệ."
     ]
   },
   "assetGroups": [

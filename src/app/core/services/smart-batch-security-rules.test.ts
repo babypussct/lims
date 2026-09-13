@@ -160,9 +160,8 @@ test('SmartBatch Step 2 uses a bounded two-step group wizard without adding a di
   assert.doesNotMatch(sampleGroupWizardSource, /Khai báo nhiều nhóm mẻ trên cùng một trang|Mỗi nhóm có wizard 2 bước/);
   assert.doesNotMatch(sampleGroupWizardSource, /Mở wizard nhóm/);
   assert.match(sampleGroupWizardSource, /Thêm nhóm mới/);
-  assert.match(sampleGroupWizardSource, /AppButtonComponent/);
-  assert.match(sampleGroupWizardSource, /AppEmptyStateComponent/);
-  assert.match(sampleGroupWizardSource, /<app-button variant="secondary" size="sm" \[fullWidth\]="true" \(click\)="addGroup\(\)" \[disabled\]="singleMode"/);
+  assert.match(sampleGroupWizardSource, /<app-button variant="secondary" size="sm" \[fullWidth\]="true" \(click\)="addGroup\(\)"/);
+  assert.doesNotMatch(sampleGroupWizardSource, /\[disabled\]="singleMode"/);
   assert.match(sampleGroupWizardSource, /<app-button variant="secondary" size="sm" \(click\)="previousStep\(\)" \[disabled\]="activeStep\(\) === 1"/);
   assert.match(sampleGroupWizardSource, /<app-button variant="primary" size="sm" \(click\)="nextStep\(\)" \[disabled\]="!canEnterStep2\(group\)"/);
   assert.match(sampleGroupWizardSource, /<app-empty-state[\s\S]*title="Các nhóm mẻ đã được lưu trong bước 2"/);
