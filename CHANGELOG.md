@@ -2,7 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.14-b01
+## Phiên bản hiện tại: v26.09.14-b02
+
+### v26.09.14-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chế độ Một mẫu duy nhất có workspace split-view với preview phân rã mẻ theo thời gian thực.
+- Planner dùng chung phân bổ target theo SOP, matrix, tồn kho và forced assignment một cách nhất quán.
+- Luồng commit chỉ tạo mẻ khi toàn bộ target đã được bao phủ và tài nguyên đã được kiểm tra.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung SingleSampleDispatchWorkspaceComponent độc lập cho chế độ Một mẫu duy nhất.
+- Bổ sung chẩn đoán target chưa được phân phối và candidate SOP thay thế khi forced SOP không hợp lệ.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Debounce preview, fingerprint draft và sequence guard để loại bỏ preview cũ trong các thao tác nhập nhanh.
+- Đồng bộ draft hai chiều, hỗ trợ mô tả mẫu từ master/alias và cho phép matrix tùy chọn khi SOP không yêu cầu lọc nền.
+- Tách UI chế độ Một mẫu duy nhất khỏi wizard Ghép nhiều mẫu và bổ sung các contract/guardrail test tương ứng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Chặn commit kế hoạch còn target chưa được phân phối, thiếu tồn kho, lỗi công thức hoặc đang tính toán.
+- Không còn fallback âm thầm khi forced SOP không tồn tại, không chứa target hoặc xung đột matrix.
+- Khôi phục masterId cho snapshot mô tả mẫu và thay thế icon fa-times không còn phù hợp với UI guardrails.
+- Đồng bộ toàn bộ màu nhấn của workspace Một mẫu duy nhất về palette Soft UI fuchsia để đáp ứng UI contract của feature.
 
 ### v26.09.14-b01
 

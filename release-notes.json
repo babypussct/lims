@@ -17,6 +17,7 @@
   "fixes": [
     "Chặn commit kế hoạch còn target chưa được phân phối, thiếu tồn kho, lỗi công thức hoặc đang tính toán.",
     "Không còn fallback âm thầm khi forced SOP không tồn tại, không chứa target hoặc xung đột matrix.",
-    "Khôi phục masterId cho snapshot mô tả mẫu và thay thế icon fa-times không còn phù hợp với UI guardrails."
+    "Khôi phục masterId cho snapshot mô tả mẫu và thay thế icon fa-times không còn phù hợp với UI guardrails.",
+    "Đồng bộ toàn bộ màu nhấn của workspace Một mẫu duy nhất về palette Soft UI fuchsia để đáp ứng UI contract của feature."
   ]
 }

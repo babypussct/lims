@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.14-b01",
+    "version": "v26.09.14-b02",
     "title": "Tái cấu trúc và hardening SmartBatch một mẫu",
     "features": [
       "Chế độ Một mẫu duy nhất có workspace split-view với preview phân rã mẻ theo thời gian thực.",

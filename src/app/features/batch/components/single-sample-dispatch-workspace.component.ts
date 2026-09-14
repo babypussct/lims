@@ -134,7 +134,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                 <button
                   type="button"
                   (click)="showGroupModal.set(true)"
-                  class="px-2 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
+                  class="px-2 py-1 rounded-lg border border-fuchsia-200 dark:border-fuchsia-800 bg-fuchsia-50/50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-bold hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">
                   <i class="fa-solid fa-layer-group mr-1"></i>Theo bộ
                 </button>
                 @if (selectedTargets().size > 0) {
@@ -202,10 +202,10 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-750 pb-2.5 shrink-0">
               <div>
                 <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <i class="fa-solid fa-network-wired text-indigo-600 dark:text-indigo-400"></i>
+                  <i class="fa-solid fa-network-wired text-fuchsia-600 dark:text-fuchsia-400"></i>
                   Bản Đồ Phân Rã Mẻ Dự Kiến
                   @if (isCalculating) {
-                    <span class="text-[10px] text-indigo-500 font-normal flex items-center gap-1">
+                    <span class="text-[10px] text-fuchsia-500 font-normal flex items-center gap-1">
                       <i class="fa-solid fa-spinner fa-spin"></i> Đang tính...
                     </span>
                   }
@@ -215,7 +215,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
 
               @if (preview) {
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-black px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                  <span class="text-xs font-black px-2.5 py-1 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200/60 dark:border-fuchsia-800/40">
                     Dự kiến {{preview.proposedBatches.length}} mẻ
                   </span>
                 </div>
@@ -234,11 +234,11 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
 
                 <!-- LIST OF PROPOSED BATCHES -->
                 @for (batch of preview.proposedBatches; track batch.id; let idx = $index) {
-                  <div class="rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-900/40 p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-600">
+                  <div class="rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-900/40 p-3.5 transition hover:border-fuchsia-300 dark:hover:border-fuchsia-600">
                     <div class="flex items-start justify-between gap-2">
                       <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                          <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                          <span class="w-5 h-5 rounded-full bg-fuchsia-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
                             {{idx + 1}}
                           </span>
                           <span class="text-xs font-black text-slate-800 dark:text-slate-100">
@@ -288,7 +288,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                       <div class="flex flex-wrap gap-1.5">
                         @for (task of batch.tasks; track task.targetId) {
                           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold shadow-2xs">
-                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></span>
                             {{task.targetName}}
                             @if (forcedSopAssignments()[task.targetId]) {
                               <button type="button" (click)="clearForcedSop(task.targetId)" class="text-slate-400 hover:text-red-500 ml-1" title="Bỏ chỉ định">
@@ -371,7 +371,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                                   <button
                                     type="button"
                                     (click)="selectForcedSop(issue.targetId, cand.id)"
-                                    class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shadow-xs transition">
+                                    class="px-2.5 py-1 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold text-[10px] shadow-xs transition">
                                     <i class="fa-solid fa-check mr-1"></i>Chọn: {{cand.name}}
                                   </button>
                                 }
@@ -466,12 +466,12 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
               <button
                 type="button"
                 (click)="importGroup(g)"
-                class="w-full text-left p-3.5 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 transition flex items-center justify-between">
+                class="w-full text-left p-3.5 hover:bg-fuchsia-50/60 dark:hover:bg-fuchsia-950/30 transition flex items-center justify-between">
                 <div>
                   <div class="text-xs font-black text-slate-800 dark:text-slate-100">{{g.name}}</div>
                   <div class="text-[10px] text-slate-400 mt-0.5">{{g.targets.length}} chỉ tiêu</div>
                 </div>
-                <i class="fa-solid fa-plus text-xs text-indigo-600"></i>
+                <i class="fa-solid fa-plus text-xs text-fuchsia-600"></i>
               </button>
             } @empty {
               <div class="p-6 text-center text-xs text-slate-400">Chưa có bộ chỉ tiêu nào.</div>
