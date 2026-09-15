@@ -33,8 +33,8 @@ export function computeDailyBatchLayoutHint(
   const maxTargetTextLength = batch.groups.reduce(
     (max, group) => Math.max(
       max,
-      group.targetScope.compact
-        ? getTargetScopeDisplayText(group.targetScope).length
+      group.printTargetScope.compact
+        ? getTargetScopeDisplayText(group.printTargetScope).length
         : group.targetNames.slice(0, 6).reduce((sum, name) => sum + name.length, 0)
     ),
     0

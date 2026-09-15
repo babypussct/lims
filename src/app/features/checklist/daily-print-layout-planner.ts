@@ -112,7 +112,7 @@ function evaluateListLayout(
     batch.groups.forEach(group => {
       const batchText = `${batch.sopName} v${batch.sopVersion || ''}`;
       const sampleText = getPrintSampleText(group, includeSampleDescriptions);
-      const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
+      const targetText = getTargetScopeDisplayText(group.printTargetScope) || 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
         estimateLines(batchText, metrics.batchCharsPerLine),
         estimateLines(sampleText, metrics.sampleCharsPerLine),
@@ -175,7 +175,7 @@ function evaluateCompactLayout(
   const landscapePenalty = orientation === 'landscape' ? 4 : 0;
   const complexityPenalty = batches.reduce((penalty, batch) => penalty
     + Number(batch.groups.length > 2) * 18
-    + Number(batch.groups.some(group => !group.targetScope.compact && group.targetNames.length > 30)) * 12, 0);
+    + Number(batch.groups.some(group => !group.printTargetScope.compact && group.targetNames.length > 30)) * 12, 0);
   const score = estimatedPages * 100
     + estimatedBatchSplits * 30
     + wrappedLineCount
@@ -257,7 +257,7 @@ function estimateCompactCard(
 
   batch.groups.forEach(group => {
     const sampleText = getPrintSampleText(group, includeSampleDescriptions);
-    const targetText = getTargetScopeDisplayText(group.targetScope) || 'Chưa xác định chỉ tiêu';
+    const targetText = getTargetScopeDisplayText(group.printTargetScope) || 'Chưa xác định chỉ tiêu';
     const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
     const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);
     wrappedLineCount += Math.max(0, sampleLines - 1) + Math.max(0, targetLines - 1);

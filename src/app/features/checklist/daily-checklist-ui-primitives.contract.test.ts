@@ -57,6 +57,11 @@ describe('daily checklist shared UI primitive integration', () => {
   it('renders compact sample runs with bold codes and normal-weight descriptions while keeping expanded traceability', () => {
     const template = read('./daily-checklist.component.html');
     const component = read('./daily-checklist.component.ts');
+    const printTemplate = template.slice(
+      template.indexOf('<div class="cl-print-document cl-print-only"'),
+      template.indexOf('<!-- ===== PRINT OPTIONS SETTINGS MODAL ===== -->')
+    );
+    const screenTemplate = template.slice(0, template.indexOf('<div class="cl-print-document cl-print-only"'));
 
     assert.match(template, /@for \(sample of group\.samples; track sample\.sampleId\)/);
     assert.match(template, /@for \(run of group\.sampleDisplayRuns; track \$index; let isLast = \$last\)/);
@@ -68,8 +73,18 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /class="cl-print-sample-code">\{\{run\.formattedSamples\}\}<\/span>/);
     assert.match(template, /class="cl-print-sample-description"> \(\{\{run\.description\.nameSnapshot\}\}\)<\/span>/);
     assert.match(template, /class="cl-print-sample-separator">; <\/span>/);
-    assert.match(template, /class="cl-print-meta">\{\{batch\.physicalBatchCount\}\} mẻ vật lý/);
-    assert.match(template, /<small>\{\{batch\.physicalBatchCount\}\} mẻ vật lý/);
+    assert.match(template, /<th>SOP<\/th><th>Mẫu thực hiện<\/th>/);
+    assert.match(template, /class="cl-print-sop">\{\{batch\.sopName\}\} · \{\{group\.sampleIds\.length\}\} mẫu<\/div>/);
+    assert.match(template, /class="cl-print-compact-label">\{\{batch\.sopName\}\} · \{\{group\.sampleIds\.length\}\} mẫu<\/div>/);
+    assert.match(screenTemplate, /group\.printTargetScope\.compact/);
+    assert.match(screenTemplate, /\{\{group\.printTargetScope\.headline\}\}/);
+    assert.match(screenTemplate, /\{\{group\.printTargetScope\.detailLabel\}\}/);
+    assert.match(template, /group\.printTargetScope\.compact/);
+    assert.match(template, /\{\{group\.printTargetScope\.headline\}\}/);
+    assert.match(template, /\{\{group\.printTargetScope\.detailLabel\}\}/);
+    assert.doesNotMatch(printTemplate, /SOP v\{\{batch\.sopVersion\}\}/);
+    assert.doesNotMatch(printTemplate, /Nhóm \{\{groupIndex \+ 1\}\}/);
+    assert.doesNotMatch(printTemplate, /\{\{batch\.physicalBatchCount\}\} mẻ vật lý/);
     assert.match(template, /\[ngModel\]="printIncludeSampleDescriptions\(\)"/);
     assert.match(template, />Kèm mô tả mẫu<\/span>/);
     assert.match(template, /Mã mẫu luôn được gom dải liên tục/);

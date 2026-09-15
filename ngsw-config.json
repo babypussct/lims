@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.15-b01",
-    "title": "Củng cố chế độ thiết bị và thông tin mẻ vật lý",
+    "version": "v26.09.15-b02",
+    "title": "Tối ưu Theo Dõi Mẫu & Kết Quả Ngày theo bộ chỉ tiêu",
     "features": [
-      "Màn hình đăng nhập dùng một lựa chọn thống nhất giữa Máy dùng chung và Duy trì đăng nhập cho Google, mật khẩu và QR.",
-      "Chế độ Máy dùng chung tiếp tục ưu tiên an toàn phiên đăng nhập, còn thiết bị cá nhân có thể duy trì phiên qua lần mở trình duyệt tiếp theo.",
-      "Bản in checklist hiển thị số mẻ vật lý và phiên bản SOP để phản ánh đúng khối lượng thao tác thực tế.",
-      "Bổ sung hướng dẫn chế độ thiết bị ngay trên màn hình đăng nhập và hỗ trợ thao tác bàn phím cho bộ chọn chế độ.",
-      "Đồng bộ trạng thái chế độ thiết bị qua một nguồn duy nhất để các luồng đăng nhập Google, mật khẩu, QR và idle-timeout dùng cùng cấu hình."
+      "Bản in Theo Dõi Mẫu & Kết Quả Ngày rút gọn SOP theo dạng Tên SOP · X mẫu và ưu tiên tên bộ chỉ tiêu thay cho danh sách target dài.",
+      "Màn hình theo dõi ngày dùng cùng cơ chế nhận diện bộ chỉ tiêu để các mẻ lớn dễ đọc hơn nhưng vẫn có thể mở toàn bộ danh sách chỉ tiêu.",
+      "Nhóm chỉ tiêu lớn thiếu dưới 5 chỉ tiêu được nhận diện gần đúng và luôn ghi rõ tỷ lệ khớp cùng các chỉ tiêu còn thiếu.",
+      "Nhận diện đồng thời nhiều bộ chỉ tiêu cấu hình trong một nhóm phân công và loại bỏ các bộ con bị bao hàm để tránh lặp thông tin.",
+      "Tính số chỉ tiêu đã được đại diện bằng hợp các target thực tế để tránh cộng trùng giữa các nhóm có giao nhau."
     ]
   },
   "assetGroups": [

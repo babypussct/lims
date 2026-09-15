@@ -278,11 +278,14 @@
                         </div>
                         @if (group.targetNames.length === 0) {
                           <p class="text-xs font-bold text-amber-600 dark:text-amber-400">Chưa xác định chỉ tiêu</p>
-                        } @else if (group.targetScope.compact) {
+                        } @else if (group.printTargetScope.compact) {
                           <div class="rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50/70 dark:bg-blue-500/10 px-3 py-2.5">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                               <div class="min-w-0">
-                                <p class="text-xs font-black text-blue-900 dark:text-blue-200 break-words">{{group.targetScope.headline}}</p>
+                                <p class="text-xs font-black text-blue-900 dark:text-blue-200 break-words">{{group.printTargetScope.headline}}</p>
+                                @if (group.printTargetScope.detailLabel) {
+                                  <p class="mt-1 text-[10px] leading-relaxed font-bold text-slate-500 dark:text-slate-400 break-words">{{group.printTargetScope.detailLabel}}</p>
+                                }
                               </div>
                               <button type="button" (click)="toggleTargetDetail(batch.cardKey, group.signature)"
                                       class="shrink-0 text-[10px] font-black text-blue-700 dark:text-blue-300 hover:underline">
@@ -352,7 +355,7 @@
             <table class="cl-print-table">
               <colgroup><col class="cl-col-batch"><col class="cl-col-samples"><col class="cl-col-targets"></colgroup>
               <thead>
-                <tr><th>Mẻ / SOP</th><th>Mẫu thực hiện</th><th>Chỉ tiêu kiểm</th></tr>
+                <tr><th>SOP</th><th>Mẫu thực hiện</th><th>Chỉ tiêu kiểm</th></tr>
               </thead>
               <tbody>
                 @for (batch of boardBatches(); track batch.cardKey) {
@@ -361,8 +364,7 @@
                       <td>
                         <div class="cl-print-batch-cell">
                           <div class="cl-print-batch-info">
-                            <div class="cl-print-sop">{{batch.sopName}}</div>
-                            <div class="cl-print-meta">{{batch.physicalBatchCount}} mẻ vật lý@if (batch.sopVersion) { · SOP v{{batch.sopVersion}} }</div>
+                            <div class="cl-print-sop">{{batch.sopName}} · {{group.sampleIds.length}} mẫu</div>
                           </div>
                         </div>
                       </td>
@@ -383,10 +385,10 @@
                       <td>
                         @if (group.targetNames.length === 0) {
                           <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
-                        } @else if (group.targetScope.compact) {
+                        } @else if (group.printTargetScope.compact) {
                           <div class="cl-print-scope">
-                            <strong>{{group.targetScope.headline}}</strong>
-                            <span>{{group.targetScope.detailLabel}}</span>
+                            <strong>{{group.printTargetScope.headline}}</strong>
+                            <span>{{group.printTargetScope.detailLabel}}</span>
                           </div>
                         } @else {
                           <ul class="cl-print-targets">
@@ -417,17 +419,11 @@
                         <section class="cl-print-compact-card">
                           <header class="cl-print-compact-head">
                              <span class="cl-print-compact-index">{{boardBatches().indexOf(batch) + 1}}</span>
-                             <div class="cl-print-compact-title">
-                               <div>{{batch.sopName}}</div>
-                               <small>{{batch.physicalBatchCount}} mẻ vật lý@if (batch.sopVersion) { · SOP v{{batch.sopVersion}} }</small>
-                             </div>
                            </header>
 
                           @for (group of batch.groups; track group.signature; let groupIndex = $index) {
                             <div class="cl-print-compact-group">
-                              @if (batch.groups.length > 1) {
-                                <div class="cl-print-compact-label">Nhóm {{groupIndex + 1}}</div>
-                              }
+                              <div class="cl-print-compact-label">{{batch.sopName}} · {{group.sampleIds.length}} mẫu</div>
                               <div class="cl-print-compact-samples">
                                 @if (!printIncludeSampleDescriptions()) {
                                   <span class="cl-print-sample-code">{{group.formattedSamples}}</span>
@@ -442,9 +438,10 @@
                               @if (printIncludeSampleDescriptions() && group.hasDescriptionConflict) { <div class="cl-print-missing">Mô tả mẫu không thống nhất</div> }
                               @if (group.targetNames.length === 0) {
                                 <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
-                              } @else if (group.targetScope.compact) {
+                              } @else if (group.printTargetScope.compact) {
                                 <div class="cl-print-scope">
-                                  <strong>{{group.targetScope.headline}}</strong>
+                                  <strong>{{group.printTargetScope.headline}}</strong>
+                                  <span>{{group.printTargetScope.detailLabel}}</span>
                                 </div>
                               } @else {
                                 <ul class="cl-print-compact-targets">

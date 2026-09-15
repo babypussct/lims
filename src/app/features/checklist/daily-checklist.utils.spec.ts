@@ -436,6 +436,132 @@ test('full SOP snapshot is represented by one compact semantic scope', () => {
   assert.equal(computeDailyBatchLayoutHint(view, 1200), 'compact');
 });
 
+test('daily print scope prefers one exact configured target group over full SOP scope', () => {
+  const targetIds = ['T1', 'T2'];
+  const targetNames = { T1: 'Chỉ tiêu 1', T2: 'Chỉ tiêu 2' };
+  const [overview] = buildApprovedBatchOverviews([
+    request({ sampleList: ['L0115'], targetIds, targetNames, sopVersion: 7 })
+  ], '2026-07-16', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const configuredGroups: TargetGroup[] = [{
+    id: 'GROUP-PESTICIDES',
+    name: 'Nhóm thuốc BVTV',
+    targets: [
+      { id: 'legacy-t1', name: 'T1' },
+      { id: 'legacy-t2', name: 'T2' }
+    ]
+  }];
+
+  const [view] = buildDailyBatchViews([overview], configuredGroups);
+
+  assert.equal(view.groups[0].targetScope.kind, 'target-group');
+  assert.equal(view.groups[0].targetScope.compact, true);
+  assert.equal(view.groups[0].targetScope.headline, 'Bộ chỉ tiêu: Nhóm thuốc BVTV');
+  assert.equal(view.groups[0].targetScope.detailLabel, '2 chỉ tiêu');
+  assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm thuốc BVTV');
+});
+
+test('a one-target configured group is still printed by group name', () => {
+  const [overview] = buildApprovedBatchOverviews([
+    request({ targetIds: ['T1'], targetNames: { T1: 'Pirimiphos methyl' } })
+  ], '2026-07-16', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const configuredGroups: TargetGroup[] = [{
+    id: 'GROUP-SINGLE',
+    name: 'Nhóm Pirimiphos',
+    targets: [{ id: 'legacy-t1', name: 'T1' }]
+  }];
+
+  const [view] = buildDailyBatchViews([overview], configuredGroups);
+
+  assert.equal(view.groups[0].targetScope.kind, 'target-group');
+  assert.equal(view.groups[0].targetScope.compact, true);
+  assert.equal(view.groups[0].targetScope.headline, 'Bộ chỉ tiêu: Nhóm Pirimiphos');
+  assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Pirimiphos');
+});
+
+test('daily print compresses complete configured groups inside a larger assigned target set', () => {
+  const chlorIds = ['Aldrin', 'BHC-gamma', 'DDT'];
+  const cucIds = ['Cypermethrins', 'Deltamethrin'];
+  const ttsIds = ['Aldrin', 'DDT'];
+  const residualIds = ['Atrazine', 'Chlorothalonil'];
+  const assignedIds = [...chlorIds, ...cucIds, ...residualIds];
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      sampleList: ['L9308'],
+      analysisDate: '2026-09-09',
+      targetIds: assignedIds,
+      targetNames: Object.fromEntries(assignedIds.map(id => [id, id]))
+    })
+  ], '2026-09-09', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const configuredGroups: TargetGroup[] = [
+    { id: 'G-TTS', name: '10 chỉ tiêu TTS', targets: ttsIds.map(id => ({ id, name: id })) },
+    { id: 'G-CHLOR', name: 'Nhóm Chlor', targets: chlorIds.map(id => ({ id, name: id })) },
+    { id: 'G-CUC', name: 'Nhóm Cúc', targets: cucIds.map(id => ({ id, name: id })) },
+    {
+      id: 'G-LAN',
+      name: 'Nhóm Lân',
+      targets: [...residualIds, 'Thiếu trong mẫu'].map(id => ({ id, name: id }))
+    }
+  ];
+
+  const [view] = buildDailyBatchViews([overview], configuredGroups);
+
+  assert.equal(view.groups[0].printTargetScope.compact, true);
+  assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Chlor · Nhóm Cúc');
+  assert.equal(view.groups[0].printTargetScope.detailLabel, '5 chỉ tiêu theo bộ · +2 chỉ tiêu khác');
+  assert.equal(view.groups[0].printTargetScope.headline.includes('10 chỉ tiêu TTS'), false);
+  assert.equal(view.groups[0].printTargetScope.headline.includes('Nhóm Lân'), false);
+});
+
+test('daily print labels a large configured group when fewer than five targets are missing', () => {
+  const lanIds = Array.from({ length: 38 }, (_, index) => `Lan-${index + 1}`);
+  const assignedLanIds = lanIds.slice(0, 36);
+  const assignedIds = [...assignedLanIds, 'Atrazine', 'Chlorothalonil'];
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      sampleList: ['L9308'],
+      analysisDate: '2026-09-09',
+      targetIds: assignedIds,
+      targetNames: Object.fromEntries(assignedIds.map(id => [id, id]))
+    })
+  ], '2026-09-09', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const configuredGroups: TargetGroup[] = [{
+    id: 'G-LAN',
+    name: 'Nhóm Lân',
+    targets: lanIds.map(id => ({ id, name: id }))
+  }];
+
+  const [view] = buildDailyBatchViews([overview], configuredGroups);
+
+  assert.equal(view.groups[0].printTargetScope.compact, true);
+  assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Lân 36/38');
+  assert.equal(
+    view.groups[0].printTargetScope.detailLabel,
+    'Thiếu Nhóm Lân: Lan-37, Lan-38 · 36 chỉ tiêu theo bộ · +2 chỉ tiêu khác'
+  );
+});
+
+test('daily print does not approximate small groups or large groups missing five targets', () => {
+  const smallIds = Array.from({ length: 5 }, (_, index) => `Small-${index + 1}`);
+  const largeIds = Array.from({ length: 20 }, (_, index) => `Large-${index + 1}`);
+  const assignedIds = [...smallIds.slice(0, 4), ...largeIds.slice(0, 15), 'Other'];
+  const [overview] = buildApprovedBatchOverviews([
+    request({
+      analysisDate: '2026-09-09',
+      targetIds: assignedIds,
+      targetNames: Object.fromEntries(assignedIds.map(id => [id, id]))
+    })
+  ], '2026-09-09', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const configuredGroups: TargetGroup[] = [
+    { id: 'G-SMALL', name: 'Nhóm nhỏ', targets: smallIds.map(id => ({ id, name: id })) },
+    { id: 'G-LARGE', name: 'Nhóm lớn', targets: largeIds.map(id => ({ id, name: id })) }
+  ];
+
+  const [view] = buildDailyBatchViews([overview], configuredGroups);
+
+  assert.equal(view.groups[0].printTargetScope.headline.includes('Nhóm nhỏ'), false);
+  assert.equal(view.groups[0].printTargetScope.headline.includes('Nhóm lớn'), false);
+});
+
 test('compact scope reduces print estimate without changing the assigned target count', () => {
   const targetIds = Array.from({ length: 80 }, (_, index) => `T${index + 1}`);
   const targetNames = Object.fromEntries(targetIds.map(id => [id, `Chỉ tiêu kiểm nghiệm dài ${id}`]));

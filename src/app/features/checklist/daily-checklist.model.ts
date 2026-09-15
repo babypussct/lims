@@ -42,6 +42,7 @@ export interface DailyBatchAssignmentGroup {
   hasSampleDescriptions: boolean;
   hasDescriptionConflict: boolean;
   targetScope: TargetScopePresentation;
+  printTargetScope: TargetScopePresentation;
 }
 
 export interface DailySampleView {

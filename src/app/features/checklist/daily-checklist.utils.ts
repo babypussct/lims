@@ -146,7 +146,18 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
       const signature = computeTargetSignature(targetIds);
       let group = targetSetMap.get(signature);
       if (!group) {
-        const classification = classifyTargetScope({
+        // Daily checklist/print should reflect the current "Quản lý nhóm chỉ tiêu"
+        // configuration whenever exactly one configured group matches this target set.
+        // Resolve that match before falling back to immutable snapshots or full-SOP scope.
+        const currentGroupMatch = classifyTargetScope({
+          assignedTargetIds: targetIds,
+          sopId: batch.sopId,
+          sopVersion: batch.sopVersion,
+          availableGroups
+        });
+        const classification = currentGroupMatch.kind === 'target-group'
+          ? currentGroupMatch
+          : classifyTargetScope({
           assignedTargetIds: targetIds,
           sopId: batch.sopId,
           sopVersion: batch.sopVersion,
@@ -154,6 +165,16 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
           storedSnapshots: batch.targetScopeSnapshots,
           availableGroups
         });
+        const targetScope = buildTargetScopePresentation(targetNames, classification);
+        // Even a one-target configured group should print by group name when it is
+        // an exact match; this keeps the printed column aligned with group management.
+        if (classification.kind === 'target-group') targetScope.compact = true;
+        const printTargetScope = buildDailyPrintTargetScope(
+          targetIds,
+          targetNames,
+          availableGroups,
+          targetScope
+        );
         group = {
           signature,
           targetIds,
@@ -166,7 +187,8 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
           formattedSampleDisplay: '',
           hasSampleDescriptions: false,
           hasDescriptionConflict: false,
-          targetScope: buildTargetScopePresentation(targetNames, classification)
+          targetScope,
+          printTargetScope
         };
         targetSetMap.set(signature, group);
         groupSampleMaps.set(signature, new Map());
@@ -285,6 +307,108 @@ export function buildDailyBatchViews(batches: ApprovedBatchOverview[], available
     const timeDifference = (b.approvedAt?.getTime() || 0) - (a.approvedAt?.getTime() || 0);
     return timeDifference || naturalCompare(a.cardKey, b.cardKey);
   });
+}
+
+function buildDailyPrintTargetScope(
+  targetIds: string[],
+  targetNames: string[],
+  availableGroups: TargetGroup[],
+  fallback: DailyBatchAssignmentGroup['targetScope']
+): DailyBatchAssignmentGroup['printTargetScope'] {
+  const partialGroupMinSize = 10;
+  const partialGroupMaxMissing = 4; // "thiếu < 5 chỉ tiêu"
+  const partialGroupMinCoverage = 0.8;
+  const assignedIds = [...new Set(targetIds.map(getCanonicalId).filter(Boolean))];
+  if (!assignedIds.length || !availableGroups.length) return fallback;
+
+  const assignedSet = new Set(assignedIds);
+  interface PrintGroupCandidate {
+    name: string;
+    ids: string[];
+    presentIds: string[];
+    missingNames: string[];
+  }
+  const candidateBuckets = new Map<string, PrintGroupCandidate[]>();
+
+  for (const configuredGroup of availableGroups) {
+    const displayNameById = new Map<string, string>();
+    configuredGroup.targets.forEach(target => {
+      const displayName = String(target.name || target.id || '').trim();
+      const id = getCanonicalId(displayName);
+      if (id && !displayNameById.has(id)) displayNameById.set(id, displayName);
+    });
+    const ids = [...displayNameById.keys()].sort();
+    if (!ids.length) continue;
+
+    const presentIds = ids.filter(id => assignedSet.has(id));
+    const missingIds = ids.filter(id => !assignedSet.has(id));
+    const exactMatch = missingIds.length === 0;
+    const partialMatch = ids.length >= partialGroupMinSize
+      && missingIds.length > 0
+      && missingIds.length <= partialGroupMaxMissing
+      && presentIds.length / ids.length >= partialGroupMinCoverage;
+    if (!exactMatch && !partialMatch) continue;
+
+    const signature = computeTargetSignature(ids);
+    const bucket = candidateBuckets.get(signature) || [];
+    bucket.push({
+      name: configuredGroup.name,
+      ids,
+      presentIds,
+      missingNames: missingIds.map(id => displayNameById.get(id) || id)
+    });
+    candidateBuckets.set(signature, bucket);
+  }
+
+  // If two configured groups represent the exact same target set, do not guess
+  // which label should be printed. Keep only unambiguous configured sets.
+  const uniqueCandidates = [...candidateBuckets.values()]
+    .filter(bucket => bucket.length === 1)
+    .map(bucket => bucket[0]);
+  if (!uniqueCandidates.length) return fallback;
+
+  // Remove redundant groups whose assigned portion is a strict subset of another
+  // matched group. This also works for near-complete large groups.
+  // Example: "10 chỉ tiêu TTS" is fully contained in "Nhóm Chlor" for L9308,
+  // so printing both would duplicate the same assigned targets.
+  const maximalCandidates = uniqueCandidates.filter(candidate =>
+    !uniqueCandidates.some(other =>
+      other !== candidate
+      && other.presentIds.length > candidate.presentIds.length
+      && candidate.presentIds.every(id => other.presentIds.includes(id))
+    )
+  ).sort((a, b) => b.presentIds.length - a.presentIds.length || naturalCompare(a.name, b.name));
+
+  if (!maximalCandidates.length) return fallback;
+
+  const coveredIds = new Set(maximalCandidates.flatMap(candidate => candidate.presentIds));
+  const residualCount = assignedIds.filter(id => !coveredIds.has(id)).length;
+  const matchedCount = assignedIds.length - residualCount;
+  const headline = `Bộ chỉ tiêu: ${maximalCandidates.map(candidate =>
+    candidate.missingNames.length
+      ? `${candidate.name} ${candidate.presentIds.length}/${candidate.ids.length}`
+      : candidate.name
+  ).join(' · ')}`;
+  const partialDetails = maximalCandidates
+    .filter(candidate => candidate.missingNames.length > 0)
+    .map(candidate => `Thiếu ${candidate.name}: ${candidate.missingNames.join(', ')}`);
+  const detailParts = [
+    ...partialDetails,
+    residualCount > 0
+      ? `${matchedCount} chỉ tiêu theo bộ · +${residualCount} chỉ tiêu khác`
+      : `${assignedIds.length} chỉ tiêu`
+  ];
+  const detailLabel = detailParts.join(' · ');
+
+  return {
+    kind: 'target-group',
+    compact: true,
+    headline,
+    detailLabel,
+    targetCount: targetNames.length,
+    targetNames: [...targetNames],
+    traceability: 'current-config'
+  };
 }
 
 export function isTrackablePhysicalBatch(request: Request): boolean {

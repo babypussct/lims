@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.15-b01
+## Phiên bản hiện tại: v26.09.15-b02
+
+### v26.09.15-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bản in Theo Dõi Mẫu & Kết Quả Ngày rút gọn SOP theo dạng Tên SOP · X mẫu và ưu tiên tên bộ chỉ tiêu thay cho danh sách target dài.
+- Màn hình theo dõi ngày dùng cùng cơ chế nhận diện bộ chỉ tiêu để các mẻ lớn dễ đọc hơn nhưng vẫn có thể mở toàn bộ danh sách chỉ tiêu.
+- Nhóm chỉ tiêu lớn thiếu dưới 5 chỉ tiêu được nhận diện gần đúng và luôn ghi rõ tỷ lệ khớp cùng các chỉ tiêu còn thiếu.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Nhận diện đồng thời nhiều bộ chỉ tiêu cấu hình trong một nhóm phân công và loại bỏ các bộ con bị bao hàm để tránh lặp thông tin.
+- Tính số chỉ tiêu đã được đại diện bằng hợp các target thực tế để tránh cộng trùng giữa các nhóm có giao nhau.
+- Bộ tính bố cục màn hình và bản in sử dụng nội dung rút gọn mới để hạn chế card quá rộng và giảm xuống dòng không cần thiết.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa trường hợp mẫu L9308 không được rút gọn theo các bộ Nhóm Chlor, Nhóm Cúc và Nhóm Lân do Nhóm Lân thiếu Chlorfenvinphos và Isofenphos methyl.
+- Không còn hiển thị số hiệu và phiên bản SOP trong dòng SOP của bản in checklist ngày.
+- Giữ khả năng truy xuất đầy đủ target bằng nút Xem danh sách ngay cả khi giao diện đang hiển thị tên bộ chỉ tiêu rút gọn.
 
 ### v26.09.15-b01
 

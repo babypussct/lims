@@ -28,7 +28,6 @@ import {
 } from './daily-screen-layout-planner';
 import { TargetService } from '../targets/target.service';
 import { getCanonicalId } from '../results/shared/compound-id-resolver';
-import { computeTargetSignature } from '../targets/target-scope-classifier';
 
 @Component({
   selector: 'app-daily-checklist',
@@ -868,6 +867,8 @@ export class DailyChecklistComponent implements OnDestroy {
         const matchingGroups = batch.groups.filter(group => normalizeSearch([
           ...group.targetNames,
           group.targetScope.headline,
+          group.printTargetScope.headline,
+          group.printTargetScope.detailLabel,
           ...group.sampleIds,
           group.formattedSamples,
           group.formattedSampleDetails
@@ -1267,17 +1268,10 @@ export class DailyChecklistComponent implements OnDestroy {
       const fallbackTargets = request.targetIds ?? request.inputs?.targetIds ?? [];
       if (targetSets.length === 0 && Array.isArray(fallbackTargets)) targetSets.push(fallbackTargets);
 
-      const storedSignatures = new Set(
-        (request.targetScopeSnapshots || []).map(snapshot => snapshot.signature)
-      );
-      const sopTargetIds = Object.keys(request.targetNames || {});
-      const sopSignature = sopTargetIds.length > 0 ? computeTargetSignature(sopTargetIds) : null;
-
-      return targetSets.some(targetIds => {
-        if (targetIds.length === 0) return false;
-        const signature = computeTargetSignature(targetIds);
-        return !storedSignatures.has(signature) && signature !== sopSignature;
-      });
+      // Always load current configured target groups when the day contains targets.
+      // The print view must be able to prefer an exact group match even when the same
+      // set was previously classified as a full SOP or has an older scope snapshot.
+      return targetSets.some(targetIds => targetIds.length > 0);
     });
   }
 

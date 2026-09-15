@@ -1,19 +1,19 @@
 {
-  "title": "Củng cố chế độ thiết bị và thông tin mẻ vật lý",
+  "title": "Tối ưu Theo Dõi Mẫu & Kết Quả Ngày theo bộ chỉ tiêu",
   "highlights": [
-    "Màn hình đăng nhập dùng một lựa chọn thống nhất giữa Máy dùng chung và Duy trì đăng nhập cho Google, mật khẩu và QR.",
-    "Chế độ Máy dùng chung tiếp tục ưu tiên an toàn phiên đăng nhập, còn thiết bị cá nhân có thể duy trì phiên qua lần mở trình duyệt tiếp theo.",
-    "Bản in checklist hiển thị số mẻ vật lý và phiên bản SOP để phản ánh đúng khối lượng thao tác thực tế."
+    "Bản in Theo Dõi Mẫu & Kết Quả Ngày rút gọn SOP theo dạng Tên SOP · X mẫu và ưu tiên tên bộ chỉ tiêu thay cho danh sách target dài.",
+    "Màn hình theo dõi ngày dùng cùng cơ chế nhận diện bộ chỉ tiêu để các mẻ lớn dễ đọc hơn nhưng vẫn có thể mở toàn bộ danh sách chỉ tiêu.",
+    "Nhóm chỉ tiêu lớn thiếu dưới 5 chỉ tiêu được nhận diện gần đúng và luôn ghi rõ tỷ lệ khớp cùng các chỉ tiêu còn thiếu."
   ],
   "features": [],
   "improvements": [
-    "Bổ sung hướng dẫn chế độ thiết bị ngay trên màn hình đăng nhập và hỗ trợ thao tác bàn phím cho bộ chọn chế độ.",
-    "Đồng bộ trạng thái chế độ thiết bị qua một nguồn duy nhất để các luồng đăng nhập Google, mật khẩu, QR và idle-timeout dùng cùng cấu hình.",
-    "Bổ sung dữ liệu khóa CocoaPods/workspace cho phần iOS để môi trường native có thể tái lập dependency ổn định hơn."
+    "Nhận diện đồng thời nhiều bộ chỉ tiêu cấu hình trong một nhóm phân công và loại bỏ các bộ con bị bao hàm để tránh lặp thông tin.",
+    "Tính số chỉ tiêu đã được đại diện bằng hợp các target thực tế để tránh cộng trùng giữa các nhóm có giao nhau.",
+    "Bộ tính bố cục màn hình và bản in sử dụng nội dung rút gọn mới để hạn chế card quá rộng và giảm xuống dòng không cần thiết."
   ],
   "fixes": [
-    "Loại bỏ tình trạng hai cờ Máy dùng chung và Duy trì đăng nhập có thể xung đột; dữ liệu cũ được tự động chuyển về chế độ thiết bị hợp lệ và mặc định an toàn.",
-    "Chờ Firebase persistence hoàn tất trước khi đăng nhập để tránh race condition khi người dùng vừa đổi chế độ thiết bị.",
-    "Sửa metadata bản in checklist từ số mẫu duy nhất sang số mẻ vật lý, đồng thời hiển thị phiên bản SOP khi có."
+    "Sửa trường hợp mẫu L9308 không được rút gọn theo các bộ Nhóm Chlor, Nhóm Cúc và Nhóm Lân do Nhóm Lân thiếu Chlorfenvinphos và Isofenphos methyl.",
+    "Không còn hiển thị số hiệu và phiên bản SOP trong dòng SOP của bản in checklist ngày.",
+    "Giữ khả năng truy xuất đầy đủ target bằng nút Xem danh sách ngay cả khi giao diện đang hiển thị tên bộ chỉ tiêu rút gọn."
   ]
 }
