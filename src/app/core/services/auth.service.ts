@@ -34,8 +34,14 @@ import { FirebaseService } from './firebase.service';
 
 import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
 import { PERMISSIONS, PERMISSION_NAMES } from '../auth/permission-catalog';
+import {
+  type DeviceMode,
+  resolveDeviceMode,
+  persistDeviceMode,
+} from '../auth/device-mode';
 
 export { PERMISSIONS, PERMISSION_NAMES } from '../auth/permission-catalog';
+export { type DeviceMode } from '../auth/device-mode';
 
 const GOOGLE_REDIRECT_PENDING_KEY = '__lims_google_redirect_pending';
 const GOOGLE_LINK_REDIRECT_PENDING_KEY = '__lims_google_link_redirect_pending';
@@ -190,15 +196,20 @@ export class AuthService {
   private rolesListenerGeneration = 0;
   private rolesSessionActive = false;
   readonly rolesConfig = signal<Record<string, string[]>>({});
+  readonly deviceMode = signal<DeviceMode>('shared');
+  readonly isSharedDevice = computed(() => this.deviceMode() === 'shared');
+  readonly rememberSession = computed(() => this.deviceMode() === 'personal');
+  private persistencePromise: Promise<void> = Promise.resolve();
 
   constructor() {
     this.auth = getAuth(this.fb.app);
 
-    // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab (hoặc giữ nếu lưu trạng thái)
-    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    const persistenceReady = setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
-      console.warn('[Auth] Failed to set session persistence:', err);
-    });
+    const storage = typeof localStorage !== 'undefined' ? localStorage : null;
+    const resolvedMode = resolveDeviceMode(storage);
+    this.deviceMode.set(resolvedMode);
+    persistDeviceMode(storage, resolvedMode);
+
+    this.persistencePromise = this.applyDeviceModePersistence(resolvedMode);
 
     const legacyRedirectError = sessionStorage.getItem('__google_redirect_error');
     if (legacyRedirectError) {
@@ -215,7 +226,7 @@ export class AuthService {
     // Let Firebase own the redirect transaction and credential exchange. This
     // avoids exposing a Google ID token to the application URL or hand-rolling
     // state/nonce validation in index.html.
-    void persistenceReady.then(() => this.processGoogleRedirectResult(hasPendingGoogleRedirect, hasPendingGoogleLink));
+    void this.persistencePromise.then(() => this.processGoogleRedirectResult(hasPendingGoogleRedirect, hasPendingGoogleLink));
 
     // 2. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
@@ -345,19 +356,47 @@ export class AuthService {
 
   // --- AUTH METHODS ---
 
-
-  /** Cập nhật persistence ngay khi user thay đổi checkbox "Duy trì đăng nhập" */
-  updatePersistence(rememberSession: boolean) {
-    setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
-      console.warn('[Auth] Failed to update session persistence:', err);
+  private applyDeviceModePersistence(mode: DeviceMode): Promise<void> {
+    return setPersistence(
+      this.auth,
+      mode === 'personal' ? browserLocalPersistence : browserSessionPersistence
+    ).catch((err: any) => {
+      console.warn('[Auth] Failed to set session persistence:', err);
     });
   }
 
+
+  /** Thiết lập chế độ thiết bị ('shared' | 'personal') và cập nhật Firebase persistence */
+  setDeviceMode(mode: DeviceMode): Promise<void> {
+    this.deviceMode.set(mode);
+    const storage = typeof localStorage !== 'undefined' ? localStorage : null;
+    persistDeviceMode(storage, mode);
+
+    // Serialize changes so rapid keyboard/click switching cannot let an older
+    // setPersistence() finish after the user's final selection.
+    this.persistencePromise = this.persistencePromise
+      .catch(() => undefined)
+      .then(() => this.applyDeviceModePersistence(mode));
+
+    return this.persistencePromise;
+  }
+
+  /** Chờ quá trình cập nhật persistence hoàn tất để tránh race condition khi đăng nhập ngay */
+  async ensurePersistenceReady(): Promise<void> {
+    try {
+      await this.persistencePromise;
+    } catch (err) {
+      console.warn('[Auth] Persistence synchronization warning:', err);
+    }
+  }
+
+  /** Cập nhật persistence tương thích ngược với boolean flag */
+  updatePersistence(rememberSession: boolean): Promise<void> {
+    return this.setDeviceMode(rememberSession ? 'personal' : 'shared');
+  }
+
   async login(email: string, pass: string) {
-    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
-      console.warn('[Auth] Failed to set session persistence dynamically:', err);
-    });
+    await this.ensurePersistenceReady();
 
     await signInWithEmailAndPassword(this.auth, this.normalizeAuthEmail(email), pass);
     if (this.auth.currentUser) {
@@ -376,10 +415,7 @@ export class AuthService {
     this.googleRedirectError.set(null);
     this.clearPendingGoogleLink();
 
-    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
-      console.warn('[Auth] Failed to set Google session persistence dynamically:', err);
-    });
+    await this.ensurePersistenceReady();
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -769,7 +805,6 @@ export class AuthService {
     this.clearQrLoginCache(); // Security cleanup
     this.clearPendingGoogleLink();
     this.passwordSetupRequested.set(false);
-    localStorage.removeItem('lims_remember_session'); // Clear remember session flag
     
     // Clear Google Drive session state
     try {
@@ -790,7 +825,7 @@ export class AuthService {
     }
 
     const isGoogle = this.isGoogleUser();
-    const isSharedDevice = localStorage.getItem('lims_shared_device') === 'true';
+    const isSharedDevice = this.isSharedDevice();
     await signOut(this.auth);
 
     if (isGoogle && isSharedDevice) {

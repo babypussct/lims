@@ -68,6 +68,8 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /class="cl-print-sample-code">\{\{run\.formattedSamples\}\}<\/span>/);
     assert.match(template, /class="cl-print-sample-description"> \(\{\{run\.description\.nameSnapshot\}\}\)<\/span>/);
     assert.match(template, /class="cl-print-sample-separator">; <\/span>/);
+    assert.match(template, /class="cl-print-meta">\{\{batch\.physicalBatchCount\}\} mẻ vật lý/);
+    assert.match(template, /<small>\{\{batch\.physicalBatchCount\}\} mẻ vật lý/);
     assert.match(template, /\[ngModel\]="printIncludeSampleDescriptions\(\)"/);
     assert.match(template, />Kèm mô tả mẫu<\/span>/);
     assert.match(template, /Mã mẫu luôn được gom dải liên tục/);

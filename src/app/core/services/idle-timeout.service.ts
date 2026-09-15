@@ -21,8 +21,8 @@ export class IdleTimeoutService {
   private resetFn = () => this.resetTimer();
 
   private shouldDisableTimeout(): boolean {
-    // 1. Kiểm tra cấu hình duy trì đăng nhập của người dùng
-    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    // 1. Kiểm tra cấu hình duy trì đăng nhập của người dùng từ AuthService
+    const rememberSession = this.auth.rememberSession();
     if (rememberSession) {
       return true; // Bỏ qua tự thoát nếu người dùng chủ động duy trì đăng nhập
     }

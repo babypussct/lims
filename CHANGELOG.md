@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.14-b02
+## Phiên bản hiện tại: v26.09.15-b01
+
+### v26.09.15-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Màn hình đăng nhập dùng một lựa chọn thống nhất giữa Máy dùng chung và Duy trì đăng nhập cho Google, mật khẩu và QR.
+- Chế độ Máy dùng chung tiếp tục ưu tiên an toàn phiên đăng nhập, còn thiết bị cá nhân có thể duy trì phiên qua lần mở trình duyệt tiếp theo.
+- Bản in checklist hiển thị số mẻ vật lý và phiên bản SOP để phản ánh đúng khối lượng thao tác thực tế.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung hướng dẫn chế độ thiết bị ngay trên màn hình đăng nhập và hỗ trợ thao tác bàn phím cho bộ chọn chế độ.
+- Đồng bộ trạng thái chế độ thiết bị qua một nguồn duy nhất để các luồng đăng nhập Google, mật khẩu, QR và idle-timeout dùng cùng cấu hình.
+- Bổ sung dữ liệu khóa CocoaPods/workspace cho phần iOS để môi trường native có thể tái lập dependency ổn định hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ tình trạng hai cờ Máy dùng chung và Duy trì đăng nhập có thể xung đột; dữ liệu cũ được tự động chuyển về chế độ thiết bị hợp lệ và mặc định an toàn.
+- Chờ Firebase persistence hoàn tất trước khi đăng nhập để tránh race condition khi người dùng vừa đổi chế độ thiết bị.
+- Sửa metadata bản in checklist từ số mẫu duy nhất sang số mẻ vật lý, đồng thời hiển thị phiên bản SOP khi có.
 
 ### v26.09.14-b02
 

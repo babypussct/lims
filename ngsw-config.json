@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.14-b02",
-    "title": "Tái cấu trúc và hardening SmartBatch một mẫu",
+    "version": "v26.09.15-b01",
+    "title": "Củng cố chế độ thiết bị và thông tin mẻ vật lý",
     "features": [
-      "Chế độ Một mẫu duy nhất có workspace split-view với preview phân rã mẻ theo thời gian thực.",
-      "Planner dùng chung phân bổ target theo SOP, matrix, tồn kho và forced assignment một cách nhất quán.",
-      "Luồng commit chỉ tạo mẻ khi toàn bộ target đã được bao phủ và tài nguyên đã được kiểm tra.",
-      "Bổ sung SingleSampleDispatchWorkspaceComponent độc lập cho chế độ Một mẫu duy nhất.",
-      "Bổ sung chẩn đoán target chưa được phân phối và candidate SOP thay thế khi forced SOP không hợp lệ."
+      "Màn hình đăng nhập dùng một lựa chọn thống nhất giữa Máy dùng chung và Duy trì đăng nhập cho Google, mật khẩu và QR.",
+      "Chế độ Máy dùng chung tiếp tục ưu tiên an toàn phiên đăng nhập, còn thiết bị cá nhân có thể duy trì phiên qua lần mở trình duyệt tiếp theo.",
+      "Bản in checklist hiển thị số mẻ vật lý và phiên bản SOP để phản ánh đúng khối lượng thao tác thực tế.",
+      "Bổ sung hướng dẫn chế độ thiết bị ngay trên màn hình đăng nhập và hỗ trợ thao tác bàn phím cho bộ chọn chế độ.",
+      "Đồng bộ trạng thái chế độ thiết bị qua một nguồn duy nhất để các luồng đăng nhập Google, mật khẩu, QR và idle-timeout dùng cùng cấu hình."
     ]
   },
   "assetGroups": [

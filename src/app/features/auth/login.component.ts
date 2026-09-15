@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, Ho
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, type DeviceMode } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 
 
@@ -11,14 +11,15 @@ import { StateService } from '../../core/services/state.service';
 import { ChangelogService } from '../../core/services/changelog.service';
 import { LogoComponent } from '../../shared/components/logo.component';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
+import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, PwaInstallPromptComponent, LogoComponent, RouterLink],
+  imports: [CommonModule, FormsModule, PwaInstallPromptComponent, LogoComponent, RouterLink, AppModalShellComponent],
   template: `
     @if (!auth.currentUser()) {
-      <div class="min-h-screen w-full flex items-center justify-center overflow-hidden relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc] dark:bg-slate-950">
+      <div class="min-h-screen w-full flex items-center justify-center overflow-x-hidden overflow-y-auto px-4 py-6 sm:py-8 relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc] dark:bg-slate-950">
         
         <!-- Calm workstation background: Soft UI-inspired, no decorative motion. -->
         <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -28,7 +29,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
         </div>
 
         <!-- Centered application panel -->
-        <div class="relative z-10 w-full max-w-[420px] mx-4 sm:mx-auto">
+        <div class="relative z-10 w-full max-w-[420px] mx-auto">
             
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-7 sm:p-8 relative overflow-hidden">
 
@@ -71,7 +72,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                          [style.width.%]="31"
                          [style.left.%]="mode() === 'google' ? 1.5 : (mode() === 'qr' ? 34.5 : 67.5)">
                     </div>
-                    
+
                     <button (click)="switchMode('google')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
                             [class.text-fuchsia-600]="mode() === 'google'"
                             [class.dark:text-fuchsia-400]="mode() === 'google'"
@@ -92,6 +93,122 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                     </button>
                 </div>
 
+                <!-- TEMPLATE: CỤM CHỌN CHẾ ĐỘ THIẾT BỊ (SEGMENTED CONTROL / RADIO GROUP - SOFT UI) -->
+                <ng-template #deviceModeSwitch>
+                    <div class="relative z-10 select-none">
+                        <div class="sr-only" id="device-mode-heading">Chế độ thiết bị</div>
+
+                        <div role="radiogroup"
+                             aria-labelledby="device-mode-heading"
+                             aria-describedby="device-mode-caption"
+                             class="relative bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 inset-soft-well flex items-center backdrop-blur-sm h-11">
+
+                            <!-- Sliding Highlight Thumb -->
+                            <div class="absolute top-1 bottom-1 left-1 device-mode-thumb rounded-xl bg-white dark:bg-slate-700 thumb-transition pointer-events-none z-0 border"
+                                 [class.pill-thumb-amber]="auth.isSharedDevice()"
+                                 [class.border-amber-200/80]="auth.isSharedDevice()"
+                                 [class.dark:border-amber-600/50]="auth.isSharedDevice()"
+                                 [class.pill-thumb-fuchsia]="auth.rememberSession()"
+                                 [class.border-fuchsia-200/80]="auth.rememberSession()"
+                                 [class.dark:border-fuchsia-600/50]="auth.rememberSession()"
+                                 [style.transform]="auth.isSharedDevice() ? 'translateX(0)' : 'translateX(100%)'"
+                                 aria-hidden="true">
+                            </div>
+
+                            <!-- Option 1: Máy dùng chung (Default) -->
+                            <button type="button"
+                                    role="radio"
+                                    id="device-mode-shared"
+                                    [attr.aria-checked]="auth.isSharedDevice()"
+                                    [attr.tabindex]="auth.isSharedDevice() ? 0 : -1"
+                                    (click)="selectDeviceMode('shared')"
+                                    (keydown)="handleDeviceModeKeyNav($event, 'shared')"
+                                    class="device-mode-option flex-1 py-1.5 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 text-xs font-bold transition-colors relative z-10 cursor-pointer min-w-0 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                                    [class.text-amber-800]="auth.isSharedDevice()"
+                                    [class.dark:text-amber-300]="auth.isSharedDevice()"
+                                    [class.text-slate-500]="!auth.isSharedDevice()"
+                                    [class.dark:text-slate-400]="!auth.isSharedDevice()"
+                                    [class.hover:text-slate-700]="!auth.isSharedDevice()"
+                                    [class.dark:hover:text-slate-300]="!auth.isSharedDevice()">
+                                <div class="device-mode-icon w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                                     [class.bg-amber-100]="auth.isSharedDevice()"
+                                     [class.dark:bg-amber-950/70]="auth.isSharedDevice()"
+                                     [class.bg-transparent]="!auth.isSharedDevice()">
+                                    <i class="fa-solid fa-users text-[13px]"
+                                       [class.text-amber-600]="auth.isSharedDevice()"
+                                       [class.dark:text-amber-400]="auth.isSharedDevice()"
+                                       [class.text-slate-400]="!auth.isSharedDevice()"
+                                       [class.dark:text-slate-500]="!auth.isSharedDevice()"
+                                       aria-hidden="true"></i>
+                                </div>
+                                <span class="device-mode-option-label tracking-tight">Máy dùng chung</span>
+                            </button>
+
+                            <!-- Option 2: Duy trì đăng nhập -->
+                            <button type="button"
+                                    role="radio"
+                                    id="device-mode-personal"
+                                    [attr.aria-checked]="auth.rememberSession()"
+                                    [attr.tabindex]="auth.rememberSession() ? 0 : -1"
+                                    (click)="selectDeviceMode('personal')"
+                                    (keydown)="handleDeviceModeKeyNav($event, 'personal')"
+                                    class="device-mode-option flex-1 py-1.5 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 text-xs font-bold transition-colors relative z-10 cursor-pointer min-w-0 focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:outline-none"
+                                    [class.text-fuchsia-700]="auth.rememberSession()"
+                                    [class.dark:text-fuchsia-300]="auth.rememberSession()"
+                                    [class.text-slate-500]="!auth.rememberSession()"
+                                    [class.dark:text-slate-400]="!auth.rememberSession()"
+                                    [class.hover:text-slate-700]="!auth.rememberSession()"
+                                    [class.dark:hover:text-slate-300]="!auth.rememberSession()">
+                                <div class="device-mode-icon w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                                     [class.bg-fuchsia-100]="auth.rememberSession()"
+                                     [class.dark:bg-fuchsia-950/70]="auth.rememberSession()"
+                                     [class.bg-transparent]="!auth.rememberSession()">
+                                    <i class="fa-solid fa-user-lock text-[13px]"
+                                       [class.text-fuchsia-600]="auth.rememberSession()"
+                                       [class.dark:text-fuchsia-400]="auth.rememberSession()"
+                                       [class.text-slate-400]="!auth.rememberSession()"
+                                       [class.dark:text-slate-500]="!auth.rememberSession()"
+                                       aria-hidden="true"></i>
+                                </div>
+                                <span class="device-mode-option-label tracking-tight">Duy trì đăng nhập</span>
+                            </button>
+                        </div>
+
+                        <!-- Dynamic Sub-caption & Help Toggle -->
+                        <div class="mt-2 px-1.5 flex items-start justify-between min-h-[34px] text-[11px] leading-relaxed transition-all">
+                            <div id="device-mode-caption" class="flex-1 flex items-start gap-1.5" aria-live="polite">
+                                @if (auth.isSharedDevice()) {
+                                    <div class="w-4 h-4 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center shrink-0 mt-0.5" aria-hidden="true">
+                                        <i class="fa-solid fa-clock-rotate-left text-amber-600 dark:text-amber-400 text-[9px]"></i>
+                                    </div>
+                                    <span class="text-amber-900/90 dark:text-amber-200/90 text-left">
+                                        Phiên tạm thời &bull; Tự đăng xuất sau <strong>30 phút</strong> không thao tác trên máy tính &bull; Phù hợp với máy phòng lab.
+                                    </span>
+                                } @else {
+                                    <div class="w-4 h-4 rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/50 border border-fuchsia-200 dark:border-fuchsia-800/60 flex items-center justify-center shrink-0 mt-0.5" aria-hidden="true">
+                                        <i class="fa-solid fa-shield-check text-fuchsia-600 dark:text-fuchsia-400 text-[9px]"></i>
+                                    </div>
+                                    <span class="text-fuchsia-950/90 dark:text-fuchsia-200/90 text-left">
+                                        Giữ phiên trên trình duyệt này sau khi mở lại &bull; Chỉ dùng trên máy tính cá nhân.
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- Tooltip Help Info Trigger -->
+                            <div class="relative shrink-0 ml-1.5">
+                                <button type="button"
+                                        aria-label="Mở hướng dẫn bảo mật phiên"
+                                        aria-controls="session-help"
+                                        [attr.aria-expanded]="showSessionHelp()"
+                                        (click)="showSessionHelp.set(true)"
+                                        class="w-6 h-6 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 flex items-center justify-center text-xs transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-700/50 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none">
+                                    <i class="fa-regular fa-circle-question text-[12px]" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </ng-template>
+
                 <!-- LOGIN MODE: GOOGLE (PRIMARY) -->
                 @if (mode() === 'google') {
                     <div class="animate-fade-in-up relative z-10 text-center">
@@ -110,53 +227,10 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                             </span>
                         </button>
 
-                        <!-- Shared Device & Remember Session Checkboxes (Horizontal Row) -->
-                        <div class="mt-4 flex items-center justify-between gap-2 text-left relative">
-                            <!-- Checkbox 1: Remember session -->
-                            <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
-                                   [class.opacity-40]="isSharedDevice()"
-                                   [class.pointer-events-none]="isSharedDevice()">
-                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200"
-                                     [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                    <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
-                                    @if (rememberSession()) {
-                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-400 animate-fade-in"></i>
-                                    }
-                                </div>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
-                            </label>
-
-                            <!-- Checkbox 2: Shared Device -->
-                            <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
-                                   [class.opacity-40]="rememberSession()"
-                                   [class.pointer-events-none]="rememberSession()">
-                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200"
-                                     [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
-                                    @if (isSharedDevice()) {
-                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-400 animate-fade-in"></i>
-                                    }
-                                </div>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
-                            </label>
-
-                            <!-- Tooltip Help Info -->
-                            <div class="relative group/tooltip shrink-0">
-                                <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
-                                    <i class="fa-regular fa-circle-question text-[13px]" aria-hidden="true"></i>
-                                </button>
-                                <!-- Tooltip content -->
-                                <div id="session-help" role="note" [class.opacity-100]="showSessionHelp()" [class.scale-100]="showSessionHelp()" [class.pointer-events-auto]="showSessionHelp()" class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
-                                    <div class="font-bold text-fuchsia-400 mb-1.5 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
-                                    </div>
-                                    <div class="space-y-1.5 text-slate-300">
-                                        <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
-                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn đăng xuất để bảo mật.</div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="mt-4">
+                            <ng-container *ngTemplateOutlet="deviceModeSwitch"></ng-container>
                         </div>
+
                         @if (errorMsg() || auth.googleRedirectError()) {
                             <div role="alert" aria-live="polite" class="mt-4 px-4 py-3 rounded-2xl bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 text-[13px] font-medium flex items-center justify-center gap-2 animate-shake">
                                 <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() || auth.googleRedirectError() }}
@@ -229,47 +303,6 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                     </button>
                                 </div>
                             </div>
-
-                            <!-- Shared Device & Remember Session iOS Toggles -->
-                            <div class="mt-4 flex items-center justify-between gap-2 text-left relative">
-                                <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
-                                       [class.opacity-40]="isSharedDevice()"
-                                       [class.pointer-events-none]="isSharedDevice()">
-                                    <span class="relative inline-flex h-5 w-9 shrink-0">
-                                        <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="peer sr-only" [disabled]="isSharedDevice()" aria-label="Duy trì đăng nhập">
-                                        <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
-                                        <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
-                                    </span>
-                                    <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
-                                </label>
-
-                                <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
-                                       [class.opacity-40]="rememberSession()"
-                                       [class.pointer-events-none]="rememberSession()">
-                                    <span class="relative inline-flex h-5 w-9 shrink-0">
-                                        <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="peer sr-only" [disabled]="rememberSession()" aria-label="Máy dùng chung">
-                                        <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
-                                        <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
-                                    </span>
-                                    <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
-                                </label>
-
-                                <!-- Tooltip Help Info -->
-                                <div class="relative group/tooltip shrink-0">
-                                    <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
-                                        <i class="fa-regular fa-circle-question text-[13px]" aria-hidden="true"></i>
-                                    </button>
-                                    <div id="session-help" role="note" [class.opacity-100]="showSessionHelp()" [class.scale-100]="showSessionHelp()" [class.pointer-events-auto]="showSessionHelp()" class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
-                                        <div class="font-bold text-fuchsia-400 mb-1.5 flex items-center gap-1.5">
-                                            <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
-                                        </div>
-                                        <div class="space-y-1.5 text-slate-300">
-                                            <div><strong>• Duy trì đăng nhập:</strong> Giữ phiên đăng nhập trên máy cá nhân.</div>
-                                            <div><strong>• Máy dùng chung:</strong> Tự thoát phiên sau thời gian không hoạt động.</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             
                             @if (errorMsg()) {
                                 <div class="px-4 py-3 rounded-2xl bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 text-[13px] font-medium flex items-center gap-2 animate-shake">
@@ -282,6 +315,10 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                                         class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline">
                                     Quên mật khẩu?
                                 </button>
+                            </div>
+
+                            <div class="mt-2">
+                                <ng-container *ngTemplateOutlet="deviceModeSwitch"></ng-container>
                             </div>
 
                             <button (click)="login()" [disabled]="isLoading()"
@@ -298,7 +335,7 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                 @if (mode() === 'qr') {
                     <div class="animate-fade-in-up relative z-10 flex flex-col items-center text-center">
                         <h2 class="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">Đăng Nhập Nhanh</h2>
-                        <p class="text-gray-500 dark:text-slate-400 text-[13px] mb-8 px-4">Sử dụng ứng dụng LIMS trên điện thoại để quét mã này.</p>
+                        <p class="text-gray-500 dark:text-slate-400 text-[13px] mb-6 px-4">Sử dụng ứng dụng LIMS trên điện thoại để quét mã này.</p>
 
                         <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 relative group w-64 h-64 mx-auto flex items-center justify-center overflow-hidden">
                             <canvas #qrCanvas class="w-56 h-56 relative z-10"></canvas>
@@ -333,49 +370,11 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
                             }
                         </div>
 
-                        <!-- Shared Device & Remember Session iOS Toggles -->
-                        <div class="mt-6 flex items-center justify-between gap-2 text-left relative w-full">
-                            <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
-                                   [class.opacity-40]="isSharedDevice()"
-                                   [class.pointer-events-none]="isSharedDevice()">
-                                <span class="relative inline-flex h-5 w-9 shrink-0">
-                                    <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="peer sr-only" [disabled]="isSharedDevice()" aria-label="Duy trì đăng nhập">
-                                    <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
-                                    <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
-                                </span>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Duy trì đăng nhập</span>
-                            </label>
-
-                            <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
-                                   [class.opacity-40]="rememberSession()"
-                                   [class.pointer-events-none]="rememberSession()">
-                                <span class="relative inline-flex h-5 w-9 shrink-0">
-                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="peer sr-only" [disabled]="rememberSession()" aria-label="Máy dùng chung">
-                                    <span class="absolute inset-0 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors peer-checked:bg-fuchsia-500"></span>
-                                    <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
-                                </span>
-                                <span class="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300 transition-colors leading-tight whitespace-normal">Máy dùng chung</span>
-                            </label>
-
-                            <!-- Tooltip Help Info -->
-                            <div class="relative group/tooltip shrink-0">
-                                <button type="button" aria-label="Mở hướng dẫn bảo mật phiên" aria-controls="session-help" [attr.aria-expanded]="showSessionHelp()" (click)="showSessionHelp.set(!showSessionHelp())" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
-                                    <i class="fa-regular fa-circle-question text-[13px]" aria-hidden="true"></i>
-                                </button>
-                                <!-- Tooltip content -->
-                                <div id="session-help" role="note" [class.opacity-100]="showSessionHelp()" [class.scale-100]="showSessionHelp()" [class.pointer-events-auto]="showSessionHelp()" class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
-                                    <div class="font-bold text-fuchsia-400 mb-1.5 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
-                                    </div>
-                                    <div class="space-y-1.5 text-slate-300">
-                                            <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
-                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn đăng xuất để bảo mật.</div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="mt-5 w-full">
+                            <ng-container *ngTemplateOutlet="deviceModeSwitch"></ng-container>
                         </div>
 
-                        <div class="mt-6 flex flex-col gap-4 w-full">
+                        <div class="mt-4 flex flex-col gap-4 w-full">
                             <div role="status" aria-live="polite" class="flex items-center gap-2 justify-center text-[13px] font-semibold text-gray-500 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm">
                                 <div class="w-2 h-2 rounded-full" [class.bg-fuchsia-500]="qrStatus() === 'waiting'" [class.animate-pulse]="qrStatus() === 'waiting'" [class.bg-gray-300]="qrStatus() !== 'waiting'"></div>
                                 {{ qrStatus() === 'waiting' ? 'Đang chờ quét mã...' : (qrStatus() === 'scanned' ? 'Đã quét! Vui lòng xác nhận.' : 'Trạng thái: ' + qrStatus()) }}
@@ -405,6 +404,74 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
             <app-pwa-install-prompt></app-pwa-install-prompt>
 
         </div>
+
+        <!-- Device Mode Security Help Modal -->
+        @if (showSessionHelp()) {
+          <app-modal-shell
+            id="session-help"
+            [title]="'Hướng dẫn chế độ thiết bị'"
+            [description]="'Chính sách lưu phiên đăng nhập và an toàn bảo mật phòng lab'"
+            size="md"
+            [showFooter]="true"
+            (closed)="showSessionHelp.set(false)">
+            <div modalBody class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              <p id="session-help-description" class="text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Lựa chọn chế độ phù hợp với loại thiết bị bạn đang sử dụng để bảo đảm an toàn dữ liệu xét nghiệm và tài khoản cá nhân.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <!-- Cột 1: Máy dùng chung -->
+                <div class="rounded-2xl border border-amber-200/80 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 p-4 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center gap-2 mb-2">
+                      <div class="w-7 h-7 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-users text-xs" aria-hidden="true"></i>
+                      </div>
+                      <h3 class="font-bold text-amber-900 dark:text-amber-200 text-sm">Máy dùng chung</h3>
+                    </div>
+                    <div class="text-[11px] font-semibold text-amber-800/90 dark:text-amber-300/90 mb-2.5">
+                      Khuyến nghị cho máy tính phòng lab, khu vực nhận mẫu hoặc nhiều người cùng thao tác.
+                    </div>
+                    <ul class="space-y-1.5 text-[11px] text-slate-700 dark:text-slate-300 pl-4 list-disc marker:text-amber-500">
+                      <li>Phiên chỉ tồn tại trong tab hoặc phiên trình duyệt hiện tại; khi phiên kết thúc, cần đăng nhập lại.</li>
+                      <li>Trên máy tính, hệ thống tự đăng xuất sau <strong>30 phút</strong> không có thao tác chuột hoặc bàn phím.</li>
+                      <li>Khi bấm &ldquo;Đăng xuất LIMS&rdquo;, hệ thống cũng đăng xuất tài khoản Google khỏi trình duyệt để giảm nguy cơ người sau truy cập Gmail, Drive hoặc đăng nhập vào tài khoản của người trước.</li>
+                      <li>Trên thiết bị di động và màn hình nhỏ, cơ chế tự thoát 30 phút không áp dụng để tránh gián đoạn thao tác.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Cột 2: Duy trì đăng nhập -->
+                <div class="rounded-2xl border border-fuchsia-200/80 dark:border-fuchsia-800/60 bg-fuchsia-50/40 dark:bg-fuchsia-950/20 p-4 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center gap-2 mb-2">
+                      <div class="w-7 h-7 rounded-xl bg-fuchsia-100 dark:bg-fuchsia-900/50 text-fuchsia-700 dark:text-fuchsia-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-user-lock text-xs" aria-hidden="true"></i>
+                      </div>
+                      <h3 class="font-bold text-fuchsia-900 dark:text-fuchsia-200 text-sm">Duy trì đăng nhập</h3>
+                    </div>
+                    <div class="text-[11px] font-semibold text-fuchsia-800/90 dark:text-fuchsia-300/90 mb-2.5">
+                      Chỉ dùng trên thiết bị cá nhân (laptop cá nhân có mật khẩu bảo vệ).
+                    </div>
+                    <ul class="space-y-1.5 text-[11px] text-slate-700 dark:text-slate-300 pl-4 list-disc marker:text-fuchsia-500">
+                      <li>Giữ phiên đăng nhập trên trình duyệt này sau khi đóng và mở lại trình duyệt.</li>
+                      <li>Không tự đăng xuất sau 30 phút không thao tác trên máy tính.</li>
+                      <li>Chỉ nên dùng trên thiết bị cá nhân, không dùng trên máy chung của phòng lab.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div modalFooter class="w-full flex items-center justify-end">
+              <button type="button"
+                      (click)="showSessionHelp.set(false)"
+                      class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer">
+                Đã hiểu
+              </button>
+            </div>
+          </app-modal-shell>
+        }
       </div>
     }
   `,
@@ -423,6 +490,51 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
     .group:hover .group-hover\:animate-shimmer {
       animation: shimmer 1s ease-in-out forwards;
     }
+
+    .inset-soft-well {
+      box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05), inset 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+    }
+    .device-mode-thumb {
+      width: calc(50% - 0.5rem);
+    }
+    .device-mode-option-label {
+      white-space: nowrap;
+    }
+    @media (max-width: 360px) {
+      .device-mode-option {
+        gap: 0.25rem;
+        padding-left: 0.375rem;
+        padding-right: 0.375rem;
+        font-size: 0.625rem;
+      }
+      .device-mode-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+      .device-mode-icon i {
+        font-size: 0.625rem;
+      }
+    }
+    .pill-thumb-amber {
+      box-shadow: 0 4px 14px -2px rgba(217, 119, 6, 0.22), 0 2px 6px -1px rgba(0, 0, 0, 0.06);
+    }
+    :host-context(.dark) .pill-thumb-amber, .dark .pill-thumb-amber {
+      box-shadow: 0 4px 16px -2px rgba(245, 158, 11, 0.28), 0 2px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+    .pill-thumb-fuchsia {
+      box-shadow: 0 4px 14px -2px rgba(203, 12, 159, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.06);
+    }
+    :host-context(.dark) .pill-thumb-fuchsia, .dark .pill-thumb-fuchsia {
+      box-shadow: 0 4px 16px -2px rgba(203, 12, 159, 0.35), 0 2px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+    .thumb-transition {
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s ease, border-color 0.32s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .thumb-transition {
+        transition: none !important;
+      }
+    }
   `]
 })
 export class LoginComponent implements OnInit, OnDestroy {
@@ -433,8 +545,6 @@ export class LoginComponent implements OnInit, OnDestroy {
   
   mode = signal<'google' | 'password' | 'qr'>('google');
   logoutReason = signal<string | null>(null);
-  isSharedDevice = signal(false);
-  rememberSession = signal(false);
   showSessionHelp = signal(false);
 
   @HostListener('document:keydown.escape')
@@ -455,38 +565,27 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.logoutReason.set(reason);
       localStorage.removeItem('lims_logout_reason');
     }
-    const sharedPref = localStorage.getItem('lims_shared_device');
-    if (sharedPref === 'true') {
-      this.isSharedDevice.set(true);
-    }
-    const rememberPref = localStorage.getItem('lims_remember_session');
-    if (rememberPref === 'true') {
-      this.rememberSession.set(true);
-    }
 
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
       this.isPWA.set(true);
     }
   }
 
-  toggleSharedDevice() {
-    this.isSharedDevice.set(!this.isSharedDevice());
-    localStorage.setItem('lims_shared_device', this.isSharedDevice() ? 'true' : 'false');
-    if (this.isSharedDevice()) {
-      this.rememberSession.set(false);
-      localStorage.setItem('lims_remember_session', 'false');
-    }
-    this.auth.updatePersistence(this.rememberSession());
+  selectDeviceMode(mode: DeviceMode): void {
+    this.auth.setDeviceMode(mode);
   }
 
-  toggleRememberSession() {
-    this.rememberSession.set(!this.rememberSession());
-    localStorage.setItem('lims_remember_session', this.rememberSession() ? 'true' : 'false');
-    if (this.rememberSession()) {
-      this.isSharedDevice.set(false);
-      localStorage.setItem('lims_shared_device', 'false');
+  handleDeviceModeKeyNav(event: KeyboardEvent, fromMode: DeviceMode): void {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      const nextMode: DeviceMode = fromMode === 'shared' ? 'personal' : 'shared';
+      this.selectDeviceMode(nextMode);
+      const targetId = nextMode === 'shared' ? 'device-mode-shared' : 'device-mode-personal';
+      document.getElementById(targetId)?.focus();
+    } else if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      this.selectDeviceMode(fromMode);
     }
-    this.auth.updatePersistence(this.rememberSession());
   }
 
   isLoading = signal(false);
@@ -605,6 +704,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       // Desktop nhận customToken từ /api/qr/status, dùng signInWithCustomToken() để đăng nhập.
       // Không có password nào được truyền trong quá trình này.
       try {
+          await this.auth.ensurePersistenceReady();
           const { getAuth, signInWithCustomToken } = await import('firebase/auth');
           const auth = getAuth();
           await signInWithCustomToken(auth, customToken);
