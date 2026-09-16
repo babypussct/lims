@@ -15,6 +15,7 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(component, /AppEmptyStateComponent/);
     assert.match(component, /AppPageHeaderComponent/);
     assert.match(component, /AppToolbarComponent/);
+    assert.match(component, /AppUiProgressComponent/);
     assert.match(template, /<app-page-header\b/);
     assert.match(template, /title="Bảng theo dõi mẫu ngày"/);
     assert.match(template, /pageHeaderActions/);
@@ -24,6 +25,10 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /toolbarActions/);
     assert.match(template, /<app-button\b[^>]*\(click\)="refreshData\(\)"/);
     assert.match(template, /<app-empty-state\b[\s\S]*title="Chưa có mẻ theo ngày phân tích này"/);
+    assert.match(template, /<app-ui-progress\b/);
+    assert.match(template, /\[value\]="dailyCompletion\(\)\.completed"/);
+    assert.match(template, /ariaLabel="Tỷ lệ mẻ đã có kết quả trong ngày"/);
+    assert.match(component, /dailyCompletion = computed/);
     assert.match(template, /<app-button\b[^>]*emptyStateActions[^>]*\(click\)="clearFilters\(\)"/);
 
     // Spatial anchor and unadorned screen wrapper

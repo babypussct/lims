@@ -7,6 +7,7 @@ import { AppEmptyStateComponent } from '../../shared/components/ui';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import type { DutyScheduleEntry } from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
+import { DutyShiftSwapService } from './duty-shift-swap.service';
 import {
   activeDutySchedules,
   aggregateDutyRosterById,
@@ -34,6 +35,7 @@ interface DutyDashboardCalendarCell {
 })
 export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly duty = inject(DutyScheduleService);
+  readonly dutySwap = inject(DutyShiftSwapService);
   private readonly auth = inject(AuthService);
   private readonly state = inject(StateService);
   private readonly router = inject(Router);
@@ -131,15 +133,22 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     }
     return nextByStaffId;
   });
+  readonly pendingSwapCount = computed(() => this.dutySwap.pendingCount());
+  readonly swapNeedsMyAction = computed(() => this.dutySwap.requests().filter(request =>
+    this.dutySwap.canTargetRespond(request)
+    || (this.duty.canManage() && request.status === 'PENDING_MANAGER'),
+  ).length);
 
   ngOnInit(): void {
     this.state.ensureUserInfoCacheListener();
     const sevenDayEnd = shiftDutyDateKey(this.todayKey, 6);
     this.duty.watchRange(this.currentMonthRange.start, sevenDayEnd > this.currentMonthRange.end ? sevenDayEnd : this.currentMonthRange.end);
+    this.dutySwap.watchRelevantRequests();
   }
 
   ngOnDestroy(): void {
     this.duty.stopRangeListener();
+    this.dutySwap.stopListener();
   }
 
   namesFor(schedule: { staffIds: string[] }): string[] {

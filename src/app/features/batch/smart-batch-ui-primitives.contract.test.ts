@@ -7,6 +7,7 @@ const template = readFileSync(new URL('./smart-batch.component.html', import.met
 
 const singleWorkspace = readFileSync(new URL('./components/single-sample-dispatch-workspace.component.ts', import.meta.url), 'utf8');
 const wizard = readFileSync(new URL('./components/sample-group-step2-wizard.component.ts', import.meta.url), 'utf8');
+const splitWizard = readFileSync(new URL('./components/batch-split-wizard.component.ts', import.meta.url), 'utf8');
 
 describe('smart batch focused workspace header', () => {
   it('uses the shared workspace header and keeps step navigation on the leading slot', () => {
@@ -69,5 +70,13 @@ describe('smart batch focused workspace header', () => {
     assert.match(singleWorkspace, /commitBlockReason = computed/);
     assert.match(singleWorkspace, /draftFingerprint === computeSingleSampleDraftFingerprint/);
     assert.match(template, /\[draft\]="singleSampleDraft\(\)"/);
+  });
+
+  it('uses the shared thin progress primitive for the split-and-transfer wizard', () => {
+    assert.match(splitWizard, /AppUiProgressComponent/);
+    assert.match(splitWizard, /<app-ui-progress\b/);
+    assert.match(splitWizard, /\[value\]="state\(\)\.step"/);
+    assert.match(splitWizard, /\[max\]="3"/);
+    assert.match(splitWizard, /ariaLabel="Tiến độ phân tách và chuyển mẻ"/);
   });
 });

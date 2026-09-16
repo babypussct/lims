@@ -6,7 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
 import { TargetGroup } from '../../core/models/sop.model';
-import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
+import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent, AppUiProgressComponent } from '../../shared/components/ui';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
@@ -32,7 +32,7 @@ import { getCanonicalId } from '../results/shared/compound-id-resolver';
 @Component({
   selector: 'app-daily-checklist',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent, AppUiProgressComponent],
   templateUrl: './daily-checklist.component.html',
   encapsulation: ViewEncapsulation.None,
   styles: [`
@@ -920,6 +920,17 @@ export class DailyChecklistComponent implements OnDestroy {
       samples: samples.size,
       targets: targets.size,
       groups
+    };
+  });
+
+  readonly dailyCompletion = computed(() => {
+    const batches = this.boardBatches();
+    const total = batches.reduce((count, batch) => count + batch.physicalBatchCount, 0);
+    const completed = batches.reduce((count, batch) => count + batch.statusCounts.completed, 0);
+    return {
+      total,
+      completed,
+      percent: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
   });
 

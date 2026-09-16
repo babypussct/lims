@@ -1,0 +1,169 @@
+<div class="h-full min-h-0 overflow-auto p-3 custom-scrollbar">
+  @if (loading) {
+    <div class="grid min-h-40 place-items-center rounded-xl border border-dashed border-slate-200 text-sm font-medium text-slate-400 dark:border-slate-700">
+      <span><i class="fa-solid fa-spinner fa-spin mr-2" aria-hidden="true"></i>Đang tải lịch tuần...</span>
+    </div>
+  } @else {
+    <div class="hidden min-w-[1050px] grid-cols-7 gap-2 lg:grid" aria-label="Lịch trực theo tuần">
+      @for (date of dates; track date) {
+        @let schedule = scheduleFor(date);
+        <article
+          class="flex min-h-[330px] min-w-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-900"
+          [ngClass]="schedule && isMyShift(schedule) ? ['border-blue-300', 'dark:border-blue-700'] : ['border-slate-200', 'dark:border-slate-700']"
+          [class.opacity-60]="schedule?.status === 'cancelled'">
+          <header class="border-b border-slate-100 px-3 py-3 dark:border-slate-800" [ngClass]="isWeekend(date) ? ['bg-rose-50', 'dark:bg-rose-950/20'] : []">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="truncate text-[10px] font-black uppercase tracking-wide" [class.text-rose-600]="isWeekend(date)" [class.text-slate-400]="!isWeekend(date)">{{ weekdayLabel(date) }}</div>
+                <div class="mt-0.5 text-lg font-black text-slate-800 dark:text-slate-100">{{ shortDateLabel(date) }}</div>
+              </div>
+              @if (isToday(date)) {
+                <span class="shrink-0 rounded-full bg-blue-600 px-2 py-1 text-[9px] font-black text-white">Hôm nay</span>
+              }
+            </div>
+          </header>
+
+          <div class="flex-1 space-y-3 px-3 py-3">
+            @if (schedule && isVisible(schedule)) {
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="font-mono text-[10px] font-black text-blue-600 dark:text-blue-300"><i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>{{ schedule.startTime || '18:00' }}</span>
+                @if (isMyShift(schedule)) {
+                  <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
+                }
+              </div>
+
+              @if (namesFor(schedule).length > 0) {
+                <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-2.5 dark:border-amber-900/50 dark:bg-amber-950/20">
+                  <div class="text-[9px] font-black uppercase tracking-wide text-amber-600 dark:text-amber-300">★ Trưởng ca</div>
+                  <div class="mt-1 break-words text-xs font-black text-slate-800 dark:text-slate-100">{{ namesFor(schedule)[0] }}</div>
+                </div>
+                @if (namesFor(schedule).length > 1) {
+                  <div>
+                    <div class="mb-1.5 text-[9px] font-black uppercase tracking-wide text-slate-400">Phối hợp</div>
+                    <div class="space-y-1.5">
+                      @for (name of namesFor(schedule).slice(1); track $index) {
+                        <div class="break-words rounded-lg bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ name }}</div>
+                      }
+                    </div>
+                  </div>
+                }
+              } @else if (unresolvedFor(schedule).length === 0) {
+                <div class="rounded-xl border border-dashed border-amber-200 px-3 py-4 text-center text-[11px] font-bold text-amber-600 dark:border-amber-900/60 dark:text-amber-300">Chưa phân công người trực</div>
+              }
+
+              @if (unresolvedFor(schedule).length > 0) {
+                <div class="space-y-1">
+                  @for (label of unresolvedFor(schedule); track $index) {
+                    <div class="rounded-lg bg-amber-100 px-2 py-1.5 text-[10px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>{{ label || '?' }}</div>
+                  }
+                </div>
+              }
+
+              @if (schedule.note) {
+                <div class="border-t border-slate-100 pt-2 text-[10px] leading-relaxed text-slate-500 dark:border-slate-800 dark:text-slate-400">{{ schedule.note }}</div>
+              }
+            } @else if (schedule) {
+              <div class="rounded-xl border border-dashed border-slate-200 px-3 py-5 text-center text-[10px] font-bold text-slate-400 dark:border-slate-700">
+                {{ schedule.status === 'cancelled' ? 'Ca này đã hủy' : 'Đã có ca khác ngoài bộ lọc' }}
+              </div>
+            } @else {
+              <div class="rounded-xl border border-dashed border-slate-200 px-3 py-5 text-center text-[10px] font-bold text-slate-400 dark:border-slate-700">Chưa có ca trực</div>
+            }
+          </div>
+
+          @if (canManage || (schedule && isMyShift(schedule) && schedule.status === 'planned')) {
+            <footer class="flex gap-2 border-t border-slate-100 p-2.5 dark:border-slate-800">
+              @if (schedule && isMyShift(schedule) && schedule.status === 'planned') {
+                <button type="button" (click)="requestSwap.emit(schedule)" class="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3 text-[10px] font-black text-amber-700 transition hover:bg-amber-100 active:scale-[0.98] dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+                  <i class="fa-solid fa-right-left" aria-hidden="true"></i>Xin đổi ca
+                </button>
+              }
+              @if (canManage) {
+              <button type="button" (click)="actOn(date, schedule)" class="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3 text-[10px] font-black text-blue-700 transition hover:bg-blue-100 active:scale-[0.98] dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+                <i class="fa-solid" [class.fa-pen-to-square]="schedule" [class.fa-plus]="!schedule" aria-hidden="true"></i>{{ schedule ? 'Sửa ca' : 'Thêm ca' }}
+              </button>
+              }
+            </footer>
+          }
+        </article>
+      }
+    </div>
+
+    <div class="space-y-3 lg:hidden" aria-label="Lịch trực theo tuần dạng thẻ ngày">
+      @for (date of dates; track date) {
+        @let schedule = scheduleFor(date);
+        <article
+          class="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-900"
+          [ngClass]="schedule && isMyShift(schedule) ? ['border-blue-300', 'dark:border-blue-700'] : ['border-slate-200', 'dark:border-slate-700']"
+          [class.opacity-60]="schedule?.status === 'cancelled'">
+          <header class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800" [ngClass]="isWeekend(date) ? ['bg-rose-50', 'dark:bg-rose-950/20'] : []">
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-wide" [class.text-rose-600]="isWeekend(date)" [class.text-slate-400]="!isWeekend(date)">{{ weekdayLabel(date) }}</div>
+              <div class="mt-0.5 text-base font-black text-slate-800 dark:text-slate-100">{{ shortDateLabel(date) }}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              @if (schedule && isVisible(schedule)) {
+                <span class="font-mono text-[10px] font-black text-blue-600 dark:text-blue-300">{{ schedule.startTime || '18:00' }}</span>
+              }
+              @if (isToday(date)) {
+                <span class="rounded-full bg-blue-600 px-2 py-1 text-[9px] font-black text-white">Hôm nay</span>
+              }
+            </div>
+          </header>
+
+          <div class="space-y-3 px-4 py-3">
+            @if (schedule && isVisible(schedule)) {
+              @if (namesFor(schedule).length > 0) {
+                <div class="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 dark:bg-amber-950/20">
+                  <i class="fa-solid fa-star mt-0.5 shrink-0 text-amber-500" aria-hidden="true"></i>
+                  <div class="min-w-0"><div class="text-[9px] font-black uppercase text-amber-600 dark:text-amber-300">Trưởng ca</div><div class="break-words text-sm font-black">{{ namesFor(schedule)[0] }}</div></div>
+                </div>
+                @if (namesFor(schedule).length > 1) {
+                  <div class="flex flex-wrap gap-1.5">
+                    @for (name of namesFor(schedule).slice(1); track $index) {
+                      <span class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-bold dark:border-slate-700 dark:bg-slate-800">{{ name }}</span>
+                    }
+                  </div>
+                }
+              } @else if (unresolvedFor(schedule).length === 0) {
+                <div class="text-xs font-bold text-amber-600 dark:text-amber-300">Chưa phân công người trực</div>
+              }
+              @if (unresolvedFor(schedule).length > 0) {
+                <div class="flex flex-wrap gap-1.5">
+                  @for (label of unresolvedFor(schedule); track $index) {
+                    <span class="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[10px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>{{ label || '?' }}</span>
+                  }
+                </div>
+              }
+              @if (schedule.note) {
+                <p class="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ schedule.note }}</p>
+              }
+              @if (isMyShift(schedule)) {
+                <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
+              }
+            } @else if (schedule) {
+              <div class="text-xs font-bold text-slate-400">{{ schedule.status === 'cancelled' ? 'Ca này đã hủy' : 'Đã có ca khác ngoài bộ lọc' }}</div>
+            } @else {
+              <div class="text-xs font-bold text-slate-400">Chưa có ca trực</div>
+            }
+          </div>
+
+          @if (canManage || (schedule && isMyShift(schedule) && schedule.status === 'planned')) {
+            <footer class="flex justify-end gap-2 border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+              @if (schedule && isMyShift(schedule) && schedule.status === 'planned') {
+                <button type="button" (click)="requestSwap.emit(schedule)" class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-4 text-xs font-black text-amber-700 transition hover:bg-amber-100 active:scale-95 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+                  <i class="fa-solid fa-right-left" aria-hidden="true"></i>Xin đổi ca
+                </button>
+              }
+              @if (canManage) {
+              <button type="button" (click)="actOn(date, schedule)" class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-4 text-xs font-black text-blue-700 transition hover:bg-blue-100 active:scale-95 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+                <i class="fa-solid" [class.fa-pen-to-square]="schedule" [class.fa-plus]="!schedule" aria-hidden="true"></i>{{ schedule ? 'Sửa ca' : 'Thêm ca' }}
+              </button>
+              }
+            </footer>
+          }
+        </article>
+      }
+    </div>
+  }
+</div>

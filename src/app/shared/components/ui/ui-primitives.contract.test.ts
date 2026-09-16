@@ -101,6 +101,31 @@ describe('shared UI primitive contracts', () => {
     assert.match(toolbar, /gap-3/);
   });
 
+  it('exports and demonstrates the Soft UI timeline primitive', () => {
+    const barrel = read('./index.ts');
+    const demo = read('./ui-primitives-demo.component.ts');
+
+    assert.match(barrel, /export \* from '\.\/timeline\/timeline\.component'/);
+    assert.match(barrel, /export \* from '\.\/timeline\/timeline\.model'/);
+    assert.match(demo, /AppUiTimelineComponent/);
+    assert.match(demo, /<app-ui-timeline/);
+    assert.match(demo, /timelinePreview: TimelineItem\[\]/);
+  });
+
+  it('exports and demonstrates the progress and avatar-group primitives', () => {
+    const barrel = read('./index.ts');
+    const demo = read('./ui-primitives-demo.component.ts');
+
+    assert.match(barrel, /export \* from '\.\/progress\/progress\.component'/);
+    assert.match(barrel, /export \* from '\.\/progress\/progress\.model'/);
+    assert.match(barrel, /export \* from '\.\/avatar-group\/avatar-group\.component'/);
+    assert.match(barrel, /export \* from '\.\/avatar-group\/avatar-group\.model'/);
+    assert.match(demo, /AppUiProgressComponent/);
+    assert.match(demo, /<app-ui-progress/);
+    assert.match(demo, /AppUiAvatarGroupComponent/);
+    assert.match(demo, /<app-ui-avatar-group/);
+  });
+
   it('keeps the primitive gallery dev-only and demonstrates light/dark plus main variants', () => {
     const demo = read('./ui-primitives-demo.component.ts');
     const routes = read('../../../app.routes.ts');

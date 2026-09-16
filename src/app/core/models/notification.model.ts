@@ -14,7 +14,12 @@ export type NotificationType =
   | 'DUTY_SCHEDULE_PUBLISHED'
   | 'DUTY_ASSIGNMENT_CHANGED'
   | 'DUTY_ASSIGNMENT_CANCELLED'
-  | 'DUTY_VERIFICATION_REQUIRED';
+  | 'DUTY_VERIFICATION_REQUIRED'
+  | 'DUTY_SWAP_REQUEST'
+  | 'DUTY_SWAP_TARGET_ACCEPTED'
+  | 'DUTY_SWAP_APPROVED'
+  | 'DUTY_SWAP_REJECTED'
+  | 'DUTY_SWAP_CANCELLED';
 
 export type NotificationLevel = 'success' | 'error' | 'info' | 'warning';
 export type NotificationChannel = 'toast' | 'inbox' | 'push';

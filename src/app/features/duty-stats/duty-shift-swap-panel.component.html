@@ -1,0 +1,78 @@
+<section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" aria-label="Yêu cầu đổi ca trực">
+  <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-2">
+        <h2 class="text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300">Đổi ca trực</h2>
+        @if (actionableCount() > 0) { <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">{{ actionableCount() }} cần xử lý</span> }
+      </div>
+      <p class="mt-1 text-[10px] text-slate-400">Đồng nghiệp xác nhận trước, quản lý duyệt sau; lịch chỉ đổi ở bước cuối.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      @if (duty.canManage()) {
+        <app-button variant="secondary" size="sm" (click)="directOpen.set(!directOpen())"><i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Đổi trực tiếp</app-button>
+      }
+      @if (swap.requests().length > 4) {
+        <button type="button" class="text-[10px] font-black text-blue-600 dark:text-blue-300" (click)="expanded.set(!expanded())">{{ expanded() ? 'Thu gọn' : 'Xem tất cả' }}</button>
+      }
+    </div>
+  </header>
+
+  @if (directOpen() && duty.canManage()) {
+    <div class="grid gap-3 border-b border-amber-100 bg-amber-50/50 p-4 lg:grid-cols-[1.1fr_1fr_1fr_1.2fr_auto] dark:border-amber-900/40 dark:bg-amber-950/15">
+      <label class="text-[10px] font-black uppercase text-slate-500">Ca cần thay
+        <select aria-label="Chọn ca đổi trực tiếp" [ngModel]="directDate()" (ngModelChange)="chooseDirectDate($event)" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+          <option value="">— Chọn ngày —</option>
+          @for (schedule of duty.schedules(); track schedule.date) { @if (schedule.status === 'planned' && schedule.staffIds.length) { <option [value]="schedule.date">{{ schedule.date }}</option> } }
+        </select>
+      </label>
+      <label class="text-[10px] font-black uppercase text-slate-500">Người cần thay
+        <select aria-label="Chọn người cần thay" [ngModel]="directOutgoingStaffId()" (ngModelChange)="chooseDirectOutgoing($event)" [disabled]="!directSchedule()" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+          <option value="">— Chọn người —</option>
+          @if (directSchedule(); as schedule) { @for (staffId of schedule.staffIds; track staffId) { <option [value]="staffId">{{ staffName(staffId) }}</option> } }
+        </select>
+      </label>
+      <label class="text-[10px] font-black uppercase text-slate-500">Người nhận ca
+        <select aria-label="Chọn người nhận ca trực tiếp" [ngModel]="directIncomingStaffId()" (ngModelChange)="directIncomingStaffId.set($event)" [disabled]="!directOutgoingStaffId()" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+          <option value="">— Chọn người —</option>
+          @for (person of directIncomingStaff(); track person.id) { @if (!directSchedule()?.staffIds?.includes(person.id)) { <option [value]="person.id">{{ person.displayName }}</option> } }
+        </select>
+      </label>
+      <label class="text-[10px] font-black uppercase text-slate-500">Lý do khẩn cấp
+        <input aria-label="Lý do đổi ca trực tiếp" [ngModel]="directReason()" (ngModelChange)="directReason.set($event)" maxlength="500" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium normal-case dark:border-slate-700 dark:bg-slate-950" placeholder="Ghi chú ngắn">
+      </label>
+      <div class="self-end"><app-button size="sm" [disabled]="!directDate() || !directOutgoingStaffId() || !directIncomingStaffId() || actionBusyId() === 'direct'" [loading]="actionBusyId() === 'direct'" (click)="submitDirect()">Áp dụng</app-button></div>
+    </div>
+  }
+
+  <div class="divide-y divide-slate-100 dark:divide-slate-800">
+    @for (request of visibleRequests(); track request.id) {
+      <article class="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-mono text-[11px] font-black text-slate-700 dark:text-slate-200">{{ requestLabel(request) }}</span>
+            <span class="rounded-full px-2 py-0.5 text-[9px] font-black" [class]="statusClass(request)">{{ statusLabel(request) }}</span>
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500 dark:bg-slate-800 dark:text-slate-300">{{ request.type === 'SWAP' ? '2 chiều' : 'Trực hộ' }}</span>
+          </div>
+          <p class="mt-1 text-xs font-bold">{{ request.requesterName }} → {{ request.targetName }}</p>
+          <p class="mt-1 line-clamp-2 text-[10px] text-slate-500 dark:text-slate-400">{{ request.reason }}</p>
+          @if (swap.isPending(request)) { <p class="mt-1 text-[9px] font-bold text-slate-400">Hết hạn: {{ expiresLabel(request) }}</p> }
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-1.5">
+          @if (isExpired(request) && swap.isPending(request)) {
+            <app-button variant="secondary" size="sm" [disabled]="actionBusyId() === request.id" (click)="expire(request)">Đánh dấu hết hạn</app-button>
+          } @else if (swap.canTargetRespond(request)) {
+            <app-button variant="secondary" size="sm" [disabled]="!!actionBusyId()" (click)="targetDecision(request, false)">Từ chối</app-button>
+            <app-button size="sm" [disabled]="!!actionBusyId()" [loading]="actionBusyId() === request.id" (click)="targetDecision(request, true)">Đồng ý</app-button>
+          } @else if (duty.canManage() && request.status === 'PENDING_MANAGER') {
+            <app-button variant="secondary" size="sm" [disabled]="!!actionBusyId()" (click)="managerDecision(request, false)">Từ chối</app-button>
+            <app-button size="sm" [disabled]="!!actionBusyId()" [loading]="actionBusyId() === request.id" (click)="managerDecision(request, true)">Duyệt & cập nhật lịch</app-button>
+          } @else if (swap.canRequesterCancel(request)) {
+            <app-button variant="secondary" size="sm" [disabled]="!!actionBusyId()" (click)="cancel(request)">Hủy yêu cầu</app-button>
+          }
+        </div>
+      </article>
+    } @empty {
+      <div class="px-4 py-6 text-center text-xs italic text-slate-400">Chưa có yêu cầu đổi ca liên quan đến bạn.</div>
+    }
+  </div>
+</section>

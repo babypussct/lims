@@ -10,6 +10,8 @@ import {
   dutyMonthCalendarDateKeys,
   dutyMonthDateKeys,
   dutyMonthRange,
+  dutyIsoWeekDays,
+  dutyIsoWeekInfo,
   dutyRolling90Range,
   findLinkedDutyStaff,
   isDutyDateKey,
@@ -46,6 +48,44 @@ test('month calendar grid is Monday-first and padded to complete weeks', () => {
   assert.equal(cells.filter(Boolean).length, 30);
 });
 
+test('ISO duty week helpers return seven Monday-first days across month boundaries', () => {
+  assert.deepEqual(dutyIsoWeekDays('2026-09-30'), [
+    '2026-09-28',
+    '2026-09-29',
+    '2026-09-30',
+    '2026-10-01',
+    '2026-10-02',
+    '2026-10-03',
+    '2026-10-04',
+  ]);
+  assert.deepEqual(dutyIsoWeekInfo('2026-09-15'), {
+    weekNumber: 38,
+    weekYear: 2026,
+    start: '2026-09-14',
+    end: '2026-09-20',
+    dates: [
+      '2026-09-14', '2026-09-15', '2026-09-16', '2026-09-17',
+      '2026-09-18', '2026-09-19', '2026-09-20',
+    ],
+    label: 'Tuần 38 (14/09 – 20/09/2026)',
+  });
+});
+
+test('ISO duty week helpers preserve ISO week-year at year boundaries', () => {
+  const lastWeek2026 = dutyIsoWeekInfo('2027-01-01');
+  assert.equal(lastWeek2026.weekNumber, 53);
+  assert.equal(lastWeek2026.weekYear, 2026);
+  assert.equal(lastWeek2026.start, '2026-12-28');
+  assert.equal(lastWeek2026.end, '2027-01-03');
+  assert.equal(lastWeek2026.label, 'Tuần 53 (28/12/2026 – 03/01/2027)');
+
+  const firstWeek2027 = dutyIsoWeekInfo('2027-01-04');
+  assert.equal(firstWeek2027.weekNumber, 1);
+  assert.equal(firstWeek2027.weekYear, 2027);
+  assert.equal(firstWeek2027.start, '2027-01-04');
+  assert.equal(firstWeek2027.end, '2027-01-10');
+});
+
 test('adjacent duty warnings detect previous and next active assignments only', () => {
   const context: DutyScheduleEntry[] = [
     { id: '2026-08-31', date: '2026-08-31', staffIds: ['staff-accented'], startTime: '18:00', status: 'planned' },
@@ -64,6 +104,7 @@ test('duty statistics stay identity-based for similar names', () => {
   assert.equal(stats.find(item => item.staffId === 'staff-dat')?.total, 1);
   assert.equal(stats.find(item => item.staffId === 'staff-accented')?.leadCount, 2);
   assert.equal(stats.find(item => item.staffId === 'staff-accented')?.weekendCount, 0);
+  assert.equal(stats.find(item => item.staffId === 'staff-accented')?.weekdayCount, 2);
   assert.deepEqual(resolveDutyStaffNames(schedules[0], staff), ['Huỳnh', 'Huynh']);
 });
 
@@ -74,9 +115,11 @@ test('duty statistics count weekend assignments and lead responsibility independ
   ];
   const stats = aggregateDutyPeopleById(weekendSchedules, staff);
   assert.equal(stats.find(item => item.staffId === 'staff-plain')?.weekendCount, 2);
+  assert.equal(stats.find(item => item.staffId === 'staff-plain')?.weekdayCount, 0);
   assert.equal(stats.find(item => item.staffId === 'staff-plain')?.leadCount, 1);
   assert.equal(stats.find(item => item.staffId === 'staff-accented')?.weekendCount, 2);
   assert.equal(stats.find(item => item.staffId === 'staff-accented')?.leadCount, 1);
+  assert.equal(stats.every(item => item.weekdayCount + item.weekendCount === item.total), true);
 });
 
 test('rolling recommendations exclude the edited shift and apply four-tier workload rules', () => {

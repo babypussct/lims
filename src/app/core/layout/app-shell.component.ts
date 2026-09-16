@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { StateService } from '../services/state.service';
 import { AppHeaderComponent } from './app-header.component';
@@ -31,17 +31,24 @@ import { NavigationPanelComponent } from './navigation-panel.component';
       <!-- Soft UI-style application header (desktop + mobile) -->
       @if (!state.focusMode()) {
         @defer (when !!state.currentUser()) {
-          <app-bottom-nav #mobileNavigation></app-bottom-nav>
-          <app-header (mobileMenuRequested)="mobileNavigation.toggleMenu()"></app-header>
+          <app-bottom-nav></app-bottom-nav>
         }
       }
 
       <main
-        class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out overflow-hidden"
-        [class.md:ml-[17rem]]="!state.sidebarCollapsed() && !state.focusMode()"
-        [class.md:ml-16]="state.sidebarCollapsed() && !state.focusMode()"
+        class="elevated-workspace-canvas flex-1 min-w-0 self-stretch flex flex-col relative transition-all duration-300 ease-in-out overflow-hidden lg:overflow-visible"
+        [class.workspace-focus-mode]="state.focusMode()"
+        [style.--soft-ui-shell-offset]="state.sidebarCollapsed() ? '4rem' : '17rem'"
+        [style.--soft-ui-workspace-offset]="state.sidebarCollapsed() ? '3rem' : '15.25rem'"
         [class.pt-16]="!state.focusMode()"
+        [class.lg:pt-0]="!state.focusMode()"
         [class.p-0]="state.focusMode()">
+
+        @if (!state.focusMode()) {
+          @defer (when !!state.currentUser()) {
+            <app-header (mobileMenuRequested)="openMobileMenu()"></app-header>
+          }
+        }
 
         <div
           class="flex-1 min-h-0 flex flex-col overflow-hidden"
@@ -86,17 +93,59 @@ import { NavigationPanelComponent } from './navigation-panel.component';
     </div>
   `,
   styles: [`
+    .elevated-workspace-canvas {
+      margin-left: 0;
+    }
+
     .app-content-scroll {
       padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
 
     @media (min-width: 768px) {
+      .elevated-workspace-canvas {
+        margin-left: var(--soft-ui-shell-offset);
+      }
+
+      .elevated-workspace-canvas.workspace-focus-mode {
+        margin-left: 0;
+      }
+
       .app-content-scroll {
         padding-bottom: 1.5rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .elevated-workspace-canvas {
+        z-index: 20;
+        margin-top: 0;
+        margin-right: 0;
+        margin-bottom: 0;
+        margin-left: var(--soft-ui-workspace-offset);
+        border: 1px solid var(--soft-ui-workspace-edge);
+        border-radius: 1.125rem 0 0 1.125rem;
+        background: var(--soft-ui-workspace);
+        box-shadow: var(--soft-ui-workspace-shadow);
+      }
+
+      .elevated-workspace-canvas.workspace-focus-mode {
+        z-index: auto;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        background: var(--soft-ui-app-bg);
+        box-shadow: none;
+        overflow: hidden;
       }
     }
   `]
 })
 export class AppShellComponent {
   state = inject(StateService);
+
+  @ViewChild(BottomNavComponent) private mobileNavigation?: BottomNavComponent;
+
+  openMobileMenu() {
+    this.mobileNavigation?.toggleMenu();
+  }
 }

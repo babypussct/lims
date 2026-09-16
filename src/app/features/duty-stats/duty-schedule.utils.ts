@@ -8,6 +8,16 @@ import type {
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface DutyIsoWeekInfo {
+  weekNumber: number;
+  weekYear: number;
+  start: string;
+  end: string;
+  dates: string[];
+  label: string;
+}
 
 export function isDutyDateKey(value: string): boolean {
   if (!DATE_KEY_PATTERN.test(value)) return false;
@@ -61,6 +71,33 @@ export function shiftDutyDateKey(dateKey: string, dayOffset: number): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day + dayOffset));
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+export function dutyIsoWeekDays(anchorDate: string): string[] {
+  if (!isDutyDateKey(anchorDate)) throw new Error('Ngày neo tuần trực không hợp lệ.');
+  const [year, month, day] = anchorDate.split('-').map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  const mondayOffset = -((weekday + 6) % 7);
+  const monday = shiftDutyDateKey(anchorDate, mondayOffset);
+  return Array.from({ length: 7 }, (_, index) => shiftDutyDateKey(monday, index));
+}
+
+export function dutyIsoWeekInfo(anchorDate: string): DutyIsoWeekInfo {
+  const dates = dutyIsoWeekDays(anchorDate);
+  const start = dates[0];
+  const end = dates[6];
+  const thursday = dates[3];
+  const weekYear = Number(thursday.slice(0, 4));
+  const firstIsoMonday = dutyIsoWeekDays(`${weekYear}-01-04`)[0];
+  const weekNumber = Math.floor((dutyDateKeyUtcMs(start) - dutyDateKeyUtcMs(firstIsoMonday)) / (7 * DAY_MS)) + 1;
+  return {
+    weekNumber,
+    weekYear,
+    start,
+    end,
+    dates,
+    label: `Tuần ${weekNumber} (${formatDutyShortDate(start, start.slice(0, 4) !== end.slice(0, 4))} – ${formatDutyShortDate(end, true)})`,
+  };
 }
 
 export function dutyMonthDateKeys(year: number, month: number): string[] {
@@ -130,6 +167,7 @@ export function aggregateDutyPeopleById(
   const stats = new Map<string, {
     total: number;
     mondayCount: number;
+    weekdayCount: number;
     weekendCount: number;
     leadCount: number;
     months: Set<string>;
@@ -144,6 +182,7 @@ export function aggregateDutyPeopleById(
       const current = stats.get(staffId) || {
         total: 0,
         mondayCount: 0,
+        weekdayCount: 0,
         weekendCount: 0,
         leadCount: 0,
         months: new Set<string>(),
@@ -152,6 +191,7 @@ export function aggregateDutyPeopleById(
       current.total += 1;
       if (weekday === 1) current.mondayCount += 1;
       if (weekday === 0 || weekday === 6) current.weekendCount += 1;
+      else current.weekdayCount += 1;
       if (schedule.staffIds[0] === staffId) current.leadCount += 1;
       current.months.add(monthKey);
       if (!current.lastDate || schedule.date > current.lastDate) current.lastDate = schedule.date;
@@ -167,6 +207,7 @@ export function aggregateDutyPeopleById(
       linkedUserUid: person?.linkedUserUid,
       total: value.total,
       mondayCount: value.mondayCount,
+      weekdayCount: value.weekdayCount,
       weekendCount: value.weekendCount,
       leadCount: value.leadCount,
       activeMonthCount: value.months.size,
@@ -190,6 +231,7 @@ export function aggregateDutyRosterById(
       linkedUserUid: person.linkedUserUid,
       total: 0,
       mondayCount: 0,
+      weekdayCount: 0,
       weekendCount: 0,
       leadCount: 0,
       activeMonthCount: 0,
@@ -264,4 +306,14 @@ export function findLinkedDutyStaff(
 
 export function normalizeDutyStaffName(value: string | null | undefined): string {
   return (value || '').trim().replace(/\s+/g, ' ');
+}
+
+function dutyDateKeyUtcMs(dateKey: string): number {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+function formatDutyShortDate(dateKey: string, includeYear: boolean): string {
+  const [year, month, day] = dateKey.split('-');
+  return includeYear ? `${day}/${month}/${year}` : `${day}/${month}`;
 }

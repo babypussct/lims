@@ -1034,6 +1034,323 @@ test('duty schedule is readable by signed-in users but writable only with duty_m
   await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/staff-huynh`)));
 });
 
+test('duty swap requests enforce participant transitions and atomic manager approval', async () => {
+  const managerDb = dbFor(users.manager);
+  const requesterDb = dbFor(users.staffDefault);
+  const targetDb = dbFor(users.batchA);
+  const outsiderDb = dbFor(users.viewer);
+  const requesterStaffId = 'swap-requester';
+  const targetStaffId = 'swap-target';
+  const sourceDate = '2026-09-21';
+  const targetDate = '2026-09-22';
+
+  const staffPayload = (displayName: string, linkedUserUid: string) => ({
+    displayName,
+    employeeCode: '',
+    linkedUserUid,
+    active: true,
+    note: '',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/${requesterStaffId}`), staffPayload('Người xin đổi', users.staffDefault.uid)));
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/${targetStaffId}`), staffPayload('Người nhận đổi', users.batchA.uid)));
+
+  const schedulePayload = (date: string, staffIds: string[]) => ({
+    date,
+    staffIds,
+    unresolvedAssignees: [] as string[],
+    needsVerification: false,
+    sourceAssignees: '',
+    startTime: '18:00',
+    status: 'planned',
+    note: '',
+    source: 'manual',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${sourceDate}`), schedulePayload(sourceDate, [requesterStaffId])));
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${targetDate}`), schedulePayload(targetDate, [targetStaffId])));
+
+  const snapshot = (date: string, staffIds: string[]) => ({
+    date,
+    staffIds,
+    unresolvedAssignees: [] as string[],
+    needsVerification: false,
+    sourceAssignees: '',
+    startTime: '18:00',
+    status: 'planned',
+    note: '',
+    source: 'manual'
+  });
+  const requestId = 'swap-request-1';
+  const requestRef = doc(requesterDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`);
+  const createBatch = writeBatch(requesterDb);
+  createBatch.set(requestRef, {
+    type: 'SWAP',
+    status: 'PENDING_TARGET',
+    requesterUid: users.staffDefault.uid,
+    requesterStaffId,
+    requesterName: 'Người xin đổi',
+    targetUid: users.batchA.uid,
+    targetStaffId,
+    targetName: 'Người nhận đổi',
+    participantUids: [users.staffDefault.uid, users.batchA.uid],
+    sourceDate,
+    targetDate,
+    reason: 'Bận việc gia đình',
+    sourceSnapshot: snapshot(sourceDate, [requesterStaffId]),
+    targetSnapshot: snapshot(targetDate, [targetStaffId]),
+    expiresAt: Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    createdAt: serverTimestamp(),
+    createdByUid: users.staffDefault.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.staffDefault.uid,
+    targetRespondedAt: null,
+    targetResponseByUid: '',
+    managerReviewedAt: null,
+    managerUid: '',
+    decisionNote: ''
+  });
+  createBatch.set(doc(requesterDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}/audit/created`), {
+    requestId,
+    action: 'CREATED',
+    actorUid: users.staffDefault.uid,
+    actorName: users.staffDefault.displayName,
+    fromStatus: '',
+    toStatus: 'PENDING_TARGET',
+    details: 'Bận việc gia đình',
+    createdAt: serverTimestamp()
+  });
+  await assertSucceeds(createBatch.commit());
+
+  await assertSucceeds(getDoc(doc(targetDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`)));
+  await assertSucceeds(getDoc(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`)));
+  await assertFails(getDoc(doc(outsiderDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`)));
+  await assertFails(updateDoc(doc(requesterDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'PENDING_MANAGER',
+    targetRespondedAt: serverTimestamp(),
+    targetResponseByUid: users.staffDefault.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.staffDefault.uid
+  }));
+
+  const targetBatch = writeBatch(targetDb);
+  targetBatch.update(doc(targetDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'PENDING_MANAGER',
+    targetRespondedAt: serverTimestamp(),
+    targetResponseByUid: users.batchA.uid,
+    decisionNote: '',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.batchA.uid
+  });
+  targetBatch.set(doc(targetDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}/audit/target-accepted`), {
+    requestId,
+    action: 'TARGET_ACCEPTED',
+    actorUid: users.batchA.uid,
+    actorName: users.batchA.displayName,
+    fromStatus: 'PENDING_TARGET',
+    toStatus: 'PENDING_MANAGER',
+    details: '',
+    createdAt: serverTimestamp()
+  });
+  await assertSucceeds(targetBatch.commit());
+
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'APPROVED',
+    managerReviewedAt: serverTimestamp(),
+    managerUid: users.manager.uid,
+    decisionNote: '',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  }));
+
+  const approvalBatch = writeBatch(managerDb);
+  approvalBatch.update(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${sourceDate}`), {
+    staffIds: [targetStaffId],
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  approvalBatch.update(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${targetDate}`), {
+    staffIds: [requesterStaffId],
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  approvalBatch.update(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'APPROVED',
+    managerReviewedAt: serverTimestamp(),
+    managerUid: users.manager.uid,
+    decisionNote: '',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  approvalBatch.set(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}/audit/approved`), {
+    requestId,
+    action: 'MANAGER_APPROVED',
+    actorUid: users.manager.uid,
+    actorName: users.manager.displayName,
+    fromStatus: 'PENDING_MANAGER',
+    toStatus: 'APPROVED',
+    details: '',
+    createdAt: serverTimestamp()
+  });
+  await assertSucceeds(approvalBatch.commit());
+  assert.deepEqual((await getDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${sourceDate}`))).data()?.staffIds, [targetStaffId]);
+  assert.deepEqual((await getDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${targetDate}`))).data()?.staffIds, [requesterStaffId]);
+});
+
+test('duty cover requests approve atomically with only the source schedule write', async () => {
+  const managerDb = dbFor(users.manager);
+  const requesterDb = dbFor(users.staffDefault);
+  const targetDb = dbFor(users.batchA);
+  const requesterStaffId = 'cover-requester';
+  const targetStaffId = 'cover-target';
+  const sourceDate = '2026-09-23';
+
+  const staffPayload = (displayName: string, linkedUserUid: string) => ({
+    displayName,
+    employeeCode: '',
+    linkedUserUid,
+    active: true,
+    note: '',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/${requesterStaffId}`), staffPayload('Người nhờ trực', users.staffDefault.uid)));
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/${targetStaffId}`), staffPayload('Người trực hộ', users.batchA.uid)));
+
+  const schedule = {
+    date: sourceDate,
+    staffIds: [requesterStaffId],
+    unresolvedAssignees: [] as string[],
+    needsVerification: false,
+    sourceAssignees: '',
+    startTime: '18:00',
+    status: 'planned',
+    note: '',
+    source: 'manual',
+    createdAt: serverTimestamp(),
+    createdByUid: users.manager.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  };
+  await assertSucceeds(setDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${sourceDate}`), schedule));
+
+  const requestId = 'cover-request-1';
+  const requestRef = doc(requesterDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`);
+  const createBatch = writeBatch(requesterDb);
+  createBatch.set(requestRef, {
+    type: 'COVER',
+    status: 'PENDING_TARGET',
+    requesterUid: users.staffDefault.uid,
+    requesterStaffId,
+    requesterName: 'Người nhờ trực',
+    targetUid: users.batchA.uid,
+    targetStaffId,
+    targetName: 'Người trực hộ',
+    participantUids: [users.staffDefault.uid, users.batchA.uid],
+    sourceDate,
+    targetDate: '',
+    reason: 'Bận việc gia đình',
+    sourceSnapshot: {
+      date: sourceDate,
+      staffIds: [requesterStaffId],
+      unresolvedAssignees: [],
+      needsVerification: false,
+      sourceAssignees: '',
+      startTime: '18:00',
+      status: 'planned',
+      note: '',
+      source: 'manual'
+    },
+    targetSnapshot: null,
+    expiresAt: Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    createdAt: serverTimestamp(),
+    createdByUid: users.staffDefault.uid,
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.staffDefault.uid,
+    targetRespondedAt: null,
+    targetResponseByUid: '',
+    managerReviewedAt: null,
+    managerUid: '',
+    decisionNote: ''
+  });
+  createBatch.set(doc(requesterDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}/audit/created`), {
+    requestId,
+    action: 'CREATED',
+    actorUid: users.staffDefault.uid,
+    actorName: users.staffDefault.displayName,
+    fromStatus: '',
+    toStatus: 'PENDING_TARGET',
+    details: 'Bận việc gia đình',
+    createdAt: serverTimestamp()
+  });
+  await assertSucceeds(createBatch.commit());
+
+  const targetBatch = writeBatch(targetDb);
+  targetBatch.update(doc(targetDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'PENDING_MANAGER',
+    targetRespondedAt: serverTimestamp(),
+    targetResponseByUid: users.batchA.uid,
+    decisionNote: '',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.batchA.uid
+  });
+  targetBatch.set(doc(targetDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}/audit/target-accepted`), {
+    requestId,
+    action: 'TARGET_ACCEPTED',
+    actorUid: users.batchA.uid,
+    actorName: users.batchA.displayName,
+    fromStatus: 'PENDING_TARGET',
+    toStatus: 'PENDING_MANAGER',
+    details: '',
+    createdAt: serverTimestamp()
+  });
+  await assertSucceeds(targetBatch.commit());
+
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'APPROVED',
+    managerReviewedAt: serverTimestamp(),
+    managerUid: users.manager.uid,
+    decisionNote: '',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  }));
+
+  const approvalBatch = writeBatch(managerDb);
+  approvalBatch.update(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${sourceDate}`), {
+    staffIds: [targetStaffId],
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  approvalBatch.update(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}`), {
+    status: 'APPROVED',
+    managerReviewedAt: serverTimestamp(),
+    managerUid: users.manager.uid,
+    decisionNote: '',
+    updatedAt: serverTimestamp(),
+    updatedByUid: users.manager.uid
+  });
+  approvalBatch.set(doc(managerDb, `artifacts/${APP_ID}/duty_swap_requests/${requestId}/audit/approved`), {
+    requestId,
+    action: 'MANAGER_APPROVED',
+    actorUid: users.manager.uid,
+    actorName: users.manager.displayName,
+    fromStatus: 'PENDING_MANAGER',
+    toStatus: 'APPROVED',
+    details: '',
+    createdAt: serverTimestamp()
+  });
+  await assertSucceeds(approvalBatch.commit());
+  assert.deepEqual((await getDoc(doc(managerDb, `artifacts/${APP_ID}/duty_schedules/${sourceDate}`))).data()?.staffIds, [targetStaffId]);
+});
+
 test('monthly stats atomic increments tolerate concurrent writers on the same month document', async () => {
   const db = dbFor(users.batchA);
   const statsRef = doc(db, `artifacts/${APP_ID}/monthly_stats/2026-08`);

@@ -20,7 +20,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
-    <div class="h-full flex flex-col fade-in bg-slate-50 dark:bg-slate-900 relative p-4 md:p-6">
+    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
         
         <!-- Header -->
         <app-page-header
@@ -57,7 +57,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
             </div>
         </app-toolbar>
 
-        <div class="flex-1 p-6 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900">
+        <div class="flex-1 p-6 overflow-hidden flex flex-col">
             <!-- List -->
             <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
                 <div class="overflow-y-auto custom-scrollbar flex-1 p-2">

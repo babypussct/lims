@@ -2,7 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.15-b02
+## Phiên bản hiện tại: v26.09.16-b01
+
+### v26.09.16-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bổ sung quy trình đổi ca/trực hộ ngay trong LIMS: người được đề nghị xác nhận, quản lý phê duyệt và lịch chỉ được cập nhật khi dữ liệu ca vẫn còn khớp với thời điểm gửi yêu cầu.
+- Lịch trực có thêm chế độ xem theo tuần, biểu đồ thống kê trực và khả năng sao chép hoặc tải ảnh PNG để chia sẻ nhanh.
+- Giao diện điều hướng, dashboard và nhiều màn hình nghiệp vụ được đồng bộ theo hệ Soft UI mới để dễ đọc, thao tác tốt hơn trên desktop lẫn màn hình hẹp.
+
+#### ✨ Tính Năng Mới
+
+- Thêm yêu cầu đổi ca hai chiều hoặc trực hộ với trạng thái xử lý, lịch sử audit, thời hạn yêu cầu và thông báo tới đúng người liên quan.
+- Thêm màn hình tuần cho lịch trực, bộ xuất ảnh lịch theo tuần/tháng và biểu đồ phân bố ngày thường, cuối tuần, lượt chủ trì và mức bình quân phòng lab.
+- Bổ sung các UI primitive dùng chung gồm Timeline, Progress và Avatar Group để thống nhất cách hiển thị trạng thái và tiến độ trên toàn hệ thống.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tách modal phân công lịch trực thành component riêng, nhóm gợi ý nhân sự theo tải 90 ngày và hiển thị cảnh báo ca liền kề rõ hơn khi xếp lịch.
+- Cải tiến header, shell, navigation panel và các màn hình Dashboard, Checklist, Kết quả, Tiêu chuẩn, Target, Truy xuất cùng một số workspace khác để giảm mật độ thông tin và tăng tính nhất quán.
+- Mở rộng bộ contract test và kiểm thử quy tắc Firestore cho các thành phần UI mới và luồng đổi ca.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Siết quyền đọc/ghi yêu cầu đổi ca trong Firestore Rules, kiểm tra snapshot ca trước khi phê duyệt và chỉ cho phép các thay đổi trạng thái hợp lệ theo từng vai trò.
+- Mở rộng API notification cho toàn bộ vòng đời yêu cầu đổi ca, đồng thời kiểm tra người gửi, trạng thái và người nhận trước khi phát thông báo.
+- Khắc phục một số vấn đề bố cục, responsive và hiển thị trạng thái phát sinh khi chuẩn hóa các màn hình sang bộ UI dùng chung.
 
 ### v26.09.15-b02
 

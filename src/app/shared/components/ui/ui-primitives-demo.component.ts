@@ -4,6 +4,11 @@ import { AppEmptyStateComponent } from './empty-state/empty-state.component';
 import { AppModalShellComponent } from './modal-shell/modal-shell.component';
 import { AppPageHeaderComponent } from './page-header/page-header.component';
 import { AppToolbarComponent } from './toolbar/toolbar.component';
+import { AppUiTimelineComponent } from './timeline/timeline.component';
+import { TimelineItem } from './timeline/timeline.model';
+import { AppUiProgressComponent } from './progress/progress.component';
+import { AppUiAvatarGroupComponent } from './avatar-group/avatar-group.component';
+import { AvatarGroupItem } from './avatar-group/avatar-group.model';
 
 @Component({
   selector: 'app-ui-primitives-demo',
@@ -14,6 +19,9 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
     AppModalShellComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    AppUiTimelineComponent,
+    AppUiProgressComponent,
+    AppUiAvatarGroupComponent,
   ],
   template: `
     <div [class.dark]="darkPreview()" class="min-h-full">
@@ -75,6 +83,31 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
           </section>
 
           <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Soft UI Timeline</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Dòng thời gian dùng chung cho traceability và audit trail.</p>
+            <div class="mt-5 max-w-3xl">
+              <app-ui-timeline [items]="timelinePreview" ariaLabel="Timeline mẫu phòng kiểm nghiệm" />
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Thin Gradient Progress</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Thanh tiến độ 4px dùng cho mẻ, checklist và báo cáo.</p>
+            <div class="mt-5 space-y-5">
+              <app-ui-progress [value]="68" label="Tiến độ mẻ phân tích" ariaLabel="Tiến độ mẻ phân tích" [showValue]="true" />
+              <app-ui-progress [value]="100" status="success" label="Checklist ngày" ariaLabel="Tiến độ checklist ngày" [showValue]="true" />
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Avatar Group</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Facepile dùng cho nhóm kỹ thuật viên cùng thao tác.</p>
+            <div class="mt-5">
+              <app-ui-avatar-group [items]="avatarPreview" [maxVisible]="4" size="md" ariaLabel="Kỹ thuật viên mẫu" />
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
             <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Khung hộp thoại</h2>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Kiểm tra vùng lấy nét, phím Escape, nền phủ, chân trang và chế độ sáng/tối.</p>
             <div class="mt-4">
@@ -112,6 +145,38 @@ import { AppToolbarComponent } from './toolbar/toolbar.component';
 export class UiPrimitivesDemoComponent {
   readonly darkPreview = signal(false);
   readonly modalOpen = signal(false);
+  readonly timelinePreview: TimelineItem[] = [
+    {
+      id: 'received',
+      title: 'Tiếp nhận mẫu kiểm nghiệm',
+      description: 'Hồ sơ được ghi nhận và chuyển sang quy trình phân tích.',
+      timestamp: new Date('2026-09-16T08:15:00+07:00'),
+      actorName: 'Nguyễn Văn A',
+      actorRole: 'Kỹ thuật viên',
+      icon: 'fa-clipboard-check',
+      status: 'info',
+      metadata: [{ label: 'Mã mẫu', value: 'LAB-260916-01' }],
+    },
+    {
+      id: 'approved',
+      title: 'Phê duyệt kế hoạch phân tích',
+      description: 'Mẻ phân tích đã sẵn sàng cho bước chuẩn bị và chạy thiết bị.',
+      timestamp: new Date('2026-09-16T09:05:00+07:00'),
+      actorName: 'Quản lý QC',
+      actorRole: 'Người phê duyệt',
+      icon: 'fa-circle-check',
+      status: 'success',
+      metadata: [{ label: 'SOP', value: 'GC-MS/MS' }],
+      isCurrent: true,
+    },
+  ];
+  readonly avatarPreview: AvatarGroupItem[] = [
+    { id: 'an', name: 'Nguyễn Văn An', subtitle: 'Kỹ thuật viên' },
+    { id: 'binh', name: 'Trần Gia Bình', subtitle: 'QC' },
+    { id: 'chi', name: 'Lê Minh Chi', subtitle: 'Kiểm nghiệm viên' },
+    { id: 'dung', name: 'Phạm Hoàng Dũng', subtitle: 'Quản lý ca' },
+    { id: 'ha', name: 'Võ Thu Hà', subtitle: 'Kỹ thuật viên' },
+  ];
 
   toggleDarkPreview(): void {
     this.darkPreview.update((value) => !value);

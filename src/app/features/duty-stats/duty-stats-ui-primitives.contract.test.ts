@@ -55,20 +55,21 @@ test('duty staffing does not expose or depend on employee codes', () => {
 test('duty schedule includes fast assignment and period navigation controls', () => {
   const component = read('src/app/features/duty-stats/duty-stats.component.ts');
   const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const assignmentTemplate = read('src/app/features/duty-stats/duty-assignment-modal.component.html');
 
   assert.match(component, /scheduleStaffSearch/);
   assert.match(component, /normalize\('NFD'\)/);
   assert.match(component, /prevPeriod\(\)/);
   assert.match(component, /nextPeriod\(\)/);
   assert.match(component, /goToCurrentMonth\(\)/);
-  assert.match(template, /Tìm nhanh nhân viên/);
+  assert.match(assignmentTemplate, /Tìm nhanh nhân viên/);
   assert.match(template, /Đang tải lịch trực/);
   assert.match(template, /Tháng này/);
-  assert.match(template, /toggleScheduleStaff\(staffId, false\)/);
+  assert.match(assignmentTemplate, /addStaff\(person\.id\)/);
   assert.match(template, /Đã gán cho/);
-  assert.match(template, /Cần chọn ít nhất 1 nhân viên hoặc thêm vị trí chưa xác định/);
-  assert.match(template, /Vị trí chưa xác định/);
-  assert.match(template, /Cần xác minh/);
+  assert.match(assignmentTemplate, /Cần chọn ít nhất 1 nhân viên hoặc thêm vị trí chưa xác định/);
+  assert.match(assignmentTemplate, /Vị trí chưa xác định/);
+  assert.match(assignmentTemplate, /Cần xác minh/);
 });
 
 test('phase 2 provides responsive schedule cards and personal shift cues', () => {
@@ -110,6 +111,7 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(component, /getAvatarUrl\(options\.displayName \|\| displayName, options\.style, options\.photoURL\)/);
 
   assert.match(template, /Lịch tháng/);
+  assert.match(component, /readonly calendarWeekdays = \['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'\]/);
   assert.match(template, /grid-cols-7/);
   assert.match(template, /@for \(cell of calendarCells\(\); track \$index\)/);
   assert.match(template, /Thống kê theo người/);
@@ -119,6 +121,10 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /avatarFor\(stat\.displayName, stat\.linkedUserUid\)/);
   assert.doesNotMatch(template, /initialsFor\(stat\.displayName\)/);
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
+  assert.doesNotMatch(template, /startTime|18:00/);
+  assert.match(template, /grid items-stretch gap-4/);
+  assert.match(template, /2xl:h-\[520px\]/);
+  assert.match(template, /max-h-\[390px\][^\n]*2xl:max-h-none/);
   assert.match(template, /so bình quân/);
 });
 
@@ -138,6 +144,86 @@ test('duty statistics support selected period, full year and all-time balance co
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
 });
 
+test('M4 statistics chart stacks weekday and weekend counts while keeping lead count separate', () => {
+  const model = read('src/app/features/duty-stats/duty-schedule.model.ts');
+  const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');
+  const chart = read('src/app/features/duty-stats/duty-stats-chart.component.ts');
+  const chartTemplate = read('src/app/features/duty-stats/duty-stats-chart.component.html');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+
+  assert.match(model, /weekdayCount: number/);
+  assert.match(utils, /else current\.weekdayCount \+= 1/);
+  assert.match(chart, /import\('chart\.js\/auto'\)/);
+  assert.match(chart, /data: stats\.map\(item => item\.weekdayCount\)/);
+  assert.match(chart, /data: stats\.map\(item => item\.weekendCount\)/);
+  assert.match(chart, /borderDash: \[6, 5\]/);
+  assert.match(chart, /★ Chủ trì/);
+  assert.match(chartTemplate, /Ngày thường \+ cuối tuần = tổng lượt/);
+  assert.match(template, /<app-duty-stats-chart/);
+});
+
+test('M5 schedule image export uses a dedicated offscreen template with clipboard fallback', () => {
+  const component = read('src/app/features/duty-stats/duty-schedule-image-export.component.ts');
+  const template = read('src/app/features/duty-stats/duty-schedule-image-export.component.html');
+  const dutyTemplate = read('src/app/features/duty-stats/duty-stats.component.html');
+
+  assert.match(component, /import\('html2canvas'\)/);
+  assert.match(component, /new ClipboardItem\(\{ 'image\/png': blob \}\)/);
+  assert.match(component, /this\.downloadBlob\(blob\)/);
+  assert.match(template, /position: fixed; left: -100000px/);
+  assert.match(template, /LỊCH TRỰC ĐÊM PHÒNG KIỂM NGHIỆM/);
+  assert.match(template, /★ Người đầu tiên là người chủ trì/);
+  assert.match(template, /Sao chép ảnh/);
+  assert.match(template, /Tải PNG/);
+  assert.match(dutyTemplate, /<app-duty-schedule-image-export/);
+});
+
+test('M6 shift swap backend keeps snapshot concurrency, exact-index replacement, expiry and server-resolved notifications', () => {
+  const model = read('src/app/features/duty-stats/duty-shift-swap.model.ts');
+  const service = read('src/app/features/duty-stats/duty-shift-swap.service.ts');
+  const utils = read('src/app/features/duty-stats/duty-shift-swap.utils.ts');
+  const rules = read('firestore.rules');
+  const notifications = read('api/notifications.ts');
+
+  assert.match(model, /type DutySwapRequestType = 'SWAP' \| 'COVER'/);
+  assert.match(model, /'PENDING_TARGET'/);
+  assert.match(model, /'PENDING_MANAGER'/);
+  assert.match(model, /unresolvedAssignees: string\[\]/);
+  assert.match(model, /needsVerification: boolean/);
+  assert.match(service, /dutyShiftSnapshotMatches\(current\.sourceSnapshot, sourceSchedule\)/);
+  assert.match(service, /replaceDutyStaffAtExactIndex/);
+  assert.match(service, /Timestamp\.fromMillis\(nowMs \+ DUTY_SWAP_TTL_MS\)/);
+  assert.match(service, /transaction\.set\(auditRef/);
+  assert.match(utils, /next\[index\] = incomingStaffId/);
+  assert.match(rules, /function validDutySwapUpdate\(appId\)/);
+  assert.match(rules, /request\.time >= resource\.data\.expiresAt/);
+  assert.match(rules, /match \/artifacts\/\{appId\}\/duty_swap_requests\/\{requestId\}/);
+  assert.match(notifications, /action === 'dutySwap'/);
+  assert.match(notifications, /duty_staff\/\$\{targetStaffId\}/);
+  assert.match(notifications, /const expectedStatus = swapEvent === 'MANAGER_APPROVED' \? 'APPROVED' : 'REJECTED_MANAGER'/);
+  assert.match(notifications, /status !== expectedStatus/);
+});
+
+test('M7 shift swap UI exposes requester, target, manager and dashboard workflows without bloating duty stats', () => {
+  const requestComponent = read('src/app/features/duty-stats/duty-shift-swap-request.component.ts');
+  const requestTemplate = read('src/app/features/duty-stats/duty-shift-swap-request.component.html');
+  const panel = read('src/app/features/duty-stats/duty-shift-swap-panel.component.html');
+  const week = read('src/app/features/duty-stats/duty-week-view.component.html');
+  const dutyTemplate = read('src/app/features/duty-stats/duty-stats.component.html');
+  const dashboard = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  assert.match(requestComponent, /this\.swap\.createRequest/);
+  assert.match(requestTemplate, /Đổi ca 2 chiều/);
+  assert.match(requestTemplate, /Nhờ trực hộ/);
+  assert.match(panel, /Đồng ý/);
+  assert.match(panel, /Duyệt & cập nhật lịch/);
+  assert.match(panel, /Đổi trực tiếp/);
+  assert.match(week, /Xin đổi ca/);
+  assert.match(dutyTemplate, /<app-duty-shift-swap-panel/);
+  assert.match(dutyTemplate, /<app-duty-shift-swap-request/);
+  assert.match(dashboard, /pendingSwapCount\(\)/);
+});
+
 test('Gemini import prompt exposes a prominent copy action beside the prompt', () => {
   const component = read('src/app/features/duty-stats/duty-tsv-import.component.ts');
   const template = read('src/app/features/duty-stats/duty-tsv-import.component.html');
@@ -145,10 +231,29 @@ test('Gemini import prompt exposes a prominent copy action beside the prompt', (
   assert.match(component, /readonly promptCopied = signal\(false\)/);
   assert.match(component, /navigator\.clipboard\.writeText\(this\.prompt\(\)\)/);
   assert.match(component, /this\.promptCopied\.set\(true\)/);
-  assert.match(template, /<details open/);
+  assert.match(template, /Xem nội dung prompt/);
   assert.match(template, /Sao chép nội dung/);
   assert.match(template, /Đã sao chép/);
   assert.match(template, /fa-copy/);
+});
+
+test('Gemini month import uses a three-step recognition, diff and verification wizard', () => {
+  const component = read('src/app/features/duty-stats/duty-tsv-import.component.ts');
+  const template = read('src/app/features/duty-stats/duty-tsv-import.component.html');
+
+  assert.match(component, /readonly step = signal<1 \| 2 \| 3>\(1\)/);
+  assert.match(component, /this\.step\.set\(2\)/);
+  assert.match(component, /continueToVerification\(\): void/);
+  assert.match(component, /this\.step\.set\(3\)/);
+  assert.match(template, /Bước 1 — Nhận diện ảnh lịch/);
+  assert.match(template, /Bước 2 — Kiểm tra thay đổi trước khi nhập/);
+  assert.match(template, /Bước 3 — Xác minh độc lập & nhập vào LIMS/);
+  assert.match(template, /Tạo mới/);
+  assert.match(template, /Thay thế/);
+  assert.match(template, /Giữ nguyên/);
+  assert.match(template, /Vị trí \?/);
+  assert.match(template, /Trước/);
+  assert.match(template, /Sau/);
 });
 
 test('Gemini month import requires a second independent TSV match before LIMS import', () => {
@@ -163,7 +268,7 @@ test('Gemini month import requires a second independent TSV match before LIMS im
   assert.match(component, /buildDutyGeminiVerificationPrompt/);
   assert.match(component, /navigator\.clipboard\.writeText\(this\.verificationPrompt\(\)\)/);
   assert.match(component, /validateVerification\(\): void/);
-  assert.match(template, /Cổng xác minh trước khi nhập/);
+  assert.match(template, /Bước 3 — Xác minh độc lập & nhập vào LIMS/);
   assert.match(template, /Bắt buộc dùng một cuộc trò chuyện Gemini mới/);
   assert.match(template, /Sao chép nội dung xác minh/);
   assert.match(template, /TSV Gemini xác minh lần 2/);
@@ -179,6 +284,7 @@ test('Gemini month import is paste-first and preserves unresolved source informa
   const parser = read('src/app/features/duty-stats/duty-tsv-import.ts');
   const persistence = read('src/app/features/duty-stats/duty-tsv-import.persistence.ts');
   const schedule = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const assignment = read('src/app/features/duty-stats/duty-assignment-modal.component.ts');
   const dashboard = read('src/app/features/duty-stats/duty-dashboard.component.html');
 
   assert.match(template, /Dán TSV Gemini trả về/);
@@ -193,7 +299,7 @@ test('Gemini month import is paste-first and preserves unresolved source informa
   assert.match(persistence, /sourceAssignees: row\.names\.join\(' \| '\)/);
   assert.match(persistence, /needsVerification:/);
   assert.match(schedule, /needsVerificationOnly/);
-  assert.match(schedule, /addUnresolvedAssignee/);
+  assert.match(assignment, /addUnresolvedAssignee/);
   assert.match(dashboard, /Cần xác minh/);
 });
 
@@ -221,6 +327,8 @@ test('phase 2 statistics table is sortable and exposes accessible sort state', (
 test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning and month skeleton tools', () => {
   const component = read('src/app/features/duty-stats/duty-stats.component.ts');
   const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const assignment = read('src/app/features/duty-stats/duty-assignment-modal.component.ts');
+  const assignmentTemplate = read('src/app/features/duty-stats/duty-assignment-modal.component.html');
   const service = read('src/app/features/duty-stats/duty-schedule.service.ts');
   const rules = read('firestore.rules');
 
@@ -241,10 +349,10 @@ test('phase 3 adds personal quick filter, print, calendar grid, fatigue warning 
   assert.match(template, /@for \(name of namesFor\(cell\.schedule\); track \$index\)/);
   assert.doesNotMatch(template, /\+\{\{ namesFor\(cell\.schedule\)\.length - 1 \}\} phối hợp/);
 
-  assert.match(component, /dutyAdjacentAssignment/);
-  assert.match(component, /conflictWarningForStaff\(staffId: string\)/);
-  assert.match(component, /2 ca liền kề/);
-  assert.match(template, /cảnh báo mềm/);
+  assert.match(assignment, /dutyAdjacentAssignment/);
+  assert.match(assignment, /conflictWarningForStaff\(staffId: string\)/);
+  assert.match(assignment, /2 ca liền kề/);
+  assert.match(assignmentTemplate, /cảnh báo mềm/);
 
   assert.match(component, /openBatchMonth\(\)/);
   assert.match(service, /createMonthSkeleton\(/);
@@ -294,6 +402,7 @@ test('phase 1 fairness adds weekend and lead statistics plus rolling recommendat
   const service = read('src/app/features/duty-stats/duty-schedule.service.ts');
   const component = read('src/app/features/duty-stats/duty-stats.component.ts');
   const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const assignment = read('src/app/features/duty-stats/duty-assignment-modal.component.ts');
   const dashboardTemplate = read('src/app/features/duty-stats/duty-dashboard.component.html');
 
   assert.match(model, /weekendCount: number/);
@@ -304,10 +413,10 @@ test('phase 1 fairness adds weekend and lead statistics plus rolling recommendat
   assert.match(service, /loadScheduleRange\(start: string, end: string\)/);
   assert.match(component, /readonly rollingSchedules = signal<DutyScheduleEntry\[]>\(\[]\)/);
   assert.match(component, /readonly staffRecommendations = computed/);
-  assert.match(component, /return 'Nên xếp'/);
-  assert.match(component, /return 'Cân bằng'/);
-  assert.match(component, /return 'Cân nhắc'/);
-  assert.match(component, /return 'Đang nhiều'/);
+  assert.match(assignment, /return 'Nên xếp'/);
+  assert.match(assignment, /return 'Cân bằng'/);
+  assert.match(assignment, /return 'Cân nhắc'/);
+  assert.match(assignment, /return 'Đang nhiều'/);
   assert.match(template, /toggleSort\('weekendCount'\)/);
   assert.match(template, /toggleSort\('leadCount'\)/);
   assert.match(template, /Cuối tuần/);
@@ -316,8 +425,34 @@ test('phase 1 fairness adds weekend and lead statistics plus rolling recommendat
   assert.match(dashboardTemplate, /★ Chủ trì:/);
 });
 
+test('M1 week view keeps an independent anchor, seven-day component and week range listener', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const weekComponent = read('src/app/features/duty-stats/duty-week-view.component.ts');
+  const weekTemplate = read('src/app/features/duty-stats/duty-week-view.component.html');
+  const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');
+
+  assert.match(utils, /export function dutyIsoWeekDays\(anchorDate: string\)/);
+  assert.match(utils, /export function dutyIsoWeekInfo\(anchorDate: string\)/);
+  assert.match(component, /type DutyScheduleLayout = 'list' \| 'calendar' \| 'week'/);
+  assert.match(component, /readonly weekAnchorDate = signal\(currentDutyDateKey\(\)\)/);
+  assert.match(component, /readonly weekInfo = computed\(\(\) => dutyIsoWeekInfo\(this\.weekAnchorDate\(\)\)\)/);
+  assert.match(component, /this\.weekAnchorDate\.update\(date => shiftDutyDateKey\(date, -7\)\)/);
+  assert.match(component, /this\.weekAnchorDate\.update\(date => shiftDutyDateKey\(date, 7\)\)/);
+  assert.match(component, /this\.duty\.watchRange\(week\.start, week\.end\)/);
+  assert.match(template, /setScheduleLayout\('week'\)/);
+  assert.match(template, /<app-duty-week-view/);
+  assert.match(template, /\[dates\]="weekInfo\(\)\.dates"/);
+  assert.match(weekComponent, /selector: 'app-duty-week-view'/);
+  assert.match(weekTemplate, /hidden min-w-\[1050px\] grid-cols-7 gap-2 lg:grid/);
+  assert.match(weekTemplate, /space-y-3 lg:hidden/);
+  assert.match(weekTemplate, /Hôm nay/);
+  assert.match(weekTemplate, /★ Trưởng ca/);
+});
+
 test('duty action buttons follow soft-ui hierarchy, row icons, touch targets and action cards', () => {
   const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const assignmentTemplate = read('src/app/features/duty-stats/duty-assignment-modal.component.html');
 
   // Navigation chevrons
   assert.match(template, /fa-chevron-left/);
@@ -345,7 +480,25 @@ test('duty action buttons follow soft-ui hierarchy, row icons, touch targets and
   assert.match(template, /Dán kết quả Gemini từ ảnh/);
   assert.match(template, /Khởi tạo ngày trực chưa xếp/);
 
-  // Schedule modal staff reorder h-8 w-8 and unresolved position button
-  assert.match(template, /h-8 w-8 items-center justify-center rounded-lg border border-slate-200/);
-  assert.match(template, /border-dashed border-amber-300 bg-amber-50\/80/);
+  // Schedule modal lead promotion and unresolved position button
+  assert.match(assignmentTemplate, /Đặt làm Trưởng ca/);
+  assert.match(assignmentTemplate, /border-dashed border-amber-300 bg-amber-50\/80/);
+});
+
+test('M2 assignment modal uses 40/60 layout, one-click cards and preserves staffIds[0] lead semantics', () => {
+  const component = read('src/app/features/duty-stats/duty-assignment-modal.component.ts');
+  const template = read('src/app/features/duty-stats/duty-assignment-modal.component.html');
+  const parent = read('src/app/features/duty-stats/duty-stats.component.html');
+
+  assert.match(parent, /<app-duty-assignment-modal/);
+  assert.match(template, /size="xl"/);
+  assert.match(template, /lg:grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
+  assert.doesNotMatch(template, /\[checked\]="isStaffSelected/);
+  assert.match(template, /\(click\)="addStaff\(person\.id\)"/);
+  assert.match(template, /✓ Đã thêm/);
+  assert.match(template, /★ Trưởng ca · Người chủ trì/);
+  assert.match(component, /current\.unshift\(staffId\)/);
+  assert.match(component, /recommended[\s\S]*balanced[\s\S]*consider[\s\S]*high/);
+  assert.match(template, /cảnh báo ca liền kề hiển thị riêng/);
+  assert.match(template, /dateWithWeekday\(draft\.date\)/);
 });

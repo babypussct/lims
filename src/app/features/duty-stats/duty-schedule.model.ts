@@ -56,6 +56,7 @@ export interface DutyPersonStat {
   linkedUserUid?: string | null;
   total: number;
   mondayCount: number;
+  weekdayCount: number;
   weekendCount: number;
   leadCount: number;
   activeMonthCount: number;

@@ -25,7 +25,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent],
   template: `
-    <div class="h-full flex flex-col animate-fade-in bg-slate-50/60 dark:bg-slate-900 p-4 lg:p-6 space-y-4 lg:space-y-5">
+    <div class="h-full flex flex-col animate-fade-in p-4 lg:p-6 space-y-4 lg:space-y-5">
       
       <!-- ENTITY DETAIL HEADER -->
       <app-page-header

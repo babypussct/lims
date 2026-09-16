@@ -11,14 +11,22 @@
   --z-toast: 210;
   --z-confirmation: 1000;
   --z-system-lock: 9999;
-  --soft-ui-app-bg: #f8f9fa;
+  --soft-ui-app-bg: #f8f7fa;
+  --soft-ui-underlay: #f8fafc;
+  --soft-ui-workspace: #ffffff;
+  --soft-ui-workspace-edge: rgba(255, 255, 255, 0.92);
+  --soft-ui-workspace-shadow: -20px 0 42px -18px rgba(54, 42, 74, 0.16), 0 10px 32px rgba(54, 42, 74, 0.055);
   --soft-ui-panel: #ffffff;
-  --soft-ui-panel-subtle: #f8f9fa;
-  --soft-ui-border: #e9ecef;
+  --soft-ui-panel-subtle: #f8f7fa;
+  --soft-ui-border: rgba(120, 100, 145, 0.10);
   --soft-ui-text: #67748e;
   --soft-ui-muted: #67748e;
   --soft-ui-accent: #cb0c9f;
   --soft-ui-accent-strong: #7928ca;
+  --soft-ui-nav-icon-surface: transparent;
+  --soft-ui-nav-icon-text: #756a83;
+  --soft-ui-nav-icon-hover: #7928ca;
+  --soft-ui-nav-item-hover: rgba(120, 100, 145, 0.09);
   --soft-ui-heading: #344767;
   --soft-ui-table-heading: #8392ab;
   --soft-ui-control-border: #d2d6da;
@@ -30,24 +38,66 @@
   --soft-ui-gradient-success: linear-gradient(310deg, #17ad37 0%, #98ec2d 100%);
   --soft-ui-gradient-warning: linear-gradient(310deg, #f53939 0%, #fbcf33 100%);
   --soft-ui-gradient-dark: linear-gradient(310deg, #141727 0%, #3a416f 100%);
+  --soft-ui-timeline-line: #e9ecef;
+  --soft-ui-timeline-node-primary: var(--soft-ui-gradient);
+  --soft-ui-timeline-node-success: var(--soft-ui-gradient-success);
+  --soft-ui-timeline-node-info: var(--soft-ui-gradient-info);
+  --soft-ui-timeline-node-warning: var(--soft-ui-gradient-warning);
+  --soft-ui-timeline-node-danger: linear-gradient(310deg, #ea0606 0%, #ff667c 100%);
+  --soft-ui-progress-track: rgba(120, 100, 145, 0.10);
+  --soft-ui-progress-primary: var(--soft-ui-gradient);
+  --soft-ui-progress-success: var(--soft-ui-gradient-success);
+  --soft-ui-progress-info: var(--soft-ui-gradient-info);
+  --soft-ui-progress-warning: var(--soft-ui-gradient-warning);
+  --soft-ui-progress-danger: linear-gradient(310deg, #ea0606 0%, #ff667c 100%);
+  --soft-ui-chart-line-start: #7928ca;
+  --soft-ui-chart-line-mid: #cb0c9f;
+  --soft-ui-chart-line-end: #ff0080;
+  --soft-ui-chart-line-glow: rgba(203, 12, 159, 0.28);
+  --soft-ui-chart-area-start: rgba(121, 40, 202, 0.24);
+  --soft-ui-chart-area-mid: rgba(203, 12, 159, 0.12);
+  --soft-ui-chart-area-end: rgba(255, 0, 128, 0);
+  --soft-ui-chart-bar-start: #17c1e8;
+  --soft-ui-chart-bar-end: #2152ff;
 }
 
+
 .dark {
-  --soft-ui-app-bg: #111322;
-  --soft-ui-panel: #1a1f32;
-  --soft-ui-panel-subtle: #20263a;
-  --soft-ui-border: #2b3248;
+  --soft-ui-app-bg: #14131d;
+  --soft-ui-underlay: #14131d;
+  --soft-ui-workspace: #1c1b29;
+  --soft-ui-workspace-edge: rgba(196, 181, 253, 0.08);
+  --soft-ui-workspace-shadow: -22px 0 46px -18px rgba(8, 7, 13, 0.56), 0 10px 34px rgba(30, 24, 44, 0.30);
+  --soft-ui-panel: #211f30;
+  --soft-ui-panel-subtle: #262338;
+  --soft-ui-border: rgba(196, 181, 253, 0.10);
   --soft-ui-text: #f5f7fb;
   --soft-ui-muted: #a8b1c5;
   --soft-ui-accent: #e879f9;
   --soft-ui-accent-strong: #f0abfc;
+  --soft-ui-nav-icon-surface: transparent;
+  --soft-ui-nav-icon-text: #b8aec9;
+  --soft-ui-nav-icon-hover: #e879f9;
+  --soft-ui-nav-item-hover: rgba(196, 181, 253, 0.09);
   --soft-ui-heading: #f8fafc;
   --soft-ui-table-heading: #a8b1c5;
   --soft-ui-control-border: #3b435c;
   --soft-ui-row-hover: rgba(32, 38, 58, 0.68);
   --soft-ui-shadow: 0 20px 27px rgba(0, 0, 0, 0.18);
   --soft-ui-shadow-control: 0 4px 10px rgba(0, 0, 0, 0.16);
+  --soft-ui-timeline-line: rgba(196, 181, 253, 0.12);
+  --soft-ui-progress-track: rgba(196, 181, 253, 0.12);
+  --soft-ui-chart-line-start: #a855f7;
+  --soft-ui-chart-line-mid: #e879f9;
+  --soft-ui-chart-line-end: #fb7185;
+  --soft-ui-chart-line-glow: rgba(232, 121, 249, 0.34);
+  --soft-ui-chart-area-start: rgba(168, 85, 247, 0.30);
+  --soft-ui-chart-area-mid: rgba(232, 121, 249, 0.15);
+  --soft-ui-chart-area-end: rgba(251, 113, 133, 0);
+  --soft-ui-chart-bar-start: #22d3ee;
+  --soft-ui-chart-bar-end: #6366f1;
 }
+
 
 /* Soft UI-inspired application language. These classes deliberately skin
    generic chrome while feature templates remain the source of truth for
@@ -56,6 +106,240 @@
   color: var(--soft-ui-text);
   background: var(--soft-ui-app-bg);
   font-family: 'Open Sans', sans-serif;
+}
+
+/* ─── Soft UI Timeline ─── */
+.soft-ui-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.soft-ui-timeline__item {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  min-width: 0;
+}
+
+.soft-ui-timeline__rail {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.soft-ui-timeline__node {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: #fff;
+  font-size: 0.68rem;
+  box-shadow: 0 5px 12px rgba(54, 42, 74, 0.16);
+}
+
+.soft-ui-timeline__node[data-status='primary'] {
+  background: var(--soft-ui-timeline-node-primary);
+  box-shadow: 0 5px 13px rgba(121, 40, 202, 0.24);
+}
+
+.soft-ui-timeline__node[data-status='success'] {
+  background: var(--soft-ui-timeline-node-success);
+  box-shadow: 0 5px 13px rgba(23, 173, 55, 0.22);
+}
+
+.soft-ui-timeline__node[data-status='info'] {
+  background: var(--soft-ui-timeline-node-info);
+  box-shadow: 0 5px 13px rgba(33, 82, 255, 0.22);
+}
+
+.soft-ui-timeline__node[data-status='warning'] {
+  background: var(--soft-ui-timeline-node-warning);
+  box-shadow: 0 5px 13px rgba(245, 57, 57, 0.18);
+}
+
+.soft-ui-timeline__node[data-status='danger'] {
+  background: var(--soft-ui-timeline-node-danger);
+  box-shadow: 0 5px 13px rgba(234, 6, 6, 0.20);
+}
+
+.soft-ui-timeline__node[data-current='true']::after {
+  content: '';
+  position: absolute;
+  inset: -0.3rem;
+  border: 1px solid color-mix(in srgb, var(--soft-ui-accent) 42%, transparent);
+  border-radius: inherit;
+  animation: soft-ui-timeline-pulse 1.8s ease-out infinite;
+}
+
+.soft-ui-timeline__line {
+  width: 2px;
+  min-height: 1.25rem;
+  flex: 1 1 auto;
+  background: var(--soft-ui-timeline-line);
+}
+
+@keyframes soft-ui-timeline-pulse {
+  0% { transform: scale(0.86); opacity: 0.78; }
+  70%, 100% { transform: scale(1.32); opacity: 0; }
+}
+
+@media (max-width: 639px) {
+  .soft-ui-timeline__item {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    column-gap: 0.625rem;
+  }
+
+  .soft-ui-timeline__node {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-basis: 1.75rem;
+    font-size: 0.62rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soft-ui-timeline__node[data-current='true']::after {
+    animation: none;
+  }
+}
+
+/* ─── Soft UI Ultra-thin Progress ─── */
+.soft-ui-progress__track {
+  width: 100%;
+  height: 0.25rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--soft-ui-progress-track);
+}
+
+.soft-ui-progress__bar {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  transition: width 320ms ease;
+}
+
+.soft-ui-progress__bar[data-status='primary'] { background: var(--soft-ui-progress-primary); }
+.soft-ui-progress__bar[data-status='success'] { background: var(--soft-ui-progress-success); }
+.soft-ui-progress__bar[data-status='info'] { background: var(--soft-ui-progress-info); }
+.soft-ui-progress__bar[data-status='warning'] { background: var(--soft-ui-progress-warning); }
+.soft-ui-progress__bar[data-status='danger'] { background: var(--soft-ui-progress-danger); }
+
+/* ─── Soft UI Avatar Group ─── */
+.soft-ui-avatar-group__item {
+  position: relative;
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid var(--soft-ui-panel);
+  border-radius: 9999px;
+  background: var(--soft-ui-panel-subtle);
+  color: var(--soft-ui-muted);
+  box-shadow: 0 4px 10px rgba(54, 42, 74, 0.10);
+  transition: transform 160ms ease, z-index 160ms ease;
+}
+
+.soft-ui-avatar-group__item:hover {
+  z-index: 10;
+  transform: translateY(-2px) scale(1.06);
+}
+
+.soft-ui-avatar-group__item--md {
+  width: 2rem;
+  height: 2rem;
+  flex-basis: 2rem;
+}
+
+.soft-ui-avatar-group__more {
+  background: var(--soft-ui-gradient);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soft-ui-progress__bar,
+  .soft-ui-avatar-group__item {
+    transition: none;
+  }
+}
+
+/* ─── Soft UI Navigation Item Core ─── */
+.soft-ui-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: all 200ms ease-in-out;
+}
+
+.soft-ui-nav-item:not(.soft-ui-nav-item--active):not(.soft-ui-nav-item--locked):hover {
+  background: var(--soft-ui-nav-item-hover);
+}
+
+.soft-ui-nav-item:not(.soft-ui-nav-item--active):not(.soft-ui-nav-item--locked):hover .soft-ui-nav-icon {
+  color: var(--soft-ui-nav-icon-hover);
+}
+
+/* 1. Expanded Active: Soft White/Panel Card + Gradient Icon Tile */
+.soft-ui-nav-item--active:not(.soft-ui-nav-item--collapsed) {
+  background: var(--soft-ui-panel);
+  box-shadow: 0 8px 24px -4px rgba(54, 42, 74, 0.08), 0 2px 6px -1px rgba(54, 42, 74, 0.04);
+}
+.dark .soft-ui-nav-item--active:not(.soft-ui-nav-item--collapsed) {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+}
+.soft-ui-nav-item--active:not(.soft-ui-nav-item--collapsed) .soft-ui-nav-icon {
+  background: var(--soft-ui-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(121, 40, 202, 0.25);
+}
+
+/* 2. Collapsed Active: Single Gradient Dock Pill */
+.soft-ui-nav-item--active.soft-ui-nav-item--collapsed {
+  background: var(--soft-ui-gradient);
+  box-shadow: 0 6px 18px rgba(121, 40, 202, 0.30);
+  color: #ffffff;
+}
+.soft-ui-nav-item--active.soft-ui-nav-item--collapsed .soft-ui-nav-icon {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+/* 3. Inactive Icon: Ghost hoàn toàn */
+.soft-ui-nav-icon {
+  background: var(--soft-ui-nav-icon-surface);
+  color: var(--soft-ui-nav-icon-text);
+  box-shadow: none;
+}
+
+.soft-ui-nav-icon.soft-ui-nav-icon--active {
+  background: var(--soft-ui-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(121, 40, 202, 0.25);
+}
+
+@media (min-width: 1024px) {
+  .soft-ui-app-shell {
+    background: var(--soft-ui-underlay);
+  }
 }
 
 .soft-ui-page-header-host[data-variant='page'] {

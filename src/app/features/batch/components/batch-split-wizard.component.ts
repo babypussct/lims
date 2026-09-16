@@ -5,6 +5,7 @@ import { Sop, SopTarget } from '../../../core/models/sop.model';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppUiProgressComponent } from '../../../shared/components/ui/progress/progress.component';
 import { getSopTargetKey, isSopMatrixCompatible } from '../smart-batch.utils';
 
 interface ProposedBatch {
@@ -29,7 +30,7 @@ export interface SplitWizardState {
 @Component({
   selector: 'app-batch-split-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppUiProgressComponent],
   template: `
     <app-modal-shell
         title="Phân tách và chuyển mẻ"
@@ -38,10 +39,13 @@ export interface SplitWizardState {
         (closed)="close.emit()">
         <div modalBody class="flex min-h-[60vh] flex-col">
             <!-- Steps Indicator -->
-            <div class="flex border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
-                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 1 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">1. Chọn mẫu</div>
-                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 2 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">2. Chọn chỉ tiêu</div>
-                <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="state().step >= 3 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">3. Chọn quy trình</div>
+            <div class="shrink-0 border-b border-slate-100 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
+                <div class="flex">
+                    <div class="flex-1 py-3 text-center text-xs font-bold transition-colors" [class]="state().step >= 1 ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-300 dark:text-slate-600'">1. Chọn mẫu</div>
+                    <div class="flex-1 py-3 text-center text-xs font-bold transition-colors" [class]="state().step >= 2 ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-300 dark:text-slate-600'">2. Chọn chỉ tiêu</div>
+                    <div class="flex-1 py-3 text-center text-xs font-bold transition-colors" [class]="state().step >= 3 ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-300 dark:text-slate-600'">3. Chọn quy trình</div>
+                </div>
+                <app-ui-progress [value]="state().step" [max]="3" ariaLabel="Tiến độ phân tách và chuyển mẻ" />
             </div>
 
             <!-- Wizard Content -->

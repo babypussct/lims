@@ -23,6 +23,7 @@ export class DutyTsvImportComponent {
   readonly duty = inject(DutyScheduleService);
   private readonly toast = inject(ToastService);
   readonly text = signal('');
+  readonly step = signal<1 | 2 | 3>(1);
   readonly rows = signal<DutyImportPlanRow[]>([]);
   readonly errors = signal<string[]>([]);
   readonly busy = signal(false);
@@ -51,10 +52,10 @@ export class DutyTsvImportComponent {
   readonly verificationMatched = computed(() => this.verificationChecked()
     && !this.verificationErrors().length && !this.verificationMismatches().length);
   readonly canImport = computed(() => this.previewReady() && this.verificationMatched() && this.independentRunConfirmed() && this.reviewed() && !this.busy() && !this.result()
-    && !this.errors().length && !this.rows().some(row => row.errors.length) && this.created() + this.replaced() > 0);
+    && this.step() === 3 && !this.errors().length && !this.rows().some(row => row.errors.length) && this.created() + this.replaced() > 0);
 
   changeText(value: string): void {
-    this.text.set(value); this.previewReady.set(false); this.reviewed.set(false); this.rows.set([]); this.errors.set([]); this.result.set(null); this.resetVerification();
+    this.text.set(value); this.step.set(1); this.previewReady.set(false); this.reviewed.set(false); this.rows.set([]); this.errors.set([]); this.result.set(null); this.resetVerification();
   }
   changeVerificationText(value: string): void {
     this.verificationText.set(value);
@@ -98,6 +99,7 @@ export class DutyTsvImportComponent {
       const existing = await this.duty.loadScheduleDates(parsed.rows.map(row => row.date));
       this.rows.set(parsed.rows.map(row => ({ ...row, previous: existing.find(item => item.date === row.date) || null, replace: false })));
       this.previewReady.set(true);
+      this.step.set(2);
     } catch { this.errors.set(['Không tải được lịch hiện có. Kiểm tra kết nối rồi xem trước lại.']); }
     finally { this.busy.set(false); }
   }
@@ -116,6 +118,18 @@ export class DutyTsvImportComponent {
   }
   replaceDate(date: string, replace: boolean): void {
     this.rows.update(rows => rows.map(row => row.date === date ? { ...row, replace } : row)); this.reviewed.set(false);
+  }
+  goToStep(step: 1 | 2 | 3): void {
+    if (step === 1) {
+      this.step.set(1);
+      return;
+    }
+    if (!this.previewReady()) return;
+    if (step === 2 || this.created() + this.replaced() > 0) this.step.set(step);
+  }
+  continueToVerification(): void {
+    if (!this.previewReady() || this.created() + this.replaced() === 0) return;
+    this.step.set(3);
   }
   existingNames(row: DutyImportPlanRow): string {
     return row.previous?.staffIds.map(id => this.duty.staff().find(person => person.id === id)?.displayName || `[${id}]`).join(' · ') || 'Chưa phân công';

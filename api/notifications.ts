@@ -29,14 +29,20 @@ const NOTIFICATION_TYPES = new Set([
   'RETURN_OVERDUE', 'STOCK_LOW_ALERT', 'SYSTEM_INFO', 'SYSTEM_UPDATE',
   'RESULT_PUBLISHED', 'RESULT_RESET', 'RESULT_REVERTED', 'STANDARD_RETURN_PENDING',
   'DUTY_SCHEDULE_PUBLISHED', 'DUTY_ASSIGNMENT_CHANGED', 'DUTY_ASSIGNMENT_CANCELLED',
-  'DUTY_VERIFICATION_REQUIRED'
+  'DUTY_VERIFICATION_REQUIRED', 'DUTY_SWAP_REQUEST', 'DUTY_SWAP_TARGET_ACCEPTED',
+  'DUTY_SWAP_APPROVED', 'DUTY_SWAP_REJECTED', 'DUTY_SWAP_CANCELLED'
 ]);
 
 const DUTY_NOTIFICATION_TYPES = new Set([
   'DUTY_SCHEDULE_PUBLISHED',
   'DUTY_ASSIGNMENT_CHANGED',
   'DUTY_ASSIGNMENT_CANCELLED',
-  'DUTY_VERIFICATION_REQUIRED'
+  'DUTY_VERIFICATION_REQUIRED',
+  'DUTY_SWAP_REQUEST',
+  'DUTY_SWAP_TARGET_ACCEPTED',
+  'DUTY_SWAP_APPROVED',
+  'DUTY_SWAP_REJECTED',
+  'DUTY_SWAP_CANCELLED'
 ]);
 
 const USER_INITIATED_ADMIN_EVENTS = new Set([
@@ -210,7 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, deletedCount: snapshot.size });
     }
 
-    if (action !== 'publish' && action !== 'dispatchEvent') {
+    if (action !== 'publish' && action !== 'dispatchEvent' && action !== 'dutySwap') {
       return res.status(400).json({ error: 'Action không hợp lệ.' });
     }
 
@@ -323,6 +329,108 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         senderName: typeof event.actorName === 'string' && event.actorName.trim()
           ? event.actorName.trim()
           : (profile['displayName'] || decoded['name'] || 'Người dùng')
+      });
+    } else if (action === 'dutySwap') {
+      const requestId = typeof body.requestId === 'string' ? body.requestId.trim() : '';
+      const swapEvent = typeof body.event === 'string' ? body.event.trim() : '';
+      const allowedEvents = new Set([
+        'REQUESTED', 'TARGET_ACCEPTED', 'TARGET_REJECTED',
+        'MANAGER_APPROVED', 'MANAGER_REJECTED', 'CANCELLED'
+      ]);
+      if (!requestId || requestId.includes('/') || requestId.length > 500 || !allowedEvents.has(swapEvent)) {
+        return res.status(400).json({ error: 'Yêu cầu notification đổi ca không hợp lệ.' });
+      }
+
+      const requestSnapshot = await db.doc(`artifacts/${appId}/duty_swap_requests/${requestId}`).get();
+      if (!requestSnapshot.exists) return res.status(404).json({ error: 'Yêu cầu đổi ca không tồn tại.' });
+      const swap = requestSnapshot.data() || {};
+      const requesterStaffId = typeof swap['requesterStaffId'] === 'string' ? swap['requesterStaffId'] : '';
+      const targetStaffId = typeof swap['targetStaffId'] === 'string' ? swap['targetStaffId'] : '';
+      const [requesterStaffSnapshot, targetStaffSnapshot] = await Promise.all([
+        requesterStaffId ? db.doc(`artifacts/${appId}/duty_staff/${requesterStaffId}`).get() : Promise.resolve(null),
+        targetStaffId ? db.doc(`artifacts/${appId}/duty_staff/${targetStaffId}`).get() : Promise.resolve(null)
+      ]);
+      const requesterUid = requesterStaffSnapshot?.exists
+        ? String(requesterStaffSnapshot.data()?.['linkedUserUid'] || '')
+        : '';
+      const targetUid = targetStaffSnapshot?.exists
+        ? String(targetStaffSnapshot.data()?.['linkedUserUid'] || '')
+        : '';
+      if (!requesterUid || !targetUid) {
+        return res.status(409).json({ error: 'Không thể xác định người nhận notification từ danh mục nhân sự trực.' });
+      }
+
+      const status = typeof swap['status'] === 'string' ? swap['status'] : '';
+      const requesterName = typeof swap['requesterName'] === 'string' ? swap['requesterName'] : 'Nhân viên';
+      const targetName = typeof swap['targetName'] === 'string' ? swap['targetName'] : 'Đồng nghiệp';
+      const sourceDate = typeof swap['sourceDate'] === 'string' ? swap['sourceDate'] : '';
+      const targetDate = typeof swap['targetDate'] === 'string' ? swap['targetDate'] : '';
+      const type = swap['type'] === 'SWAP' ? 'SWAP' : 'COVER';
+      const dateLabel = type === 'SWAP' ? `${sourceDate} ↔ ${targetDate}` : sourceDate;
+      let notificationType = '';
+      let title = '';
+      let message = '';
+
+      if (swapEvent === 'REQUESTED') {
+        if (decoded.uid !== requesterUid || status !== 'PENDING_TARGET') {
+          return res.status(403).json({ error: 'Không có quyền phát notification yêu cầu đổi ca này.' });
+        }
+        recipientUids = [targetUid];
+        notificationType = 'DUTY_SWAP_REQUEST';
+        title = `${requesterName} đề nghị đổi ca`;
+        message = `${requesterName} đề nghị ${type === 'SWAP' ? 'đổi ca hai chiều' : 'bạn trực hộ'} (${dateLabel}). Mở Lịch trực để đồng ý hoặc từ chối.`;
+      } else if (swapEvent === 'TARGET_ACCEPTED') {
+        if (decoded.uid !== targetUid || status !== 'PENDING_MANAGER') {
+          return res.status(403).json({ error: 'Không có quyền phát notification xác nhận đổi ca này.' });
+        }
+        recipientUids = await resolvePermissionRecipients(['duty_manage']);
+        notificationType = 'DUTY_SWAP_TARGET_ACCEPTED';
+        title = 'Yêu cầu đổi ca chờ phê duyệt';
+        message = `${targetName} đã đồng ý đề nghị của ${requesterName} (${dateLabel}). Quản lý cần phê duyệt trước khi lịch thay đổi.`;
+      } else if (swapEvent === 'TARGET_REJECTED') {
+        if (decoded.uid !== targetUid || status !== 'REJECTED_TARGET') {
+          return res.status(403).json({ error: 'Không có quyền phát notification từ chối đổi ca này.' });
+        }
+        recipientUids = [requesterUid];
+        notificationType = 'DUTY_SWAP_REJECTED';
+        title = 'Đề nghị đổi ca không được đồng ý';
+        message = `${targetName} đã từ chối đề nghị đổi ca ${dateLabel}.`;
+      } else if (swapEvent === 'MANAGER_APPROVED' || swapEvent === 'MANAGER_REJECTED') {
+        const expectedStatus = swapEvent === 'MANAGER_APPROVED' ? 'APPROVED' : 'REJECTED_MANAGER';
+        if (!canManageDuty || status !== expectedStatus) {
+          return res.status(403).json({ error: 'Không có quyền phát notification quyết định đổi ca này.' });
+        }
+        recipientUids = [requesterUid, targetUid];
+        notificationType = swapEvent === 'MANAGER_APPROVED' ? 'DUTY_SWAP_APPROVED' : 'DUTY_SWAP_REJECTED';
+        title = swapEvent === 'MANAGER_APPROVED' ? 'Đổi ca đã được phê duyệt' : 'Đổi ca không được phê duyệt';
+        message = swapEvent === 'MANAGER_APPROVED'
+          ? `Quản lý đã phê duyệt ${type === 'SWAP' ? 'đổi ca' : 'trực hộ'} ${dateLabel}. Lịch trực đã được cập nhật.`
+          : `Quản lý đã từ chối yêu cầu ${type === 'SWAP' ? 'đổi ca' : 'trực hộ'} ${dateLabel}.`;
+      } else {
+        if (decoded.uid !== requesterUid || status !== 'CANCELLED') {
+          return res.status(403).json({ error: 'Không có quyền phát notification hủy đổi ca này.' });
+        }
+        recipientUids = [targetUid];
+        notificationType = 'DUTY_SWAP_CANCELLED';
+        title = 'Yêu cầu đổi ca đã hủy';
+        message = `${requesterName} đã hủy yêu cầu ${type === 'SWAP' ? 'đổi ca' : 'trực hộ'} ${dateLabel}.`;
+      }
+
+      recipientUids = [...new Set(recipientUids)].filter(uid => uid && uid !== decoded.uid);
+      input = cleanObject({
+        eventId: `duty-swap:${requestId}:${swapEvent.toLowerCase()}`,
+        type: notificationType,
+        title,
+        message,
+        level: swapEvent.includes('REJECTED') || swapEvent === 'CANCELLED' ? 'warning' : 'info',
+        targetId: requestId,
+        targetType: 'DUTY_SWAP_REQUEST',
+        targetName: `Đổi ca ${dateLabel}`,
+        requestId,
+        module: 'DUTY',
+        actionUrl: '/duty-stats',
+        senderUid: decoded.uid,
+        senderName: profile['displayName'] || decoded['name'] || 'Người dùng'
       });
     } else {
       input = (body.notification && typeof body.notification === 'object') ? body.notification : {};

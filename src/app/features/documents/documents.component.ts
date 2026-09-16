@@ -72,7 +72,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
     '[class.document-preview-active]': 'previewItem() !== null'
   },
   template: `
-    <div class="documents-page-enter h-full min-h-0 w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6 relative overflow-hidden">
+    <div class="documents-page-enter h-full min-h-0 w-full flex flex-col p-4 md:p-6 relative overflow-hidden">
       
       <app-page-header
         class="mb-4 block shrink-0"

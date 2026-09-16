@@ -1,5 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AppUiProgressComponent } from '../../../shared/components/ui/progress/progress.component';
+import { AppUiTimelineComponent } from '../../../shared/components/ui/timeline/timeline.component';
+import { TimelineItem } from '../../../shared/components/ui/timeline/timeline.model';
 
 export interface ReportProgress {
   total: number;
@@ -16,7 +19,7 @@ export interface OpenPdfEvent {
 @Component({
   selector: 'app-result-active-reports-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppUiProgressComponent, AppUiTimelineComponent],
   templateUrl: './result-active-reports-panel.component.html'
 })
 export class ResultActiveReportsPanelComponent {
@@ -96,6 +99,44 @@ export class ResultActiveReportsPanelComponent {
     if (!prefix || prefix === 'ALL') return 'Báo cáo chung';
     if (prefix === '_NO_PREFIX_') return 'Không tiền tố';
     return `Nhóm ${prefix}`;
+  }
+
+  getHistoryTimelineItems(): TimelineItem[] {
+    return this.getRecentHistory().map((hist, index) => {
+      const pdfUrl = hist?.pdfViewUrl || hist?.pdfUrl;
+      const docsUrl = hist?.docsUrl ? this.getDocsPreviewUrl(hist.docsUrl) : '';
+      const includedSamples = Array.isArray(hist?.includedSamples) ? hist.includedSamples : [];
+      const metadata = [
+        { label: 'Phạm vi', value: this.getHistoryScopeLabel(hist) },
+        includedSamples.length > 0 ? { label: 'Mẫu', value: this.formatSampleRange(includedSamples) } : null,
+        hist?.isFromMaster ? { label: 'Nguồn', value: 'Mẻ tổng hợp' } : null,
+        hist?.status === 'archived' ? { label: 'Trạng thái', value: 'Lưu trữ' } : null,
+      ].filter((item): item is { label: string; value: string } => item !== null);
+
+      return {
+        id: hist?._id || `${hist?.version || 'unknown'}-${hist?.reportId || hist?.prefix || index}`,
+        title: `Phát hành báo cáo v${hist?.version || '—'}`,
+        description: includedSamples.length > 0
+          ? `Báo cáo gồm ${includedSamples.length} mẫu trong phạm vi đã chọn.`
+          : 'Phiên bản báo cáo đã được lưu vào lịch sử.',
+        timestamp: hist?.publishedAt,
+        actorName: hist?.publishedBy,
+        actorRole: hist?.isFromMaster ? 'Mẻ tổng hợp' : 'Báo cáo kết quả',
+        icon: hist?.status === 'archived' ? 'fa-box-archive' : 'fa-file-circle-check',
+        status: hist?.status === 'archived' ? 'warning' : 'success',
+        metadata,
+        action: pdfUrl ? {
+          label: 'Mở PDF',
+          icon: 'fa-file-pdf',
+          callback: () => this.openPdf.emit({ pdfUrl, docsUrl: hist?.docsUrl }),
+        } : docsUrl ? {
+          label: 'Mở Google Docs',
+          icon: 'fa-arrow-up-right-from-square',
+          href: docsUrl,
+        } : undefined,
+        isCurrent: index === 0,
+      } satisfies TimelineItem;
+    });
   }
 
 }

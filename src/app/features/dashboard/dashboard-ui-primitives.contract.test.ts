@@ -37,6 +37,20 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /role="separator" aria-label="Mới kể từ lần truy cập trước"/);
   });
 
+  it('uses brand-token gradient glow for the dashboard activity chart', () => {
+    const component = read('./dashboard.component.ts');
+    const styles = read('../../../styles.css');
+
+    assert.match(styles, /--soft-ui-chart-line-start: #7928ca/);
+    assert.match(styles, /--soft-ui-chart-line-end: #ff0080/);
+    assert.match(styles, /--soft-ui-chart-line-glow:/);
+    assert.match(component, /chartToken\('--soft-ui-chart-line-start'\)/);
+    assert.match(component, /lineGradient\.addColorStop\(0\.52, lineMid\)/);
+    assert.match(component, /id: 'softUiGlow'/);
+    assert.match(component, /chart\.ctx\.shadowBlur = 14/);
+    assert.match(component, /softUiGlowColor: lineGlow/);
+  });
+
   it('uses the shared page header, toolbar and buttons on management statistics', () => {
     const component = read('./statistics.component.ts');
     const template = read('./statistics.component.html');

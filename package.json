@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.09.15-b02",
+  "version": "26.09.16-b01",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -37,10 +37,10 @@
     "test:notifications": "tsx --test api/_lib/notification-utils.test.ts api/_lib/notification-retention.test.ts api/_lib/activity-notification-dispatch.test.ts scripts/firebase-admin-runtime.test.js src/app/core/services/notification-badge.test.ts src/app/core/services/notification-policy.test.ts src/app/core/services/toast.service.test.ts src/app/shared/components/notification-panel/notification-panel.utils.test.ts && npm run test:notification-workflow",
     "test:backup": "tsx --test api/_lib/backup-crypto.test.ts api/_lib/backup-contract.test.ts api/_lib/firestore-backup.test.ts api/_lib/backup-restore.test.ts api/_lib/apps-script-backup.test.ts api/_lib/drive-assets-backup.test.ts api/_lib/backup-retention.test.ts api/_lib/backup-resumable.test.ts api/_lib/backup-read-budget.test.ts",
     "test:notification-workflow": "node scripts/run-notification-workflow-emulator.js",
-    "test:ui-primitives": "tsx --test src/app/shared/components/ui/ui-primitives.contract.test.ts src/app/shared/components/confirmation-modal/confirmation-modal.component.test.ts src/app/core/layout/soft-ui-layout.contract.test.ts",
+    "test:ui-primitives": "tsx --test src/app/shared/components/ui/ui-primitives.contract.test.ts src/app/shared/components/ui/timeline/timeline.contract.test.ts src/app/shared/components/ui/progress/progress.contract.test.ts src/app/shared/components/ui/avatar-group/avatar-group.contract.test.ts src/app/shared/components/confirmation-modal/confirmation-modal.component.test.ts src/app/core/layout/soft-ui-layout.contract.test.ts",
     "test:ui-contracts": "npm run test:ui-primitives && npm run test:ui-dashboard && npm run test:ui-inventory && npm run test:ui-results && npm run test:ui-requests && npm run test:ui-batch && npm run test:ui-recipes && npm run test:ui-preparation && npm run test:ui-standards && npm run test:ui-targets && npm run test:ui-documents && npm run test:ui-checklist && npm run test:ui-labels && npm run test:ui-config && npm run test:settings && npm run test:ui-traceability && npm run test:ui-sop && npm run test:ui-auth-public",
     "test:ui-guardrails": "tsx --test scripts/ui-guardrails.test.ts && node scripts/ui-guardrails.js",
-    "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts src/app/features/duty-stats/duty-stats-ui-primitives.contract.test.ts src/app/features/duty-stats/duty-schedule.utils.test.ts src/app/features/duty-stats/duty-stats.utils.test.ts src/app/features/duty-stats/duty-tsv-import.test.ts",
+    "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts src/app/features/duty-stats/duty-stats-ui-primitives.contract.test.ts src/app/features/duty-stats/duty-schedule.utils.test.ts src/app/features/duty-stats/duty-shift-swap.utils.test.ts src/app/features/duty-stats/duty-stats.utils.test.ts src/app/features/duty-stats/duty-tsv-import.test.ts",
     "test:ui-inventory": "tsx --test src/app/features/inventory/inventory-ui-primitives.contract.test.ts",
     "test:ui-results": "tsx --test src/app/features/results/result-list-ui-primitives.contract.test.ts",
     "test:ui-requests": "tsx --test src/app/features/requests/request-list-ui-primitives.contract.test.ts",

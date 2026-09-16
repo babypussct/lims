@@ -11,6 +11,7 @@ describe('traceability shared UI primitive integration', () => {
     assert.match(source, /AppButtonComponent/);
     assert.match(source, /AppEmptyStateComponent/);
     assert.match(source, /AppPageHeaderComponent/);
+    assert.match(source, /AppUiTimelineComponent/);
     assert.match(source, /<app-page-header\b/);
     assert.match(source, /\[variant\]="id \? 'detail' : 'page'"/);
     assert.match(source, /pageHeaderLeading/);
@@ -20,6 +21,14 @@ describe('traceability shared UI primitive integration', () => {
     assert.match(source, /<app-button\b[^>]*type="submit"/);
     assert.match(source, /<app-button\b[^>]*variant="secondary"[^>]*\(click\)="startQrScan\(\)"/);
     assert.match(source, /<app-empty-state\b/);
+    assert.match(source, /<app-ui-timeline\b/);
+    assert.match(source, /timelineItems = signal<TimelineItem\[\]>/);
+    assert.match(source, /sampleFilterQuery = signal\(''\)/);
+    assert.match(source, /\(ngModelChange\)="sampleFilterQuery\.set\(\$event\)"/);
+    assert.match(source, /where\('requestId', '==', requestId\)/);
+    assert.match(source, /loadAuditTimeline\(log, requestToken\)/);
+    assert.doesNotMatch(source, /Premium Workflow Stepper/);
+    assert.doesNotMatch(source, />Bước 1</);
     assert.match(source, /\(ngSubmit\)="submitLookup\(\)"/);
     assert.match(source, /#lookupInput/);
     assert.match(source, /@if \(!id\) \{\s*<section/);

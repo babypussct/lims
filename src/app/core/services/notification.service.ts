@@ -87,6 +87,20 @@ export class NotificationService {
         });
     }
 
+    async notifyDutySwap(
+        requestId: string,
+        event: 'REQUESTED' | 'TARGET_ACCEPTED' | 'TARGET_REJECTED' | 'MANAGER_APPROVED' | 'MANAGER_REJECTED' | 'CANCELLED'
+    ): Promise<Record<string, unknown>> {
+        const normalized = requestId.trim();
+        if (!normalized || normalized.includes('/')) throw new Error('requestId đổi ca không hợp lệ.');
+        return this.callNotificationApi({
+            action: 'dutySwap',
+            appId: this.fb.APP_ID,
+            requestId: normalized,
+            event
+        });
+    }
+
     /**
      * Server-authoritative projection of an already committed canonical event.
      * The client supplies only eventId; policy, recipients and deep-link are

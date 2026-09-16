@@ -666,14 +666,33 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       const tooltipTitleColor = isDark ? '#f8fafc' : '#0f172a';
       const tooltipBodyColor = isDark ? '#cbd5e1' : '#334155';
       const tooltipBorderColor = isDark ? '#334155' : '#e2e8f0';
-      
-      const barGradient = ctx.createLinearGradient(0, 0, 0, 400);
-      barGradient.addColorStop(0, isDark ? '#818cf8' : '#6366f1'); 
-      barGradient.addColorStop(1, isDark ? '#4f46e5' : '#4338ca');
 
-      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(99, 102, 241, 0.2)'); 
-      gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+      const rootStyles = getComputedStyle(document.documentElement);
+      const chartToken = (name: string) => rootStyles.getPropertyValue(name).trim();
+      const lineStart = chartToken('--soft-ui-chart-line-start');
+      const lineMid = chartToken('--soft-ui-chart-line-mid');
+      const lineEnd = chartToken('--soft-ui-chart-line-end');
+      const lineGlow = chartToken('--soft-ui-chart-line-glow');
+      const areaStart = chartToken('--soft-ui-chart-area-start');
+      const areaMid = chartToken('--soft-ui-chart-area-mid');
+      const areaEnd = chartToken('--soft-ui-chart-area-end');
+      const barStart = chartToken('--soft-ui-chart-bar-start');
+      const barEnd = chartToken('--soft-ui-chart-bar-end');
+      const panelColor = chartToken('--soft-ui-panel');
+
+      const lineGradient = ctx.createLinearGradient(0, 0, Math.max(canvas.clientWidth, 320), 0);
+      lineGradient.addColorStop(0, lineStart);
+      lineGradient.addColorStop(0.52, lineMid);
+      lineGradient.addColorStop(1, lineEnd);
+
+      const barGradient = ctx.createLinearGradient(0, 0, 0, Math.max(canvas.clientHeight, 260));
+      barGradient.addColorStop(0, barStart);
+      barGradient.addColorStop(1, barEnd);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, Math.max(canvas.clientHeight, 260));
+      gradient.addColorStop(0, areaStart);
+      gradient.addColorStop(0.48, areaMid);
+      gradient.addColorStop(1, areaEnd);
 
       const chartRange = this.getActiveDateRange();
       const chartDates = enumerateInclusiveDates(chartRange);
@@ -753,6 +772,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           });
           this.chartInstance.options.scales.y.grid.color = gridColor;
           this.chartInstance.data.datasets[0].backgroundColor = gradient;
+          this.chartInstance.data.datasets[0].borderColor = lineGradient;
+          this.chartInstance.data.datasets[0].pointBackgroundColor = lineEnd;
+          this.chartInstance.data.datasets[0].pointBorderColor = panelColor;
+          (this.chartInstance.data.datasets[0] as any).softUiGlowColor = lineGlow;
           this.chartInstance.data.datasets[1].backgroundColor = barGradient;
           this.chartInstance.update(themeChanged ? 'none' : 'active');
       } else {
@@ -763,14 +786,30 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
                   labels: labels,
                   datasets: [
                       { 
-                          label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: '#6366f1', borderWidth: 3, 
-                          pointRadius: 4, pointBackgroundColor: '#6366f1', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
+                          label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: lineGradient, borderWidth: 3,
+                          pointRadius: 3, pointBackgroundColor: lineEnd, pointBorderColor: panelColor, pointBorderWidth: 2, pointHoverRadius: 6, fill: true, tension: 0.42, yAxisID: 'y',
+                          softUiGlowColor: lineGlow
                       },
                       { 
                           label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: barGradient, borderRadius: 6, barThickness: 12, borderSkipped: false, order: 1, yAxisID: 'y1' 
                       }
                   ]
               },
+              plugins: [{
+                  id: 'softUiGlow',
+                  beforeDatasetDraw: (chart: any, args: any) => {
+                      const dataset = chart.data.datasets[args.index] as any;
+                      if (!dataset?.softUiGlowColor) return;
+                      chart.ctx.save();
+                      chart.ctx.shadowColor = dataset.softUiGlowColor;
+                      chart.ctx.shadowBlur = 14;
+                      chart.ctx.shadowOffsetY = 5;
+                  },
+                  afterDatasetDraw: (chart: any, args: any) => {
+                      const dataset = chart.data.datasets[args.index] as any;
+                      if (dataset?.softUiGlowColor) chart.ctx.restore();
+                  }
+              }],
               options: { 
                   responsive: true, maintainAspectRatio: false, 
                   layout: {

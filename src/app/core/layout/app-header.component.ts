@@ -29,10 +29,24 @@ interface PaletteItem {
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
     <header
-      class="fixed right-6 top-2 z-[45] hidden h-14 items-center justify-between gap-4 px-4 transition-[left] duration-300 ease-in-out md:flex"
-      [style.left]="state.focusMode() ? '0' : (state.sidebarCollapsed() ? '4rem' : '17rem')">
+      class="soft-ui-desktop-header fixed right-6 top-2 z-[45] hidden h-14 items-center justify-between gap-4 px-4 transition-[left] duration-300 ease-in-out md:flex lg:px-6"
+      [style.--soft-ui-header-left]="state.sidebarCollapsed() ? '4rem' : '17rem'">
 
       <div class="flex min-w-0 flex-1 items-center">
+        <!-- ── Sidenav Toggler (Soft UI PRO style) ── -->
+        <button
+          type="button"
+          (click)="state.toggleSidebarCollapse()"
+          class="mr-3 hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#756a83] hover:text-[#7928ca] dark:text-[#b8aec9] dark:hover:text-[#e879f9] hover:bg-[var(--soft-ui-nav-item-hover)] transition-all duration-200 active:scale-95 md:flex"
+          [attr.aria-label]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
+          [title]="state.sidebarCollapsed() ? 'Mở rộng sidebar' : 'Thu gọn sidebar'">
+          <span class="flex w-[16px] flex-col gap-[3px]" aria-hidden="true">
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+            <span class="block h-0.5 rounded-sm bg-current"></span>
+            <span class="block h-0.5 rounded-sm bg-current transition-transform duration-200" [class.translate-x-1]="!state.sidebarCollapsed()"></span>
+          </span>
+        </button>
+
         <!-- ── Breadcrumb / Page Title ── -->
         <div class="min-w-0 leading-tight">
           <div class="flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-white/60">
@@ -278,7 +292,22 @@ interface PaletteItem {
         </div>
       </div>
     }
-  `
+  `,
+  styles: [`
+    .soft-ui-desktop-header {
+      left: var(--soft-ui-header-left);
+    }
+
+    @media (min-width: 1024px) {
+      .soft-ui-desktop-header {
+        position: relative;
+        inset: auto;
+        z-index: 30;
+        width: 100%;
+        flex: 0 0 auto;
+      }
+    }
+  `]
 })
 export class AppHeaderComponent implements OnInit, OnDestroy {
   state = inject(StateService);
@@ -351,6 +380,27 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
         path: `/${segment}`,
         category: 'Trang'
       });
+    }
+
+    if (this.canAccessRoute('calculator')) {
+      const quickSops = this.state.sops()
+        .filter(sop => !sop.isArchived)
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+
+      for (const sop of quickSops) {
+        const categoryParts = ['Tra cứu SOP nhanh', sop.category, sop.ref].filter(Boolean);
+        items.push({
+          id: `sop-${sop.id}`,
+          name: sop.name,
+          icon: 'fa-book-open-reader',
+          action: () => {
+            this.state.selectedSop.set(sop);
+            void this.router.navigate(['/calculator']);
+          },
+          category: categoryParts.join(' · ')
+        });
+      }
     }
 
     return items;

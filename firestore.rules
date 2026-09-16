@@ -302,6 +302,129 @@ service cloud.firestore {
         request.resource.data.updatedByUid == request.auth.uid;
     }
 
+    function dutyShiftSnapshotMatches(appId, scheduleDate, snapshot) {
+      let schedulePath = /databases/$(database)/documents/artifacts/$(appId)/duty_schedules/$(scheduleDate);
+      let schedule = get(schedulePath);
+      return exists(schedulePath) && snapshot is map &&
+        snapshot.keys().hasOnly([
+          'date', 'staffIds', 'unresolvedAssignees', 'needsVerification', 'sourceAssignees',
+          'startTime', 'status', 'note', 'source'
+        ]) &&
+        snapshot.date == scheduleDate &&
+        snapshot.staffIds == schedule.data.staffIds &&
+        snapshot.get('unresolvedAssignees', []) == schedule.data.get('unresolvedAssignees', []) &&
+        snapshot.get('needsVerification', false) == schedule.data.get('needsVerification', false) &&
+        snapshot.get('sourceAssignees', '') == schedule.data.get('sourceAssignees', '') &&
+        snapshot.startTime == schedule.data.startTime &&
+        snapshot.status == schedule.data.status &&
+        snapshot.note == schedule.data.note &&
+        snapshot.source == schedule.data.source;
+    }
+
+    function canReadDutySwap(appId, data) {
+      return isSignedIn() && (
+        canManageDutySchedule(appId) ||
+        (data.get('participantUids', []) is list && data.get('participantUids', []).hasAny([request.auth.uid]))
+      );
+    }
+
+    function validDutySwapCreate(appId) {
+      let data = request.resource.data;
+      let requesterPath = /databases/$(database)/documents/artifacts/$(appId)/duty_staff/$(data.get('requesterStaffId', ''));
+      let targetPath = /databases/$(database)/documents/artifacts/$(appId)/duty_staff/$(data.get('targetStaffId', ''));
+      let requester = get(requesterPath);
+      let target = get(targetPath);
+      return isActiveUser(appId) &&
+        data.keys().hasOnly([
+          'type', 'status', 'requesterUid', 'requesterStaffId', 'requesterName',
+          'targetUid', 'targetStaffId', 'targetName', 'participantUids',
+          'sourceDate', 'targetDate', 'reason', 'sourceSnapshot', 'targetSnapshot',
+          'expiresAt', 'createdAt', 'createdByUid', 'updatedAt', 'updatedByUid',
+          'targetRespondedAt', 'targetResponseByUid', 'managerReviewedAt', 'managerUid', 'decisionNote'
+        ]) &&
+        ['SWAP', 'COVER'].hasAny([data.type]) && data.status == 'PENDING_TARGET' &&
+        data.requesterUid == request.auth.uid && data.createdByUid == request.auth.uid &&
+        data.updatedByUid == request.auth.uid && data.createdAt == request.time && data.updatedAt == request.time &&
+        exists(requesterPath) && exists(targetPath) && requester.data.get('linkedUserUid', '') == request.auth.uid &&
+        requester.data.get('active', false) == true && target.data.get('active', false) == true &&
+        data.requesterStaffId != data.targetStaffId && data.requesterName == requester.data.get('displayName', '') &&
+        data.targetUid == target.data.get('linkedUserUid', '') && data.targetUid.size() > 0 &&
+        data.targetName == target.data.get('displayName', '') && data.participantUids == [request.auth.uid, data.targetUid] &&
+        data.sourceDate is string && data.sourceDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.targetDate is string && data.reason is string && data.reason.size() > 0 && data.reason.size() <= 1000 &&
+        data.expiresAt is timestamp && data.expiresAt > request.time &&
+        data.expiresAt <= request.time + duration.value(14, 'd') &&
+        data.targetRespondedAt == null && data.targetResponseByUid == '' &&
+        data.managerReviewedAt == null && data.managerUid == '' && data.decisionNote == '' &&
+        dutyShiftSnapshotMatches(appId, data.sourceDate, data.sourceSnapshot) &&
+        data.sourceSnapshot.staffIds.hasAny([data.requesterStaffId]) &&
+        !data.sourceSnapshot.staffIds.hasAny([data.targetStaffId]) &&
+        (
+          (data.type == 'COVER' && data.targetDate == '' && data.targetSnapshot == null) ||
+          (data.type == 'SWAP' && data.targetDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+            data.targetDate != data.sourceDate && dutyShiftSnapshotMatches(appId, data.targetDate, data.targetSnapshot) &&
+            data.targetSnapshot.staffIds.hasAny([data.targetStaffId]) &&
+            !data.targetSnapshot.staffIds.hasAny([data.requesterStaffId]))
+        );
+    }
+
+    function dutySwapApprovalHasScheduleWrites(appId) {
+      let sourcePath = /databases/$(database)/documents/artifacts/$(appId)/duty_schedules/$(resource.data.sourceDate);
+      let sourceBefore = get(sourcePath);
+      let sourceAfter = getAfter(sourcePath);
+      let targetPath = /databases/$(database)/documents/artifacts/$(appId)/duty_schedules/$(resource.data.targetDate);
+      let targetBefore = get(targetPath);
+      let targetAfter = getAfter(targetPath);
+      let sourceUpdated = existsAfter(sourcePath) &&
+        sourceAfter.data.updatedAt == request.time && sourceAfter.data.updatedByUid == request.auth.uid &&
+        sourceAfter.data.staffIds != sourceBefore.data.staffIds;
+      return sourceUpdated && (
+        resource.data.type == 'COVER' ||
+        (resource.data.type == 'SWAP' && existsAfter(targetPath) &&
+          targetAfter.data.updatedAt == request.time && targetAfter.data.updatedByUid == request.auth.uid &&
+          targetAfter.data.staffIds != targetBefore.data.staffIds)
+      );
+    }
+
+    function validDutySwapUpdate(appId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let targetRespond = resource.data.status == 'PENDING_TARGET' &&
+        request.auth.uid == resource.data.targetUid && request.time < resource.data.expiresAt &&
+        ['PENDING_MANAGER', 'REJECTED_TARGET'].hasAny([request.resource.data.status]) &&
+        changed.hasOnly(['status', 'targetRespondedAt', 'targetResponseByUid', 'decisionNote', 'updatedAt', 'updatedByUid']) &&
+        request.resource.data.targetRespondedAt == request.time &&
+        request.resource.data.targetResponseByUid == request.auth.uid;
+      let requesterCancel = ['PENDING_TARGET', 'PENDING_MANAGER'].hasAny([resource.data.status]) &&
+        request.auth.uid == resource.data.requesterUid && request.time < resource.data.expiresAt &&
+        request.resource.data.status == 'CANCELLED' &&
+        changed.hasOnly(['status', 'updatedAt', 'updatedByUid']);
+      let managerDecision = resource.data.status == 'PENDING_MANAGER' &&
+        canManageDutySchedule(appId) && request.time < resource.data.expiresAt &&
+        ['APPROVED', 'REJECTED_MANAGER'].hasAny([request.resource.data.status]) &&
+        changed.hasOnly(['status', 'managerReviewedAt', 'managerUid', 'decisionNote', 'updatedAt', 'updatedByUid']) &&
+        request.resource.data.managerReviewedAt == request.time && request.resource.data.managerUid == request.auth.uid &&
+        (request.resource.data.status != 'APPROVED' || dutySwapApprovalHasScheduleWrites(appId));
+      let expire = ['PENDING_TARGET', 'PENDING_MANAGER'].hasAny([resource.data.status]) &&
+        request.time >= resource.data.expiresAt && canReadDutySwap(appId, resource.data) &&
+        request.resource.data.status == 'EXPIRED' && changed.hasOnly(['status', 'updatedAt', 'updatedByUid']);
+      return request.resource.data.updatedAt == request.time && request.resource.data.updatedByUid == request.auth.uid &&
+        request.resource.data.decisionNote is string && request.resource.data.decisionNote.size() <= 1000 &&
+        (targetRespond || requesterCancel || managerDecision || expire);
+    }
+
+    function validDutySwapAuditCreate(appId, requestId) {
+      let parentPath = /databases/$(database)/documents/artifacts/$(appId)/duty_swap_requests/$(requestId);
+      let parent = getAfter(parentPath);
+      let data = request.resource.data;
+      return existsAfter(parentPath) && canReadDutySwap(appId, parent.data) &&
+        data.keys().hasOnly(['requestId', 'action', 'actorUid', 'actorName', 'fromStatus', 'toStatus', 'details', 'createdAt']) &&
+        data.requestId == requestId && data.actorUid == request.auth.uid &&
+        data.actorName is string && data.actorName.size() > 0 && data.actorName.size() <= 200 &&
+        ['CREATED', 'TARGET_ACCEPTED', 'TARGET_REJECTED', 'MANAGER_APPROVED', 'MANAGER_REJECTED', 'CANCELLED', 'EXPIRED'].hasAny([data.action]) &&
+        data.fromStatus is string && data.toStatus is string && data.details is string && data.details.size() <= 1000 &&
+        data.createdAt == request.time;
+    }
+
     function isCurrentActorName(appId, value) {
       let profile = getUserProfile(appId);
       return value is string && (
@@ -1544,6 +1667,21 @@ service cloud.firestore {
       allow create: if canManageDutySchedule(appId) && validDutyScheduleCreate(scheduleDate);
       allow update: if canManageDutySchedule(appId) && validDutyScheduleUpdate(scheduleDate);
       allow delete: if false;
+    }
+    match /artifacts/{appId}/duty_swap_requests/{requestId} {
+      allow read: if canReadDutySwap(appId, resource.data);
+      allow create: if validDutySwapCreate(appId);
+      allow update: if validDutySwapUpdate(appId);
+      allow delete: if false;
+
+      match /audit/{auditId} {
+        allow read: if canReadDutySwap(
+          appId,
+          get(/databases/$(database)/documents/artifacts/$(appId)/duty_swap_requests/$(requestId)).data
+        );
+        allow create: if validDutySwapAuditCreate(appId, requestId);
+        allow update, delete: if false;
+      }
     }
     match /artifacts/{appId}/results_details/{docId} {
       allow read: if canUseSopWorkspace(appId);

@@ -37,20 +37,45 @@ describe('Soft UI application layout contract', () => {
     const header = read('./app-header.component.ts');
 
     assert.match(shell, /<app-navigation-panel><\/app-navigation-panel>/);
-    assert.match(shell, /\[class\.md:ml-16\]="state\.sidebarCollapsed\(\)/);
-    assert.match(shell, /\[class\.md:ml-\[17rem\]\]="!state\.sidebarCollapsed\(\)/);
-    assert.match(navigation, /state\.sidebarCollapsed\(\) \? 'left-1 w-14/);
-    assert.match(navigation, /: 'left-4 w-64/);
-    assert.match(navigation, /rounded-2xl bg-white shadow-none/);
-    assert.match(navigation, /md:bg-transparent/);
-    assert.match(navigation, /bg-white dark:bg-slate-900 border-transparent shadow-soft-xl/);
-    assert.match(navigation, /Thu gọn thanh điều hướng/);
-    assert.match(navigation, /flex w-\[18px\] flex-col gap-\[3px\]/);
-    assert.match(navigation, /\[class\.translate-x-1\]="!state\.sidebarCollapsed\(\)"/);
+    assert.match(shell, /elevated-workspace-canvas/);
+    assert.match(shell, /\[style\.--soft-ui-shell-offset\]="state\.sidebarCollapsed\(\) \? '4rem' : '17rem'"/);
+    assert.match(shell, /\[style\.--soft-ui-workspace-offset\]="state\.sidebarCollapsed\(\) \? '3rem' : '15\.25rem'"/);
+    assert.match(shell, /workspace-focus-mode/);
+    assert.match(shell, /@media \(min-width: 1024px\)/);
+    assert.match(shell, /margin-left: var\(--soft-ui-workspace-offset\)/);
+    assert.match(shell, /border-radius: 1\.125rem 0 0 1\.125rem/);
+    assert.doesNotMatch(shell, /margin-(?:top|right|bottom): 0\.625rem/);
+    assert.match(shell, /box-shadow: var\(--soft-ui-workspace-shadow\)/);
+    assert.ok(shell.indexOf('<app-header') > shell.indexOf('<main'), 'desktop header must live inside the elevated workspace canvas');
+    assert.match(navigation, /state\.sidebarCollapsed\(\) \? 'left-1 w-14 lg:left-0 lg:w-16/);
+    assert.match(navigation, /: 'left-4 w-64 lg:left-0 lg:w-\[17rem\]'/);
+    assert.match(navigation, /z-40[^"]*lg:z-10/);
+    assert.match(navigation, /lg:inset-y-0/);
+    assert.doesNotMatch(navigation, /lg:bottom-auto/);
+    assert.match(navigation, /state\.sidebarCollapsed\(\) \? 'w-12 justify-center px-0' : 'w-full gap-3 px-5'/);
+    assert.match(navigation, /state\.sidebarCollapsed\(\) \? 'w-12 px-1' : 'w-full px-2 lg:pl-4 lg:pr-10'/);
+    assert.match(navigation, /rounded-2xl[^"]*bg-transparent shadow-none/);
+    assert.match(navigation, /dark:bg-transparent/);
+    assert.match(navigation, /soft-ui-nav-item/);
+    assert.match(navigation, /\[class\.soft-ui-nav-item--active\]="!item\.isLocked && isActive\(item\.activeMatch\)"/);
+    assert.match(navigation, /\[class\.soft-ui-nav-item--collapsed\]="state\.sidebarCollapsed\(\)"/);
+    assert.match(navigation, /soft-ui-nav-icon/);
+    assert.match(navigation, /\[class\.soft-ui-nav-icon--active\]="!item\.isLocked && isActive\(item\.activeMatch\)"/);
+    assert.match(navigation, /class="fa-solid \{\{item\.icon\}\}"/);
+    assert.match(navigation, /\[ngClass\]="state\.sidebarCollapsed\(\) \? 'text-\[13px\]' : 'text-\[12px\]'"/);
+    assert.doesNotMatch(navigation, /class="fa-solid \{\{item\.icon\}\}"[^>]*\[class\]=/);
+    assert.doesNotMatch(navigation, /state\.toggleSidebarCollapse\(\)/);
     assert.doesNotMatch(navigation, /state\.systemVersion\(\)/);
-    assert.match(header, /state\.sidebarCollapsed\(\) \? '4rem' : '17rem'/);
+    assert.match(header, /state\.toggleSidebarCollapse\(\)/);
+    assert.match(header, /Mở rộng sidebar/);
+    assert.match(header, /Thu gọn sidebar/);
+    assert.match(header, /flex w-\[16px\] flex-col gap-\[3px\]/);
+    assert.match(header, /\[class\.translate-x-1\]="!state\.sidebarCollapsed\(\)"/);
+    assert.match(header, /\[style\.--soft-ui-header-left\]="state\.sidebarCollapsed\(\) \? '4rem' : '17rem'"/);
+    assert.match(header, /\.soft-ui-desktop-header\s*\{\s*left: var\(--soft-ui-header-left\)/);
+    assert.match(header, /@media \(min-width: 1024px\)[\s\S]*position: relative/);
+    assert.doesNotMatch(header, /\[style\.left\]=/);
     assert.match(header, /absolute left-1\/2 top-1\/2 hidden h-9 w-56 -translate-x-1\/2 -translate-y-1\/2/);
-    assert.doesNotMatch(header, /Mở rộng sidebar|Thu gọn sidebar/);
     assert.doesNotMatch(header, /bg-white\/75 dark:bg-slate-900\/80 backdrop-blur-xl/);
   });
 
@@ -69,6 +94,17 @@ describe('Soft UI application layout contract', () => {
     assert.doesNotMatch(profileMenu, /Giao diện Sáng|Giao diện Tối/);
   });
 
+  it('keeps Quick SOP access inside the permission-aware command palette', () => {
+    const header = read('./app-header.component.ts');
+
+    assert.match(header, /this\.canAccessRoute\('calculator'\)/);
+    assert.match(header, /this\.state\.sops\(\)/);
+    assert.match(header, /\.filter\(sop => !sop\.isArchived\)/);
+    assert.match(header, /Tra cứu SOP nhanh/);
+    assert.match(header, /this\.state\.selectedSop\.set\(sop\)/);
+    assert.match(header, /this\.router\.navigate\(\['\/calculator'\]\)/);
+  });
+
   it('keeps one dashboard greeting, global date scope and Soft UI surfaces', () => {
     const component = read('../../features/dashboard/dashboard.component.ts');
     const template = read('../../features/dashboard/dashboard.component.html');
@@ -83,6 +119,28 @@ describe('Soft UI application layout contract', () => {
     assert.match(template, /soft-ui-kpi/);
     assert.match(template, /soft-ui-icon-tile/);
     assert.match(template, /soft-ui-panel/);
+  });
+
+  it('keeps authenticated route pages transparent inside the elevated workspace canvas', () => {
+    const pageSurfaces = [
+      ['documents', read('../../features/documents/documents.component.ts'), /documents-page-enter[^\"]*bg-slate-/],
+      ['smart preparation', read('../../features/preparation/smart-prep.component.html'), /<div class="flex min-h-full flex-col[^\"]*bg-slate-/],
+      ['standard detail', read('../../features/standards/standard-detail.component.html'), /<div class="flex flex-col h-full[^\"]*bg-slate-/],
+      ['batch detail', read('../../features/results-view/batch-detail-view.component.ts'), /<div class="h-full flex flex-col animate-fade-in[^\"]*bg-slate-/],
+      ['master targets', read('../../features/targets/master-target-manager.component.ts'), /<div class="h-full flex flex-col fade-in[^\"]*bg-slate-/],
+      ['target groups', read('../../features/targets/target-group-manager.component.ts'), /<div class="h-full flex flex-col fade-in[^\"]*bg-slate-/],
+      ['label printing', read('../../features/labels/label-print.component.html'), /<div class="h-full flex flex-col md:flex-row[^\"]*bg-slate-/],
+      ['SOP editor', read('../../features/sop/editor/sop-editor.component.html'), /<div class="h-full flex flex-col[^\"]*bg-slate-/],
+    ] as const;
+
+    for (const [name, source, rootBackground] of pageSurfaces) {
+      assert.doesNotMatch(source, rootBackground, `${name} must inherit the elevated workspace canvas background`);
+    }
+
+    const masterTargets = read('../../features/targets/master-target-manager.component.ts');
+    const targetGroups = read('../../features/targets/target-group-manager.component.ts');
+    assert.doesNotMatch(masterTargets, /flex-1 p-6 overflow-hidden flex flex-col bg-slate-/);
+    assert.doesNotMatch(targetGroups, /flex-1 bg-slate-[^\"]* flex flex-col overflow-hidden relative/);
   });
 
   it('locks the Creative Tim Soft UI reference parity for desktop dashboard chrome', () => {
@@ -114,6 +172,24 @@ describe('Soft UI application layout contract', () => {
     assert.match(styles, /--soft-ui-gradient-success:/);
     assert.match(styles, /--soft-ui-gradient-warning:/);
     assert.match(styles, /--soft-ui-gradient-dark:/);
+    assert.match(styles, /--soft-ui-underlay:/);
+    assert.match(styles, /--soft-ui-workspace:/);
+    assert.match(styles, /--soft-ui-workspace-shadow:/);
+    assert.match(styles, /--soft-ui-underlay: #f8fafc;/);
+    assert.match(styles, /--soft-ui-panel-subtle: #f8f7fa;/);
+    assert.match(styles, /--soft-ui-border: rgba\(120, 100, 145, 0\.10\);/);
+    assert.match(styles, /--soft-ui-nav-icon-text: #756a83;/);
+    assert.match(styles, /--soft-ui-nav-icon-hover: #7928ca;/);
+    assert.match(styles, /--soft-ui-nav-item-hover: rgba\(120, 100, 145, 0\.09\);/);
+    assert.match(styles, /\.soft-ui-nav-item--active:not\(\.soft-ui-nav-item--collapsed\)/);
+    assert.match(styles, /\.soft-ui-nav-item--active\.soft-ui-nav-item--collapsed/);
+    assert.match(styles, /\.dark[\s\S]*--soft-ui-underlay: #14131d;/);
+    assert.match(styles, /\.dark[\s\S]*--soft-ui-workspace: #1c1b29;/);
+    assert.match(styles, /\.dark[\s\S]*--soft-ui-panel: #211f30;/);
+    assert.match(styles, /\.dark[\s\S]*--soft-ui-nav-item-hover: rgba\(196, 181, 253, 0\.09\);/);
+    assert.match(styles, /\.soft-ui-nav-icon\.soft-ui-nav-icon--active[\s\S]*background: var\(--soft-ui-gradient\)/);
+    assert.match(styles, /@media \(min-width: 1024px\)[\s\S]*\.soft-ui-app-shell[\s\S]*background: var\(--soft-ui-underlay\)/);
+    assert.doesNotMatch(styles, /\.soft-ui-app-shell::before/);
     assert.match(styles, /\.soft-ui-dashboard-toolbar/);
     assert.match(styles, /\.soft-ui-dashboard-page/);
   });

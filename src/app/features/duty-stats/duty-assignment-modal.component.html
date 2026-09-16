@@ -1,0 +1,219 @@
+<app-modal-shell
+  title="Xếp ca trực"
+  description="Chọn đội trực bằng một chạm. ★ xác định người chủ trì và luôn được lưu ở staffIds[0]."
+  size="xl"
+  [closeDisabled]="saving"
+  (closed)="closed.emit()">
+  <div modalBody class="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+    <section class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+      <div>
+        <div class="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Ca đang xây dựng</div>
+        <div class="mt-1 text-sm font-black text-slate-800 dark:text-slate-100">
+          {{ draft.date ? dateWithWeekday(draft.date) : 'Chưa chọn ngày trực' }}
+        </div>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Ngày trực <span class="text-red-500">*</span>
+          <input type="date" [ngModel]="draft.date" (ngModelChange)="onDateChange($event)" [disabled]="!!draft.originalDate"
+            class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:disabled:bg-slate-800">
+          @if (draft.originalDate) { <span class="mt-1 block text-[10px] font-medium text-slate-400">Ngày là mã của ca trực nên không đổi sau khi tạo.</span> }
+        </label>
+        <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Giờ bắt đầu
+          <input type="time" [(ngModel)]="draft.startTime" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+        </label>
+      </div>
+
+      <label class="block text-xs font-bold text-slate-600 dark:text-slate-300">Trạng thái
+        <select [(ngModel)]="draft.status" class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+          <option value="planned">Đang áp dụng</option>
+          <option value="cancelled">Đã hủy</option>
+        </select>
+      </label>
+
+      <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <div class="text-[10px] font-black uppercase tracking-wide text-amber-700 dark:text-amber-300">★ Trưởng ca · Người chủ trì</div>
+        @if (draft.staffIds[0]; as leadId) {
+          <div class="mt-2 flex items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-3 shadow-sm dark:border-amber-900/50 dark:bg-slate-900">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-300"><i class="fa-solid fa-star" aria-hidden="true"></i></span>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm font-black text-slate-900 dark:text-slate-100">{{ staffName(leadId) }}</div>
+              @if (conflictWarningForStaff(leadId); as warning) {
+                <div class="mt-1 text-[10px] font-black text-orange-600 dark:text-orange-300">⚠ {{ warning }}</div>
+              }
+            </div>
+            <button type="button" (click)="removeStaff(leadId)" class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30" aria-label="Gỡ trưởng ca" title="Gỡ khỏi ca">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
+        } @else {
+          <div class="mt-2 rounded-xl border border-dashed border-amber-300 px-3 py-4 text-center text-xs font-bold text-amber-700 dark:border-amber-800 dark:text-amber-300">Chọn nhân viên ở danh sách bên phải để đặt Trưởng ca.</div>
+        }
+      </div>
+
+      <div>
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <div class="text-xs font-black text-slate-700 dark:text-slate-200">Phối hợp</div>
+          <span class="text-[10px] font-bold text-slate-400">{{ draft.staffIds.length > 1 ? draft.staffIds.length - 1 : 0 }} người</span>
+        </div>
+        @if (draft.staffIds.length > 1) {
+          <div class="space-y-2">
+            @for (staffId of draft.staffIds.slice(1); track staffId) {
+              <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" (click)="makeLead(staffId)" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-amber-50 hover:text-amber-500 dark:hover:bg-amber-950/30" [attr.aria-label]="'Đặt ' + staffName(staffId) + ' làm trưởng ca'" title="Đặt làm Trưởng ca">
+                  <i class="fa-regular fa-star" aria-hidden="true"></i>
+                </button>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-xs font-black text-slate-800 dark:text-slate-100">{{ staffName(staffId) }}</div>
+                  @if (conflictWarningForStaff(staffId); as warning) {
+                    <div class="mt-0.5 text-[9px] font-black text-orange-600 dark:text-orange-300">⚠ {{ warning }}</div>
+                  }
+                </div>
+                <button type="button" (click)="removeStaff(staffId)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30" aria-label="Gỡ nhân viên khỏi ca" title="Gỡ khỏi ca">
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-center text-[11px] font-medium text-slate-400 dark:border-slate-700">Chưa có nhân viên phối hợp.</div>
+        }
+      </div>
+
+      @if (conflictLoading) {
+        <div class="text-[10px] font-bold text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Đang kiểm tra ca liền kề...</div>
+      } @else if (selectedConflictCount() > 0) {
+        <div class="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-[11px] font-bold text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-300">
+          <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>Có {{ selectedConflictCount() }} người có ca liền kề. Đây là cảnh báo mềm.
+        </div>
+      }
+
+      <section class="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-black text-amber-800 dark:text-amber-200">Vị trí chưa xác định</div>
+            <p class="mt-1 text-[10px] text-amber-700 dark:text-amber-300">Dùng khi bản giấy/Gemini chưa xác định chắc người trực.</p>
+          </div>
+          <button type="button" (click)="addUnresolvedAssignee()" class="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-amber-300 bg-amber-50/80 px-3 py-1.5 text-xs font-bold text-amber-800 transition active:scale-95 hover:bg-amber-100 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-200">
+            <i class="fa-solid fa-plus text-[10px]" aria-hidden="true"></i>Thêm vị trí chưa rõ
+          </button>
+        </div>
+        @if ((draft.unresolvedAssignees?.length || 0) > 0) {
+          <div class="mt-3 space-y-2">
+            @for (label of draft.unresolvedAssignees; track $index) {
+              <div class="flex items-center gap-2">
+                <span class="w-6 text-center text-xs font-black text-amber-600">{{ $index + 1 }}</span>
+                <input type="text" [ngModel]="label" (ngModelChange)="updateUnresolvedAssignee($index, $event)" maxlength="100" class="h-9 min-w-0 flex-1 rounded-lg border border-amber-200 bg-white px-3 text-xs font-bold outline-none focus:border-amber-500 dark:border-amber-800 dark:bg-slate-900" placeholder="? hoặc mô tả như: Đạt (chưa rõ N/O)">
+                <button type="button" (click)="removeUnresolvedAssignee($index)" class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30" aria-label="Xóa vị trí chưa xác định" title="Xóa"><i class="fa-solid fa-xmark text-xs" aria-hidden="true"></i></button>
+              </div>
+            }
+          </div>
+        }
+        @if (draft.sourceAssignees) {
+          <div class="mt-3 rounded-lg border border-amber-200/70 bg-white/70 px-3 py-2 text-[10px] dark:border-amber-900/50 dark:bg-slate-900/70"><strong>Nguồn Gemini ban đầu:</strong> {{ draft.sourceAssignees }}</div>
+        }
+        @if ((draft.unresolvedAssignees?.length || 0) === 0 && draft.needsVerification) {
+          <label class="mt-3 flex items-start gap-2 text-[11px] font-bold text-amber-800 dark:text-amber-200">
+            <input type="checkbox" [ngModel]="draft.needsVerification" (ngModelChange)="draft.needsVerification = $event" class="mt-0.5 rounded border-amber-300">Giữ trạng thái Cần xác minh.
+          </label>
+        }
+      </section>
+
+      <label class="block text-xs font-bold text-slate-600 dark:text-slate-300">Ghi chú ca trực
+        <textarea [(ngModel)]="draft.note" maxlength="1000" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Ghi chú đặc biệt cho ca trực..."></textarea>
+      </label>
+    </section>
+
+    <section class="min-w-0 space-y-3">
+      <div class="sticky top-0 z-10 bg-white pb-2 dark:bg-slate-950">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <div>
+            <div class="text-sm font-black text-slate-800 dark:text-slate-100">Gợi ý nhân sự</div>
+            <div class="text-[10px] font-medium text-slate-400">Dựa trên tải 90 ngày; cảnh báo ca liền kề hiển thị riêng trên từng người.</div>
+          </div>
+          @if (rollingLoading) { <i class="fa-solid fa-spinner fa-spin text-blue-500" aria-label="Đang tính gợi ý"></i> }
+        </div>
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
+          <input type="search" [ngModel]="search" (ngModelChange)="updateSearch($event)" placeholder="Tìm nhanh nhân viên..." aria-label="Tìm nhanh nhân viên xếp ca" class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-medium outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+          @if (search) {
+            <button type="button" (click)="updateSearch('')" aria-label="Xóa tìm kiếm nhân viên" class="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+          }
+        </div>
+      </div>
+
+      <div class="max-h-[62vh] space-y-4 overflow-y-auto pr-1">
+        @for (group of recommendationGroups; track group.tier) {
+          @if (staffForTier(group.tier); as people) {
+            @if (people.length > 0) {
+              <section>
+                <div class="mb-2 flex items-start justify-between gap-3">
+                  <div>
+                    <div class="text-xs font-black text-slate-700 dark:text-slate-200">{{ recommendationMarker(group.tier) }} {{ group.title }}</div>
+                    <div class="mt-0.5 text-[9px] font-medium text-slate-400">{{ group.description }}</div>
+                  </div>
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500 dark:bg-slate-800 dark:text-slate-300">{{ people.length }}</span>
+                </div>
+                <div class="grid gap-2 xl:grid-cols-2">
+                  @for (person of people; track person.id) {
+                    @let recommendation = recommendationForStaff(person.id);
+                    <button type="button" (click)="addStaff(person.id)" [disabled]="isSelected(person.id)" class="group flex min-h-20 w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition active:scale-[0.99] disabled:cursor-default"
+                      [ngClass]="isSelected(person.id) ? ['border-emerald-200', 'bg-emerald-50/70', 'dark:border-emerald-900/50', 'dark:bg-emerald-950/20'] : ['border-slate-200', 'bg-white', 'hover:border-blue-300', 'hover:bg-blue-50/40', 'dark:border-slate-700', 'dark:bg-slate-900', 'dark:hover:border-blue-800']">
+                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700 dark:bg-slate-800 dark:text-slate-300">{{ person.displayName.slice(0, 1) }}</span>
+                      <span class="min-w-0 flex-1">
+                        <span class="flex items-center gap-2">
+                          <span class="min-w-0 flex-1 truncate text-xs font-black text-slate-800 dark:text-slate-100">{{ person.displayName }}</span>
+                          @if (isSelected(person.id)) { <span class="shrink-0 text-[9px] font-black text-emerald-600 dark:text-emerald-300">✓ Đã thêm</span> }
+                        </span>
+                        @if (recommendation) {
+                          <span class="mt-1 block text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            <strong class="text-slate-700 dark:text-slate-200">{{ recommendation.total }} ca / 90 ngày</strong>
+                            <span [class.text-rose-600]="recommendation.deviationPercent > 15" [class.text-blue-600]="recommendation.deviationPercent < -15"> · {{ recommendation.deviationPercent > 0 ? '+' : '' }}{{ recommendation.deviationPercent | number:'1.0-0' }}%</span>
+                            · Cuối tuần {{ recommendation.weekendCount }} · ★ {{ recommendation.leadCount }}
+                          </span>
+                        }
+                        @if (conflictWarningForStaff(person.id); as warning) {
+                          <span class="mt-1.5 inline-flex rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">⚠ {{ warning }}</span>
+                        }
+                      </span>
+                    </button>
+                  }
+                </div>
+              </section>
+            }
+          }
+        }
+
+        @if (otherStaff(); as people) {
+          @if (people.length > 0) {
+            <section>
+              <div class="mb-2 text-xs font-black text-slate-500">Khác</div>
+              <div class="grid gap-2 xl:grid-cols-2">
+                @for (person of people; track person.id) {
+                  <button type="button" (click)="addStaff(person.id)" [disabled]="isSelected(person.id)" class="flex min-h-16 w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left dark:border-slate-700 dark:bg-slate-900">
+                    <span class="min-w-0 flex-1 truncate text-xs font-black">{{ person.displayName }}</span>
+                    @if (isSelected(person.id)) { <span class="text-[9px] font-black text-emerald-600">✓ Đã thêm</span> }
+                  </button>
+                }
+              </div>
+            </section>
+          }
+        }
+
+        @if (!rollingLoading && !hasVisibleCandidates()) {
+          <div class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs italic text-slate-400 dark:border-slate-700">{{ search ? 'Không tìm thấy nhân viên phù hợp.' : 'Chưa có nhân viên đang hoạt động.' }}</div>
+        }
+      </div>
+    </section>
+  </div>
+
+  <div modalFooter class="flex flex-wrap items-center justify-end gap-2">
+    @if (!draft.date) {
+      <span class="mr-auto text-[11px] font-bold text-amber-600 dark:text-amber-400">Vui lòng chọn ngày trực.</span>
+    } @else if (!hasAssignment()) {
+      <span class="mr-auto text-[11px] font-bold text-amber-600 dark:text-amber-400">Cần chọn ít nhất 1 nhân viên hoặc thêm vị trí chưa xác định.</span>
+    }
+    <app-button variant="secondary" [disabled]="saving" (click)="closed.emit()">Hủy</app-button>
+    <app-button [loading]="saving" [disabled]="!draft.date || !hasAssignment() || saving" (click)="saved.emit()">Lưu ca trực</app-button>
+  </div>
+</app-modal-shell>

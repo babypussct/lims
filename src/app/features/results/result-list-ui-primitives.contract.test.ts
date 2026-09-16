@@ -79,6 +79,19 @@ describe('results entry shared UI primitive integration', () => {
     assert.doesNotMatch(header, /Tách phiếu in/);
   });
 
+  it('reuses timeline and thin progress primitives for report publication history', () => {
+    const component = read('./components/result-active-reports-panel.component.ts');
+    const template = read('./components/result-active-reports-panel.component.html');
+
+    assert.match(component, /AppUiTimelineComponent/);
+    assert.match(component, /AppUiProgressComponent/);
+    assert.match(component, /getHistoryTimelineItems\(\): TimelineItem\[]/);
+    assert.match(template, /<app-ui-timeline\b/);
+    assert.match(template, /\[items\]="getHistoryTimelineItems\(\)"/);
+    assert.match(template, /<app-ui-progress\b/);
+    assert.match(template, /ariaLabel="Tiến độ xuất báo cáo"/);
+  });
+
   it('uses the shared detail header contract on batch details', () => {
     const component = read('../results-view/batch-detail-view.component.ts');
 

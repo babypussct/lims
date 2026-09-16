@@ -11,13 +11,21 @@
         </div>
       </div>
     </div>
-    <button
-      type="button"
-      (click)="openModule()"
-      class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
-      Chi tiết
-      <i class="fa-solid fa-arrow-right text-[10px]" aria-hidden="true"></i>
-    </button>
+    <div class="flex items-center gap-2">
+      @if (pendingSwapCount() > 0) {
+        <button type="button" (click)="openModule()" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 text-[10px] font-black text-amber-700 shadow-sm transition hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+          <i class="fa-solid fa-right-left" aria-hidden="true"></i>{{ pendingSwapCount() }} đổi ca
+          @if (swapNeedsMyAction() > 0) { <span class="rounded-full bg-amber-600 px-1.5 py-0.5 text-[8px] text-white">{{ swapNeedsMyAction() }}</span> }
+        </button>
+      }
+      <button
+        type="button"
+        (click)="openModule()"
+        class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+        Chi tiết
+        <i class="fa-solid fa-arrow-right text-[10px]" aria-hidden="true"></i>
+      </button>
+    </div>
   </header>
 
   @if (duty.loadingStaff() || duty.loadingSchedules()) {
@@ -41,7 +49,6 @@
             <div class="mt-2 flex items-start justify-between gap-3">
               <div>
                 <div class="text-base font-black text-slate-800 dark:text-slate-100">{{ formatShortDate(next.date) }}</div>
-                <div class="mt-1 font-mono text-xs font-black text-blue-700 dark:text-blue-300">{{ next.startTime || '18:00' }}</div>
               </div>
               <span class="rounded-full bg-white px-2.5 py-1 text-[9px] font-black text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300">{{ me.displayName }}</span>
             </div>
@@ -69,9 +76,6 @@
             <div class="text-[10px] font-black uppercase tracking-[0.12em] text-indigo-500">Trực hôm nay</div>
             <div class="mt-1 text-sm font-black text-slate-800 dark:text-slate-100">{{ formatShortDate(todayKey) }}</div>
           </div>
-          @if (todaySchedule(); as today) {
-            <span class="rounded-lg bg-white px-2.5 py-1 text-[10px] font-bold text-indigo-600 shadow-sm dark:bg-slate-900 dark:text-indigo-300">{{ today.startTime || '18:00' }}</span>
-          }
         </div>
         @if (todaySchedule(); as today) {
           <div class="mt-3 flex flex-wrap gap-1.5">
@@ -104,7 +108,6 @@
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <div class="text-[11px] font-black text-slate-600 dark:text-slate-300">{{ formatShortDate(schedule.date) }}</div>
-                  <div class="mt-0.5 font-mono text-[10px] font-bold text-slate-400">{{ schedule.startTime || '18:00' }}</div>
                 </div>
                 @if (isMyShift(schedule)) {
                   <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">Ca của bạn</span>
@@ -141,9 +144,6 @@
                 <p class="mt-1 text-[11px] font-medium text-slate-400">Nhân sự trực đêm và người chịu trách nhiệm chính</p>
               </div>
             </div>
-            @if (todaySchedule(); as today) {
-              <span class="shrink-0 rounded-xl bg-blue-50 px-3 py-1.5 font-mono text-[11px] font-black text-blue-700 shadow-sm dark:bg-blue-950/40 dark:text-blue-300">{{ today.startTime || '18:00' }} → hết mẫu</span>
-            }
           </div>
 
           @if (todaySchedule(); as today) {
@@ -198,7 +198,7 @@
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-[9px] font-black uppercase tracking-wide text-slate-400">Ca kế tiếp</div>
-                    <div class="mt-1 text-sm font-black text-slate-700 dark:text-slate-200">{{ formatShortDate(myNext.date) }} · {{ myNext.startTime || '18:00' }}</div>
+                    <div class="mt-1 text-sm font-black text-slate-700 dark:text-slate-200">{{ formatShortDate(myNext.date) }}</div>
                   </div>
                   <span class="rounded-full bg-fuchsia-50 px-2.5 py-1 text-[10px] font-black text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300">{{ relativeDutyDayLabel(myNext.date) }}</span>
                 </div>
@@ -242,8 +242,8 @@
         </div>
       </div>
 
-      <div class="grid items-start gap-4 2xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,.85fr)]">
-        <section class="soft-ui-panel min-w-0 overflow-hidden dark:bg-slate-900">
+      <div class="grid items-stretch gap-4 2xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,.85fr)]">
+        <section class="soft-ui-panel flex min-w-0 flex-col overflow-hidden dark:bg-slate-900 2xl:h-[520px]">
           <div class="soft-ui-panel-header">
             <div>
               <h3 class="text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300">Lịch tháng</h3>
@@ -251,7 +251,7 @@
             </div>
             <span class="shrink-0 rounded-xl bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-600 shadow-sm dark:bg-indigo-950/40 dark:text-indigo-300">{{ activeSchedules().length }} ca</span>
           </div>
-          <div class="overflow-x-auto p-3 custom-scrollbar">
+          <div class="min-h-0 flex-1 overflow-auto p-3 custom-scrollbar">
             <div class="min-w-[640px]">
               <div class="grid grid-cols-7 px-1 pb-2">
                 @for (weekday of calendarWeekdays; track weekday) {
@@ -261,7 +261,7 @@
               <div class="grid grid-cols-7 gap-1.5">
                 @for (cell of calendarCells(); track $index) {
                   @if (cell) {
-                    <div class="min-h-24 rounded-xl bg-slate-50/80 p-2 transition dark:bg-slate-800/55"
+                    <div class="min-h-20 rounded-xl bg-slate-50/80 p-2 transition dark:bg-slate-800/55"
                       [class.ring-2]="isToday(cell.date)"
                       [class.ring-fuchsia-400]="isToday(cell.date)"
                       [class.shadow-md]="isToday(cell.date)">
@@ -284,17 +284,16 @@
                           @for (label of unresolvedFor(schedule); track $index) {
                             <div class="flex min-w-0 items-center gap-1 rounded-lg bg-amber-50 px-1.5 py-1 text-[9px] font-black text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation shrink-0 text-[8px]"></i><span class="truncate">{{ label || '?' }}</span></div>
                           }
-                          <div class="flex items-center justify-between gap-1 pt-0.5">
-                            <span class="font-mono text-[9px] font-bold text-slate-400">{{ schedule.startTime || '18:00' }}</span>
-                            @if (schedule.needsVerification) { <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-black text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">Cần xác minh</span> }
-                          </div>
+                          @if (schedule.needsVerification) {
+                            <div class="flex justify-end pt-0.5"><span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-black text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">Cần xác minh</span></div>
+                          }
                         </div>
                       } @else {
                         <div class="mt-2 text-[10px] font-medium text-slate-300 dark:text-slate-600">—</div>
                       }
                     </div>
                   } @else {
-                    <div class="min-h-24 rounded-xl bg-slate-50/45 dark:bg-slate-950/25"></div>
+                    <div class="min-h-20 rounded-xl bg-slate-50/45 dark:bg-slate-950/25"></div>
                   }
                 }
               </div>
@@ -302,7 +301,7 @@
           </div>
         </section>
 
-        <section class="soft-ui-panel self-start overflow-hidden dark:bg-slate-900">
+        <section class="soft-ui-panel flex min-h-0 flex-col overflow-hidden dark:bg-slate-900 2xl:h-[520px]">
           <div class="soft-ui-panel-header">
             <div>
               <h3 class="text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300">Thống kê theo người</h3>
@@ -318,7 +317,7 @@
             <div class="rounded-xl bg-indigo-50 px-2 py-2.5 text-center dark:bg-indigo-950/25"><div class="text-sm font-black text-indigo-600 dark:text-indigo-300">{{ minAssignments() }}–{{ maxAssignments() }}</div><div class="mt-0.5 text-[8px] font-black uppercase tracking-wide text-indigo-600/70 dark:text-indigo-300/70">Khoảng lượt</div></div>
           </div>
 
-          <div class="max-h-[500px] overflow-y-auto px-2 pb-2 custom-scrollbar">
+          <div class="max-h-[390px] min-h-0 flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar 2xl:max-h-none">
             @for (stat of personStats(); track stat.staffId; let index = $index) {
               <article class="mb-2 rounded-2xl bg-slate-50/80 p-3 last:mb-0 dark:bg-slate-800/50" [ngClass]="linkedStaff()?.id === stat.staffId ? ['ring-1', 'ring-blue-200', 'dark:ring-blue-800'] : []">
                 <div class="flex items-start gap-3">
@@ -369,7 +368,6 @@
           @for (schedule of upcomingSchedules(); track schedule.date) {
             <div class="rounded-2xl bg-slate-50/80 p-3 dark:bg-slate-800/55" [ngClass]="isMyShift(schedule) ? ['ring-1', 'ring-blue-200', 'dark:ring-blue-800'] : []">
               <div class="flex items-center justify-between gap-2"><div class="text-[11px] font-black text-slate-600 dark:text-slate-300">{{ formatShortDate(schedule.date) }}</div>@if (isMyShift(schedule)) { <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[8px] font-black text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">Ca của bạn</span> }</div>
-              <div class="mt-1 font-mono text-[9px] font-bold text-slate-400">{{ schedule.startTime || '18:00' }}</div>
               <div class="mt-2 space-y-1">
                 @for (name of namesFor(schedule); track $index) { <div class="truncate rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">@if ($index === 0) { <i class="fa-solid fa-star mr-1 text-[8px] text-amber-500"></i> }{{ name }}</div> }
                 @for (label of unresolvedFor(schedule); track $index) { <div class="truncate rounded-lg bg-amber-50 px-2 py-1 text-[9px] font-black text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1 text-[8px]"></i>{{ label || '?' }}</div> }

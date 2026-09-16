@@ -18,7 +18,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent],
   template: `
-    <div class="h-full flex flex-col fade-in bg-slate-50 dark:bg-slate-900 relative p-4 md:p-6">
+    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
         
         <!-- Header -->
         <app-page-header
@@ -69,7 +69,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
             </div>
 
             <!-- EDITOR AREA -->
-            <div class="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col overflow-hidden relative">
+            <div class="flex-1 flex flex-col overflow-hidden relative">
                 @if (isEditing()) {
                     <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
                         <form id="target-group-form" appFormLabelA11y [formGroup]="form" class="max-w-4xl mx-auto space-y-6">

@@ -1,0 +1,42 @@
+<app-modal-shell title="Xin đổi ca trực" [description]="'Ca của bạn ngày ' + sourceSchedule.date" size="lg" [closeDisabled]="busy()" (closed)="closed.emit()">
+  <div modalBody class="space-y-5 text-sm text-slate-700 dark:text-slate-200">
+    <div class="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="group" aria-label="Hình thức đổi ca">
+      <button type="button" class="rounded-lg px-3 py-2.5 text-xs font-black transition" [class]="type() === 'SWAP' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300' : 'text-slate-500'" (click)="setType('SWAP')">Đổi ca 2 chiều</button>
+      <button type="button" class="rounded-lg px-3 py-2.5 text-xs font-black transition" [class]="type() === 'COVER' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300' : 'text-slate-500'" (click)="setType('COVER')">Nhờ trực hộ</button>
+    </div>
+
+    <div class="rounded-xl border border-blue-100 bg-blue-50/60 p-3 text-xs dark:border-blue-900/60 dark:bg-blue-950/20">
+      <strong>Ca nguồn:</strong> {{ sourceSchedule.date }} · {{ sourceSchedule.startTime || '18:00' }}
+      <p class="mt-1 text-slate-500 dark:text-slate-400">Yêu cầu chỉ thay vị trí của bạn trong danh sách phân công. Nếu bạn đang là ★ chủ trì, người thay sẽ kế thừa đúng vị trí đó sau khi quản lý duyệt.</p>
+    </div>
+
+    <label class="block font-bold">Đồng nghiệp
+      <select aria-label="Chọn đồng nghiệp đổi ca" [ngModel]="targetStaffId()" (ngModelChange)="setTarget($event)" [disabled]="busy()" class="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+        <option value="">— Chọn người —</option>
+        @for (person of candidates(); track person.id) { <option [value]="person.id">{{ person.displayName }}</option> }
+      </select>
+    </label>
+
+    @if (type() === 'SWAP') {
+      <label class="block font-bold">Ca của đồng nghiệp sẽ đổi lại cho bạn
+        <select aria-label="Chọn ca đối ứng" [ngModel]="targetDate()" (ngModelChange)="targetDate.set($event)" [disabled]="busy() || !targetStaffId()" class="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+          <option value="">— Chọn ca đối ứng —</option>
+          @for (schedule of targetSchedules(); track schedule.date) { <option [value]="schedule.date">{{ schedule.date }} · {{ schedule.startTime || '18:00' }}</option> }
+        </select>
+      </label>
+      @if (targetStaffId() && targetSchedules().length === 0) { <p class="text-xs font-bold text-amber-600 dark:text-amber-300">Không có ca đối ứng phù hợp của người này trong phạm vi lịch đang tải.</p> }
+    }
+
+    <label class="block font-bold">Lý do
+      <textarea aria-label="Lý do đổi ca" [ngModel]="reason()" (ngModelChange)="reason.set($event)" [disabled]="busy()" maxlength="1000" rows="4" placeholder="Ví dụ: bận việc gia đình đột xuất..." class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950"></textarea>
+    </label>
+
+    <div class="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
+      Đồng nghiệp phải xác nhận trước. Sau đó quản lý mới có thể phê duyệt; lịch chỉ thay đổi tại bước phê duyệt cuối cùng.
+    </div>
+  </div>
+  <div modalFooter class="flex w-full justify-end gap-2">
+    <app-button variant="secondary" [disabled]="busy()" (click)="closed.emit()">Hủy</app-button>
+    <app-button [disabled]="busy() || !canSubmit()" [loading]="busy()" (click)="submit()">Gửi yêu cầu</app-button>
+  </div>
+</app-modal-shell>

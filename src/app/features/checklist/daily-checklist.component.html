@@ -171,6 +171,20 @@
             </div>
           </div>
 
+          <div class="mb-3 flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-xs dark:border-slate-700 dark:bg-slate-800">
+            <div class="min-w-0 flex-1">
+              <div class="mb-1.5 flex items-center justify-between gap-3 text-[10px] font-bold">
+                <span class="uppercase tracking-wide text-slate-400">Tiến độ có kết quả</span>
+                <span class="shrink-0 tabular-nums text-slate-600 dark:text-slate-300">{{dailyCompletion().completed}}/{{dailyCompletion().total}} mẻ · {{dailyCompletion().percent}}%</span>
+              </div>
+              <app-ui-progress
+                [value]="dailyCompletion().completed"
+                [max]="dailyCompletion().total || 1"
+                [status]="dailyCompletion().percent === 100 ? 'success' : 'primary'"
+                ariaLabel="Tỷ lệ mẻ đã có kết quả trong ngày" />
+            </div>
+          </div>
+
           <div class="cl-batch-grid-shell">
             <div #batchGrid class="cl-batch-grid" [attr.data-view-mode]="viewMode()">
               @let layoutHints = batchLayoutHints();

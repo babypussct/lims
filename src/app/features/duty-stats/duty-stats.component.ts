@@ -11,15 +11,20 @@ import {
   AppToolbarComponent,
 } from '../../shared/components/ui';
 import type {
-  DutyRecommendationTier,
   DutyScheduleDraft,
   DutyScheduleEntry,
   DutyStaff,
   DutyStaffDraft,
-  DutyStaffRecommendation,
 } from './duty-schedule.model';
+import { DutyAssignmentModalComponent } from './duty-assignment-modal.component';
+import { DutyScheduleImageExportComponent } from './duty-schedule-image-export.component';
 import { DutyScheduleService } from './duty-schedule.service';
+import { DutyShiftSwapPanelComponent } from './duty-shift-swap-panel.component';
+import { DutyShiftSwapRequestComponent } from './duty-shift-swap-request.component';
+import { DutyShiftSwapService } from './duty-shift-swap.service';
+import { DutyStatsChartComponent } from './duty-stats-chart.component';
 import { DutyTsvImportComponent } from './duty-tsv-import.component';
+import { DutyWeekViewComponent } from './duty-week-view.component';
 import {
   activeDutySchedules,
   aggregateDutyRosterById,
@@ -27,10 +32,10 @@ import {
   countDutyAssignments,
   currentDutyDateKey,
   currentDutyMonthKey,
-  dutyAdjacentAssignment,
   dutyMonthCalendarDateKeys,
   dutyMonthDateKeys,
   dutyMonthRange,
+  dutyIsoWeekInfo,
   dutyRolling90Range,
   dutyYearRange,
   findLinkedDutyStaff,
@@ -40,7 +45,7 @@ import {
 } from './duty-schedule.utils';
 
 type DutyView = 'schedule' | 'staff' | 'stats';
-type DutyScheduleLayout = 'list' | 'calendar';
+type DutyScheduleLayout = 'list' | 'calendar' | 'week';
 type DutyBatchScope = 'all' | 'weekdays' | 'weekends';
 type DutyStatsRangeMode = 'selection' | 'year' | 'all';
 type DutyMobilePeriodMode = 'month' | 'year' | 'all';
@@ -63,13 +68,20 @@ interface DutyCalendarCell {
     AppModalShellComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    DutyAssignmentModalComponent,
+    DutyScheduleImageExportComponent,
+    DutyShiftSwapPanelComponent,
+    DutyShiftSwapRequestComponent,
+    DutyStatsChartComponent,
     DutyTsvImportComponent,
+    DutyWeekViewComponent,
   ],
   templateUrl: './duty-stats.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly duty = inject(DutyScheduleService);
+  readonly dutySwap = inject(DutyShiftSwapService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly confirmation = inject(ConfirmationService);
@@ -78,6 +90,13 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly importMonth = signal<string | null>(null);
   readonly selectedYear = signal(Number(currentDutyMonthKey().slice(0, 4)));
   readonly selectedMonth = signal<number | null>(Number(currentDutyMonthKey().slice(5, 7)));
+  readonly weekAnchorDate = signal(currentDutyDateKey());
+  readonly weekInfo = computed(() => dutyIsoWeekInfo(this.weekAnchorDate()));
+  readonly imageExportDates = computed(() => {
+    if (this.scheduleLayout() === 'week') return this.weekInfo().dates;
+    const month = this.selectedMonth();
+    return month === null ? [] : dutyMonthDateKeys(this.selectedYear(), month);
+  });
   readonly selectedStaffFilter = signal<string | null>(null);
   readonly myShiftsOnly = signal(false);
   readonly needsVerificationOnly = signal(false);
@@ -96,6 +115,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly staffModalOpen = signal(false);
   readonly scheduleModalOpen = signal(false);
   readonly batchModalOpen = signal(false);
+  readonly swapSourceSchedule = signal<DutyScheduleEntry | null>(null);
   readonly batchScope = signal<DutyBatchScope>('all');
   readonly batchStartTime = signal('18:00');
   readonly conflictSchedules = signal<DutyScheduleEntry[]>([]);
@@ -222,10 +242,24 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshRange();
+    this.dutySwap.watchRelevantRequests();
   }
 
   ngOnDestroy(): void {
     this.duty.stopAllListeners();
+    this.dutySwap.stopListener();
+  }
+
+  openSwapRequest(schedule: DutyScheduleEntry): void {
+    if (!this.myStaffId() || !schedule.staffIds.includes(this.myStaffId()!)) {
+      this.toast.show('Chỉ người đang được phân công trong ca mới có thể gửi yêu cầu đổi ca.', 'warning');
+      return;
+    }
+    if (schedule.status !== 'planned') {
+      this.toast.show('Ca đã hủy không thể gửi yêu cầu đổi ca.', 'warning');
+      return;
+    }
+    this.swapSourceSchedule.set(schedule);
   }
 
   setYear(value: number | string): void {
@@ -261,9 +295,15 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
       return;
     }
     this.scheduleLayout.set(layout);
+    this.refreshRange();
   }
 
   prevPeriod(): void {
+    if (this.isWeekMode()) {
+      this.weekAnchorDate.update(date => shiftDutyDateKey(date, -7));
+      this.refreshRange();
+      return;
+    }
     const month = this.selectedMonth();
     if (month === null) {
       this.selectedYear.update(year => year - 1);
@@ -277,6 +317,11 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   nextPeriod(): void {
+    if (this.isWeekMode()) {
+      this.weekAnchorDate.update(date => shiftDutyDateKey(date, 7));
+      this.refreshRange();
+      return;
+    }
     const month = this.selectedMonth();
     if (month === null) {
       this.selectedYear.update(year => year + 1);
@@ -290,6 +335,11 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   goToCurrentMonth(): void {
+    if (this.isWeekMode()) {
+      this.weekAnchorDate.set(currentDutyDateKey());
+      this.refreshRange();
+      return;
+    }
     const currentMonth = currentDutyMonthKey();
     this.selectedYear.set(Number(currentMonth.slice(0, 4)));
     this.selectedMonth.set(Number(currentMonth.slice(5, 7)));
@@ -300,6 +350,28 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const currentMonth = currentDutyMonthKey();
     return this.selectedMonth() === Number(currentMonth.slice(5, 7))
       && this.selectedYear() === Number(currentMonth.slice(0, 4));
+  }
+
+  isCurrentWeek(): boolean {
+    const current = dutyIsoWeekInfo(currentDutyDateKey());
+    const selected = this.weekInfo();
+    return selected.start === current.start && selected.end === current.end;
+  }
+
+  isCurrentPeriod(): boolean {
+    return this.isWeekMode() ? this.isCurrentWeek() : this.isCurrentMonth();
+  }
+
+  currentPeriodButtonLabel(): string {
+    return this.isWeekMode() ? 'Tuần này' : 'Tháng này';
+  }
+
+  currentPeriodLabel(): string {
+    return this.isWeekMode()
+      ? this.weekInfo().label
+      : (this.selectedMonth() === null
+        ? `Năm ${this.selectedYear()}`
+        : `Tháng ${this.formatMonth(this.selectedMonth()!)}/${this.selectedYear()}`);
   }
 
   isMyShift(schedule: DutyScheduleEntry): boolean {
@@ -525,70 +597,8 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     void this.refreshRecommendationContext();
   }
 
-  isStaffSelected(staffId: string): boolean {
-    return this.scheduleDraft.staffIds.includes(staffId);
-  }
-
-  toggleScheduleStaff(staffId: string, checked: boolean): void {
-    const current = [...this.scheduleDraft.staffIds];
-    if (checked && !current.includes(staffId)) current.push(staffId);
-    if (!checked) {
-      const index = current.indexOf(staffId);
-      if (index >= 0) current.splice(index, 1);
-    }
-    this.scheduleDraft.staffIds = current;
-  }
-
-  moveScheduleStaff(staffId: string, delta: -1 | 1): void {
-    const current = [...this.scheduleDraft.staffIds];
-    const index = current.indexOf(staffId);
-    const next = index + delta;
-    if (index < 0 || next < 0 || next >= current.length) return;
-    [current[index], current[next]] = [current[next], current[index]];
-    this.scheduleDraft.staffIds = current;
-  }
-
-  removeScheduleStaff(staffId: string): void {
-    this.scheduleDraft.staffIds = this.scheduleDraft.staffIds.filter(id => id !== staffId);
-  }
-
-  addUnresolvedAssignee(): void {
-    this.scheduleDraft.unresolvedAssignees = [...(this.scheduleDraft.unresolvedAssignees || []), '?'];
-    this.scheduleDraft.needsVerification = true;
-  }
-
-  updateUnresolvedAssignee(index: number, value: string): void {
-    const current = [...(this.scheduleDraft.unresolvedAssignees || [])];
-    if (index < 0 || index >= current.length) return;
-    current[index] = value;
-    this.scheduleDraft.unresolvedAssignees = current;
-    this.scheduleDraft.needsVerification = true;
-  }
-
-  removeUnresolvedAssignee(index: number): void {
-    const current = [...(this.scheduleDraft.unresolvedAssignees || [])];
-    if (index < 0 || index >= current.length) return;
-    current.splice(index, 1);
-    this.scheduleDraft.unresolvedAssignees = current;
-    if (current.length === 0) this.scheduleDraft.needsVerification = false;
-  }
-
   scheduleDraftHasAssignment(): boolean {
     return this.scheduleDraft.staffIds.length > 0 || (this.scheduleDraft.unresolvedAssignees?.length || 0) > 0;
-  }
-
-  conflictWarningForStaff(staffId: string): string | null {
-    const date = this.scheduleDraft.date;
-    if (!date) return null;
-    const conflict = dutyAdjacentAssignment(date, staffId, this.conflictSchedules());
-    if (conflict.previous && conflict.next) return '2 ca liền kề';
-    if (conflict.previous) return 'Vừa trực hôm qua';
-    if (conflict.next) return 'Đã có ca ngày mai';
-    return null;
-  }
-
-  selectedConflictCount(): number {
-    return this.scheduleDraft.staffIds.filter(staffId => Boolean(this.conflictWarningForStaff(staffId))).length;
   }
 
   openBatchMonth(): void {
@@ -682,51 +692,6 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     return this.duty.staff().find(person => person.id !== this.staffDraft.id && person.linkedUserUid === accountUid);
   }
 
-  scheduleStaffOptions(): DutyStaff[] {
-    const selected = new Set(this.scheduleDraft.staffIds);
-    return this.duty.staff().filter(item => item.active || selected.has(item.id));
-  }
-
-  filteredScheduleStaffOptions(): DutyStaff[] {
-    const search = this.normalizeSearchTerm(this.scheduleStaffSearch());
-    const recommendationOrder = new Map(this.staffRecommendations().map((item, index) => [item.staffId, index]));
-    const options = this.scheduleStaffOptions().sort((a, b) =>
-      (recommendationOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER)
-      - (recommendationOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER)
-      || a.displayName.localeCompare(b.displayName, 'vi'),
-    );
-    if (!search) return options;
-    return options.filter(person => {
-      const haystack = this.normalizeSearchTerm(person.displayName);
-      return haystack.includes(search);
-    });
-  }
-
-  recommendationForStaff(staffId: string): DutyStaffRecommendation | undefined {
-    return this.staffRecommendations().find(item => item.staffId === staffId);
-  }
-
-  recommendationLabel(tier: DutyRecommendationTier): string {
-    if (tier === 'recommended') return 'Nên xếp';
-    if (tier === 'balanced') return 'Cân bằng';
-    if (tier === 'high') return 'Đang nhiều';
-    return 'Cân nhắc';
-  }
-
-  recommendationBadgeClass(tier: DutyRecommendationTier): string {
-    if (tier === 'recommended') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300';
-    if (tier === 'balanced') return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
-    if (tier === 'high') return 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300';
-    return 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300';
-  }
-
-  recommendationMarker(tier: DutyRecommendationTier): string {
-    if (tier === 'recommended') return '🟢';
-    if (tier === 'balanced') return '🔵';
-    if (tier === 'high') return '🔴';
-    return '🟠';
-  }
-
   scheduleCountForStaff(staffId: string): number {
     return this.activeSchedules().filter(item => item.staffIds.includes(staffId)).length;
   }
@@ -769,7 +734,9 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const anchor = document.createElement('a');
     anchor.href = url;
     const month = this.selectedMonth();
-    anchor.download = `lich-truc-${this.selectedYear()}-${month ? String(month).padStart(2, '0') : 'ca-nam'}.csv`;
+    anchor.download = this.isWeekMode()
+      ? `lich-truc-tuan-${String(this.weekInfo().weekNumber).padStart(2, '0')}-${this.weekInfo().weekYear}.csv`
+      : `lich-truc-${this.selectedYear()}-${month ? String(month).padStart(2, '0') : 'ca-nam'}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -793,9 +760,11 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const schedules = activeDutySchedules(this.duty.schedules())
       .filter(schedule => !this.myShiftsOnly() || (!!myStaffId && schedule.staffIds.includes(myStaffId)));
     const month = this.selectedMonth();
-    const periodLabel = month
-      ? `THÁNG ${this.formatMonth(month)}/${this.selectedYear()}`
-      : `NĂM ${this.selectedYear()}`;
+    const periodLabel = this.isWeekMode()
+      ? `TUẦN ${this.weekInfo().weekNumber} · ${this.weekInfo().start.slice(8, 10)}/${this.weekInfo().start.slice(5, 7)} – ${this.weekInfo().end.slice(8, 10)}/${this.weekInfo().end.slice(5, 7)}/${this.weekInfo().weekYear}`
+      : month
+        ? `THÁNG ${this.formatMonth(month)}/${this.selectedYear()}`
+        : `NĂM ${this.selectedYear()}`;
     const personalLabel = this.myShiftsOnly() && this.myStaff()
       ? `CÁ NHÂN - ${this.myStaff()!.displayName.toLocaleUpperCase('vi-VN')}`
       : '';
@@ -886,6 +855,11 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   private refreshRange(): void {
+    if (this.isWeekMode()) {
+      const week = this.weekInfo();
+      this.duty.watchRange(week.start, week.end);
+      return;
+    }
     const month = this.selectedMonth();
     const statsMode = this.activeView() === 'stats' ? this.statsRangeMode() : 'selection';
     const range = statsMode === 'all'
@@ -900,6 +874,10 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   private isMobileViewport(): boolean {
     return typeof window !== 'undefined' && window.innerWidth < 768;
+  }
+
+  private isWeekMode(): boolean {
+    return this.activeView() === 'schedule' && this.scheduleLayout() === 'week';
   }
 
   private async refreshScheduleConflictContext(): Promise<void> {
@@ -986,6 +964,10 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   private defaultScheduleDate(): string {
     const today = currentDutyDateKey();
+    if (this.isWeekMode()) {
+      const week = this.weekInfo();
+      return today >= week.start && today <= week.end ? today : this.weekAnchorDate();
+    }
     const month = this.selectedMonth();
     if (Number(today.slice(0, 4)) === this.selectedYear()
       && (!month || Number(today.slice(5, 7)) === month)) {

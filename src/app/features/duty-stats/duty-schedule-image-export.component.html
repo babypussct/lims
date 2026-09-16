@@ -1,0 +1,66 @@
+<div class="flex items-center gap-1.5" [class.flex-col]="compact()" [class.w-full]="compact()">
+  <app-button variant="secondary" size="sm" [disabled]="busy() || !activeRows().length" [loading]="busy()" (click)="copyImage()" title="Sao chép ảnh lịch để dán vào Zalo Web">
+    <i class="fa-solid fa-copy" aria-hidden="true"></i> Sao chép ảnh
+  </app-button>
+  <app-button variant="secondary" size="sm" [disabled]="busy() || !activeRows().length" (click)="downloadImage()" title="Tải ảnh lịch PNG">
+    <i class="fa-solid fa-image" aria-hidden="true"></i> Tải PNG
+  </app-button>
+</div>
+
+<div aria-hidden="true" style="position: fixed; left: -100000px; top: 0; pointer-events: none; z-index: -1;">
+  <section #exportTemplate
+    [style.width.px]="mode() === 'week' ? 1080 : 1500"
+    [style.min-height.px]="mode() === 'week' ? 1350 : 1000"
+    style="box-sizing:border-box;background:#ffffff;color:#0f172a;padding:52px;font-family:Arial,'Helvetica Neue',sans-serif;">
+    <header style="text-align:center;border-bottom:3px solid #1d4ed8;padding-bottom:24px;margin-bottom:28px;">
+      <div style="font-size:30px;font-weight:900;letter-spacing:.02em;">LỊCH TRỰC ĐÊM PHÒNG KIỂM NGHIỆM</div>
+      <div style="margin-top:10px;font-size:23px;font-weight:800;color:#1d4ed8;text-transform:uppercase;">{{ periodLabel() }}</div>
+      <div style="margin-top:8px;font-size:13px;color:#64748b;">★ Người đầu tiên là người chủ trì · Ảnh xuất từ LIMS</div>
+    </header>
+
+    @if (mode() === 'week') {
+      <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+        @for (row of activeRows(); track row.date) {
+          <article [style.background]="isWeekend(row.date) ? '#fff7ed' : '#f8fafc'" style="display:grid;grid-template-columns:150px 1fr;gap:18px;border:1px solid #cbd5e1;border-radius:18px;padding:18px 20px;min-height:125px;">
+            <div style="border-right:1px solid #cbd5e1;padding-right:16px;">
+              <div [style.color]="isWeekend(row.date) ? '#c2410c' : '#64748b'" style="font-size:15px;font-weight:800;text-transform:uppercase;">{{ weekdayLabel(row.date) }}</div>
+              <div style="margin-top:5px;font-size:25px;font-weight:900;">{{ row.date.slice(8, 10) }}/{{ row.date.slice(5, 7) }}</div>
+              @if (row.schedule) { <div style="margin-top:8px;font-size:14px;font-weight:800;color:#2563eb;">{{ row.schedule.startTime || '18:00' }}</div> }
+            </div>
+            <div>
+              @if (row.schedule; as schedule) {
+                @let names = namesFor(schedule);
+                <div style="font-size:18px;font-weight:900;color:#92400e;">★ {{ names[0] || 'Chưa phân công' }}</div>
+                @if (names.length > 1 || unresolvedFor(schedule).length) {
+                  <div style="margin-top:8px;font-size:15px;line-height:1.5;"><strong>Phối hợp:</strong> {{ names.slice(1).join(' · ') }}@if(names.length > 1 && unresolvedFor(schedule).length) { · }{{ unresolvedFor(schedule).join(' · ') }}</div>
+                }
+                @if (schedule.note) { <div style="margin-top:8px;font-size:14px;color:#475569;">{{ schedule.note }}</div> }
+                @if (schedule.needsVerification) { <div style="margin-top:8px;font-size:12px;font-weight:900;color:#b45309;">⚠ CẦN XÁC MINH</div> }
+              } @else {
+                <div style="font-size:15px;color:#94a3b8;font-style:italic;padding-top:18px;">Chưa có ca trực</div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;">
+        @for (row of activeRows(); track row.date) {
+          <article [style.background]="isWeekend(row.date) ? '#fff7ed' : '#f8fafc'" style="border:1px solid #cbd5e1;border-radius:14px;padding:13px;min-height:155px;overflow:hidden;">
+            <div [style.color]="isWeekend(row.date) ? '#c2410c' : '#64748b'" style="font-size:11px;font-weight:800;text-transform:uppercase;">{{ weekdayLabel(row.date) }}</div>
+            <div style="font-size:20px;font-weight:900;margin-top:2px;">{{ row.date.slice(8, 10) }}</div>
+            @if (row.schedule; as schedule) {
+              @let names = namesFor(schedule);
+              <div style="margin-top:8px;font-size:12px;font-weight:900;color:#92400e;line-height:1.35;">★ {{ names[0] || 'Chưa phân công' }}</div>
+              @for (name of names.slice(1); track $index) { <div style="margin-top:3px;font-size:11px;line-height:1.3;">{{ name }}</div> }
+              @for (label of unresolvedFor(schedule); track $index) { <div style="margin-top:3px;font-size:10px;font-weight:800;color:#b45309;">⚠ {{ label || '?' }}</div> }
+              <div style="margin-top:7px;font-size:10px;font-weight:800;color:#2563eb;">{{ schedule.startTime || '18:00' }}</div>
+            } @else {
+              <div style="margin-top:18px;font-size:10px;color:#cbd5e1;">—</div>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

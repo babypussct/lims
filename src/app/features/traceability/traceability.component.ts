@@ -22,13 +22,23 @@ import { QrGlobalService } from '../../core/services/qr-global.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppUiTimelineComponent } from '../../shared/components/ui/timeline/timeline.component';
+import { TimelineItem, TimelineStatus } from '../../shared/components/ui/timeline/timeline.model';
 import { getActivityActionLabel } from '../../core/activity/activity-feed.utils';
 import { isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
+
+export interface TraceabilitySampleRow {
+  sampleId: string;
+  description: string;
+  targetScope: TargetScopePresentation;
+  targetNames: string[];
+  totalTargets: number;
+}
 
 @Component({
   selector: 'app-traceability',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppUiTimelineComponent],
   template: `
     <div class="relative mx-auto min-h-full w-full max-w-7xl shrink-0 p-4 md:p-6 pb-20 fade-in">
         <app-page-header
@@ -328,293 +338,306 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
                 </app-empty-state>
             </div>
         } @else if(logData()) {
-            <!-- DATA CARD -->
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 relative">
-                <!-- Status Stripe -->
-                <div class="absolute top-0 left-0 w-full h-1.5 bg-fuchsia-600 dark:bg-fuchsia-500"></div>
+            <!-- HERO SUMMARY CARD (SoftUI Panel, Shadow mượt) -->
+            <section class="mb-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6 lg:p-7 relative overflow-hidden" aria-labelledby="traceability-hero-heading">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div class="flex-1 min-w-0">
+                        <!-- Top Metadata Row: Status & Tag -->
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            @if (logData()?.status; as status) {
+                                <span [class]="getStatusBadgeClass(status)"
+                                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-xs">
+                                    <i class="fa-solid" [ngClass]="getStatusIcon(status)"></i>
+                                    {{ getStatusLabel(status) }}
+                                </span>
+                            }
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200/70 rounded-full text-[10px] font-black uppercase tracking-wider dark:bg-fuchsia-950/40 dark:border-fuchsia-900/40 dark:text-fuchsia-300">
+                                <i class="fa-solid fa-shield-halved text-[10px]"></i> Hồ sơ gốc LIMS
+                            </span>
+                        </div>
 
-                <div class="p-8">
-                    <!-- Top Row: ID & QR -->
-                    <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b border-slate-100 pb-8">
-                        <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider">
-                                    Mã giao dịch
-                                </span>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
-                                    <i class="fa-solid fa-database"></i> Hệ thống LIMS
-                                </span>
+                        <!-- Main Title: SOP / Record Name -->
+                        <h2 id="traceability-hero-heading" class="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-snug break-words">
+                            {{ getRecordHeadline() }}
+                        </h2>
+
+                        <!-- Secondary Meta Chips -->
+                        <div class="mt-4 flex flex-wrap items-center gap-2.5 text-xs">
+                            <!-- Traceability Code with copy button -->
+                            <div class="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/60">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Mã:</span>
+                                <span class="font-mono font-bold text-slate-700 dark:text-slate-200">{{ logData()?.id }}</span>
+                                <button
+                                    type="button"
+                                    (click)="copyText(logData()?.id || '')"
+                                    class="ml-1 text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition cursor-pointer"
+                                    [title]="copiedCode() ? 'Đã sao chép!' : 'Sao chép mã'">
+                                    <i class="fa-solid text-xs" [ngClass]="copiedCode() ? 'fa-check text-emerald-500' : 'fa-copy'"></i>
+                                </button>
                             </div>
-                            <div class="font-mono text-xl md:text-3xl font-black text-slate-800 break-all">
-                                {{logData()?.id}}
-                            </div>
-                            <div class="mt-2 text-sm text-slate-500 font-medium flex items-center gap-2">
-                                <i class="fa-solid fa-clock"></i> {{formatDate(logData()?.timestamp)}}
-                            </div>
+
+                            <!-- Analysis Date (only when exists) -->
+                            @if (getAnalysisDate(); as aDate) {
+                                <div class="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/60 text-slate-600 dark:text-slate-300">
+                                    <i class="fa-regular fa-calendar text-slate-400"></i>
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Ngày phân tích:</span>
+                                    <span class="font-bold">{{ aDate | date:'dd/MM/yyyy' }}</span>
+                                </div>
+                            }
+
+                            <!-- Total sample count -->
+                            @if (totalSampleCount() > 0) {
+                                <div class="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/60 text-slate-600 dark:text-slate-300">
+                                    <i class="fa-solid fa-vial text-slate-400"></i>
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Quy mô:</span>
+                                    <span class="font-bold">{{ totalSampleCount() }} mẫu</span>
+                                </div>
+                            }
+
+                            <!-- View Batch Results Button (if permitted) -->
                             @if (getAssociatedRequestId(); as reqId) {
-                                <div class="mt-4">
-                                    @if (auth.currentUser() && auth.canViewSop()) {
-                                        <app-button size="sm" (click)="viewBatchResults(reqId)">
-                                            <i class="fa-solid fa-square-poll-vertical"></i>
-                                            <span>Xem kết quả mẻ phân tích</span>
-                                        </app-button>
-                                    } @else {
-                                        <div class="inline-flex items-start gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
-                                            <div class="mt-0.5 w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-                                                <i class="fa-solid fa-lock text-[10px]"></i>
-                                            </div>
-                                            <div>
-                                                <p class="text-[10px] font-bold text-slate-700 leading-tight mb-1">Kết quả thuộc chế độ bảo mật.</p>
-                                                <p class="text-[9px] text-slate-500 leading-tight">
-                                                    @if (auth.currentUser()) {
-                                                        Tài khoản của bạn không có quyền xem dữ liệu này.
-                                                    } @else {
-                                                        Yêu cầu đăng nhập hệ thống LIMS để xem chi tiết.
-                                                    }
-                                                </p>
-                                            </div>
-                                        </div>
+                                @if (auth.currentUser() && auth.canViewSop()) {
+                                    <app-button size="sm" variant="secondary" (click)="viewBatchResults(reqId)">
+                                        <i class="fa-solid fa-square-poll-vertical"></i>
+                                        <span>Xem kết quả mẻ</span>
+                                    </app-button>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Right QR Code Tile -->
+                    <div class="shrink-0 bg-slate-50 dark:bg-slate-800/90 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/70 text-center self-center md:self-auto shadow-xs">
+                        <canvas #qrCanvas class="w-28 h-28 mx-auto"></canvas>
+                        <div class="mt-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mã QR truy xuất</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- WORKSPACE 2-COLUMN (~62% / 38% on desktop, 1-column on mobile) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                <!-- LEFT COLUMN: Lab Analysis Data (~62% desktop) -->
+                <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+
+                    @if (allSampleRows().length > 0) {
+                        <!-- SAMPLE & SCOPE MATRIX CARD -->
+                        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6" aria-labelledby="sample-matrix-heading">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                <div>
+                                    <div class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-fuchsia-600 dark:text-fuchsia-400">
+                                        <i class="fa-solid fa-vials" aria-hidden="true"></i> Nghiệp vụ phân tích
+                                    </div>
+                                    <h3 id="sample-matrix-heading" class="text-base font-black text-slate-800 dark:text-slate-100">
+                                        Ma trận Mẫu &amp; Chỉ tiêu phân tích
+                                    </h3>
+                                </div>
+                                <span class="inline-flex h-7 items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 text-[10px] font-bold tabular-nums text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 self-start sm:self-auto">
+                                    {{ filteredSampleRows().length }} / {{ allSampleRows().length }} mẫu
+                                </span>
+                            </div>
+
+                            <!-- Search Inside Matrix -->
+                            @if (allSampleRows().length > 1) {
+                                <div class="relative mb-3">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                                    <input
+                                        type="text"
+                                        [ngModel]="sampleFilterQuery()"
+                                        (ngModelChange)="sampleFilterQuery.set($event)"
+                                        placeholder="Tìm mã hoặc tên mẫu..."
+                                        class="w-full h-9 pl-8 pr-8 rounded-xl border border-slate-200/80 bg-slate-50 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:bg-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:bg-slate-900">
+                                    @if (sampleFilterQuery()) {
+                                        <button
+                                            type="button"
+                                            (click)="sampleFilterQuery.set('')"
+                                            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                                            title="Xóa tìm kiếm">
+                                            <i class="fa-solid fa-xmark text-xs"></i>
+                                        </button>
                                     }
                                 </div>
                             }
-                        </div>
-                        <div class="shrink-0 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
-                            <canvas #qrCanvas class="w-32 h-32"></canvas>
-                        </div>
-                    </div>
 
-                    <!-- Premium Workflow Stepper -->
-                    @if(logData()?.status; as status) {
-                        <div class="mb-10 fade-in">
-                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Tiến Độ Quy Trình LIMS</h4>
-                            <div class="flex flex-col sm:flex-row items-stretch gap-2">
-                                <!-- Step 1: Request -->
-                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="status !== 'unknown' ? 'border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
-                                    <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-fuchsia-100 to-transparent dark:from-fuchsia-900/30 opacity-50"></div>
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm"
-                                         [ngClass]="status !== 'unknown' ? 'bg-fuchsia-500' : 'bg-slate-300 dark:bg-slate-700'">
-                                        <i class="fa-solid fa-clipboard-list text-xs"></i>
-                                    </div>
-                                    <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="status !== 'unknown' ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-400'">Bước 1</div>
-                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Tiếp nhận</div>
-                                    </div>
-                                </div>
-
-                                <!-- Step 2: Approve -->
-                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
-                                    @if(status === 'approved' || status === 'draft' || status === 'completed') {
-                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-fuchsia-100 to-transparent dark:from-fuchsia-900/30 opacity-50"></div>
-                                    }
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
-                                         [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'bg-fuchsia-500' : 'bg-slate-300 dark:bg-slate-700'">
-                                        <i class="fa-solid fa-check-double text-xs"></i>
-                                    </div>
-                                    <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'text-fuchsia-700 dark:text-fuchsia-400' : 'text-slate-400'">Bước 2</div>
-                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Phê duyệt</div>
-                                    </div>
-                                </div>
-
-                                <!-- Step 3: Result & Report -->
-                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="status === 'completed' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : (status === 'draft' ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800')">
-                                    @if(status === 'completed') {
-                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-100 to-transparent dark:from-emerald-900/30 opacity-50"></div>
-                                    } @else if(status === 'draft') {
-                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-amber-100 to-transparent dark:from-amber-900/30 opacity-50"></div>
-                                    }
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
-                                         [ngClass]="status === 'completed' ? 'bg-emerald-500' : (status === 'draft' ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700')">
-                                        <i class="fa-solid fa-square-poll-vertical text-xs"></i>
-                                    </div>
-                                    <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="status === 'completed' ? 'text-emerald-700 dark:text-emerald-400' : (status === 'draft' ? 'text-amber-700 dark:text-amber-400' : 'text-slate-400')">Bước 3</div>
-                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Cập nhật & Báo cáo</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    }
-
-                    <!-- Main Info Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <!-- Left: Actor & Action Unified Card -->
-                        <div class="space-y-6">
-                            <div class="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm p-6 relative overflow-hidden group">
-                                <!-- Status left border accent -->
-                                <div class="absolute left-0 top-0 bottom-0 w-2 transition-colors duration-300"
-                                     [ngClass]="logData()?.status === 'completed' || logData()?.status === 'approved' ? 'bg-emerald-500' : 
-                                                (logData()?.status === 'pending' ? 'bg-amber-500' : 
-                                                (logData()?.status === 'draft' ? 'bg-fuchsia-500' :
-                                                (logData()?.status === 'rejected' ? 'bg-rose-500' : 'bg-slate-400')))">
-                                </div>
-                                
-                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-slate-800">
-                                   <div class="flex items-center gap-4">
-                                       <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner overflow-hidden shrink-0">
-                                           <img [src]="getAvatarUrl(logData()?.user, state.getUserAvatarOptions(logData()?.user).style, state.getUserAvatarOptions(logData()?.user).photoURL)" class="w-full h-full object-cover">
-                                       </div>
-                                       <div>
-                                           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Thực hiện bởi</div>
-                                           <div class="text-base font-black text-slate-800 dark:text-slate-100 leading-none">{{logData()?.user}}</div>
-                                           <div class="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-1">
-                                               <i class="fa-solid fa-user-shield text-emerald-500"></i> Authorized Staff
-                                           </div>
-                                       </div>
-                                   </div>
-                                   <div class="shrink-0 pl-14 sm:pl-0">
-                                       @if(logData()?.status; as status) {
-                                           <span [class]="status === 'pending' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/30' :
-                                                          status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/30' :
-                                                          status === 'rejected' ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/30' :
-                                                          status === 'completed' ? 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-900/30' :
-                                                          status === 'draft' ? 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-900/30' : 'bg-slate-50 text-slate-700 border-slate-200/60'"
-                                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm">
-                                               @if(status === 'completed' || status === 'approved') {
-                                                   <i class="fa-solid fa-check"></i>
-                                               } @else if(status === 'pending' || status === 'draft') {
-                                                   <i class="fa-solid fa-clock"></i>
-                                               } @else if(status === 'rejected') {
-                                                   <i class="fa-solid fa-xmark"></i>
-                                               }
-                                               {{ status === 'pending' ? 'Chờ duyệt' :
-                                                  status === 'approved' ? 'Đã duyệt' :
-                                                  status === 'rejected' ? 'Bị từ chối' :
-                                                  status === 'completed' ? 'Đã hoàn thành' :
-                                                  status === 'draft' ? 'Lưu nháp' : status }}
-                                           </span>
-                                       }
-                                   </div>
-                                </div>
-                                
-                                <div class="pl-3">
-                                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sự kiện hệ thống ghi nhận</div>
-                                    <div class="text-lg font-black text-slate-800 dark:text-slate-100 mb-2 leading-tight">
-                                        {{getActionLabel(logData()?.action)}}
-                                    </div>
-                                    <div class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 break-words">
-                                        {{logData()?.details}}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Context Details -->
-                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Chi Tiết Ngữ Cảnh</h4>
-                            
-                            <div class="space-y-4">
-                                @if(logData()?.sopBasicInfo?.name || logData()?.printData?.sop?.name) {
-                                    <div>
-                                        <span class="text-xs text-slate-500 block">Quy trình (SOP)</span>
-                                        <span class="font-bold text-slate-800">
-                                            {{ logData()?.sopBasicInfo?.name || logData()?.printData?.sop?.name }}
-                                        </span>
-                                    </div>
-                                }
-
-                                @if(logData()?.printData?.inputs) {
-                                    <div>
-                                        <span class="text-xs text-slate-500 block mb-1">Thông số đầu vào</span>
-                                        <div class="flex flex-wrap gap-2">
-                                            @for(key of objectKeys(logData()?.printData?.inputs); track key) {
-                                                @if(key !== 'sampleList' && key !== 'targetIds' && key !== 'sampleTargetMap' && key !== 'sampleDescriptionMap') {
-                                                    <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
-                                                        {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
-                                                    </span>
-                                                }
-                                            }
-                                        </div>
-                                    </div>
-                                }
-
-                                <!-- Sample List -->
-                                @if(logData()?.printData?.inputs?.sampleList?.length > 0) {
-                                   <div>
-                                       <span class="text-xs text-slate-500 block">Danh sách mẫu</span>
-                                       <span class="font-bold text-slate-800 break-words font-mono text-sm leading-snug">{{ formatSampleList(logData()?.printData?.inputs?.sampleList) }}</span>
-                                   </div>
-                                }
-
-                                @if(getSampleDescriptionRows().length > 0) {
-                                  <div>
-                                    <span class="text-xs text-slate-500 block mb-1">Mô tả từng mẫu</span>
-                                    <div class="flex flex-wrap gap-1.5">
-                                      @for(row of getSampleDescriptionRows(); track row.sampleId) {
-                                        <span class="bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-800 px-2 py-1 rounded-lg text-xs font-bold"><span class="font-mono">{{row.sampleId}}</span> · {{row.description}}</span>
-                                      }
-                                    </div>
-                                  </div>
-                                }
-
-                                <!-- Target Map -->
-                                @if(computedSampleTargetGroups(); as targetGroups) {
-                                    <div class="pt-2">
-                                        <span class="text-xs text-slate-500 block mb-2 font-bold uppercase tracking-wider text-slate-400">Chỉ tiêu phân tích theo từng mẫu</span>
-                                        <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                                            @for(group of targetGroups; track group.formattedSamples) {
-                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xs">
-                                                    <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ group.formattedSamples }}</span>
-                                                    <div class="flex flex-wrap gap-1.5 justify-end">
-                                                        @if(group.targetScope.compact) {
-                                                            <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/60 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                                                                {{ group.targetScope.headline }}
-                                                            </span>
-                                                        } @else {
-                                                            @for(tName of group.targetNames; track tName) {
-                                                                <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/60 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                                                                    {{ tName }}
-                                                                </span>
-                                                            } @empty {
-                                                                <span class="text-xs text-slate-400 dark:text-slate-500 italic">Không có chỉ tiêu</span>
-                                                            }
-                                                        }
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                }
-
-                                @if(logData()?.printData?.analysisDate) {
-                                    <div>
-                                        <span class="text-xs text-slate-500 block">Ngày phân tích</span>
-                                        <span class="font-bold text-slate-800">{{ logData()?.printData?.analysisDate | date:'dd/MM/yyyy' }}</span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Items List (If Batch Approval) -->
-                    @if(logData()?.printData?.items) {
-                        <div class="mt-8 pt-8 border-t border-slate-100">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Danh Sách Hóa Chất Sử Dụng</h4>
-                            <div class="overflow-hidden rounded-xl border border-slate-200">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                            <!-- Scrollable Table with Sticky Header (max-h 480px) -->
+                            <div class="max-h-[480px] overflow-y-auto custom-scrollbar rounded-xl border border-slate-100 dark:border-slate-800">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead class="sticky top-0 bg-slate-50 dark:bg-slate-800/95 backdrop-blur z-10 border-b border-slate-200/80 dark:border-slate-700">
                                         <tr>
-                                            <th class="px-4 py-3">Tên hóa chất</th>
-                                            <th class="px-4 py-3 text-right">Lượng dùng</th>
+                                            <th scope="col" class="py-2.5 px-3 font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] w-28 sm:w-36">Mã mẫu</th>
+                                            <th scope="col" class="py-2.5 px-3 font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">Mô tả mẫu</th>
+                                            <th scope="col" class="py-2.5 px-3 font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">Chỉ tiêu yêu cầu</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        @for(item of logData()?.printData?.items; track item.name) {
-                                            <tr class="bg-white">
-                                                <td class="px-4 py-3 font-medium text-slate-700">{{item.displayName || item.name}}</td>
-                                                <td class="px-4 py-3 text-right font-mono font-bold text-slate-600">
-                                                    {{formatNum(item.stockNeed)}} {{item.stockUnit}}
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                                        @for (row of filteredSampleRows(); track row.sampleId) {
+                                            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                                <!-- Sample ID -->
+                                                <td class="py-3 px-3 align-top">
+                                                    <span class="font-mono font-bold text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs inline-block">
+                                                        {{ row.sampleId }}
+                                                    </span>
+                                                </td>
+                                                <!-- Description -->
+                                                <td class="py-3 px-3 align-top">
+                                                    @if (row.description) {
+                                                        <span class="font-semibold text-slate-700 dark:text-slate-200 leading-snug block">
+                                                            {{ row.description }}
+                                                        </span>
+                                                    } @else {
+                                                        <span class="text-slate-400 italic text-[11px]">—</span>
+                                                    }
+                                                </td>
+                                                <!-- Target Scope -->
+                                                <td class="py-3 px-3 align-top">
+                                                    <div class="space-y-1.5">
+                                                        @if (row.targetScope.compact) {
+                                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                                <span class="inline-flex items-center gap-1 bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/70 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                                                                    <i class="fa-solid fa-list-check text-[9px]"></i>
+                                                                    {{ row.targetScope.headline }}
+                                                                </span>
+                                                                @if (row.targetNames.length > 0) {
+                                                                    <button
+                                                                        type="button"
+                                                                        (click)="toggleSampleTargetExpand(row.sampleId)"
+                                                                        class="text-[10px] font-bold text-fuchsia-600 hover:text-fuchsia-700 dark:text-fuchsia-400 underline underline-offset-2 cursor-pointer">
+                                                                        {{ isSampleExpanded(row.sampleId) ? 'Thu gọn' : 'Xem chi tiết' }}
+                                                                    </button>
+                                                                }
+                                                            </div>
+                                                        } @else {
+                                                            <div class="flex flex-wrap gap-1">
+                                                                @for (tName of row.targetNames; track tName) {
+                                                                    <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/70 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                                                                        {{ tName }}
+                                                                    </span>
+                                                                } @empty {
+                                                                    <span class="text-slate-400 italic text-[11px]">Chưa chỉ định chỉ tiêu</span>
+                                                                }
+                                                            </div>
+                                                        }
+
+                                                        <!-- Expanded target list when compact -->
+                                                        @if (row.targetScope.compact && isSampleExpanded(row.sampleId)) {
+                                                            <div class="mt-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1">
+                                                                @for (tName of row.targetNames; track tName) {
+                                                                    <span class="bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-600 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                                                        {{ tName }}
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        } @empty {
+                                            <tr>
+                                                <td colspan="3" class="py-8 text-center text-slate-400">
+                                                    <i class="fa-solid fa-magnifying-glass mb-1 text-sm block"></i>
+                                                    Không tìm thấy mẫu phù hợp từ khóa "{{ sampleFilterQuery() }}"
                                                 </td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+
+                            <!-- Additional input parameters if any -->
+                            @if (getInputKeyValues().length > 0) {
+                                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Thông số kèm theo</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        @for (item of getInputKeyValues(); track item.key) {
+                                            <span class="bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
+                                                <span class="text-slate-400 font-medium">{{ item.key }}:</span> <b class="font-mono text-slate-700 dark:text-slate-200">{{ item.val }}</b>
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </section>
+                    } @else {
+                        <!-- RECORD CONTENT (When no sample list is associated) -->
+                        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                            <div class="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <i class="fa-solid fa-circle-info text-xs text-fuchsia-600 dark:text-fuchsia-400"></i>
+                                <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                                    Nội Dung Hồ Sơ
+                                </h3>
+                            </div>
+                            @if (logData()?.details) {
+                                <p class="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    {{ logData()?.details }}
+                                </p>
+                            }
+                            @if (getInputKeyValues().length > 0) {
+                                <div class="mt-4">
+                                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Thông số kèm theo</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        @for (item of getInputKeyValues(); track item.key) {
+                                            <span class="bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
+                                                <span class="text-slate-400 font-medium">{{ item.key }}:</span> <b class="font-mono text-slate-700 dark:text-slate-200">{{ item.val }}</b>
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </section>
                     }
+
+                    <!-- REAGENTS & CONSUMABLES CARD (Auto-hidden if empty) -->
+                    @if (logData()?.printData?.items?.length) {
+                        <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6" aria-labelledby="chemicals-heading">
+                            <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <i class="fa-solid fa-flask text-xs text-fuchsia-600 dark:text-fuchsia-400"></i>
+                                <h3 id="chemicals-heading" class="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                                    Danh Sách Hóa Chất Sử Dụng
+                                </h3>
+                            </div>
+                            <div class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800">
+                                <table class="w-full text-xs text-left">
+                                    <thead class="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px]">
+                                        <tr>
+                                            <th class="px-3.5 py-2.5">Tên hóa chất</th>
+                                            <th class="px-3.5 py-2.5 text-right">Lượng dùng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                                        @for (item of logData()?.printData?.items; track item.name) {
+                                            <tr>
+                                                <td class="px-3.5 py-2.5 font-medium text-slate-700 dark:text-slate-200">{{ item.displayName || item.name }}</td>
+                                                <td class="px-3.5 py-2.5 text-right font-mono font-bold text-slate-600 dark:text-slate-300">
+                                                    {{ formatNum(item.stockNeed) }} {{ item.stockUnit }}
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    }
+                </div>
+
+                <!-- RIGHT COLUMN: Audit Trail Timeline (~38% desktop) -->
+                <div class="lg:col-span-5 xl:col-span-4">
+                    <section class="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/45 sm:p-5 lg:sticky lg:top-20" aria-labelledby="traceability-audit-heading">
+                        <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <div class="mb-1 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--soft-ui-accent-strong)]">
+                                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Audit Trail
+                                </div>
+                                <h3 id="traceability-audit-heading" class="text-base font-black text-slate-800 dark:text-slate-100">Dòng thời gian hồ sơ LIMS</h3>
+                                <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                    Chuỗi thao tác được ghi nhận tự động để đảm bảo tính toàn vẹn và minh bạch.
+                                </p>
+                            </div>
+                            <span class="inline-flex h-7 items-center rounded-full border border-slate-200 bg-white px-2.5 text-[10px] font-bold tabular-nums text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                {{ timelineItems().length }} sự kiện
+                            </span>
+                        </div>
+                        <app-ui-timeline [items]="timelineItems()" ariaLabel="Lịch sử truy xuất hồ sơ LIMS" />
+                    </section>
                 </div>
             </div>
         }
@@ -654,6 +677,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   objectKeys = Object.keys;
 
   logData = signal<Log | null>(null);
+  timelineItems = signal<TimelineItem[]>([]);
   masterTargets = signal<any[]>([]);
   availableTargetGroups = signal<TargetGroup[]>([]);
   isLoading = signal(false);
@@ -670,73 +694,81 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   private verificationInterval?: ReturnType<typeof setInterval>;
   private verificationTimeout?: ReturnType<typeof setTimeout>;
 
-  computedSampleTargetGroups = computed(() => {
+  copiedCode = signal(false);
+  sampleFilterQuery = signal('');
+  expandedSampleIds = signal<Set<string>>(new Set());
+
+  allSampleRows = computed<TraceabilitySampleRow[]>(() => {
       const log = this.logData() as any;
-      if (!log) return null;
-      
-      const targetMap = log.sampleTargetMap 
-          || log.inputs?.sampleTargetMap
-          || log.printData?.sampleTargetMap
-          || log.printData?.inputs?.sampleTargetMap
-          || {};
+      if (!log) return [];
 
+      const targetMap = this.getSampleTargetMap() || {};
       const fallbackTargets = log.targetIds || log.inputs?.targetIds || log.printData?.targetIds || log.printData?.inputs?.targetIds || [];
-      const sampleList = log.sampleList || log.inputs?.sampleList || log.printData?.sampleList || log.printData?.inputs?.sampleList || [];
+      const sampleList: string[] = log.sampleList || log.inputs?.sampleList || log.printData?.sampleList || log.printData?.inputs?.sampleList || [];
+      const descMap = log?.sampleDescriptionMap || log?.printData?.inputs?.sampleDescriptionMap || log?.inputs?.sampleDescriptionMap;
 
-      if (!sampleList.length && !Object.keys(targetMap).length) return null;
+      const allSamples = Array.from(new Set([
+          ...sampleList,
+          ...Object.keys(targetMap),
+          ...Object.keys(descMap || {})
+      ])).sort(naturalCompare);
 
-      const allSamples = Array.from(new Set([...sampleList, ...Object.keys(targetMap)]));
-      if (allSamples.length === 0) return null;
+      if (!allSamples.length) return [];
 
-      const groupMap = new Map<string, { samples: string[], targetIds: string[] }>();
+      const sopId = log.printData?.sop?.id || (log.sopBasicInfo as any)?.id || log.sopId;
+      const sopVersion = log.printData?.sop?.version || (log.sopBasicInfo as any)?.version || log.sopVersion;
+      const sopTargetSnapshot = log.targetNames || log.printData?.targetNames || log.printData?.sop?.targets;
 
-      allSamples.forEach(sampleId => {
+      return allSamples.map(sampleId => {
+          const descSnapshot = getSampleDescriptionSnapshot(descMap, sampleId);
+          const description = descSnapshot?.nameSnapshot || '';
           const assignedTargets = getAssignedTargetsForSample(sampleId, targetMap);
           const targetIds = assignedTargets?.length ? assignedTargets : fallbackTargets;
-          
+
           const canonicalTargets = new Map<string, string>();
-          targetIds.forEach((targetId: string) => {
-              const canonicalId = getCanonicalId(targetId);
+          targetIds.forEach((tId: string) => {
+              const canonicalId = getCanonicalId(tId);
               if (canonicalId && !canonicalTargets.has(canonicalId)) {
-                  canonicalTargets.set(canonicalId, targetId);
+                  canonicalTargets.set(canonicalId, tId);
               }
           });
-          
-          // Sort canonical IDs for consistent signature
-          const dedupedTargetIds = Array.from(canonicalTargets.values()).sort((a, b) => naturalCompare(this.resolveCompoundName(a), this.resolveCompoundName(b)));
-          const signature = dedupedTargetIds.join('|');
-          
-          if (!groupMap.has(signature)) {
-              groupMap.set(signature, { samples: [], targetIds: dedupedTargetIds });
-          }
-          groupMap.get(signature)!.samples.push(sampleId);
-      });
+          const dedupedTargetIds = Array.from(canonicalTargets.values()).sort((a, b) =>
+              naturalCompare(this.resolveCompoundName(a), this.resolveCompoundName(b))
+          );
 
-      const groups = Array.from(groupMap.values()).map(g => {
-          const sopId = log.printData?.sop?.id || (log.sopBasicInfo as any)?.id || log.sopId;
-          const sopVersion = log.printData?.sop?.version || (log.sopBasicInfo as any)?.version || log.sopVersion;
-          const sopTargetSnapshot = log.targetNames || log.printData?.targetNames || log.printData?.sop?.targets;
-          
           const classification = classifyTargetScope({
-            assignedTargetIds: g.targetIds,
-            sopId,
-            sopVersion,
-            sopTargetSnapshot,
-            availableGroups: this.availableTargetGroups()
+              assignedTargetIds: dedupedTargetIds,
+              sopId,
+              sopVersion,
+              sopTargetSnapshot,
+              availableGroups: this.availableTargetGroups()
           });
-          const targetNames = g.targetIds.map(tId => this.resolveCompoundName(tId));
+          const targetNames = dedupedTargetIds.map(tId => this.resolveCompoundName(tId));
           const targetScope = buildTargetScopePresentation(targetNames, classification);
-          
-          return {
-              formattedSamples: formatSampleList(g.samples.sort(naturalCompare)),
-              targetIds: g.targetIds,
-              targetScope,
-              targetNames
-          };
-      }).sort((a, b) => naturalCompare(a.formattedSamples, b.formattedSamples));
 
-      return groups.length > 0 ? groups : null;
+          return {
+              sampleId,
+              description,
+              targetScope,
+              targetNames,
+              totalTargets: dedupedTargetIds.length
+          };
+      });
   });
+
+  filteredSampleRows = computed<TraceabilitySampleRow[]>(() => {
+      const rows = this.allSampleRows();
+      const q = this.sampleFilterQuery().trim().toLowerCase();
+      if (!q) return rows;
+      return rows.filter(r =>
+          r.sampleId.toLowerCase().includes(q) ||
+          r.description.toLowerCase().includes(q) ||
+          r.targetScope.headline.toLowerCase().includes(q) ||
+          r.targetNames.some(t => t.toLowerCase().includes(q))
+      );
+  });
+
+  totalSampleCount = computed<number>(() => this.allSampleRows().length);
 
   async ngOnInit() {
       this.state.ensureUserInfoCacheListener();
@@ -788,6 +820,8 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   clearLookupInput() {
       this.lookupValue = '';
+      this.sampleFilterQuery.set('');
+      this.expandedSampleIds.set(new Set());
       this.inputError.set('');
       this.focusLookupInput();
   }
@@ -815,7 +849,10 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           this.lookupRequest++;
           this.stopVerificationTimers();
           this.lookupValue = '';
+          this.sampleFilterQuery.set('');
+          this.expandedSampleIds.set(new Set());
           this.logData.set(null);
+          this.timelineItems.set([]);
           this.errorMsg.set('');
           this.inputError.set('');
           this.isLoading.set(false);
@@ -826,6 +863,8 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       }
 
       this.lookupValue = code;
+      this.sampleFilterQuery.set('');
+      this.expandedSampleIds.set(new Set());
       this.inputError.set('');
       void this.loadData(code);
   }
@@ -936,6 +975,98 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       return [...tIds].sort((a, b) => naturalCompare(this.resolveCompoundName(a), this.resolveCompoundName(b)));
   }
 
+  toggleSampleTargetExpand(sampleId: string) {
+      const current = new Set(this.expandedSampleIds());
+      if (current.has(sampleId)) {
+          current.delete(sampleId);
+      } else {
+          current.add(sampleId);
+      }
+      this.expandedSampleIds.set(current);
+  }
+
+  isSampleExpanded(sampleId: string): boolean {
+      return this.expandedSampleIds().has(sampleId);
+  }
+
+  async copyText(text: string) {
+      if (!text) return;
+      try {
+          await navigator.clipboard.writeText(text);
+          this.copiedCode.set(true);
+          setTimeout(() => this.copiedCode.set(false), 2000);
+          this.toast.show('Đã sao chép mã truy xuất', 'info');
+      } catch {
+          this.toast.show('Không thể sao chép mã', 'warning');
+      }
+  }
+
+  getRecordHeadline(): string {
+      const log = this.logData();
+      if (!log) return 'Hồ sơ LIMS';
+      return log.sopBasicInfo?.name
+          || log.printData?.sop?.name
+          || (log.details ? log.details.replace(/^Yêu cầu phân tích:\s*/i, '') : '')
+          || log.action
+          || 'Hồ sơ kiểm nghiệm';
+  }
+
+  getAnalysisDate(): any {
+      const log = this.logData();
+      return log?.printData?.analysisDate || (log as any)?.analysisDate || null;
+  }
+
+  getStatusLabel(status: string | undefined): string {
+      switch (status) {
+          case 'approved': return 'Đã duyệt';
+          case 'completed': return 'Đã hoàn thành';
+          case 'pending': return 'Chờ duyệt';
+          case 'draft': return 'Lưu nháp';
+          case 'rejected': return 'Bị từ chối';
+          default: return status || 'Đã ghi nhận';
+      }
+  }
+
+  getStatusBadgeClass(status: string | undefined): string {
+      switch (status) {
+          case 'approved':
+          case 'completed':
+              return 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/40';
+          case 'pending':
+              return 'bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40';
+          case 'rejected':
+              return 'bg-rose-50 text-rose-700 border border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/40';
+          case 'draft':
+              return 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200/80 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900/40';
+          default:
+              return 'bg-slate-100 text-slate-700 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+      }
+  }
+
+  getStatusIcon(status: string | undefined): string {
+      switch (status) {
+          case 'approved':
+          case 'completed':
+              return 'fa-check';
+          case 'pending':
+          case 'draft':
+              return 'fa-clock';
+          case 'rejected':
+              return 'fa-xmark';
+          default:
+              return 'fa-circle-info';
+      }
+  }
+
+  getInputKeyValues(): { key: string; val: any }[] {
+      const inputs = this.logData()?.printData?.inputs || (this.logData() as any)?.inputs;
+      if (!inputs || typeof inputs !== 'object') return [];
+      const excluded = new Set(['sampleList', 'targetIds', 'sampleTargetMap', 'sampleDescriptionMap', 'batchCode']);
+      return Object.entries(inputs)
+          .filter(([k, v]) => !excluded.has(k) && v !== null && v !== undefined && v !== '')
+          .map(([key, val]) => ({ key, val: String(val) }));
+  }
+
   async loadData(id: string) {
       const requestToken = ++this.lookupRequest;
       this.stopVerificationTimers();
@@ -944,6 +1075,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       this.verifyStep.set(-1);
       this.errorMsg.set('');
       this.logData.set(null);
+      this.timelineItems.set([]);
       
       try {
           // 1. Try Direct Log Lookup (Priority 1)
@@ -1104,10 +1236,130 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           if (requestToken !== this.lookupRequest) return;
           
           this.logData.set(log);
+          this.timelineItems.set([this.toTimelineItem(log, true)]);
+          void this.loadAuditTimeline(log, requestToken);
           setTimeout(() => void this.generateQr(log.id), 100);
       };
 
       getStatusAndHydrate();
+  }
+
+  private async loadAuditTimeline(currentLog: Log, requestToken: number): Promise<void> {
+      const requestId = this.resolveAssociatedRequestId(currentLog);
+      if (!requestId || !this.auth.currentUser()) return;
+
+      try {
+          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`);
+          const relatedSnapshot = await getDocs(query(logsRef, where('requestId', '==', requestId)));
+          if (requestToken !== this.lookupRequest) return;
+
+          const relatedLogs = relatedSnapshot.docs.map(snapshot => ({
+              id: snapshot.id,
+              ...snapshot.data()
+          } as Log));
+
+          const isRequestProjection = !currentLog.requestId
+              && currentLog.id === requestId
+              && currentLog.sopBasicInfo?.category === 'Request Record';
+          const merged = new Map<string, Log>();
+          for (const event of relatedLogs) merged.set(event.id, event);
+          if (!isRequestProjection || relatedLogs.length === 0) merged.set(currentLog.id, currentLog);
+
+          const sorted = Array.from(merged.values()).sort((a, b) =>
+              this.timelineTimestamp(a.timestamp) - this.timelineTimestamp(b.timestamp)
+          );
+          if (sorted.length === 0) return;
+
+          this.timelineItems.set(sorted.map((event, index) =>
+              this.toTimelineItem(event, index === sorted.length - 1)
+          ));
+      } catch (error) {
+          // Some public traceability routes intentionally have get-only access.
+          // Keep the already-rendered current event as a safe fallback.
+          console.warn('Could not load related traceability audit events', error);
+      }
+  }
+
+  private toTimelineItem(log: Log, isCurrent = false): TimelineItem {
+      const action = log.action || '';
+      const status = this.timelineStatus(log);
+      const requestId = this.resolveAssociatedRequestId(log);
+      const metadata: { label: string; value: string }[] = [];
+      const sopName = log.sopBasicInfo?.name || log.printData?.sop?.name;
+      const targetName = (log as any).targetName;
+
+      if (requestId && requestId !== log.id) metadata.push({ label: 'Hồ sơ', value: requestId });
+      if (sopName) metadata.push({ label: 'SOP', value: String(sopName) });
+      if (targetName) metadata.push({ label: 'Đối tượng', value: String(targetName) });
+      if (log.reason) metadata.push({ label: 'Lý do', value: log.reason });
+
+      const actionUrl = (log as any).actionUrl;
+      const item: TimelineItem = {
+          id: log.id,
+          title: this.getActionLabel(action),
+          description: log.details || undefined,
+          timestamp: log.timestamp,
+          actorName: (log as any).actorName || log.user || null,
+          actorRole: this.timelineActorRole(log),
+          icon: this.timelineIcon(action),
+          status,
+          metadata: metadata.slice(0, 4),
+          isCurrent
+      };
+
+      if (typeof actionUrl === 'string' && actionUrl.startsWith('/') && !actionUrl.startsWith('/traceability')) {
+          item.action = { label: 'Mở chi tiết', icon: 'fa-arrow-up-right-from-square', routerLink: actionUrl };
+      }
+      return item;
+  }
+
+  private resolveAssociatedRequestId(log: Log): string | null {
+      const targetType = String((log as any).targetType || '').toUpperCase();
+      return log.requestId
+          || log.printData?.requestId
+          || (log.printData?.inputs?.['batchCode'] as string | undefined)
+          || (targetType === 'REQUEST' ? log.targetId : undefined)
+          || log.id
+          || null;
+  }
+
+  private timelineStatus(log: Log): TimelineStatus {
+      const value = `${log.status || ''} ${log.action || ''}`.toLowerCase();
+      if (/reject|revoke|cancel|delete|fail|error|hủy|từ chối/.test(value)) return 'danger';
+      if (/pending|waiting|warning|chờ/.test(value)) return 'warning';
+      if (/approve|complete|publish|return|restore|success|duyệt|hoàn thành/.test(value)) return 'success';
+      if (/create|request|receive|print|import|scan|tiếp nhận|yêu cầu/.test(value)) return 'info';
+      return 'primary';
+  }
+
+  private timelineIcon(action: string): string {
+      const value = action.toLowerCase();
+      if (/reject|revoke|cancel|delete/.test(value)) return 'fa-circle-xmark';
+      if (/approve|complete|publish|return|restore/.test(value)) return 'fa-circle-check';
+      if (/result|analysis/.test(value)) return 'fa-flask-vial';
+      if (/print|pdf/.test(value)) return 'fa-print';
+      if (/edit|update|save.*draft|draft/.test(value)) return 'fa-pen-to-square';
+      if (/standard/.test(value)) return 'fa-vial';
+      if (/inventory|stock/.test(value)) return 'fa-boxes-stacked';
+      if (/request|create|receive/.test(value)) return 'fa-clipboard-check';
+      return 'fa-clock-rotate-left';
+  }
+
+  private timelineActorRole(log: Log): string | null {
+      const explicitRole = (log.metadata as any)?.actorRole;
+      if (typeof explicitRole === 'string' && explicitRole.trim()) return explicitRole.trim();
+      if (!log.module) return null;
+      return log.module.replaceAll('_', ' ').toLowerCase().replace(/(^|\s)\p{L}/gu, char => char.toUpperCase());
+  }
+
+  private timelineTimestamp(value: unknown): number {
+      if (value instanceof Date) return value.getTime();
+      if (value && typeof value === 'object' && typeof (value as any).toDate === 'function') {
+          const date = (value as any).toDate();
+          return date instanceof Date ? date.getTime() : 0;
+      }
+      const parsed = new Date(value as any).getTime();
+      return Number.isNaN(parsed) ? 0 : parsed;
   }
 
   async generateQr(text: string) {

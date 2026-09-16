@@ -146,6 +146,8 @@ describe('standards shared UI primitive integration', () => {
     assert.match(component, /AppButtonComponent/);
     assert.match(component, /AppEmptyStateComponent/);
     assert.match(component, /AppPageHeaderComponent/);
+    assert.match(component, /AppUiTimelineComponent/);
+    assert.match(component, /AppUiAvatarGroupComponent/);
     assert.match(template, /<app-page-header\b/);
     assert.match(template, /variant="detail"/);
     assert.match(template, /pageHeaderLeading/);
@@ -158,6 +160,12 @@ describe('standards shared UI primitive integration', () => {
     assert.match(template, />\s*Quay lại danh sách\s*</);
     assert.match(template, />\s*Nhật ký sử dụng\s*</);
     assert.match(template, />\s*Lọ chuẩn cùng tên/);
+    assert.match(template, /<app-ui-timeline\b/);
+    assert.match(template, /\[items\]="usageTimelineItems\(\)"/);
+    assert.match(template, /<app-ui-avatar-group\b/);
+    assert.match(component, /usageTimelineItems = computed<TimelineItem\[]>/);
+    assert.match(component, /usageActors = computed<AvatarGroupItem\[]>/);
+    assert.match(component, /callback: \(\) => \{ void this\.deleteLog\(log, std\.id\); \}/);
     assert.doesNotMatch(template, /<h1[^>]*>\s*\{\{std\.name\}\}/);
   });
 

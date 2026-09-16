@@ -1,19 +1,23 @@
 {
-  "title": "Tối ưu Theo Dõi Mẫu & Kết Quả Ngày theo bộ chỉ tiêu",
+  "title": "Nâng cấp Lịch trực, đổi ca và trải nghiệm Soft UI",
   "highlights": [
-    "Bản in Theo Dõi Mẫu & Kết Quả Ngày rút gọn SOP theo dạng Tên SOP · X mẫu và ưu tiên tên bộ chỉ tiêu thay cho danh sách target dài.",
-    "Màn hình theo dõi ngày dùng cùng cơ chế nhận diện bộ chỉ tiêu để các mẻ lớn dễ đọc hơn nhưng vẫn có thể mở toàn bộ danh sách chỉ tiêu.",
-    "Nhóm chỉ tiêu lớn thiếu dưới 5 chỉ tiêu được nhận diện gần đúng và luôn ghi rõ tỷ lệ khớp cùng các chỉ tiêu còn thiếu."
+    "Bổ sung quy trình đổi ca/trực hộ ngay trong LIMS: người được đề nghị xác nhận, quản lý phê duyệt và lịch chỉ được cập nhật khi dữ liệu ca vẫn còn khớp với thời điểm gửi yêu cầu.",
+    "Lịch trực có thêm chế độ xem theo tuần, biểu đồ thống kê trực và khả năng sao chép hoặc tải ảnh PNG để chia sẻ nhanh.",
+    "Giao diện điều hướng, dashboard và nhiều màn hình nghiệp vụ được đồng bộ theo hệ Soft UI mới để dễ đọc, thao tác tốt hơn trên desktop lẫn màn hình hẹp."
   ],
-  "features": [],
+  "features": [
+    "Thêm yêu cầu đổi ca hai chiều hoặc trực hộ với trạng thái xử lý, lịch sử audit, thời hạn yêu cầu và thông báo tới đúng người liên quan.",
+    "Thêm màn hình tuần cho lịch trực, bộ xuất ảnh lịch theo tuần/tháng và biểu đồ phân bố ngày thường, cuối tuần, lượt chủ trì và mức bình quân phòng lab.",
+    "Bổ sung các UI primitive dùng chung gồm Timeline, Progress và Avatar Group để thống nhất cách hiển thị trạng thái và tiến độ trên toàn hệ thống."
+  ],
   "improvements": [
-    "Nhận diện đồng thời nhiều bộ chỉ tiêu cấu hình trong một nhóm phân công và loại bỏ các bộ con bị bao hàm để tránh lặp thông tin.",
-    "Tính số chỉ tiêu đã được đại diện bằng hợp các target thực tế để tránh cộng trùng giữa các nhóm có giao nhau.",
-    "Bộ tính bố cục màn hình và bản in sử dụng nội dung rút gọn mới để hạn chế card quá rộng và giảm xuống dòng không cần thiết."
+    "Tách modal phân công lịch trực thành component riêng, nhóm gợi ý nhân sự theo tải 90 ngày và hiển thị cảnh báo ca liền kề rõ hơn khi xếp lịch.",
+    "Cải tiến header, shell, navigation panel và các màn hình Dashboard, Checklist, Kết quả, Tiêu chuẩn, Target, Truy xuất cùng một số workspace khác để giảm mật độ thông tin và tăng tính nhất quán.",
+    "Mở rộng bộ contract test và kiểm thử quy tắc Firestore cho các thành phần UI mới và luồng đổi ca."
   ],
   "fixes": [
-    "Sửa trường hợp mẫu L9308 không được rút gọn theo các bộ Nhóm Chlor, Nhóm Cúc và Nhóm Lân do Nhóm Lân thiếu Chlorfenvinphos và Isofenphos methyl.",
-    "Không còn hiển thị số hiệu và phiên bản SOP trong dòng SOP của bản in checklist ngày.",
-    "Giữ khả năng truy xuất đầy đủ target bằng nút Xem danh sách ngay cả khi giao diện đang hiển thị tên bộ chỉ tiêu rút gọn."
+    "Siết quyền đọc/ghi yêu cầu đổi ca trong Firestore Rules, kiểm tra snapshot ca trước khi phê duyệt và chỉ cho phép các thay đổi trạng thái hợp lệ theo từng vai trò.",
+    "Mở rộng API notification cho toàn bộ vòng đời yêu cầu đổi ca, đồng thời kiểm tra người gửi, trạng thái và người nhận trước khi phát thông báo.",
+    "Khắc phục một số vấn đề bố cục, responsive và hiển thị trạng thái phát sinh khi chuẩn hóa các màn hình sang bộ UI dùng chung."
   ]
 }
