@@ -282,7 +282,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
 
       @if (!auth.isAuthReady()) {
          <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
-            <div class="rounded-2xl overflow-hidden shadow-lg shadow-fuchsia-500/10 mb-4 animate-pulse">
+            <div class="mb-4 animate-pulse drop-shadow-[0_12px_28px_rgba(217,70,239,0.18)]">
                <app-logo size="180px"></app-logo>
             </div>
             <div class="text-white font-bold tracking-widest animate-pulse mt-4">NAFIQPM6 | LIMS CLOUD</div>

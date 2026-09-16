@@ -34,7 +34,7 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-7 sm:p-8 relative overflow-hidden">
 
                 <div class="text-center mb-8 relative z-10">
-                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-2xl overflow-hidden shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 mb-6">
+                    <div class="inline-flex items-center justify-center w-24 h-24 mb-6">
                         <app-logo size="96px"></app-logo>
                     </div>
                     <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>

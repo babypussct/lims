@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.16-b01
+## Phiên bản hiện tại: v26.09.17-b01
+
+### v26.09.17-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Logo trong giao diện LIMS nay dùng riêng bản thương hiệu nền trong suốt, giúp hiển thị tự nhiên trên cả nền sáng và nền tối mà không còn khung app icon màu trắng.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tách rõ logo dùng trong giao diện với bộ icon PWA/iOS để mỗi loại tài nguyên phục vụ đúng ngữ cảnh hiển thị.
+- Đơn giản hóa LogoComponent về một nguồn ảnh thương hiệu 512 px, giữ đầy đủ chi tiết và hiệu ứng của logo ở mọi kích thước UI.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ các lớp bo góc, cắt tràn, viền và scale thừa quanh logo tại sidebar, màn hình đăng nhập và màn hình khởi động để logo không còn bị cắt hoặc đóng khung sai.
 
 ### v26.09.16-b01
 

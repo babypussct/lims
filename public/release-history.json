@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.09.17-b01",
+    "date": "17/9/2026",
+    "title": "Chuẩn hóa logo thương hiệu trên giao diện LIMS",
+    "highlights": [
+      "Logo trong giao diện LIMS nay dùng riêng bản thương hiệu nền trong suốt, giúp hiển thị tự nhiên trên cả nền sáng và nền tối mà không còn khung app icon màu trắng."
+    ],
+    "features": [],
+    "improvements": [
+      "Tách rõ logo dùng trong giao diện với bộ icon PWA/iOS để mỗi loại tài nguyên phục vụ đúng ngữ cảnh hiển thị.",
+      "Đơn giản hóa LogoComponent về một nguồn ảnh thương hiệu 512 px, giữ đầy đủ chi tiết và hiệu ứng của logo ở mọi kích thước UI."
+    ],
+    "fixes": [
+      "Loại bỏ các lớp bo góc, cắt tràn, viền và scale thừa quanh logo tại sidebar, màn hình đăng nhập và màn hình khởi động để logo không còn bị cắt hoặc đóng khung sai."
+    ],
+    "releaseOrder": 26091700001
+  },
+  {
     "version": "v26.09.16-b01",
     "date": "16/9/2026",
     "title": "Nâng cấp Lịch trực, đổi ca và trải nghiệm Soft UI",

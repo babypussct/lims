@@ -31,8 +31,8 @@ interface ResolvedNavigationGroup {
       <div
         class="flex h-16 shrink-0 items-center transition-all duration-300"
         [ngClass]="state.sidebarCollapsed() ? 'w-12 justify-center px-0' : 'w-full gap-3 px-5'">
-        <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl">
-          <app-logo size="38px" class="scale-105"></app-logo>
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center">
+          <app-logo size="38px"></app-logo>
         </div>
         @if (!state.sidebarCollapsed()) {
           <div class="min-w-0">
