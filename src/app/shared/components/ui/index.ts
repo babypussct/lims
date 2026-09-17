@@ -11,3 +11,6 @@ export * from './progress/progress.component';
 export * from './progress/progress.model';
 export * from './avatar-group/avatar-group.component';
 export * from './avatar-group/avatar-group.model';
+
+export * from './date-picker/date-picker.component';
+export * from './date-picker/date-picker.model';

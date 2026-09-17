@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.17-b01
+## Phiên bản hiện tại: v26.09.17-b02
+
+### v26.09.17-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Toàn bộ trường ngày nghiệp vụ trong LIMS dùng chung Soft UI Date Picker, hiển thị ổn định định dạng DD/MM/YYYY và lưu trữ date-only theo ISO YYYY-MM-DD.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung calendar popover dùng chung với preset nghiệp vụ, nhập nhanh DDMMYYYY, keyboard navigation, CVA/Reactive Forms, ngModel và Signal model.
+- Thêm cơ chế căn chỉnh left/right/auto và clamp popover theo viewport để lịch không bị cắt trên màn hình nhỏ.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tối ưu Date Range Filter cho mobile bằng field full-width, layout xếp dọc dưới breakpoint sm, input 16px và touch affordance.
+- Chuẩn hóa date-only arithmetic và xử lý timezone cho date range, đồng thời bổ sung guardrail tự động ngăn native date input quay lại production.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục lỗi cắt hai chữ số cuối của năm trong các container hẹp như Hiệu Suất Phân Tích, request list và standards modal.
+- Khắc phục nguy cơ popover tràn mép trái/phải và lệch ngày do timezone khi lọc, nhập hoặc xuất dữ liệu nghiệp vụ.
 
 ### v26.09.17-b01
 

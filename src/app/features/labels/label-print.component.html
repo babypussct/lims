@@ -54,8 +54,14 @@
                     </div>
                     
                     <!-- Fetch from Requests -->
-                    <div class="flex gap-2 mb-2 bg-fuchsia-50 dark:bg-fuchsia-950/30 p-2 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900">
-                        <input type="date" [ngModel]="fetchDate()" (ngModelChange)="fetchDate.set($event)" class="input-std py-1.5 text-xs flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
+                    <div class="flex items-center gap-2 mb-2 bg-fuchsia-50 dark:bg-fuchsia-950/30 p-2 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900">
+                        <div class="flex-1 min-w-0">
+                            <app-date-picker
+                                [(value)]="fetchDate"
+                                size="sm"
+                                ariaLabel="Ngày lấy mẫu">
+                            </app-date-picker>
+                        </div>
                         <app-button size="sm" (click)="fetchFromRequests()">
                             <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Lấy mẫu
                         </app-button>

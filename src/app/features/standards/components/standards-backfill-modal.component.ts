@@ -5,6 +5,7 @@ import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
 import { getExpiryClass, formatNum } from '../../../shared/utils/utils';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppDatePickerComponent } from '../../../shared/components/ui/date-picker/date-picker.component';
 
 export interface BackfillData {
   date: string;          // YYYY-MM-DD
@@ -19,7 +20,7 @@ export interface BackfillData {
 @Component({
   selector: 'app-standards-backfill-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppModalShellComponent],
+  imports: [CommonModule, FormsModule, AppModalShellComponent, AppDatePickerComponent],
   template: `
     @if (isOpen() && std()) {
       <app-modal-shell
@@ -101,11 +102,14 @@ export interface BackfillData {
               <!-- Ngày sử dụng -->
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày sử dụng <span class="text-red-500">*</span></label>
-                <input type="date"
-                  [ngModel]="usageDate()"
-                  (ngModelChange)="usageDate.set($event)"
+                <app-date-picker
+                  [value]="usageDate()"
+                  (valueChange)="usageDate.set($event)"
                   [max]="todayStr"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none">
+                  [required]="true"
+                  presets="simple"
+                  ariaLabel="Ngày sử dụng"
+                />
                 <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-1">
                   <i class="fa-solid fa-calendar-days mr-1"></i>
                   Ngày có thể nhập ngược (không được sau hôm nay)

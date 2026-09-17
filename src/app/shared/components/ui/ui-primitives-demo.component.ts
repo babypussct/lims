@@ -9,6 +9,7 @@ import { TimelineItem } from './timeline/timeline.model';
 import { AppUiProgressComponent } from './progress/progress.component';
 import { AppUiAvatarGroupComponent } from './avatar-group/avatar-group.component';
 import { AvatarGroupItem } from './avatar-group/avatar-group.model';
+import { AppDatePickerComponent } from './date-picker/date-picker.component';
 
 @Component({
   selector: 'app-ui-primitives-demo',
@@ -22,6 +23,7 @@ import { AvatarGroupItem } from './avatar-group/avatar-group.model';
     AppUiTimelineComponent,
     AppUiProgressComponent,
     AppUiAvatarGroupComponent,
+    AppDatePickerComponent,
   ],
   template: `
     <div [class.dark]="darkPreview()" class="min-h-full">
@@ -108,6 +110,48 @@ import { AvatarGroupItem } from './avatar-group/avatar-group.model';
           </section>
 
           <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Date Picker Primitives</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Chọn ngày Soft UI với định dạng cố định DD/MM/YYYY, lưu trữ ISO YYYY-MM-DD và hỗ trợ các nhóm preset nghiệp vụ.
+            </p>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <app-date-picker
+                  label="Preset Standard"
+                  presets="standard"
+                  [(value)]="demoDateStandard"
+                ></app-date-picker>
+                <span class="text-[10px] text-slate-400 mt-1 block">ISO: {{ demoDateStandard() || 'rỗng' }}</span>
+              </div>
+              <div>
+                <app-date-picker
+                  label="Preset Prep"
+                  presets="prep"
+                  [(value)]="demoDatePrep"
+                ></app-date-picker>
+                <span class="text-[10px] text-slate-400 mt-1 block">ISO: {{ demoDatePrep() || 'rỗng' }}</span>
+              </div>
+              <div>
+                <app-date-picker
+                  label="Kích thước nhỏ (sm)"
+                  size="sm"
+                  presets="simple"
+                  [(value)]="demoDateSmall"
+                ></app-date-picker>
+                <span class="text-[10px] text-slate-400 mt-1 block">ISO: {{ demoDateSmall() || 'rỗng' }}</span>
+              </div>
+              <div>
+                <app-date-picker
+                  label="Vô hiệu hóa"
+                  [disabled]="true"
+                  value="2026-09-17"
+                ></app-date-picker>
+                <span class="text-[10px] text-slate-400 mt-1 block">Đã khóa</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
             <h2 class="text-base font-black text-slate-800 dark:text-slate-100">Khung hộp thoại</h2>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Kiểm tra vùng lấy nét, phím Escape, nền phủ, chân trang và chế độ sáng/tối.</p>
             <div class="mt-4">
@@ -145,6 +189,9 @@ import { AvatarGroupItem } from './avatar-group/avatar-group.model';
 export class UiPrimitivesDemoComponent {
   readonly darkPreview = signal(false);
   readonly modalOpen = signal(false);
+  readonly demoDateStandard = signal('2026-09-17');
+  readonly demoDatePrep = signal('');
+  readonly demoDateSmall = signal('2026-09-17');
   readonly timelinePreview: TimelineItem[] = [
     {
       id: 'received',

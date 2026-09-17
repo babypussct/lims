@@ -15,6 +15,8 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
 import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolbar.component';
+import { DateRangeFilterComponent } from '../../../shared/components/date-range-filter/date-range-filter.component';
+import { parseLocalDateKey } from '../../../shared/utils/date-range';
 
 @Component({
   selector: 'app-standard-usage',
@@ -27,6 +29,7 @@ import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolb
     AppEmptyStateComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    DateRangeFilterComponent,
   ],
   providers: [DatePipe, DecimalPipe],
   templateUrl: './standard-usage.component.html'
@@ -114,18 +117,25 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
          }
      }
 
-     if (isLocalDateFilter) {
-         const from = this.fromDate();
-         const to = this.toDate();
-         if (from) {
-             const fromTime = new Date(from).getTime();
-             result = result.filter(l => (l.timestamp || 0) >= fromTime);
-         }
-         if (to) {
-             const toTime = new Date(to).setHours(23, 59, 59, 999);
-             result = result.filter(l => (l.timestamp || 0) <= toTime);
-         }
-     }
+      if (isLocalDateFilter) {
+          const from = this.fromDate();
+          const to = this.toDate();
+          if (from) {
+              const fromDate = parseLocalDateKey(from);
+              if (fromDate) {
+                  const fromTime = fromDate.getTime();
+                  result = result.filter(l => (l.timestamp || 0) >= fromTime);
+              }
+          }
+          if (to) {
+              const toDate = parseLocalDateKey(to);
+              if (toDate) {
+                  toDate.setHours(23, 59, 59, 999);
+                  const toTime = toDate.getTime();
+                  result = result.filter(l => (l.timestamp || 0) <= toTime);
+              }
+          }
+      }
 
      // Sort
      const col = this.sortColumn();
@@ -244,6 +254,11 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
       this.searchSubject.complete();
   }
 
+  onDateRangeChange(event: { start: string; end: string; label: string }): void {
+      this.fromDate.set(event.start);
+      this.toDate.set(event.end);
+  }
+
   onSearchInput(event: any) {
       this.searchSubject.next(event.target.value);
   }
@@ -275,8 +290,12 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
       
       this.isLoading.set(true);
       try {
-          const fromTs = new Date(from).getTime();
-          const toTs = new Date(to).setHours(23, 59, 59, 999);
+          const fromDate = parseLocalDateKey(from);
+          const toDate = parseLocalDateKey(to);
+          if (!fromDate || !toDate) return;
+          const fromTs = fromDate.getTime();
+          toDate.setHours(23, 59, 59, 999);
+          const toTs = toDate.getTime();
           const res = await this.stdService.queryUsageLogsByDateRange(fromTs, toTs, 500);
           
           this.logs.set(res.items);
@@ -304,8 +323,12 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
       try {
           let res;
           if (this.dateQueryMode() && this.fromDate() && this.toDate()) {
-              const fromTs = new Date(this.fromDate()).getTime();
-              const toTs = new Date(this.toDate()).setHours(23, 59, 59, 999);
+              const fromDate = parseLocalDateKey(this.fromDate());
+              const toDate = parseLocalDateKey(this.toDate());
+              if (!fromDate || !toDate) return;
+              const fromTs = fromDate.getTime();
+              toDate.setHours(23, 59, 59, 999);
+              const toTs = toDate.getTime();
               res = await this.stdService.queryUsageLogsByDateRange(fromTs, toTs, 500, this.lastDoc());
           } else {
               const timestamps = this.logs().map(log => log.timestamp || 0).filter(value => value > 0);

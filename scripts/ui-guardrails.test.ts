@@ -12,7 +12,8 @@ const {
   parseClassTokens,
   parseClassReferences,
   normalizeToken,
-  auditPageHeaderPurity
+  auditPageHeaderPurity,
+  auditNativeDateInputs
 } = guardrails;
 
 describe('ui-guardrails opening tag parser and token normalizer', () => {
@@ -181,6 +182,51 @@ describe('ui-guardrails auditPageHeaderPurity with fixture files', () => {
   });
 });
 
+describe('ui-guardrails auditNativeDateInputs with fixture files', () => {
+  function withTempDir(fn: (dir: string) => void) {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lims-date-guardrail-test-'));
+    try {
+      fn(tmpDir);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }
+
+  it('allows <app-date-picker>, datetime-local, text, and time inputs', () => {
+    withTempDir((dir) => {
+      const file = path.join(dir, 'test.component.html');
+      fs.writeFileSync(file, `
+        <app-date-picker [(value)]="selectedDate" presets="standard" label="Hạn sử dụng"></app-date-picker>
+        <input type="text" [(ngModel)]="name" />
+        <input type="datetime-local" [(ngModel)]="scheduledAt" />
+        <input type="time" [(ngModel)]="startTime" />
+      `);
+
+      const violations = auditNativeDateInputs([file]);
+      assert.equal(violations.length, 0);
+    });
+  });
+
+  it('catches literal type="date", type=\'date\', type = "date", and [type]="\'date\'"', () => {
+    withTempDir((dir) => {
+      const file = path.join(dir, 'test.component.html');
+      fs.writeFileSync(file, `
+        <input type="date" [(ngModel)]="d1" />
+        <input type='date' [(ngModel)]="d2" />
+        <input type = "date" [(ngModel)]="d3" />
+        <input [type]="'date'" [(ngModel)]="d4" />
+      `);
+
+      const violations = auditNativeDateInputs([file]);
+      assert.equal(violations.length, 4);
+      assert.equal(violations[0].line, 2);
+      assert.equal(violations[1].line, 3);
+      assert.equal(violations[2].line, 4);
+      assert.equal(violations[3].line, 5);
+    });
+  });
+});
+
 describe('ui-guardrails CLI child process failure seam', () => {
   it('exits with code 0 on clean external fixture directory', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lims-cli-clean-'));
@@ -188,18 +234,20 @@ describe('ui-guardrails CLI child process failure seam', () => {
       const cleanFile = path.join(tmpDir, 'clean.component.html');
       fs.writeFileSync(cleanFile, `
         <app-page-header title="Sạch" class="block mb-4 border-0 shadow-none ring-0"></app-page-header>
+        <app-date-picker [(value)]="d" label="Ngày"></app-date-picker>
       `);
 
       const scriptPath = path.resolve('scripts/ui-guardrails.js');
       const res = spawnSync(process.execPath, [scriptPath, '--source-root', tmpDir], { encoding: 'utf8' });
       assert.equal(res.status, 0, `Expected 0 but got ${res.status}: ${res.stderr || res.stdout}`);
       assert.match(res.stdout, /UI guardrails passed/);
+      assert.match(res.stdout, /0 native date inputs/);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
 
-  it('exits with code 1 on invalid external fixture directory', () => {
+  it('exits with code 1 on invalid external fixture directory with page-header violations', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lims-cli-invalid-'));
     try {
       const invalidFile = path.join(tmpDir, 'invalid.component.html');
@@ -211,6 +259,23 @@ describe('ui-guardrails CLI child process failure seam', () => {
       const res = spawnSync(process.execPath, [scriptPath, '--source-root', tmpDir], { encoding: 'utf8' });
       assert.equal(res.status, 1, `Expected exit 1 but got ${res.status}`);
       assert.match(res.stderr, /app-page-header must not have borders, cards, shadows/);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('exits with code 1 on fixture directory containing native type="date"', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lims-cli-date-invalid-'));
+    try {
+      const invalidFile = path.join(tmpDir, 'invalid-date.component.html');
+      fs.writeFileSync(invalidFile, `
+        <input type="date" [(ngModel)]="rawDate" />
+      `);
+
+      const scriptPath = path.resolve('scripts/ui-guardrails.js');
+      const res = spawnSync(process.execPath, [scriptPath, '--source-root', tmpDir], { encoding: 'utf8' });
+      assert.equal(res.status, 1, `Expected exit 1 but got ${res.status}`);
+      assert.match(res.stderr, /Native date input is forbidden in production source files/);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

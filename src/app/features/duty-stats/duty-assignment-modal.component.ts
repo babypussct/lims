@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AppButtonComponent, AppModalShellComponent } from '../../shared/components/ui';
+import { AppButtonComponent, AppDatePickerComponent, AppModalShellComponent } from '../../shared/components/ui';
 import type {
   DutyRecommendationTier,
   DutyScheduleDraft,
@@ -20,7 +20,7 @@ interface DutyRecommendationGroup {
 @Component({
   selector: 'app-duty-assignment-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppModalShellComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppDatePickerComponent, AppModalShellComponent],
   templateUrl: './duty-assignment-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

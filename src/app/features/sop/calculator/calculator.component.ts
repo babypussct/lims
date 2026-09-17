@@ -26,10 +26,7 @@ import { TargetService } from '../../targets/target.service';
 import { SampleDescriptionMap, SampleDescriptionMaster, SampleDescriptionSnapshot } from '../../../core/models/sample-description.model';
 import { getSampleDescriptionSnapshot, setSampleDescriptionSnapshot, subsetSampleDescriptionMap } from '../../../shared/utils/sample-description.utils';
 import { SampleDescriptionMasterService } from '../../config/sample-description-master.service';
-import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
-import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
-import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
-import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolbar.component';
+import { AppButtonComponent, AppDatePickerComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../../shared/components/ui';
 
 interface EditInfoChange {
   label: string;
@@ -56,6 +53,7 @@ interface EditInventoryDiff {
     QuickGenerateSampleModalComponent,
     LockPermissionDirective,
     AppButtonComponent,
+    AppDatePickerComponent,
     AppEmptyStateComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,

@@ -22,6 +22,9 @@ import { AppButtonComponent } from '../../../shared/components/ui/button/button.
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { AppPageHeaderComponent } from '../../../shared/components/ui/page-header/page-header.component';
 import { AppToolbarComponent } from '../../../shared/components/ui/toolbar/toolbar.component';
+import { DateRangeFilterComponent } from '../../../shared/components/date-range-filter/date-range-filter.component';
+import { parseLocalDateKey } from '../../../shared/utils/date-range';
+import { formatIsoToDisplay } from '../../../shared/utils/date-only';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -33,7 +36,7 @@ type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'adminRece
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective, AppButtonComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, LockPermissionDirective, AppButtonComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent, DateRangeFilterComponent],
   providers: [DatePipe],
   templateUrl: './standard-requests.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -620,26 +623,37 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.showExportModal.set(false);
   }
 
+  onExportDateRangeChange(event: { start: string; end: string; label: string }): void {
+      this.dateRangeFilter.set({ from: event.start, to: event.end });
+  }
+
   getExportDateRangeText(): string {
       const dr = this.dateRangeFilter();
       if (!dr.from && !dr.to) return '';
-      const fromStr = dr.from ? (this.datePipe.transform(dr.from, 'dd/MM/yyyy') ?? '...') : '...';
-      const toStr = dr.to ? (this.datePipe.transform(dr.to, 'dd/MM/yyyy') ?? '...') : '...';
+      const fromStr = dr.from ? formatIsoToDisplay(dr.from) : '...';
+      const toStr = dr.to ? formatIsoToDisplay(dr.to) : '...';
       return `${fromStr} → ${toStr}`;
   }
 
   getExportableRequests(): any[] {
       let reqs = this.filteredRequests();
 
-      // Date range filter (from export modal)
+      // Date range filter (from export modal) using local date boundary
       const dr = this.dateRangeFilter();
       if (dr.from) {
-          const fromTs = new Date(dr.from).getTime();
-          reqs = reqs.filter(r => r.requestDate >= fromTs);
+          const fromDate = parseLocalDateKey(dr.from);
+          if (fromDate) {
+              const fromTs = fromDate.getTime();
+              reqs = reqs.filter(r => r.requestDate >= fromTs);
+          }
       }
       if (dr.to) {
-          const toTs = new Date(dr.to).setHours(23, 59, 59, 999);
-          reqs = reqs.filter(r => r.requestDate <= toTs);
+          const toDate = parseLocalDateKey(dr.to);
+          if (toDate) {
+              toDate.setHours(23, 59, 59, 999);
+              const toTs = toDate.getTime();
+              reqs = reqs.filter(r => r.requestDate <= toTs);
+          }
       }
 
       return reqs;

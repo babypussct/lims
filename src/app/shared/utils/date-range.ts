@@ -6,6 +6,16 @@ export interface InclusiveDateRange {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function toUtcDayMs(date: Date): number {
+  // Date.UTC(year, ...) maps years 0000-0099 to 1900-1999. Build through
+  // setUTCFullYear so inclusive ranges remain correct for every supported
+  // YYYY-MM-DD value.
+  const utc = new Date(0);
+  utc.setUTCFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+  utc.setUTCHours(0, 0, 0, 0);
+  return utc.getTime();
+}
+
 export function parseLocalDateKey(value: string | null | undefined): Date | null {
   if (!value) return null;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -14,7 +24,11 @@ export function parseLocalDateKey(value: string | null | undefined): Date | null
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  const parsed = new Date(year, month - 1, day);
+  // Construct through setFullYear so years 0001-0099 are not interpreted as
+  // 1901-1999 by the multi-argument Date constructor.
+  const parsed = new Date(0);
+  parsed.setHours(0, 0, 0, 0);
+  parsed.setFullYear(year, month - 1, day);
   if (
     parsed.getFullYear() !== year ||
     parsed.getMonth() !== month - 1 ||
@@ -27,7 +41,7 @@ export function parseLocalDateKey(value: string | null | undefined): Date | null
 }
 
 export function toLocalDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export function createInclusiveDateRange(
@@ -38,12 +52,8 @@ export function createInclusiveDateRange(
   const endStartOfDay = parseLocalDateKey(endKey);
   if (!start || !endStartOfDay || start.getTime() > endStartOfDay.getTime()) return null;
 
-  const startUtcDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
-  const endUtcDay = Date.UTC(
-    endStartOfDay.getFullYear(),
-    endStartOfDay.getMonth(),
-    endStartOfDay.getDate()
-  );
+  const startUtcDay = toUtcDayMs(start);
+  const endUtcDay = toUtcDayMs(endStartOfDay);
   const days = Math.round((endUtcDay - startUtcDay) / DAY_MS) + 1;
   const end = new Date(endStartOfDay);
   end.setHours(23, 59, 59, 999);

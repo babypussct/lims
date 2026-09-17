@@ -316,18 +316,12 @@
                       <div class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                           <i class="fa-regular fa-calendar text-[9px]"></i> Lọc theo khoảng ngày yêu cầu (tuỳ chọn)
                       </div>
-                      <div class="flex items-center gap-3">
-                          <input type="date" [ngModel]="dateRangeFilter().from" (ngModelChange)="dateRangeFilter.set({from: $event, to: dateRangeFilter().to})"
-                                 class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none transition [color-scheme:light] dark:[color-scheme:dark]">
-                          <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 text-xs"></i>
-                          <input type="date" [ngModel]="dateRangeFilter().to" (ngModelChange)="dateRangeFilter.set({from: dateRangeFilter().from, to: $event})"
-                                 class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none transition [color-scheme:light] dark:[color-scheme:dark]">
-                          @if (dateRangeFilter().from || dateRangeFilter().to) {
-                              <button (click)="dateRangeFilter.set({from:'', to:''})" class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-xs">
-                                  <i class="fa-solid fa-xmark"></i>
-                              </button>
-                          }
-                      </div>
+                      <app-date-range-filter
+                          [initStart]="dateRangeFilter().from"
+                          [initEnd]="dateRangeFilter().to"
+                          (dateChange)="onExportDateRangeChange($event)"
+                          containerClass="w-full bg-transparent p-0 border-0 shadow-none"
+                      />
                   </div>
 
                   <!-- Export Type Selection -->

@@ -1,17 +1,27 @@
 
-import { Component, signal, output, input, effect, ElementRef, viewChild } from '@angular/core';
+import { Component, signal, output, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { normalizeManualDateRange } from '../../utils/date-range';
+import { addCalendarDate, getDaysInMonth, getTodayIso, getWeekday, parseIsoDateParts } from '../../utils/date-only';
+import { AppDatePickerComponent } from '../ui/date-picker/date-picker.component';
 
 export type DateRangePreset = 'all' | 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_quarter' | 'this_year' | 'custom';
+
+function getCurrentWeekStart(todayIso: string): string {
+    const parts = parseIsoDateParts(todayIso);
+    if (!parts) return todayIso;
+
+    const sundayFirstDay = getWeekday(parts.year, parts.month, parts.day);
+    const daysSinceMonday = (sundayFirstDay + 6) % 7;
+    return addCalendarDate(todayIso, -daysSinceMonday, 'day');
+}
 
 @Component({
   selector: 'app-date-range-filter',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, AppDatePickerComponent],
   template: `
-    <div [class]="'flex flex-col sm:flex-row gap-2 items-start sm:items-center rounded-xl relative group/filter ' + containerClass()">
+    <div [class]="'flex w-full sm:w-auto min-w-0 flex-col sm:flex-row gap-2 items-start sm:items-center rounded-xl relative group/filter ' + containerClass()">
         
         <!-- Preset Dropdown -->
         <div class="relative">
@@ -84,18 +94,28 @@ export type DateRangePreset = 'all' | 'today' | 'yesterday' | 'this_week' | 'las
             }
         </div>
  
-        <!-- Date Inputs -->
-        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700 focus-within:border-fuchsia-400 dark:focus-within:border-fuchsia-500 focus-within:ring-2 focus-within:ring-fuchsia-100 dark:focus-within:ring-fuchsia-900/30 transition-all">
-            <div class="flex flex-col">
-                <label class="text-[8px] font-bold text-slate-400 uppercase leading-none">Từ ngày</label>
-                <input type="date" [ngModel]="startDate()" (ngModelChange)="onManualDateChange('start', $event)" 
-                       class="bg-transparent border-none p-0 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-24 h-5 cursor-pointer [color-scheme:light] dark:[color-scheme:dark]">
+        <!-- Date Inputs using AppDatePickerComponent -->
+        <div class="flex w-full sm:w-auto min-w-0 flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+            <div class="w-full min-w-0 sm:min-w-[136px] sm:flex-1 sm:flex-none sm:w-36">
+                <app-date-picker
+                    size="sm"
+                    align="left"
+                    placeholder="Từ ngày"
+                    ariaLabel="Từ ngày"
+                    [value]="startDate()"
+                    (valueChange)="onManualDateChange('start', $event)"
+                />
             </div>
-            <div class="text-slate-300 dark:text-slate-600"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-            <div class="flex flex-col">
-                <label class="text-[8px] font-bold text-slate-400 uppercase leading-none">Đến ngày</label>
-                <input type="date" [ngModel]="endDate()" (ngModelChange)="onManualDateChange('end', $event)"
-                       class="bg-transparent border-none p-0 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-24 h-5 cursor-pointer [color-scheme:light] dark:[color-scheme:dark]">
+            <div class="shrink-0 self-center py-0.5 text-slate-300 dark:text-slate-600 rotate-90 sm:rotate-0"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
+            <div class="w-full min-w-0 sm:min-w-[136px] sm:flex-1 sm:flex-none sm:w-36">
+                <app-date-picker
+                    size="sm"
+                    align="right"
+                    placeholder="Đến ngày"
+                    ariaLabel="Đến ngày"
+                    [value]="endDate()"
+                    (valueChange)="onManualDateChange('end', $event)"
+                />
             </div>
         </div>
     </div>
@@ -145,25 +165,20 @@ export class DateRangeFilterComponent {
   private detectPreset(start: string, end: string): { preset: DateRangePreset, label: string } {
       if (!start && !end) return { preset: 'all', label: 'Tất cả thời gian' };
 
-      const toStr = (d: Date) => {
-          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      };
-      const today = new Date();
-      const todayStr = toStr(today);
+      const todayStr = getTodayIso();
+      const yesterdayStr = addCalendarDate(todayStr, -1, 'day');
+      const todayParts = parseIsoDateParts(todayStr)!;
 
-      const yd = new Date(today); yd.setDate(today.getDate() - 1);
-      const yesterdayStr = toStr(yd);
+      const monthStart = `${todayParts.year}-${String(todayParts.month).padStart(2, '0')}-01`;
+      const prevMonthParts = todayParts.month === 1
+        ? { year: todayParts.year - 1, month: 12 }
+        : { year: todayParts.year, month: todayParts.month - 1 };
+      const lastMonthStart = `${prevMonthParts.year}-${String(prevMonthParts.month).padStart(2, '0')}-01`;
+      const lastMonthEnd = `${prevMonthParts.year}-${String(prevMonthParts.month).padStart(2, '0')}-${String(getDaysInMonth(prevMonthParts.year, prevMonthParts.month)).padStart(2, '0')}`;
+      const yearStart = `${todayParts.year}-01-01`;
 
-      const monthStart = toStr(new Date(today.getFullYear(), today.getMonth(), 1));
-      const lastMonthStart = toStr(new Date(today.getFullYear(), today.getMonth() - 1, 1));
-      const lastMonthEnd = toStr(new Date(today.getFullYear(), today.getMonth(), 0));
-      const yearStart = toStr(new Date(today.getFullYear(), 0, 1));
-
-      const weekStart = new Date(today);
-      const day = weekStart.getDay();
-      weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1));
-      const weekStartStr = toStr(weekStart);
-      const weekEndStr = todayStr; // Cap at today
+      const weekStartStr = getCurrentWeekStart(todayStr);
+      const weekEndStr = todayStr;
 
       if (start === todayStr && end === todayStr) return { preset: 'today', label: 'Hôm nay' };
       if (start === yesterdayStr && end === yesterdayStr) return { preset: 'yesterday', label: 'Hôm qua' };
@@ -206,73 +221,74 @@ export class DateRangeFilterComponent {
           return;
       }
       
-      const today = new Date();
-      let start = new Date();
-      let end = new Date();
+      const todayStr = getTodayIso();
+      const todayParts = parseIsoDateParts(todayStr)!;
+      let start = todayStr;
+      let end = todayStr;
       let label = '';
-
-      // Helper: To Local YYYY-MM-DD string
-      const toStr = (d: Date) => {
-          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      };
 
       switch (preset) {
           case 'today':
               label = 'Hôm nay';
-              // start/end already now
+              start = todayStr;
+              end = todayStr;
               break;
           
           case 'yesterday':
               label = 'Hôm qua';
-              start.setDate(today.getDate() - 1);
-              end.setDate(today.getDate() - 1);
+              start = addCalendarDate(todayStr, -1, 'day');
+              end = start;
               break;
 
-          case 'this_week':
+          case 'this_week': {
               label = 'Tuần này';
-              // Monday is 1, Sunday is 0. 
-              const day = today.getDay(); 
-              const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
-              start.setDate(diffToMon);
-              end = new Date(today); // Cap at today
+              start = getCurrentWeekStart(todayStr);
+              end = todayStr;
               break;
+          }
 
-          case 'last_week':
+          case 'last_week': {
               label = 'Tuần trước';
-              const currentDay = today.getDay();
-              const diffToLastMon = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1) - 7;
-              start.setDate(diffToLastMon);
-              end = new Date(start);
-              end.setDate(start.getDate() + 6);
+              start = addCalendarDate(getCurrentWeekStart(todayStr), -7, 'day');
+              end = addCalendarDate(start, 6, 'day');
               break;
+          }
 
           case 'this_month':
               label = 'Tháng này';
-              start = new Date(today.getFullYear(), today.getMonth(), 1);
-              end = new Date(today); // Cap at today
+              start = `${todayParts.year}-${String(todayParts.month).padStart(2, '0')}-01`;
+              end = todayStr;
               break;
 
-          case 'last_month':
+          case 'last_month': {
               label = 'Tháng trước';
-              start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-              end = new Date(today.getFullYear(), today.getMonth(), 0); 
+              const prevMonthParts = todayParts.month === 1
+                ? { year: todayParts.year - 1, month: 12 }
+                : { year: todayParts.year, month: todayParts.month - 1 };
+              start = `${prevMonthParts.year}-${String(prevMonthParts.month).padStart(2, '0')}-01`;
+              end = `${prevMonthParts.year}-${String(prevMonthParts.month).padStart(2, '0')}-${String(getDaysInMonth(prevMonthParts.year, prevMonthParts.month)).padStart(2, '0')}`;
               break;
+          }
           
-          case 'this_quarter':
+          case 'this_quarter': {
               label = 'Quý này';
-              const q = Math.floor((today.getMonth() + 3) / 3);
-              start = new Date(today.getFullYear(), (q - 1) * 3, 1);
+              const q = Math.floor((todayParts.month + 2) / 3);
+              const quarterStartMonth = (q - 1) * 3 + 1;
+              start = `${todayParts.year}-${String(quarterStartMonth).padStart(2, '0')}-01`;
+              end = todayStr;
               break;
+          }
 
           case 'this_year':
               label = 'Năm nay';
-              start = new Date(today.getFullYear(), 0, 1);
+              start = `${todayParts.year}-01-01`;
+              end = todayStr;
               break;
       }
 
       this.currentLabel.set(label);
-      this.startDate.set(toStr(start));
-      this.endDate.set(toStr(end));
+      this.startDate.set(start);
+      this.endDate.set(end);
       this.emitChange();
   }
 

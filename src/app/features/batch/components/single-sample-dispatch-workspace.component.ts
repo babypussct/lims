@@ -14,6 +14,7 @@ import { SampleDescriptionMaster, SampleDescriptionSnapshot } from '../../../cor
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { AppEmptyStateComponent } from '../../../shared/components/ui/empty-state/empty-state.component';
+import { AppDatePickerComponent } from '../../../shared/components/ui/date-picker/date-picker.component';
 import { getCanonicalId } from '../../results/shared/compound-id-resolver';
 import {
   SingleSampleDraft,
@@ -31,7 +32,8 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
     FormsModule,
     AppButtonComponent,
     AppModalShellComponent,
-    AppEmptyStateComponent
+    AppEmptyStateComponent,
+    AppDatePickerComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -91,12 +93,15 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                   <span>Ngày kiểm nghiệm <span class="text-red-500">*</span></span>
                   <button type="button" (click)="setTodayDate()" class="text-[9px] text-fuchsia-600 hover:underline">Hôm nay</button>
                 </label>
-                <input
-                  type="date"
-                  [ngModel]="analysisDate()"
-                  (ngModelChange)="updateAnalysisDate($event)"
-                  [class.border-red-400]="!isValidDate()"
-                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 focus:border-fuchsia-500 transition" />
+                <app-date-picker
+                  size="sm"
+                  [required]="true"
+                  presets="simple"
+                  [value]="analysisDate()"
+                  (valueChange)="updateAnalysisDate($event)"
+                  ariaLabel="Ngày kiểm nghiệm"
+                  [error]="!isValidDate() ? 'Bắt buộc' : null"
+                />
               </div>
             </div>
 

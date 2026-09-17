@@ -7,8 +7,7 @@ import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { timestampToLocalDateKey } from '../../shared/utils/timestamp';
-import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
-import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppButtonComponent, AppDatePickerComponent, AppPageHeaderComponent } from '../../shared/components/ui';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
@@ -47,7 +46,7 @@ interface LabelPage {
 @Component({
   selector: 'app-label-print',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppDatePickerComponent, AppPageHeaderComponent],
   templateUrl: './label-print.component.html',
   styles: [`
     .label-std { display: block; font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }

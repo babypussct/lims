@@ -11,6 +11,7 @@ const modalShellRoot = path.join(appRoot, 'shared', 'components', 'ui', 'modal-s
 const colorUtilityPattern = /(?<![A-Za-z0-9_-])((?:(?:[A-Za-z0-9_-]+|\[[^\]\s]+\]):)*(?:bg|text|border(?:-[trblxy])?|ring(?:-offset)?|outline|divide|from|via|to|placeholder|decoration|caret|accent|fill|stroke|shadow)-([a-z][a-z0-9-]*)-(\d{2,3})(?:\/(?:\d{1,3}|\[[^\]]+\]))?)/g;
 const faTimesPattern = /\bfa-times\b/g;
 const fullscreenOverlayPattern = /(?:\bfixed\b[^\r\n]{0,240}\binset-0\b|\binset-0\b[^\r\n]{0,240}\bfixed\b)/g;
+const nativeDateInputPattern = /(?:\btype\s*=\s*['"]date['"]|\[type\]\s*=\s*['"]'date'['"])/gi;
 
 function toRepoPath(filePath) {
   return path.relative(repoRoot, filePath).split(path.sep).join('/');
@@ -78,6 +79,23 @@ function auditFaTimes(sources) {
       violations.push({
         file: toRepoPath(filePath),
         line: lineNumberAt(text, match.index)
+      });
+    }
+  }
+  return violations;
+}
+
+function auditNativeDateInputs(sources) {
+  const violations = [];
+  for (const filePath of sources) {
+    const text = fs.readFileSync(filePath, 'utf8');
+    nativeDateInputPattern.lastIndex = 0;
+    let match;
+    while ((match = nativeDateInputPattern.exec(text)) !== null) {
+      violations.push({
+        file: toRepoPath(filePath),
+        line: lineNumberAt(text, match.index),
+        match: match[0]
       });
     }
   }
@@ -355,6 +373,7 @@ function runAudits(sources, options = {}) {
   const baseline = options.overlayBaseline ?? overlayBaseline;
   const colorViolations = auditColorUtilities(sources);
   const faTimesViolations = auditFaTimes(sources);
+  const dateInputViolations = auditNativeDateInputs(sources);
   const overlayAudit = auditFullscreenOverlays(sources, baseline);
   const pageHeaderViolations = auditPageHeaderPurity(sources);
   const failures = [];
@@ -370,6 +389,13 @@ function runAudits(sources, options = {}) {
     failures.push(formatFailure(
       'Deprecated Font Awesome close icon alias found',
       faTimesViolations.map((item) => `${item.file}:${item.line} fa-times`)
+    ));
+  }
+
+  if (dateInputViolations.length > 0) {
+    failures.push(formatFailure(
+      'Native date input is forbidden in production source files. Use <app-date-picker> instead.',
+      dateInputViolations.map((item) => `${item.file}:${item.line} found '${item.match}'`)
     ));
   }
 
@@ -398,6 +424,7 @@ function runAudits(sources, options = {}) {
     failures,
     colorViolations,
     faTimesViolations,
+    dateInputViolations,
     overlayAudit,
     pageHeaderViolations
   };
@@ -441,7 +468,7 @@ function main(options = {}) {
   const legacyOverlayCount = [...result.overlayAudit.counts.values()].reduce((sum, count) => sum + count, 0);
   console.log(
     `UI guardrails passed: ${sources.length} production source files scanned; ` +
-    `0 invalid Tailwind color shades; 0 fa-times; 0 page-header decorations; ${legacyOverlayCount} legacy fullscreen overlays remain within baseline.`
+    `0 invalid Tailwind color shades; 0 fa-times; 0 native date inputs; 0 page-header decorations; ${legacyOverlayCount} legacy fullscreen overlays remain within baseline.`
   );
   return result;
 }
@@ -455,6 +482,7 @@ module.exports = {
   auditColorUtilities,
   auditFaTimes,
   auditFullscreenOverlays,
+  auditNativeDateInputs,
   auditPageHeaderPurity,
   filterBaselineForSourceRoot,
   listProductionSources,

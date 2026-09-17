@@ -12,11 +12,12 @@ import { sanitizeLegacyTagKeys } from '../services/standard-tag.utils';
 import { StandardTagPickerComponent } from './standard-tag-picker.component';
 import { isCurrentStandardLifecycle, isSpecialInternalId, normalizeInternalId, STANDARD_INTERNAL_ID_PATTERN } from '../../../shared/utils/standard-internal-id';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppDatePickerComponent } from '../../../shared/components/ui/date-picker/date-picker.component';
 
 @Component({
   selector: 'app-standards-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, StandardTagPickerComponent, AppModalShellComponent],
+  imports: [CommonModule, ReactiveFormsModule, StandardTagPickerComponent, AppModalShellComponent, AppDatePickerComponent],
   template: `
       <!-- ADD/EDIT MODAL (3 TABS) -->
       @if (isOpen()) {
@@ -42,7 +43,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                                 <input formControlName="chemical_name" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500 dark:focus:ring-fuchsia-500/50 italic" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
                                 <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
                                 <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800"></div>
@@ -68,7 +69,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <!-- SECTION 2: STOCK & STORAGE -->
                         <div class="space-y-4 fade-in">
                             <h4 class="text-sm font-bold text-fuchsia-600 dark:text-fuchsia-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">2. Kho & Bảo Quản</h4>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Điều kiện bảo quản</label>
                                     <input formControlName="storage_condition" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500" placeholder="VD: FT, CT, RT...">
@@ -103,21 +104,25 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                         <!-- SECTION 3: DOCS & EXPIRY -->
                         <div class="space-y-4 fade-in pb-4">
                             <h4 class="text-sm font-bold text-fuchsia-600 dark:text-fuchsia-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">3. Hồ Sơ & Hạn Dùng</h4>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
-                                    <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 [color-scheme:light] dark:[color-scheme:dark]">
+                                    <app-date-picker formControlName="received_date" presets="simple" ariaLabel="Ngày nhận (Received)" />
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-red-400 dark:text-red-500 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500 [color-scheme:light] dark:[color-scheme:dark]" (keydown.enter)="saveStandard(false)">
-                                    </div>
+                                    <app-date-picker formControlName="expiry_date" presets="standard" ariaLabel="Hạn sử dụng (Expiry)" (commit)="saveStandard(false)" />
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 [color-scheme:light] dark:[color-scheme:dark]"></div>
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500"></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label>
+                                    <app-date-picker formControlName="date_opened" presets="simple" ariaLabel="Ngày mở nắp" />
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label>
+                                    <input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500">
+                                </div>
                             </div>
                             
                             <div class="pt-2 border-t border-slate-100 dark:border-slate-800">

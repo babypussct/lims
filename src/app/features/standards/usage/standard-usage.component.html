@@ -47,16 +47,13 @@
         </select>
       </div>
 
-      <div toolbarFilters class="w-40 min-w-[150px]">
-        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Từ ngày</label>
-        <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"
-          class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
-      </div>
-
-      <div toolbarFilters class="w-40 min-w-[150px]">
-        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Đến ngày</label>
-        <input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"
-          class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
+      <div toolbarFilters class="min-w-[280px]">
+        <app-date-range-filter
+          [initStart]="fromDate()"
+          [initEnd]="toDate()"
+          (dateChange)="onDateRangeChange($event)"
+          containerClass="p-0 border-0 bg-transparent shadow-none"
+        />
       </div>
 
       <div toolbarActions class="contents">

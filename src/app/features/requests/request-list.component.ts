@@ -10,6 +10,8 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { PrintQueueComponent } from './print-queue.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
+import { parseLocalDateKey } from '../../shared/utils/date-range';
+import { AppDatePickerComponent } from '../../shared/components/ui/date-picker/date-picker.component';
 import { PrintQueueService } from '../../core/services/print-queue.service';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
@@ -18,7 +20,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent, AppDatePickerComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
         <app-page-header
@@ -122,16 +124,19 @@ import { Router } from '@angular/router';
                                              }
 
                                              @if (req.status === 'pending' && state.isAdmin()) {
-                                                <label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
-                                                    <i class="fa-regular fa-calendar text-blue-500"></i>
-                                                    <span>Ngày kiểm nghiệm <span class="text-red-500">*</span></span>
-                                                    <input type="date"
-                                                           required
-                                                           [ngModel]="getPendingAnalysisDate(req)"
-                                                           (ngModelChange)="setPendingAnalysisDate(req.id, $event)"
-                                                           class="h-8 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 [color-scheme:light] dark:[color-scheme:dark]"
-                                                           [class.border-red-400]="!getPendingAnalysisDate(req)">
-                                                </label>
+                                                 <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
+                                                     <span>Ngày kiểm nghiệm <span class="text-red-500">*</span></span>
+                                                     <div class="w-36 min-w-[140px] shrink-0">
+                                                         <app-date-picker
+                                                             size="sm"
+                                                             [required]="true"
+                                                             presets="simple"
+                                                             [value]="getPendingAnalysisDate(req)"
+                                                             (valueChange)="setPendingAnalysisDate(req.id, $event)"
+                                                             ariaLabel="Ngày kiểm nghiệm"
+                                                         />
+                                                     </div>
+                                                 </div>
                                              } @else {
                                                 <span class="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
                                                     <i class="fa-regular fa-calendar"></i>
@@ -364,21 +369,23 @@ export class RequestListComponent implements OnInit {
       const all = this.state.approvedRequests();
       const user = this.auth.currentUser();
       
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      const start = parseLocalDateKey(this.startDate());
+      if (start) start.setHours(0, 0, 0, 0);
+      const end = parseLocalDateKey(this.endDate());
+      if (end) end.setHours(23, 59, 59, 999);
 
       return all.filter(req => {
           // Date Filter
           let d: Date | null;
           // Priority: Analysis Date (if exists) -> Approved At -> Timestamp
           if (req.analysisDate) {
-              const parts = req.analysisDate.split('-');
-              d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+              d = parseLocalDateKey(req.analysisDate);
           } else {
               d = timestampToDate(req.approvedAt ?? req.timestamp);
           }
           if (!d) return false;
-          if (d < start || d > end) return false;
+          if (start && d < start) return false;
+          if (end && d > end) return false;
 
           // User Filter
           if (user?.role === 'manager') return true;

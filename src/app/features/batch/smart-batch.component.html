@@ -314,12 +314,15 @@
                                     <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1 truncate" title="Ngày kiểm nghiệm dự kiến">
                                         Ngày kiểm nghiệm <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="date"
-                                           required
-                                           [ngModel]="batch.inputValues['analysisDate']"
-                                           (ngModelChange)="updateBatchInput(batchIdx, 'analysisDate', $event)"
-                                           [class.border-red-400]="!batch.inputValues['analysisDate']"
-                                           class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 dark:focus:border-teal-400 transition h-8 shadow-sm [color-scheme:light] dark:[color-scheme:dark]">
+                                    <app-date-picker
+                                        size="sm"
+                                        [required]="true"
+                                        presets="simple"
+                                        [value]="batch.inputValues['analysisDate'] || ''"
+                                        (valueChange)="updateBatchInput(batchIdx, 'analysisDate', $event)"
+                                        ariaLabel="Ngày kiểm nghiệm"
+                                        [error]="!batch.inputValues['analysisDate'] ? 'Bắt buộc' : null"
+                                    />
                                 </div>
 
                                 <!-- DYNAMIC INPUTS -->

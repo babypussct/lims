@@ -43,6 +43,15 @@ test('manual edits normalize the opposite endpoint instead of emitting a reverse
     normalizeManualDateRange('end', '2026-07-31', '2026-08-01', '2026-08-07'),
     { start: '2026-07-31', end: '2026-07-31' }
   );
+  // Empty endpoint handling
+  assert.deepEqual(
+    normalizeManualDateRange('start', '', '2026-08-01', '2026-08-07'),
+    { start: '', end: '2026-08-07' }
+  );
+  assert.deepEqual(
+    normalizeManualDateRange('end', '', '2026-08-01', '2026-08-07'),
+    { start: '2026-08-01', end: '' }
+  );
 });
 
 test('all-time bounds come from the complete monthly stats history', () => {
@@ -64,4 +73,15 @@ test('long inclusive ranges are not capped at 90 days', () => {
   const dates = enumerateInclusiveDates(range);
   assert.equal(toLocalDateKey(dates[0]), '2026-01-01');
   assert.equal(toLocalDateKey(dates.at(-1)!), '2026-08-07');
+});
+
+test('inclusive day counts preserve supported years below 100', () => {
+  const range = createInclusiveDateRange('0001-01-01', '0001-01-03');
+  assert.ok(range);
+  assert.equal(range.days, 3);
+  assert.deepEqual(enumerateInclusiveDates(range).map(toLocalDateKey), [
+    '0001-01-01',
+    '0001-01-02',
+    '0001-01-03'
+  ]);
 });

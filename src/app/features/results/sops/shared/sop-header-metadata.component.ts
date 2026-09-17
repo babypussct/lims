@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { AppDatePickerComponent } from '../../../../shared/components/ui';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 
 @Component({
   selector: 'app-sop-header-metadata',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AppDatePickerComponent],
   template: `
     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
       <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
@@ -17,21 +18,23 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký/ Người phân tích</label>
-          <input type="date"
+          <app-date-picker
             [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']"
             (ngModelChange)="onDataChanged()"
-            [disabled]="isReadOnly"
-            class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none disabled:opacity-75 disabled:cursor-not-allowed">
-          </div>
-          <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký/ Người thẩm tra</label>
-            <input type="date"
-              [(ngModel)]="draft.page1Data['ngayNguoiThamTra']"
-              (ngModelChange)="onDataChanged()"
-              [disabled]="isReadOnly"
-              class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none disabled:opacity-75 disabled:cursor-not-allowed">
-            </div>
-          </div>
+            presets="simple"
+            [disabled]="isReadOnly">
+          </app-date-picker>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký/ Người thẩm tra</label>
+          <app-date-picker
+            [(ngModel)]="draft.page1Data['ngayNguoiThamTra']"
+            (ngModelChange)="onDataChanged()"
+            presets="simple"
+            [disabled]="isReadOnly">
+          </app-date-picker>
+        </div>
+      </div>
 
           <!-- Custom metadata inputs projected from parent -->
           <div class="empty:hidden">

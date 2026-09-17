@@ -2,13 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.17-b01",
-    "title": "Chuẩn hóa logo thương hiệu trên giao diện LIMS",
+    "version": "v26.09.17-b02",
+    "title": "Thống nhất Date Picker và tối ưu thao tác mobile",
     "features": [
-      "Logo trong giao diện LIMS nay dùng riêng bản thương hiệu nền trong suốt, giúp hiển thị tự nhiên trên cả nền sáng và nền tối mà không còn khung app icon màu trắng.",
-      "Tách rõ logo dùng trong giao diện với bộ icon PWA/iOS để mỗi loại tài nguyên phục vụ đúng ngữ cảnh hiển thị.",
-      "Đơn giản hóa LogoComponent về một nguồn ảnh thương hiệu 512 px, giữ đầy đủ chi tiết và hiệu ứng của logo ở mọi kích thước UI.",
-      "Loại bỏ các lớp bo góc, cắt tràn, viền và scale thừa quanh logo tại sidebar, màn hình đăng nhập và màn hình khởi động để logo không còn bị cắt hoặc đóng khung sai."
+      "Toàn bộ trường ngày nghiệp vụ trong LIMS dùng chung Soft UI Date Picker, hiển thị ổn định định dạng DD/MM/YYYY và lưu trữ date-only theo ISO YYYY-MM-DD.",
+      "Bổ sung calendar popover dùng chung với preset nghiệp vụ, nhập nhanh DDMMYYYY, keyboard navigation, CVA/Reactive Forms, ngModel và Signal model.",
+      "Thêm cơ chế căn chỉnh left/right/auto và clamp popover theo viewport để lịch không bị cắt trên màn hình nhỏ.",
+      "Tối ưu Date Range Filter cho mobile bằng field full-width, layout xếp dọc dưới breakpoint sm, input 16px và touch affordance.",
+      "Chuẩn hóa date-only arithmetic và xử lý timezone cho date range, đồng thời bổ sung guardrail tự động ngăn native date input quay lại production."
     ]
   },
   "assetGroups": [

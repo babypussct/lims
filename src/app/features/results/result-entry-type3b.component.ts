@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AppDatePickerComponent } from '../../shared/components/ui';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { MasterTargetService } from '../targets/master-target.service';
 import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssigned } from './shared/compound-id-resolver';
@@ -8,7 +9,7 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
 @Component({
   selector: 'app-result-entry-type3b',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDatePickerComponent],
   template: `
     <fieldset [disabled]="isReadOnly" class="space-y-6 animate-fade-in">
       
@@ -22,17 +23,21 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
-            <input type="date" 
-                   [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']" 
+            <app-date-picker
+                   [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']"
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
+                   presets="simple"
+                   [disabled]="isReadOnly">
+            </app-date-picker>
           </div>
           <div>
             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
-            <input type="date" 
-                   [(ngModel)]="draft.page1Data['ngayNguoiThamTra']" 
+            <app-date-picker
+                   [(ngModel)]="draft.page1Data['ngayNguoiThamTra']"
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
+                   presets="simple"
+                   [disabled]="isReadOnly">
+            </app-date-picker>
           </div>
         </div>
 
