@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.18-b01
+## Phiên bản hiện tại: v26.09.18-b02
+
+### v26.09.18-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Siết release gate để mọi test file trong repo phải được một release runner tham chiếu, giúp ngăn regression bị bỏ sót khi CI vẫn xanh.
+- Khắc phục race condition của QR scanner khi rời màn hình trong lúc thư viện camera đang tải.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đưa các test trước đây nằm ngoài npm test vào release gate cho Auth/device mode, formatting, Standards cleanup, Results, Smart Batch và Daily Checklist.
+- Nâng Firebase Admin lên 14.4.0, cập nhật cây dependency và giữ tương thích CommonJS cho Vercel API runtime.
+- Làm sạch production dependency audit về 0 vulnerabilities và loại bỏ trạng thái npm dependency invalid ở các nhánh uuid production.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- QR scanner dùng reader ID riêng cho từng instance, hủy an toàn sau async load/start và không còn cố khởi tạo camera trên DOM đã bị destroy.
+- Bổ sung regression contract cho vòng đời QR scanner và kiểm tra tự động phát hiện test file chưa được release runner bao phủ.
+- Khắc phục lỗi Firebase Admin runtime do jwks-rsa 4.x gọi jose ESM từ CommonJS bằng dependency override tương thích đã được runtime test bảo vệ.
 
 ### v26.09.18-b01
 

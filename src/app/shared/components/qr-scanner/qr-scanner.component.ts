@@ -1,6 +1,8 @@
-import { Component, output, OnDestroy, AfterViewInit, signal, ElementRef, viewChild } from '@angular/core';
+import { Component, output, OnDestroy, AfterViewInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ensureHtml5Qrcode } from '../../utils/external-script-loader';
+
+let nextQrReaderId = 0;
 
 @Component({
   selector: 'app-qr-scanner',
@@ -24,7 +26,7 @@ import { ensureHtml5Qrcode } from '../../utils/external-script-loader';
         </div>
 
         <!-- Camera Feed Container -->
-        <div id="reader" class="w-full h-full object-cover"></div>
+        <div [id]="readerId" class="w-full h-full object-cover"></div>
 
         <!-- Error / Status Message -->
         @if (statusMsg()) {
@@ -51,15 +53,18 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
   scanError = output<string>();
   
   statusMsg = signal('');
+  readonly readerId = `qr-reader-${++nextQrReaderId}`;
   private html5QrCode: any;
   private isScanning = false;
+  private destroyed = false;
 
   ngAfterViewInit() {
     this.startCamera();
   }
 
   ngOnDestroy() {
-    this.stopCamera();
+    this.destroyed = true;
+    void this.stopCamera();
   }
 
   async startCamera() {
@@ -68,9 +73,11 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
 
     try {
         const qrLib = await ensureHtml5Qrcode();
+        if (this.destroyed) return;
         Html5Qrcode = qrLib.Html5Qrcode;
         Html5QrcodeSupportedFormats = qrLib.Html5QrcodeSupportedFormats;
     } catch (err: any) {
+        if (this.destroyed) return;
         console.error("Scanner library load error:", err);
         this.statusMsg.set('Không thể tải thư viện quét mã. Vui lòng kiểm tra kết nối mạng.');
         return;
@@ -92,7 +99,8 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
             ];
         }
 
-        this.html5QrCode = new Html5Qrcode("reader", formatsToSupport ? { formatsToSupport } : undefined);
+        if (this.destroyed) return;
+        this.html5QrCode = new Html5Qrcode(this.readerId, formatsToSupport ? { formatsToSupport } : undefined);
         
         const config = { 
             fps: 10, 
@@ -110,7 +118,11 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
             }
         );
         this.isScanning = true;
+        if (this.destroyed) {
+            await this.stopCamera();
+        }
     } catch (err: any) {
+        if (this.destroyed) return;
         console.error("Camera Error:", err);
         if (err?.name === 'NotAllowedError') {
             this.statusMsg.set('Vui lòng cấp quyền Camera trong cài đặt trình duyệt.');
@@ -124,14 +136,18 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
   }
 
   async stopCamera() {
-      if (this.html5QrCode && this.isScanning) {
-          try {
-              await this.html5QrCode.stop();
-              this.html5QrCode.clear();
+      const scanner = this.html5QrCode;
+      if (!scanner) return;
+
+      try {
+          if (this.isScanning) {
+              await scanner.stop();
               this.isScanning = false;
-          } catch (e) {
-              console.warn("Failed to stop camera", e);
           }
+          scanner.clear();
+          if (this.html5QrCode === scanner) this.html5QrCode = undefined;
+      } catch (e) {
+          if (!this.destroyed) console.warn("Failed to stop camera", e);
       }
   }
 

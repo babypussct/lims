@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.09.18-b02",
+    "date": "18/9/2026",
+    "title": "Ổn định release gate, QR scanner và dependency production",
+    "highlights": [
+      "Siết release gate để mọi test file trong repo phải được một release runner tham chiếu, giúp ngăn regression bị bỏ sót khi CI vẫn xanh.",
+      "Khắc phục race condition của QR scanner khi rời màn hình trong lúc thư viện camera đang tải."
+    ],
+    "features": [],
+    "improvements": [
+      "Đưa các test trước đây nằm ngoài npm test vào release gate cho Auth/device mode, formatting, Standards cleanup, Results, Smart Batch và Daily Checklist.",
+      "Nâng Firebase Admin lên 14.4.0, cập nhật cây dependency và giữ tương thích CommonJS cho Vercel API runtime.",
+      "Làm sạch production dependency audit về 0 vulnerabilities và loại bỏ trạng thái npm dependency invalid ở các nhánh uuid production."
+    ],
+    "fixes": [
+      "QR scanner dùng reader ID riêng cho từng instance, hủy an toàn sau async load/start và không còn cố khởi tạo camera trên DOM đã bị destroy.",
+      "Bổ sung regression contract cho vòng đời QR scanner và kiểm tra tự động phát hiện test file chưa được release runner bao phủ.",
+      "Khắc phục lỗi Firebase Admin runtime do jwks-rsa 4.x gọi jose ESM từ CommonJS bằng dependency override tương thích đã được runtime test bảo vệ."
+    ],
+    "releaseOrder": 26091800002
+  },
+  {
     "version": "v26.09.18-b01",
     "date": "18/9/2026",
     "title": "Tối ưu Lịch trực và Dashboard vận hành",

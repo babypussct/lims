@@ -43,6 +43,18 @@ describe('auth/public shared UI primitive integration', () => {
     assert.match(source, /<app-button\b[^>]*\(click\)="cancel\(\)"/);
   });
 
+  it('guards the QR scanner lifecycle against async destroy races and duplicate reader ids', () => {
+    const source = read('../../shared/components/qr-scanner/qr-scanner.component.ts');
+
+    assert.match(source, /\[id\]="readerId"/);
+    assert.doesNotMatch(source, /id="reader"/);
+    assert.match(source, /private destroyed = false/);
+    assert.match(source, /this\.destroyed = true/);
+    assert.match(source, /const qrLib = await ensureHtml5Qrcode\(\);\s*if \(this\.destroyed\) return;/s);
+    assert.match(source, /await this\.html5QrCode\.start\([\s\S]*?this\.isScanning = true;\s*if \(this\.destroyed\)/);
+    assert.match(source, /if \(this\.destroyed\) return;\s*console\.error\("Camera Error:/);
+  });
+
   it('uses a single unified segmented control (radiogroup) for device mode in login', () => {
     const source = read('./login.component.ts');
 
