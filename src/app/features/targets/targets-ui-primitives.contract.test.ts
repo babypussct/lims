@@ -20,6 +20,9 @@ describe('targets shared UI primitive integration', () => {
     assert.match(component, /<app-empty-state\b/);
     assert.match(component, /<app-modal-shell\b/);
     assert.match(component, /title="Quản lý nhóm chỉ tiêu"/);
+    assert.match(component, /flex flex-1 flex-col overflow-hidden md:flex-row/);
+    assert.match(component, /max-h-\[42vh\][^\"]*w-full[^\"]*md:max-h-none[^\"]*md:w-72/);
+    assert.match(component, /p-3 custom-scrollbar sm:p-4 md:p-6/);
     assert.doesNotMatch(component, /fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900\/50/);
     assert.match(component, /class="[^"]*p-4 md:p-6[^"]*"/);
     assert.doesNotMatch(component, /<app-page-header[^>]*border/);

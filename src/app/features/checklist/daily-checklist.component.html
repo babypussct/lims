@@ -162,7 +162,7 @@
                 <button type="button" (click)="setViewMode(option.value)"
                         [attr.aria-pressed]="viewMode() === option.value"
                         [title]="option.label"
-                        class="h-7 px-2.5 rounded-lg flex items-center gap-1.5 text-[10px] font-black transition active:scale-95"
+                        class="h-10 px-3 rounded-lg flex items-center gap-1.5 text-[10px] font-black transition active:scale-95 sm:h-7 sm:px-2.5"
                         [ngClass]="viewMode() === option.value
                           ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-300 shadow-sm'
                           : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
@@ -217,13 +217,13 @@
                     @if (batch.statusCounts.approved > 0) { <span class="px-2 py-1 rounded-lg text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30">{{batch.statusCounts.approved}} chưa KQ</span> }
                     @if (state.isAdmin() && batch.physicalBatchCount === 1) {
                       <button type="button" (click)="editBatch(batch.sourceBatches[0].requestId)"
-                              class="shrink-0 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1.5 transition active:scale-95 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
+                              class="shrink-0 min-h-10 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1.5 transition active:scale-95 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 sm:min-h-0"
                               title="Sửa thông tin mẻ này">
                         <i class="fa-solid fa-pen text-xs"></i><span class="text-[10px] font-black uppercase tracking-wide">Sửa mẻ</span>
                       </button>
                     }
                     <button type="button" (click)="toggleSourceBatchList(batch.cardKey)"
-                            class="shrink-0 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center gap-1.5 transition active:scale-95">
+                            class="shrink-0 min-h-10 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center gap-1.5 transition active:scale-95 sm:min-h-0">
                       <i class="fa-solid fa-layer-group text-xs"></i><span class="text-[10px] font-black uppercase tracking-wide">{{batch.physicalBatchCount}} mẻ</span>
                       <i class="fa-solid fa-chevron-down text-[8px] transition" [class.rotate-180]="isSourceBatchListOpen(batch.cardKey)"></i>
                     </button>
@@ -239,11 +239,11 @@
                           <div class="font-mono text-[10px] font-black text-slate-700 dark:text-slate-300 break-all">{{source.requestId}}</div>
                           <div class="text-[10px] text-slate-400 mt-0.5">{{source.formattedSamples || 'Chưa xác định mã mẫu'}} · {{sourceBatchStatusLabel(source.status)}}</div>
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                          <button type="button" (click)="copyBatchId(source.requestId)" class="h-7 px-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[9px] font-black text-slate-500 dark:text-slate-300 hover:text-blue-600"><i class="fa-regular fa-copy mr-1"></i>Sao Chép</button>
-                          <button type="button" (click)="navigateToResult(source.requestId, source.status)" class="h-7 px-2 rounded-lg bg-blue-600 text-white text-[9px] font-black hover:bg-blue-700"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở Kết Quả</button>
+                        <div class="flex flex-wrap items-center gap-1.5 shrink-0 sm:flex-nowrap">
+                          <button type="button" (click)="copyBatchId(source.requestId)" class="h-10 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[9px] font-black text-slate-500 dark:text-slate-300 hover:text-blue-600 sm:h-7 sm:px-2"><i class="fa-regular fa-copy mr-1"></i>Sao Chép</button>
+                          <button type="button" (click)="navigateToResult(source.requestId, source.status)" class="h-10 px-2.5 rounded-lg bg-blue-600 text-white text-[9px] font-black hover:bg-blue-700 sm:h-7 sm:px-2"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở Kết Quả</button>
                           @if (state.isAdmin()) {
-                            <button type="button" (click)="editBatch(source.requestId)" class="h-7 px-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[9px] font-black hover:bg-emerald-100 dark:hover:bg-emerald-500/20" title="Sửa thông tin mẻ này">
+                            <button type="button" (click)="editBatch(source.requestId)" class="h-10 px-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[9px] font-black hover:bg-emerald-100 dark:hover:bg-emerald-500/20 sm:h-7 sm:px-2" title="Sửa thông tin mẻ này">
                               <i class="fa-solid fa-pen mr-1"></i>Sửa Mẻ
                             </button>
                           }

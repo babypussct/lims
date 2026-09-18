@@ -59,7 +59,7 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                 <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                                     Phân loại hóa chất
                                 </label>
-                                <select [(ngModel)]="rule.category" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                <select [(ngModel)]="rule.category" class="h-10 w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                     <option value="" disabled selected>-- Chọn phân loại áp dụng --</option>
                                     @for(cat of state.categories(); track cat.id) {
                                         <option [value]="cat.id">{{cat.name}} ({{cat.id}})</option>
@@ -70,11 +70,11 @@ import { validateSafetyConfigDraft } from '../../settings/settings-validation.ut
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Tỷ lệ hao hụt:</span>
                                     <div class="relative w-24">
-                                        <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                                        <input type="number" min="0" max="100" step="0.1" [(ngModel)]="rule.margin" class="h-10 w-full pl-3 pr-7 py-1.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-center text-xs font-black text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:bg-white dark:focus:bg-slate-800 transition">
                                         <span class="absolute right-2.5 top-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">%</span>
                                     </div>
                                 </div>
-                                <button (click)="removeSafetyRule($index)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition" title="Xóa quy tắc này">
+                                <button (click)="removeSafetyRule($index)" class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition" title="Xóa quy tắc này">
                                     <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
                                 </button>
                             </div>

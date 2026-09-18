@@ -30,6 +30,9 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2/);
     assert.match(template, /relative w-full sm:w-1\/2/);
     assert.match(template, /overflow-x-auto custom-scrollbar/);
+    assert.match(template, /class="soft-ui-control h-10 w-full/);
+    assert.match(template, /min-h-10 px-3 py-1 rounded-full[^\"]*sm:min-h-0 sm:px-2\.5/);
+    assert.match(template, /min-h-10 text-\[9px\][^\"]*sm:min-h-0 sm:px-2\.5/);
     assert.match(template, /\[attr\.aria-busy\]="activityFeedLoading\(\)"/);
     assert.match(template, /getActivityTraceabilityUrl\(log\); as traceabilityUrl/);
     assert.match(template, /aria-label\]="'Truy xuất nguồn gốc '/);

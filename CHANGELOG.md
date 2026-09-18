@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.18-b02
+## Phiên bản hiện tại: v26.09.19-b01
+
+### v26.09.19-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tối ưu giao diện trên điện thoại, tablet và màn hình landscape hẹp để các luồng chính không còn bị ép cột, tràn ngang hoặc khó thao tác.
+- SOP Editor tự chuyển sang bố cục xếp dọc trên màn hình dưới desktop và giữ bố cục hai cột khi đủ không gian.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tăng vùng chạm cho nút, checkbox, bộ lọc, bộ chọn ngày và các thao tác quan trọng trên mobile trong Dashboard, Checklist, Standards, Requests, Results và Settings.
+- Cải thiện bố cục responsive cho Duty Stats, Target Groups, Standard Usage, Print Queue và các màn hình quản trị để giữ nội dung dễ đọc ở độ rộng nhỏ.
+- Mở rộng browser acceptance audit với ma trận responsive cho SOP Editor, kiểm tra overflow và phục hồi đúng media mode sau kiểm thử in.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục các trường hợp control bị co quá hẹp, nút khó bấm, filter/menu bị lệch hoặc rơi khỏi viewport trên điện thoại.
+- Khắc phục Date Picker cỡ nhỏ trên mobile để input và nút mở/xóa lịch có vùng chạm phù hợp mà vẫn giữ mật độ desktop.
+- Khắc phục audit sau bước in bị giữ ở print media khiến phép đo layout responsive trả về kích thước 0.
 
 ### v26.09.18-b02
 

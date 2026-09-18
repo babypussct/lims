@@ -70,7 +70,7 @@ const ADMIN_PERMISSIONS = [
                     routerLinkActive="bg-white text-gray-700 shadow-soft-md dark:bg-slate-900 dark:text-white"
                     #rlaAccount="routerLinkActive"
                     [attr.aria-current]="rlaAccount.isActive ? 'page' : null"
-                    class="flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition-all hover:text-gray-700 active:scale-95 dark:text-slate-400 dark:hover:text-white">
+                    class="flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition-all hover:text-gray-700 active:scale-95 dark:text-slate-400 dark:hover:text-white sm:min-h-9">
                     <i class="fa-solid text-[11px]" [class]="item.icon" aria-hidden="true"></i>
                     <span>{{ item.label }}</span>
                   </a>
@@ -107,7 +107,7 @@ const ADMIN_PERMISSIONS = [
                     [routerLinkActiveOptions]="{ exact: item.path === '/settings/manager' }"
                     [attr.aria-current]="rlaAdmin.isActive ? 'page' : null"
                     [title]="item.description"
-                    class="flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition-all hover:text-gray-700 active:scale-95 dark:text-slate-400 dark:hover:text-white">
+                    class="flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition-all hover:text-gray-700 active:scale-95 dark:text-slate-400 dark:hover:text-white sm:min-h-9">
                     <i class="fa-solid text-[11px]" [class]="item.icon" aria-hidden="true"></i>
                     <span>{{ item.label }}</span>
                   </a>
@@ -124,7 +124,7 @@ const ADMIN_PERMISSIONS = [
                   placeholder="Tìm cài đặt..."
                   class="h-10 w-full rounded-xl border-0 bg-gray-50 pl-9 pr-8 text-xs font-semibold text-slate-600 shadow-soft-sm outline-none transition focus:ring-2 focus:ring-fuchsia-500/15 dark:bg-slate-800 dark:text-slate-200">
                 @if (searchQuery()) {
-                  <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm" class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[11px] text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200">
+                  <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm" class="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[11px] text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200 sm:right-2">
                     <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                   </button>
                 }
@@ -140,7 +140,7 @@ const ADMIN_PERMISSIONS = [
                     [routerLink]="item.path"
                     routerLinkActive="bg-white text-fuchsia-600 shadow-soft-sm dark:bg-slate-900 dark:text-fuchsia-300"
                     [routerLinkActiveOptions]="{ exact: true }"
-                    class="inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                    class="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:min-h-8">
                     <i class="fa-solid text-[9px]" [class]="item.icon" aria-hidden="true"></i>
                     {{ item.label }}
                   </a>

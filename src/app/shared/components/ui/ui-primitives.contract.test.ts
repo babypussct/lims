@@ -143,4 +143,10 @@ describe('shared UI primitive contracts', () => {
     assert.match(routes, /path: '__ui-primitives'/);
     assert.match(appComponent, /!environment\.production && url\.startsWith\('\/__ui-primitives'\)/);
   });
+
+  it('keeps small shared buttons finger-friendly on narrow screens while preserving desktop density', () => {
+    const button = read('./button/button.component.ts');
+
+    assert.match(button, /this\.size\(\) === 'sm' \? 'h-10 px-3 text-sm sm:h-9'/);
+  });
 });

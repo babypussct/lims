@@ -612,14 +612,14 @@ async function run() {
     if (!inAppShell) throw new Error('[AUTH FAILED] Could not enter app-shell after admin login');
     console.log('  └─> Authentication successful! User is in app-shell.');
 
-    // Helper: Set Sidebar State via Visible UI Controls (Strict Criteria >=255px / <=57px)
+    // Helper: Set Sidebar State via Visible UI Controls (Strict Criteria >=255px / <=65px)
     async function setSidebarState(targetState) { // 'expanded' | 'collapsed'
       const expected = targetState === 'expanded'
         ? (w) => w >= 255
-        : (w) => w <= 57;
+        : (w) => w <= 65;
 
       let curWidth = null;
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 60; i++) {
         curWidth = await client.eval(`
           (() => {
             const panel = document.querySelector('[data-navigation-panel]');
@@ -632,14 +632,13 @@ async function run() {
         await sleep(150);
       }
 
-      if (curWidth !== null && expected(curWidth)) {
-        return curWidth;
+      if (curWidth === null) {
+        throw new Error(`[SIDEBAR PANEL MISSING] Navigation panel did not become measurable for target state ${targetState}`);
       }
 
-      const labelToClick = targetState === 'expanded' ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng';
       const clicked = await client.eval(`
         (() => {
-          const btns = Array.from(document.querySelectorAll('button[aria-label="${labelToClick}"]')).filter(b => {
+          const btns = Array.from(document.querySelectorAll('button[aria-label="Mở rộng sidebar"], button[aria-label="Thu gọn sidebar"]')).filter(b => {
             const r = b.getBoundingClientRect();
             return r.width > 0 && r.height > 0;
           });
@@ -650,7 +649,7 @@ async function run() {
           return false;
         })()
       `);
-      if (!clicked) throw new Error(`[SIDEBAR TOGGLE MISSING] Button with aria-label "${labelToClick}" not visible`);
+      if (!clicked) throw new Error(`[SIDEBAR TOGGLE MISSING] Visible sidebar toggle not found while panel width was ${curWidth}px`);
 
       let finalWidth = null;
       for (let w = 0; w < 30; w++) {
@@ -667,7 +666,7 @@ async function run() {
       }
 
       if (finalWidth === null || !expected(finalWidth)) {
-        throw new Error(`[SIDEBAR STATE FAILED] Expected ${targetState} (${targetState === 'expanded' ? '>=255px' : '<=57px'}), but final panel width was ${finalWidth}px`);
+        throw new Error(`[SIDEBAR STATE FAILED] Expected ${targetState} (${targetState === 'expanded' ? '>=255px' : '<=65px'}), but final panel width was ${finalWidth}px`);
       }
 
       return finalWidth;
@@ -1060,14 +1059,21 @@ async function run() {
           const dateInput = document.querySelector('input[type="date"], input[aria-label="Chọn ngày theo dõi"]');
           if (!dateInput) return { ok: false, reason: 'no-input' };
 
-          dateInput.value = '${candidateDate}';
+          const expectedInputValue = dateInput.type === 'date'
+            ? '${candidateDate}'
+            : '${candidateDate}'.split('-').reverse().join('/');
+          dateInput.value = expectedInputValue;
           dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-          dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+          if (dateInput.type === 'date') {
+            dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            dateInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+          }
 
           // 1. Wait until input reflects candidateDate
           let inputReflected = false;
           for (let i = 0; i < 20; i++) {
-            if (dateInput.value === '${candidateDate}') {
+            if (dateInput.value === expectedInputValue) {
               inputReflected = true;
               break;
             }
@@ -1216,6 +1222,11 @@ async function run() {
     }
     console.log('  └─> Afterprint cleanup: body class removed, container cleared, orientation style removed (PASS)');
 
+    // Print media emulation is a CDP session setting and survives SPA/document
+    // navigation. Restore screen media before any subsequent layout measurement.
+    await client.send('Emulation.setEmulatedMedia', { media: 'screen' });
+    await sleep(250);
+
     auditReportData.states.state6_print = {
       viewport: { width: vp6.innerWidth, height: vp6.innerHeight },
       selectedPrintDate,
@@ -1228,6 +1239,206 @@ async function run() {
       }
     };
 
+    // =========================================================================
+    // STATE 7: SOP EDITOR RESPONSIVE MASTER-DETAIL LAYOUT
+    // =========================================================================
+    console.log('\n================ STATE 7: SOP EDITOR RESPONSIVE LAYOUT ================');
+    // The print verification intentionally mutates body classes and print-only DOM.
+    // Re-enter the SPA through a clean document navigation before measuring a
+    // different responsive route so no post-print geometry can leak into state 7.
+    await client.send('Page.navigate', { url: `${baseUrl}/#/editor` });
+    let editorDocumentReady = false;
+    for (let i = 0; i < 120; i++) {
+      await sleep(200);
+      editorDocumentReady = await client.eval(`
+        window.location.hash === '#/editor' &&
+        !!document.querySelector('app-shell') &&
+        document.querySelector('.app-content-scroll')?.getBoundingClientRect().width > 1
+      `);
+      if (editorDocumentReady) break;
+    }
+    if (!editorDocumentReady) {
+      const editorReadyDiagnostics = await client.eval(`(() => {
+        const appContent = document.querySelector('.app-content-scroll');
+        const rect = appContent?.getBoundingClientRect();
+        return {
+          hash: window.location.hash,
+          hasAppShell: !!document.querySelector('app-shell'),
+          hasLogin: !!document.querySelector('app-login, [data-login], form[autocomplete="on"]'),
+          appContent: rect ? {
+            width: rect.width,
+            height: rect.height,
+            display: getComputedStyle(appContent).display,
+            visibility: getComputedStyle(appContent).visibility,
+          } : null,
+          pageTitle: document.querySelector('h1, [data-page-title], .page-title')?.textContent?.trim() || '',
+        };
+      })()`);
+      throw new Error(`[SOP EDITOR RESPONSIVE FAILED] Clean post-print editor document did not become measurable: ${JSON.stringify(editorReadyDiagnostics)}`);
+    }
+
+    const editorViewports = [
+      { label: '320x720', width: 320, height: 720, mobile: true },
+      { label: '390x844', width: 390, height: 844, mobile: true },
+      { label: '768x1024', width: 768, height: 1024, mobile: true },
+      { label: '844x390-landscape', width: 844, height: 390, mobile: true },
+      { label: '1280x800-desktop', width: 1280, height: 800, mobile: false },
+    ];
+    const editorChecks = [];
+
+    for (const viewport of editorViewports) {
+      await client.send('Emulation.setDeviceMetricsOverride', {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: viewport.mobile ? 2 : 1,
+        mobile: viewport.mobile,
+      });
+      await sleep(300);
+      await client.eval(`window.location.hash = '/editor';`);
+
+      let editorReady = false;
+      for (let i = 0; i < 35; i++) {
+        await sleep(120);
+        editorReady = await client.eval(`
+          (() => {
+            const visible = (selector) => Array.from(document.querySelectorAll(selector)).some(el => {
+              const style = getComputedStyle(el);
+              const rect = el.getBoundingClientRect();
+              return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 1 && rect.height > 1;
+            });
+            return window.location.hash === '#/editor' &&
+              visible('[data-sop-editor-layout]') &&
+              visible('[data-sop-editor-form-panel]') &&
+              visible('[data-sop-editor-preview]');
+          })()
+        `);
+        if (editorReady) break;
+      }
+      if (!editorReady) {
+        const diagnostics = await client.eval(`
+          (() => {
+            const rect = (el) => {
+              if (!el) return null;
+              const r = el.getBoundingClientRect();
+              const s = getComputedStyle(el);
+              return {
+                tag: el.tagName.toLowerCase(),
+                display: s.display,
+                visibility: s.visibility,
+                width: Number(r.width.toFixed(1)),
+                height: Number(r.height.toFixed(1)),
+                left: Number(r.left.toFixed(1)),
+                top: Number(r.top.toFixed(1)),
+              };
+            };
+            return {
+              hash: location.hash,
+              title: document.querySelector('[data-page-header-title]')?.textContent?.trim() || '',
+              appContent: rect(document.querySelector('.app-content-scroll')),
+              host: rect(document.querySelector('app-sop-editor')),
+              root: rect(document.querySelector('app-sop-editor > div')),
+              layout: rect(document.querySelector('[data-sop-editor-layout]')),
+              form: rect(document.querySelector('[data-sop-editor-form-panel]')),
+              preview: rect(document.querySelector('[data-sop-editor-preview]')),
+            };
+          })()
+        `);
+        throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: editor layout hooks not ready; diagnostics=${JSON.stringify(diagnostics)}`);
+      }
+
+      await client.eval(`(async () => {
+        const owner = document.querySelector('.app-content-scroll');
+        if (owner) owner.scrollTop = 0;
+        window.scrollTo(0, 0);
+        if (document.fonts) await document.fonts.ready;
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      })()`);
+      await sleep(180);
+
+      const metrics = await client.eval(`
+        (() => {
+          const pickVisible = (selector) => Array.from(document.querySelectorAll(selector)).find(el => {
+            const style = getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 1 && rect.height > 1;
+          });
+          const layout = pickVisible('[data-sop-editor-layout]');
+          const form = pickVisible('[data-sop-editor-form-panel]');
+          const preview = pickVisible('[data-sop-editor-preview]');
+          const lr = layout.getBoundingClientRect();
+          const fr = form.getBoundingClientRect();
+          const pr = preview.getBoundingClientRect();
+          const owner = document.querySelector('.app-content-scroll');
+          const ownerRect = owner?.getBoundingClientRect();
+          const overflowers = Array.from(document.querySelectorAll('body *')).filter(el => {
+            const style = getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 1 && rect.height > 1 &&
+              (rect.left < -2 || rect.right > document.documentElement.clientWidth + 2);
+          }).slice(0, 8).map(el => {
+            const rect = el.getBoundingClientRect();
+            return {
+              tag: el.tagName.toLowerCase(),
+              cls: String(el.className || '').slice(0, 160),
+              text: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+              left: Number(rect.left.toFixed(1)),
+              right: Number(rect.right.toFixed(1)),
+              width: Number(rect.width.toFixed(1)),
+            };
+          });
+          return {
+            flexDirection: getComputedStyle(layout).flexDirection,
+            layout: { left: lr.left, right: lr.right, width: lr.width, height: lr.height },
+            form: { left: fr.left, right: fr.right, width: fr.width, height: fr.height },
+            preview: { left: pr.left, right: pr.right, width: pr.width, height: pr.height },
+            docScrollWidth: document.documentElement.scrollWidth,
+            docClientWidth: document.documentElement.clientWidth,
+            owner: owner ? {
+              left: ownerRect.left,
+              right: ownerRect.right,
+              width: ownerRect.width,
+              scrollWidth: owner.scrollWidth,
+              clientWidth: owner.clientWidth,
+            } : null,
+            overflowers,
+          };
+        })()
+      `);
+
+      const shouldStack = viewport.width < 1024;
+      if (metrics.docScrollWidth > metrics.docClientWidth + 1) {
+        throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: document overflow ${metrics.docScrollWidth}px > ${metrics.docClientWidth}px; offenders=${JSON.stringify(metrics.overflowers)}`);
+      }
+      if (shouldStack) {
+        if (metrics.flexDirection !== 'column') {
+          throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: expected stacked column layout, got ${metrics.flexDirection}`);
+        }
+        if (metrics.form.width < metrics.layout.width - 2 || metrics.preview.width < metrics.layout.width - 2) {
+          throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: stacked panels do not fill workspace width`);
+        }
+        const maxPreviewHeight = viewport.height * 0.32 + 2;
+        if (metrics.preview.height > maxPreviewHeight) {
+          throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: preview height ${metrics.preview.height.toFixed(1)}px exceeds 32dvh bound`);
+        }
+      } else {
+        if (metrics.flexDirection !== 'row') {
+          throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: expected desktop row layout, got ${metrics.flexDirection}`);
+        }
+        if (metrics.preview.width < 382 || metrics.preview.width > 386) {
+          throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: desktop preview width ${metrics.preview.width.toFixed(1)}px is outside 384px target`);
+        }
+        if (metrics.form.width < 320) {
+          throw new Error(`[SOP EDITOR RESPONSIVE FAILED] ${viewport.label}: editor form width ${metrics.form.width.toFixed(1)}px is too narrow`);
+        }
+      }
+
+      editorChecks.push({ viewport: viewport.label, ...metrics });
+      console.log(`  [Editor] ${viewport.label.padEnd(18)} | ${metrics.flexDirection.padEnd(6)} | form=${metrics.form.width.toFixed(1)}px | preview=${metrics.preview.width.toFixed(1)}x${metrics.preview.height.toFixed(1)}px | PASS`);
+    }
+
+    auditReportData.states.state7_sop_editor_responsive = { checks: editorChecks };
+    console.log('  └─> SOP Editor master-detail responsive layout: PASS');
+
     // Save structured audit report to artifacts directory
     const artifactsDir = path.resolve('artifacts');
     if (!fs.existsSync(artifactsDir)) fs.mkdirSync(artifactsDir, { recursive: true });
@@ -1236,7 +1447,7 @@ async function run() {
     console.log(`\n[Artifacts] Structured audit report saved to ${reportPath}`);
 
     console.log('\n========================================================================');
-    console.log('🎉 ALL 6 ZERO JUMP & ACCEPTANCE MATRIX STATES PASSED WITH ZERO REGRESSION!');
+    console.log('🎉 ALL 7 ZERO JUMP & ACCEPTANCE MATRIX STATES PASSED WITH ZERO REGRESSION!');
     console.log('========================================================================\n');
 
   } catch (err) {

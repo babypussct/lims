@@ -180,9 +180,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                      [value]="searchText()"
                      (input)="onSearchInput($event)"
                      placeholder="Tìm theo Mã mẻ, SOP, Mã số mẫu, Analyst..."
-                     class="w-full pl-8 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-400 dark:text-slate-200 font-semibold transition placeholder:text-slate-350 dark:placeholder:text-slate-600">
+                     class="w-full h-10 pl-8 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-400 dark:text-slate-200 font-semibold transition placeholder:text-slate-350 dark:placeholder:text-slate-600">
               @if (searchText()) {
-                <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm kết quả" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm kết quả" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
                   <i class="fa-solid fa-circle-xmark text-xs" aria-hidden="true"></i>
                 </button>
               }
@@ -193,12 +193,12 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <div class="flex bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl shrink-0">
                 <button (click)="viewMode.set('grid')"
                         [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
-                        class="min-h-9 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150">
+                        class="min-h-10 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150 sm:min-h-9">
                   <i class="fa-solid fa-table-cells"></i> Lưới
                 </button>
                 <button (click)="viewMode.set('table')"
                         [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
-                        class="min-h-9 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150">
+                        class="min-h-10 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150 sm:min-h-9">
                   <i class="fa-solid fa-list"></i> Bảng
                 </button>
               </div>
@@ -206,7 +206,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <!-- Merge Mode Toggle -->
               <button (click)="toggleMergeMode()"
                       [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-                      class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900">
+                      class="min-h-10 px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900 sm:min-h-9">
                 <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()"></i>
                 Gộp mẻ
                 @if (isMergeModeActive() && selectedRunsCount() > 0) {
@@ -217,7 +217,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <!-- Advanced Filters toggle -->
               <button (click)="showAdvancedFilters.set(!showAdvancedFilters())"
                       [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-                      class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900">
+                      class="min-h-10 px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900 sm:min-h-9">
                 <i class="fa-solid fa-sliders text-[10px]"></i> Lọc nâng cao
                 @if (activeFiltersCount() > 0) {
                   <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-sm">{{ activeFiltersCount() }}</span>
@@ -246,7 +246,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                     <i class="fa-solid fa-flask text-[10px]"></i>
                   </span>
                   <select [value]="selectedSopId()" (change)="onSopChange($event)"
-                          class="w-full appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
+                          class="w-full h-10 appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
                     <option value="all">Tất cả phương pháp</option>
                     @for (sop of availableSops(); track sop.id) {
                       <option [value]="sop.id">{{ sop.name }}</option>
@@ -264,7 +264,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                     <i class="fa-solid fa-user text-[10px]"></i>
                   </span>
                   <select [value]="selectedAnalyst()" (change)="onAnalystChange($event)"
-                          class="w-full appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
+                          class="w-full h-10 appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
                     <option value="all">Tất cả nhân viên</option>
                     @for (analyst of availableAnalysts(); track analyst) {
                       <option [value]="analyst">{{ analyst }}</option>
@@ -558,15 +558,15 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                 <span class="font-black text-slate-800 dark:text-slate-100">{{ pageEndIndex() }}</span>
                 / {{ displayedRuns().length }} mẻ
               </div>
-              <div class="flex items-center gap-1.5">
+              <div class="flex max-w-full items-center gap-1.5 overflow-x-auto custom-scrollbar">
                 <button type="button" (click)="previousPage()" aria-label="Trang trước"
                         [disabled]="activePage() === 1"
-                        class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
+                        class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition sm:w-9 sm:h-9">
                   <i class="fa-solid fa-chevron-left text-[10px]"></i>
                 </button>
                 @for (page of visiblePageNumbers(); track page) {
                   <button (click)="setPage(page)"
-                          class="min-w-8 h-8 px-2 rounded-xl border text-[11px] font-black transition"
+                          class="min-w-10 h-10 px-2 rounded-xl border text-[11px] font-black transition sm:min-w-8 sm:h-8"
                           [class]="activePage() === page
                             ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm'
                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-fuchsia-300 dark:hover:border-fuchsia-800'">
@@ -575,7 +575,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                 }
                 <button type="button" (click)="nextPage()" aria-label="Trang sau"
                         [disabled]="activePage() === totalPages()"
-                        class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition">
+                        class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition sm:w-9 sm:h-9">
                   <i class="fa-solid fa-chevron-right text-[10px]"></i>
                 </button>
               </div>

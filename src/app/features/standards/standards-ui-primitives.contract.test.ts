@@ -62,6 +62,7 @@ describe('standards shared UI primitive integration', () => {
   it('uses the shared page header and buttons while preserving the standards function-menu contract', () => {
     const toolbar = read('./components/standards-toolbar.component.ts');
     const filter = read('./components/standards-filter.component.ts');
+    const grid = read('./components/standards-grid-view.component.ts');
     const page = read('./standards.component.html');
     const component = read('./standards.component.ts');
 
@@ -87,9 +88,14 @@ describe('standards shared UI primitive integration', () => {
     assert.match(toolbar, /Chọn tệp/);
     assert.match(toolbar, /aria-haspopup="menu"/);
     assert.match(toolbar, /\[attr\.aria-expanded\]="functionMenuOpen\(\)"/);
+    assert.match(toolbar, /class="h-10 px-3[^\"]*md:h-9"/);
+    assert.match(toolbar, /class="min-h-10 text-left px-3 py-2[^\"]*md:min-h-0"/);
+    assert.match(filter, /fixed inset-x-3 top-1\/2[^\"]*lg:absolute lg:left-0/);
     assert.match(toolbar, /closeMenuOnOutsideClick/);
     assert.match(toolbar, /closeMenuOnEscape/);
     assert.match(toolbar, /this\.functionMenuOpen\.set\(false\);\s*input\.click\(\);/);
+    assert.match(grid, /w-10 h-10 rounded-lg[^\"]*sm:w-8 sm:h-8/);
+    assert.match(grid, /w-auto px-3 h-10 rounded-lg[^\"]*sm:h-8/);
 
     // Spatial anchor and borderless page header contract
     assert.match(page, /class="[^"]*p-4 md:p-6[^"]*"/);
@@ -100,6 +106,7 @@ describe('standards shared UI primitive integration', () => {
   it('uses the shared page header, toolbar and buttons for standards requests with sentence-case migrated labels', () => {
     const actionModals = read('./requests/components/requests-action-modals.component.ts');
     const createRequestDrawer = read('./requests/components/create-request-drawer.component.ts');
+    const kanban = read('./requests/components/requests-kanban.component.ts');
     const component = read('./requests/standard-requests.component.ts');
     const template = read('./requests/standard-requests.component.html');
 
@@ -137,6 +144,9 @@ describe('standards shared UI primitive integration', () => {
     assert.match(template, />\s*Hoàn thành\s*</);
     assert.match(template, /Giao diện thẻ \(Kanban\)/);
     assert.match(template, /Giao diện bảng \(Table\)/);
+    assert.match(template, /class="w-10 h-10 rounded-lg[^\"]*sm:w-8 sm:h-8"/);
+    assert.match(kanban, /h-10 w-10 bg-emerald-600[^\"]*sm:h-8 sm:w-8/);
+    assert.match(kanban, /min-h-10 px-3 py-2 bg-teal-600[^\"]*sm:min-h-0 sm:px-2 sm:py-1/);
   });
 
   it('uses shared header, buttons and empty state on standard detail while preserving specialized tab controls', () => {
@@ -182,6 +192,7 @@ describe('standards shared UI primitive integration', () => {
     assert.match(template, /<app-toolbar\b/);
     assert.match(template, /toolbarSearch/);
     assert.match(template, /toolbarFilters/);
+    assert.match(template, /toolbarFilters class="w-full min-w-0 sm:w-auto sm:min-w-\[280px\]"/);
     assert.match(template, /toolbarActions/);
     assert.match(template, /<app-button\b/);
     assert.match(template, /<app-empty-state\b/);

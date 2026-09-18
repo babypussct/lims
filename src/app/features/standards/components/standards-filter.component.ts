@@ -14,13 +14,13 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
            <div class="relative min-w-0 flex-1 group">
               <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-fuchsia-500 dark:group-focus-within:text-fuchsia-400 transition-colors"></i>
               <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
-                     class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
+                     class="h-10 w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500 md:h-auto"
                      placeholder="Tìm kiếm chuẩn, mã số, số lô...">
            </div>
            
            @if (!isAuditMode()) {
              <!-- FILTER DROPDOWN -->
-             <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
+             <div class="flex h-10 items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none md:h-[30px]">
                  <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-filter mr-1"></i> Lọc:</span>
                  <select [ngModel]="activeWidgetFilter()" (ngModelChange)="onWidgetFilterChange($event)"
                          class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
@@ -34,7 +34,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
            }
            
            <!-- SORT DROPDOWN -->
-           <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
+           <div class="flex h-10 items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none md:h-[30px]">
                <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
                <select [ngModel]="sortOption()" (ngModelChange)="onSortChange($event)" 
                        class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
@@ -56,11 +56,11 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                </select>
            </div>
 
-           <div class="flex bg-slate-200/50 dark:bg-slate-700/50 p-0.5 rounded-lg shrink-0 h-[30px] self-start md:self-auto">
-              <button (click)="onViewModeChange('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Danh sách">
+           <div class="flex h-10 shrink-0 self-start rounded-lg bg-slate-200/50 p-0.5 dark:bg-slate-700/50 md:h-[30px] md:self-auto">
+              <button (click)="onViewModeChange('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="h-full w-10 flex items-center justify-center rounded transition md:w-7" title="Dạng Danh sách">
                   <i class="fa-solid fa-list text-[11px]"></i>
               </button>
-              <button (click)="onViewModeChange('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Lưới (Thẻ)">
+              <button (click)="onViewModeChange('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="h-full w-10 flex items-center justify-center rounded transition md:w-7" title="Dạng Lưới (Thẻ)">
                   <i class="fa-solid fa-border-all text-[11px]"></i>
               </button>
            </div>
@@ -75,7 +75,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                    (click)="toggleMethodPicker($event)"
                    [attr.aria-expanded]="methodPickerOpen()"
                    aria-haspopup="dialog"
-                   class="flex h-[34px] w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-left shadow-sm dark:shadow-none transition hover:border-fuchsia-300 dark:hover:border-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
+                   class="flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-left shadow-sm dark:shadow-none transition hover:border-fuchsia-300 dark:hover:border-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 md:h-[34px]"
                >
                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400">
                        <i class="fa-solid fa-flask-vial text-[10px]"></i>
@@ -92,7 +92,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                    <div
                        role="dialog"
                        aria-label="Chọn phương pháp phân tích"
-                       class="absolute left-0 top-full z-50 mt-1.5 w-[min(720px,calc(100vw-24px))] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
+                       class="fixed inset-x-3 top-1/2 z-50 max-h-[calc(100dvh-1.5rem)] -translate-y-1/2 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl lg:absolute lg:left-0 lg:right-auto lg:top-full lg:mt-1.5 lg:w-[min(720px,calc(100vw-24px))] lg:max-h-none lg:translate-y-0 lg:overflow-hidden"
                        (click)="$event.stopPropagation()"
                    >
                        <div class="border-b border-slate-100 dark:border-slate-800 px-3 py-2.5">
@@ -101,7 +101,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                                    <div class="text-xs font-black text-slate-800 dark:text-slate-100">Phương pháp phân tích</div>
                                    <div class="mt-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500">Kỹ thuật chỉ dùng để thu hẹp danh mục phương pháp; chuẩn vẫn được lọc theo phương pháp đã gắn.</div>
                                </div>
-                               <button type="button" (click)="closeMethodPicker()" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Đóng">
+                               <button type="button" (click)="closeMethodPicker()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 md:h-7 md:w-7" aria-label="Đóng">
                                    <i class="fa-solid fa-xmark text-xs"></i>
                                </button>
                            </div>

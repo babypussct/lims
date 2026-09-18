@@ -42,6 +42,10 @@ describe('results list shared UI primitive integration', () => {
     assert.match(component, /<button[^>]*\(click\)="viewMode\.set\('grid'\)"/);
     assert.match(component, /<button[^>]*\(click\)="toggleMergeMode\(\)"/);
     assert.match(component, /<button[^>]*\(click\)="previousPage\(\)"/);
+    assert.match(component, /min-h-10 px-3 py-1\.5 rounded-lg[^\"]*sm:min-h-9/);
+    assert.match(component, /class="w-10 h-10 rounded-xl[^\"]*sm:w-9 sm:h-9"/);
+    assert.match(component, /class="min-w-10 h-10 px-2 rounded-xl[^\"]*sm:min-w-8 sm:h-8"/);
+    assert.match(component, /overflow-x-auto custom-scrollbar/);
     assert.match(component, /<app-merge-runs-modal\b/);
     assert.match(component, /<app-report-hub-modal\b/);
     assert.doesNotMatch(component, /<app-modal-shell\b/);

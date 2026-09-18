@@ -197,7 +197,7 @@ interface PaletteItem {
       <button
         type="button"
         (click)="goToDashboard()"
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-soft text-white shadow-soft-md"
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-soft text-white shadow-soft-md"
         aria-label="Về Trang Chủ"
         title="Về Trang Chủ">
         <i class="fa-solid fa-flask-vial text-xs" aria-hidden="true"></i>
@@ -209,7 +209,7 @@ interface PaletteItem {
       <button
         type="button"
         (click)="openPalette()"
-        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
         aria-label="Tìm chức năng hoặc mã truy xuất"
         title="Tìm chức năng hoặc mã truy xuất">
         <i class="fa-solid fa-magnifying-glass text-xs" aria-hidden="true"></i>
@@ -218,7 +218,7 @@ interface PaletteItem {
       <button
         type="button"
         (click)="mobileMenuRequested.emit()"
-        class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
         aria-label="Mở menu điều hướng"
         title="Menu">
         <i class="fa-solid fa-bars text-xs" aria-hidden="true"></i>

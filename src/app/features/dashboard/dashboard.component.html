@@ -56,13 +56,13 @@
                 @if(showPendingRequestsPopover()) {
                     <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md z-30 flex flex-col justify-center items-center p-3 gap-2 animate-fade-in rounded-2xl shadow-xl">
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 w-full text-center">Chọn loại yêu cầu</p>
-                        <button type="button" (click)="$event.stopPropagation(); navTo('requests'); showPendingRequestsPopover.set(false)"
-                                class="w-full bg-fuchsia-50 hover:bg-fuchsia-100 dark:bg-fuchsia-900/30 dark:hover:bg-fuchsia-800/50 text-fuchsia-700 dark:text-fuchsia-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors">
+                                <button type="button" (click)="$event.stopPropagation(); navTo('requests'); showPendingRequestsPopover.set(false)"
+                                class="w-full min-h-10 bg-fuchsia-50 hover:bg-fuchsia-100 dark:bg-fuchsia-900/30 dark:hover:bg-fuchsia-800/50 text-fuchsia-700 dark:text-fuchsia-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors sm:min-h-0">
                             <span>SOP</span>
                             <span class="bg-fuchsia-200 dark:bg-fuchsia-700 px-2 py-0.5 rounded-full min-w-[20px] text-center">{{pendingCounts().sop}}</span>
                         </button>
                         <button type="button" (click)="$event.stopPropagation(); navTo('standard-requests'); showPendingRequestsPopover.set(false)"
-                                class="w-full bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors">
+                                class="w-full min-h-10 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 font-bold py-1.5 rounded-lg text-xs flex justify-between px-3 items-center transition-colors sm:min-h-0">
                             <span>Chuẩn</span>
                             <span class="bg-orange-200 dark:bg-orange-700 px-2 py-0.5 rounded-full min-w-[20px] text-center">{{pendingCounts().std}}</span>
                         </button>
@@ -188,7 +188,7 @@
                             <!-- SOP Active Filter Badge -->
                             @if(selectedSopFilter(); as activeSop) {
                                 <button (click)="selectedSopFilter.set(null)" 
-                                     class="flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold rounded-full bg-fuchsia-500 text-white cursor-pointer hover:bg-fuchsia-600 active:scale-95 transition-all shadow-sm shrink-0 border border-fuchsia-400/30">
+                                     class="flex min-h-10 items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-fuchsia-500 text-white cursor-pointer hover:bg-fuchsia-600 active:scale-95 transition-all shadow-sm shrink-0 border border-fuchsia-400/30 sm:min-h-0 sm:px-2.5 sm:py-0.5">
                                     <span>Lọc: {{activeSop}}</span>
                                     <i class="fa-solid fa-circle-xmark text-[10px] opacity-80 hover:opacity-100"></i>
                                 </button>
@@ -252,7 +252,7 @@
                                         <div class="flex flex-col gap-1.5">
                                             @for (item of sopDistribution(); track item.name) {
                                                 <button (click)="toggleSopFilter(item.name)"
-                                                     class="w-full flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1 px-1.5 rounded-lg border border-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer transition-all last:border-b-0 focus:outline-none focus:ring-1 focus:ring-fuchsia-400"
+                                                     class="w-full min-h-10 flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1 px-2.5 rounded-lg border border-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer transition-all last:border-b-0 focus:outline-none focus:ring-1 focus:ring-fuchsia-400 sm:min-h-0 sm:px-1.5"
                                                      [ngClass]="{ 'bg-fuchsia-50/80 dark:bg-fuchsia-950/40 border-fuchsia-200 dark:border-fuchsia-800/40 text-fuchsia-600 dark:text-fuchsia-400': selectedSopFilter() === item.name }">
                                                     <div class="flex items-center gap-1.5 truncate mr-2">
                                                         <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" [style.backgroundColor]="item.color"></span>
@@ -281,14 +281,14 @@
                             <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base">Hoạt Động Gần Đây</h6>
                             <div class="relative w-full sm:w-1/2">
                                 <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                <input type="text" [ngModel]="logSearchTerm()" (ngModelChange)="logSearchTerm.set($event)" placeholder="Tìm kiếm..." aria-label="Tìm kiếm hoạt động" class="soft-ui-control w-full rounded-lg py-1.5 pl-8 pr-2 text-xs text-slate-700 transition focus:outline-none dark:text-slate-300">
+                                <input type="text" [ngModel]="logSearchTerm()" (ngModelChange)="logSearchTerm.set($event)" placeholder="Tìm kiếm..." aria-label="Tìm kiếm hoạt động" class="soft-ui-control h-10 w-full rounded-lg py-1.5 pl-8 pr-2 text-xs text-slate-700 transition focus:outline-none dark:text-slate-300">
                             </div>
                         </div>
                         <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
                             @for(cat of activityFilterOptions(); track cat) {
                                 <button type="button" (click)="logFilterCategory.set($any(cat))"
                                         [attr.aria-pressed]="logFilterCategory() === cat"
-                                        class="px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all"
+                                        class="min-h-10 px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all sm:min-h-0 sm:px-2.5"
                                         [ngClass]="logFilterCategory() === cat ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'">
                                     {{getActivityFilterLabel(cat)}}
                                 </button>
@@ -296,7 +296,7 @@
                             @if (activityFeedV2Enabled()) {
                                 <button type="button" (click)="toggleImportantActivity()"
                                         [attr.aria-pressed]="importantActivityOnly()"
-                                        class="px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all flex items-center gap-1"
+                                        class="min-h-10 px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all flex items-center gap-1 sm:min-h-0 sm:px-2.5"
                                         [ngClass]="importantActivityOnly() ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'">
                                     <i class="fa-solid fa-star text-[8px]"></i> Quan trọng
                                 </button>
@@ -380,12 +380,12 @@
                                                                     </span>
                                                                 }
                                                                 @if (log.actionUrl) {
-                                                                    <button type="button" (click)="navToUrl(log.actionUrl)" [attr.aria-label]="'Mở chi tiết hoạt động ' + (getActivityTargetText(log) || log.action)" class="text-[9px] bg-fuchsia-50 dark:bg-fuchsia-900/30 border border-fuchsia-100 dark:border-fuchsia-800/50 px-2.5 py-1 rounded-md text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/55 font-bold transition shadow-xs active:scale-95 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500">
+                                                                    <button type="button" (click)="navToUrl(log.actionUrl)" [attr.aria-label]="'Mở chi tiết hoạt động ' + (getActivityTargetText(log) || log.action)" class="min-h-10 text-[9px] bg-fuchsia-50 dark:bg-fuchsia-900/30 border border-fuchsia-100 dark:border-fuchsia-800/50 px-3 py-1 rounded-md text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/55 font-bold transition shadow-xs active:scale-95 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 sm:min-h-0 sm:px-2.5">
                                                                         <i class="fa-solid fa-arrow-up-right-from-square mr-1" aria-hidden="true"></i> Mở
                                                                     </button>
                                                                 }
                                                                 @if (getActivityTraceabilityUrl(log); as traceabilityUrl) {
-                                                                    <button type="button" (click)="navToUrl(traceabilityUrl)" [attr.aria-label]="'Truy xuất nguồn gốc ' + (getActivityTargetText(log) || log.requestId)" class="text-[9px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 font-bold transition shadow-xs active:scale-95 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                                                    <button type="button" (click)="navToUrl(traceabilityUrl)" [attr.aria-label]="'Truy xuất nguồn gốc ' + (getActivityTargetText(log) || log.requestId)" class="min-h-10 text-[9px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-3 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 font-bold transition shadow-xs active:scale-95 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:min-h-0 sm:px-2.5">
                                                                         <i class="fa-solid fa-qrcode mr-1" aria-hidden="true"></i> Truy Xuất
                                                                     </button>
                                                                 }

@@ -18,7 +18,7 @@
             </app-button>
 
             <div pageHeaderActions class="flex items-center gap-2">
-                <label class="flex h-9 items-center gap-1.5 rounded-xl bg-slate-100 px-2.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <label class="flex h-10 items-center gap-1.5 rounded-xl bg-slate-100 px-2.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400 md:h-9">
                     <span class="hidden sm:inline">Phiên bản</span>
                     <span aria-hidden="true">v</span>
                     <input
@@ -26,7 +26,7 @@
                         min="1"
                         [formControl]="form.controls.version"
                         aria-label="Phiên bản quy trình"
-                        class="w-10 bg-transparent text-center text-xs font-bold text-fuchsia-700 outline-none dark:text-fuchsia-400" />
+                        class="h-full w-10 bg-transparent text-center text-xs font-bold text-fuchsia-700 outline-none dark:text-fuchsia-400" />
                 </label>
                 <app-button size="sm" (click)="save()" [disabled]="isLoading()" [loading]="isLoading()">
                     @if (!isLoading()) { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> }
@@ -36,11 +36,11 @@
         </app-page-header>
 
         <!-- Split View Layout -->
-        <div class="flex-1 flex overflow-hidden relative">
+        <div data-sop-editor-layout class="flex-1 flex flex-col overflow-hidden relative lg:flex-row">
             @if(isLoading()) { <div class="absolute inset-0 bg-white/50 dark:bg-slate-900/50 z-50 cursor-wait"></div> }
             
             <!-- LEFT COLUMN: Editor -->
-            <div class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900 overflow-hidden border-r border-slate-200 dark:border-slate-700">
+            <div data-sop-editor-form-panel class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900 overflow-hidden border-r border-slate-200 dark:border-slate-700">
                 <!-- Tabs -->
                 <div class="flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 gap-6 shrink-0 overflow-x-auto no-scrollbar">
                    <button (click)="currentTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'general' ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">Thông Tin</button>
@@ -90,7 +90,7 @@
                                         [class]="selectedMatrixTags().length === 0
                                           ? 'ring-2 ring-offset-1 opacity-100 dark:ring-offset-slate-800'
                                           : 'opacity-60 hover:opacity-80'"
-                                        class="px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800 border-slate-400 text-slate-500 dark:text-slate-400">
+                                        class="min-h-10 px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800 border-slate-400 text-slate-500 dark:text-slate-400 md:min-h-0">
                                         <div class="w-2 h-2 rounded-full bg-slate-400"></div>
                                         Dùng chung (ANY)
                                         @if (selectedMatrixTags().length === 0) { <i class="fa-solid fa-check ml-1 text-[10px]"></i> }
@@ -100,7 +100,7 @@
                                           [class]="selectedMatrixTags().includes(m.id)
                                             ? 'ring-2 ring-offset-1 opacity-100 dark:ring-offset-slate-800'
                                             : 'opacity-60 hover:opacity-80'"
-                                          class="px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800"
+                                          class="min-h-10 px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800 md:min-h-0"
                                           [style.border-color]="m.color || '#94a3b8'"
                                           [style.color]="m.color || '#94a3b8'">
                                           <div class="w-2 h-2 rounded-full" [style.background-color]="m.color || '#94a3b8'"></div>
@@ -128,7 +128,7 @@
                                             [class]="selectedAllowedDevices().includes(d.name)
                                               ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20'
                                               : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'"
-                                            class="px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-sm">
+                                            class="min-h-10 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-sm md:min-h-0">
                                             <i class="fa-solid fa-microchip"></i>
                                             {{ d.name }}
                                             @if (selectedAllowedDevices().includes(d.name)) { <i class="fa-solid fa-check ml-1 text-blue-600 dark:text-blue-400"></i> }
@@ -146,7 +146,7 @@
                                       <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                                         Thiết bị Mặc định
                                       </label>
-                                      <select formControlName="device" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm font-bold outline-none focus:border-blue-500 dark:focus:border-blue-400 transition cursor-pointer">
+                                      <select formControlName="device" class="min-h-10 w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm font-bold outline-none focus:border-blue-500 dark:focus:border-blue-400 transition cursor-pointer md:min-h-0">
                                         <option value="">-- Tự động --</option>
                                         @if (selectedAllowedDevices().length > 0) {
                                           @for (name of selectedAllowedDevices(); track name) {
@@ -166,7 +166,7 @@
                               <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                   <div class="flex justify-between items-center mb-4">
                                       <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase">Dữ Liệu Đầu vào</h3>
-                                      <button type="button" (click)="addInput()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg font-bold text-slate-600 dark:text-slate-300 transition">+ Thêm Trường Nhập</button>
+                                      <button type="button" (click)="addInput()" class="min-h-10 text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg font-bold text-slate-600 dark:text-slate-300 transition md:min-h-0">+ Thêm Trường Nhập</button>
                                   </div>
                                   
                                   <div formArrayName="inputs" class="space-y-3">
@@ -174,25 +174,25 @@
                                           <div [formGroupName]="i" class="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 group">
                                               <div class="flex gap-2 items-start">
                                                   <div class="grid grid-cols-2 md:grid-cols-4 gap-2 flex-1">
-                                                      <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Biến (Var)</label><input formControlName="var" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-mono font-bold text-blue-600 dark:text-blue-400 outline-none"></div>
-                                                      <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nhãn (Label)</label><input formControlName="label" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none"></div>
+                                                      <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Biến (Var)</label><input formControlName="var" class="min-h-10 w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-mono font-bold text-blue-600 dark:text-blue-400 outline-none md:min-h-0"></div>
+                                                      <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nhãn (Label)</label><input formControlName="label" class="min-h-10 w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none md:min-h-0"></div>
                                                       <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Kiểu</label>
-                                                          <select formControlName="type" class="w-full border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs outline-none bg-white dark:bg-slate-800">
+                                                          <select formControlName="type" class="min-h-10 w-full border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs outline-none bg-white dark:bg-slate-800 md:min-h-0">
                                                               <option value="number">Số (Number)</option>
                                                               <option value="checkbox">Checkbox</option>
                                                               <option value="select">Danh sách lựa chọn</option>
                                                           </select>
                                                       </div>
-                                                      <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Mặc định</label><input formControlName="default" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-bold outline-none"></div>
+                                                      <div><label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Mặc định</label><input formControlName="default" class="min-h-10 w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-bold outline-none md:min-h-0"></div>
                                                   </div>
-                                                  <button type="button" (click)="inputs.removeAt(i)" class="mt-4 text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition px-2"><i class="fa-solid fa-trash"></i></button>
+                                                  <button type="button" (click)="inputs.removeAt(i)" class="mt-4 flex h-10 w-10 shrink-0 items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition md:h-auto md:w-auto md:px-2"><i class="fa-solid fa-trash"></i></button>
                                               </div>
                                               
                                               <!-- Options for Select -->
                                               @if (inp.get('type')?.value === 'select') {
                                                   <div class="pl-2 border-l-2 border-orange-200 dark:border-orange-800/50 ml-1">
                                                       <label class="text-[9px] font-bold text-orange-600 dark:text-orange-400 uppercase">Tùy chọn (Format: "Value:Label, Value:Label")</label>
-                                                      <input formControlName="optionsStr" class="w-full border border-orange-200 dark:border-orange-800/50 rounded px-2 py-1.5 text-xs bg-orange-50 dark:bg-orange-900/20 focus:bg-white dark:focus:bg-slate-800 transition outline-none placeholder-orange-300 dark:placeholder-orange-700" placeholder="0:Thủy sản, 1:Sữa, 2:Phomat">
+                                                      <input formControlName="optionsStr" class="min-h-10 w-full border border-orange-200 dark:border-orange-800/50 rounded px-2 py-1.5 text-xs bg-orange-50 dark:bg-orange-900/20 focus:bg-white dark:focus:bg-slate-800 transition outline-none placeholder-orange-300 dark:placeholder-orange-700 md:min-h-0" placeholder="0:Thủy sản, 1:Sữa, 2:Phomat">
                                                   </div>
                                               }
                                           </div>
@@ -486,7 +486,7 @@
                 </div>
             </div>
             <!-- RIGHT COLUMN: Preview (Simplified for brevity, logic same) -->
-            <div class="w-96 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col shrink-0 shadow-xl z-20">
+            <div data-sop-editor-preview class="flex h-56 max-h-[32dvh] w-full shrink-0 flex-col border-t border-slate-200 bg-white shadow-xl z-20 dark:border-slate-700 dark:bg-slate-800 lg:h-auto lg:max-h-none lg:w-96 lg:border-l lg:border-t-0">
                 <div class="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-xs font-bold text-slate-600 dark:text-slate-400">Xem trước Kết quả</div>
                 <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
                      @for (item of previewResults(); track item.name) {

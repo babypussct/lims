@@ -37,7 +37,7 @@ export class AppButtonComponent {
       'soft-ui-button inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all duration-200 active:scale-[0.98]',
       'disabled:cursor-not-allowed disabled:opacity-50',
       this.fullWidth() ? 'w-full' : '',
-      this.size() === 'sm' ? 'h-9 px-3 text-sm' : 'h-10 px-4 text-sm',
+      this.size() === 'sm' ? 'h-10 px-3 text-sm sm:h-9' : 'h-10 px-4 text-sm',
     ];
 
     const variantClasses: Record<AppButtonVariant, string> = {

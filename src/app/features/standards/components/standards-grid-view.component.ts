@@ -160,48 +160,48 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
 
                                    <div class="flex gap-1 flex-wrap justify-end">
                                        @if(std.certificate_ref) {
-                                           <button (click)="$event.stopPropagation(); openCoaPreview.emit({url: std.certificate_ref, event: $event})" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition flex items-center justify-center" title="Xem CoA">
+                                           <button (click)="$event.stopPropagation(); openCoaPreview.emit({url: std.certificate_ref, event: $event})" class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition flex items-center justify-center sm:w-8 sm:h-8" title="Xem CoA" aria-label="Xem CoA">
                                                <i class="fa-solid fa-file-pdf text-xs"></i>
                                            </button>
                                        } @else if(!isAuditMode() && currentUser()?.role === 'manager') {
-                                           <button (click)="$event.stopPropagation(); triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Tải CoA lên Google Drive">
+                                           <button (click)="$event.stopPropagation(); triggerQuickDriveUpload.emit({std: std, event: $event})" [disabled]="quickUploadStdId() === std.id" class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center sm:w-8 sm:h-8" title="Tải CoA lên Google Drive" aria-label="Tải CoA lên Google Drive">
                                                @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin text-xs"></i> } @else { <i class="fa-brands fa-google-drive text-xs"></i> }
                                            </button>
                                        }
                                        @if (!isAuditMode()) {
-                                       <button (click)="$event.stopPropagation(); viewHistory.emit(std)" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Lịch sử">
+                                       <button (click)="$event.stopPropagation(); viewHistory.emit(std)" class="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center justify-center sm:w-8 sm:h-8" title="Lịch sử" aria-label="Xem lịch sử sử dụng">
                                            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                                        </button>
                                        @if(canEditStandards() || state.showLockedFeatures()) {
-                                           <button [appLockPermission]="'standard_edit'" (click)="$event.stopPropagation(); openPrintModal.emit(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
+                                           <button [appLockPermission]="'standard_edit'" (click)="$event.stopPropagation(); openPrintModal.emit(std)" class="w-10 h-10 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center sm:w-8 sm:h-8" title="In nhãn" aria-label="In nhãn chất chuẩn">
                                                <i class="fa-solid fa-print text-xs"></i>
                                            </button>
                                        }
                                        @if(canAssign(std)) {
                                            @if(std.has_pending_request) {
-                                               <button disabled class="w-auto px-3 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed border border-orange-200 dark:border-orange-800/50" title="Đang có người yêu cầu mượn">
+                                               <button disabled class="w-auto px-3 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed border border-orange-200 dark:border-orange-800/50 sm:h-8" title="Đang có người yêu cầu mượn">
                                                    <i class="fa-solid fa-hourglass-half"></i> Chờ Duyệt
                                                </button>
                                            } @else if(canAssignStandards()) {
-                                               <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: true})" class="w-auto px-3 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Gán cho mượn">
+                                               <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: true})" class="w-auto px-3 h-10 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95 sm:h-8" title="Gán cho mượn">
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Gán
                                                </button>
                                            } @else if(canRequestStandards()) {
-                                               <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: false})" class="w-auto px-3 h-8 rounded-lg bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-md shadow-fuchsia-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Mượn chuẩn này">
+                                               <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: false})" class="w-auto px-3 h-10 rounded-lg bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-md shadow-fuchsia-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95 sm:h-8" title="Mượn chuẩn này">
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Mượn
                                                </button>
                                            }
                                        } @else if (std.status === 'IN_USE' && (canAssignStandards() || std.current_holder_uid === currentUser()?.uid)) {
-                                           <button (click)="$event.stopPropagation(); goToReturn.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Trả chuẩn">
+                                           <button (click)="$event.stopPropagation(); goToReturn.emit(std)" class="w-auto px-3 h-10 rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95 sm:h-8" title="Trả chuẩn">
                                                <i class="fa-solid fa-rotate-left"></i> Trả Chuẩn
                                           </button>
                                        } @else if (std.status === 'DEPLETED' || std.current_amount <= 0) {
                                            @if (std.restock_requested) {
-                                               <button class="w-auto px-3 h-8 rounded-lg bg-slate-300 dark:bg-slate-700 text-slate-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed" title="Đã có người yêu cầu mua">
+                                               <button class="w-auto px-3 h-10 rounded-lg bg-slate-300 dark:bg-slate-700 text-slate-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed sm:h-8" title="Đã có người yêu cầu mua">
                                                    <i class="fa-solid fa-cart-arrow-down"></i> Đã Y/C
                                                </button>
                                            } @else if(canRequestStandards() || canAssignStandards()) {
-                                               <button (click)="$event.stopPropagation(); openPurchaseRequestModal.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-500 shadow-md shadow-amber-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Đề nghị mua sắm">
+                                               <button (click)="$event.stopPropagation(); openPurchaseRequestModal.emit(std)" class="w-auto px-3 h-10 rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-500 shadow-md shadow-amber-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95 sm:h-8" title="Đề nghị mua sắm">
                                                    <i class="fa-solid fa-cart-plus"></i> Đề Nghị Mua
                                                </button>
                                            }

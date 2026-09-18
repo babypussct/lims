@@ -125,6 +125,7 @@ describe('config shared UI primitive integration', () => {
     assert.match(source, /id="role-config-form" appFormLabelA11y \[formGroup\]="roleForm"/);
     assert.match(source, /\(change\)="togglePermSelected\(perm\.val\)"/);
     assert.match(source, /\(click\)="saveRole\(\)" \[disabled\]="roleForm\.invalid \|\| savingRole\(\)" \[loading\]="savingRole\(\)"/);
+    assert.match(source, /openEditModal\(role\)[^\n]*min-h-10[^\n]*sm:min-h-0/);
     assert.match(source, /\(closed\)="closeModal\(\)"/);
   });
 
@@ -140,6 +141,9 @@ describe('config shared UI primitive integration', () => {
     assert.match(source, /\(change\)="togglePerm\(user, perm\.val\)"/);
     assert.match(source, /\(click\)="saveUserFromModal\(user\)"/);
     assert.match(source, /if \(await this\.saveUser\(u\)\) this\.closePermModal\(\)/);
+    assert.match(source, /-m-2 flex h-10 w-10[^\"]*md:h-auto md:w-auto/);
+    assert.match(source, /aria-label="Sao chép mã tài khoản"/);
+    assert.match(source, /min-h-10 w-fit[^\"]*md:min-h-0/);
     assert.match(source, /\(closed\)="closePermModal\(\)"/);
   });
 
@@ -171,6 +175,8 @@ describe('config shared UI primitive integration', () => {
     assert.match(safetySource, /block sm:hidden space-y-3/);
     assert.match(safetySource, /hidden sm:block/);
     assert.match(safetySource, /min-w-\[420px\]/);
+    assert.match(safetySource, /class="h-10 w-full[^\"]*Chọn phân loại áp dụng|class="h-10 w-full/);
+    assert.match(safetySource, /inline-flex h-10 w-10 items-center justify-center/);
 
     // CSS cleanliness
     assert.doesNotMatch(safetySource, /list-circle/);

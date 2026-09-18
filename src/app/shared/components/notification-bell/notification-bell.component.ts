@@ -73,7 +73,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
         [attr.aria-expanded]="panel.isOpen()"
         aria-controls="notification-panel"
         [title]="unreadCount() > 0 ? unreadCount() + ' thông báo chưa đọc' : 'Thông báo'"
-        class="relative flex h-8 w-8 items-center justify-center rounded-lg
+        class="relative flex h-10 w-10 items-center justify-center rounded-lg md:h-8 md:w-8
                transition-all duration-200 active:scale-95 select-none"
         [ngClass]="panel.isOpen()
           ? 'bell-btn--active'

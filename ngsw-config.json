@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.18-b02",
-    "title": "Ổn định release gate, QR scanner và dependency production",
+    "version": "v26.09.19-b01",
+    "title": "Tối ưu trải nghiệm mobile và responsive toàn hệ thống",
     "features": [
-      "Siết release gate để mọi test file trong repo phải được một release runner tham chiếu, giúp ngăn regression bị bỏ sót khi CI vẫn xanh.",
-      "Khắc phục race condition của QR scanner khi rời màn hình trong lúc thư viện camera đang tải.",
-      "Đưa các test trước đây nằm ngoài npm test vào release gate cho Auth/device mode, formatting, Standards cleanup, Results, Smart Batch và Daily Checklist.",
-      "Nâng Firebase Admin lên 14.4.0, cập nhật cây dependency và giữ tương thích CommonJS cho Vercel API runtime.",
-      "Làm sạch production dependency audit về 0 vulnerabilities và loại bỏ trạng thái npm dependency invalid ở các nhánh uuid production."
+      "Tối ưu giao diện trên điện thoại, tablet và màn hình landscape hẹp để các luồng chính không còn bị ép cột, tràn ngang hoặc khó thao tác.",
+      "SOP Editor tự chuyển sang bố cục xếp dọc trên màn hình dưới desktop và giữ bố cục hai cột khi đủ không gian.",
+      "Tăng vùng chạm cho nút, checkbox, bộ lọc, bộ chọn ngày và các thao tác quan trọng trên mobile trong Dashboard, Checklist, Standards, Requests, Results và Settings.",
+      "Cải thiện bố cục responsive cho Duty Stats, Target Groups, Standard Usage, Print Queue và các màn hình quản trị để giữ nội dung dễ đọc ở độ rộng nhỏ.",
+      "Mở rộng browser acceptance audit với ma trận responsive cho SOP Editor, kiểm tra overflow và phục hồi đúng media mode sau kiểm thử in."
     ]
   },
   "assetGroups": [

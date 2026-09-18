@@ -38,7 +38,15 @@ const STANDARD_VARS = [
   selector: 'app-sop-editor',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, AppButtonComponent, AppModalShellComponent, AppPageHeaderComponent],
-  templateUrl: './sop-editor.component.html'
+  templateUrl: './sop-editor.component.html',
+  styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+  `]
 })
 export class SopEditorComponent {
   // Services & State

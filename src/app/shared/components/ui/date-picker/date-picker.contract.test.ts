@@ -37,6 +37,14 @@ describe('shared UI date picker primitive contract', () => {
     assert.match(source, /min-w-\[136px\]/);
     assert.match(source, /max-w-\[calc\(100vw-1\.5rem\)\]/);
     assert.match(source, /touch-manipulation/);
+    assert.match(source, /\[class\.h-11\]="size\(\) === 'sm' \|\| size\(\) === 'md'"/);
+    assert.match(source, /\[class\.sm:h-8\]="size\(\) === 'sm'"/);
+    assert.match(source, /\[class\.sm:h-10\]="size\(\) === 'md'"/);
+    assert.match(source, /class="h-full flex-1 min-w-0/);
+    assert.match(source, /\[class\.w-10\]="size\(\) === 'sm' \|\| size\(\) === 'md'"/);
+    assert.match(source, /\[class\.h-10\]="size\(\) === 'sm' \|\| size\(\) === 'md'"/);
+    assert.match(source, /\[class\.sm:w-5\]="size\(\) === 'sm'"/);
+    assert.match(source, /\[class\.sm:w-7\]="size\(\) === 'md'"/);
     assert.match(source, /resolveDatePickerAlignment/);
     assert.match(source, /resolveDatePickerPopoverPosition/);
     assert.match(source, /\[style\.left\.px\]/);

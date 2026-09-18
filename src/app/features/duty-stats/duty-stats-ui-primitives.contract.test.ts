@@ -90,6 +90,14 @@ test('phase 2 provides responsive schedule cards and personal shift cues', () =>
   assert.match(template, /\[class\.border-l-4\]="isMyShift\(schedule\)"/);
   assert.match(template, /border-blue-300/);
   assert.match(template, /Ca của bạn/);
+  assert.match(template, /flex flex-wrap items-center gap-2 rounded-2xl/);
+  assert.match(template, /flex w-full items-center justify-end gap-2 overflow-x-auto/);
+  assert.match(template, /aria-label="Mở thêm công cụ"/);
+  assert.match(template, /class="hidden shrink-0 lg:block"/);
+  assert.match(template, /shadow-sm lg:hidden dark:border-slate-800/);
+  assert.match(template, /shadow-2xl lg:hidden dark:border-slate-700/);
+  assert.match(template, /min-h-10 items-center gap-1 rounded-lg border border-dashed[^\"]*md:min-h-0/);
+  assert.match(template, /min-h-10 rounded-md px-2\.5 py-1\.5[^\"]*md:min-h-0/);
 
   assert.match(dashboardComponent, /isMyShift\(schedule: \{ staffIds: string\[\] \}\)/);
   assert.match(dashboardTemplate, /@for \(name of namesFor\(schedule\); track \$index\)/);

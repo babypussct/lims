@@ -95,11 +95,11 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
                     </div>
 
                     <div class="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                        <button (click)="openEditModal(role)" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                        <button (click)="openEditModal(role)" class="min-h-10 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 sm:min-h-0">
                             <i class="fa-solid fa-sliders"></i> Cấu Hình
                         </button>
                         @if (!role.isSystemRole) {
-                            <button (click)="deleteRole(role)" [disabled]="deletingRoleId() === role.id" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-wait">
+                            <button (click)="deleteRole(role)" [disabled]="deletingRoleId() === role.id" class="min-h-10 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-wait sm:min-h-0">
                                 <i class="fa-solid" [class.fa-spinner]="deletingRoleId() === role.id" [class.fa-spin]="deletingRoleId() === role.id" [class.fa-trash-can]="deletingRoleId() !== role.id"></i> Xóa
                             </button>
                         }

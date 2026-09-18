@@ -260,12 +260,15 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                         
                         <!-- Col 1: Checkbox & User Info -->
                         <div class="col-span-1 md:col-span-4 flex items-center gap-3.5">
-                            <input type="checkbox" 
-                                   [checked]="selectedUids().has(u.uid)" 
-                                   [disabled]="isSuperAdmin(u)"
-                                   [title]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ và không tham gia thao tác hàng loạt.' : 'Chọn người dùng'"
-                                   (change)="toggleSelectUser(u.uid)" 
-                                   class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-fuchsia-600 shrink-0">
+                            <label class="-m-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:m-0 md:h-auto md:w-auto">
+                                <input type="checkbox"
+                                       [checked]="selectedUids().has(u.uid)"
+                                       [disabled]="isSuperAdmin(u)"
+                                       [title]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ và không tham gia thao tác hàng loạt.' : 'Chọn người dùng'"
+                                       [attr.aria-label]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ' : 'Chọn người dùng'"
+                                       (change)="toggleSelectUser(u.uid)"
+                                       class="h-5 w-5 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-fuchsia-600 shrink-0 md:h-4 md:w-4">
+                            </label>
                             
                             <img [src]="getAvatarUrl(u.displayName, state.getAvatarOptionsForProfile(u).style, state.getAvatarOptionsForProfile(u).photoURL)" class="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 object-cover" alt="Avatar">
                             
@@ -293,7 +296,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                 </div>
 
                                 <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">{{u.email}}</div>
-                                <button type="button" class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1 cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 w-fit" (click)="copyUid(u.uid)" title="Nhấn để sao chép mã tài khoản" aria-label="Sao chép mã tài khoản">
+                                <button type="button" class="mt-0.5 flex min-h-10 w-fit items-center gap-1 text-[10px] font-mono text-slate-400 cursor-pointer hover:text-fuchsia-600 dark:text-slate-500 dark:hover:text-fuchsia-400 md:min-h-0" (click)="copyUid(u.uid)" title="Nhấn để sao chép mã tài khoản" aria-label="Sao chép mã tài khoản">
                                     <i class="fa-regular fa-copy"></i> {{u.uid.substring(0,8)}}...
                                 </button>
                             </div>

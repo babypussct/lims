@@ -239,33 +239,33 @@ import { formatNum } from '../../../../shared/utils/utils';
         }
 
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-1 mt-1 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+        <div class="flex flex-wrap items-center justify-end gap-1 mt-1 pt-2 border-t border-slate-100 dark:border-slate-800/50">
           @if(req.status === 'PENDING_APPROVAL' && canApproveRequest(req)) {
-              <button (click)="actionApprove.emit(req)" class="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition shadow-sm active:scale-95" title="Duyệt & Giao"><i class="fa-solid fa-check text-xs"></i></button>
-              <button (click)="actionReject.emit(req)" class="p-1.5 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200 transition active:scale-95" title="Từ chối"><i class="fa-solid fa-xmark text-xs"></i></button>
+              <button (click)="actionApprove.emit(req)" class="h-10 w-10 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition shadow-sm active:scale-95 flex items-center justify-center sm:h-8 sm:w-8" title="Duyệt & Giao" aria-label="Duyệt và giao yêu cầu"><i class="fa-solid fa-check text-xs"></i></button>
+              <button (click)="actionReject.emit(req)" class="h-10 w-10 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200 transition active:scale-95 flex items-center justify-center sm:h-8 sm:w-8" title="Từ chối" aria-label="Từ chối yêu cầu"><i class="fa-solid fa-xmark text-xs"></i></button>
           }
           @if(req.status === 'IN_PROGRESS') {
               @if(isCurrentUser(req.requestedBy)) {
-                  <button (click)="actionLogUsage.emit(req)" class="px-2 py-1 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition shadow-sm active:scale-95 text-[11px] font-bold" title="Ghi nhận dùng"><i class="fa-solid fa-pen-nib mr-1"></i> GHI NHẬN</button>
-                  <button (click)="actionReturn.emit({req: req, isForce: false})" class="px-2 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition shadow-sm active:scale-95 text-[11px] font-bold" title="Báo cáo trả"><i class="fa-solid fa-reply mr-1"></i> BÁO TRẢ</button>
+                  <button (click)="actionLogUsage.emit(req)" class="min-h-10 px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition shadow-sm active:scale-95 text-[11px] font-bold sm:min-h-0 sm:px-2 sm:py-1" title="Ghi nhận dùng"><i class="fa-solid fa-pen-nib mr-1"></i> GHI NHẬN</button>
+                  <button (click)="actionReturn.emit({req: req, isForce: false})" class="min-h-10 px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition shadow-sm active:scale-95 text-[11px] font-bold sm:min-h-0 sm:px-2 sm:py-1" title="Báo cáo trả"><i class="fa-solid fa-reply mr-1"></i> BÁO TRẢ</button>
               }
               @if(canApproveAndNotRequestedBySelf(req)) {
-                  <button (click)="actionReturn.emit({req: req, isForce: true})" class="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition active:scale-95 text-[11px] font-bold" title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand mr-1"></i> THU HỒI</button>
+                  <button (click)="actionReturn.emit({req: req, isForce: true})" class="min-h-10 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition active:scale-95 text-[11px] font-bold sm:min-h-0 sm:px-2 sm:py-1" title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand mr-1"></i> THU HỒI</button>
               }
           }
           @if(req.status === 'PENDING_RETURN') {
               @if(isCurrentUser(req.requestedBy)) {
-                  <button (click)="actionUndoReturn.emit(req)" class="px-2 py-1 bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition shadow-sm active:scale-95 text-[11px] font-bold mr-1" title="Hủy báo cáo trả và nhập lại"><i class="fa-solid fa-rotate-left mr-1"></i> HỦY BÁO CÁO</button>
+                  <button (click)="actionUndoReturn.emit(req)" class="min-h-10 px-3 py-2 bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition shadow-sm active:scale-95 text-[11px] font-bold mr-1 sm:min-h-0 sm:px-2 sm:py-1" title="Hủy báo cáo trả và nhập lại"><i class="fa-solid fa-rotate-left mr-1"></i> HỦY BÁO CÁO</button>
               }
               @if(canApproveRequest(req)) {
-                  <button (click)="actionAdminReceive.emit(req)" class="px-2 py-1 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition shadow-sm active:scale-95 text-[11px] font-bold"><i class="fa-solid fa-check-to-slot mr-1"></i> NHẬN TRẢ</button>
+                  <button (click)="actionAdminReceive.emit(req)" class="min-h-10 px-3 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition shadow-sm active:scale-95 text-[11px] font-bold sm:min-h-0 sm:px-2 sm:py-1"><i class="fa-solid fa-check-to-slot mr-1"></i> NHẬN TRẢ</button>
               }
           }
           @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
               <div class="text-[11px] font-bold text-slate-400 flex items-center gap-1 px-1"><i class="fa-solid fa-lock"></i> Đã khóa</div>
           }
           @if(canDeleteRequest(req)) {
-              <button (click)="actionDelete.emit(req)" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition active:scale-95 ml-auto" title="Xóa yêu cầu"><i class="fa-solid fa-trash-can text-xs"></i></button>
+              <button (click)="actionDelete.emit(req)" class="h-10 w-10 text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition active:scale-95 ml-auto flex items-center justify-center sm:h-8 sm:w-8" title="Xóa yêu cầu" aria-label="Xóa yêu cầu"><i class="fa-solid fa-trash-can text-xs"></i></button>
           }
         </div>
       </div>

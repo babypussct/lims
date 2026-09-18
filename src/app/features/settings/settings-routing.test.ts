@@ -183,6 +183,8 @@ describe('Settings routing contract', () => {
     assert.match(settingsShellSource, /label: 'Chính sách hao hụt'[\s\S]*path: '\/settings\/policies\/consumption'[\s\S]*PERMISSIONS\.POLICY_MANAGE/);
     assert.match(settingsShellSource, /label: 'Chỉ tiêu'[\s\S]*\/settings\/data\/master\/analytes/);
     assert.match(settingsShellSource, /label: 'Vai trò & quyền'[\s\S]*\/settings\/access\/roles/);
+    assert.match(settingsShellSource, /class="flex min-h-10 shrink-0 items-center[^\"]*sm:min-h-9"/);
+    assert.match(settingsShellSource, /class="inline-flex min-h-10 items-center[^\"]*sm:min-h-8"/);
     assert.doesNotMatch(settingsShellSource, /<aside/);
     assert.doesNotMatch(settingsShellSource, /Desktop Sticky Navigation Sidebar/);
     assert.doesNotMatch(settingsShellSource, /isAccountArea/);

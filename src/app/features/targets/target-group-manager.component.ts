@@ -40,9 +40,9 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
             </div>
         </app-page-header>
 
-        <div class="flex-1 flex overflow-hidden">
+        <div class="flex flex-1 flex-col overflow-hidden md:flex-row">
             <!-- LIST SIDEBAR -->
-            <div class="w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+            <div class="flex max-h-[42vh] w-full shrink-0 flex-col overflow-y-auto border-b border-slate-200 bg-white custom-scrollbar dark:border-slate-700 dark:bg-slate-800 md:max-h-none md:w-72 md:border-b-0 md:border-r">
                 @if (isLoading()) {
                     <div class="p-4 text-center text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
                 } @else {
@@ -71,7 +71,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
             <!-- EDITOR AREA -->
             <div class="flex-1 flex flex-col overflow-hidden relative">
                 @if (isEditing()) {
-                    <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                    <div class="flex-1 overflow-y-auto p-3 custom-scrollbar sm:p-4 md:p-6">
                         <form id="target-group-form" appFormLabelA11y [formGroup]="form" class="max-w-4xl mx-auto space-y-6">
                             
                             <!-- Header Info -->

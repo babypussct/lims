@@ -89,6 +89,10 @@ describe('Soft UI application layout contract', () => {
     assert.match(header, /openPalette\(\)/);
     assert.match(header, /mobileMenuRequested\.emit\(\)/);
     assert.match(header, /\[headerMode\]="true"/);
+    assert.match(header, /flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-soft/);
+    assert.match(header, /flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/);
+    const notificationBell = read('../../shared/components/notification-bell/notification-bell.component.ts');
+    assert.match(notificationBell, /h-10 w-10[^\n]*md:h-8 md:w-8/);
     const profileMenu = header.slice(header.indexOf('<!-- ── Profile Dropdown ── -->'), header.indexOf('<!-- ═══════ UNIFIED MOBILE TOP NAVIGATION ═══════ -->'));
     assert.doesNotMatch(profileMenu, /Nhật ký thay đổi/);
     assert.doesNotMatch(profileMenu, /Giao diện Sáng|Giao diện Tối/);
