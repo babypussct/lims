@@ -115,17 +115,23 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /grid-cols-7/);
   assert.match(template, /@for \(cell of calendarCells\(\); track \$index\)/);
   assert.match(template, /Thống kê theo người/);
-  assert.match(template, /Người tham gia/);
-  assert.match(template, /Bình quân\/người/);
+  assert.match(template, /Tóm tắt vận hành lịch trực/);
+  assert.match(template, /ca tháng/);
+  assert.match(template, /lượt trực/);
+  assert.match(template, /Mở lịch trực/);
+  assert.match(template, /Xem thống kê đầy đủ/);
   assert.match(template, /@for \(stat of personStats\(\); track stat\.staffId/);
   assert.match(template, /avatarFor\(stat\.displayName, stat\.linkedUserUid\)/);
+  assert.match(component, /assignmentDeviationBadgeClass\(total: number\)/);
   assert.doesNotMatch(template, /initialsFor\(stat\.displayName\)/);
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
   assert.doesNotMatch(template, /startTime|18:00/);
   assert.match(template, /grid items-stretch gap-4/);
-  assert.match(template, /2xl:h-\[520px\]/);
-  assert.match(template, /max-h-\[390px\][^\n]*2xl:max-h-none/);
+  assert.match(template, /2xl:h-\[460px\]/);
+  assert.match(template, /max-h-\[300px\]/);
+  assert.match(template, /xl:max-h-none/);
   assert.match(template, /so bình quân/);
+  assert.doesNotMatch(template, /Ca sắp tới/);
 });
 
 test('duty statistics support selected period, full year and all-time balance comparison', () => {
@@ -383,7 +389,7 @@ test('mobile-first duty roster adds compact calendar, bottom sheets, staff distr
   assert.match(template, /Thống kê nhân viên dạng thẻ/);
   assert.match(template, />Ít<\/span><span>Nhiều</);
   assert.match(template, /sticky top-0 z-20/);
-  assert.match(template, /hidden h-full min-h-0 overflow-auto p-3 custom-scrollbar md:block/);
+  assert.match(template, /hidden min-h-0 flex-1 overflow-hidden p-2 md:flex md:flex-col/);
   assert.match(template, /hidden h-full min-h-0 overflow-auto custom-scrollbar md:block/);
 
   assert.match(dashboardComponent, /readonly nextSevenDaysSchedules = computed/);
@@ -394,6 +400,37 @@ test('mobile-first duty roster adds compact calendar, bottom sheets, staff distr
   assert.match(dashboardTemplate, /Xem toàn bộ lịch tháng/);
   assert.match(dashboardTemplate, /class="space-y-3 p-3 md:hidden"/);
   assert.match(dashboardTemplate, /class="hidden space-y-4 p-4 md:block"/);
+});
+
+test('fit-to-screen month calendars use compact cells and a non-flow shift-swap drawer', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const dashboardComponent = read('src/app/features/duty-stats/duty-dashboard.component.ts');
+  const dashboardTemplate = read('src/app/features/duty-stats/duty-dashboard.component.html');
+
+  assert.match(component, /readonly swapDrawerOpen = signal\(false\)/);
+  assert.match(component, /readonly calendarWeekCount = computed/);
+  assert.match(component, /readonly pendingSwapCount = computed/);
+  assert.match(component, /openSwapDrawer\(\): void/);
+  assert.match(component, /toggleVerificationFilter\(\): void/);
+  assert.match(template, /aria-label="Tóm tắt lịch trực"/);
+  assert.match(template, /Cần xác minh/);
+  assert.match(template, /Có \{\{ pendingSwapCount\(\) \}\} yêu cầu đổi ca cần xử lý/);
+  assert.match(template, /role="dialog"/);
+  assert.match(template, /<app-duty-shift-swap-panel><\/app-duty-shift-swap-panel>/);
+  assert.match(template, /grid-template-rows/);
+  assert.match(template, /minmax\(54px, 1fr\)/);
+  assert.match(template, /calendarCellLabel\(cell\)/);
+  assert.match(template, /calendarAdditionalPeopleCount\(cell\.schedule\)/);
+  assert.match(template, /border-dashed/);
+  assert.match(template, /group-focus-visible:opacity-100/);
+
+  assert.match(dashboardComponent, /readonly calendarWeekCount = computed/);
+  assert.match(dashboardComponent, /calendarVisibleNames\(schedule: DutyScheduleEntry\)/);
+  assert.match(dashboardTemplate, /grid-template-rows/);
+  assert.match(dashboardTemplate, /calendarVisibleNames\(schedule\)/);
+  assert.match(dashboardTemplate, /calendarAdditionalPeopleCount\(schedule\)/);
+  assert.doesNotMatch(dashboardTemplate, /min-h-20|overflow-auto p-3 custom-scrollbar/);
 });
 
 test('phase 1 fairness adds weekend and lead statistics plus rolling recommendation cues', () => {
@@ -421,8 +458,8 @@ test('phase 1 fairness adds weekend and lead statistics plus rolling recommendat
   assert.match(template, /toggleSort\('leadCount'\)/);
   assert.match(template, /Cuối tuần/);
   assert.match(template, /★ Chủ trì/);
-  assert.match(dashboardTemplate, /Cuối tuần:/);
-  assert.match(dashboardTemplate, /★ Chủ trì:/);
+  assert.doesNotMatch(dashboardTemplate, /Cuối tuần:/);
+  assert.doesNotMatch(dashboardTemplate, /★ Chủ trì:/);
 });
 
 test('M1 week view keeps an independent anchor, seven-day component and week range listener', () => {

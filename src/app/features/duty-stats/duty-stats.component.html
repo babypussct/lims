@@ -1,11 +1,12 @@
-<div class="flex h-full min-h-0 flex-col gap-5 p-4 text-slate-800 md:p-6 dark:text-slate-200">
+<div class="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-3 text-slate-800 md:gap-3 md:p-4 dark:text-slate-200">
   <app-page-header
+    variant="workspace"
     title="Lịch trực đêm"
-    subtitle="Xếp lịch, quản lý nhân sự trực và theo dõi phân bổ lâu dài."
+    subtitle="Xếp lịch, theo dõi phân bổ và xử lý đổi ca."
     icon="fa-user-clock">
   </app-page-header>
 
-  <div class="hidden md:block">
+  <div class="hidden shrink-0 md:block">
   <app-toolbar>
     <div toolbarSearch class="flex w-full flex-wrap items-center gap-2">
       @if (activeView() === 'schedule' && scheduleLayout() === 'week') {
@@ -74,6 +75,15 @@
     </div>
 
     <div toolbarActions class="flex items-center gap-2">
+      @if (activeView() === 'schedule') {
+        <app-button variant="secondary" size="sm" (click)="openSwapDrawer()" title="Mở bảng đổi ca trực">
+          <i class="fa-solid fa-right-left" aria-hidden="true"></i>
+          Đổi ca trực
+          @if (pendingSwapCount() > 0) {
+            <span class="ml-0.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] leading-none text-white">{{ pendingSwapCount() }}</span>
+          }
+        </app-button>
+      }
       @if (duty.canManage() && activeView() === 'schedule' && selectedMonth() !== null && scheduleLayout() !== 'week') {
         <div class="flex items-center gap-1.5" aria-label="Công cụ chuẩn bị tháng">
           <app-button variant="secondary" size="sm" (click)="openBatchMonth()" title="Tạo khung ca trống cho tháng">
@@ -139,6 +149,14 @@
         <i class="fa-solid fa-star" [class.text-amber-500]="myShiftsOnly()" aria-hidden="true"></i>
       </button>
     }
+    @if (activeView() === 'schedule') {
+      <button type="button" (click)="openSwapDrawer()" class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700 transition active:scale-95 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300" aria-label="Đổi ca trực">
+        <i class="fa-solid fa-right-left text-xs" aria-hidden="true"></i>
+        @if (pendingSwapCount() > 0) {
+          <span class="absolute -right-1 -top-1 min-w-4 rounded-full bg-amber-600 px-1 text-[8px] font-black leading-4 text-white">{{ pendingSwapCount() }}</span>
+        }
+      </button>
+    }
     @if (duty.canManage() && activeView() === 'schedule') {
       <button type="button" (click)="openNewSchedule()" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-sm transition active:scale-95 hover:bg-blue-700" aria-label="Thêm ca">
         <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Ca</span>
@@ -159,53 +177,62 @@
     </div>
   }
 
-  <div class="sticky top-0 z-20 flex shrink-0 gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-slate-100/90 p-1.5 shadow-sm backdrop-blur-md md:static md:gap-2 md:bg-slate-100 dark:border-slate-800 dark:bg-slate-950/80 md:dark:bg-slate-950">
+  <div class="sticky top-0 z-20 flex shrink-0 gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-slate-100/90 p-1 shadow-sm backdrop-blur-md md:static md:gap-2 md:bg-slate-100 dark:border-slate-800 dark:bg-slate-950/80 md:dark:bg-slate-950">
     <button type="button" (click)="setActiveView('schedule')"
-      class="inline-flex items-center rounded-xl px-4 py-2 text-xs font-black transition active:scale-95"
+      class="inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95"
       [class]="activeView() === 'schedule' ? 'border border-slate-200/80 bg-white text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'">
       <i class="fa-solid fa-calendar-days mr-2 text-[11px]" aria-hidden="true"></i>Lịch trực
     </button>
     <button type="button" (click)="setActiveView('staff')"
-      class="inline-flex items-center rounded-xl px-4 py-2 text-xs font-black transition active:scale-95"
+      class="inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95"
       [class]="activeView() === 'staff' ? 'border border-slate-200/80 bg-white text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'">
       <i class="fa-solid fa-users mr-2 text-[11px]" aria-hidden="true"></i>Nhân sự
     </button>
     <button type="button" (click)="setActiveView('stats')"
-      class="inline-flex items-center rounded-xl px-4 py-2 text-xs font-black transition active:scale-95"
+      class="inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95"
       [class]="activeView() === 'stats' ? 'border border-slate-200/80 bg-white text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'">
       <i class="fa-solid fa-chart-column mr-2 text-[11px]" aria-hidden="true"></i>Thống kê
     </button>
   </div>
 
   @if (activeView() === 'schedule') {
-    <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-5">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="text-[10px] font-bold uppercase text-slate-400">Ca đang áp dụng</div>
-        <div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div>
-        @if (unassignedSchedules().length > 0) {
-          <div class="mt-1 text-[10px] font-black text-amber-600 dark:text-amber-400">{{ unassignedSchedules().length }} ca chưa phân công</div>
-        }
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="text-[10px] font-bold uppercase text-slate-400">Tổng lượt trực</div>
-        <div class="mt-1 text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ totalAssignments() }}</div>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="text-[10px] font-bold uppercase text-slate-400">Người tham gia</div>
-        <div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}</div>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="text-[10px] font-bold uppercase text-slate-400">Bình quân/người</div>
-        <div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div>
-      </div>
-      <div class="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20">
-        <div class="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-300">Cần xác minh</div>
-        <div class="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">{{ verificationSchedules().length }}</div>
-        <div class="mt-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">{{ unresolvedAssignmentCount() }} vị trí chưa rõ</div>
-      </div>
+    <div class="flex shrink-0 flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-800 dark:bg-slate-900" aria-label="Tóm tắt lịch trực">
+      <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số ca đang áp dụng">
+        <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ activeSchedules().length }}</strong> ca
+      </span>
+      <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+      <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Tổng lượt phân công">
+        <strong class="text-sm font-black text-indigo-600 dark:text-indigo-300">{{ totalAssignments() }}</strong> lượt trực
+      </span>
+      <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+      <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số nhân sự có lượt trực">
+        <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ uniqueAssignedPeople() }}</strong> nhân sự
+      </span>
+      <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+      <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số lượt trung bình trên mỗi nhân sự trong kỳ">
+        BQ <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ averageAssignments() | number:'1.1-1' }}</strong>/người
+      </span>
+      <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+      <button type="button" (click)="toggleVerificationFilter()"
+        class="inline-flex items-center gap-1 rounded-lg border border-dashed px-2 py-1 text-[11px] font-black transition active:scale-95"
+        [class]="needsVerificationOnly() ? 'border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-400 dark:bg-amber-950/60 dark:text-amber-200' : 'border-amber-300 bg-amber-50/70 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300'"
+        [attr.aria-pressed]="needsVerificationOnly()"
+        title="Lọc các ca cần xác minh">
+        <i class="fa-solid fa-triangle-exclamation text-[10px]" aria-hidden="true"></i>
+        <strong>{{ verificationSchedules().length }}</strong> cần xác minh
+      </button>
     </div>
 
-    <app-duty-shift-swap-panel></app-duty-shift-swap-panel>
+    @if (pendingSwapCount() > 0) {
+      <button type="button" (click)="openSwapDrawer()" class="flex min-h-9 shrink-0 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-left text-[11px] font-bold text-amber-800 shadow-sm transition hover:bg-amber-100 active:scale-[.99] dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200" aria-label="Mở yêu cầu đổi ca đang chờ">
+        <i class="fa-solid fa-bell text-amber-600 dark:text-amber-300" aria-hidden="true"></i>
+        <span class="min-w-0 flex-1 truncate">Có {{ pendingSwapCount() }} yêu cầu đổi ca cần xử lý</span>
+        @if (actionableSwapCount() > 0 && actionableSwapCount() !== pendingSwapCount()) {
+          <span class="shrink-0 text-[10px] font-bold text-amber-600 dark:text-amber-300">{{ actionableSwapCount() }} cần bạn</span>
+        }
+        <span class="shrink-0 underline underline-offset-2">Xem chi tiết</span>
+      </button>
+    }
 
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
@@ -257,80 +284,99 @@
           (requestSwap)="openSwapRequest($event)">
         </app-duty-week-view>
       } @else if (scheduleLayout() === 'calendar') {
-        <div class="hidden h-full min-h-0 overflow-auto p-3 custom-scrollbar md:block">
-          <div class="min-w-[640px] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-            <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+        <div class="hidden min-h-0 flex-1 overflow-hidden p-2 md:flex md:flex-col">
+          <div class="flex h-full min-h-0 min-w-[640px] flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="grid shrink-0 grid-cols-7 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
               @for (weekday of calendarWeekdays; track weekday) {
-                <div class="px-2 py-2 text-center text-[10px] font-black uppercase text-slate-500">{{ weekday }}</div>
+                <div class="px-2 py-1.5 text-center text-[9px] font-black uppercase text-slate-500">{{ weekday }}</div>
               }
             </div>
-            <div class="grid grid-cols-7 bg-slate-100/70 dark:bg-slate-950/60">
+            <div class="grid min-h-0 flex-1 grid-cols-7 bg-slate-100/70 dark:bg-slate-950/60"
+              [style.grid-template-rows]="'repeat(' + calendarWeekCount() + ', minmax(54px, 1fr))'">
               @for (cell of calendarCells(); track $index) {
                 @if (cell) {
                   <button type="button" (click)="openCalendarDate(cell)" [disabled]="!duty.canManage()"
-                    class="group min-h-20 border-b border-r border-slate-200 bg-white p-1.5 text-left transition enabled:hover:z-[1] enabled:hover:bg-blue-50/60 enabled:hover:shadow-sm disabled:cursor-default dark:border-slate-700 dark:bg-slate-900 dark:enabled:hover:bg-blue-950/20"
+                    class="group relative flex min-h-0 flex-col overflow-hidden border-b border-r border-slate-200 bg-white p-1.5 text-left transition enabled:hover:z-[1] enabled:hover:bg-blue-50/60 enabled:hover:shadow-sm disabled:cursor-default dark:border-slate-700 dark:bg-slate-900 dark:enabled:hover:bg-blue-950/20"
+                    [attr.title]="calendarCellLabel(cell)"
+                    [attr.aria-label]="calendarCellLabel(cell)"
+                    [class.border-2]="cell.schedule && isMyShift(cell.schedule)"
+                    [class.border-blue-500]="cell.schedule && isMyShift(cell.schedule)"
+                    [class.border-dashed]="cell.schedule && (cell.schedule.status === 'cancelled' || cell.schedule.needsVerification || unresolvedFor(cell.schedule).length > 0)"
+                    [class.opacity-60]="cell.schedule?.status === 'cancelled'"
                     [class.ring-2]="isToday(cell.date)" [class.ring-inset]="isToday(cell.date)" [class.ring-blue-500]="isToday(cell.date)">
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-black"
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black"
                         [class]="isToday(cell.date) ? 'bg-blue-600 text-white' : (isWeekend(cell.date) ? 'text-rose-600 dark:text-rose-300' : 'text-slate-700 dark:text-slate-200')">
                         {{ cell.day }}
                       </span>
                       @if (cell.schedule?.status === 'cancelled') {
-                        <span class="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-black text-red-600 dark:bg-red-950/30 dark:text-red-300">Đã hủy</span>
-                      } @else if (cell.schedule?.needsVerification) {
-                        <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Cần xác minh</span>
+                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-dashed border-red-300 text-red-600 dark:border-red-800 dark:text-red-300" title="Ca đã hủy">
+                          <i class="fa-solid fa-ban text-[9px]" aria-hidden="true"></i><span class="sr-only">Ca đã hủy</span>
+                        </span>
+                      } @else if (cell.schedule?.needsVerification || (cell.schedule && unresolvedFor(cell.schedule).length > 0)) {
+                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-dashed border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-300" title="Cần xác minh">
+                          <i class="fa-solid fa-triangle-exclamation text-[9px]" aria-hidden="true"></i><span class="sr-only">Cần xác minh</span>
+                        </span>
                       } @else if (cell.schedule && cell.schedule.staffIds.length === 0) {
-                        <span class="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">Chưa phân công</span>
-                      } @else if (cell.schedule && cell.visible) {
-                        <span class="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">Đã xếp</span>
+                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-dashed border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-300" title="Chưa phân công">
+                          <i class="fa-solid fa-user-clock text-[9px]" aria-hidden="true"></i><span class="sr-only">Chưa phân công</span>
+                        </span>
+                      }
+                      @if (cell.schedule && !cell.visible) {
+                        <i class="fa-solid fa-filter text-[9px] text-slate-400" title="Ca đang bị ẩn bởi bộ lọc" aria-label="Ca đang bị ẩn bởi bộ lọc"></i>
                       }
                     </div>
 
                     @if (cell.schedule && cell.visible) {
-                      <div class="mt-2 space-y-1.5">
-                        @if (namesFor(cell.schedule).length > 0) {
-                          <div class="flex flex-wrap gap-1">
-                            @for (name of namesFor(cell.schedule); track $index) {
-                              <span class="inline-flex max-w-full items-start gap-1 rounded-md bg-slate-100 px-1.5 py-1 text-[11px] font-black leading-tight text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                                @if ($index === 0) {
-                                  <i class="fa-solid fa-star mt-px shrink-0 text-amber-500" aria-hidden="true"></i>
-                                }
-                                <span class="min-w-0 whitespace-normal break-words">{{ name }}</span>
-                              </span>
-                            }
-                          </div>
+                      <div class="mt-1 min-w-0 space-y-0.5">
+                        @for (name of namesFor(cell.schedule); track $index) {
+                          @if ($index < 2) {
+                            <div class="flex min-w-0 items-center gap-1 rounded-md bg-slate-100/90 px-1 py-0.5 text-[10px] font-bold leading-tight text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
+                              @if ($index === 0) {
+                                <i class="fa-solid fa-star shrink-0 text-[8px] text-amber-500" title="Người chủ trì" aria-hidden="true"></i>
+                              }
+                              <span class="min-w-0 truncate" [ngClass]="isMyName(name) ? ['font-black', 'text-blue-700', 'dark:text-blue-300'] : []">{{ name }}</span>
+                            </div>
+                          }
+                        }
+                        @if (calendarAdditionalPeopleCount(cell.schedule) > 0) {
+                          <span class="inline-flex max-w-full items-center rounded-md border border-slate-200 bg-white/80 px-1 py-0.5 text-[9px] font-black text-slate-500 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">
+                            +{{ calendarAdditionalPeopleCount(cell.schedule) }} người
+                          </span>
                         }
                         @if (unresolvedFor(cell.schedule).length > 0) {
-                          <div class="flex flex-wrap gap-1">
-                            @for (label of unresolvedFor(cell.schedule); track $index) {
-                              <span class="inline-flex rounded-md bg-amber-100 px-1.5 py-1 text-[10px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                                <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>{{ label || '?' }}
-                              </span>
-                            }
-                          </div>
+                          <span class="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-300 bg-amber-50/80 px-1 py-0.5 text-[9px] font-black text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                            <i class="fa-solid fa-triangle-exclamation text-[8px]" aria-hidden="true"></i>
+                            <span>{{ unresolvedFor(cell.schedule).length }}</span><span class="sr-only"> vị trí chưa xác định</span>
+                          </span>
+                        }
+                        @if (cell.schedule.needsVerification && unresolvedFor(cell.schedule).length === 0) {
+                          <span class="sr-only">Cần xác minh</span>
                         }
                         @if (namesFor(cell.schedule).length === 0 && unresolvedFor(cell.schedule).length === 0) {
-                          <div class="text-[11px] font-bold text-amber-600 dark:text-amber-300">Chạm để phân công người trực</div>
+                          <span class="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-300">
+                            <i class="fa-solid fa-user-clock text-[8px]" aria-hidden="true"></i><span class="sr-only">Chưa phân công</span>
+                          </span>
                         }
-                        <div class="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-300">
-                          <i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>{{ cell.schedule.startTime || '18:00' }}
-                        </div>
-                        @if (isMyShift(cell.schedule)) {
-                          <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Ca của bạn</span>
+                        @if ((cell.schedule.startTime || '18:00') !== '18:00') {
+                          <span class="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-blue-600 dark:text-blue-300" title="Giờ bắt đầu ca">
+                            <i class="fa-regular fa-clock text-[8px]" aria-hidden="true"></i>{{ cell.schedule.startTime }}
+                          </span>
                         }
                       </div>
                     } @else if (cell.schedule) {
-                      <div class="mt-2 text-[10px] font-bold text-slate-400">
-                        {{ cell.schedule.status === 'cancelled' ? 'Ca này đã hủy' : 'Đã có ca khác ngoài bộ lọc' }}
+                      <div class="mt-1 flex items-center gap-1 text-[9px] font-bold text-slate-400">
+                        <i class="fa-solid fa-filter text-[8px]" aria-hidden="true"></i><span class="sr-only">Ca đang bị ẩn bởi bộ lọc</span>
                       </div>
                     } @else {
-                      <div class="mt-2 text-[10px] font-bold text-slate-300 dark:text-slate-600">
-                        {{ duty.canManage() ? 'Chạm để tạo ca' : 'Chưa có ca' }}
+                      <div class="mt-1 flex min-h-0 flex-1 items-center justify-center text-slate-300 dark:text-slate-600">
+                        <i class="fa-solid fa-plus text-[10px] opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-100" aria-hidden="true"></i>
+                        <span class="sr-only">{{ duty.canManage() ? 'Chạm để tạo ca' : 'Chưa có ca' }}</span>
                       </div>
                     }
                   </button>
                 } @else {
-                  <div class="min-h-20 border-b border-r border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-950/40"></div>
+                  <div class="min-h-0 border-b border-r border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-950/40"></div>
                 }
               }
             </div>
@@ -1021,6 +1067,35 @@
     [requesterStaffId]="myStaffId() || ''"
     (closed)="swapSourceSchedule.set(null)">
   </app-duty-shift-swap-request>
+}
+
+@if (swapDrawerOpen()) {
+  <div class="fixed left-0 top-0 z-[70] h-full w-full animate-fade-in" aria-label="Bảng đổi ca trực">
+    <button
+      type="button"
+      class="absolute left-0 top-0 h-full w-full cursor-default bg-slate-950/45 backdrop-blur-[1px]"
+      (click)="closeSwapDrawer()"
+      aria-label="Đóng bảng đổi ca trực">
+    </button>
+    <aside
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="duty-swap-drawer-title"
+      class="absolute bottom-0 left-0 right-0 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl animate-slide-up dark:border-slate-700 dark:bg-slate-900 lg:bottom-0 lg:left-auto lg:h-full lg:max-h-none lg:w-[min(720px,100vw)] lg:rounded-l-3xl lg:rounded-t-none">
+      <header class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+        <div class="min-w-0">
+          <h2 id="duty-swap-drawer-title" class="truncate text-sm font-black text-slate-800 dark:text-slate-100">Đổi ca trực</h2>
+          <p class="mt-0.5 text-[10px] font-medium text-slate-400">Xem, phản hồi hoặc duyệt các yêu cầu đổi ca.</p>
+        </div>
+        <button type="button" (click)="closeSwapDrawer()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-white" aria-label="Đóng bảng đổi ca trực">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="min-h-0 flex-1 overflow-y-auto p-3 custom-scrollbar">
+        <app-duty-shift-swap-panel></app-duty-shift-swap-panel>
+      </div>
+    </aside>
+  </div>
 }
 
 @if (staffModalOpen()) {

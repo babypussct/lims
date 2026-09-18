@@ -1,18 +1,19 @@
 {
-  "title": "Thống nhất Date Picker và tối ưu thao tác mobile",
+  "title": "Tối ưu Lịch trực và Dashboard vận hành",
   "highlights": [
-    "Toàn bộ trường ngày nghiệp vụ trong LIMS dùng chung Soft UI Date Picker, hiển thị ổn định định dạng DD/MM/YYYY và lưu trữ date-only theo ISO YYYY-MM-DD."
+    "Tái cấu trúc widget Lịch trực trên Dashboard để giữ đầy đủ thông tin vận hành và thống kê nhân sự nhưng giảm đáng kể chiều cao, giúp truy cập nhanh hơn các phân hệ phía dưới."
   ],
   "features": [
-    "Bổ sung calendar popover dùng chung với preset nghiệp vụ, nhập nhanh DDMMYYYY, keyboard navigation, CVA/Reactive Forms, ngModel và Signal model.",
-    "Thêm cơ chế căn chỉnh left/right/auto và clamp popover theo viewport để lịch không bị cắt trên màn hình nhỏ."
+    "Bổ sung dải tóm tắt vận hành, cảnh báo ca cần xác minh và yêu cầu đổi ca trực ngay trên Dashboard.",
+    "Bổ sung luồng đổi ca dạng drawer trên màn hình Lịch trực, kèm chỉ báo yêu cầu đang chờ xử lý trên desktop và mobile."
   ],
   "improvements": [
-    "Tối ưu Date Range Filter cho mobile bằng field full-width, layout xếp dọc dưới breakpoint sm, input 16px và touch affordance.",
-    "Chuẩn hóa date-only arithmetic và xử lý timezone cho date range, đồng thời bổ sung guardrail tự động ngăn native date input quay lại production."
+    "Thu gọn Trực hôm nay, Ca của bạn và Thống kê theo người; giữ tổng lượt và độ lệch so bình quân nhưng chuyển các chỉ số công bằng chuyên sâu sang trang thống kê đầy đủ.",
+    "Tối ưu lịch tháng theo kiểu fit-to-screen với lưới 5/6 tuần tự co giãn, hiển thị trạng thái xác minh, ca của bạn, người chủ trì và số nhân sự bổ sung mà không cần cuộn dọc calendar.",
+    "Chuyển bố cục Calendar và Thống kê sang hai cột từ màn hình laptop rộng, đồng thời giới hạn vùng cuộn thống kê ở viewport hẹp để Dashboard gọn hơn."
   ],
   "fixes": [
-    "Khắc phục lỗi cắt hai chữ số cuối của năm trong các container hẹp như Hiệu Suất Phân Tích, request list và standards modal.",
-    "Khắc phục nguy cơ popover tràn mép trái/phải và lệch ngày do timezone khi lọc, nhập hoặc xuất dữ liệu nghiệp vụ."
+    "Loại bỏ phần Ca sắp tới bị lặp trên Dashboard desktop và các KPI trùng thông tin, giúp giảm chiều cao widget và tránh lặp dữ liệu.",
+    "Khắc phục tình trạng calendar và thống kê vẫn xếp dọc trên nhiều màn hình laptop do breakpoint quá muộn."
   ]
 }

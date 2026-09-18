@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.17-b02
+## Phiên bản hiện tại: v26.09.18-b01
+
+### v26.09.18-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tái cấu trúc widget Lịch trực trên Dashboard để giữ đầy đủ thông tin vận hành và thống kê nhân sự nhưng giảm đáng kể chiều cao, giúp truy cập nhanh hơn các phân hệ phía dưới.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung dải tóm tắt vận hành, cảnh báo ca cần xác minh và yêu cầu đổi ca trực ngay trên Dashboard.
+- Bổ sung luồng đổi ca dạng drawer trên màn hình Lịch trực, kèm chỉ báo yêu cầu đang chờ xử lý trên desktop và mobile.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Thu gọn Trực hôm nay, Ca của bạn và Thống kê theo người; giữ tổng lượt và độ lệch so bình quân nhưng chuyển các chỉ số công bằng chuyên sâu sang trang thống kê đầy đủ.
+- Tối ưu lịch tháng theo kiểu fit-to-screen với lưới 5/6 tuần tự co giãn, hiển thị trạng thái xác minh, ca của bạn, người chủ trì và số nhân sự bổ sung mà không cần cuộn dọc calendar.
+- Chuyển bố cục Calendar và Thống kê sang hai cột từ màn hình laptop rộng, đồng thời giới hạn vùng cuộn thống kê ở viewport hẹp để Dashboard gọn hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ phần Ca sắp tới bị lặp trên Dashboard desktop và các KPI trùng thông tin, giúp giảm chiều cao widget và tránh lặp dữ liệu.
+- Khắc phục tình trạng calendar và thống kê vẫn xếp dọc trên nhiều màn hình laptop do breakpoint quá muộn.
 
 ### v26.09.17-b02
 

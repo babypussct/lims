@@ -1,5 +1,27 @@
 [
   {
+    "version": "v26.09.18-b01",
+    "date": "18/9/2026",
+    "title": "Tối ưu Lịch trực và Dashboard vận hành",
+    "highlights": [
+      "Tái cấu trúc widget Lịch trực trên Dashboard để giữ đầy đủ thông tin vận hành và thống kê nhân sự nhưng giảm đáng kể chiều cao, giúp truy cập nhanh hơn các phân hệ phía dưới."
+    ],
+    "features": [
+      "Bổ sung dải tóm tắt vận hành, cảnh báo ca cần xác minh và yêu cầu đổi ca trực ngay trên Dashboard.",
+      "Bổ sung luồng đổi ca dạng drawer trên màn hình Lịch trực, kèm chỉ báo yêu cầu đang chờ xử lý trên desktop và mobile."
+    ],
+    "improvements": [
+      "Thu gọn Trực hôm nay, Ca của bạn và Thống kê theo người; giữ tổng lượt và độ lệch so bình quân nhưng chuyển các chỉ số công bằng chuyên sâu sang trang thống kê đầy đủ.",
+      "Tối ưu lịch tháng theo kiểu fit-to-screen với lưới 5/6 tuần tự co giãn, hiển thị trạng thái xác minh, ca của bạn, người chủ trì và số nhân sự bổ sung mà không cần cuộn dọc calendar.",
+      "Chuyển bố cục Calendar và Thống kê sang hai cột từ màn hình laptop rộng, đồng thời giới hạn vùng cuộn thống kê ở viewport hẹp để Dashboard gọn hơn."
+    ],
+    "fixes": [
+      "Loại bỏ phần Ca sắp tới bị lặp trên Dashboard desktop và các KPI trùng thông tin, giúp giảm chiều cao widget và tránh lặp dữ liệu.",
+      "Khắc phục tình trạng calendar và thống kê vẫn xếp dọc trên nhiều màn hình laptop do breakpoint quá muộn."
+    ],
+    "releaseOrder": 26091800001
+  },
+  {
     "version": "v26.09.17-b02",
     "date": "17/9/2026",
     "title": "Thống nhất Date Picker và tối ưu thao tác mobile",

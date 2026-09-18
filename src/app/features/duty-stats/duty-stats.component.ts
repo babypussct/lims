@@ -104,6 +104,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'calendar',
   );
   readonly mobileMenuOpen = signal(false);
+  readonly swapDrawerOpen = signal(false);
   readonly selectedDayCell = signal<DutyCalendarCell | null>(null);
   readonly mobilePeriodMode = signal<DutyMobilePeriodMode>('month');
   readonly staffSearch = signal('');
@@ -171,6 +172,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
       visible: visibleDates.has(date),
     } : null);
   });
+  readonly calendarWeekCount = computed(() => Math.max(1, Math.ceil(this.calendarCells().length / 7)));
   readonly batchScopedDates = computed(() => {
     const month = this.selectedMonth();
     if (!month) return [];
@@ -218,6 +220,12 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     const people = this.statsPopulationCount();
     return people === 0 ? 0 : this.totalAssignments() / people;
   });
+  readonly pendingSwapCount = computed(() => this.dutySwap.pendingCount());
+  readonly actionableSwapCount = computed(() => this.dutySwap.requests().filter(request =>
+    this.dutySwap.canTargetRespond(request)
+    || this.dutySwap.canRequesterCancel(request)
+    || (this.duty.canManage() && request.status === 'PENDING_MANAGER'),
+  ).length);
   readonly staffRecommendations = computed(() => {
     const byDate = new Map(
       [...this.rollingSchedules(), ...this.conflictSchedules()]
@@ -260,6 +268,18 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
       return;
     }
     this.swapSourceSchedule.set(schedule);
+  }
+
+  openSwapDrawer(): void {
+    this.swapDrawerOpen.set(true);
+  }
+
+  closeSwapDrawer(): void {
+    this.swapDrawerOpen.set(false);
+  }
+
+  toggleVerificationFilter(): void {
+    this.needsVerificationOnly.update(value => !value);
   }
 
   setYear(value: number | string): void {
@@ -377,6 +397,10 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   isMyShift(schedule: DutyScheduleEntry): boolean {
     const staffId = this.myStaffId();
     return !!staffId && schedule.staffIds.includes(staffId);
+  }
+
+  isMyName(name: string): boolean {
+    return this.myStaff()?.displayName === name;
   }
 
   isToday(dateKey: string): boolean {
@@ -678,6 +702,41 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     return schedule.unresolvedAssignees || [];
   }
 
+  calendarVisibleNames(schedule: DutyScheduleEntry): string[] {
+    return this.namesFor(schedule).slice(0, 2);
+  }
+
+  calendarAdditionalPeopleCount(schedule: DutyScheduleEntry): number {
+    return Math.max(0, this.namesFor(schedule).length - 2);
+  }
+
+  calendarCellLabel(cell: DutyCalendarCell): string {
+    const dateLabel = this.formatDate(cell.date);
+    if (!cell.schedule) {
+      return `${dateLabel}. ${this.duty.canManage() ? 'Chạm để tạo ca.' : 'Chưa có ca trực.'}`;
+    }
+
+    const schedule = cell.schedule;
+    const names = this.namesFor(schedule);
+    const unresolved = this.unresolvedFor(schedule);
+    const assignments = [...names, ...unresolved.map(label => `Vị trí chưa xác định: ${label || '?'}`)];
+    const status = schedule.status === 'cancelled'
+      ? 'Đã hủy'
+      : schedule.needsVerification || unresolved.length > 0
+        ? 'Cần xác minh'
+        : assignments.length === 0
+          ? 'Chưa phân công'
+          : 'Đang áp dụng';
+
+    return [
+      dateLabel,
+      `Giờ trực ${schedule.startTime || '18:00'}`,
+      status,
+      assignments.join(', ') || 'Chưa phân công',
+      schedule.note || '',
+    ].filter(Boolean).join('. ');
+  }
+
   accountFor(person: DutyStaff): UserProfile | undefined {
     if (!person.linkedUserUid) return undefined;
     return this.duty.accounts().find(item => item.uid === person.linkedUserUid);
@@ -743,6 +802,10 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handlePrintShortcut(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.swapDrawerOpen()) {
+      this.closeSwapDrawer();
+      return;
+    }
     if (!(event.ctrlKey || event.metaKey) || event.key.toLocaleLowerCase() !== 'p') return;
     if (this.activeView() !== 'schedule' || this.scheduleModalOpen() || this.batchModalOpen() || this.staffModalOpen()) return;
     event.preventDefault();

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.17-b02",
-    "title": "Thống nhất Date Picker và tối ưu thao tác mobile",
+    "version": "v26.09.18-b01",
+    "title": "Tối ưu Lịch trực và Dashboard vận hành",
     "features": [
-      "Toàn bộ trường ngày nghiệp vụ trong LIMS dùng chung Soft UI Date Picker, hiển thị ổn định định dạng DD/MM/YYYY và lưu trữ date-only theo ISO YYYY-MM-DD.",
-      "Bổ sung calendar popover dùng chung với preset nghiệp vụ, nhập nhanh DDMMYYYY, keyboard navigation, CVA/Reactive Forms, ngModel và Signal model.",
-      "Thêm cơ chế căn chỉnh left/right/auto và clamp popover theo viewport để lịch không bị cắt trên màn hình nhỏ.",
-      "Tối ưu Date Range Filter cho mobile bằng field full-width, layout xếp dọc dưới breakpoint sm, input 16px và touch affordance.",
-      "Chuẩn hóa date-only arithmetic và xử lý timezone cho date range, đồng thời bổ sung guardrail tự động ngăn native date input quay lại production."
+      "Tái cấu trúc widget Lịch trực trên Dashboard để giữ đầy đủ thông tin vận hành và thống kê nhân sự nhưng giảm đáng kể chiều cao, giúp truy cập nhanh hơn các phân hệ phía dưới.",
+      "Bổ sung dải tóm tắt vận hành, cảnh báo ca cần xác minh và yêu cầu đổi ca trực ngay trên Dashboard.",
+      "Bổ sung luồng đổi ca dạng drawer trên màn hình Lịch trực, kèm chỉ báo yêu cầu đang chờ xử lý trên desktop và mobile.",
+      "Thu gọn Trực hôm nay, Ca của bạn và Thống kê theo người; giữ tổng lượt và độ lệch so bình quân nhưng chuyển các chỉ số công bằng chuyên sâu sang trang thống kê đầy đủ.",
+      "Tối ưu lịch tháng theo kiểu fit-to-screen với lưới 5/6 tuần tự co giãn, hiển thị trạng thái xác minh, ca của bạn, người chủ trì và số nhân sự bổ sung mà không cần cuộn dọc calendar."
     ]
   },
   "assetGroups": [

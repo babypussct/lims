@@ -58,14 +58,9 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
       schedule: byDate.get(date),
     } : null);
   });
+  readonly calendarWeekCount = computed(() => Math.max(1, Math.ceil(this.calendarCells().length / 7)));
   readonly todaySchedule = computed(() =>
     this.watchedActiveSchedules().find(item => item.date === this.todayKey),
-  );
-  readonly nextSchedule = computed(() =>
-    this.activeSchedules().find(item => item.date > this.todayKey),
-  );
-  readonly upcomingSchedules = computed(() =>
-    this.activeSchedules().filter(item => item.date >= this.todayKey).slice(0, 5),
   );
   readonly nextSevenDaysSchedules = computed(() => {
     const end = shiftDutyDateKey(this.todayKey, 6);
@@ -123,16 +118,6 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     const stats = this.personStats();
     return stats.length === 0 ? 0 : Math.min(...stats.map(item => item.total));
   });
-  readonly nextAssignmentByStaffId = computed(() => {
-    const nextByStaffId = new Map<string, string>();
-    for (const schedule of this.activeSchedules()) {
-      if (schedule.date < this.todayKey) continue;
-      for (const staffId of new Set(schedule.staffIds)) {
-        if (!nextByStaffId.has(staffId)) nextByStaffId.set(staffId, schedule.date);
-      }
-    }
-    return nextByStaffId;
-  });
   readonly pendingSwapCount = computed(() => this.dutySwap.pendingCount());
   readonly swapNeedsMyAction = computed(() => this.dutySwap.requests().filter(request =>
     this.dutySwap.canTargetRespond(request)
@@ -168,6 +153,46 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     return this.linkedStaff()?.displayName === name;
   }
 
+  calendarVisibleNames(schedule: DutyScheduleEntry): string[] {
+    return this.namesFor(schedule).slice(0, 2);
+  }
+
+  calendarAdditionalPeopleCount(schedule: DutyScheduleEntry): number {
+    return Math.max(0, this.namesFor(schedule).length - 2);
+  }
+
+  calendarHasCustomTime(schedule: DutyScheduleEntry): boolean {
+    return (schedule.startTime || '18:00') !== '18:00';
+  }
+
+  calendarTimeLabel(schedule: DutyScheduleEntry): string {
+    return schedule.startTime || '18:00';
+  }
+
+  calendarCellLabel(cell: DutyDashboardCalendarCell): string {
+    if (!cell.schedule) return 'Ngày ' + cell.day + '. Chưa có ca trực.';
+
+    const schedule = cell.schedule;
+    const names = this.namesFor(schedule);
+    const unresolved = this.unresolvedFor(schedule);
+    const assignments = [...names, ...unresolved.map(label => 'Vị trí chưa xác định: ' + (label || '?'))];
+    const status = schedule.status === 'cancelled'
+      ? 'Đã hủy'
+      : schedule.needsVerification || unresolved.length > 0
+        ? 'Cần xác minh'
+        : assignments.length === 0
+          ? 'Chưa phân công'
+          : 'Đang áp dụng';
+
+    return [
+      this.formatShortDate(cell.date),
+      'Giờ trực ' + (schedule.startTime || '18:00'),
+      status,
+      assignments.join(', ') || 'Chưa phân công',
+      schedule.note || '',
+    ].filter(Boolean).join('. ');
+  }
+
   assignmentDeviationPercent(total: number): number {
     const average = this.averageAssignments();
     if (average === 0) return 0;
@@ -180,22 +205,14 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     return deviation > 0 ? 'Nhiều hơn' : 'Ít hơn';
   }
 
-  assignmentDelta(total: number): number {
-    return total - this.averageAssignments();
-  }
-
-  assignmentSharePercent(total: number): number {
-    const assignments = this.monthAssignmentCount();
-    return assignments === 0 ? 0 : (total / assignments) * 100;
-  }
-
-  assignmentLoadPercent(total: number): number {
-    const max = this.maxAssignments();
-    return max === 0 ? 0 : (total / max) * 100;
-  }
-
-  nextAssignmentDate(staffId: string): string | undefined {
-    return this.nextAssignmentByStaffId().get(staffId);
+  assignmentDeviationBadgeClass(total: number): string {
+    const deviation = this.assignmentDeviationPercent(total);
+    if (Math.abs(deviation) < 10) {
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300';
+    }
+    return deviation > 0
+      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+      : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300';
   }
 
   avatarFor(displayName: string, linkedUserUid?: string | null): string {
