@@ -6,179 +6,6 @@
     icon="fa-user-clock">
   </app-page-header>
 
-  <div class="hidden shrink-0 lg:block">
-  <app-toolbar>
-    <div toolbarSearch class="flex w-full flex-wrap items-center gap-2">
-      @if (activeView() === 'schedule' && scheduleLayout() === 'week') {
-        <div class="flex h-[42px] min-w-64 items-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 shadow-sm dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300">
-          <i class="fa-solid fa-calendar-week mr-2" aria-hidden="true"></i>{{ weekInfo().label }}
-        </div>
-      } @else {
-        <select
-          aria-label="Năm lịch trực"
-          [ngModel]="selectedYear()"
-          (ngModelChange)="setYear($event)"
-          class="h-[42px] min-w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
-          @for (year of years; track year) {
-            <option [ngValue]="year">{{ year }}</option>
-          }
-        </select>
-        <select
-          aria-label="Tháng lịch trực"
-          [ngModel]="selectedMonth()"
-          (ngModelChange)="setMonth($event)"
-          class="h-[42px] min-w-36 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
-          <option [ngValue]="null">Cả năm</option>
-          @for (month of months; track month) {
-            <option [ngValue]="month">Tháng {{ formatMonth(month) }}</option>
-          }
-        </select>
-      }
-      <div class="flex h-[42px] items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition dark:border-slate-700 dark:bg-slate-900" aria-label="Điều hướng thời gian lịch trực">
-        <button type="button" (click)="prevPeriod()" aria-label="Kỳ trước" title="Kỳ trước"
-          class="flex h-full min-w-9 items-center justify-center px-2 text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:hover:bg-slate-800 dark:hover:text-white">
-          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-        </button>
-        <button type="button" (click)="goToCurrentMonth()" [attr.aria-label]="'Về ' + currentPeriodButtonLabel().toLocaleLowerCase('vi-VN')"
-          class="flex h-full items-center border-x border-slate-200 px-3 text-[11px] font-black transition active:scale-95 dark:border-slate-700"
-          [class]="isCurrentPeriod() ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white'">
-          {{ activeView() === 'schedule' && scheduleLayout() === 'week' ? 'Tuần này' : 'Tháng này' }}
-        </button>
-        <button type="button" (click)="nextPeriod()" aria-label="Kỳ sau" title="Kỳ sau"
-          class="flex h-full min-w-9 items-center justify-center px-2 text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:hover:bg-slate-800 dark:hover:text-white">
-          <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-        </button>
-      </div>
-      @if (activeView() === 'schedule') {
-        <select
-          aria-label="Lọc theo nhân viên"
-          [ngModel]="selectedStaffFilter()"
-          (ngModelChange)="setStaffFilter($event)"
-          class="h-[42px] min-w-44 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
-          <option [ngValue]="null">Tất cả nhân viên</option>
-          @for (person of duty.staff(); track person.id) {
-            <option [ngValue]="person.id">{{ person.displayName }}</option>
-          }
-        </select>
-        @if (myStaffId()) {
-          <button type="button" (click)="toggleMyShifts()"
-            class="inline-flex h-[42px] items-center gap-2 rounded-xl border px-3.5 text-xs font-black transition active:scale-95"
-            [class]="myShiftsOnly()
-              ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-500/80 dark:bg-blue-950/40 dark:text-blue-300'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/50'"
-            [attr.aria-pressed]="myShiftsOnly()" title="Chỉ hiện các ca có bạn tham gia">
-            <i class="fa-solid" [class.fa-check]="myShiftsOnly()" [class.fa-star]="!myShiftsOnly()" [class.text-amber-500]="!myShiftsOnly()" aria-hidden="true"></i>
-            {{ myShiftsOnly() ? 'Chỉ ca của tôi' : 'Ca của tôi' }}
-          </button>
-        }
-      }
-    </div>
-
-    <div toolbarActions class="flex items-center gap-2">
-      @if (activeView() === 'schedule') {
-        <app-button variant="secondary" size="sm" (click)="openSwapDrawer()" title="Mở bảng đổi ca trực">
-          <i class="fa-solid fa-right-left" aria-hidden="true"></i>
-          Đổi ca trực
-          @if (pendingSwapCount() > 0) {
-            <span class="ml-0.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] leading-none text-white">{{ pendingSwapCount() }}</span>
-          }
-        </app-button>
-      }
-      @if (duty.canManage() && activeView() === 'schedule' && selectedMonth() !== null && scheduleLayout() !== 'week') {
-        <div class="flex items-center gap-1.5" aria-label="Công cụ chuẩn bị tháng">
-          <app-button variant="secondary" size="sm" (click)="openBatchMonth()" title="Tạo khung ca trống cho tháng">
-            <i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Tạo khung tháng
-          </app-button>
-          <app-button variant="secondary" size="sm" (click)="importMonth.set(selectedYear() + '-' + formatMonth(selectedMonth()!))" title="Nhập lịch từ Gemini TSV">
-            <i class="fa-solid fa-file-import" aria-hidden="true"></i> Nhập lịch TSV
-          </app-button>
-        </div>
-        <div class="h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></div>
-      }
-      <div class="flex items-center gap-1.5" aria-label="Xuất và in ấn">
-        @if (activeView() === 'schedule') {
-          @if (imageExportDates().length) {
-            <app-duty-schedule-image-export
-              [dates]="imageExportDates()"
-              [schedules]="duty.schedules()"
-              [staff]="duty.staff()"
-              [periodLabel]="currentPeriodLabel()"
-              [mode]="scheduleLayout() === 'week' ? 'week' : 'month'">
-            </app-duty-schedule-image-export>
-          }
-          <app-button variant="secondary" size="sm" (click)="printSchedule()" title="In lịch trực (Ctrl/Cmd + P)">
-            <i class="fa-solid fa-print" aria-hidden="true"></i> In lịch trực
-          </app-button>
-        }
-        <app-button variant="secondary" size="sm" (click)="exportCsv()" title="Tải tệp CSV lịch trực">
-          <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Xuất CSV
-        </app-button>
-      </div>
-      @if (duty.canManage()) {
-        @if (activeView() === 'schedule') {
-          <div class="h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></div>
-          <app-button size="sm" (click)="openNewSchedule()">
-            <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm ca
-          </app-button>
-        } @else if (activeView() === 'staff') {
-          <div class="h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></div>
-          <app-button size="sm" (click)="openNewStaff()">
-            <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Thêm nhân viên
-          </app-button>
-        }
-      }
-    </div>
-  </app-toolbar>
-  </div>
-
-  <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:hidden dark:border-slate-800 dark:bg-slate-900">
-    <button type="button" (click)="prevPeriod()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black text-slate-500 transition hover:bg-slate-100 active:scale-95 dark:hover:bg-slate-800" aria-label="Kỳ trước">
-      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-    </button>
-    <button type="button" (click)="goToCurrentMonth()" class="min-w-0 flex-1 rounded-xl px-2.5 py-1.5 text-left transition hover:bg-slate-50 active:scale-95 dark:hover:bg-slate-800/70" [attr.aria-label]="'Về ' + currentPeriodButtonLabel().toLocaleLowerCase('vi-VN')">
-      <div class="truncate text-[10px] font-black uppercase tracking-wide text-slate-400">{{ activeView() === 'stats' ? 'Thống kê trực' : (activeView() === 'staff' ? 'Nhân sự trực' : 'Lịch trực') }}</div>
-      <div class="truncate text-sm font-black text-slate-800 dark:text-slate-100">{{ currentPeriodLabel() }}</div>
-    </button>
-    <button type="button" (click)="nextPeriod()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black text-slate-500 transition hover:bg-slate-100 active:scale-95 dark:hover:bg-slate-800" aria-label="Kỳ sau">
-      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-    </button>
-    <div class="flex w-full items-center justify-end gap-2 overflow-x-auto pt-0.5 custom-scrollbar">
-      @if (activeView() === 'schedule' && myStaffId()) {
-        <button type="button" (click)="toggleMyShifts()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm transition active:scale-95"
-          [class]="myShiftsOnly() ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' : 'border-slate-200 text-slate-500 dark:border-slate-700'"
-          [attr.aria-pressed]="myShiftsOnly()" aria-label="Ca của tôi">
-          <i class="fa-solid fa-star" [class.text-amber-500]="myShiftsOnly()" aria-hidden="true"></i>
-        </button>
-      }
-      @if (activeView() === 'schedule') {
-        <button type="button" (click)="openSwapDrawer()" class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700 transition active:scale-95 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300" aria-label="Đổi ca trực">
-          <i class="fa-solid fa-right-left text-xs" aria-hidden="true"></i>
-          @if (pendingSwapCount() > 0) {
-            <span class="absolute -right-1 -top-1 min-w-4 rounded-full bg-amber-600 px-1 text-[8px] font-black leading-4 text-white">{{ pendingSwapCount() }}</span>
-          }
-        </button>
-      }
-      @if (duty.canManage() && activeView() === 'schedule') {
-        <button type="button" (click)="openNewSchedule()" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-sm transition active:scale-95 hover:bg-blue-700" aria-label="Thêm ca">
-          <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Ca</span>
-        </button>
-      } @else if (duty.canManage() && activeView() === 'staff') {
-        <button type="button" (click)="openNewStaff()" class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-sm transition active:scale-95 hover:bg-blue-700" aria-label="Thêm nhân viên">
-          <i class="fa-solid fa-user-plus" aria-hidden="true"></i><span>NV</span>
-        </button>
-      }
-      <button type="button" (click)="mobileMenuOpen.set(true)" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-base font-black text-slate-600 transition active:scale-95 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="Mở thêm công cụ">
-        <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
-      </button>
-    </div>
-  </div>
-
-  @if (duty.error()) {
-    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
-      <i class="fa-solid fa-triangle-exclamation mr-2"></i>{{ duty.error() }}
-    </div>
-  }
-
   <div class="sticky top-0 z-20 flex shrink-0 gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-slate-100/90 p-1 shadow-sm backdrop-blur-md md:static md:gap-2 md:bg-slate-100 dark:border-slate-800 dark:bg-slate-950/80 md:dark:bg-slate-950">
     <button type="button" (click)="setActiveView('schedule')"
       class="inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95"
@@ -197,6 +24,291 @@
     </button>
   </div>
 
+  <div class="hidden shrink-0 lg:block">
+    @if (activeView() === 'schedule') {
+      <app-toolbar>
+        <div toolbarSearch class="flex items-center gap-2">
+          <div class="relative flex h-[42px] items-center rounded-xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-900" aria-label="Điều hướng thời gian lịch trực">
+            <button type="button" (click)="prevPeriod()" aria-label="Kỳ trước" title="Kỳ trước"
+              class="flex h-full min-w-10 items-center justify-center rounded-l-xl text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:hover:bg-slate-800 dark:hover:text-white">
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button type="button" (click)="togglePeriodPicker()"
+              class="flex h-full min-w-56 items-center justify-center gap-2 border-x border-slate-200 px-4 text-xs font-black text-slate-700 transition hover:bg-white active:scale-[.99] dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+              [attr.aria-expanded]="scheduleLayout() === 'week' ? null : periodPickerOpen()"
+              [attr.aria-label]="scheduleLayout() === 'week' ? 'Về tuần này' : 'Chọn tháng và năm'">
+              <span>{{ currentPeriodLabel() }}</span>
+              @if (scheduleLayout() !== 'week') {
+                <i class="fa-solid fa-chevron-down text-[9px] text-slate-400" aria-hidden="true"></i>
+              }
+            </button>
+            <button type="button" (click)="nextPeriod()" aria-label="Kỳ sau" title="Kỳ sau"
+              class="flex h-full min-w-10 items-center justify-center rounded-r-xl text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:hover:bg-slate-800 dark:hover:text-white">
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+
+            @if (periodPickerOpen()) {
+              <div class="absolute left-1/2 top-full z-40 mt-2 w-80 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-700 dark:bg-slate-900" role="dialog" aria-label="Chọn tháng và năm">
+                <div class="mb-3 flex items-center gap-2">
+                  <select aria-label="Năm lịch trực" [ngModel]="selectedYear()" (ngModelChange)="setYear($event)"
+                    class="h-10 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950">
+                    @for (year of years; track year) {
+                      <option [ngValue]="year">{{ year }}</option>
+                    }
+                  </select>
+                  <button type="button" (click)="goToCurrentMonth()" class="h-10 rounded-xl border border-blue-200 bg-blue-50 px-3 text-[10px] font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+                    Về tháng này
+                  </button>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5">
+                  @for (month of months; track month) {
+                    <button type="button" (click)="selectPeriodMonth(month)"
+                      class="rounded-lg px-2 py-2 text-[10px] font-black transition"
+                      [class]="selectedMonth() === month ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'">
+                      Th {{ month }}
+                    </button>
+                  }
+                </div>
+                <button type="button" (click)="selectPeriodMonth(null)"
+                  class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                  Xem cả năm {{ selectedYear() }}
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div toolbarActions class="flex items-center gap-2">
+          <app-button variant="secondary" size="sm" (click)="openSwapDrawer()" title="Mở yêu cầu đổi ca">
+            <i class="fa-solid fa-right-left" aria-hidden="true"></i>
+            Đổi ca
+            @if (pendingSwapCount() > 0) {
+              <span class="ml-0.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] leading-none text-white">{{ pendingSwapCount() }}</span>
+            }
+          </app-button>
+          @if (duty.canManage()) {
+            <app-button size="sm" (click)="openNewSchedule()">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm ca
+            </app-button>
+          }
+          <div class="relative">
+            <app-button variant="secondary" size="sm" (click)="toggleToolsMenu()" [attr.aria-expanded]="toolsMenuOpen()">
+              <i class="fa-solid fa-ellipsis" aria-hidden="true"></i> Công cụ
+            </app-button>
+            @if (toolsMenuOpen()) {
+              <div class="absolute right-0 top-full z-40 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900" role="menu" aria-label="Công cụ lịch trực">
+                @if (duty.canManage() && selectedMonth() !== null && scheduleLayout() !== 'week') {
+                  <div class="border-b border-slate-100 p-2 dark:border-slate-800">
+                    <div class="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400">Quản lý lịch</div>
+                    <button type="button" (click)="toolsMenuOpen.set(false); openBatchMonth()" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <i class="fa-solid fa-calendar-plus w-4 text-center text-blue-600" aria-hidden="true"></i><span>Tạo khung tháng trống</span>
+                    </button>
+                    <button type="button" (click)="toolsMenuOpen.set(false); importMonth.set(selectedYear() + '-' + formatMonth(selectedMonth()!))" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <i class="fa-solid fa-file-import w-4 text-center text-amber-600" aria-hidden="true"></i><span>Nhập lịch TSV / Gemini</span>
+                    </button>
+                  </div>
+                }
+                <div class="border-b border-slate-100 p-2 dark:border-slate-800">
+                  <div class="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400">Chia sẻ & xuất dữ liệu</div>
+                  @if (imageExportDates().length) {
+                    <button type="button" (click)="copyScheduleImage()" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <i class="fa-solid fa-copy w-4 text-center text-blue-600" aria-hidden="true"></i><span>Sao chép ảnh (dán Zalo)</span>
+                    </button>
+                    <button type="button" (click)="downloadScheduleImage()" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <i class="fa-solid fa-image w-4 text-center text-violet-600" aria-hidden="true"></i><span>Tải ảnh PNG</span>
+                    </button>
+                  }
+                  <button type="button" (click)="toolsMenuOpen.set(false); printSchedule()" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-print w-4 text-center text-indigo-600" aria-hidden="true"></i><span>In lịch trực / PDF</span>
+                  </button>
+                  <button type="button" (click)="toolsMenuOpen.set(false); exportCsv()" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-file-csv w-4 text-center text-emerald-600" aria-hidden="true"></i><span>Xuất dữ liệu CSV</span>
+                  </button>
+                </div>
+                <div class="p-2">
+                  <div class="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400">Tùy chọn hiển thị</div>
+                  <label class="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <input type="checkbox" [ngModel]="includeCancelled()" (ngModelChange)="includeCancelled.set($event)" class="rounded border-slate-300">
+                    Hiện cả ca đã hủy
+                  </label>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </app-toolbar>
+
+      <div class="-mt-2 mb-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-950" aria-label="Kiểu hiển thị lịch trực">
+          <button type="button" (click)="setScheduleLayout('calendar')" [disabled]="selectedMonth() === null"
+            class="rounded-md px-2.5 py-1.5 text-[10px] font-black transition disabled:cursor-not-allowed disabled:opacity-40"
+            [class]="scheduleLayout() === 'calendar' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">
+            <i class="fa-solid fa-table-cells-large mr-1" aria-hidden="true"></i>Tháng
+          </button>
+          <button type="button" (click)="setScheduleLayout('week')" class="rounded-md px-2.5 py-1.5 text-[10px] font-black transition"
+            [class]="scheduleLayout() === 'week' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500'">
+            <i class="fa-solid fa-calendar-week mr-1" aria-hidden="true"></i>Tuần
+          </button>
+          <button type="button" (click)="setScheduleLayout('list')" class="rounded-md px-2.5 py-1.5 text-[10px] font-black transition"
+            [class]="scheduleLayout() === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">
+            <i class="fa-solid fa-list mr-1" aria-hidden="true"></i>Danh sách
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <select aria-label="Lọc ca trực" [ngModel]="combinedStaffFilter()" (ngModelChange)="setCombinedStaffFilter($event)"
+            class="h-9 min-w-48 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-bold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950">
+            <option value="all">Tất cả ca</option>
+            @if (myStaffId()) {
+              <option value="mine">★ Ca của tôi</option>
+            }
+            <optgroup label="Nhân sự">
+              @for (person of duty.staff(); track person.id) {
+                <option [value]="'staff:' + person.id">{{ person.displayName }}</option>
+              }
+            </optgroup>
+          </select>
+          @if (verificationSchedules().length > 0) {
+            <button type="button" (click)="toggleVerificationFilter()"
+              class="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-[11px] font-black transition active:scale-95"
+              [class]="needsVerificationOnly() ? 'border-amber-500 bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200' : 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300'"
+              [attr.aria-pressed]="needsVerificationOnly()">
+              <i class="fa-solid fa-triangle-exclamation text-[10px]" aria-hidden="true"></i>{{ verificationSchedules().length }} cần xác minh
+            </button>
+          }
+        </div>
+      </div>
+    } @else if (activeView() === 'staff') {
+      <app-toolbar>
+        <div toolbarSearch class="relative w-full max-w-md">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
+          <input type="search" [ngModel]="staffSearch()" (ngModelChange)="staffSearch.set($event)" placeholder="Tìm nhân sự..."
+            class="h-[42px] w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-medium outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900">
+        </div>
+        <label toolbarFilters class="flex items-center gap-2 text-[11px] font-bold text-slate-500">
+          <input type="checkbox" [ngModel]="includeInactiveStaff()" (ngModelChange)="includeInactiveStaff.set($event)" class="rounded border-slate-300">
+          Hiện nhân viên ngừng dùng
+        </label>
+        <div toolbarActions>
+          @if (duty.canManage()) {
+            <app-button size="sm" (click)="openNewStaff()"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Thêm nhân viên</app-button>
+          }
+        </div>
+      </app-toolbar>
+    } @else {
+      <app-toolbar>
+        <div toolbarSearch class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950">
+          <button type="button" (click)="setStatsRangeMode('selection')" class="rounded-lg px-3 py-2 text-[10px] font-black transition"
+            [class]="statsRangeMode() === 'selection' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Kỳ đang chọn</button>
+          <button type="button" (click)="setStatsRangeMode('year')" class="rounded-lg px-3 py-2 text-[10px] font-black transition"
+            [class]="statsRangeMode() === 'year' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Cả năm {{ selectedYear() }}</button>
+          <button type="button" (click)="setStatsRangeMode('all')" class="rounded-lg px-3 py-2 text-[10px] font-black transition"
+            [class]="statsRangeMode() === 'all' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Toàn bộ</button>
+        </div>
+        <div toolbarActions>
+          <app-button variant="secondary" size="sm" (click)="exportCsv()" title="Tải tệp CSV thống kê">
+            <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Xuất CSV
+          </app-button>
+        </div>
+      </app-toolbar>
+    }
+  </div>
+
+  <div class="shrink-0 lg:hidden">
+    @if (activeView() === 'schedule') {
+      <div class="space-y-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex items-center gap-1">
+          <button type="button" (click)="prevPeriod()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black text-slate-500 transition hover:bg-slate-100 active:scale-95 dark:hover:bg-slate-800" aria-label="Kỳ trước">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <div class="relative min-w-0 flex-1">
+            <button type="button" (click)="togglePeriodPicker()" class="flex h-10 w-full items-center justify-center gap-2 rounded-xl px-2 text-xs font-black text-slate-800 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-800">
+              <span class="truncate">{{ currentPeriodLabel() }}</span>
+              @if (scheduleLayout() !== 'week') { <i class="fa-solid fa-chevron-down text-[9px] text-slate-400" aria-hidden="true"></i> }
+            </button>
+            @if (periodPickerOpen()) {
+              <div class="absolute left-1/2 top-full z-40 mt-2 w-[min(92vw,320px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-700 dark:bg-slate-900" role="dialog" aria-label="Chọn tháng và năm">
+                <div class="mb-3 flex items-center gap-2">
+                  <select aria-label="Năm lịch trực" [ngModel]="selectedYear()" (ngModelChange)="setYear($event)" class="h-10 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black dark:border-slate-700 dark:bg-slate-950">
+                    @for (year of years; track year) { <option [ngValue]="year">{{ year }}</option> }
+                  </select>
+                  <button type="button" (click)="goToCurrentMonth()" class="h-10 rounded-xl border border-blue-200 bg-blue-50 px-3 text-[10px] font-black text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">Tháng này</button>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5">
+                  @for (month of months; track month) {
+                    <button type="button" (click)="selectPeriodMonth(month)" class="rounded-lg px-2 py-2 text-[10px] font-black"
+                      [class]="selectedMonth() === month ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300'">Th {{ month }}</button>
+                  }
+                </div>
+                <button type="button" (click)="selectPeriodMonth(null)" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 dark:border-slate-700 dark:text-slate-300">Cả năm {{ selectedYear() }}</button>
+              </div>
+            }
+          </div>
+          <button type="button" (click)="nextPeriod()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black text-slate-500 transition hover:bg-slate-100 active:scale-95 dark:hover:bg-slate-800" aria-label="Kỳ sau">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" (click)="openSwapDrawer()" class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300" aria-label="Đổi ca trực">
+            <i class="fa-solid fa-right-left text-xs" aria-hidden="true"></i>
+            @if (pendingSwapCount() > 0) { <span class="absolute -right-1 -top-1 min-w-4 rounded-full bg-amber-600 px-1 text-[8px] font-black leading-4 text-white">{{ pendingSwapCount() }}</span> }
+          </button>
+          @if (duty.canManage()) {
+            <button type="button" (click)="openNewSchedule()" class="inline-flex h-10 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-sm active:scale-95" aria-label="Thêm ca">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Thêm ca</span>
+            </button>
+          }
+          <button type="button" (click)="mobileMenuOpen.set(true)" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-base font-black text-slate-600 dark:border-slate-700 dark:text-slate-300" aria-label="Mở thêm công cụ">
+            <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+          <div class="flex items-center rounded-lg bg-slate-100 p-1 dark:bg-slate-950" aria-label="Kiểu hiển thị lịch trực">
+            <button type="button" (click)="setScheduleLayout('calendar')" [disabled]="selectedMonth() === null" class="h-9 rounded-md px-2 text-[10px] font-black disabled:opacity-40"
+              [class]="scheduleLayout() === 'calendar' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">Tháng</button>
+            <button type="button" (click)="setScheduleLayout('week')" class="h-9 rounded-md px-2 text-[10px] font-black"
+              [class]="scheduleLayout() === 'week' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500'">Tuần</button>
+            <button type="button" (click)="setScheduleLayout('list')" class="h-9 rounded-md px-2 text-[10px] font-black"
+              [class]="scheduleLayout() === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'">DS</button>
+          </div>
+          <select aria-label="Lọc ca trực" [ngModel]="combinedStaffFilter()" (ngModelChange)="setCombinedStaffFilter($event)" class="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold dark:border-slate-700 dark:bg-slate-950">
+            <option value="all">Tất cả ca</option>
+            @if (myStaffId()) { <option value="mine">★ Ca của tôi</option> }
+            <optgroup label="Nhân sự">
+              @for (person of duty.staff(); track person.id) { <option [value]="'staff:' + person.id">{{ person.displayName }}</option> }
+            </optgroup>
+          </select>
+          @if (verificationSchedules().length > 0) {
+            <button type="button" (click)="toggleVerificationFilter()" class="h-10 rounded-xl border px-2 text-[10px] font-black"
+              [class]="needsVerificationOnly() ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-amber-300 bg-amber-50 text-amber-700'"
+              [attr.aria-pressed]="needsVerificationOnly()"><i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>{{ verificationSchedules().length }}</button>
+          }
+        </div>
+      </div>
+    } @else if (activeView() === 'staff' && duty.canManage()) {
+      <div class="flex justify-end">
+        <app-button size="sm" (click)="openNewStaff()"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Thêm nhân viên</app-button>
+      </div>
+    }
+  </div>
+
+  @if (activeView() === 'schedule' && imageExportDates().length) {
+    <app-duty-schedule-image-export
+      #imageExporter
+      [dates]="imageExportDates()"
+      [schedules]="duty.schedules()"
+      [staff]="duty.staff()"
+      [periodLabel]="currentPeriodLabel()"
+      [mode]="scheduleLayout() === 'week' ? 'week' : 'month'"
+      [controlsHidden]="true">
+    </app-duty-schedule-image-export>
+  }
+
+  @if (duty.error()) {
+    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+      <i class="fa-solid fa-triangle-exclamation mr-2"></i>{{ duty.error() }}
+    </div>
+  }
+
   @if (activeView() === 'schedule') {
     <div class="flex shrink-0 flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-800 dark:bg-slate-900" aria-label="Tóm tắt lịch trực">
       <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số ca đang áp dụng">
@@ -214,64 +326,17 @@
       <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số lượt trung bình trên mỗi nhân sự trong kỳ">
         BQ <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ averageAssignments() | number:'1.1-1' }}</strong>/người
       </span>
-      <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-      <button type="button" (click)="toggleVerificationFilter()"
-        class="inline-flex min-h-10 items-center gap-1 rounded-lg border border-dashed px-2 py-1 text-[11px] font-black transition active:scale-95 md:min-h-0"
-        [class]="needsVerificationOnly() ? 'border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-400 dark:bg-amber-950/60 dark:text-amber-200' : 'border-amber-300 bg-amber-50/70 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300'"
-        [attr.aria-pressed]="needsVerificationOnly()"
-        title="Lọc các ca cần xác minh">
-        <i class="fa-solid fa-triangle-exclamation text-[10px]" aria-hidden="true"></i>
-        <strong>{{ verificationSchedules().length }}</strong> cần xác minh
-      </button>
     </div>
 
-    @if (pendingSwapCount() > 0) {
+    @if (actionableSwapCount() > 0) {
       <button type="button" (click)="openSwapDrawer()" class="flex min-h-9 shrink-0 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-left text-[11px] font-bold text-amber-800 shadow-sm transition hover:bg-amber-100 active:scale-[.99] dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200" aria-label="Mở yêu cầu đổi ca đang chờ">
         <i class="fa-solid fa-bell text-amber-600 dark:text-amber-300" aria-hidden="true"></i>
-        <span class="min-w-0 flex-1 truncate">Có {{ pendingSwapCount() }} yêu cầu đổi ca cần xử lý</span>
-        @if (actionableSwapCount() > 0 && actionableSwapCount() !== pendingSwapCount()) {
-          <span class="shrink-0 text-[10px] font-bold text-amber-600 dark:text-amber-300">{{ actionableSwapCount() }} cần bạn</span>
-        }
+        <span class="min-w-0 flex-1 truncate">Có {{ actionableSwapCount() }} yêu cầu đổi ca cần bạn xử lý</span>
         <span class="shrink-0 underline underline-offset-2">Xem chi tiết</span>
       </button>
     }
 
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <div class="hidden flex-wrap items-center gap-4 md:flex">
-          <label class="flex items-center gap-2 text-[11px] font-bold text-slate-500">
-            <input type="checkbox" [ngModel]="includeCancelled()" (ngModelChange)="includeCancelled.set($event)" class="rounded border-slate-300">
-            Hiện cả ca đã hủy
-          </label>
-          <label class="flex items-center gap-2 text-[11px] font-bold text-amber-700 dark:text-amber-300">
-            <input type="checkbox" [ngModel]="needsVerificationOnly()" (ngModelChange)="needsVerificationOnly.set($event)" class="rounded border-amber-300">
-            Chỉ ca cần xác minh
-          </label>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-950" aria-label="Kiểu hiển thị lịch trực">
-            <button type="button" (click)="setScheduleLayout('calendar')" [disabled]="selectedMonth() === null"
-              class="min-h-10 rounded-md px-2.5 py-1.5 text-[10px] font-black transition disabled:cursor-not-allowed disabled:opacity-40 md:min-h-0"
-              [class]="scheduleLayout() === 'calendar' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'"
-              [attr.aria-pressed]="scheduleLayout() === 'calendar'" title="Lưới lịch theo tháng">
-              <i class="fa-solid fa-table-cells-large mr-1" aria-hidden="true"></i>Tháng
-            </button>
-            <button type="button" (click)="setScheduleLayout('week')" class="min-h-10 rounded-md px-2.5 py-1.5 text-[10px] font-black transition md:min-h-0"
-              [class]="scheduleLayout() === 'week' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500'"
-              [attr.aria-pressed]="scheduleLayout() === 'week'">
-              <i class="fa-solid fa-calendar-week mr-1" aria-hidden="true"></i>Tuần
-            </button>
-            <button type="button" (click)="setScheduleLayout('list')" class="min-h-10 rounded-md px-2.5 py-1.5 text-[10px] font-black transition md:min-h-0"
-              [class]="scheduleLayout() === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500'"
-              [attr.aria-pressed]="scheduleLayout() === 'list'">
-              <i class="fa-solid fa-list mr-1" aria-hidden="true"></i>Danh sách
-            </button>
-          </div>
-          @if (!duty.canManage()) {
-            <span class="text-[10px] font-bold text-slate-400"><i class="fa-solid fa-eye mr-1"></i>Chế độ chỉ xem</span>
-          }
-        </div>
-      </div>
       @if (scheduleLayout() === 'week') {
         <app-duty-week-view
           [dates]="weekInfo().dates"
@@ -432,7 +497,9 @@
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               @for (schedule of visibleSchedules(); track schedule.date) {
-                <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40" [class.opacity-50]="schedule.status === 'cancelled'">
+                <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40" [class.opacity-50]="schedule.status === 'cancelled'"
+                  (dblclick)="duty.canManage() ? openEditSchedule(schedule) : null"
+                  [attr.title]="duty.canManage() ? 'Nhấp đúp để sửa ca trực' : null">
                   <td
                     class="whitespace-nowrap px-5 py-3.5 text-xs font-black"
                     [class.border-l-4]="isMyShift(schedule)"
@@ -475,23 +542,37 @@
                   @if (duty.canManage() || (isMyShift(schedule) && schedule.status !== 'cancelled')) {
                     <td class="whitespace-nowrap px-5 py-3.5 text-right">
                       <div class="inline-flex items-center justify-end gap-1.5">
-                        @if (isMyShift(schedule) && schedule.status !== 'cancelled') {
+                        @if (!duty.canManage() && isMyShift(schedule) && schedule.status !== 'cancelled') {
                           <button type="button" (click)="openSwapRequest(schedule)" title="Xin đổi ca trực"
                             class="inline-flex items-center gap-1 rounded-lg border border-amber-200/80 bg-amber-50/60 px-2.5 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 active:scale-95 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
                             <i class="fa-solid fa-right-left text-[10px]" aria-hidden="true"></i>Xin đổi ca
                           </button>
                         }
                         @if (duty.canManage()) {
-                        <button type="button" (click)="openEditSchedule(schedule)" title="Chỉnh sửa ca trực"
-                          class="inline-flex items-center gap-1 rounded-lg border border-blue-200/80 bg-blue-50/60 px-2.5 py-1.5 text-xs font-bold text-blue-600 transition hover:bg-blue-100 hover:text-blue-800 active:scale-95 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
-                          <i class="fa-solid fa-pen-to-square text-[10px]" aria-hidden="true"></i>Sửa
-                        </button>
-                        @if (schedule.status !== 'cancelled') {
-                          <button type="button" (click)="cancelSchedule(schedule)" title="Hủy ca trực này"
-                            class="inline-flex items-center gap-1 rounded-lg border border-rose-200/80 bg-rose-50/60 px-2.5 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-100 hover:text-rose-800 active:scale-95 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-900/50">
-                            <i class="fa-solid fa-ban text-[10px]" aria-hidden="true"></i>Hủy ca
+                          <button type="button" (click)="openEditSchedule(schedule)" title="Chỉnh sửa ca trực"
+                            class="inline-flex items-center gap-1 rounded-lg border border-blue-200/80 bg-blue-50/60 px-2.5 py-1.5 text-xs font-bold text-blue-600 transition hover:bg-blue-100 hover:text-blue-800 active:scale-95 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
+                            <i class="fa-solid fa-pen-to-square text-[10px]" aria-hidden="true"></i>Sửa
                           </button>
-                        }
+                          @if (schedule.status !== 'cancelled') {
+                            <details class="relative">
+                              <summary title="Thêm thao tác" aria-label="Thêm thao tác cho ca trực"
+                                class="flex h-[30px] w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                                <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
+                              </summary>
+                              <div class="absolute right-0 top-full z-30 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                                @if (isMyShift(schedule)) {
+                                  <button type="button" (click)="openSwapRequest(schedule)"
+                                    class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30">
+                                    <i class="fa-solid fa-right-left w-4 text-center" aria-hidden="true"></i>Xin đổi ca
+                                  </button>
+                                }
+                                <button type="button" (click)="cancelSchedule(schedule)" title="Hủy ca trực này"
+                                  class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/30">
+                                  <i class="fa-solid fa-ban w-4 text-center" aria-hidden="true"></i>Hủy ca
+                                </button>
+                              </div>
+                            </details>
+                          }
                         }
                       </div>
                     </td>
@@ -603,7 +684,7 @@
 
   @if (activeView() === 'staff') {
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+      <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4 lg:hidden dark:border-slate-800">
         <div class="relative min-w-[220px] flex-1">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
           <input type="search" [ngModel]="staffSearch()" (ngModelChange)="staffSearch.set($event)" placeholder="Tìm tên nhân viên..."
@@ -681,7 +762,7 @@
   }
 
   @if (activeView() === 'stats') {
-    <div class="hidden flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:flex dark:border-slate-800 dark:bg-slate-900">
+    <div class="hidden flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:flex lg:hidden dark:border-slate-800 dark:bg-slate-900">
       <div>
         <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">Phạm vi thống kê</div>
         <div class="mt-0.5 text-sm font-black text-slate-700 dark:text-slate-200">{{ statsRangeLabel() }}</div>
@@ -897,34 +978,37 @@
     </div>
     @if (activeView() === 'schedule') {
       <div class="space-y-3">
-        @if (imageExportDates().length) {
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
-            <div class="mb-2 text-[10px] font-black uppercase tracking-wide text-slate-400">Chia sẻ lịch</div>
-            <app-duty-schedule-image-export
-              [dates]="imageExportDates()"
-              [schedules]="duty.schedules()"
-              [staff]="duty.staff()"
-              [periodLabel]="currentPeriodLabel()"
-              [mode]="scheduleLayout() === 'week' ? 'week' : 'month'"
-              [compact]="true">
-            </app-duty-schedule-image-export>
-          </div>
-        }
-        <select aria-label="Lọc theo nhân viên" [ngModel]="selectedStaffFilter()" (ngModelChange)="setStaffFilter($event)" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold dark:border-slate-700 dark:bg-slate-950">
-          <option [ngValue]="null">Tất cả nhân viên</option>
-          @for (person of duty.staff(); track person.id) {
-            <option [ngValue]="person.id">{{ person.displayName }}</option>
-          }
-        </select>
-        <label class="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 text-xs font-bold dark:border-slate-700">
-          <input type="checkbox" [ngModel]="needsVerificationOnly()" (ngModelChange)="needsVerificationOnly.set($event)" class="rounded">
-          Chỉ ca cần xác minh
-        </label>
+        <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">Tùy chọn hiển thị</div>
         <label class="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 text-xs font-bold dark:border-slate-700">
           <input type="checkbox" [ngModel]="includeCancelled()" (ngModelChange)="includeCancelled.set($event)" class="rounded">
           Hiện cả ca đã hủy
         </label>
+        <div class="pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Chia sẻ & xuất dữ liệu</div>
         <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          @if (imageExportDates().length) {
+            <button type="button" (click)="copyScheduleImage()"
+              class="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition active:scale-95 hover:bg-slate-100/80 dark:border-slate-700/80 dark:bg-slate-800/40 dark:hover:bg-slate-800/80">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                <i class="fa-solid fa-copy text-sm" aria-hidden="true"></i>
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100">Sao chép ảnh</div>
+                <div class="truncate text-[10px] font-medium text-slate-400">Dán nhanh vào Zalo Web</div>
+              </div>
+            </button>
+
+            <button type="button" (click)="downloadScheduleImage()"
+              class="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition active:scale-95 hover:bg-slate-100/80 dark:border-slate-700/80 dark:bg-slate-800/40 dark:hover:bg-slate-800/80">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300">
+                <i class="fa-solid fa-image text-sm" aria-hidden="true"></i>
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100">Tải ảnh PNG</div>
+                <div class="truncate text-[10px] font-medium text-slate-400">Lưu ảnh lịch chất lượng cao</div>
+              </div>
+            </button>
+          }
+
           <button type="button" (click)="mobileMenuOpen.set(false); printSchedule()"
             class="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition active:scale-95 hover:bg-slate-100/80 dark:border-slate-700/80 dark:bg-slate-800/40 dark:hover:bg-slate-800/80">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
@@ -948,6 +1032,7 @@
           </button>
 
           @if (duty.canManage() && selectedMonth() !== null && scheduleLayout() !== 'week') {
+            <div class="col-span-full pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Quản lý lịch</div>
             <button type="button" (click)="mobileMenuOpen.set(false); importMonth.set(selectedYear() + '-' + formatMonth(selectedMonth()!))"
               class="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition active:scale-95 hover:bg-slate-100/80 dark:border-slate-700/80 dark:bg-slate-800/40 dark:hover:bg-slate-800/80">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">

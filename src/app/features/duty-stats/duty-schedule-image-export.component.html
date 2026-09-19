@@ -1,11 +1,13 @@
-<div class="flex items-center gap-1.5" [class.flex-col]="compact()" [class.w-full]="compact()">
-  <app-button variant="secondary" size="sm" [disabled]="busy() || !activeRows().length" [loading]="busy()" (click)="copyImage()" title="Sao chép ảnh lịch để dán vào Zalo Web">
-    <i class="fa-solid fa-copy" aria-hidden="true"></i> Sao chép ảnh
-  </app-button>
-  <app-button variant="secondary" size="sm" [disabled]="busy() || !activeRows().length" (click)="downloadImage()" title="Tải ảnh lịch PNG">
-    <i class="fa-solid fa-image" aria-hidden="true"></i> Tải PNG
-  </app-button>
-</div>
+@if (!controlsHidden()) {
+  <div class="flex items-center gap-1.5" [class.flex-col]="compact()" [class.w-full]="compact()">
+    <app-button variant="secondary" size="sm" [disabled]="busy() || !activeRows().length" [loading]="busy()" (click)="copyImage()" title="Sao chép ảnh lịch để dán vào Zalo Web">
+      <i class="fa-solid fa-copy" aria-hidden="true"></i> Sao chép ảnh
+    </app-button>
+    <app-button variant="secondary" size="sm" [disabled]="busy() || !activeRows().length" (click)="downloadImage()" title="Tải ảnh lịch PNG">
+      <i class="fa-solid fa-image" aria-hidden="true"></i> Tải PNG
+    </app-button>
+  </div>
+}
 
 <div aria-hidden="true" style="position: fixed; left: -100000px; top: 0; pointer-events: none; z-index: -1;">
   <section #exportTemplate

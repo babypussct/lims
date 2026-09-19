@@ -1,16 +1,16 @@
 {
-  "title": "Hoàn thiện nền tảng PWA và deep link khi cài ứng dụng",
+  "title": "Tinh gọn Lịch trực trên điện thoại và PWA",
   "highlights": [
-    "Chuẩn hóa manifest cho ứng dụng dùng hash routing, bao gồm launch URL, shortcut, định danh và màu giao diện PWA.",
-    "Khắc phục mở sai màn hình khi người dùng bấm push notification trong lúc ứng dụng đang đóng."
+    "Tách Lịch trực, Nhân sự và Thống kê thành ba khu vực rõ ràng để thao tác nhanh hơn trên điện thoại, máy tính bảng và máy tính.",
+    "Gom điều hướng kỳ, bộ lọc nhân sự và các công cụ xuất lịch thành cụm gọn, giảm tình trạng nút bị chen chúc trên màn hình nhỏ."
   ],
-  "features": [],
+  "features": [
+    "Chuyển nhanh giữa dạng Tháng, Tuần và Danh sách; bộ lọc cho phép xem tất cả ca, ca của tôi hoặc ca của từng nhân sự.",
+    "Menu Công cụ tập trung thao tác tạo khung lịch, nhập lịch, sao chép hoặc tải ảnh, in lịch và xuất CSV."
+  ],
   "improvements": [
-    "Bổ sung regression contract cho installability, standalone mode, manifest shortcut, service worker và chính sách offline online-first.",
-    "Đồng bộ theme color giữa web manifest và document metadata để splash/status bar nhất quán hơn."
+    "Danh sách ca trên điện thoại ưu tiên thao tác chính và đưa các thao tác phụ vào menu gọn hơn.",
+    "Thông báo đổi ca chỉ nhấn mạnh các yêu cầu đang cần chính người dùng xử lý."
   ],
-  "fixes": [
-    "Khắc phục shortcut PWA mở URL không tương thích HashLocationStrategy.",
-    "Khắc phục FCM cold launch dùng route nội bộ trực tiếp thay vì URL PWA dạng hash."
-  ]
+  "fixes": []
 }

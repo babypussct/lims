@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService, type UserProfile } from '../../core/services/auth.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -104,6 +104,8 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'calendar',
   );
   readonly mobileMenuOpen = signal(false);
+  readonly toolsMenuOpen = signal(false);
+  readonly periodPickerOpen = signal(false);
   readonly swapDrawerOpen = signal(false);
   readonly selectedDayCell = signal<DutyCalendarCell | null>(null);
   readonly mobilePeriodMode = signal<DutyMobilePeriodMode>('month');
@@ -130,6 +132,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly years = Array.from({ length: 21 }, (_, index) => new Date().getFullYear() + 5 - index);
   readonly months = Array.from({ length: 12 }, (_, index) => index + 1);
   readonly calendarWeekdays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+  private readonly imageExporter = viewChild<DutyScheduleImageExportComponent>('imageExporter');
   private conflictRequestId = 0;
   private recommendationRequestId = 0;
 
@@ -213,6 +216,11 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     findLinkedDutyStaff(this.auth.currentUser()?.uid, this.duty.staff()),
   );
   readonly myStaffId = computed(() => this.myStaff()?.id);
+  readonly combinedStaffFilter = computed(() => {
+    if (this.myShiftsOnly()) return 'mine';
+    const staffId = this.selectedStaffFilter();
+    return staffId ? `staff:${staffId}` : 'all';
+  });
   readonly totalAssignments = computed(() => countDutyAssignments(this.duty.schedules()));
   readonly uniqueAssignedPeople = computed(() => this.personStats().filter(item => item.total > 0).length);
   readonly statsPopulationCount = computed(() => this.personStats().length);
@@ -298,6 +306,55 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     this.selectedStaffFilter.set(value || null);
   }
 
+  setCombinedStaffFilter(value: string): void {
+    if (value === 'mine') {
+      const myStaffId = this.myStaffId();
+      if (!myStaffId) {
+        this.toast.show('Tài khoản của bạn chưa được gán với nhân sự trong danh mục lịch trực.', 'warning');
+        this.myShiftsOnly.set(false);
+        this.selectedStaffFilter.set(null);
+        return;
+      }
+      this.myShiftsOnly.set(true);
+      this.selectedStaffFilter.set(myStaffId);
+      return;
+    }
+
+    this.myShiftsOnly.set(false);
+    this.selectedStaffFilter.set(value.startsWith('staff:') ? value.slice(6) : null);
+  }
+
+  toggleToolsMenu(): void {
+    this.periodPickerOpen.set(false);
+    this.toolsMenuOpen.update(value => !value);
+  }
+
+  togglePeriodPicker(): void {
+    if (this.isWeekMode()) {
+      this.goToCurrentMonth();
+      return;
+    }
+    this.toolsMenuOpen.set(false);
+    this.periodPickerOpen.update(value => !value);
+  }
+
+  selectPeriodMonth(month: number | null): void {
+    this.setMonth(month);
+    this.periodPickerOpen.set(false);
+  }
+
+  copyScheduleImage(): void {
+    this.toolsMenuOpen.set(false);
+    this.mobileMenuOpen.set(false);
+    void this.imageExporter()?.copyImage();
+  }
+
+  downloadScheduleImage(): void {
+    this.toolsMenuOpen.set(false);
+    this.mobileMenuOpen.set(false);
+    void this.imageExporter()?.downloadImage();
+  }
+
   toggleMyShifts(): void {
     const myStaffId = this.myStaffId();
     if (!myStaffId) {
@@ -319,6 +376,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   prevPeriod(): void {
+    this.periodPickerOpen.set(false);
     if (this.isWeekMode()) {
       this.weekAnchorDate.update(date => shiftDutyDateKey(date, -7));
       this.refreshRange();
@@ -337,6 +395,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   nextPeriod(): void {
+    this.periodPickerOpen.set(false);
     if (this.isWeekMode()) {
       this.weekAnchorDate.update(date => shiftDutyDateKey(date, 7));
       this.refreshRange();
@@ -355,6 +414,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   goToCurrentMonth(): void {
+    this.periodPickerOpen.set(false);
     if (this.isWeekMode()) {
       this.weekAnchorDate.set(currentDutyDateKey());
       this.refreshRange();
@@ -457,6 +517,9 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   setActiveView(view: DutyView): void {
+    this.toolsMenuOpen.set(false);
+    this.periodPickerOpen.set(false);
+    this.mobileMenuOpen.set(false);
     this.activeView.set(view);
     this.refreshRange();
     if (view === 'staff') void this.ensureAccounts();

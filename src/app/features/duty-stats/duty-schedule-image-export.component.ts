@@ -18,6 +18,7 @@ export class DutyScheduleImageExportComponent {
   readonly periodLabel = input.required<string>();
   readonly mode = input.required<'week' | 'month'>();
   readonly compact = input(false);
+  readonly controlsHidden = input(false);
   readonly busy = signal(false);
   private readonly toast = inject(ToastService);
   private readonly exportTemplate = viewChild<ElementRef<HTMLElement>>('exportTemplate');

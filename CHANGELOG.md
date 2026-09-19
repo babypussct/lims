@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.19-b04
+## Phiên bản hiện tại: v26.09.20-b01
+
+### v26.09.20-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tách Lịch trực, Nhân sự và Thống kê thành ba khu vực rõ ràng để thao tác nhanh hơn trên điện thoại, máy tính bảng và máy tính.
+- Gom điều hướng kỳ, bộ lọc nhân sự và các công cụ xuất lịch thành cụm gọn, giảm tình trạng nút bị chen chúc trên màn hình nhỏ.
+
+#### ✨ Tính Năng Mới
+
+- Chuyển nhanh giữa dạng Tháng, Tuần và Danh sách; bộ lọc cho phép xem tất cả ca, ca của tôi hoặc ca của từng nhân sự.
+- Menu Công cụ tập trung thao tác tạo khung lịch, nhập lịch, sao chép hoặc tải ảnh, in lịch và xuất CSV.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Danh sách ca trên điện thoại ưu tiên thao tác chính và đưa các thao tác phụ vào menu gọn hơn.
+- Thông báo đổi ca chỉ nhấn mạnh các yêu cầu đang cần chính người dùng xử lý.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.09.19-b04
 
