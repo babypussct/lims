@@ -90,4 +90,16 @@ describe('auth/public shared UI primitive integration', () => {
     assert.doesNotMatch(source, /toggleSharedDevice\(/);
     assert.doesNotMatch(source, /toggleRememberSession\(/);
   });
+
+  it('keeps the login shell constrained to the mobile viewport without horizontal clipping', () => {
+    const source = read('./login.component.ts');
+
+    assert.match(source, /w-\[calc\(100vw-2rem\)\]\s+sm:w-full\s+min-w-0\s+max-w-\[420px\]/);
+    assert.match(source, /w-full\s+min-w-0\s+max-w-full[^\n]*p-5\s+sm:p-8/);
+    assert.match(source, /w-full\s+min-w-0\s+overflow-hidden[^\n]*shadow-inner[^\n]*h-10/);
+    assert.match(source, /role="radiogroup"[\s\S]*?w-full\s+min-w-0\s+overflow-hidden/);
+
+    const tabButtons = source.match(/class="flex-1 min-w-0 py-1\.5 text-center text-xs font-bold/g);
+    assert.equal(tabButtons?.length, 3, 'All three login tabs must be allowed to shrink on narrow screens');
+  });
 });

@@ -193,7 +193,7 @@ interface PaletteItem {
     </header>
 
     <!-- ═══════ UNIFIED MOBILE TOP NAVIGATION ═══════ -->
-    <header class="fixed inset-x-0 top-0 z-[45] flex h-14 items-center gap-2 border-b border-white/70 bg-white/90 px-3 shadow-navbar backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+    <header class="soft-ui-mobile-header fixed inset-x-0 top-0 z-[45] flex h-14 items-center gap-2 border-b border-white/70 bg-white/90 px-3 shadow-navbar backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <button
         type="button"
         (click)="goToDashboard()"
@@ -294,6 +294,11 @@ interface PaletteItem {
     }
   `,
   styles: [`
+    .soft-ui-mobile-header {
+      height: calc(3.5rem + env(safe-area-inset-top, 0px));
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
     .soft-ui-desktop-header {
       left: var(--soft-ui-header-left);
     }

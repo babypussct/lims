@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.19-b01
+## Phiên bản hiện tại: v26.09.19-b02
+
+### v26.09.19-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khắc phục header trên PWA mobile có thể che nội dung khi thiết bị có status bar hoặc notch.
+- Ổn định bố cục đăng nhập trên màn hình hẹp để tab và nội dung không bị cắt ngang.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đồng bộ khoảng trống nội dung với chiều cao thực của mobile header khi có safe-area-inset-top.
+- Bổ sung regression contract cho mobile header safe area và giới hạn chiều rộng giao diện đăng nhập.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục Phiếu giao nhận mẫu và các màn hình PWA mobile có thể bị header/status bar lấn lên phần nội dung đầu trang.
+- Khắc phục thẻ đăng nhập, tab phương thức đăng nhập và lựa chọn chế độ thiết bị bị tràn hoặc cắt ở viewport hẹp.
 
 ### v26.09.19-b01
 

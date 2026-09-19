@@ -38,6 +38,7 @@ import { NavigationPanelComponent } from './navigation-panel.component';
       <main
         class="elevated-workspace-canvas flex-1 min-w-0 self-stretch flex flex-col relative transition-all duration-300 ease-in-out overflow-hidden lg:overflow-visible"
         [class.workspace-focus-mode]="state.focusMode()"
+        [class.shell-mobile-header-offset]="!state.focusMode()"
         [style.--soft-ui-shell-offset]="state.sidebarCollapsed() ? '4rem' : '17rem'"
         [style.--soft-ui-workspace-offset]="state.sidebarCollapsed() ? '3rem' : '15.25rem'"
         [class.pt-16]="!state.focusMode()"
@@ -99,6 +100,12 @@ import { NavigationPanelComponent } from './navigation-panel.component';
 
     .app-content-scroll {
       padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    @media (max-width: 767px) {
+      .elevated-workspace-canvas.shell-mobile-header-offset {
+        padding-top: calc(4rem + env(safe-area-inset-top, 0px));
+      }
     }
 
     @media (min-width: 768px) {

@@ -29,9 +29,9 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
         </div>
 
         <!-- Centered application panel -->
-        <div class="relative z-10 w-full max-w-[420px] mx-auto">
+        <div class="relative z-10 w-[calc(100vw-2rem)] sm:w-full min-w-0 max-w-[420px] mx-auto">
             
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-7 sm:p-8 relative overflow-hidden">
+            <div class="w-full min-w-0 max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-5 sm:p-8 relative overflow-hidden">
 
                 <div class="text-center mb-8 relative z-10">
                     <div class="inline-flex items-center justify-center w-24 h-24 mb-6">
@@ -66,26 +66,26 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                 }
 
                 <!-- TAB SWITCHER: PILL SEGMENTED CONTROL -->
-                <div class="relative z-10 bg-gray-100/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-2xl flex items-center mb-6 border border-gray-200/30 dark:border-slate-700/30 shadow-inner relative h-10 select-none">
+                <div class="relative z-10 w-full min-w-0 overflow-hidden bg-gray-100/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-2xl flex items-center mb-6 border border-gray-200/30 dark:border-slate-700/30 shadow-inner h-10 select-none">
                     <!-- Sliding highlight indicator -->
                     <div class="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm transition-all duration-300 ease-out pointer-events-none"
                          [style.width.%]="31"
                          [style.left.%]="mode() === 'google' ? 1.5 : (mode() === 'qr' ? 34.5 : 67.5)">
                     </div>
 
-                    <button (click)="switchMode('google')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
+                    <button (click)="switchMode('google')" class="flex-1 min-w-0 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
                             [class.text-fuchsia-600]="mode() === 'google'"
                             [class.dark:text-fuchsia-400]="mode() === 'google'"
                             [class.text-gray-500]="mode() !== 'google'">
                         <i class="fa-brands fa-google mr-1"></i> Google
                     </button>
-                    <button (click)="switchMode('qr')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
+                    <button (click)="switchMode('qr')" class="flex-1 min-w-0 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
                             [class.text-fuchsia-600]="mode() === 'qr'"
                             [class.dark:text-fuchsia-400]="mode() === 'qr'"
                             [class.text-gray-500]="mode() !== 'qr'">
                         <i class="fa-solid fa-qrcode mr-1"></i> Mã QR
                     </button>
-                    <button (click)="switchMode('password')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
+                    <button (click)="switchMode('password')" class="flex-1 min-w-0 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
                             [class.text-fuchsia-600]="mode() === 'password'"
                             [class.dark:text-fuchsia-400]="mode() === 'password'"
                             [class.text-gray-500]="mode() !== 'password'">
@@ -101,7 +101,7 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                         <div role="radiogroup"
                              aria-labelledby="device-mode-heading"
                              aria-describedby="device-mode-caption"
-                             class="relative bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 inset-soft-well flex items-center backdrop-blur-sm h-11">
+                             class="relative w-full min-w-0 overflow-hidden bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 inset-soft-well flex items-center backdrop-blur-sm h-11">
 
                             <!-- Sliding Highlight Thumb -->
                             <div class="absolute top-1 bottom-1 left-1 device-mode-thumb rounded-xl bg-white dark:bg-slate-700 thumb-transition pointer-events-none z-0 border"
@@ -175,8 +175,8 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                         </div>
 
                         <!-- Dynamic Sub-caption & Help Toggle -->
-                        <div class="mt-2 px-1.5 flex items-start justify-between min-h-[34px] text-[11px] leading-relaxed transition-all">
-                            <div id="device-mode-caption" class="flex-1 flex items-start gap-1.5" aria-live="polite">
+                        <div class="mt-2 px-1.5 min-w-0 flex items-start justify-between min-h-[34px] text-[11px] leading-relaxed transition-all">
+                            <div id="device-mode-caption" class="min-w-0 flex-1 flex items-start gap-1.5" aria-live="polite">
                                 @if (auth.isSharedDevice()) {
                                     <div class="w-4 h-4 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center shrink-0 mt-0.5" aria-hidden="true">
                                         <i class="fa-solid fa-clock-rotate-left text-amber-600 dark:text-amber-400 text-[9px]"></i>

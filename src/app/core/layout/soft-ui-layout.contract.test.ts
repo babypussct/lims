@@ -81,6 +81,7 @@ describe('Soft UI application layout contract', () => {
 
   it('keeps Soft UI utility chrome and a unified responsive mobile header', () => {
     const header = read('./app-header.component.ts');
+    const shell = read('./app-shell.component.ts');
 
     assert.match(header, /fa-circle-info/);
     assert.match(header, /openChangelog\(\)/);
@@ -89,6 +90,11 @@ describe('Soft UI application layout contract', () => {
     assert.match(header, /openPalette\(\)/);
     assert.match(header, /mobileMenuRequested\.emit\(\)/);
     assert.match(header, /\[headerMode\]="true"/);
+    assert.match(header, /soft-ui-mobile-header/);
+    assert.match(header, /height: calc\(3\.5rem \+ env\(safe-area-inset-top, 0px\)\)/);
+    assert.match(header, /padding-top: env\(safe-area-inset-top, 0px\)/);
+    assert.match(shell, /\[class\.shell-mobile-header-offset\]="!state\.focusMode\(\)"/);
+    assert.match(shell, /padding-top: calc\(4rem \+ env\(safe-area-inset-top, 0px\)\)/);
     assert.match(header, /flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-soft/);
     assert.match(header, /flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/);
     const notificationBell = read('../../shared/components/notification-bell/notification-bell.component.ts');
