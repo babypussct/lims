@@ -25,6 +25,7 @@ interface PaletteItem {
   selector: 'app-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block shrink-0' },
   imports: [CommonModule, FormsModule, NotificationBellComponent],
   template: `
     <!-- ═══════ DESKTOP TOP HEADER BAR ═══════ -->
@@ -193,7 +194,7 @@ interface PaletteItem {
     </header>
 
     <!-- ═══════ UNIFIED MOBILE TOP NAVIGATION ═══════ -->
-    <header class="soft-ui-mobile-header fixed inset-x-0 top-0 z-[45] flex h-14 items-center gap-2 border-b border-white/70 bg-white/90 px-3 shadow-navbar backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+    <header class="soft-ui-mobile-header relative z-[45] flex h-14 w-full shrink-0 items-center gap-2 border-b border-white/70 bg-white/90 px-3 shadow-navbar backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <button
         type="button"
         (click)="goToDashboard()"

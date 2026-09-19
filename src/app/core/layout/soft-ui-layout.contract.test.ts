@@ -91,10 +91,13 @@ describe('Soft UI application layout contract', () => {
     assert.match(header, /mobileMenuRequested\.emit\(\)/);
     assert.match(header, /\[headerMode\]="true"/);
     assert.match(header, /soft-ui-mobile-header/);
+    assert.match(header, /host:\s*\{\s*class:\s*'block shrink-0'\s*\}/);
+    assert.match(header, /soft-ui-mobile-header relative z-\[45\] flex h-14 w-full shrink-0/);
+    assert.doesNotMatch(header, /soft-ui-mobile-header fixed/);
     assert.match(header, /height: calc\(3\.5rem \+ env\(safe-area-inset-top, 0px\)\)/);
     assert.match(header, /padding-top: env\(safe-area-inset-top, 0px\)/);
-    assert.match(shell, /\[class\.shell-mobile-header-offset\]="!state\.focusMode\(\)"/);
-    assert.match(shell, /padding-top: calc\(4rem \+ env\(safe-area-inset-top, 0px\)\)/);
+    assert.match(shell, /\[class\.md:pt-16\]="!state\.focusMode\(\)"/);
+    assert.doesNotMatch(shell, /shell-mobile-header-offset/);
     assert.match(header, /flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-soft/);
     assert.match(header, /flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/);
     const notificationBell = read('../../shared/components/notification-bell/notification-bell.component.ts');

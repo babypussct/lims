@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.19-b02
+## Phiên bản hiện tại: v26.09.19-b03
+
+### v26.09.19-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đưa header mobile vào luồng bố cục tự nhiên để nội dung luôn bắt đầu sau đúng chiều cao header thực tế.
+- Phiếu giao nhận mẫu được kiểm tra trực tiếp ở viewport 390x844 và 320x720, không còn bị header chồng lên nội dung.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Loại bỏ công thức offset mobile riêng giữa header và vùng nội dung, giảm sai lệch trên PWA có safe area.
+- Bổ sung kiểm tra hình học mobile để phát hiện hồi quy khi header che phần đầu trang.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục dứt điểm trường hợp header PWA mobile che phần đầu của Phiếu giao nhận mẫu và các màn hình dùng app shell.
 
 ### v26.09.19-b02
 

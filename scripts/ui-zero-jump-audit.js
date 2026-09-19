@@ -825,6 +825,54 @@ async function run() {
     }
     console.log('  └─> Documents Segmented Control: HIDDEN under sm breakpoint (PASS)');
 
+    const documentHeaderGeometry = [];
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 720 },
+    ]) {
+      await client.send('Emulation.setDeviceMetricsOverride', {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 3,
+        mobile: true,
+      });
+      await sleep(300);
+
+      const geometry = await client.eval(`
+        (() => {
+          const mobileHeader = document.querySelector('.soft-ui-mobile-header');
+          const pageHeader = document.querySelector('app-page-header');
+          if (!mobileHeader || !pageHeader) return null;
+          const mobileRect = mobileHeader.getBoundingClientRect();
+          const pageRect = pageHeader.getBoundingClientRect();
+          return {
+            mobileHeaderBottom: mobileRect.bottom,
+            pageHeaderTop: pageRect.top,
+            gap: pageRect.top - mobileRect.bottom,
+            mobileHeaderPosition: getComputedStyle(mobileHeader).position,
+          };
+        })()
+      `);
+
+      if (!geometry) {
+        throw new Error(`[MOBILE HEADER GEOMETRY FAILED] ${viewport.width}x${viewport.height}: missing mobile or page header`);
+      }
+      if (geometry.mobileHeaderPosition === 'fixed' || geometry.gap < -0.5) {
+        throw new Error(`[MOBILE HEADER GEOMETRY FAILED] ${viewport.width}x${viewport.height}: position=${geometry.mobileHeaderPosition}, headerBottom=${geometry.mobileHeaderBottom.toFixed(1)}, pageTop=${geometry.pageHeaderTop.toFixed(1)}, gap=${geometry.gap.toFixed(1)}`);
+      }
+
+      documentHeaderGeometry.push({ viewport, ...geometry });
+      console.log(`  └─> Documents Header Geometry ${viewport.width}x${viewport.height}: gap=${geometry.gap.toFixed(1)}px, position=${geometry.mobileHeaderPosition} (PASS)`);
+    }
+
+    await client.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 3,
+      mobile: true,
+    });
+    await sleep(300);
+
     // Touch Target height >= 39.5px on BOTH /results and /requests with route identity check & stable item count
     const touchTargetResults = {};
     for (const routeFixture of [
@@ -882,6 +930,7 @@ async function run() {
       }),
       dashboard: dashRes,
       documentsSegmentedHidden: docSegmentedHidden,
+      documentHeaderGeometry,
       touchTargets: touchTargetResults
     };
 

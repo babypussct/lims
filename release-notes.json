@@ -1,16 +1,15 @@
 {
-  "title": "Khắc phục giao diện mobile PWA và vùng an toàn màn hình",
+  "title": "Ổn định header PWA mobile không che nội dung",
   "highlights": [
-    "Khắc phục header trên PWA mobile có thể che nội dung khi thiết bị có status bar hoặc notch.",
-    "Ổn định bố cục đăng nhập trên màn hình hẹp để tab và nội dung không bị cắt ngang."
+    "Đưa header mobile vào luồng bố cục tự nhiên để nội dung luôn bắt đầu sau đúng chiều cao header thực tế.",
+    "Phiếu giao nhận mẫu được kiểm tra trực tiếp ở viewport 390x844 và 320x720, không còn bị header chồng lên nội dung."
   ],
   "features": [],
   "improvements": [
-    "Đồng bộ khoảng trống nội dung với chiều cao thực của mobile header khi có safe-area-inset-top.",
-    "Bổ sung regression contract cho mobile header safe area và giới hạn chiều rộng giao diện đăng nhập."
+    "Loại bỏ công thức offset mobile riêng giữa header và vùng nội dung, giảm sai lệch trên PWA có safe area.",
+    "Bổ sung kiểm tra hình học mobile để phát hiện hồi quy khi header che phần đầu trang."
   ],
   "fixes": [
-    "Khắc phục Phiếu giao nhận mẫu và các màn hình PWA mobile có thể bị header/status bar lấn lên phần nội dung đầu trang.",
-    "Khắc phục thẻ đăng nhập, tab phương thức đăng nhập và lựa chọn chế độ thiết bị bị tràn hoặc cắt ở viewport hẹp."
+    "Khắc phục dứt điểm trường hợp header PWA mobile che phần đầu của Phiếu giao nhận mẫu và các màn hình dùng app shell."
   ]
 }
