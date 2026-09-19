@@ -1,5 +1,24 @@
 [
   {
+    "version": "v26.09.19-b04",
+    "date": "19/9/2026",
+    "title": "Hoàn thiện nền tảng PWA và deep link khi cài ứng dụng",
+    "highlights": [
+      "Chuẩn hóa manifest cho ứng dụng dùng hash routing, bao gồm launch URL, shortcut, định danh và màu giao diện PWA.",
+      "Khắc phục mở sai màn hình khi người dùng bấm push notification trong lúc ứng dụng đang đóng."
+    ],
+    "features": [],
+    "improvements": [
+      "Bổ sung regression contract cho installability, standalone mode, manifest shortcut, service worker và chính sách offline online-first.",
+      "Đồng bộ theme color giữa web manifest và document metadata để splash/status bar nhất quán hơn."
+    ],
+    "fixes": [
+      "Khắc phục shortcut PWA mở URL không tương thích HashLocationStrategy.",
+      "Khắc phục FCM cold launch dùng route nội bộ trực tiếp thay vì URL PWA dạng hash."
+    ],
+    "releaseOrder": 26091900004
+  },
+  {
     "version": "v26.09.19-b03",
     "date": "19/9/2026",
     "title": "Ổn định header PWA mobile không che nội dung",

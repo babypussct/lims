@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { notificationDocumentId, shouldClaimNotificationPush, uniqueStringValues } from './notification-utils.js';
+import { notificationDocumentId, pwaLaunchUrl, shouldClaimNotificationPush, uniqueStringValues } from './notification-utils.js';
 
 test('notification document IDs are stable per event and recipient', () => {
   const first = notificationDocumentId('event-123', 'user-a');
@@ -17,6 +17,15 @@ test('FCM token normalization removes duplicates and invalid values', () => {
     uniqueStringValues(['token-a', '', 'token-a', null, 'token-b', 42]),
     ['token-a', 'token-b']
   );
+});
+
+test('PWA browser launch URLs preserve Angular hash routes without accepting external URLs', () => {
+  assert.equal(pwaLaunchUrl('/standards/STD-1'), '/#/standards/STD-1');
+  assert.equal(pwaLaunchUrl('/requests?tab=pending'), '/#/requests?tab=pending');
+  assert.equal(pwaLaunchUrl('/#/results/REQ-1'), '/#/results/REQ-1');
+  assert.equal(pwaLaunchUrl('/'), '/#/');
+  assert.equal(pwaLaunchUrl('https://example.com/phish'), '/#/');
+  assert.equal(pwaLaunchUrl('//example.com/phish'), '/#/');
 });
 
 test('same event retry never duplicates inbox and only reclaims failed or stale push work', () => {

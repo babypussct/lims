@@ -16,6 +16,20 @@ export function uniqueStringValues(values: unknown): string[] {
   ))];
 }
 
+/**
+ * Converts an internal Angular route into a browser launch URL for this app's
+ * HashLocationStrategy. In-app navigation keeps using `/route`; only browser
+ * launches (FCM links, service-worker openWindow, manifest shortcuts) need
+ * the `/#/route` form.
+ */
+export function pwaLaunchUrl(actionUrl: unknown): string {
+  const value = typeof actionUrl === 'string' ? actionUrl.trim() : '';
+  if (!value || value === '/') return '/#/';
+  if (value.startsWith('/#/')) return value;
+  if (value.startsWith('/') && !value.startsWith('//')) return `/#${value}`;
+  return '/#/';
+}
+
 export function shouldClaimNotificationPush(
   existing: Record<string, unknown>,
   sendPush: boolean,

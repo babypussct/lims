@@ -1,11 +1,15 @@
 {
+  "id": "/",
   "name": "LIMS NAFIQPM6",
   "short_name": "LIMS",
-  "theme_color": "#1976d2",
-  "background_color": "#fafafa",
+  "description": "Hệ thống quản lý thông tin phòng thí nghiệm NAFIQPM6",
+  "lang": "vi",
+  "dir": "ltr",
+  "theme_color": "#f8f9fa",
+  "background_color": "#f8f9fa",
   "display": "standalone",
-  "scope": "./",
-  "start_url": "./",
+  "scope": "/",
+  "start_url": "/#/",
   "icons": [
     {
       "src": "icons/icon-72x72.png",
@@ -61,21 +65,21 @@
       "name": "Kho chất chuẩn",
       "short_name": "Kho chất chuẩn",
       "description": "Quản lý kho chất chuẩn",
-      "url": "/standards",
+      "url": "/#/standards",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
       "name": "Yêu cầu chất chuẩn",
       "short_name": "Yêu cầu",
       "description": "Quản lý yêu cầu cấp phát chất chuẩn",
-      "url": "/standard-requests",
+      "url": "/#/standard-requests",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
       "name": "Nhật ký sử dụng",
       "short_name": "Nhật ký",
       "description": "Nhật ký sử dụng chất chuẩn",
-      "url": "/standard-usage",
+      "url": "/#/standard-usage",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]

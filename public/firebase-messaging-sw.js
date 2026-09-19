@@ -14,6 +14,14 @@ firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
+function pwaLaunchUrl(actionUrl) {
+    const value = typeof actionUrl === 'string' ? actionUrl.trim() : '';
+    if (!value || value === '/') return '/#/';
+    if (value.startsWith('/#/')) return value;
+    if (value.startsWith('/') && !value.startsWith('//')) return '/#' + value;
+    return '/#/';
+}
+
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Received background message ', payload);
     // Notification payloads are already rendered automatically by FCM.
@@ -56,7 +64,7 @@ self.addEventListener('notificationclick', function(event) {
             }
             // If not, then open the target URL in a new window/tab.
             if (clients.openWindow) {
-                return clients.openWindow(actionUrl);
+                return clients.openWindow(pwaLaunchUrl(actionUrl));
             }
         })
     );

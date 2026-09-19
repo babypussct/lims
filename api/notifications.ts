@@ -8,7 +8,7 @@ import {
 } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { initializeFirebaseAdminIfNeeded } from './_lib/firebase-admin.js';
-import { notificationDocumentId, shouldClaimNotificationPush, uniqueStringValues } from './_lib/notification-utils.js';
+import { notificationDocumentId, pwaLaunchUrl, shouldClaimNotificationPush, uniqueStringValues } from './_lib/notification-utils.js';
 import {
   actorMayDispatchContract,
   canonicalDispatchActionUrl,
@@ -634,7 +634,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             },
             webpush: {
               headers: { Urgency: 'high' },
-              fcmOptions: { link: typeof input.actionUrl === 'string' && input.actionUrl ? input.actionUrl : '/' }
+              fcmOptions: { link: pwaLaunchUrl(input.actionUrl) }
             },
             tokens: tokenGroup
           });

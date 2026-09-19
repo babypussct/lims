@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.19-b03",
-    "title": "Ổn định header PWA mobile không che nội dung",
+    "version": "v26.09.19-b04",
+    "title": "Hoàn thiện nền tảng PWA và deep link khi cài ứng dụng",
     "features": [
-      "Đưa header mobile vào luồng bố cục tự nhiên để nội dung luôn bắt đầu sau đúng chiều cao header thực tế.",
-      "Phiếu giao nhận mẫu được kiểm tra trực tiếp ở viewport 390x844 và 320x720, không còn bị header chồng lên nội dung.",
-      "Loại bỏ công thức offset mobile riêng giữa header và vùng nội dung, giảm sai lệch trên PWA có safe area.",
-      "Bổ sung kiểm tra hình học mobile để phát hiện hồi quy khi header che phần đầu trang.",
-      "Khắc phục dứt điểm trường hợp header PWA mobile che phần đầu của Phiếu giao nhận mẫu và các màn hình dùng app shell."
+      "Chuẩn hóa manifest cho ứng dụng dùng hash routing, bao gồm launch URL, shortcut, định danh và màu giao diện PWA.",
+      "Khắc phục mở sai màn hình khi người dùng bấm push notification trong lúc ứng dụng đang đóng.",
+      "Bổ sung regression contract cho installability, standalone mode, manifest shortcut, service worker và chính sách offline online-first.",
+      "Đồng bộ theme color giữa web manifest và document metadata để splash/status bar nhất quán hơn.",
+      "Khắc phục shortcut PWA mở URL không tương thích HashLocationStrategy."
     ]
   },
   "assetGroups": [

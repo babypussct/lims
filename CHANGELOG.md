@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.19-b03
+## Phiên bản hiện tại: v26.09.19-b04
+
+### v26.09.19-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chuẩn hóa manifest cho ứng dụng dùng hash routing, bao gồm launch URL, shortcut, định danh và màu giao diện PWA.
+- Khắc phục mở sai màn hình khi người dùng bấm push notification trong lúc ứng dụng đang đóng.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung regression contract cho installability, standalone mode, manifest shortcut, service worker và chính sách offline online-first.
+- Đồng bộ theme color giữa web manifest và document metadata để splash/status bar nhất quán hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục shortcut PWA mở URL không tương thích HashLocationStrategy.
+- Khắc phục FCM cold launch dùng route nội bộ trực tiếp thay vì URL PWA dạng hash.
 
 ### v26.09.19-b03
 
