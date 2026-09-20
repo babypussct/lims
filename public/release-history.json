@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.09.21-b01",
+    "date": "21/9/2026",
+    "title": "Chuẩn hóa quyền Superadmin và tăng cường kiểm soát quản trị",
+    "highlights": [
+      "Chuẩn hóa Superadmin thành tài khoản Manager có cờ bảo vệ tin cậy, dùng cùng một định nghĩa trên giao diện và lớp bảo mật Firestore.",
+      "Tăng cường bảo vệ tài khoản quản trị gốc để dữ liệu quyền sai lệch không thể vô tình nhận đặc quyền Superadmin."
+    ],
+    "features": [
+      "Bổ sung công cụ quản trị tin cậy để kiểm tra, cấp và thu hồi Superadmin theo UID với bước xác nhận rõ ràng."
+    ],
+    "improvements": [
+      "Các màn hình và dịch vụ dùng chung kiểm tra Manager/Superadmin thay vì tự kiểm tra role rải rác.",
+      "Bổ sung tài liệu vận hành và bất biến bảo mật cho việc quản lý Superadmin."
+    ],
+    "fixes": [
+      "Cờ protectedAdmin chỉ cấp đặc quyền Superadmin khi tài khoản đồng thời có role Manager.",
+      "Bổ sung kiểm thử Firestore Rules để ngăn profile Staff có protectedAdmin nhận quyền quản trị cao nhất."
+    ],
+    "releaseOrder": 26092100001
+  },
+  {
     "version": "v26.09.20-b04",
     "date": "20/9/2026",
     "title": "Siết an toàn và hoàn thiện luồng yêu cầu chất chuẩn",

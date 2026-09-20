@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.20-b04
+## Phiên bản hiện tại: v26.09.21-b01
+
+### v26.09.21-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chuẩn hóa Superadmin thành tài khoản Manager có cờ bảo vệ tin cậy, dùng cùng một định nghĩa trên giao diện và lớp bảo mật Firestore.
+- Tăng cường bảo vệ tài khoản quản trị gốc để dữ liệu quyền sai lệch không thể vô tình nhận đặc quyền Superadmin.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung công cụ quản trị tin cậy để kiểm tra, cấp và thu hồi Superadmin theo UID với bước xác nhận rõ ràng.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Các màn hình và dịch vụ dùng chung kiểm tra Manager/Superadmin thay vì tự kiểm tra role rải rác.
+- Bổ sung tài liệu vận hành và bất biến bảo mật cho việc quản lý Superadmin.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Cờ protectedAdmin chỉ cấp đặc quyền Superadmin khi tài khoản đồng thời có role Manager.
+- Bổ sung kiểm thử Firestore Rules để ngăn profile Staff có protectedAdmin nhận quyền quản trị cao nhất.
 
 ### v26.09.20-b04
 
