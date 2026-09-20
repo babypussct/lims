@@ -111,7 +111,7 @@ service cloud.firestore {
     }
 
     function isProtectedAdmin(appId) {
-      return userExists(appId) && getUserProfile(appId).get('protectedAdmin', false) == true;
+      return isManager(appId) && getUserProfile(appId).get('protectedAdmin', false) == true;
     }
 
     // Release notes dùng chung cho toàn bộ ứng dụng. APP_ID production hiện tại

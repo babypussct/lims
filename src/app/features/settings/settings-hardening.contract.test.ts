@@ -59,7 +59,7 @@ describe('Settings production hardening contracts', () => {
   });
 
   it('keeps avatar global owned by protected Superadmin and personal overrides user-scoped', () => {
-    assert.match(stateSource, /user\.protectedAdmin !== true/);
+    assert.match(stateSource, /!this\.auth\.isSuperAdmin\(\)/);
     assert.match(stateSource, /await this\.saveAvatarStyle\(style\)/);
     assert.match(stateSource, /avatarStyle: normalizedStyle \|\| deleteField\(\)/);
     assert.match(stateSource, /resolveAvatarStyle\(cache\.avatarStyle, cache\.protectedAdmin\)/);
@@ -81,10 +81,10 @@ describe('Settings production hardening contracts', () => {
 
   it('removes client-side protected-admin identity heuristics and locks protected profiles in user management', () => {
     assert.doesNotMatch(authSource, /oneloveonepeopleforever@gmail\.com/i);
-    assert.match(usersSource, /u\.protectedAdmin === true/);
-    assert.match(usersSource, /\[disabled\]="isSuperAdmin\(u\)"/);
+    assert.match(usersSource, /return isProtectedAdminProfile\(u\)/);
+    assert.match(usersSource, /\[disabled\]="isProtectedAdmin\(u\)"/);
     assert.match(usersSource, /Tài khoản quản trị gốc được bảo vệ/);
-    assert.match(usersSource, /filter\(u => selected\.has\(u\.uid\) && !this\.isSuperAdmin\(u\)\)/);
+    assert.match(usersSource, /filter\(u => selected\.has\(u\.uid\) && !this\.isProtectedAdmin\(u\)\)/);
   });
 
   it('removes the completed hyphen-id migration from runtime UI', () => {

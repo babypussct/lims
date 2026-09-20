@@ -423,7 +423,7 @@ export class AppComponent implements OnDestroy {
     effect(() => {
       const user = this.auth.currentUser();
       const version = this.state.systemVersion();
-      if (this.auth.isAuthReady() && user?.role === 'manager' && this.releaseBootstrapVersion !== version) {
+      if (this.auth.isAuthReady() && this.auth.isManager() && this.releaseBootstrapVersion !== version) {
         this.releaseBootstrapVersion = version;
         void this.ensureCurrentRelease(version);
       }

@@ -34,6 +34,7 @@ import { FirebaseService } from './firebase.service';
 
 import { buildDeltaAuthScope, DeltaSyncService } from './delta-sync.service';
 import { PERMISSIONS, PERMISSION_NAMES } from '../auth/permission-catalog';
+import { isManagerProfile, isSuperAdminProfile, type UserRole } from '../auth/access-control';
 import {
   type DeviceMode,
   resolveDeviceMode,
@@ -41,6 +42,7 @@ import {
 } from '../auth/device-mode';
 
 export { PERMISSIONS, PERMISSION_NAMES } from '../auth/permission-catalog';
+export { hasInvalidProtectedAdminState, isManagerProfile, isProtectedAdminProfile, isSuperAdminProfile, type UserRole } from '../auth/access-control';
 export { type DeviceMode } from '../auth/device-mode';
 
 const GOOGLE_REDIRECT_PENDING_KEY = '__lims_google_redirect_pending';
@@ -112,7 +114,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
-  role: 'manager' | 'staff' | 'viewer' | 'pending';
+  role: UserRole;
   roleId?: string; // Khóa liên kết Dynamic RBAC
   permissions?: string[]; // Fallback hoặc Quyền cá nhân
   customPermissions?: string[]; // Quyền ghi đè cá nhân cho Staff
@@ -138,6 +140,10 @@ export class AuthService {
   // CRED_KEY removed: password caching in localStorage was a security vulnerability.
 
   currentUser = signal<UserProfile | null>(null);
+  /** Canonical Manager check used by client-side navigation and UI policy. */
+  readonly isManager = computed(() => isManagerProfile(this.currentUser()));
+  /** Superadmin is a protected Manager; the marker alone never grants this level. */
+  readonly isSuperAdmin = computed(() => isSuperAdminProfile(this.currentUser()));
   /** Stable auth identity used by app-wide effects; profile snapshots may change frequently. */
   readonly currentUserUid = computed(() => this.currentUser()?.uid ?? null);
   isAuthReady = signal<boolean>(false);
@@ -956,7 +962,7 @@ export class AuthService {
   readonly userPermissions = computed(() => {
     const u = this.currentUser();
     if (!u) return [];
-    if (u.role === 'manager') return ['*']; // Full quyền
+    if (isManagerProfile(u)) return ['*']; // Full quyền
     if (u.role === 'viewer') return [];
     if (u.role === 'pending') return [];
 
@@ -1087,7 +1093,7 @@ export class AuthService {
    */
   isStandardAuditMode(): boolean {
     const user = this.currentUser();
-    return user?.role !== 'manager' && this.canViewStandardAudit();
+    return !isManagerProfile(user) && this.canViewStandardAudit();
   }
   canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
   canManageDutySchedule(): boolean { return this.hasPermission(PERMISSIONS.DUTY_MANAGE); }

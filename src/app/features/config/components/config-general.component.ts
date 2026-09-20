@@ -336,7 +336,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   canManageRecycleBin(): boolean {
-    return this.auth.currentUser()?.role === 'manager';
+    return this.auth.isManager();
   }
 
   missingBackupPermissionLabel(permission: 'create' | 'verify' | 'restore'): string {

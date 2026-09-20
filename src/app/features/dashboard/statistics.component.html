@@ -40,7 +40,7 @@
                             Xuất báo cáo
                         </app-button>
 
-                        @if (auth.currentUser()?.role === 'manager') {
+                        @if (auth.isManager()) {
                             <app-button
                                 variant="secondary"
                                 size="sm"

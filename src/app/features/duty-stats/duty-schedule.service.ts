@@ -65,7 +65,7 @@ export class DutyScheduleService {
   readonly activeRange = signal<{ start: string; end: string } | null>(null);
 
   readonly canManage = computed(() =>
-    this.auth.currentUser()?.role === 'manager'
+    this.auth.isManager()
       || this.auth.hasPermission(PERMISSIONS.DUTY_MANAGE)
   );
 

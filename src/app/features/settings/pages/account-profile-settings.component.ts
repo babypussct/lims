@@ -99,7 +99,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
           <h2 class="text-sm font-bold text-gray-700 dark:text-white">Quyền truy cập hiệu lực</h2>
           <p class="mt-1 text-xs leading-relaxed text-slate-400">Các quyền nghiệp vụ đang áp dụng cho tài khoản này.</p>
 
-          @if (auth.currentUser()?.role === 'manager') {
+          @if (auth.isManager()) {
             <div class="mt-5 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/20">
               <div class="flex items-start gap-3">
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
@@ -143,7 +143,7 @@ export class AccountProfileSettingsComponent {
   readonly getUserRoleLabel = getUserRoleLabel;
   private readonly toast = inject(ToastService);
   readonly getAvatarUrl = getAvatarUrl;
-  readonly isSuperAdmin = computed(() => this.auth.currentUser()?.protectedAdmin === true);
+  readonly isSuperAdmin = this.auth.isSuperAdmin;
   readonly avatarStyleValue = computed(() => this.isSuperAdmin()
     ? this.state.avatarStyle()
     : (this.auth.currentUser()?.avatarStyle || ''));

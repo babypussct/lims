@@ -51,7 +51,7 @@ export class PrintQueueService {
     // Manager sees all printable jobs. Non-manager users use canonical UID
     // ownership; all production printable documents were backfilled before
     // this UID-only reader was released.
-    const isManager = user.role === 'manager';
+    const isManager = this.auth.isManager();
     const nextScope = isManager ? `${user.uid}:manager` : `${user.uid}:self`;
     if (nextScope === this.scopeKey && this.listeners.length > 0) return;
 

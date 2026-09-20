@@ -398,7 +398,7 @@ export class RequestListComponent implements OnInit {
           if (end && d > end) return false;
 
           // User Filter
-          if (user?.role === 'manager') return true;
+          if (this.auth.isManager()) return true;
           return req.user === user?.displayName;
       });
   });

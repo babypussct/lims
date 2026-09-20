@@ -584,6 +584,27 @@ test('protectedAdmin cannot be changed or deleted through client rules, includin
   await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/users/${protectedUid}`)));
 });
 
+test('protectedAdmin marker alone never grants Superadmin operations without Manager role', async () => {
+  const uid = 'protected-staff';
+  const systemPath = `artifacts/${APP_ID}/config/system`;
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, `artifacts/${APP_ID}/users/${uid}`), {
+      email: 'protected-staff@example.test',
+      displayName: 'Protected Staff',
+      role: 'staff',
+      roleId: 'role_staff_default',
+      permissions: [],
+      customPermissions: [],
+      protectedAdmin: true
+    });
+    await setDoc(doc(db, systemPath), { maintenanceMode: false, avatarStyle: 'bottts-neutral' });
+  });
+  const malformedDb = env.authenticatedContext(uid, { email: 'protected-staff@example.test' }).firestore();
+  await assertFails(updateDoc(doc(malformedDb, systemPath), { avatarStyle: 'micah' }));
+  await assertFails(deleteDoc(doc(malformedDb, systemPath)));
+});
+
 test('release history is readable before authentication for the public changelog route', async () => {
   const publicDb = env.unauthenticatedContext().firestore();
   const snapshot = await assertSucceeds(getDocs(collection(publicDb, 'releases')));

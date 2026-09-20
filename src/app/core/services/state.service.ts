@@ -294,7 +294,7 @@ export class StateService implements OnDestroy {
   cachedCalculatorState = signal<{ sopId: string, formValues: any } | null>(null);
 
   currentUser = this.auth.currentUser;
-  isAdmin = computed(() => this.auth.currentUser()?.role === 'manager');
+  isAdmin = computed(() => this.auth.isManager());
 
   isSystemHealthy = signal<boolean>(true);
   permissionError = signal<boolean>(false);
@@ -1281,7 +1281,7 @@ export class StateService implements OnDestroy {
 
   async saveAvatarStyle(style: string) {
     const user = this.auth.currentUser();
-    if (!user || user.protectedAdmin !== true) {
+    if (!user || !this.auth.isSuperAdmin()) {
       throw new Error('Chỉ Superadmin được thay đổi avatar mặc định toàn hệ thống.');
     }
     const normalizedStyle = style?.trim();
@@ -1301,7 +1301,7 @@ export class StateService implements OnDestroy {
 
     // Superadmin's choice is the system-wide default. Remove any legacy
     // personal override so the protected account follows the global setting too.
-    if (user.protectedAdmin === true) {
+    if (this.auth.isSuperAdmin()) {
       await this.saveAvatarStyle(style);
       if (user.avatarStyle) {
         await updateDoc(ref, { avatarStyle: deleteField() });

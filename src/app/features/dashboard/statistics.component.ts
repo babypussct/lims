@@ -988,7 +988,7 @@ export class StatisticsComponent {
     if (this.isBackfilling()) return;
     
     // Check permission (only Manager)
-    if (this.auth.currentUser()?.role !== 'manager') {
+    if (!this.auth.isManager()) {
         this.toast.show('Bạn không có quyền chạy Backfill.', 'error');
         return;
     }

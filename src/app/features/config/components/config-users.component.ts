@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FirebaseService } from '../../../core/services/firebase.service';
-import { AuthService, PERMISSIONS, UserProfile } from '../../../core/services/auth.service';
+import { AuthService, PERMISSIONS, UserProfile, isProtectedAdminProfile } from '../../../core/services/auth.service';
 import { StateService } from '../../../core/services/state.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { getAvatarUrl } from '../../../shared/utils/utils';
@@ -203,7 +203,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                         <select [ngModel]="batchRole()" (ngModelChange)="batchRole.set($event)" 
                                 class="bg-slate-900 text-xs font-bold text-slate-200 border-none rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
                             <option value="staff">Staff</option>
-                            <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Quản lý</option>
+                            <option value="manager" [disabled]="!auth.isManager()">Quản lý</option>
                             <option value="viewer">Viewer</option>
                             <option value="pending">Pending</option>
                         </select>
@@ -263,9 +263,9 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                             <label class="-m-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:m-0 md:h-auto md:w-auto">
                                 <input type="checkbox"
                                        [checked]="selectedUids().has(u.uid)"
-                                       [disabled]="isSuperAdmin(u)"
-                                       [title]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ và không tham gia thao tác hàng loạt.' : 'Chọn người dùng'"
-                                       [attr.aria-label]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ' : 'Chọn người dùng'"
+                                       [disabled]="isProtectedAdmin(u)"
+                                       [title]="isProtectedAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ và không tham gia thao tác hàng loạt.' : 'Chọn người dùng'"
+                                       [attr.aria-label]="isProtectedAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ' : 'Chọn người dùng'"
                                        (change)="toggleSelectUser(u.uid)"
                                        class="h-5 w-5 rounded text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-fuchsia-600 shrink-0 md:h-4 md:w-4">
                             </label>
@@ -277,7 +277,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                     <span class="font-bold text-slate-800 dark:text-slate-200 truncate text-sm md:text-base">{{u.displayName}}</span>
                                     
                                     <!-- Status Badges -->
-                                    @if (isSuperAdmin(u)) {
+                                    @if (isProtectedAdmin(u)) {
                                         <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-black rounded-md border border-amber-300 dark:border-amber-700/60 shrink-0 flex items-center gap-1">
                                             <i class="fa-solid fa-lock" aria-hidden="true"></i> Quản trị được bảo vệ
                                         </span>
@@ -308,12 +308,12 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                             
                             <div class="flex items-center gap-2">
                                 <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
-                                        [disabled]="isSuperAdmin(u)"
-                                        [title]="isSuperAdmin(u) ? 'Vai trò của tài khoản quản trị gốc chỉ có thể thay đổi qua trusted admin path.' : 'Vai trò tài khoản'"
+                                        [disabled]="isProtectedAdmin(u)"
+                                        [title]="isProtectedAdmin(u) ? 'Vai trò của tài khoản quản trị gốc chỉ có thể thay đổi qua trusted admin path.' : 'Vai trò tài khoản'"
                                         class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-fuchsia-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
                                         [class.text-orange-600]="u.role === 'pending'"
                                         [class.dark:text-orange-400]="u.role === 'pending'">
-                                    <option value="manager" [disabled]="auth.currentUser()?.role !== 'manager'">Quản lý (toàn quyền)</option>
+                                    <option value="manager" [disabled]="!auth.isManager()">Quản lý (toàn quyền)</option>
                                     <option value="staff">Staff (Nhân viên)</option>
                                     <option value="viewer">Viewer (Chỉ xem)</option>
                                     <option value="pending">Pending (Chờ duyệt)</option>
@@ -371,9 +371,9 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                         <!-- Col 4: Save Single User -->
                         <div class="col-span-1 md:col-span-1 flex md:justify-center mt-2 md:mt-0">
                             <button (click)="saveUser(u)"
-                                    [disabled]="isSuperAdmin(u)"
+                                    [disabled]="isProtectedAdmin(u)"
                                     class="w-full md:w-10 h-10 md:h-10 rounded-xl bg-fuchsia-50 md:bg-fuchsia-50/60 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-600 dark:hover:bg-fuchsia-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-fuchsia-200 md:border-transparent dark:border-fuchsia-800/40 font-bold gap-2 text-sm shadow-xs disabled:cursor-not-allowed disabled:opacity-40"
-                                    [title]="isSuperAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ ở trusted layer.' : 'Lưu thay đổi cho người dùng này'">
+                                    [title]="isProtectedAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ ở trusted layer.' : 'Lưu thay đổi cho người dùng này'">
                                 <i class="fa-solid fa-floppy-disk text-base md:text-sm"></i> <span class="md:hidden">Lưu Thay Đổi</span>
                             </button>
                         </div>
@@ -547,7 +547,7 @@ export class ConfigUsersComponent implements OnInit {
   });
 
   isAllSelected = computed(() => {
-    const visible = this.filteredUsers().filter(u => !this.isSuperAdmin(u));
+    const visible = this.filteredUsers().filter(u => !this.isProtectedAdmin(u));
     if (visible.length === 0) return false;
     const selected = this.selectedUids();
     return visible.every(u => selected.has(u.uid));
@@ -608,7 +608,7 @@ export class ConfigUsersComponent implements OnInit {
   // SELECTION HANDLERS
   toggleSelectUser(uid: string) {
       const user = this.userList().find(candidate => candidate.uid === uid);
-      if (user && this.isSuperAdmin(user)) return;
+      if (user && this.isProtectedAdmin(user)) return;
       const next = new Set(this.selectedUids());
       if (next.has(uid)) {
           next.delete(uid);
@@ -620,7 +620,7 @@ export class ConfigUsersComponent implements OnInit {
 
   toggleSelectAll() {
       const next = new Set(this.selectedUids());
-      const visible = this.filteredUsers().filter(u => !this.isSuperAdmin(u));
+      const visible = this.filteredUsers().filter(u => !this.isProtectedAdmin(u));
       if (this.isAllSelected()) {
           visible.forEach(u => next.delete(u.uid));
       } else {
@@ -675,7 +675,7 @@ export class ConfigUsersComponent implements OnInit {
       const targetRoleId = this.batchRoleId();
       const selected = this.selectedUids();
 
-      if (targetRole === 'manager' && this.auth.currentUser()?.role !== 'manager') {
+      if (targetRole === 'manager' && !this.auth.isManager()) {
           this.toast.show('Chỉ người quản lý mới được cấp vai trò quản lý.', 'error');
           return;
       }
@@ -693,7 +693,7 @@ export class ConfigUsersComponent implements OnInit {
       this.userList.update(users => 
           users.map(u => {
               if (selected.has(u.uid)) {
-                  if (this.isSuperAdmin(u) && targetRole !== 'manager') {
+                  if (this.isProtectedAdmin(u) && targetRole !== 'manager') {
                       return u; // Protect Super Admin from demotion
                   }
                   const updated: UserProfile = { ...u, role: targetRole };
@@ -715,7 +715,7 @@ export class ConfigUsersComponent implements OnInit {
 
   async saveBatchUsers() {
       const selected = this.selectedUids();
-      const targets = this.userList().filter(u => selected.has(u.uid) && !this.isSuperAdmin(u));
+      const targets = this.userList().filter(u => selected.has(u.uid) && !this.isProtectedAdmin(u));
 
       if (targets.length === 0 || this.batchSaving()) return;
 
@@ -811,18 +811,18 @@ export class ConfigUsersComponent implements OnInit {
       );
   }
 
-  isSuperAdmin(u: UserProfile): boolean {
-      return u.protectedAdmin === true;
+  isProtectedAdmin(u: UserProfile): boolean {
+      return isProtectedAdminProfile(u);
   }
 
   updateRole(u: UserProfile, role: 'manager' | 'staff' | 'viewer' | 'pending') { 
-      if (this.auth.currentUser()?.role !== 'manager' && (u.role === 'manager' || role === 'manager')) {
+      if (!this.auth.isManager() && (u.role === 'manager' || role === 'manager')) {
           this.toast.show('Chỉ người quản lý mới được cấp hoặc thay đổi vai trò quản lý.', 'error');
           return;
       }
 
       // SAFETY GUARD: Protect Super Admin account
-      if (this.isSuperAdmin(u) && role !== 'manager') {
+      if (this.isProtectedAdmin(u) && role !== 'manager') {
           this.toast.show('Không thể hạ cấp tài khoản quản trị cao nhất.', 'error');
           return;
       }
@@ -856,7 +856,7 @@ export class ConfigUsersComponent implements OnInit {
   }
 
   private async persistUser(u: UserProfile): Promise<void> {
-      if (this.isSuperAdmin(u)) {
+      if (this.isProtectedAdmin(u)) {
           throw new Error('Tài khoản quản trị gốc được bảo vệ và không thể sửa từ giao diện phân quyền.');
       }
       let resolvedPerms: string[] = [];

@@ -129,7 +129,7 @@ import { AppDatePickerComponent } from '../../../shared/components/ui/date-picke
                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Tệp CoA (liên kết hoặc tải lên)</label>
                                 <div class="flex gap-2">
                                     <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
-                                    @if(auth.currentUser()?.role === 'manager') {
+                                    @if(auth.isManager()) {
                 <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Tải lên Google Drive (15 GB miễn phí, tự đặt tên)">
                                             @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên... } @else { <i class="fa-brands fa-google-drive"></i> Google Drive }
                                         </button>

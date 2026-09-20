@@ -25,7 +25,7 @@ export const permissionGuard: CanActivateFn = (route, state) => {
   }
 
   // 2. Check Admin Override
-  if (user.role === 'manager') return true;
+  if (auth.isManager()) return true;
 
   // Audit mode is intentionally exclusive for operational standard routes,
   // even when the account still inherits an older standard role permission.
