@@ -39,6 +39,7 @@ import {
   buildChloroformPdfPayload
 } from './result-pdf-helper';
 import { buildPublishPreflightSummary, PublishPreflightSummary } from './result-preflight';
+import { buildReportCoverage } from './report-completion.utils';
 
 // Refactored sub-components
 import { ResultPrefixTabsComponent } from './components/result-prefix-tabs.component';
@@ -475,30 +476,19 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const d = this.draft();
     if (!r || !d) return { published: 0, total: 0, percent: 0, unpublishedSamples: [] as string[] };
 
-    // Tổng mẫu = TẤT CẢ mẫu thực trong mẻ (loại trừ QC nội bộ như QC_SPIKE, QC_FINAL…)
-    // Không lọc theo `selected` để tránh hiển thị sai tiến độ khi đang filter prefix
-    const allSamples = (r.sampleList || []).filter((s: string) => !s.startsWith('QC_'));
-
-    const publishedSamples = new Set<string>();
-    const reports = d.reports || {};
-    for (const rep of Object.values(reports)) {
-      if (rep && ((rep as any).status === 'completed' || (rep as any).pdfUrl)) {
-        ((rep as any).includedSamples || []).forEach((s: string) => publishedSamples.add(s));
-      }
-    }
-    // Báo cáo chung (non-prefix)
-    if (d.pdfUrl) {
-      allSamples.forEach((s: string) => publishedSamples.add(s));
-    }
-
-    const publishedCount = allSamples.filter((s: string) => publishedSamples.has(s)).length;
-    const unpublishedSamples = allSamples.filter((s: string) => !publishedSamples.has(s));
+    const coverage = buildReportCoverage({
+      sampleList: r.sampleList || [],
+      reports: d.reports,
+      allReportPdfUrl: d.pdfUrl,
+      allReportStatus: d.allReportStatus,
+      allReportIncludedSamples: d.includedSamples
+    });
 
     return {
-      published: publishedCount,
-      total: allSamples.length,
-      percent: allSamples.length > 0 ? Math.round(publishedCount / allSamples.length * 100) : 0,
-      unpublishedSamples
+      published: coverage.published,
+      total: coverage.total,
+      percent: coverage.percent,
+      unpublishedSamples: coverage.unpublishedSamples
     };
   });
 
@@ -620,6 +610,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.hasUnsavedChangesActivity = false;
         await this.resultService.updateHeartbeat(this.requestId);
       }
+      if (r?.resultStatusReason === 'manual_edit' && this.autoSaveStatus() === 'synced') {
+        await this.resultService.relockUnchangedManualEdit(this.requestId);
+      }
     }, 60000);
     
     // Read prefix from route query params
@@ -684,6 +677,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           // nhưng chưa kịp auto-save vào Firestore
           if (this.isLoading() || this.autoSaveStatus() === 'synced') {
             this.draft.set(draftDoc);
+          }
+
+          // Phiên manual_edit cũ hoặc bị bỏ quên sẽ tự khóa lại sau thời gian chờ
+          // nếu chưa có bất kỳ thay đổi dữ liệu báo cáo nào.
+          if (runDoc.resultStatusReason === 'manual_edit' && this.autoSaveStatus() === 'synced') {
+            void this.resultService.relockUnchangedManualEdit(this.requestId);
           }
 
           // Tự chữa các mẻ cũ đã in đủ 100% nhưng bị autosave kéo ngược về draft.
@@ -1057,7 +1056,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   async triggerUnlockToEdit() {
     if (this.isProcessing()) return;
     const confirmed = await this.confirmation.confirm({
-      message: 'Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nSau khi chỉnh sửa xong, lần xuất bản tiếp theo sẽ tạo ra một bản báo cáo phiên bản mới (tăng 1 version) mà không xóa bản cũ.',
+      message: 'Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nNếu không thay đổi số liệu, mẻ sẽ tự khóa lại và giữ nguyên báo cáo hiện tại. Chỉ khi có thay đổi dữ liệu, báo cáo cũ mới cần xuất lại phiên bản mới.',
       confirmText: 'Mở khóa chỉnh sửa',
       isDangerous: true
     });
@@ -1446,7 +1445,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     return dateStr;
   }
 
-  goBack() {
+  async goBack() {
+    const r = this.run();
+    if (r?.resultStatusReason === 'manual_edit' && this.draft()) {
+      if (this.autoSaveStatus() !== 'synced') {
+        const saved = await this.flushCurrentDraft(false);
+        this.resumeAutoSave();
+        if (!saved) return;
+      }
+      await this.resultService.relockUnchangedManualEdit(this.requestId, 0, true);
+    }
     this.router.navigate(['/results']);
   }
 

@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.09.20-b03",
+    "date": "20/9/2026",
+    "title": "Tự khóa lại mẻ mở khóa nhưng không thay đổi",
+    "highlights": [
+      "Mẻ đã xuất đủ báo cáo sẽ tự trở về trạng thái hoàn tất nếu người dùng chỉ mở khóa chỉnh sửa nhưng không thay đổi dữ liệu.",
+      "Báo cáo đã phát hành chỉ mất hiệu lực khi hệ thống phát hiện dữ liệu có ảnh hưởng đến báo cáo thực sự thay đổi."
+    ],
+    "features": [
+      "Phiên mở khóa không thay đổi được tự kiểm tra sau 3 phút và tự khóa lại; khi quay về danh sách, hệ thống kiểm tra và khóa lại ngay nếu dữ liệu vẫn nguyên vẹn."
+    ],
+    "improvements": [
+      "Tiến độ xuất báo cáo dùng chung một cơ chế tính coverage, loại trừ mẫu QC nội bộ và hỗ trợ đúng báo cáo ALL chia nhiều phần.",
+      "Thao tác chọn mẫu trên giao diện không bị xem là thay đổi nội dung báo cáo."
+    ],
+    "fixes": [
+      "Khắc phục trường hợp báo cáo hiển thị 100% nhưng mẻ vẫn ở trạng thái nháp sau khi mở khóa thủ công.",
+      "Khắc phục trạng thái xuất từng phần bị ghi nhận như nháp chủ động, làm cơ chế tự hoàn tất không thể phục hồi đúng trạng thái."
+    ],
+    "releaseOrder": 26092000003
+  },
+  {
     "version": "v26.09.20-b02",
     "date": "20/9/2026",
     "title": "Chuyển SOP an toàn cho mẻ đã duyệt",

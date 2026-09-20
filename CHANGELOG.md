@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.20-b02
+## Phiên bản hiện tại: v26.09.20-b03
+
+### v26.09.20-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mẻ đã xuất đủ báo cáo sẽ tự trở về trạng thái hoàn tất nếu người dùng chỉ mở khóa chỉnh sửa nhưng không thay đổi dữ liệu.
+- Báo cáo đã phát hành chỉ mất hiệu lực khi hệ thống phát hiện dữ liệu có ảnh hưởng đến báo cáo thực sự thay đổi.
+
+#### ✨ Tính Năng Mới
+
+- Phiên mở khóa không thay đổi được tự kiểm tra sau 3 phút và tự khóa lại; khi quay về danh sách, hệ thống kiểm tra và khóa lại ngay nếu dữ liệu vẫn nguyên vẹn.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tiến độ xuất báo cáo dùng chung một cơ chế tính coverage, loại trừ mẫu QC nội bộ và hỗ trợ đúng báo cáo ALL chia nhiều phần.
+- Thao tác chọn mẫu trên giao diện không bị xem là thay đổi nội dung báo cáo.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục trường hợp báo cáo hiển thị 100% nhưng mẻ vẫn ở trạng thái nháp sau khi mở khóa thủ công.
+- Khắc phục trạng thái xuất từng phần bị ghi nhận như nháp chủ động, làm cơ chế tự hoàn tất không thể phục hồi đúng trạng thái.
 
 ### v26.09.20-b02
 

@@ -64,6 +64,10 @@ export interface AnalysisResultDraft {
   docsUrl?: string;     // Google Docs editor URL
   pdfFileName?: string; // Tên file PDF đã lưu
   pdfCreatedAt?: string;
+  /** Mẫu đã được bao phủ bởi các báo cáo ALL hiện hành. */
+  includedSamples?: string[];
+  /** Báo cáo ALL hiện hành bị vô hiệu sau khi người dùng thực sự sửa dữ liệu. */
+  allReportStatus?: 'completed' | 'stale';
   updatedAt: any;
   updatedBy: string;
 }

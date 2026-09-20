@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.20-b02",
-    "title": "Chuyển SOP an toàn cho mẻ đã duyệt",
+    "version": "v26.09.20-b03",
+    "title": "Tự khóa lại mẻ mở khóa nhưng không thay đổi",
     "features": [
-      "Bổ sung nghiệp vụ Chuyển SOP ngay từ danh sách phiếu và màn hình nhập kết quả, giúp đổi phương pháp cho mẻ phù hợp mà vẫn giữ đầy đủ truy vết.",
-      "Đồng bộ việc chuyển SOP với dữ liệu mẻ, tồn kho, Daily Checklist, thống kê và nhật ký hoạt động trong cùng một giao dịch được kiểm soát.",
-      "Người có quyền duyệt SOP có thể chuyển mẻ đã duyệt hoặc đang nhập nháp sang SOP khác khi SOP đích phủ đủ chỉ tiêu và có biểu mẫu kết quả tương ứng.",
-      "Hiển thị bước kiểm tra trước khi chuyển SOP và chặn thao tác khi mẻ đã phát hành báo cáo, thuộc cấu trúc master/child hoặc đang bị người khác khóa chỉnh sửa.",
-      "Khu vực báo cáo đang hoạt động và lịch sử được sắp xếp rõ hơn, tránh hiển thị trùng phiên bản đang còn hiệu lực trong danh sách lịch sử."
+      "Mẻ đã xuất đủ báo cáo sẽ tự trở về trạng thái hoàn tất nếu người dùng chỉ mở khóa chỉnh sửa nhưng không thay đổi dữ liệu.",
+      "Báo cáo đã phát hành chỉ mất hiệu lực khi hệ thống phát hiện dữ liệu có ảnh hưởng đến báo cáo thực sự thay đổi.",
+      "Phiên mở khóa không thay đổi được tự kiểm tra sau 3 phút và tự khóa lại; khi quay về danh sách, hệ thống kiểm tra và khóa lại ngay nếu dữ liệu vẫn nguyên vẹn.",
+      "Tiến độ xuất báo cáo dùng chung một cơ chế tính coverage, loại trừ mẫu QC nội bộ và hỗ trợ đúng báo cáo ALL chia nhiều phần.",
+      "Thao tác chọn mẫu trên giao diện không bị xem là thay đổi nội dung báo cáo."
     ]
   },
   "assetGroups": [

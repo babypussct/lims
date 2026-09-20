@@ -131,6 +131,11 @@ export const ACTIVITY_ACTION_REGISTRY = {
     label: 'đã đồng bộ trạng thái kết quả', iconKey: 'arrows-rotate', defaultActionUrl: resultUrl,
     notification: none()
   }),
+  RELOCK_UNCHANGED_RESULT_EDIT: define('RELOCK_UNCHANGED_RESULT_EDIT', {
+    module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'NORMAL', activityVisible: false,
+    label: 'đã tự khóa lại phiên chỉnh sửa không thay đổi', iconKey: 'lock', defaultActionUrl: resultUrl,
+    notification: none()
+  }),
   UNLOCK_RESULT_EDIT: define('UNLOCK_RESULT_EDIT', {
     module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'IMPORTANT', activityVisible: true,
     label: 'đã mở khóa chỉnh sửa kết quả', iconKey: 'lock-open', defaultActionUrl: resultUrl,

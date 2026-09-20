@@ -12,6 +12,13 @@ import { Request } from '../../../core/models/request.model';
 import { DailyChecklistEntry } from '../../../core/models/daily-checklist.model';
 import { buildDailyChecklistEntry } from '../../../core/utils/daily-checklist-projection';
 import { buildGeneratePdfRequestId } from './report-request-id';
+import {
+  buildReportCoverage,
+  getReportableSamples,
+  haveReportInputsChanged,
+  invalidatePublishedReports,
+  isBatchReportComplete
+} from '../report-completion.utils';
 
 @Injectable({
   providedIn: 'root'
@@ -240,7 +247,9 @@ export class ResultService {
         docsUrl: lastMeta['analysisResultSummary']?.['docsUrl'] || '',
         pdfFileName: lastMeta['analysisResultSummary']?.['pdfFileName'] || '',
         pdfCreatedAt: lastMeta['analysisResultSummary']?.['pdfCreatedAt'] || '',
-        reports: lastMeta['analysisResultSummary']?.['reports']
+        reports: lastMeta['analysisResultSummary']?.['reports'],
+        includedSamples: lastMeta['analysisResultSummary']?.['includedSamples'] || [],
+        allReportStatus: lastMeta['analysisResultSummary']?.['allReportStatus']
       };
       
       callback(mergedDraft, { id: requestId, ...lastMeta });
@@ -319,7 +328,9 @@ export class ResultService {
         docsUrl: metaData['analysisResultSummary']?.['docsUrl'] || '',
         pdfFileName: metaData['analysisResultSummary']?.['pdfFileName'] || '',
         pdfCreatedAt: metaData['analysisResultSummary']?.['pdfCreatedAt'] || '',
-        reports: metaData['analysisResultSummary']?.['reports']
+        reports: metaData['analysisResultSummary']?.['reports'],
+        includedSamples: metaData['analysisResultSummary']?.['includedSamples'] || [],
+        allReportStatus: metaData['analysisResultSummary']?.['allReportStatus']
       } as any;
     } catch (e: any) {
       console.error('Error fetching split draft:', e);
@@ -369,6 +380,22 @@ export class ResultService {
         ...(currentDetail['resultData'] || {}),
         ...(draft.resultData || {})
       }));
+
+      const previousPage1Data = JSON.parse(JSON.stringify({
+        ...(legacyResult['page1Data'] || {}),
+        ...(currentDetail['page1Data'] || {})
+      }));
+      const previousResultData = JSON.parse(JSON.stringify({
+        ...(legacyResult['resultData'] || {}),
+        ...(currentDetail['resultData'] || {})
+      }));
+      const isManualEditSession = metaData['resultStatusReason'] === 'manual_edit';
+      const manualEditChanged = isManualEditSession && haveReportInputsChanged(
+        previousPage1Data,
+        previousResultData,
+        mergedPage1Data,
+        mergedResultData
+      );
       
       const batch = writeBatch(this.fb.db);
       const dailyEntriesByDate = new Map<string, DailyChecklistEntry[]>();
@@ -410,10 +437,24 @@ export class ResultService {
       if ((draft as any).includedSamples !== undefined) summaryPayload.includedSamples = (draft as any).includedSamples;
       else if (metaData['analysisResultSummary']?.['includedSamples'] !== undefined) summaryPayload.includedSamples = metaData['analysisResultSummary']['includedSamples'];
       else if (legacyResult['includedSamples'] !== undefined) summaryPayload.includedSamples = legacyResult['includedSamples'];
+
+      if (draft.allReportStatus !== undefined) summaryPayload.allReportStatus = draft.allReportStatus;
+      else if (metaData['analysisResultSummary']?.['allReportStatus'] !== undefined) summaryPayload.allReportStatus = metaData['analysisResultSummary']['allReportStatus'];
+      else if (legacyResult['allReportStatus'] !== undefined) summaryPayload.allReportStatus = legacyResult['allReportStatus'];
       
       if (draft.reports !== undefined) summaryPayload.reports = draft.reports;
       else if (metaData['analysisResultSummary']?.['reports'] !== undefined) summaryPayload.reports = metaData['analysisResultSummary']['reports'];
       else if (legacyResult['reports'] !== undefined) summaryPayload.reports = legacyResult['reports'];
+
+      // Mở khóa chỉ tạo một phiên chỉnh sửa. Báo cáo cũ vẫn còn hiệu lực cho tới
+      // khi có thay đổi dữ liệu thật sự được lưu.
+      if (manualEditChanged) {
+        summaryPayload.reports = invalidatePublishedReports(summaryPayload.reports);
+        summaryPayload.includedSamples = [];
+        if (summaryPayload.pdfUrl) {
+          summaryPayload.allReportStatus = 'stale';
+        }
+      }
       
       const metaUpdatePayload: any = {
         lastUpdated: serverTimestamp(),
@@ -427,6 +468,17 @@ export class ResultService {
         metaUpdatePayload.status = draft.status || metaData['status'] || 'draft';
         metaUpdatePayload.resultStatusReason = statusReason
           || (draft.status === 'completed' ? 'published' : 'explicit_draft');
+        if (statusReason === 'manual_edit') {
+          metaUpdatePayload.manualEditStartedAt = serverTimestamp();
+          metaUpdatePayload.manualEditChangedAt = deleteField();
+        } else {
+          metaUpdatePayload.manualEditStartedAt = deleteField();
+          metaUpdatePayload.manualEditChangedAt = deleteField();
+        }
+      } else if (manualEditChanged) {
+        metaUpdatePayload.status = 'draft';
+        metaUpdatePayload.resultStatusReason = 'manual_edit_changed';
+        metaUpdatePayload.manualEditChangedAt = serverTimestamp();
       } else if (!metaData['status'] || metaData['status'] === 'approved') {
         // Lần lưu nội dung đầu tiên là lúc mẻ chính thức chuyển từ Chờ nhập sang Nháp.
         metaUpdatePayload.status = 'draft';
@@ -504,6 +556,17 @@ export class ResultService {
               childMetaUpdatePayload.status = draft.status || metaData['status'] || 'draft';
               childMetaUpdatePayload.resultStatusReason = statusReason
                 || (draft.status === 'completed' ? 'published' : 'explicit_draft');
+              if (statusReason === 'manual_edit') {
+                childMetaUpdatePayload.manualEditStartedAt = serverTimestamp();
+                childMetaUpdatePayload.manualEditChangedAt = deleteField();
+              } else {
+                childMetaUpdatePayload.manualEditStartedAt = deleteField();
+                childMetaUpdatePayload.manualEditChangedAt = deleteField();
+              }
+            } else if (manualEditChanged) {
+              childMetaUpdatePayload.status = 'draft';
+              childMetaUpdatePayload.resultStatusReason = 'manual_edit_changed';
+              childMetaUpdatePayload.manualEditChangedAt = serverTimestamp();
             } else if (!childMeta['status'] || childMeta['status'] === 'approved') {
               childMetaUpdatePayload.status = 'draft';
               childMetaUpdatePayload.resultStatusReason = 'data_entry_started';
@@ -762,6 +825,9 @@ export class ResultService {
       
       let nextVersion = 1;
       const reports = currentDraft.reports || {};
+      const effectiveReports = reports;
+      const effectiveAllReportStatus = currentDraft.allReportStatus;
+      const effectiveAllIncludedSamples = currentDraft.includedSamples || [];
       const currentVersion = currentDraft.version || 0;
 
       // Xác định xem đây là báo cáo theo nhóm tiền tố hay báo cáo chung (Tất cả mẫu)
@@ -775,7 +841,7 @@ export class ResultService {
         let matchedId = '';
         let matchedReport: any = null;
         
-        for (const [key, rep] of Object.entries(reports)) {
+        for (const [key, rep] of Object.entries(effectiveReports)) {
           const repPrefix = (rep as any).prefix || key;
           if (repPrefix === prefixKey) {
             const repSamples = [...((rep as any).includedSamples || [])].sort().join(',');
@@ -872,7 +938,7 @@ export class ResultService {
       if (isPrefixReport) {
         const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix!;
         const updatedReports = {
-          ...reports,
+          ...effectiveReports,
           [targetReportId]: {
             id: targetReportId,
             prefix: prefixKey,
@@ -887,55 +953,47 @@ export class ResultService {
           }
         } as AnalysisResultDraft['reports'];
 
-        // Kiểm tra xem tất cả các mẫu trong mẻ đã được xuất bản chưa
-        const publishedSamples = new Set<string>();
-        for (const rep of Object.values(updatedReports || {})) {
-          if (rep && (rep.status === 'completed' || rep.pdfUrl)) {
-            (rep.includedSamples || []).forEach((s: string) => publishedSamples.add(s));
-          }
-        }
-        
         const allSamples = docSnap.data()?.['sampleList'] || [];
-        const allPublished = allSamples.length > 0 && allSamples.every((s: string) => publishedSamples.has(s));
-        
-        // Kiểm tra xem tất cả các mẫu trong mẻ đã có dữ liệu kết quả thực sự chưa (tránh khóa mẻ nếu chỉ in phiếu nháp)
-        const hasResultForAllSamples = allSamples.length > 0 && allSamples.every((s: string) => {
-          const sData = backup.resultData?.[s];
-          if (!sData) return false;
-          return Object.keys(sData).some(k => k !== 'selected' && sData[k] !== null && sData[k] !== undefined && sData[k] !== '');
+        const coverage = buildReportCoverage({
+          sampleList: allSamples,
+          reports: updatedReports,
+          allReportPdfUrl: currentDraft.pdfUrl,
+          allReportStatus: effectiveAllReportStatus,
+          allReportIncludedSamples: effectiveAllIncludedSamples
         });
 
-        newStatus = (allPublished && hasResultForAllSamples) ? 'completed' : 'draft';
+        newStatus = isBatchReportComplete(coverage, backup.resultData) ? 'completed' : 'draft';
 
         updatePayload = {
           ...draftData,
           status: newStatus,
-          reports: updatedReports
+          reports: updatedReports,
+          includedSamples: effectiveAllIncludedSamples,
+          allReportStatus: effectiveAllReportStatus
         };
       } else {
-        // Tính xem tất cả mẫu đã được xuất bản chưa
-        // (Kể cả báo cáo ALL vừa tạo + tất cả prefix reports đã có trước đó)
-        const publishedSamplesAll = new Set<string>();
-        // Thêm mẫu từ các prefix reports đã có
-        for (const rep of Object.values(reports || {})) {
-          if (rep && (rep.status === 'completed' || rep.pdfUrl)) {
-            (rep.includedSamples || []).forEach((s: string) => publishedSamplesAll.add(s));
-          }
-        }
-        // Thêm mẫu từ báo cáo ALL vừa tạo
-        (includedSamples || []).forEach((s: string) => publishedSamplesAll.add(s));
-
         const allSamplesForAll = docSnap.data()?.['sampleList'] || [];
-        const allPublishedForAll = allSamplesForAll.length > 0 && allSamplesForAll.every((s: string) => publishedSamplesAll.has(s));
-
-        // Kiểm tra xem tất cả các mẫu trong mẻ đã có dữ liệu kết quả thực sự chưa
-        const hasResultForAllSamplesForAll = allSamplesForAll.length > 0 && allSamplesForAll.every((s: string) => {
-          const sData = backup.resultData?.[s];
-          if (!sData) return false;
-          return Object.keys(sData).some(k => k !== 'selected' && sData[k] !== null && sData[k] !== undefined && sData[k] !== '');
+        let previousAllIncluded = [...effectiveAllIncludedSamples];
+        if (
+          previousAllIncluded.length === 0
+          && currentDraft.pdfUrl
+          && effectiveAllReportStatus !== 'stale'
+        ) {
+          previousAllIncluded = getReportableSamples(allSamplesForAll);
+        }
+        const nextAllIncluded = Array.from(new Set([
+          ...previousAllIncluded,
+          ...(includedSamples || [])
+        ]));
+        const coverage = buildReportCoverage({
+          sampleList: allSamplesForAll,
+          reports: effectiveReports,
+          allReportPdfUrl: response.pdfUrl || currentDraft.pdfUrl,
+          allReportStatus: 'completed',
+          allReportIncludedSamples: nextAllIncluded
         });
 
-        newStatus = (allPublishedForAll && hasResultForAllSamplesForAll) ? 'completed' : 'draft';
+        newStatus = isBatchReportComplete(coverage, backup.resultData) ? 'completed' : 'draft';
 
         updatePayload = {
           ...draftData,
@@ -946,11 +1004,19 @@ export class ResultService {
           docsUrl: response.docsUrl || undefined,
           pdfFileName: response.fileName || undefined,
           pdfCreatedAt: publishedAt,
-          ...({ includedSamples: includedSamples || [] } as any)
+          includedSamples: nextAllIncluded,
+          reports: effectiveReports,
+          allReportStatus: 'completed'
         };
       }
 
-      const saved = await this.saveDraft(requestId, updatePayload);
+      const saved = await this.saveDraft(
+        requestId,
+        updatePayload,
+        false,
+        true,
+        newStatus === 'completed' ? 'published' : 'publish_partial'
+      );
       if (!saved) {
         throw new Error('Không thể cập nhật thông tin xuất bản mới vào cơ sở dữ liệu!');
       }
@@ -1020,35 +1086,18 @@ export class ResultService {
     statusReason?: string
   ): Promise<boolean> {
     if (draft.status === 'completed') return false;
-    if (statusReason && ['manual_edit', 'reset', 'restore', 'explicit_draft'].includes(statusReason)) {
+    if (statusReason && ['manual_edit', 'manual_edit_changed', 'reset', 'restore', 'explicit_draft'].includes(statusReason)) {
       return false;
     }
 
-    const samples = sampleList.filter(sample => !sample.startsWith('QC_'));
-    if (samples.length === 0) return false;
-
-    const publishedSamples = new Set<string>();
-    if (draft.pdfUrl) {
-      samples.forEach(sample => publishedSamples.add(sample));
-    }
-    for (const report of Object.values(draft.reports || {})) {
-      if (report && (report.status === 'completed' || report.pdfUrl)) {
-        (report.includedSamples || []).forEach(sample => publishedSamples.add(sample));
-      }
-    }
-
-    const allPublished = samples.every(sample => publishedSamples.has(sample));
-    const allHaveResults = samples.every(sample => {
-      const row = draft.resultData?.[sample];
-      if (!row) return false;
-      return Object.keys(row).some(key =>
-        key !== 'selected'
-        && row[key] !== null
-        && row[key] !== undefined
-        && row[key] !== ''
-      );
+    const coverage = buildReportCoverage({
+      sampleList,
+      reports: draft.reports,
+      allReportPdfUrl: draft.pdfUrl,
+      allReportStatus: draft.allReportStatus,
+      allReportIncludedSamples: draft.includedSamples
     });
-    if (!allPublished || !allHaveResults) return false;
+    if (!isBatchReportComplete(coverage, draft.resultData)) return false;
 
     try {
       const metaRef = this.getDocRef(requestId);
@@ -1081,6 +1130,87 @@ export class ResultService {
       return true;
     } catch (error) {
       console.error('[ResultService] Failed to reconcile completion status:', error);
+      return false;
+    }
+  }
+
+  private timestampToMillis(value: any): number | null {
+    if (!value) return null;
+    if (typeof value.toMillis === 'function') return value.toMillis();
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    if (typeof value.seconds === 'number') return value.seconds * 1000;
+    return null;
+  }
+
+  /**
+   * Tự khóa lại một phiên "Mở khóa & chỉnh sửa" nếu người dùng chưa thay đổi
+   * dữ liệu báo cáo. Mặc định chờ 3 phút để tránh vừa mở khóa đã bị đóng ngay.
+   */
+  async relockUnchangedManualEdit(
+    requestId: string,
+    minAgeMs = 3 * 60 * 1000,
+    force = false
+  ): Promise<boolean> {
+    try {
+      const metaRef = this.getDocRef(requestId);
+      const metaSnap = await getDoc(metaRef);
+      if (!metaSnap.exists()) return false;
+
+      const metaData = metaSnap.data();
+      if (metaData['status'] !== 'draft' || metaData['resultStatusReason'] !== 'manual_edit') {
+        return false;
+      }
+
+      const startedAtMs = this.timestampToMillis(
+        metaData['manualEditStartedAt'] || metaData['lastUpdated']
+      );
+      if (!force) {
+        if (!startedAtMs || Date.now() - startedAtMs < minAgeMs) return false;
+      }
+
+      const currentDraft = await this.getDraft(requestId);
+      if (!currentDraft) return false;
+
+      const coverage = buildReportCoverage({
+        sampleList: metaData['sampleList'] || [],
+        reports: currentDraft.reports,
+        allReportPdfUrl: currentDraft.pdfUrl,
+        allReportStatus: currentDraft.allReportStatus,
+        allReportIncludedSamples: currentDraft.includedSamples
+      });
+      if (!isBatchReportComplete(coverage, currentDraft.resultData)) return false;
+
+      const batch = writeBatch(this.fb.db);
+      batch.update(metaRef, {
+        status: 'completed',
+        resultStatusReason: 'manual_edit_unchanged',
+        manualEditStartedAt: deleteField(),
+        manualEditChangedAt: deleteField(),
+        lastUpdated: serverTimestamp()
+      });
+      await batch.commit();
+
+      await this.dailyChecklistMaterializer.materializeRequestBestEffort({
+        id: requestId,
+        ...metaData,
+        status: 'completed'
+      } as Request, 'ResultService.relockUnchangedManualEdit');
+
+      await this.logActivity(
+        'RELOCK_UNCHANGED_RESULT_EDIT',
+        `Tự động khóa lại mẻ do mở khóa nhưng không thay đổi dữ liệu (Mã yêu cầu: ${requestId})`,
+        requestId,
+        currentDraft.sopId || '',
+        currentDraft.sopName || '',
+        { version: currentDraft.version ?? 0 }
+      );
+      return true;
+    } catch (error) {
+      console.error('[ResultService] Failed to relock unchanged manual edit:', error);
       return false;
     }
   }

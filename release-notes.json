@@ -1,19 +1,18 @@
 {
-  "title": "Chuyển SOP an toàn cho mẻ đã duyệt",
+  "title": "Tự khóa lại mẻ mở khóa nhưng không thay đổi",
   "highlights": [
-    "Bổ sung nghiệp vụ Chuyển SOP ngay từ danh sách phiếu và màn hình nhập kết quả, giúp đổi phương pháp cho mẻ phù hợp mà vẫn giữ đầy đủ truy vết.",
-    "Đồng bộ việc chuyển SOP với dữ liệu mẻ, tồn kho, Daily Checklist, thống kê và nhật ký hoạt động trong cùng một giao dịch được kiểm soát."
+    "Mẻ đã xuất đủ báo cáo sẽ tự trở về trạng thái hoàn tất nếu người dùng chỉ mở khóa chỉnh sửa nhưng không thay đổi dữ liệu.",
+    "Báo cáo đã phát hành chỉ mất hiệu lực khi hệ thống phát hiện dữ liệu có ảnh hưởng đến báo cáo thực sự thay đổi."
   ],
   "features": [
-    "Người có quyền duyệt SOP có thể chuyển mẻ đã duyệt hoặc đang nhập nháp sang SOP khác khi SOP đích phủ đủ chỉ tiêu và có biểu mẫu kết quả tương ứng.",
-    "Hiển thị bước kiểm tra trước khi chuyển SOP và chặn thao tác khi mẻ đã phát hành báo cáo, thuộc cấu trúc master/child hoặc đang bị người khác khóa chỉnh sửa."
+    "Phiên mở khóa không thay đổi được tự kiểm tra sau 3 phút và tự khóa lại; khi quay về danh sách, hệ thống kiểm tra và khóa lại ngay nếu dữ liệu vẫn nguyên vẹn."
   ],
   "improvements": [
-    "Khu vực báo cáo đang hoạt động và lịch sử được sắp xếp rõ hơn, tránh hiển thị trùng phiên bản đang còn hiệu lực trong danh sách lịch sử.",
-    "Khi chỉnh sửa phiếu đã duyệt, việc đổi SOP trực tiếp trong máy tính SOP được khóa và dẫn người dùng sang đúng nghiệp vụ Chuyển SOP.",
-    "Nút Chuyển SOP được mở cho người có quyền duyệt SOP trên danh sách phiếu đã duyệt, không phụ thuộc quyền quản trị hệ thống."
+    "Tiến độ xuất báo cáo dùng chung một cơ chế tính coverage, loại trừ mẫu QC nội bộ và hỗ trợ đúng báo cáo ALL chia nhiều phần.",
+    "Thao tác chọn mẫu trên giao diện không bị xem là thay đổi nội dung báo cáo."
   ],
   "fixes": [
-    "Siết Firestore Rules để thay đổi định danh SOP chỉ được thực hiện qua giao dịch Chuyển SOP hợp lệ, đồng thời yêu cầu xóa kết quả đang hoạt động và cập nhật các dữ liệu liên quan nhất quán."
+    "Khắc phục trường hợp báo cáo hiển thị 100% nhưng mẻ vẫn ở trạng thái nháp sau khi mở khóa thủ công.",
+    "Khắc phục trạng thái xuất từng phần bị ghi nhận như nháp chủ động, làm cơ chế tự hoàn tất không thể phục hồi đúng trạng thái."
   ]
 }
