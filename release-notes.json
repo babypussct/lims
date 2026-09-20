@@ -1,16 +1,19 @@
 {
-  "title": "Tinh gọn Lịch trực trên điện thoại và PWA",
+  "title": "Chuyển SOP an toàn cho mẻ đã duyệt",
   "highlights": [
-    "Tách Lịch trực, Nhân sự và Thống kê thành ba khu vực rõ ràng để thao tác nhanh hơn trên điện thoại, máy tính bảng và máy tính.",
-    "Gom điều hướng kỳ, bộ lọc nhân sự và các công cụ xuất lịch thành cụm gọn, giảm tình trạng nút bị chen chúc trên màn hình nhỏ."
+    "Bổ sung nghiệp vụ Chuyển SOP ngay từ danh sách phiếu và màn hình nhập kết quả, giúp đổi phương pháp cho mẻ phù hợp mà vẫn giữ đầy đủ truy vết.",
+    "Đồng bộ việc chuyển SOP với dữ liệu mẻ, tồn kho, Daily Checklist, thống kê và nhật ký hoạt động trong cùng một giao dịch được kiểm soát."
   ],
   "features": [
-    "Chuyển nhanh giữa dạng Tháng, Tuần và Danh sách; bộ lọc cho phép xem tất cả ca, ca của tôi hoặc ca của từng nhân sự.",
-    "Menu Công cụ tập trung thao tác tạo khung lịch, nhập lịch, sao chép hoặc tải ảnh, in lịch và xuất CSV."
+    "Người có quyền duyệt SOP có thể chuyển mẻ đã duyệt hoặc đang nhập nháp sang SOP khác khi SOP đích phủ đủ chỉ tiêu và có biểu mẫu kết quả tương ứng.",
+    "Hiển thị bước kiểm tra trước khi chuyển SOP và chặn thao tác khi mẻ đã phát hành báo cáo, thuộc cấu trúc master/child hoặc đang bị người khác khóa chỉnh sửa."
   ],
   "improvements": [
-    "Danh sách ca trên điện thoại ưu tiên thao tác chính và đưa các thao tác phụ vào menu gọn hơn.",
-    "Thông báo đổi ca chỉ nhấn mạnh các yêu cầu đang cần chính người dùng xử lý."
+    "Khu vực báo cáo đang hoạt động và lịch sử được sắp xếp rõ hơn, tránh hiển thị trùng phiên bản đang còn hiệu lực trong danh sách lịch sử.",
+    "Khi chỉnh sửa phiếu đã duyệt, việc đổi SOP trực tiếp trong máy tính SOP được khóa và dẫn người dùng sang đúng nghiệp vụ Chuyển SOP.",
+    "Nút Chuyển SOP được mở cho người có quyền duyệt SOP trên danh sách phiếu đã duyệt, không phụ thuộc quyền quản trị hệ thống."
   ],
-  "fixes": []
+  "fixes": [
+    "Siết Firestore Rules để thay đổi định danh SOP chỉ được thực hiện qua giao dịch Chuyển SOP hợp lệ, đồng thời yêu cầu xóa kết quả đang hoạt động và cập nhật các dữ liệu liên quan nhất quán."
+  ]
 }

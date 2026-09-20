@@ -10,6 +10,7 @@
     [isProcessing]="isProcessing()"
     [isPublishing]="isPublishing()"
     [isReadOnly]="isReadOnly()"
+    [canReassignSop]="canReassignSop()"
     [showRestoreMenu]="showRestoreMenu()"
     [showActionsMenu]="showActionsMenu()"
     [currentPdfUrl]="getCurrentPdfUrl()"
@@ -20,6 +21,7 @@
     (publishReport)="triggerPublishReport()"
     (unlockToEdit)="triggerUnlockToEdit()"
     (openResetModal)="openResetModal()"
+    (openSopReassignment)="openSopReassignment()"
     (deleteVirtualMaster)="triggerDeleteVirtualMaster()"
     (openPdf)="openPdfPreview($event.pdfUrl, $event.docsUrl)"
     (restoreVersion)="restoreFromVersion($event.version, $event.prefix, $event.reportId)"
@@ -168,6 +170,116 @@
       (cancelled)="closeExcelImport()"
       (applied)="onExcelImportApplied($event)">
     </app-excel-result-import-modal>
+  }
+
+  @if (showSopReassignmentModal() && run()) {
+    <app-modal-shell
+      title="Chuyển SOP"
+      description="Giữ nguyên mẻ và danh sách mẫu, thay quy trình kiểm nghiệm và biểu mẫu kết quả"
+      size="md"
+      [closeOnBackdrop]="false"
+      (closed)="closeSopReassignmentModal()">
+      <div modalBody class="space-y-4">
+        <div class="rounded-2xl border border-red-200 bg-red-50/70 p-4 dark:border-red-900/40 dark:bg-red-950/20">
+          <div class="flex gap-3">
+            <i class="fa-solid fa-triangle-exclamation mt-0.5 text-red-600 dark:text-red-400" aria-hidden="true"></i>
+            <div>
+              <div class="text-sm font-black text-red-700 dark:text-red-300">Dữ liệu SOP cũ sẽ bị xóa vĩnh viễn</div>
+              <p class="mt-1 text-xs font-medium leading-relaxed text-red-650 dark:text-red-300">
+                Toàn bộ dữ liệu kết quả đang hoạt động của <strong>{{ run()?.sopName }}</strong> sẽ bị xóa trước khi
+                khởi tạo biểu mẫu SOP mới. Mã mẻ và danh sách mẫu được giữ nguyên.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+          <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">SOP hiện tại</div>
+            <div class="mt-1 text-sm font-black text-slate-800 dark:text-slate-100">{{ run()?.sopName }}</div>
+            <div class="mt-0.5 text-[11px] text-slate-500">{{ run()?.sopRef || run()?.sopId }}</div>
+          </div>
+          <div class="hidden pb-3 text-slate-400 sm:block">
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </div>
+          <label class="block">
+            <span class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              SOP chuyển đến
+            </span>
+            <select
+              [value]="selectedReassignmentSopId()"
+              [disabled]="isLoadingSopReassignment() || isReassigningSop()"
+              (change)="onSopReassignmentTargetChange($event)"
+              class="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+              <option value="">Chọn SOP đích...</option>
+              @for (sop of sopReassignmentCandidates(); track sop.id) {
+                <option [value]="sop.id">{{ sop.name }}{{ sop.ref ? ' · ' + sop.ref : '' }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        @if (isLoadingSopReassignment()) {
+          <div class="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            Đang kiểm tra SOP, công thức và tồn kho...
+          </div>
+        }
+
+        @if (sopReassignmentError()) {
+          <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-semibold leading-relaxed text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+            {{ sopReassignmentError() }}
+          </div>
+        }
+
+        @if (sopReassignmentPreview(); as preview) {
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800">
+              <div class="text-lg font-black text-slate-800 dark:text-slate-100">{{ preview.request.sampleList?.length || 0 }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Mẫu giữ nguyên</div>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800">
+              <div class="text-lg font-black text-slate-800 dark:text-slate-100">{{ preview.request.targetIds?.length || 0 }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Chỉ tiêu</div>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800">
+              <div class="text-lg font-black text-slate-800 dark:text-slate-100">{{ preview.changedInventoryCount }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Vật tư đổi</div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-xs font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+            <i class="fa-solid fa-circle-check mr-1.5" aria-hidden="true"></i>
+            SOP {{ preview.targetSop.name }} hợp lệ, phủ đủ chỉ tiêu và công thức vật tư đã được tính lại.
+          </div>
+        }
+
+        <label class="block">
+          <span class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Ghi chú chuyển SOP <span class="normal-case font-medium text-slate-400">(không bắt buộc)</span>
+          </span>
+          <textarea
+            rows="2"
+            maxlength="500"
+            [value]="sopReassignmentNote()"
+            [disabled]="isReassigningSop()"
+            (input)="onSopReassignmentNoteInput($event)"
+            placeholder="Ví dụ: Khách hàng chỉ định SOP này..."
+            class="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"></textarea>
+        </label>
+      </div>
+      <div modalFooter class="flex flex-wrap justify-end gap-3">
+        <app-button variant="secondary" [disabled]="isReassigningSop()" (click)="closeSopReassignmentModal()">
+          Hủy
+        </app-button>
+        <app-button
+          variant="danger"
+          [disabled]="!sopReassignmentPreview() || isLoadingSopReassignment()"
+          [loading]="isReassigningSop()"
+          (click)="confirmSopReassignment()">
+          Xóa dữ liệu cũ và chuyển SOP
+        </app-button>
+      </div>
+    </app-modal-shell>
   }
 
   <!-- Publish Preflight Modal -->

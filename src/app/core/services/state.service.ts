@@ -259,7 +259,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.20-b01');
+  systemVersion = signal<string>('v26.09.20-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -2238,6 +2238,10 @@ export class StateService implements OnDestroy {
 
   async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
     if (!this.auth.canApprove()) return;
+    if (sop.id !== req.sopId) {
+      this.toast.show('Đổi SOP của phiếu đã duyệt phải thực hiện bằng nghiệp vụ “Chuyển SOP”.', 'warning');
+      return false;
+    }
     if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
       this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi cập nhật.', 'error');
       return false;

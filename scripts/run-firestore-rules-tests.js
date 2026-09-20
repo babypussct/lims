@@ -1,12 +1,17 @@
 const { execFileSync, spawnSync } = require('node:child_process');
-const { resolve } = require('node:path');
+const { dirname, join, resolve } = require('node:path');
 
 const ROOT = resolve(__dirname, '..');
 const PROJECT_ID = 'demo-lims-smart-batch-rules';
 const FIRESTORE_PORT = 8080;
 const TEST_COMMAND = 'npx tsx --test src/app/core/services/smart-batch-firestore-rules.emulator.test.ts';
 const FIREBASE_CLI_VERSION = '14.27.0';
-const FIREBASE_CLI = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const NPX = process.platform === 'win32'
+  ? {
+      executable: process.execPath,
+      prefixArgs: [join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npx-cli.js')]
+    }
+  : { executable: 'npx', prefixArgs: [] };
 
 function listWindowsPortListeners() {
   if (process.platform !== 'win32') return [];
@@ -97,8 +102,9 @@ try {
   ensureFirestorePortAvailable();
 
   const result = spawnSync(
-    FIREBASE_CLI,
+    NPX.executable,
     [
+      ...NPX.prefixArgs,
       '--yes',
       '--package',
       `firebase-tools@${FIREBASE_CLI_VERSION}`,

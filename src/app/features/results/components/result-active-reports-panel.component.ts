@@ -91,7 +91,49 @@ export class ResultActiveReportsPanelComponent {
   }
 
   getRecentHistory(): any[] {
-    return (this.historyList || []).slice(0, 5);
+    return this.getVisibleHistory().slice(0, 5);
+  }
+
+  getActiveReportCount(): number {
+    let count = this.generalReport ? 1 : 0;
+    for (const prefix of this.prefixes || []) {
+      count += this.getPrefixReports(prefix).length;
+    }
+    return count;
+  }
+
+  getVisibleHistory(): any[] {
+    const activeUrls = new Set<string>();
+    const activeVersionScopes = new Set<string>();
+
+    const registerActive = (report: any, scope: string) => {
+      if (!report) return;
+      [report.pdfViewUrl, report.pdfUrl, report.docsUrl]
+        .filter((url): url is string => typeof url === 'string' && url.length > 0)
+        .forEach(url => activeUrls.add(url));
+
+      if (report.version !== undefined && report.version !== null) {
+        activeVersionScopes.add(`${report.version}|${scope}`);
+      }
+    };
+
+    registerActive(this.generalReport, 'ALL');
+    for (const prefix of this.prefixes || []) {
+      const scope = prefix === '' ? '_NO_PREFIX_' : prefix;
+      this.getPrefixReports(prefix).forEach(report => registerActive(report, scope));
+    }
+
+    return (this.historyList || []).filter(hist => {
+      const historyUrls = [hist?.pdfViewUrl, hist?.pdfUrl, hist?.docsUrl]
+        .filter((url): url is string => typeof url === 'string' && url.length > 0);
+      if (historyUrls.some(url => activeUrls.has(url))) return false;
+
+      const scope = !hist?.prefix || hist.prefix === 'ALL' ? 'ALL' : hist.prefix;
+      if (hist?.version !== undefined && hist?.version !== null) {
+        return !activeVersionScopes.has(`${hist.version}|${scope}`);
+      }
+      return true;
+    });
   }
 
   getHistoryScopeLabel(hist: any): string {
@@ -134,7 +176,7 @@ export class ResultActiveReportsPanelComponent {
           icon: 'fa-arrow-up-right-from-square',
           href: docsUrl,
         } : undefined,
-        isCurrent: index === 0,
+        isCurrent: false,
       } satisfies TimelineItem;
     });
   }

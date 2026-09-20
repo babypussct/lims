@@ -15,6 +15,7 @@ const writerFiles = [
   'src/app/features/inventory/inventory.service.ts',
   'src/app/features/results/result-list.component.ts',
   'src/app/features/results/services/result.service.ts',
+  'src/app/features/results/services/sop-reassignment.service.ts',
   'src/app/features/standards/services/standard-crud.service.ts',
   'src/app/features/standards/services/standard-import.service.ts',
   'src/app/features/standards/services/standard-request.service.ts',
@@ -123,6 +124,7 @@ test('public traceability is an explicit action allowlist, not a printable side 
   assert.equal(canBePublicTraceableActivityAction('APPROVE_REQUEST'), true);
   assert.equal(canBePublicTraceableActivityAction('EDIT_REQUEST'), true);
   assert.equal(canBePublicTraceableActivityAction('CREATE_VIRTUAL_MASTER'), true);
+  assert.equal(canBePublicTraceableActivityAction('REASSIGN_SOP'), true);
   assert.equal(canBePublicTraceableActivityAction('PRINT'), false);
   assert.equal(canBePublicTraceableActivityAction('UNKNOWN_ACTION'), false);
 });

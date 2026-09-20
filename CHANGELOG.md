@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.20-b01
+## Phiên bản hiện tại: v26.09.20-b02
+
+### v26.09.20-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bổ sung nghiệp vụ Chuyển SOP ngay từ danh sách phiếu và màn hình nhập kết quả, giúp đổi phương pháp cho mẻ phù hợp mà vẫn giữ đầy đủ truy vết.
+- Đồng bộ việc chuyển SOP với dữ liệu mẻ, tồn kho, Daily Checklist, thống kê và nhật ký hoạt động trong cùng một giao dịch được kiểm soát.
+
+#### ✨ Tính Năng Mới
+
+- Người có quyền duyệt SOP có thể chuyển mẻ đã duyệt hoặc đang nhập nháp sang SOP khác khi SOP đích phủ đủ chỉ tiêu và có biểu mẫu kết quả tương ứng.
+- Hiển thị bước kiểm tra trước khi chuyển SOP và chặn thao tác khi mẻ đã phát hành báo cáo, thuộc cấu trúc master/child hoặc đang bị người khác khóa chỉnh sửa.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Khu vực báo cáo đang hoạt động và lịch sử được sắp xếp rõ hơn, tránh hiển thị trùng phiên bản đang còn hiệu lực trong danh sách lịch sử.
+- Khi chỉnh sửa phiếu đã duyệt, việc đổi SOP trực tiếp trong máy tính SOP được khóa và dẫn người dùng sang đúng nghiệp vụ Chuyển SOP.
+- Nút Chuyển SOP được mở cho người có quyền duyệt SOP trên danh sách phiếu đã duyệt, không phụ thuộc quyền quản trị hệ thống.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Siết Firestore Rules để thay đổi định danh SOP chỉ được thực hiện qua giao dịch Chuyển SOP hợp lệ, đồng thời yêu cầu xóa kết quả đang hoạt động và cập nhật các dữ liệu liên quan nhất quán.
 
 ### v26.09.20-b01
 

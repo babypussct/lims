@@ -359,6 +359,9 @@
                       <app-button [fullWidth]="true" (click)="goToResultsEntry()" [disabled]="isProcessing()">
                         <i class="fa-solid fa-square-poll-vertical" aria-hidden="true"></i> Nhập kết quả ngay
                       </app-button>
+                      <app-button variant="secondary" [fullWidth]="true" (click)="goToSopReassignment()" [disabled]="isProcessing()">
+                        <i class="fa-solid fa-code-compare" aria-hidden="true"></i> Chuyển SOP
+                      </app-button>
                       <app-button [fullWidth]="true" (click)="saveEditedRequest(currentSop)" [disabled]="isProcessing() || form().invalid" [loading]="isProcessing()">
                         @if (!isProcessing()) { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> }
                         Lưu thay đổi

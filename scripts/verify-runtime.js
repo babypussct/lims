@@ -69,7 +69,16 @@ function evaluateRuntimePolicy({ packageManager, nodeEngine, nvmrc, actualNode, 
 function collectRuntimePolicy(root = path.join(__dirname, '..')) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const nvmrc = fs.readFileSync(path.join(root, '.nvmrc'), 'utf8').trim();
-  const actualNpm = execFileSync('npm', ['--version'], {
+  const npmCommand = process.platform === 'win32'
+    ? {
+        executable: process.execPath,
+        args: [
+          path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+          '--version'
+        ]
+      }
+    : { executable: 'npm', args: ['--version'] };
+  const actualNpm = execFileSync(npmCommand.executable, npmCommand.args, {
     cwd: root,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe']

@@ -47,6 +47,7 @@ export interface Request {
   inputs?: any;
   margin?: number;
   analysisDate?: string;
+  resultStatusReason?: string;
   
   // New Feature: Sample & Target Tracking
   sampleList?: string[]; // List of Sample IDs

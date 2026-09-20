@@ -111,6 +111,11 @@ export const ACTIVITY_ACTION_REGISTRY = {
     label: 'đã reset số liệu kết quả', iconKey: 'trash-arrow-up', defaultActionUrl: resultUrl,
     notification: workflow('RESULT_RESET')
   }),
+  REASSIGN_SOP: define('REASSIGN_SOP', {
+    module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'WARNING', activityVisible: true,
+    label: 'đã chuyển SOP', iconKey: 'code-compare', defaultActionUrl: resultUrl,
+    publicTraceableAllowed: true, notification: none()
+  }),
   RESTORE_RESULT_BACKUP: define('RESTORE_RESULT_BACKUP', {
     module: 'RESULT', audience: 'RESULT_OPERATOR', importance: 'NORMAL', activityVisible: true,
     label: 'đã khôi phục số liệu lưu trữ', iconKey: 'clock-rotate-left', defaultActionUrl: resultUrl,

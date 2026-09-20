@@ -24,6 +24,7 @@ export class ResultEntryHeaderComponent {
   @Input() isProcessing = false;
   @Input() isPublishing = false;
   @Input() isReadOnly = false;
+  @Input() canReassignSop = false;
   @Input() showRestoreMenu = false;
   @Input() showActionsMenu = false;
   @Input() currentPdfUrl: string | null = null;
@@ -36,6 +37,7 @@ export class ResultEntryHeaderComponent {
   @Output() publishReport = new EventEmitter<void>();
   @Output() unlockToEdit = new EventEmitter<void>();
   @Output() openResetModal = new EventEmitter<void>();
+  @Output() openSopReassignment = new EventEmitter<void>();
   @Output() deleteVirtualMaster = new EventEmitter<void>();
   @Output() openPdf = new EventEmitter<{ pdfUrl: string | null | undefined; docsUrl?: string | null | undefined }>();
   @Output() restoreVersion = new EventEmitter<{ version: number; prefix?: string; reportId?: string }>();

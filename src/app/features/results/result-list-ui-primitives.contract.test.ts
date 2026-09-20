@@ -63,7 +63,8 @@ describe('results entry shared UI primitive integration', () => {
     assert.doesNotMatch(component, /ModalA11yDirective/);
     assert.match(template, /<app-empty-state\b/);
     assert.match(template, /<app-button\b/);
-    assert.equal((template.match(/<app-modal-shell\b/g) ?? []).length, 2);
+    assert.equal((template.match(/<app-modal-shell\b/g) ?? []).length, 3);
+    assert.match(template, /title="Chuyển SOP"/);
     assert.doesNotMatch(template, /fixed inset-0/);
     assert.match(template, />\s*Quay lại danh sách\s*</);
     assert.match(template, />\s*Hủy\s*</);

@@ -1,145 +1,181 @@
-<!-- Báo cáo đang hoạt động + Tiến độ — gộp thành 1 section compact -->
 @if (hasAnyReports) {
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-sm mb-6 p-5 transition-all duration-300">
+  <section class="relative mb-6 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
+    <div class="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-fuchsia-200/35 blur-3xl dark:bg-fuchsia-700/10"></div>
+    <div class="pointer-events-none absolute -left-20 top-10 h-48 w-48 rounded-full bg-fuchsia-100/40 blur-3xl dark:bg-fuchsia-900/15"></div>
 
-    <!-- Row: tiêu đề + tiến độ -->
-    <div class="flex items-center justify-between gap-3 mb-2.5">
-      <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
-        <i class="fa-solid fa-file-invoice text-fuchsia-400"></i> Các Báo Cáo
-      </h4>
+    <div class="relative border-b border-slate-100 bg-gradient-to-r from-fuchsia-50/90 via-white to-slate-50/80 px-5 py-5 dark:border-slate-800 dark:from-fuchsia-950/25 dark:via-slate-900 dark:to-slate-900/80 sm:px-6">
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex min-w-0 items-center gap-3.5">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 text-white shadow-soft-md">
+            <i class="fa-solid fa-file-shield text-base" aria-hidden="true"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h4 class="text-sm font-black tracking-tight text-slate-900 dark:text-slate-100">Các Báo Cáo</h4>
+              <span class="inline-flex items-center rounded-full border border-fuchsia-200/80 bg-white/80 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-fuchsia-700 shadow-xs dark:border-fuchsia-800/60 dark:bg-slate-900/80 dark:text-fuchsia-300">
+                {{ getActiveReportCount() }} đang hiệu lực
+              </span>
+            </div>
+            <p class="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              Phiên bản đang sử dụng cho mẻ phân tích này
+            </p>
+          </div>
+        </div>
 
-      <!-- Progress inline -->
-      @if (draftStatus !== 'completed') {
-        <div class="flex items-center gap-2 flex-1 min-w-0">
+        <div class="w-full xl:max-w-md">
+          <div class="mb-1.5 flex items-center justify-between gap-3 text-[10px] font-bold">
+            <span class="text-slate-500 dark:text-slate-400">Tiến độ phát hành</span>
+            <span class="tabular-nums"
+                  [class.text-emerald-600]="progress.percent === 100"
+                  [class.text-amber-600]="progress.percent < 100">
+              {{ progress.published }}/{{ progress.total }} mẫu · {{ progress.percent }}%
+            </span>
+          </div>
           <app-ui-progress
-            class="min-w-0 flex-1"
             [value]="progress.published"
             [max]="progress.total || 1"
             [status]="progress.percent === 100 ? 'success' : 'primary'"
             ariaLabel="Tiến độ xuất báo cáo" />
-          <span class="text-[10px] font-black tabular-nums shrink-0"
-                [class.text-emerald-600]="progress.percent === 100"
-                [class.text-amber-600]="progress.percent < 100">
-            {{ progress.published }}/{{ progress.total }}
-          </span>
         </div>
-      }
+      </div>
     </div>
 
-    <!-- Chips row: tất cả báo cáo với bố cục cột tự động thích ứng (auto-fit columns) -->
-    <div class="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-3">
+    <div class="relative p-4 sm:p-5">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
 
       <!-- Báo cáo chung -->
       @if (generalReport) {
-        <div class="flex items-center justify-between gap-3 bg-fuchsia-50/40 dark:bg-fuchsia-950/20 border border-fuchsia-150/80 dark:border-fuchsia-800/40 rounded-xl px-3 py-2 hover:bg-fuchsia-50 hover:border-fuchsia-300 dark:hover:bg-fuchsia-950/40 transition shadow-xs">
-          <div class="flex items-center gap-2.5 min-w-0 flex-1">
-            <div class="w-7 h-7 rounded-lg bg-fuchsia-500 text-white flex items-center justify-center shrink-0 text-xs shadow-xs">
-              <i class="fa-solid fa-file-invoice"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-black text-fuchsia-800 dark:text-fuchsia-300 uppercase tracking-wide truncate">Báo cáo chung</span>
-                <span class="px-1.5 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-900/60 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-black uppercase border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-xs shrink-0">v{{ generalReport.version }}</span>
+        <article class="group flex min-h-32 flex-col justify-between rounded-2xl border border-fuchsia-200/70 bg-gradient-to-br from-fuchsia-50/90 to-white p-4 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-fuchsia-300 hover:shadow-soft-md dark:border-fuchsia-900/50 dark:from-fuchsia-950/25 dark:to-slate-900">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 items-start gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fuchsia-500 text-white shadow-soft-sm">
+                <i class="fa-solid fa-file-invoice" aria-hidden="true"></i>
               </div>
-              <div class="mt-1 flex items-center">
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fuchsia-500/10 dark:bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-400 font-mono font-bold text-[9px] border border-fuchsia-200/20 dark:border-fuchsia-800/30 truncate w-fit" [title]="(sampleList || []).join(', ')">
-                  <i class="fa-solid fa-vials text-[8px] text-fuchsia-500 mr-0.5"></i>
-                  {{ formatSampleRange(sampleList) }}
-                </span>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-xs font-black uppercase tracking-wide text-fuchsia-800 dark:text-fuchsia-300">Báo cáo chung</span>
+                  <span class="rounded-md border border-fuchsia-200/70 bg-white/80 px-1.5 py-0.5 text-[9px] font-black text-fuchsia-700 shadow-xs dark:border-fuchsia-800/60 dark:bg-slate-900/70 dark:text-fuchsia-300">v{{ generalReport.version }}</span>
+                </div>
+                <div class="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  Đang hiệu lực
+                </div>
               </div>
             </div>
+            <span class="rounded-lg bg-fuchsia-100/80 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300">Toàn mẻ</span>
           </div>
-          <!-- Action Buttons -->
-          <div class="flex items-center gap-1.5 shrink-0">
+
+          <div class="mt-4 flex items-end justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Phạm vi mẫu</div>
+              <div class="mt-1 truncate font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300" [title]="(sampleList || []).join(', ')">
+                {{ formatSampleRange(sampleList) }}
+              </div>
+            </div>
             <button type="button" (click)="$event.stopPropagation(); openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl, docsUrl: generalReport.docsUrl })"
-               class="w-8 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 dark:hover:bg-red-900/50 text-red-500 dark:text-red-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-red-200 dark:border-red-900/30 flex items-center justify-center shadow-xs"
-               title="Xem PDF">
-              <i class="fa-solid fa-file-pdf text-xs"></i>
+               class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 text-[10px] font-bold text-rose-600 shadow-xs transition hover:bg-rose-50 active:scale-95 dark:border-rose-900/50 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/30"
+               title="Xem PDF báo cáo chung">
+              <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+              PDF
             </button>
             @if (generalReport.docsUrl) {
               <a [href]="getDocsPreviewUrl(generalReport.docsUrl)" target="_blank" rel="noopener noreferrer"
                  (click)="$event.stopPropagation()"
-                 class="w-8 h-8 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-900/50 text-blue-500 dark:text-blue-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-blue-200 dark:border-blue-900/30 no-underline flex items-center justify-center shadow-xs"
+                 class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-600 shadow-xs transition hover:bg-blue-50 active:scale-95 dark:border-blue-900/50 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-blue-950/30"
                  title="Mở Google Docs">
-                <i class="fa-brands fa-google-drive text-xs"></i>
+                <i class="fa-brands fa-google-drive text-xs" aria-hidden="true"></i>
               </a>
             }
           </div>
-        </div>
+        </article>
       }
 
       <!-- Báo cáo theo prefix + chunk -->
       @for (pref of prefixes; track pref) {
         @for (rep of getPrefixReports(pref); track rep.id || rep.pdfCreatedAt; let repIdx = $index) {
-          <div class="flex items-center justify-between gap-3 bg-fuchsia-50/30 dark:bg-fuchsia-950/10 border border-fuchsia-150/80 dark:border-fuchsia-800/40 rounded-xl px-3 py-2 hover:bg-fuchsia-50/60 hover:border-fuchsia-300 dark:hover:bg-fuchsia-950/20 transition shadow-xs">
-            <div class="flex items-center gap-2.5 min-w-0 flex-1">
-              <div class="w-7 h-7 rounded-lg bg-fuchsia-500 text-white flex items-center justify-center shrink-0 text-xs shadow-xs">
-                <i class="fa-solid fa-layer-group"></i>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-black text-fuchsia-800 dark:text-fuchsia-300 uppercase tracking-wide truncate">
-                    Nhóm {{ pref === '' ? 'N/A' : pref }}
-                  </span>
-                  @if (getPrefixReports(pref).length > 1) {
-                    <span class="px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[8px] font-black border border-amber-200/50 dark:border-amber-800/50 shadow-xs shrink-0">P.{{ repIdx + 1 }}</span>
-                  }
-                  <span class="px-1.5 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-900/60 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-black border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-xs shrink-0">v{{ rep.version }}</span>
+          <article class="group flex min-h-32 flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-fuchsia-300 hover:shadow-soft-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-fuchsia-800">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fuchsia-500 text-white shadow-soft-sm">
+                  <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
                 </div>
-                @if ((rep.includedSamples || []).length > 0) {
-                  <div class="mt-1 flex items-center">
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fuchsia-500/10 dark:bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-400 font-mono font-bold text-[9px] border border-fuchsia-200/20 dark:border-fuchsia-800/30 truncate w-fit" [title]="(rep.includedSamples || []).join(', ')">
-                      <i class="fa-solid fa-vials text-[8px] text-fuchsia-500 mr-0.5"></i>
-                      {{ formatSampleRange(rep.includedSamples) }}
-                    </span>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Nhóm {{ pref === '' ? 'N/A' : pref }}</span>
+                    @if (getPrefixReports(pref).length > 1) {
+                      <span class="rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">P.{{ repIdx + 1 }}</span>
+                    }
+                    <span class="rounded-md border border-fuchsia-200/70 bg-fuchsia-50 px-1.5 py-0.5 text-[9px] font-black text-fuchsia-700 dark:border-fuchsia-900/60 dark:bg-fuchsia-950/30 dark:text-fuchsia-300">v{{ rep.version }}</span>
                   </div>
-                }
+                  <div class="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    Đang hiệu lực
+                  </div>
+                </div>
               </div>
+              <span class="rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">Theo nhóm</span>
             </div>
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-1.5 shrink-0">
+
+            <div class="mt-4 flex items-end justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Phạm vi mẫu</div>
+                <div class="mt-1 truncate font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300" [title]="(rep.includedSamples || []).join(', ')">
+                  {{ formatSampleRange(rep.includedSamples) }}
+                </div>
+              </div>
               @if (rep.pdfViewUrl || rep.pdfUrl) {
                 <button type="button" (click)="$event.stopPropagation(); openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl, docsUrl: rep.docsUrl })"
-                   class="w-8 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 dark:hover:bg-red-900/50 text-red-500 dark:text-red-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-red-200 dark:border-red-900/30 flex items-center justify-center shadow-xs"
+                   class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 text-[10px] font-bold text-rose-600 shadow-xs transition hover:bg-rose-50 active:scale-95 dark:border-rose-900/50 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/30"
                    title="Xem PDF">
-                  <i class="fa-solid fa-file-pdf text-xs"></i>
+                  <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+                  PDF
                 </button>
               }
               @if (rep.docsUrl) {
                 <a [href]="getDocsPreviewUrl(rep.docsUrl)" target="_blank" rel="noopener noreferrer"
                    (click)="$event.stopPropagation()"
-                   class="w-8 h-8 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-900/50 text-blue-500 dark:text-blue-400 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer border border-blue-200 dark:border-blue-900/30 no-underline flex items-center justify-center shadow-xs"
+                   class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-600 shadow-xs transition hover:bg-blue-50 active:scale-95 dark:border-blue-900/50 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-blue-950/30"
                    title="Mở Google Docs">
-                  <i class="fa-brands fa-google-drive text-xs"></i>
+                  <i class="fa-brands fa-google-drive text-xs" aria-hidden="true"></i>
                 </a>
               }
             </div>
-          </div>
+          </article>
         }
       }
+      </div>
 
+      @if (progress.unpublishedSamples.length > 0 && draftStatus !== 'completed') {
+        <div class="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200/70 bg-amber-50/70 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
+            <i class="fa-solid fa-hourglass-half text-xs" aria-hidden="true"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Còn {{ progress.unpublishedSamples.length }} mẫu chưa phát hành</div>
+            <div class="mt-1 break-words font-mono text-[10px] font-semibold leading-relaxed text-amber-700/80 dark:text-amber-300/80">{{ progress.unpublishedSamples.join(', ') }}</div>
+          </div>
+        </div>
+      }
+
+      @if (getVisibleHistory().length > 0) {
+        <div class="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <i class="fa-solid fa-clock-rotate-left text-xs" aria-hidden="true"></i>
+              </div>
+              <div>
+                <h5 class="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">Lịch sử phát hành</h5>
+                <p class="mt-0.5 text-[9px] font-medium text-slate-400">Chỉ hiển thị các phiên bản đã thay thế hoặc lưu trữ</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ getVisibleHistory().length }} bản cũ</span>
+          </div>
+
+          <app-ui-timeline [items]="getHistoryTimelineItems()" ariaLabel="Lịch sử phiên bản báo cáo" />
+        </div>
+      }
     </div>
 
-    @if (historyList.length > 0) {
-      <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-        <div class="flex items-center justify-between gap-3 mb-2">
-          <h5 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-            <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Timeline phiên bản
-          </h5>
-          <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">{{ historyList.length }} bản</span>
-        </div>
-
-        <app-ui-timeline [items]="getHistoryTimelineItems()" ariaLabel="Lịch sử phiên bản báo cáo" />
-      </div>
-    }
-
-    <!-- Danh sách mẫu chưa xuất (compact) -->
-    @if (progress.unpublishedSamples.length > 0 && draftStatus !== 'completed') {
-      <p class="text-[9px] text-slate-400 mt-2 leading-relaxed">
-        <span class="font-semibold">Chưa xuất:</span>
-        <span class="font-mono text-amber-600 dark:text-amber-400 ml-1">{{ progress.unpublishedSamples.join(', ') }}</span>
-      </p>
-    }
-
-  </div>
+  </section>
 }

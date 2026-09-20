@@ -771,7 +771,14 @@ export class CalculatorComponent implements OnDestroy {
   
   toggleMenu(id: string, event: Event) { event.stopPropagation(); if (this.activeMenuSopId() === id) this.activeMenuSopId.set(null); else this.activeMenuSopId.set(id); }
   closeMenu() { this.activeMenuSopId.set(null); }
-  selectSop(s: Sop) { this.state.selectedSop.set(s); }
+  selectSop(s: Sop) {
+      const editing = this.editingRequest();
+      if (editing && s.id !== editing.sopId) {
+          this.toast.show('Phiếu đã duyệt chỉ được đổi SOP bằng nghiệp vụ “Chuyển SOP”.', 'warning');
+          return;
+      }
+      this.state.selectedSop.set(s);
+  }
   clearSelection() { 
       this.state.selectedSop.set(null); 
       this.state.cachedCalculatorState.set(null); 
@@ -933,6 +940,13 @@ export class CalculatorComponent implements OnDestroy {
       const req = this.editingRequest();
       if (req) {
           this.router.navigate(['/results', req.id]);
+      }
+  }
+
+  goToSopReassignment() {
+      const req = this.editingRequest();
+      if (req) {
+          this.router.navigate(['/results', req.id], { queryParams: { action: 'reassign-sop' } });
       }
   }
 

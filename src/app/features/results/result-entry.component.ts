@@ -6,6 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { ResultService } from './services/result.service';
 import { MasterTargetService } from '../targets/master-target.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
+import { Sop } from '../../core/models/sop.model';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -24,6 +25,11 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { SopDraftFactoryService } from './services/sop-draft-factory.service';
+import {
+  SopReassignmentPreview,
+  SopReassignmentService
+} from './services/sop-reassignment.service';
+import { getSopReassignmentBlockReason } from './services/sop-reassignment.utils';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -84,6 +90,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private masterService = inject(MasterTargetService);
   private auth = inject(AuthService);
   private draftFactory = inject(SopDraftFactoryService);
+  private sopReassignment = inject(SopReassignmentService);
   private reloadSafety = inject(ReloadSafetyService);
   printService = inject(PrintService);
 
@@ -162,7 +169,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   isSavingDraft = signal(false);
   isPublishing = signal(false);
-  isProcessing = computed(() => this.isSavingDraft() || this.isPublishing());
+  isReassigningSop = signal(false);
+  isProcessing = computed(() => this.isSavingDraft() || this.isPublishing() || this.isReassigningSop());
   formIsReadOnly = computed(() => this.isReadOnly() || this.isProcessing());
 
   // Auto-save state
@@ -196,6 +204,13 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   // Sub-collection history signal
   historyList = signal<any[]>([]);
   showResetModal = signal(false);
+  showSopReassignmentModal = signal(false);
+  sopReassignmentCandidates = signal<Sop[]>([]);
+  selectedReassignmentSopId = signal('');
+  sopReassignmentPreview = signal<SopReassignmentPreview | null>(null);
+  sopReassignmentNote = signal('');
+  sopReassignmentError = signal('');
+  isLoadingSopReassignment = signal(false);
   showPreflightModal = signal(false);
   excelImportFile = signal<File | null>(null);
   preflightSummary = signal<PublishPreflightSummary | null>(null);
@@ -204,6 +219,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   // Actions dropdown toggle (click-based instead of hover)
   showActionsMenu = signal(false);
+  private sopReassignmentRouteRequested = false;
+
+  canReassignSop = computed(() => {
+    const request = this.run();
+    return Boolean(
+      request &&
+      this.auth.canApprove() &&
+      !this.isReassigningSop() &&
+      !getSopReassignmentBlockReason(request) &&
+      this.historyList().length === 0
+    );
+  });
 
   toggleActionsMenu() {
     this.showActionsMenu.update(v => !v);
@@ -211,6 +238,190 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   closeActionsMenu() {
     this.showActionsMenu.set(false);
+  }
+
+  private tryOpenRequestedSopReassignment(): void {
+    if (!this.sopReassignmentRouteRequested || !this.run() || this.showSopReassignmentModal()) return;
+    this.sopReassignmentRouteRequested = false;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { action: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+    void this.openSopReassignment();
+  }
+
+  async openSopReassignment(): Promise<void> {
+    const request = this.run();
+    if (!request || this.isProcessing()) return;
+    if (!this.auth.canApprove()) {
+      this.toast.show('Bạn không có quyền chuyển SOP cho mẻ đã duyệt.', 'error');
+      return;
+    }
+    const blockReason = getSopReassignmentBlockReason(request);
+    if (blockReason) {
+      this.toast.show(blockReason, 'warning');
+      return;
+    }
+    if (this.historyList().length > 0) {
+      this.toast.show('Mẻ đã có lịch sử báo cáo. Chuyển SOP trực tiếp đã bị khóa để bảo toàn truy vết.', 'warning');
+      return;
+    }
+
+    this.closeActionsMenu();
+    this.selectedReassignmentSopId.set('');
+    this.sopReassignmentPreview.set(null);
+    this.sopReassignmentNote.set('');
+    this.sopReassignmentError.set('');
+    this.sopReassignmentCandidates.set([]);
+    this.showSopReassignmentModal.set(true);
+    this.isLoadingSopReassignment.set(true);
+    try {
+      const candidates = await this.sopReassignment.getCandidates(request);
+      this.sopReassignmentCandidates.set(candidates);
+      if (candidates.length === 0) {
+        this.sopReassignmentError.set(
+          'Không có SOP đích đang hoạt động vừa có biểu mẫu kết quả, vừa phủ đủ toàn bộ chỉ tiêu của mẻ này.'
+        );
+        return;
+      }
+      if (candidates.length === 1) {
+        this.selectedReassignmentSopId.set(candidates[0].id);
+        await this.loadSopReassignmentPreview(candidates[0].id);
+      }
+    } catch (error: any) {
+      this.sopReassignmentError.set(error?.message || 'Không thể tải danh sách SOP đích.');
+    } finally {
+      this.isLoadingSopReassignment.set(false);
+    }
+  }
+
+  closeSopReassignmentModal(): void {
+    if (this.isReassigningSop()) return;
+    this.showSopReassignmentModal.set(false);
+    this.sopReassignmentPreview.set(null);
+    this.sopReassignmentError.set('');
+  }
+
+  async onSopReassignmentTargetChange(event: Event): Promise<void> {
+    const targetSopId = (event.target as HTMLSelectElement).value;
+    this.selectedReassignmentSopId.set(targetSopId);
+    this.sopReassignmentPreview.set(null);
+    this.sopReassignmentError.set('');
+    if (targetSopId) await this.loadSopReassignmentPreview(targetSopId);
+  }
+
+  onSopReassignmentNoteInput(event: Event): void {
+    this.sopReassignmentNote.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  private async loadSopReassignmentPreview(targetSopId: string): Promise<void> {
+    if (!targetSopId) return;
+    this.isLoadingSopReassignment.set(true);
+    this.sopReassignmentError.set('');
+    try {
+      const preview = await this.sopReassignment.preview(this.requestId, targetSopId);
+      if (this.selectedReassignmentSopId() === targetSopId) {
+        this.sopReassignmentPreview.set(preview);
+      }
+    } catch (error: any) {
+      if (this.selectedReassignmentSopId() === targetSopId) {
+        this.sopReassignmentPreview.set(null);
+        this.sopReassignmentError.set(error?.message || 'SOP đích không hợp lệ cho mẻ này.');
+      }
+    } finally {
+      if (this.selectedReassignmentSopId() === targetSopId) {
+        this.isLoadingSopReassignment.set(false);
+      }
+    }
+  }
+
+  async confirmSopReassignment(): Promise<void> {
+    const request = this.run();
+    const preview = this.sopReassignmentPreview();
+    if (!request || !preview || this.isProcessing()) return;
+
+    const oldDraft = this.draft() ? this.cloneDraft(this.draft()!) : null;
+    const oldDraftWasDirty = this.autoSaveStatus() !== 'synced';
+    let succeeded = false;
+
+    this.isReassigningSop.set(true);
+    this.renderDraftForm.set(false);
+    this.excelImportFile.set(null);
+    this.showPreflightModal.set(false);
+    this.showResetModal.set(false);
+    this.closeActionsMenu();
+    this.closeRestoreMenu();
+
+    try {
+      // Invalidate every pending SOP-A autosave and wait for any request that
+      // already reached the queue. From this point no A draft may write after
+      // the reassignment transaction.
+      await this.pauseAutoSave();
+
+      const updatedRequest = await this.sopReassignment.reassign(
+        this.requestId,
+        request.sopId,
+        preview.targetSop.id,
+        this.sopReassignmentNote()
+      );
+
+      const userEmail = this.auth.currentUser()?.email;
+      if (userEmail) {
+        try {
+          localStorage.removeItem(`backup_draft_${userEmail}_${this.requestId}`);
+        } catch (error) {
+          console.warn('[SOP reassignment] Local backup cleanup failed', error);
+        }
+      }
+
+      // Build the clean B form immediately. This avoids depending on the
+      // delivery order of the request and results_details snapshot listeners.
+      const targetConfig = ANGULAR_SOP_CONFIG[preview.configKey];
+      this.run.set(updatedRequest);
+      this.config.set({ ...targetConfig, id: preview.configKey });
+      this.configKey.set(preview.configKey);
+      this.draft.set(this.createDefaultDraft(updatedRequest, targetConfig));
+      this.activeFilter.set('ALL');
+      this.historyList.set([]);
+      this.previousLockedBy = null;
+      this.previousDraftStatus = null;
+      this.completionReconcileChecked = false;
+      this.autoSaveRevision = 0;
+      this.lastSavedRevision = 0;
+      this.lastSavedAt.set(null);
+      this.autoSaveStatus.set('synced');
+      this.showSopReassignmentModal.set(false);
+      this.sopReassignmentPreview.set(null);
+      this.sopReassignmentError.set('');
+      succeeded = true;
+
+      this.toast.show(
+        `Đã chuyển SOP từ “${preview.sourceSop.name}” sang “${preview.targetSop.name}”. Dữ liệu kết quả của SOP cũ đã được xóa.`,
+        'success'
+      );
+    } catch (error: any) {
+      this.sopReassignmentError.set(error?.message || 'Không thể chuyển SOP. Không có dữ liệu nào được thay đổi.');
+      this.toast.show(this.sopReassignmentError(), 'error');
+    } finally {
+      this.resumeAutoSave();
+      this.isReassigningSop.set(false);
+      await Promise.resolve();
+      this.renderDraftForm.set(true);
+
+      // A failed reassignment must not accidentally discard an unsaved edit
+      // that existed before the user opened the destructive workflow.
+      if (!succeeded && oldDraftWasDirty && oldDraft) {
+        const revision = ++this.autoSaveRevision;
+        this.autoSaveStatus.set('modified');
+        this.draftChangeSubject.next({
+          draft: oldDraft,
+          generation: this.autoSaveGeneration,
+          revision
+        });
+      }
+    }
   }
 
   // Restore Version dropdown toggle (click-based instead of hover)
@@ -416,6 +627,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       if (params['prefix'] !== undefined) {
         this.activeFilter.set(params['prefix']);
       }
+      if (params['action'] === 'reassign-sop') {
+        this.sopReassignmentRouteRequested = true;
+        this.tryOpenRequestedSopReassignment();
+      }
     });
 
     this.isLoading.set(true);
@@ -484,6 +699,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         }
       }
       this.isLoading.set(false);
+      this.tryOpenRequestedSopReassignment();
     });
 
     // Load Master Targets

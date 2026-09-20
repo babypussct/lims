@@ -212,6 +212,11 @@ service cloud.firestore {
         (hasPermission(appId, 'batch_run') || hasPermission(appId, 'sop_approve'));
     }
 
+    function canReassignSop(appId) {
+      return isActiveUser(appId) &&
+        (isManager(appId) || hasPermission(appId, 'sop_approve'));
+    }
+
     function canManageDutySchedule(appId) {
       return isManager(appId) ||
         (isActiveUser(appId) && hasPermission(appId, 'duty_manage'));
@@ -486,7 +491,7 @@ service cloud.firestore {
         'SAVE_RESULT_DRAFT', 'RESET_RESULT_DATA', 'RESTORE_RESULT_BACKUP',
         'RESTORE_RESULT_VERSION', 'RECONCILE_RESULT_STATUS', 'UNLOCK_RESULT_EDIT',
         'CREATE_VIRTUAL_MASTER', 'DELETE_VIRTUAL_MASTER', 'DIRECT_APPROVE_PLAN',
-        'EDIT_REQUEST', 'DAILY_CHECK_ITEM', 'DAILY_UNCHECK_ITEM',
+        'EDIT_REQUEST', 'REASSIGN_SOP', 'DAILY_CHECK_ITEM', 'DAILY_UNCHECK_ITEM',
         'DAILY_CHECK_BULK', 'DAILY_UNCHECK_BULK'
       ].hasAny([action]);
     }
@@ -608,7 +613,7 @@ service cloud.firestore {
 
     function isWarningActivityAction(action) {
       return [
-        'RESET_RESULT_DATA', 'DELETE_VIRTUAL_MASTER', 'REVOKE_APPROVE',
+        'RESET_RESULT_DATA', 'REASSIGN_SOP', 'DELETE_VIRTUAL_MASTER', 'REVOKE_APPROVE',
         'REVOKE_AND_REJECT', 'DAILY_UNCHECK_ITEM', 'DAILY_UNCHECK_BULK',
         'SOFT_DELETE_ITEM', 'BULK_ZERO',
         'INVENTORY_LOW_STOCK', 'STANDARD_LOW_STOCK', 'SOFT_DELETE_BATCH',
@@ -638,7 +643,7 @@ service cloud.firestore {
     function canBePublicTraceableActivityAction(action) {
       return [
         'DIRECT_APPROVE', 'DIRECT_APPROVE_PLAN', 'APPROVE_REQUEST',
-        'EDIT_REQUEST', 'CREATE_VIRTUAL_MASTER'
+        'EDIT_REQUEST', 'REASSIGN_SOP', 'CREATE_VIRTUAL_MASTER'
       ].hasAny([action]);
     }
 
@@ -828,6 +833,126 @@ service cloud.firestore {
     function validBatchRequestUpdate(appId) {
       return isActiveUser(appId) && hasPermission(appId, 'batch_run') &&
         (validResultUpdate() || validLockUpdate(appId) || validVirtualMasterUpdate());
+    }
+
+    // Chuyển SOP là một protocol nguyên tử: request phải đổi SOP và đồng thời
+    // xóa mọi kết quả đang hoạt động. Các collection phụ dùng helper này để
+    // chứng minh chúng thuộc cùng một transaction hợp lệ.
+    function validSopReassignmentTransition(appId, reqId) {
+      let reqPath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(reqId);
+      let before = get(reqPath).data;
+      let after = getAfter(reqPath).data;
+      let changed = after.diff(before).affectedKeys();
+      return canReassignSop(appId) &&
+        ['approved', 'draft'].hasAny([before.get('status', '')]) &&
+        after.get('status', '') == 'approved' &&
+        before.get('sopId', '') is string &&
+        after.get('sopId', '') is string &&
+        before.get('sopId', '') != after.get('sopId', '') &&
+        after.get('sopName', '') is string && after.get('sopName', '').size() > 0 &&
+        after.get('resultStatusReason', '') == 'sop_reassigned' &&
+        before.get('isVirtualMaster', false) != true &&
+        before.get('parentMasterId', '') == '' &&
+        before.get('childRequestIds', []).size() == 0 &&
+        after.get('analysisDate', '') == before.get('analysisDate', '') &&
+        after.get('sampleList', after.get('inputs', {}).get('sampleList', [])) ==
+          before.get('sampleList', before.get('inputs', {}).get('sampleList', [])) &&
+        after.get('sampleDescriptionMap', after.get('inputs', {}).get('sampleDescriptionMap', {})) ==
+          before.get('sampleDescriptionMap', before.get('inputs', {}).get('sampleDescriptionMap', {})) &&
+        !('analysisResult' in after) &&
+        !('analysisResultSummary' in after) &&
+        !existsAfter(/databases/$(database)/documents/artifacts/$(appId)/results_details/$(reqId)) &&
+        after.get('items', []) is list &&
+        after.get('inputs', {}) is map &&
+        after.lastUpdated == request.time &&
+        changed.hasOnly([
+          'sopId', 'sopName', 'sopVersion', 'sopRef',
+          'items', 'inputs', 'margin', 'analysisDate',
+          'sampleList', 'sampleDescriptionMap', 'targetIds', 'sampleTargetMap',
+          'targetNames', 'targetScopeSnapshots',
+          'status', 'resultStatusReason', 'analysisResult', 'analysisResultSummary',
+          'lockedBy', 'lockedByName', 'lockedAt', 'lastActiveAt', 'lastUpdated'
+        ]);
+    }
+
+    function validSopReassignmentDailyChecklistEntry(appId, analysisDate, reqId, entry) {
+      let reqPath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(reqId);
+      let afterReq = getAfter(reqPath).data;
+      return reqId is string && reqId.size() > 0 &&
+        entry is map &&
+        validSopReassignmentTransition(appId, reqId) &&
+        afterReq.get('analysisDate', '') == analysisDate &&
+        entry.get('requestId', '') == reqId &&
+        entry.get('sopId', '') == afterReq.get('sopId', '') &&
+        entry.get('sopName', '') == afterReq.get('sopName', '') &&
+        entry.get('status', '') == 'approved';
+    }
+
+    function validSopReassignmentDailyChecklistCreate(appId, analysisDate) {
+      let reqId = request.resource.data.get('lastSopReassignmentRequestId', '');
+      let entries = request.resource.data.get('entries', {});
+      return canReassignSop(appId) &&
+        request.resource.data.keys().hasOnly([
+          'schemaVersion', 'analysisDate', 'updatedAt',
+          'lastSopReassignmentRequestId', 'entries'
+        ]) &&
+        request.resource.data.get('schemaVersion', 0) == 1 &&
+        request.resource.data.get('analysisDate', '') == analysisDate &&
+        request.resource.data.updatedAt == request.time &&
+        entries is map &&
+        entries.keys().size() == 1 &&
+        entries.keys().hasAll([reqId]) &&
+        validSopReassignmentDailyChecklistEntry(appId, analysisDate, reqId, entries.get(reqId, {}));
+    }
+
+    function validSopReassignmentDailyChecklistUpdate(appId, analysisDate) {
+      let reqId = request.resource.data.get('lastSopReassignmentRequestId', '');
+      let beforeEntries = resource.data.get('entries', {});
+      let afterEntries = request.resource.data.get('entries', {});
+      let changedEntries = afterEntries.diff(beforeEntries).affectedKeys();
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return canReassignSop(appId) &&
+        request.resource.data.get('schemaVersion', 0) == 1 &&
+        request.resource.data.get('analysisDate', '') == analysisDate &&
+        request.resource.data.updatedAt == request.time &&
+        changed.hasOnly([
+          'schemaVersion', 'analysisDate', 'updatedAt',
+          'lastSopReassignmentRequestId', 'entries'
+        ]) &&
+        beforeEntries is map && afterEntries is map &&
+        changedEntries.size() == 1 &&
+        changedEntries.hasAll([reqId]) &&
+        validSopReassignmentDailyChecklistEntry(appId, analysisDate, reqId, afterEntries.get(reqId, {}));
+    }
+
+    function validSopReassignmentInventoryUpdate(appId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let reqId = request.resource.data.get('lastSopReassignmentRequestId', '');
+      return canReassignSop(appId) &&
+        reqId is string && reqId.size() > 0 &&
+        changed.hasOnly(['stock', 'lastSopReassignmentRequestId', 'lastUpdated']) &&
+        request.resource.data.get('stock', -1) is number &&
+        request.resource.data.get('stock', -1) >= 0 &&
+        request.resource.data.lastUpdated == request.time &&
+        validSopReassignmentTransition(appId, reqId);
+    }
+
+    function validSopReassignmentLogSupersede(appId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let replacementId = request.resource.data.get('supersededBy', '');
+      let replacement = getAfter(
+        /databases/$(database)/documents/artifacts/$(appId)/logs/$(replacementId)
+      ).data;
+      return canReassignSop(appId) &&
+        changed.hasOnly(['printable', 'supersededBy', 'lastUpdated']) &&
+        resource.data.get('printable', false) == true &&
+        request.resource.data.get('printable', true) == false &&
+        replacementId is string && replacementId.size() > 0 &&
+        request.resource.data.lastUpdated == request.time &&
+        replacement.get('action', '') == 'REASSIGN_SOP' &&
+        replacement.get('requestId', '') == resource.data.get('requestId', '') &&
+        replacement.get('actorUid', '') == request.auth.uid &&
+        replacement.get('timestamp', null) == request.time;
     }
 
     function canOperateStandards(appId) {
@@ -1144,7 +1269,8 @@ service cloud.firestore {
     match /artifacts/{appId}/inventory/{itemId} {
       allow read: if hasPermission(appId, 'inventory_view') || hasPermission(appId, 'report_view');
       allow create, delete: if hasPermission(appId, 'inventory_edit');
-      allow update: if hasPermission(appId, 'inventory_edit') || (
+      allow update: if hasPermission(appId, 'inventory_edit') ||
+        validSopReassignmentInventoryUpdate(appId) || (
         hasPermission(appId, 'batch_run') &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'lastUpdated']) &&
         request.resource.data.stock is number &&
@@ -1644,7 +1770,10 @@ service cloud.firestore {
       allow list: if canUseSopWorkspace(appId) ||
         (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if validRequestCreate(appId, request.resource.data);
-      allow update: if isManager(appId) || hasPermission(appId, 'sop_approve') || validBatchRequestUpdate(appId);
+      allow update: if (
+          request.resource.data.get('sopId', '') == resource.data.get('sopId', '') &&
+          (isManager(appId) || hasPermission(appId, 'sop_approve') || validBatchRequestUpdate(appId))
+        ) || validSopReassignmentTransition(appId, reqId);
       allow delete: if isManager(appId);
 
       match /history/{histId} {
@@ -1654,7 +1783,13 @@ service cloud.firestore {
     }
     match /artifacts/{appId}/daily_checklists/{analysisDate} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+      allow create: if isManager(appId) ||
+        hasPermission(appId, 'batch_run') ||
+        validSopReassignmentDailyChecklistCreate(appId, analysisDate);
+      allow update: if isManager(appId) ||
+        hasPermission(appId, 'batch_run') ||
+        validSopReassignmentDailyChecklistUpdate(appId, analysisDate);
+      allow delete: if isManager(appId) || hasPermission(appId, 'batch_run');
     }
     match /artifacts/{appId}/duty_staff/{staffId} {
       allow read: if isSignedIn();
@@ -1687,8 +1822,10 @@ service cloud.firestore {
       allow read: if canUseSopWorkspace(appId);
       allow create, update: if canEditResults(appId) &&
         request.resource.data.get('requestId', docId) == docId;
-      allow delete: if canEditResults(appId) &&
-        get(/databases/$(database)/documents/artifacts/$(appId)/requests/$(docId)).data.get('isVirtualMaster', false) == true;
+      allow delete: if (
+          canEditResults(appId) &&
+          get(/databases/$(database)/documents/artifacts/$(appId)/requests/$(docId)).data.get('isVirtualMaster', false) == true
+        ) || validSopReassignmentTransition(appId, docId);
     }
 
     // Yeu cau in an nhan / barcode (Print Jobs)
@@ -1739,7 +1876,8 @@ service cloud.firestore {
       // independently through Activity audience, Audit class or Print Queue.
       allow get: if canGetGlobalLog(appId, resource.data);
       allow list: if canListGlobalLog(appId, resource.data);
-      allow update, delete: if isManager(appId);
+      allow update: if isManager(appId) || validSopReassignmentLogSupersede(appId);
+      allow delete: if isManager(appId);
     }
   }
 }

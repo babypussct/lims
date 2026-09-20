@@ -95,6 +95,31 @@ test('result details require an operational role to write', () => {
   assert.doesNotMatch(block, /allow read, write:\s*if isSignedIn\(\)/);
 });
 
+test('SOP reassignment is the guarded path for changing SOP identity and purges active result details', () => {
+  const requestBlock = ruleBlock(
+    'match /artifacts/{appId}/requests/{reqId}',
+    'match /artifacts/{appId}/daily_checklists/{analysisDate}'
+  );
+  const detailBlock = ruleBlock(
+    'match /artifacts/{appId}/results_details/{docId}',
+    '// Yeu cau in an nhan / barcode'
+  );
+  const dailyBlock = ruleBlock(
+    'match /artifacts/{appId}/daily_checklists/{analysisDate}',
+    'match /artifacts/{appId}/duty_staff/{staffId}'
+  );
+
+  assert.match(rules, /function validSopReassignmentTransition\(appId, reqId\)/);
+  assert.match(rules, /!existsAfter\([^\n]*results_details\/\$\(reqId\)\)/);
+  assert.match(requestBlock, /request\.resource\.data\.get\('sopId', ''\) == resource\.data\.get\('sopId', ''\)/);
+  assert.match(requestBlock, /validSopReassignmentTransition\(appId, reqId\)/);
+  assert.match(detailBlock, /validSopReassignmentTransition\(appId, docId\)/);
+  assert.match(dailyBlock, /validSopReassignmentDailyChecklistCreate\(appId, analysisDate\)/);
+  assert.match(dailyBlock, /validSopReassignmentDailyChecklistUpdate\(appId, analysisDate\)/);
+  assert.match(rules, /validSopReassignmentInventoryUpdate\(appId\)/);
+  assert.match(rules, /validSopReassignmentLogSupersede\(appId\)/);
+});
+
 test('activity log creation validates V2 classification, actor identity and server timestamp', () => {
   const block = rules.slice(rules.indexOf('match /artifacts/{appId}/logs/{logId}'));
   assert.match(block, /allow create:\s*if canCreateAuditLog\(appId\) &&\s*validCanonicalActivityCreate/);

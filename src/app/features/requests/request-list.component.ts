@@ -181,7 +181,7 @@ import { Router } from '@angular/router';
                                         </div>
                                     </div>
 
-                                    @if(state.isAdmin()) {
+                                    @if(state.isAdmin() || (currentTab() === 'approved' && auth.canApprove())) {
                                         <div class="flex flex-row md:flex-col gap-2 shrink-0 md:w-36 mt-2 md:mt-0">
                                             @if (currentTab() === 'pending') {
                                                 <button (click)="approve(req)" [disabled]="!!processingId() || !getPendingAnalysisDate(req)"
@@ -193,18 +193,28 @@ import { Router } from '@angular/router';
                                                     <i class="fa-solid fa-xmark"></i> Từ Chối
                                                 </button>
                                             } @else {
-                                                <button (click)="goToResults(req)" [disabled]="!!processingId()" 
-                                                         class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả
-                                                </button>
-                                                <button (click)="editApproved(req)" [disabled]="!!processingId()" 
-                                                         class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-pen"></i> Chỉnh Sửa
-                                                </button>
-                                                <button (click)="revoke(req)" [disabled]="!!processingId()" 
-                                                         class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn Tác
-                                                </button>
+                                                @if (state.isAdmin()) {
+                                                    <button (click)="goToResults(req)" [disabled]="!!processingId()"
+                                                             class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả
+                                                    </button>
+                                                    <button (click)="editApproved(req)" [disabled]="!!processingId()"
+                                                             class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <i class="fa-solid fa-pen"></i> Chỉnh Sửa
+                                                    </button>
+                                                }
+                                                @if (auth.canApprove()) {
+                                                  <button (click)="reassignSop(req)" [disabled]="!!processingId()"
+                                                          class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                      <i class="fa-solid fa-code-compare"></i> Chuyển SOP
+                                                  </button>
+                                                }
+                                                @if (state.isAdmin()) {
+                                                    <button (click)="revoke(req)" [disabled]="!!processingId()"
+                                                             class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn Tác
+                                                    </button>
+                                                }
                                             }
                                         </div>
                                     } @else {
@@ -471,6 +481,10 @@ export class RequestListComponent implements OnInit {
 
   editApproved(req: Request) {
       this.router.navigate(['/calculator'], { queryParams: { editRequestId: req.id } });
+  }
+
+  reassignSop(req: Request) {
+      this.router.navigate(['/results', req.id], { queryParams: { action: 'reassign-sop' } });
   }
 
   goToResults(req: Request) {
