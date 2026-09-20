@@ -974,8 +974,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           await this.stdService.createRequest(request, this.isAssignMode());
 
           if (this.isAssignMode()) {
-              // Automatically dispense if assigning directly
-              await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
               this.toast.show('Đã gán chuẩn thành công', 'success');
           } else {
               this.toast.show('Đã gửi yêu cầu mượn chuẩn', 'success');

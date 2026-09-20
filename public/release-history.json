@@ -1,5 +1,25 @@
 [
   {
+    "version": "v26.09.20-b04",
+    "date": "20/9/2026",
+    "title": "Siết an toàn và hoàn thiện luồng yêu cầu chất chuẩn",
+    "highlights": [
+      "Quy trình yêu cầu, duyệt, cấp và hoàn trả chất chuẩn được ràng buộc chặt chẽ hơn giữa phiếu yêu cầu và trạng thái thực tế của lọ chuẩn.",
+      "Gán chuẩn trực tiếp được thực hiện trong một giao dịch nguyên tử, tránh để lại yêu cầu chờ hoặc khóa lô khi thao tác bị gián đoạn."
+    ],
+    "features": [],
+    "improvements": [
+      "Xuất Excel yêu cầu chất chuẩn đọc toàn bộ lịch sử có phân trang thay vì chỉ dùng tối đa 1.000 bản ghi trong bộ nhớ màn hình.",
+      "Nút Yêu cầu mua sắm của quản lý mở đúng danh sách chờ xử lý."
+    ],
+    "fixes": [
+      "Giữ nguyên lượng dự kiến đã khai báo khi quản lý mở hộp duyệt và xác nhận giao chuẩn.",
+      "Gộp cập nhật mục đích, lượng dự kiến và thao tác cấp chuẩn vào cùng một giao dịch để không phát sinh trạng thái nửa hoàn tất.",
+      "Siết Firestore Rules để người vận hành chỉ được tạo hoặc chuyển trạng thái yêu cầu theo các luồng duyệt, từ chối, tiếp tục sử dụng, hoàn trả, gán trực tiếp và nhập bù hợp lệ."
+    ],
+    "releaseOrder": 26092000004
+  },
+  {
     "version": "v26.09.20-b03",
     "date": "20/9/2026",
     "title": "Tự khóa lại mẻ mở khóa nhưng không thay đổi",

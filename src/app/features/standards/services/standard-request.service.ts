@@ -271,33 +271,46 @@ export class StandardRequestService {
         requestedByName: isAssign
           ? request.requestedByName
           : (currentUser.displayName || currentUser.email || 'Người dùng'),
-        status: 'PENDING_APPROVAL',
+        status: isAssign ? 'IN_PROGRESS' : 'PENDING_APPROVAL',
+        ...(isAssign ? {
+          approvedBy: currentUser.uid,
+          approvedByName: currentUser.displayName || currentUser.email || 'Quản trị viên',
+          approvalDate: Date.now()
+        } : {}),
         totalAmountUsed: 0,
         usageLogs: [],
         _isDeleted: false
       };
       transaction.set(reqRef, { ...trustedRequest, lastUpdated: serverTimestamp() });
-      // Reserve the lot atomically for both normal requests and direct assignment.
-      // dispenseStandard() clears this flag immediately after a direct assignment.
-      transaction.update(stdRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
+      transaction.update(stdRef, isAssign ? {
+        status: 'IN_USE',
+        current_holder: trustedRequest.requestedByName,
+        current_holder_uid: trustedRequest.requestedBy,
+        current_request_id: reqRef.id,
+        has_pending_request: deleteField(),
+        lastUpdated: serverTimestamp()
+      } : {
+        has_pending_request: true,
+        lastUpdated: serverTimestamp()
+      });
 
-      if (!isAssign) {
-        const activityEvent = this.activityEvents.build({
-          eventId: activityRef.id,
-          action: 'REQUEST_STANDARD',
-          details: `Yêu cầu chuẩn: ${trustedRequest.standardName}`,
-          targetType: 'STANDARD',
-          targetId: trustedRequest.standardId,
-          targetName: trustedRequest.standardName,
-          requestId: reqRef.id,
-          metadata: {
-            internalId: trustedRequest.internalId,
-            requestedBy: trustedRequest.requestedBy,
-            expectedAmount: trustedRequest.expectedAmount
-          }
-        });
-        this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
-      }
+      const activityEvent = this.activityEvents.build({
+        eventId: activityRef.id,
+        action: isAssign ? 'ASSIGN_STANDARD' : 'REQUEST_STANDARD',
+        details: isAssign
+          ? `Gán chuẩn: ${trustedRequest.standardName} cho ${trustedRequest.requestedByName}`
+          : `Yêu cầu chuẩn: ${trustedRequest.standardName}`,
+        targetType: 'STANDARD',
+        targetId: trustedRequest.standardId,
+        targetName: trustedRequest.standardName,
+        requestId: reqRef.id,
+        metadata: {
+          internalId: trustedRequest.internalId,
+          requestedBy: trustedRequest.requestedBy,
+          expectedAmount: trustedRequest.expectedAmount
+        }
+      });
+      this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
 
     if (!isAssign) {
@@ -309,6 +322,40 @@ export class StandardRequestService {
         targetId: request.standardId, actionUrl: `/standards/${request.standardId}`,
         channels: ['inbox', 'push']
       });
+    } else {
+      if (currentUser.uid !== request.requestedBy) {
+        await this.notificationCenter.publishActivityProjection(activityRef.id, {
+          recipientUid: request.requestedBy,
+          senderUid: currentUser.uid,
+          senderName: currentUser.displayName || 'Quản trị viên',
+          type: 'REQUEST_APPROVED', title: 'Được cấp chuẩn',
+          message: `Quản trị viên đã trực tiếp cấp cho bạn lô chuẩn ${request.standardName}. Xin hãy bảo quản cẩn thận!`,
+          targetId: request.standardId, actionUrl: `/standards/${request.standardId}`,
+          channels: ['inbox', 'push']
+        });
+      } else {
+        await this.notificationCenter.dispatchActivityProjectionIfEnabled(activityRef.id);
+      }
+
+      await this.notificationCenter.publishLegacyIfActivityProjectionDisabled({
+        eventId: `standard-request:${request.id}:direct-assignment:admins`,
+        recipientUid: 'role:admin', senderUid: currentUser.uid,
+        senderName: currentUser.displayName || 'Quản trị viên',
+        type: 'SYSTEM_INFO', title: 'Gán chuẩn trực tiếp',
+        message: `Quản trị viên ${currentUser.displayName || currentUser.email || ''} vừa gán trực tiếp lô chuẩn ${request.standardName} cho ${request.requestedByName}.`,
+        targetId: request.standardId, actionUrl: `/standards/${request.standardId}`,
+        channels: ['inbox', 'push']
+      });
+
+      try {
+        const freshSnap = await getDoc(stdRef);
+        if (freshSnap.exists()) {
+          const freshStd = { id: freshSnap.id, ...freshSnap.data() } as ReferenceStandard;
+          this.cache._mergeAndSave([freshStd], []);
+        }
+      } catch (e) {
+        console.warn('[StandardRequestService] post-direct-assignment cache merge failed:', e);
+      }
     }
   }
 
@@ -444,7 +491,8 @@ export class StandardRequestService {
   // ─── Dispense Standard ────────────────────────────────────────────────────────
   async dispenseStandard(
     requestId: string, standardId: string,
-    approverId: string, approverName: string, isAssign = false
+    approverId: string, approverName: string, isAssign = false,
+    requestUpdates: Partial<Pick<StandardRequest, 'purpose' | 'expectedAmount'>> = {}
   ): Promise<void> {
     const currentUser = this.auth.currentUser();
     if (!currentUser || !this.auth.canAssignStandards()) {
@@ -472,6 +520,17 @@ export class StandardRequestService {
       if (reqData.standardId !== standardId || reqData.status !== 'PENDING_APPROVAL') {
         throw new Error('Yêu cầu không còn hợp lệ để cấp chuẩn!');
       }
+      const approvedPurpose = requestUpdates.purpose === undefined
+        ? reqData.purpose
+        : requestUpdates.purpose.trim();
+      if (!approvedPurpose) throw new Error('Mục đích sử dụng là bắt buộc.');
+      const approvedExpectedAmount = requestUpdates.expectedAmount === undefined
+        ? reqData.expectedAmount
+        : requestUpdates.expectedAmount;
+      if (approvedExpectedAmount !== undefined && approvedExpectedAmount !== null &&
+        (!Number.isFinite(approvedExpectedAmount) || approvedExpectedAmount < 0)) {
+        throw new Error('Lượng dự kiến phải là số không âm.');
+      }
       assertStandardRequestTransition(reqData.status, 'IN_PROGRESS');
       transaction.update(stdRef, {
         status: 'IN_USE', current_holder: reqData.requestedByName,
@@ -482,7 +541,10 @@ export class StandardRequestService {
       transaction.update(reqRef, {
         status: 'IN_PROGRESS', approvedBy: currentUser.uid,
         approvedByName: currentUser.displayName || currentUser.email || approverName || approverId,
-        approvalDate: Date.now(), updatedAt: Date.now(), lastUpdated: serverTimestamp()
+        approvalDate: Date.now(),
+        purpose: approvedPurpose,
+        ...(approvedExpectedAmount === undefined ? {} : { expectedAmount: approvedExpectedAmount }),
+        updatedAt: Date.now(), lastUpdated: serverTimestamp()
       });
 
       const activityEvent = this.activityEvents.build({

@@ -384,9 +384,8 @@ export class RequestsActionModalsComponent implements OnChanges {
               this.returnSopTags.set(sanitizeLegacyTagKeys(req.sopTags));
            }
         } else if (mode === 'approve' && req) {
-           if (!this.approvePurpose()) {
-              this.approvePurpose.set(req.purpose || '');
-           }
+           this.approveExpectedAmount.set(req.expectedAmount ?? null);
+           this.approvePurpose.set(req.purpose || '');
         }
     }
   }

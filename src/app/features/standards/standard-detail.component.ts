@@ -453,16 +453,6 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
             await this.stdService.createRequest(request, this.isAssignMode());
 
-            if (this.isAssignMode()) {
-                await this.stdService.dispenseStandard(
-                    request.id!,
-                    std.id,
-                    this.auth.currentUser()?.uid || '',
-                    this.auth.currentUser()?.displayName || 'QTV',
-                    true
-                );
-            }
-
             this.toast.show(this.isAssignMode() ? 'Đã gán chuẩn thành công' : 'Đã gửi yêu cầu mượn chuẩn', 'success');
             this.showAssignModal.set(false);
 

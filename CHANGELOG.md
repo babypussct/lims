@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.20-b03
+## Phiên bản hiện tại: v26.09.20-b04
+
+### v26.09.20-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Quy trình yêu cầu, duyệt, cấp và hoàn trả chất chuẩn được ràng buộc chặt chẽ hơn giữa phiếu yêu cầu và trạng thái thực tế của lọ chuẩn.
+- Gán chuẩn trực tiếp được thực hiện trong một giao dịch nguyên tử, tránh để lại yêu cầu chờ hoặc khóa lô khi thao tác bị gián đoạn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Xuất Excel yêu cầu chất chuẩn đọc toàn bộ lịch sử có phân trang thay vì chỉ dùng tối đa 1.000 bản ghi trong bộ nhớ màn hình.
+- Nút Yêu cầu mua sắm của quản lý mở đúng danh sách chờ xử lý.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Giữ nguyên lượng dự kiến đã khai báo khi quản lý mở hộp duyệt và xác nhận giao chuẩn.
+- Gộp cập nhật mục đích, lượng dự kiến và thao tác cấp chuẩn vào cùng một giao dịch để không phát sinh trạng thái nửa hoàn tất.
+- Siết Firestore Rules để người vận hành chỉ được tạo hoặc chuyển trạng thái yêu cầu theo các luồng duyệt, từ chối, tiếp tục sử dụng, hoàn trả, gán trực tiếp và nhập bù hợp lệ.
 
 ### v26.09.20-b03
 

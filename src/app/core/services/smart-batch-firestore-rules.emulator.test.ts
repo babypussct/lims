@@ -1669,9 +1669,9 @@ test('requester lifecycle can report and resume but cannot rewrite accounting or
   }));
 });
 
-test('approver may write admin-only return fields that requester cannot', async () => {
+test('approver cannot patch admin-only fields outside an explicit request transition', async () => {
   const approverRef = doc(dbFor(users.approver), `artifacts/${APP_ID}/standard_requests/requester-lifecycle`);
-  await assertSucceeds(updateDoc(approverRef, {
+  await assertFails(updateDoc(approverRef, {
     finalSopTags: [],
     confirmedAmountUsed: 0,
     confirmedUnit: 'mg',
@@ -1679,6 +1679,106 @@ test('approver may write admin-only return fields that requester cannot', async 
     receivedByName: users.approver.displayName,
     lastUpdated: serverTimestamp()
   }));
+});
+
+test('approver approval is allowed only with the correlated standard handoff', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await updateDoc(doc(db, `artifacts/${APP_ID}/reference_standards/std-create`), {
+      has_pending_request: true
+    });
+    await setDoc(doc(db, `artifacts/${APP_ID}/standard_requests/approval-atomic`), {
+      id: 'approval-atomic',
+      standardId: 'std-create',
+      standardName: 'Create Standard',
+      lotNumber: 'LOT-CREATE-1',
+      internalId: 'AA02',
+      requestedBy: users.batchA.uid,
+      requestedByName: users.batchA.displayName,
+      requestDate: 1_786_182_400_100,
+      purpose: 'Approval atomic test',
+      expectedAmount: 5,
+      status: 'PENDING_APPROVAL',
+      totalAmountUsed: 0,
+      usageLogs: [],
+      createdAt: 1_786_182_400_100,
+      updatedAt: 1_786_182_400_100,
+      _isDeleted: false,
+      lastUpdated: Timestamp.fromMillis(1_786_182_400_100)
+    });
+  });
+
+  const db = dbFor(users.approver);
+  const requestRef = doc(db, `artifacts/${APP_ID}/standard_requests/approval-atomic`);
+  await assertFails(updateDoc(requestRef, {
+    status: 'IN_PROGRESS',
+    approvedBy: users.approver.uid,
+    approvedByName: users.approver.displayName,
+    approvalDate: 1_786_182_400_101,
+    updatedAt: 1_786_182_400_101,
+    lastUpdated: serverTimestamp()
+  }));
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, `artifacts/${APP_ID}/reference_standards/std-create`), {
+    status: 'IN_USE',
+    current_holder: users.batchA.displayName,
+    current_holder_uid: users.batchA.uid,
+    current_request_id: 'approval-atomic',
+    has_pending_request: deleteField(),
+    lastUpdated: serverTimestamp()
+  });
+  batch.update(requestRef, {
+    status: 'IN_PROGRESS',
+    approvedBy: users.approver.uid,
+    approvedByName: users.approver.displayName,
+    approvalDate: 1_786_182_400_101,
+    updatedAt: 1_786_182_400_101,
+    lastUpdated: serverTimestamp()
+  });
+  await assertSucceeds(batch.commit());
+});
+
+test('direct standard assignment create is allowed only in the same atomic handoff', async () => {
+  const db = dbFor(users.approver);
+  const requestId = 'direct-assignment-atomic';
+  const requestRef = doc(db, `artifacts/${APP_ID}/standard_requests/${requestId}`);
+  const payload = {
+    id: requestId,
+    standardId: 'std-create',
+    standardName: 'Create Standard',
+    lotNumber: 'LOT-CREATE-1',
+    internalId: 'AA02',
+    requestedBy: users.batchA.uid,
+    requestedByName: users.batchA.displayName,
+    requestDate: 1_786_182_400_200,
+    purpose: 'Direct assignment atomic test',
+    expectedAmount: 4,
+    status: 'IN_PROGRESS',
+    approvedBy: users.approver.uid,
+    approvedByName: users.approver.displayName,
+    approvalDate: 1_786_182_400_200,
+    totalAmountUsed: 0,
+    usageLogs: [],
+    createdAt: 1_786_182_400_200,
+    updatedAt: 1_786_182_400_200,
+    _isDeleted: false,
+    lastUpdated: serverTimestamp()
+  };
+
+  await assertFails(setDoc(requestRef, payload));
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, `artifacts/${APP_ID}/reference_standards/std-create`), {
+    status: 'IN_USE',
+    current_holder: users.batchA.displayName,
+    current_holder_uid: users.batchA.uid,
+    current_request_id: requestId,
+    has_pending_request: deleteField(),
+    lastUpdated: serverTimestamp()
+  });
+  batch.set(requestRef, payload);
+  await assertSucceeds(batch.commit());
 });
 
 test('internal-id ownership cannot be rewritten without the lifecycle transaction', async () => {

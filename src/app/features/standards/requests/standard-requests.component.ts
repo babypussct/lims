@@ -230,6 +230,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   // --- Purchase Requests Logic (Admin) ---
   openAdminPurchaseRequests() {
       if (!this.auth.canAssignStandards()) return;
+      this.showPurchaseRequestsAdminModal.set(true);
   }
 
   closeAdminPurchaseRequests() {
@@ -417,16 +418,17 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.isProcessing.set(true);
       try {
 
-          // Dispense
-          await this.stdService.dispenseStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown');
-          
-          if (data.purpose !== req.purpose || data.expectedAmount !== req.expectedAmount) {
-              const updates: any = {
+          await this.stdService.dispenseStandard(
+              req.id,
+              req.standardId,
+              user.uid,
+              user.displayName || user.email || 'Unknown',
+              false,
+              {
                   purpose: data.purpose,
-                  expectedAmount: data.expectedAmount ?? null
-              };
-              await this.stdService.updateRequestStatus(req.id, 'IN_PROGRESS', updates);
-          }
+                  ...(data.expectedAmount === null ? {} : { expectedAmount: data.expectedAmount })
+              }
+          );
           
           this.toast.show('Đã duyệt và giao chuẩn thành công', 'success');
           this.closeActionModal();
@@ -635,8 +637,34 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       return `${fromStr} → ${toStr}`;
   }
 
-  getExportableRequests(): any[] {
-      let reqs = this.filteredRequests();
+  getExportableRequests(sourceRequests?: StandardRequest[]): any[] {
+      let reqs = sourceRequests
+          ? sourceRequests.map(r => ({
+              ...r,
+              standardDetails: this.allStandards().find(s => s.id === r.standardId)
+          }))
+          : this.filteredRequests();
+
+      if (sourceRequests) {
+          const term = removeAccents(this.searchTerm().toLowerCase());
+          const status = this.statusFilter();
+          const currentUser = this.auth.currentUser();
+          const isAdmin = this.auth.canAssignStandards();
+
+          if (!isAdmin && currentUser) {
+              reqs = reqs.filter(r => r.requestedBy === currentUser.uid);
+          }
+          if (status !== 'ALL') {
+              reqs = reqs.filter(r => r.status === status);
+          }
+          if (term) {
+              reqs = reqs.filter(r =>
+                  removeAccents((r.standardName || '').toLowerCase()).includes(term) ||
+                  removeAccents((r.requestedByName || '').toLowerCase()).includes(term) ||
+                  removeAccents((r.lotNumber || '').toLowerCase()).includes(term)
+              );
+          }
+      }
 
       // Date range filter (from export modal) using local date boundary
       const dr = this.dateRangeFilter();
@@ -660,16 +688,17 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   async runExport() {
-      const reqs = this.getExportableRequests();
-      if (reqs.length === 0) {
-          this.toast.show('Không có dữ liệu để xuất.', 'info');
-          return;
-      }
-
       this.isExporting.set(true);
       this.exportCompleted.set(false);
 
       try {
+          const history = await this.requestService.getRequestsForExport();
+          const reqs = this.getExportableRequests(history);
+          if (reqs.length === 0) {
+              this.toast.show('Không có dữ liệu để xuất.', 'info');
+              return;
+          }
+
           const XLSX = await import('xlsx');
           const wb = XLSX.utils.book_new();
 

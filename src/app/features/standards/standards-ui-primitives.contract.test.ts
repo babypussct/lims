@@ -147,6 +147,21 @@ describe('standards shared UI primitive integration', () => {
     assert.match(template, /class="w-10 h-10 rounded-lg[^\"]*sm:w-8 sm:h-8"/);
     assert.match(kanban, /h-10 w-10 bg-emerald-600[^\"]*sm:h-8 sm:w-8/);
     assert.match(kanban, /min-h-10 px-3 py-2 bg-teal-600[^\"]*sm:min-h-0 sm:px-2 sm:py-1/);
+    assert.match(component, /showPurchaseRequestsAdminModal\.set\(true\)/);
+    assert.match(component, /requestService\.getRequestsForExport\(\)/);
+    assert.match(actionModals, /approveExpectedAmount\.set\(req\.expectedAmount \?\? null\)/);
+  });
+
+  it('keeps direct assignment atomic instead of creating then dispensing in a second transaction', () => {
+    const service = read('./services/standard-request.service.ts');
+    const page = read('./standards.component.ts');
+    const detail = read('./standard-detail.component.ts');
+
+    assert.match(service, /status: isAssign \? 'IN_PROGRESS' : 'PENDING_APPROVAL'/);
+    assert.match(service, /current_request_id: reqRef\.id/);
+    assert.match(service, /action: isAssign \? 'ASSIGN_STANDARD' : 'REQUEST_STANDARD'/);
+    assert.doesNotMatch(page, /if \(this\.isAssignMode\(\)\)[\s\S]{0,220}dispenseStandard/);
+    assert.doesNotMatch(detail, /if \(this\.isAssignMode\(\)\)[\s\S]{0,300}dispenseStandard/);
   });
 
   it('uses shared header, buttons and empty state on standard detail while preserving specialized tab controls', () => {

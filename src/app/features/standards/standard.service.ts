@@ -243,9 +243,10 @@ export class StandardService {
   }
   async dispenseStandard(
     requestId: string, standardId: string,
-    approverId: string, approverName: string, isAssign?: boolean
+    approverId: string, approverName: string, isAssign?: boolean,
+    requestUpdates?: Partial<Pick<StandardRequest, 'purpose' | 'expectedAmount'>>
   ): Promise<void> {
-    return this.request.dispenseStandard(requestId, standardId, approverId, approverName, isAssign);
+    return this.request.dispenseStandard(requestId, standardId, approverId, approverName, isAssign, requestUpdates);
   }
   async returnStandard(
     requestId: string, standardId: string,

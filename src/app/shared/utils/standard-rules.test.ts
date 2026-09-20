@@ -104,7 +104,7 @@ test('requester request mutations keep admin fields and legacy accounting outsid
   );
   const requesterCreate = requestsBlock.slice(
     requestsBlock.indexOf('function validRequesterStandardRequestCreate(appId)'),
-    requestsBlock.indexOf('function validStandardRequestCreate(appId)')
+    requestsBlock.indexOf('function validOperatorDirectAssignmentCreate(appId)')
   );
   const requesterLifecycle = requestsBlock.slice(
     requestsBlock.indexOf('function validRequesterReturnSubmission()'),
@@ -117,6 +117,25 @@ test('requester request mutations keep admin fields and legacy accounting outsid
   assert.doesNotMatch(requesterLifecycle, /usageLogs/);
   assert.doesNotMatch(requesterLifecycle, /totalAmountUsed/);
   assert.match(requestsBlock, /changed\.hasOnly\(\['totalAmountUsed', 'lastUsageLogId', 'updatedAt', 'lastUpdated'\]\)/);
+});
+
+test('standard request operators are limited to explicit create and lifecycle transitions', () => {
+  const requestsBlock = rules.slice(
+    rules.indexOf('match /artifacts/{appId}/standard_requests/{reqId}'),
+    rules.indexOf('match /artifacts/{appId}/purchase_requests/{reqId}')
+  );
+  assert.match(requestsBlock, /function validOperatorDirectAssignmentCreate\(appId\)/);
+  assert.match(requestsBlock, /function validOperatorBackfillCreate\(appId\)/);
+  assert.match(requestsBlock, /function preservesStandardRequestIdentity\(\)/);
+  assert.match(requestsBlock, /function validOperatorApproval\(appId\)/);
+  assert.match(requestsBlock, /function validOperatorRejection\(appId\)/);
+  assert.match(requestsBlock, /function validOperatorResumeUsage\(appId\)/);
+  assert.match(requestsBlock, /function validOperatorCompletion\(appId\)/);
+  assert.match(requestsBlock, /validOperatorStandardRequestUpdate\(appId\)/);
+  assert.doesNotMatch(
+    requestsBlock,
+    /canOperateStandards\(appId\) &&\s*validReturnTagArray\(request\.resource\.data\) &&\s*validFinalReturnTagArray/
+  );
 });
 
 test('batch operators can only deduct inventory stock through constrained updates', () => {
