@@ -199,7 +199,7 @@ export function aggregateDutyPeopleById(
     }
   }
 
-  return [...stats.entries()].map(([staffId, value]) => {
+  const aggregated = [...stats.entries()].map(([staffId, value]) => {
     const person = byStaffId.get(staffId);
     return {
       staffId,
@@ -212,8 +212,17 @@ export function aggregateDutyPeopleById(
       leadCount: value.leadCount,
       activeMonthCount: value.months.size,
       lastDate: value.lastDate,
+      expectedAssignments: 0,
+      deviationPercent: 0,
+      eligibleMonthCount: 0,
+      fairnessAvailable: false,
+      effectiveFromMonth: '',
+      effectiveToMonth: '',
     };
-  }).sort((a, b) => b.total - a.total || a.displayName.localeCompare(b.displayName, 'vi'));
+  });
+
+  return applyDutyFairness(aggregated, schedules, staff)
+    .sort((a, b) => b.total - a.total || a.displayName.localeCompare(b.displayName, 'vi'));
 }
 
 export function aggregateDutyRosterById(
@@ -236,11 +245,118 @@ export function aggregateDutyRosterById(
       leadCount: 0,
       activeMonthCount: 0,
       lastDate: '',
+      expectedAssignments: 0,
+      deviationPercent: 0,
+      eligibleMonthCount: 0,
+      fairnessAvailable: false,
+      effectiveFromMonth: '',
+      effectiveToMonth: '',
     });
   }
 
-  return [...byStaffId.values()]
+  return applyDutyFairness([...byStaffId.values()], schedules, staff)
     .sort((a, b) => b.total - a.total || a.displayName.localeCompare(b.displayName, 'vi'));
+}
+
+/**
+ * Computes the expected number of assignments from the observed monthly roster.
+ *
+ * A person's first observed month starts at day 1. An inactive person's last
+ * observed month ends their effective period; an active person's period runs
+ * through the last month represented by the selected schedule range. Each
+ * month's assignment capacity is divided only among people effective in that
+ * month, so a late joiner or a person who has left is not compared with the
+ * whole historical range.
+ */
+function applyDutyFairness(
+  stats: readonly DutyPersonStat[],
+  schedules: readonly DutyScheduleEntry[],
+  staff: readonly DutyStaff[],
+): DutyPersonStat[] {
+  const activeSchedules = activeDutySchedules(schedules);
+  const monthKeys = [...new Set(
+    activeSchedules
+      .filter(schedule => isDutyDateKey(schedule.date))
+      .map(schedule => schedule.date.slice(0, 7)),
+  )].sort();
+  if (monthKeys.length === 0) {
+    return stats.map(stat => ({
+      ...stat,
+      expectedAssignments: 0,
+      deviationPercent: 0,
+      eligibleMonthCount: 0,
+      fairnessAvailable: false,
+      effectiveFromMonth: '',
+      effectiveToMonth: '',
+    }));
+  }
+
+  const assignmentsByMonth = new Map<string, number>(monthKeys.map(month => [month, 0]));
+  const observedMonthsByStaffId = new Map<string, Set<string>>();
+  for (const schedule of activeSchedules) {
+    if (!isDutyDateKey(schedule.date)) continue;
+    const month = schedule.date.slice(0, 7);
+    assignmentsByMonth.set(
+      month,
+      (assignmentsByMonth.get(month) || 0) + new Set(schedule.staffIds).size,
+    );
+    for (const staffId of new Set(schedule.staffIds)) {
+      const observed = observedMonthsByStaffId.get(staffId) || new Set<string>();
+      observed.add(month);
+      observedMonthsByStaffId.set(staffId, observed);
+    }
+  }
+
+  const staffById = new Map(staff.map(person => [person.id, person]));
+  const effectiveRanges = stats.map(stat => {
+    const observedMonths = [...(observedMonthsByStaffId.get(stat.staffId) || [])].sort();
+    const effectiveFromMonth = observedMonths[0] || '';
+    const observedToMonth = observedMonths.at(-1) || '';
+    const person = staffById.get(stat.staffId);
+    const effectiveToMonth = effectiveFromMonth && person?.active !== false
+      ? monthKeys.at(-1) || observedToMonth
+      : observedToMonth;
+    return {
+      stat,
+      effectiveFromMonth,
+      effectiveToMonth,
+    };
+  });
+
+  const eligibleByMonth = new Map<string, string[]>();
+  for (const month of monthKeys) {
+    eligibleByMonth.set(month, effectiveRanges
+      .filter(item => item.effectiveFromMonth
+        && item.effectiveFromMonth <= month
+        && month <= item.effectiveToMonth)
+      .map(item => item.stat.staffId));
+  }
+
+  return effectiveRanges.map(({ stat, effectiveFromMonth, effectiveToMonth }) => {
+    const eligibleMonths = monthKeys.filter(month => effectiveFromMonth
+      && effectiveFromMonth <= month
+      && month <= effectiveToMonth);
+    const expectedAssignments = eligibleMonths.reduce((total, month) => {
+      const eligibleCount = eligibleByMonth.get(month)?.length || 0;
+      return eligibleCount === 0
+        ? total
+        : total + (assignmentsByMonth.get(month) || 0) / eligibleCount;
+    }, 0);
+    const fairnessAvailable = expectedAssignments > 0;
+    const deviationPercent = fairnessAvailable
+      ? ((stat.total - expectedAssignments) / expectedAssignments) * 100
+      : 0;
+
+    return {
+      ...stat,
+      expectedAssignments,
+      deviationPercent,
+      eligibleMonthCount: eligibleMonths.length,
+      fairnessAvailable,
+      effectiveFromMonth,
+      effectiveToMonth,
+    };
+  });
 }
 
 export function computeDutyStaffRecommendations(
@@ -260,11 +376,12 @@ export function computeDutyStaffRecommendations(
     && schedule.date !== excludeDateKey,
   );
   const roster = aggregateDutyRosterById(baseline, activeStaff);
-  const average = countDutyAssignments(baseline) / activeStaff.length;
   const tierRank = { recommended: 1, balanced: 2, consider: 3, high: 4 } as const;
 
   return roster.map(stat => {
-    const deviationPercent = average === 0 ? 0 : ((stat.total - average) / average) * 100;
+    const deviationPercent = stat.fairnessAvailable
+      ? stat.deviationPercent
+      : stat.total === 0 ? -100 : 0;
     const adjacent = dutyAdjacentAssignment(targetDateKey, stat.staffId, schedules);
     const hasAdjacent = adjacent.previous || adjacent.next;
     const tier = deviationPercent > 35

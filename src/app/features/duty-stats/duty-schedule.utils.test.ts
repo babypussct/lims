@@ -108,6 +108,45 @@ test('duty statistics stay identity-based for similar names', () => {
   assert.deepEqual(resolveDutyStaffNames(schedules[0], staff), ['Huỳnh', 'Huynh']);
 });
 
+test('duty fairness uses each person effective months and keeps Huỳnh separate from Huynh', () => {
+  const fairnessStaff: DutyStaff[] = [
+    { id: 'acute', displayName: 'Huỳnh', active: true },
+    { id: 'plain', displayName: 'Huynh', active: true },
+    { id: 'newcomer', displayName: 'Mới tham gia', active: true },
+    { id: 'former', displayName: 'Nghĩa', active: false },
+  ];
+  const fairnessSchedules: DutyScheduleEntry[] = [
+    { id: 'jan-1', date: '2026-01-10', staffIds: ['acute', 'plain'], startTime: '18:00', status: 'planned' },
+    { id: 'jan-2', date: '2026-01-20', staffIds: ['acute'], startTime: '18:00', status: 'planned' },
+    { id: 'feb-1', date: '2026-02-10', staffIds: ['acute', 'plain', 'former'], startTime: '18:00', status: 'planned' },
+    { id: 'mar-1', date: '2026-03-10', staffIds: ['acute', 'plain', 'newcomer'], startTime: '18:00', status: 'planned' },
+    { id: 'apr-1', date: '2026-04-10', staffIds: ['acute', 'plain'], startTime: '18:00', status: 'planned' },
+  ];
+
+  const stats = aggregateDutyRosterById(fairnessSchedules, fairnessStaff);
+  const acute = stats.find(item => item.staffId === 'acute');
+  const plain = stats.find(item => item.staffId === 'plain');
+  const newcomer = stats.find(item => item.staffId === 'newcomer');
+  const former = stats.find(item => item.staffId === 'former');
+
+  assert.equal(acute?.displayName, 'Huỳnh');
+  assert.equal(plain?.displayName, 'Huynh');
+  assert.equal(acute?.total, 5);
+  assert.equal(plain?.total, 4);
+  assert.equal(acute?.effectiveFromMonth, '2026-01');
+  assert.equal(acute?.effectiveToMonth, '2026-04');
+  assert.equal(newcomer?.effectiveFromMonth, '2026-03');
+  assert.equal(newcomer?.effectiveToMonth, '2026-04');
+  assert.equal(newcomer?.eligibleMonthCount, 2);
+  assert.equal(former?.effectiveFromMonth, '2026-02');
+  assert.equal(former?.effectiveToMonth, '2026-02');
+  assert.equal(former?.eligibleMonthCount, 1);
+  assert.ok(Math.abs((acute?.expectedAssignments || 0) - (25 / 6)) < 0.0001);
+  assert.ok(Math.abs((plain?.expectedAssignments || 0) - (25 / 6)) < 0.0001);
+  assert.ok(Math.abs((newcomer?.expectedAssignments || 0) - (5 / 3)) < 0.0001);
+  assert.equal(former?.expectedAssignments, 1);
+});
+
 test('duty statistics count weekend assignments and lead responsibility independently', () => {
   const weekendSchedules: DutyScheduleEntry[] = [
     { id: 'sat', date: '2026-09-05', staffIds: ['staff-plain', 'staff-accented'], startTime: '18:00', status: 'planned' },
@@ -150,7 +189,7 @@ test('rolling recommendations exclude the edited shift and apply four-tier workl
   assert.equal(byId.get('b')?.tier, 'consider');
   assert.equal(byId.get('b')?.adjacentPrevious, true);
   assert.equal(byId.get('c')?.tier, 'balanced');
-  assert.equal(byId.get('d')?.tier, 'consider');
+  assert.equal(byId.get('d')?.tier, 'balanced');
   assert.equal(byId.get('e')?.tier, 'high');
   assert.equal(recommendations[0].staffId, 'a');
 });

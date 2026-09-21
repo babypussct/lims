@@ -10,7 +10,6 @@ import type { DutyPersonStat } from './duty-schedule.model';
 })
 export class DutyStatsChartComponent implements OnDestroy {
   readonly stats = input.required<readonly DutyPersonStat[]>();
-  readonly average = input(0);
   readonly rangeLabel = input('');
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('chartCanvas');
   private chart: Chart | null = null;
@@ -20,7 +19,6 @@ export class DutyStatsChartComponent implements OnDestroy {
   constructor() {
     effect(() => {
       this.stats();
-      this.average();
       this.canvas();
       void this.render();
     });
@@ -96,8 +94,8 @@ export class DutyStatsChartComponent implements OnDestroy {
           },
           {
             type: 'line',
-            label: 'Bình quân phòng lab',
-            data: stats.map(() => this.average()),
+            label: 'Mức kỳ vọng',
+            data: stats.map(item => item.expectedAssignments),
             borderColor: dark ? '#94a3b8' : '#64748b',
             borderDash: [6, 5],
             borderWidth: 1.5,

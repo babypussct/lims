@@ -324,7 +324,7 @@
       </span>
       <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
       <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số lượt trung bình trên mỗi nhân sự trong kỳ">
-        BQ <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ averageAssignments() | number:'1.1-1' }}</strong>/người
+        Mức kỳ vọng TB <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ averageAssignments() | number:'1.1-1' }}</strong>/người
       </span>
     </div>
 
@@ -815,17 +815,16 @@
     <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">Tổng lượt</span><span class="hidden md:inline">Tổng lượt trong phạm vi</span></div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">{{ statsRangeLabel() }}</div></div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Đã tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}/{{ statsPopulationCount() }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">người có lượt / người trong thống kê</div></div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">TB/người</span><span class="hidden md:inline">Bình quân/người</span><span class="md:hidden" title="Mốc 0% để so mức trực">ⓘ</span></div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">mốc 0% để so mức trực</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">Mức kỳ vọng</span><span class="hidden md:inline">Mức kỳ vọng bình quân</span><span class="md:hidden" title="Mức kỳ vọng được tính theo tháng hiệu lực của từng nhân sự">ⓘ</span></div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">mỗi người có thể có mức kỳ vọng riêng</div></div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Ca trực</div><div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div></div>
     </div>
     <app-duty-stats-chart
       [stats]="personStats()"
-      [average]="averageAssignments()"
       [rangeLabel]="statsRangeLabel()">
     </app-duty-stats-chart>
     <section class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="hidden border-b border-slate-100 px-5 py-4 text-xs text-slate-500 md:block dark:border-slate-800 dark:text-slate-400">
-        Ca đã hủy không được tính. Nhân sự đang hoạt động chưa từng được xếp ca vẫn hiển thị với 0 lượt. “% lệch” so số lượt của từng người với bình quân trong cùng phạm vi: số dương = trực nhiều hơn, số âm = trực ít hơn.
+        Ca đã hủy không được tính. Mỗi người được tính mức kỳ vọng từ tháng đầu tiên xuất hiện trong bảng trực; người đã ngừng sử dụng kết thúc vào cuối tháng có lượt cuối. “% lệch” so lượt thực tế với mức kỳ vọng riêng: số dương = trực nhiều hơn, số âm = trực ít hơn.
       </div>
       <div class="hidden h-full min-h-0 overflow-auto custom-scrollbar md:block">
         <table class="w-full min-w-[900px] text-left text-sm">
@@ -850,7 +849,7 @@
                     [class.fa-sort]="sortColumn() !== 'total'"></i>
                 </button>
               </th>
-              <th class="px-5 py-3 text-right">So với bình quân</th>
+              <th class="px-5 py-3 text-right">So với mức kỳ vọng</th>
               <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('weekendCount')">
                 <button type="button" (click)="toggleSort('weekendCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
                   Cuối tuần
@@ -869,13 +868,13 @@
                     [class.fa-sort]="sortColumn() !== 'leadCount'"></i>
                 </button>
               </th>
-              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('activeMonthCount')">
-                <button type="button" (click)="toggleSort('activeMonthCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
-                  Số tháng
+              <th class="px-5 py-3 text-right" [attr.aria-sort]="ariaSortFor('eligibleMonthCount')">
+                <button type="button" (click)="toggleSort('eligibleMonthCount')" class="inline-flex w-full items-center justify-end gap-1 rounded-md uppercase outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                  Tháng hiệu lực
                   <i class="fa-solid" aria-hidden="true"
-                    [class.fa-sort-up]="sortColumn() === 'activeMonthCount' && sortDirection() === 'asc'"
-                    [class.fa-sort-down]="sortColumn() === 'activeMonthCount' && sortDirection() === 'desc'"
-                    [class.fa-sort]="sortColumn() !== 'activeMonthCount'"></i>
+                    [class.fa-sort-up]="sortColumn() === 'eligibleMonthCount' && sortDirection() === 'asc'"
+                    [class.fa-sort-down]="sortColumn() === 'eligibleMonthCount' && sortDirection() === 'desc'"
+                    [class.fa-sort]="sortColumn() !== 'eligibleMonthCount'"></i>
                 </button>
               </th>
               <th class="px-5 py-3" [attr.aria-sort]="ariaSortFor('lastDate')">
@@ -898,30 +897,26 @@
                 </td>
                 <td class="px-5 py-3.5 text-right text-base font-black text-indigo-600 dark:text-indigo-400">{{ stat.total }}</td>
                 <td class="px-5 py-3.5 text-right">
-                  <div class="inline-flex items-center gap-2">
-                    <span
-                      class="rounded-full px-2 py-1 text-[9px] font-black"
-                      [class]="assignmentBalanceLabel(stat.total) === 'Cân bằng'
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                        : (assignmentDeviationPercent(stat.total) > 0
-                          ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
-                          : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300')">
-                      {{ assignmentBalanceLabel(stat.total) }}
-                    </span>
-                    <span class="min-w-14 text-sm font-black"
-                      [class.text-rose-600]="assignmentDeviationPercent(stat.total) > 0"
-                      [class.text-blue-600]="assignmentDeviationPercent(stat.total) < 0"
-                      [class.text-emerald-600]="assignmentDeviationPercent(stat.total) === 0">
-                      {{ assignmentDeviationPercent(stat.total) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat.total) | number:'1.0-0' }}%
-                    </span>
-                  </div>
-                  <div class="mt-1 text-[9px] font-bold text-slate-400">
-                    {{ assignmentDifference(stat.total) > 0 ? '+' : '' }}{{ assignmentDifference(stat.total) | number:'1.1-1' }} lượt
-                  </div>
+                  @if (stat.fairnessAvailable) {
+                    <div class="inline-flex items-center gap-2">
+                      <span class="rounded-full px-2 py-1 text-[9px] font-black" [class]="assignmentBalanceClass(stat)">{{ assignmentBalanceLabel(stat) }}</span>
+                      <span class="min-w-14 text-sm font-black"
+                        [class.text-rose-600]="assignmentDeviationPercent(stat) > 0"
+                        [class.text-blue-600]="assignmentDeviationPercent(stat) < 0"
+                        [class.text-emerald-600]="assignmentDeviationPercent(stat) === 0">
+                        {{ assignmentDeviationPercent(stat) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat) | number:'1.0-0' }}%
+                      </span>
+                    </div>
+                    <div class="mt-1 text-[9px] font-bold text-slate-400">
+                      {{ assignmentDifference(stat) > 0 ? '+' : '' }}{{ assignmentDifference(stat) | number:'1.1-1' }} lượt · kỳ vọng {{ stat.expectedAssignments | number:'1.1-1' }}
+                    </div>
+                  } @else {
+                    <span class="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">Chưa đủ dữ liệu</span>
+                  }
                 </td>
                 <td class="px-5 py-3.5 text-right">{{ stat.weekendCount }}</td>
                 <td class="px-5 py-3.5 text-right">{{ stat.leadCount }}</td>
-                <td class="px-5 py-3.5 text-right">{{ stat.activeMonthCount }}</td>
+                <td class="px-5 py-3.5 text-right">{{ stat.eligibleMonthCount }}</td>
                 <td class="px-5 py-3.5 text-xs text-slate-500">{{ stat.lastDate ? formatDate(stat.lastDate) : '—' }}</td>
               </tr>
             } @empty {
@@ -937,26 +932,29 @@
               <div class="min-w-0">
                 <div class="truncate text-sm font-black text-slate-800 dark:text-slate-100">{{ index + 1 }} · {{ stat.displayName }}</div>
               </div>
-              <div class="shrink-0 text-right">
+                <div class="shrink-0 text-right">
                 <div class="text-xl font-black text-indigo-600 dark:text-indigo-300">{{ stat.total }} <span class="text-[10px] font-bold text-slate-400">lượt</span></div>
-                <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black"
-                  [class]="assignmentBalanceLabel(stat.total) === 'Cân bằng' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : (assignmentDeviationPercent(stat.total) > 0 ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300')">
-                  {{ assignmentDeviationPercent(stat.total) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat.total) | number:'1.0-0' }}% · {{ assignmentBalanceLabel(stat.total) }}
-                </span>
+                @if (stat.fairnessAvailable) {
+                  <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black" [class]="assignmentBalanceClass(stat)">
+                    {{ assignmentDeviationPercent(stat) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat) | number:'1.0-0' }}% · {{ assignmentBalanceLabel(stat) }}
+                  </span>
+                } @else {
+                  <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black" [class]="assignmentBalanceClass(stat)">Chưa đủ dữ liệu</span>
+                }
               </div>
             </div>
             <div class="mt-3 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
-              <div><span class="block text-slate-400">Bình quân</span><strong>{{ averageAssignments() | number:'1.1-1' }} lượt</strong></div>
+              <div><span class="block text-slate-400">Mức kỳ vọng</span><strong>{{ stat.fairnessAvailable ? (stat.expectedAssignments | number:'1.1-1') : '—' }} lượt</strong></div>
               <div><span class="block text-slate-400">Cuối tuần</span><strong>{{ stat.weekendCount }}</strong></div>
               <div><span class="block text-slate-400">★ Chủ trì</span><strong>{{ stat.leadCount }}</strong></div>
-              <div><span class="block text-slate-400">Hoạt động</span><strong>{{ stat.activeMonthCount }} tháng</strong></div>
+              <div><span class="block text-slate-400">Hiệu lực</span><strong>{{ stat.eligibleMonthCount }} tháng</strong></div>
             </div>
             <div class="mt-2 text-[10px] text-slate-400">Gần nhất: <strong class="text-slate-600 dark:text-slate-300">{{ stat.lastDate ? formatDate(stat.lastDate) : '—' }}</strong></div>
             <div class="mt-4">
               <div class="relative h-2 rounded-full bg-gradient-to-r from-blue-100 via-emerald-100 to-rose-100 dark:from-blue-950 dark:via-emerald-950 dark:to-rose-950">
                 <span class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm dark:border-slate-900"
                   [style.left.%]="distributionPercent(stat.total)"
-                  [class]="assignmentBalanceLabel(stat.total) === 'Cân bằng' ? 'bg-emerald-500' : (assignmentDeviationPercent(stat.total) > 0 ? 'bg-rose-500' : 'bg-blue-500')"></span>
+                  [class]="!stat.fairnessAvailable ? 'bg-slate-400' : (assignmentBalanceLabel(stat) === 'Cân bằng' ? 'bg-emerald-500' : (assignmentDeviationPercent(stat) > 0 ? 'bg-rose-500' : 'bg-blue-500'))"></span>
               </div>
               <div class="mt-1 flex justify-between text-[9px] font-bold text-slate-400"><span>Ít</span><span>Nhiều</span></div>
             </div>

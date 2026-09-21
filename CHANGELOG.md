@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.21-b01
+## Phiên bản hiện tại: v26.09.21-b02
+
+### v26.09.21-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Thống kê lượt trực đêm so sánh từng nhân sự với mức kỳ vọng theo các tháng họ thực sự có hiệu lực.
+- Giữ riêng hai hồ sơ Huỳnh và Huynh theo ID, không gộp hai người chỉ vì tên gần giống nhau.
+
+#### ✨ Tính Năng Mới
+
+- Hiển thị mức kỳ vọng riêng, phần trăm lệch, số tháng hiệu lực và đường kỳ vọng tương ứng trong thống kê, dashboard và biểu đồ.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Mỗi tháng phân bổ tổng lượt trực cho đúng nhóm nhân sự có hiệu lực trong tháng đó; nhân sự mới bắt đầu từ đầu tháng xuất hiện đầu tiên.
+- Nhân sự ngừng sử dụng kết thúc hiệu lực vào cuối tháng có lượt cuối; cùng một công thức được dùng cho trang thống kê, dashboard và gợi ý xếp ca.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ cách chia tổng lượt cho toàn bộ số người trong lịch sử, vốn làm sai lệch phần trăm So với bình quân khi có người mới tham gia hoặc đã nghỉ.
+- Bổ sung kiểm thử hồi quy cho mốc bắt đầu, mốc kết thúc, nhân sự chưa đủ dữ liệu và hai tên Huỳnh/Huynh.
 
 ### v26.09.21-b01
 

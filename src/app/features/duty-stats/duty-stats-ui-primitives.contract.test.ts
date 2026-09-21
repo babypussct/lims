@@ -130,7 +130,7 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /Xem thống kê đầy đủ/);
   assert.match(template, /@for \(stat of personStats\(\); track stat\.staffId/);
   assert.match(template, /avatarFor\(stat\.displayName, stat\.linkedUserUid\)/);
-  assert.match(component, /assignmentDeviationBadgeClass\(total: number\)/);
+  assert.match(component, /assignmentDeviationBadgeClass\(stat: DutyPersonStat\)/);
   assert.doesNotMatch(template, /initialsFor\(stat\.displayName\)/);
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
   assert.doesNotMatch(template, /startTime|18:00/);
@@ -138,7 +138,7 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.match(template, /2xl:h-\[460px\]/);
   assert.match(template, /max-h-\[300px\]/);
   assert.match(template, /xl:max-h-none/);
-  assert.match(template, /so bình quân/);
+  assert.match(template, /so mức kỳ vọng/);
   assert.doesNotMatch(template, /Ca sắp tới/);
 });
 
@@ -149,12 +149,12 @@ test('duty statistics support selected period, full year and all-time balance co
   assert.match(component, /type DutyStatsRangeMode = 'selection' \| 'year' \| 'all'/);
   assert.match(component, /readonly statsRangeMode = signal<DutyStatsRangeMode>\('selection'\)/);
   assert.match(component, /aggregateDutyRosterById/);
-  assert.match(component, /assignmentDeviationPercent\(total: number\)/);
+  assert.match(component, /assignmentDeviationPercent\(stat: DutyPersonStat\)/);
   assert.match(component, /start: '2000-01-01', end: '2200-12-31'/);
   assert.match(template, /Phạm vi thống kê/);
   assert.match(template, /Cả năm \{\{ selectedYear\(\) \}\}/);
   assert.match(template, /Toàn bộ/);
-  assert.match(template, /So với bình quân/);
+  assert.match(template, /So với mức kỳ vọng/);
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
 });
 
@@ -170,6 +170,8 @@ test('M4 statistics chart stacks weekday and weekend counts while keeping lead c
   assert.match(chart, /import\('chart\.js\/auto'\)/);
   assert.match(chart, /data: stats\.map\(item => item\.weekdayCount\)/);
   assert.match(chart, /data: stats\.map\(item => item\.weekendCount\)/);
+  assert.match(chart, /label: 'Mức kỳ vọng'/);
+  assert.match(chart, /data: stats\.map\(item => item\.expectedAssignments\)/);
   assert.match(chart, /borderDash: \[6, 5\]/);
   assert.match(chart, /★ Chủ trì/);
   assert.match(chartTemplate, /Ngày thường \+ cuối tuần = tổng lượt/);

@@ -11,6 +11,7 @@ import {
   AppToolbarComponent,
 } from '../../shared/components/ui';
 import type {
+  DutyPersonStat,
   DutyScheduleDraft,
   DutyScheduleEntry,
   DutyStaff,
@@ -49,7 +50,7 @@ type DutyScheduleLayout = 'list' | 'calendar' | 'week';
 type DutyBatchScope = 'all' | 'weekdays' | 'weekends';
 type DutyStatsRangeMode = 'selection' | 'year' | 'all';
 type DutyMobilePeriodMode = 'month' | 'year' | 'all';
-type DutyStatsSortColumn = 'total' | 'mondayCount' | 'weekendCount' | 'leadCount' | 'activeMonthCount' | 'lastDate' | 'displayName';
+type DutyStatsSortColumn = 'total' | 'mondayCount' | 'weekendCount' | 'leadCount' | 'eligibleMonthCount' | 'lastDate' | 'displayName';
 type SortDirection = 'asc' | 'desc';
 interface DutyCalendarCell {
   date: string;
@@ -225,8 +226,12 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly uniqueAssignedPeople = computed(() => this.personStats().filter(item => item.total > 0).length);
   readonly statsPopulationCount = computed(() => this.personStats().length);
   readonly averageAssignments = computed(() => {
-    const people = this.statsPopulationCount();
-    return people === 0 ? 0 : this.totalAssignments() / people;
+    const expected = this.personStats()
+      .filter(item => item.fairnessAvailable)
+      .map(item => item.expectedAssignments);
+    return expected.length === 0
+      ? 0
+      : expected.reduce((total, value) => total + value, 0) / expected.length;
   });
   readonly pendingSwapCount = computed(() => this.dutySwap.pendingCount());
   readonly actionableSwapCount = computed(() => this.dutySwap.requests().filter(request =>
@@ -565,20 +570,32 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     return Math.max(0, Math.min(100, ((total - min) / (max - min)) * 100));
   }
 
-  assignmentDifference(total: number): number {
-    return total - this.averageAssignments();
+  assignmentDifference(stat: DutyPersonStat): number {
+    return stat.fairnessAvailable
+      ? stat.total - stat.expectedAssignments
+      : 0;
   }
 
-  assignmentDeviationPercent(total: number): number {
-    const average = this.averageAssignments();
-    if (average === 0) return 0;
-    return ((total - average) / average) * 100;
+  assignmentDeviationPercent(stat: DutyPersonStat): number {
+    return stat.fairnessAvailable ? stat.deviationPercent : 0;
   }
 
-  assignmentBalanceLabel(total: number): 'Cân bằng' | 'Nhiều hơn' | 'Ít hơn' {
-    const deviation = this.assignmentDeviationPercent(total);
+  assignmentBalanceLabel(stat: DutyPersonStat): 'Cân bằng' | 'Nhiều hơn' | 'Ít hơn' | 'Chưa đủ dữ liệu' {
+    if (!stat.fairnessAvailable) return 'Chưa đủ dữ liệu';
+    const deviation = this.assignmentDeviationPercent(stat);
     if (Math.abs(deviation) < 10) return 'Cân bằng';
     return deviation > 0 ? 'Nhiều hơn' : 'Ít hơn';
+  }
+
+  assignmentBalanceClass(stat: DutyPersonStat): string {
+    if (!stat.fairnessAvailable) {
+      return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
+    }
+    return this.assignmentBalanceLabel(stat) === 'Cân bằng'
+      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+      : (this.assignmentDeviationPercent(stat) > 0
+        ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+        : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300');
   }
 
   openNewStaff(): void {

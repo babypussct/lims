@@ -61,6 +61,12 @@ export interface DutyPersonStat {
   leadCount: number;
   activeMonthCount: number;
   lastDate: string;
+  expectedAssignments: number;
+  deviationPercent: number;
+  eligibleMonthCount: number;
+  fairnessAvailable: boolean;
+  effectiveFromMonth: string;
+  effectiveToMonth: string;
 }
 
 export type DutyRecommendationTier = 'recommended' | 'balanced' | 'consider' | 'high';

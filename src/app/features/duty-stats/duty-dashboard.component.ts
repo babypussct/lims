@@ -5,7 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 import { AppEmptyStateComponent } from '../../shared/components/ui';
 import { getAvatarUrl } from '../../shared/utils/utils';
-import type { DutyScheduleEntry } from './duty-schedule.model';
+import type { DutyPersonStat, DutyScheduleEntry } from './duty-schedule.model';
 import { DutyScheduleService } from './duty-schedule.service';
 import { DutyShiftSwapService } from './duty-shift-swap.service';
 import {
@@ -101,15 +101,19 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly uniqueAssignedPeople = computed(() => this.personStats().filter(item => item.total > 0).length);
   readonly statsPopulationCount = computed(() => this.personStats().length);
   readonly averageAssignments = computed(() => {
-    const people = this.statsPopulationCount();
-    return people === 0 ? 0 : this.monthAssignmentCount() / people;
+    const expected = this.personStats()
+      .filter(item => item.fairnessAvailable)
+      .map(item => item.expectedAssignments);
+    return expected.length === 0
+      ? 0
+      : expected.reduce((total, value) => total + value, 0) / expected.length;
   });
   readonly unassignedPeopleCount = computed(() =>
     this.personStats().filter(item => item.total === 0).length,
   );
   readonly balancedPeopleCount = computed(() => {
     if (this.averageAssignments() === 0) return 0;
-    return this.personStats().filter(item => Math.abs(this.assignmentDeviationPercent(item.total)) < 10).length;
+    return this.personStats().filter(item => item.fairnessAvailable && Math.abs(item.deviationPercent) < 10).length;
   });
   readonly maxAssignments = computed(() =>
     Math.max(0, ...this.personStats().map(item => item.total)),
@@ -193,20 +197,22 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     ].filter(Boolean).join('. ');
   }
 
-  assignmentDeviationPercent(total: number): number {
-    const average = this.averageAssignments();
-    if (average === 0) return 0;
-    return ((total - average) / average) * 100;
+  assignmentDeviationPercent(stat: DutyPersonStat): number {
+    return stat.fairnessAvailable ? stat.deviationPercent : 0;
   }
 
-  assignmentDeviationLabel(total: number): string {
-    const deviation = this.assignmentDeviationPercent(total);
+  assignmentDeviationLabel(stat: DutyPersonStat): string {
+    if (!stat.fairnessAvailable) return 'Chưa đủ dữ liệu';
+    const deviation = this.assignmentDeviationPercent(stat);
     if (Math.abs(deviation) < 10) return 'Cân bằng';
     return deviation > 0 ? 'Nhiều hơn' : 'Ít hơn';
   }
 
-  assignmentDeviationBadgeClass(total: number): string {
-    const deviation = this.assignmentDeviationPercent(total);
+  assignmentDeviationBadgeClass(stat: DutyPersonStat): string {
+    if (!stat.fairnessAvailable) {
+      return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
+    }
+    const deviation = this.assignmentDeviationPercent(stat);
     if (Math.abs(deviation) < 10) {
       return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300';
     }
@@ -235,9 +241,10 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
 
   myBalanceProgressPercent(): number {
     const myCount = this.myMonthCount();
-    const average = this.averageAssignments();
-    if (myCount === null || average === 0) return 0;
-    return Math.min(100, (myCount / average) * 100);
+    const myStaffId = this.linkedStaff()?.id;
+    const expected = this.personStats().find(item => item.staffId === myStaffId)?.expectedAssignments || 0;
+    if (myCount === null || expected === 0) return 0;
+    return Math.min(100, (myCount / expected) * 100);
   }
 
   isToday(dateKey: string): boolean {

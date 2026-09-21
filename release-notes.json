@@ -1,18 +1,18 @@
 {
-  "title": "Chuẩn hóa quyền Superadmin và tăng cường kiểm soát quản trị",
+  "title": "Điều chỉnh thống kê lượt trực theo thời gian hiệu lực nhân sự",
   "highlights": [
-    "Chuẩn hóa Superadmin thành tài khoản Manager có cờ bảo vệ tin cậy, dùng cùng một định nghĩa trên giao diện và lớp bảo mật Firestore.",
-    "Tăng cường bảo vệ tài khoản quản trị gốc để dữ liệu quyền sai lệch không thể vô tình nhận đặc quyền Superadmin."
+    "Thống kê lượt trực đêm so sánh từng nhân sự với mức kỳ vọng theo các tháng họ thực sự có hiệu lực.",
+    "Giữ riêng hai hồ sơ Huỳnh và Huynh theo ID, không gộp hai người chỉ vì tên gần giống nhau."
   ],
   "features": [
-    "Bổ sung công cụ quản trị tin cậy để kiểm tra, cấp và thu hồi Superadmin theo UID với bước xác nhận rõ ràng."
+    "Hiển thị mức kỳ vọng riêng, phần trăm lệch, số tháng hiệu lực và đường kỳ vọng tương ứng trong thống kê, dashboard và biểu đồ."
   ],
   "improvements": [
-    "Các màn hình và dịch vụ dùng chung kiểm tra Manager/Superadmin thay vì tự kiểm tra role rải rác.",
-    "Bổ sung tài liệu vận hành và bất biến bảo mật cho việc quản lý Superadmin."
+    "Mỗi tháng phân bổ tổng lượt trực cho đúng nhóm nhân sự có hiệu lực trong tháng đó; nhân sự mới bắt đầu từ đầu tháng xuất hiện đầu tiên.",
+    "Nhân sự ngừng sử dụng kết thúc hiệu lực vào cuối tháng có lượt cuối; cùng một công thức được dùng cho trang thống kê, dashboard và gợi ý xếp ca."
   ],
   "fixes": [
-    "Cờ protectedAdmin chỉ cấp đặc quyền Superadmin khi tài khoản đồng thời có role Manager.",
-    "Bổ sung kiểm thử Firestore Rules để ngăn profile Staff có protectedAdmin nhận quyền quản trị cao nhất."
+    "Loại bỏ cách chia tổng lượt cho toàn bộ số người trong lịch sử, vốn làm sai lệch phần trăm So với bình quân khi có người mới tham gia hoặc đã nghỉ.",
+    "Bổ sung kiểm thử hồi quy cho mốc bắt đầu, mốc kết thúc, nhân sự chưa đủ dữ liệu và hai tên Huỳnh/Huynh."
   ]
 }

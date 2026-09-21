@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.21-b01",
-    "title": "Chuẩn hóa quyền Superadmin và tăng cường kiểm soát quản trị",
+    "version": "v26.09.21-b02",
+    "title": "Điều chỉnh thống kê lượt trực theo thời gian hiệu lực nhân sự",
     "features": [
-      "Chuẩn hóa Superadmin thành tài khoản Manager có cờ bảo vệ tin cậy, dùng cùng một định nghĩa trên giao diện và lớp bảo mật Firestore.",
-      "Tăng cường bảo vệ tài khoản quản trị gốc để dữ liệu quyền sai lệch không thể vô tình nhận đặc quyền Superadmin.",
-      "Bổ sung công cụ quản trị tin cậy để kiểm tra, cấp và thu hồi Superadmin theo UID với bước xác nhận rõ ràng.",
-      "Các màn hình và dịch vụ dùng chung kiểm tra Manager/Superadmin thay vì tự kiểm tra role rải rác.",
-      "Bổ sung tài liệu vận hành và bất biến bảo mật cho việc quản lý Superadmin."
+      "Thống kê lượt trực đêm so sánh từng nhân sự với mức kỳ vọng theo các tháng họ thực sự có hiệu lực.",
+      "Giữ riêng hai hồ sơ Huỳnh và Huynh theo ID, không gộp hai người chỉ vì tên gần giống nhau.",
+      "Hiển thị mức kỳ vọng riêng, phần trăm lệch, số tháng hiệu lực và đường kỳ vọng tương ứng trong thống kê, dashboard và biểu đồ.",
+      "Mỗi tháng phân bổ tổng lượt trực cho đúng nhóm nhân sự có hiệu lực trong tháng đó; nhân sự mới bắt đầu từ đầu tháng xuất hiện đầu tiên.",
+      "Nhân sự ngừng sử dụng kết thúc hiệu lực vào cuối tháng có lượt cuối; cùng một công thức được dùng cho trang thống kê, dashboard và gợi ý xếp ca."
     ]
   },
   "assetGroups": [
