@@ -138,6 +138,13 @@ export class StateService implements OnDestroy {
     );
   }
 
+  private get pendingRequestsDeltaCacheKey(): string {
+    return buildScopedDeltaKey(
+      `lims_pending_requests_cache_${this.fb.APP_ID}`,
+      this.auth.getDeltaCacheScope()
+    );
+  }
+
   /** Publish a committed inventory mutation to the active DeltaSync projection. */
   publishInventoryChanges(changed: InventoryItem[], deletedIds: string[] = []): void {
     const key = this.inventoryDeltaCacheKey;
@@ -193,6 +200,20 @@ export class StateService implements OnDestroy {
       (timestampToMillis(b.timestamp ?? b.lastUpdated) ?? 0) -
       (timestampToMillis(a.timestamp ?? a.lastUpdated) ?? 0)
     ));
+
+    const pendingKey = this.pendingRequestsDeltaCacheKey;
+    if (this.deltaSync.getSingletonStatus(pendingKey)) {
+      const pendingChanges = changed.filter(request =>
+        request.status === 'pending' && !request._isDeleted
+      );
+      const pendingRemovals = [
+        ...deletedIds,
+        ...changed
+          .filter(request => request.status !== 'pending' || request._isDeleted)
+          .map(request => request.id)
+      ];
+      this.deltaSync.mergeSingletonCache<Request>(pendingKey, pendingChanges, pendingRemovals);
+    }
 
     deleted.forEach(id => {
       this.approvedRecentRequests.delete(id);
@@ -520,29 +541,31 @@ export class StateService implements OnDestroy {
     }
 
 
-    // 3. Requests Listeners
+    // 3. Pending requests — seed the bounded pending projection once, then
+    // listen globally by lastUpdated so pending -> approved/rejected transitions
+    // remove stale cached rows without rereading up to 100 pending docs/login.
     if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
-      const requestsPath = `artifacts/${this.fb.APP_ID}/requests`;
-      let isFirstRequestsSnapshot = true;
-      const reqSub = onSnapshot(query(
-        collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'),
-        where('status', '==', 'pending'),
-        orderBy('timestamp', 'desc'),
-        // Chỉ cần các yêu cầu đang chờ xử lý gần nhất trên bảng điều hành.
-        // Không để lịch sử pending cũ biến listener nền thành truy vấn không giới hạn.
-        limit(100)
-      ),
-        (s) => {
-          this.readMonitor.record(
-            'onSnapshot',
-            requestsPath,
-            isFirstRequestsSnapshot
-              ? s.size
-              : s.docChanges().filter(change => change.type !== 'removed').length,
-            { phase: isFirstRequestsSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache }
-          );
-          isFirstRequestsSnapshot = false;
-          const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); if (!isCurrentInit()) return; this.requests.set(items); }, handleError('Requests'));
+      const reqSub = this.deltaSync.startSingletonListener<Request>({
+        cacheKey: this.pendingRequestsDeltaCacheKey,
+        cursorKey: buildScopedDeltaKey(
+          `lims_pending_requests_cursor_${this.fb.APP_ID}`,
+          this.auth.getDeltaCacheScope()
+        ),
+        collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
+        maxCacheSize: 100,
+        orderByField: 'timestamp',
+        orderDirection: 'desc',
+        queryConstraints: [where('status', '==', 'pending')],
+        initialOrderByField: 'timestamp',
+        initialOrderDirection: 'desc',
+        // The initial query is status-filtered, but deltas must see every status
+        // transition. DeltaSync adds the lastUpdated cursor constraint itself.
+        listenerQueryConstraints: [],
+        isDeletedFn: request => request._isDeleted === true || request.status !== 'pending'
+      }, (items) => {
+        if (!isCurrentInit()) return;
+        this.requests.set(items);
+      });
       addListener(reqSub);
     }
 
@@ -970,6 +993,7 @@ export class StateService implements OnDestroy {
   // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
   private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
   private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
+  private latestSystemConfig: Record<string, unknown> | null = null;
 
   private applyFeatureRolloutConfig(config: Record<string, unknown>): void {
     this.activityFeedV2Configured.set(resolveActivityFeedEnabled(config['activityFeedV2']));
@@ -980,6 +1004,30 @@ export class StateService implements OnDestroy {
     this.notificationEventSyncV2CanaryUids.set(
       normalizeFeatureCanaryUids(config['notificationEventSyncV2CanaryUids']),
     );
+  }
+
+  private applySystemConfig(config: Record<string, unknown>): void {
+    this.latestSystemConfig = { ...config };
+    if (config['avatarStyle']) this.avatarStyle.set(config['avatarStyle'] as string);
+    if (config['maintenanceMode'] !== undefined) this.maintenanceMode.set(config['maintenanceMode'] as boolean);
+    if (config['maintenanceMessage']) this.maintenanceMessage.set(config['maintenanceMessage'] as string);
+    if (config['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(config['showLockedFeatures'] as boolean);
+    this.applyFeatureRolloutConfig(config);
+    this.maintenanceScheduledTime.set((config['maintenanceScheduledTime'] as string | null | undefined) || null);
+  }
+
+  private persistConfigCache(partial: Record<string, unknown>): void {
+    try {
+      let current: Record<string, unknown> = {};
+      const raw = localStorage.getItem(this.CONFIG_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') current = parsed as Record<string, unknown>;
+      }
+      localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify({ ...current, ...partial }));
+    } catch (e) {
+      console.warn('Config cache write error:', e);
+    }
   }
 
   async loadConfig(initGeneration?: number): Promise<void> {
@@ -1005,13 +1053,9 @@ export class StateService implements OnDestroy {
         this.sysConfigSub = onSnapshot(doc(this.fb.db, base, 'system'), (snap) => {
           if (!isLoadActive()) return;
           if (snap.exists()) {
-            const d = snap.data();
-            if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
-            if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
-            if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
-            if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
-            this.applyFeatureRolloutConfig(d);
-            this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
+            const d = snap.data() as Record<string, unknown>;
+            this.applySystemConfig(d);
+            this.persistConfigCache({ system: d });
           }
         });
       }
@@ -1023,16 +1067,14 @@ export class StateService implements OnDestroy {
       }
 
       // Nếu không có cache, hoặc Server báo có phiên bản cấu hình mới => Tải lại toàn bộ
-      const [printSnap, safetySnap, catSnap, sysSnap] = await Promise.all([
+      const [printSnap, safetySnap, catSnap] = await Promise.all([
         getDoc(doc(this.fb.db, base, 'print')),
         getDoc(doc(this.fb.db, base, 'safety')),
         getDoc(doc(this.fb.db, base, 'categories')),
-        getDoc(doc(this.fb.db, base, 'system')),
       ]);
       this.readMonitor.record('getDoc', `${base}/print`, 1);
       this.readMonitor.record('getDoc', `${base}/safety`, 1);
       this.readMonitor.record('getDoc', `${base}/categories`, 1);
-      this.readMonitor.record('getDoc', `${base}/system`, 1);
       if (!isLoadActive()) return;
 
       if (printSnap.exists()) this.printConfig.set(printSnap.data() as PrintConfig);
@@ -1040,25 +1082,13 @@ export class StateService implements OnDestroy {
       if (catSnap.exists() && catSnap.data()?.['items']) {
         this.categories.set(catSnap.data()!['items'] as CategoryItem[]);
       }
-      if (sysSnap.exists()) {
-        const d = sysSnap.data()!;
-        // systemVersion is strictly controlled by package.json build sync
-        if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
-        if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
-        if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
-        if (d['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(d['showLockedFeatures']);
-        this.applyFeatureRolloutConfig(d);
-        this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
-      }
-
       // Lưu lại vào trình duyệt cho lần sau
-      const cache = {
+      this.persistConfigCache({
         print: printSnap.exists() ? printSnap.data() : null,
         safety: safetySnap.exists() ? safetySnap.data() : null,
         categories: catSnap.exists() ? catSnap.data() : null,
-        system: sysSnap.exists() ? sysSnap.data() : null,
-      };
-      localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(cache));
+        ...(this.latestSystemConfig ? { system: this.latestSystemConfig } : {}),
+      });
       localStorage.setItem(this.CONFIG_VERSION_KEY, serverVersion.toString());
     } catch (e) { console.warn('Config load error:', e); }
   }
@@ -1072,12 +1102,13 @@ export class StateService implements OnDestroy {
       if (cache.safety) this.safetyConfig.set(cache.safety as SafetyConfig);
       if (cache.categories?.['items']) this.categories.set(cache.categories['items'] as CategoryItem[]);
       // systemVersion is strictly controlled by package.json build sync
-      if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
-      if (cache.system?.['maintenanceMode'] !== undefined) this.maintenanceMode.set(cache.system['maintenanceMode']);
-      if (cache.system?.['maintenanceMessage']) this.maintenanceMessage.set(cache.system['maintenanceMessage']);
-      if (cache.system?.['showLockedFeatures'] !== undefined) this.showLockedFeatures.set(cache.system['showLockedFeatures']);
-      this.applyFeatureRolloutConfig((cache.system ?? {}) as Record<string, unknown>);
-      this.maintenanceScheduledTime.set(cache.system?.['maintenanceScheduledTime'] || null);
+      if (cache.system) {
+        this.applySystemConfig(cache.system as Record<string, unknown>);
+      } else {
+        this.latestSystemConfig = null;
+        this.applyFeatureRolloutConfig({});
+        this.maintenanceScheduledTime.set(null);
+      }
       return true;
     } catch (_) { return false; /* ignore stale/corrupt cache */ }
   }
@@ -1184,6 +1215,17 @@ export class StateService implements OnDestroy {
         if (!this.auth.currentUser() || !(this.auth.hasPermission('standard_view') || this.auth.canViewReports())) {
           return { complete: false, loaded: 0, reads: 0 };
         }
+        const { StandardCacheService } = await import('../../features/standards/services/standard-cache.service');
+        if (initGeneration !== this.initGeneration) return { complete: false, loaded: 0, reads: 0 };
+        const standardCache = this.injector.get(StandardCacheService);
+        const completeActive = !forceRefresh
+          ? standardCache.getCompleteActiveCatalogue(this.ON_DEMAND_CACHE_TTL_MS)
+          : null;
+        if (completeActive) {
+          this.standards.set(completeActive);
+          this.referenceStandardsLoadedAt = Date.now();
+          return { complete: true, loaded: completeActive.length, reads: 0 };
+        }
         const cacheKey = buildScopedDeltaKey(
           'lims_reference_standards_cache_' + this.fb.APP_ID,
           this.auth.getDeltaCacheScope()
@@ -1227,6 +1269,7 @@ export class StateService implements OnDestroy {
           .filter(standard => !standard._isDeleted && standard.status !== 'DELETED')
           .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
         this.standards.set(visibleStandards);
+        standardCache.publishCompleteActiveCatalogue(visibleStandards);
         this.referenceStandardsLoadedAt = Date.now();
         return { complete: true, loaded: visibleStandards.length, reads };
       } catch (e) {

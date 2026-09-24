@@ -14,6 +14,13 @@ export interface DeltaSyncConfig {
   orderByField?: string;
   orderDirection?: 'asc' | 'desc';
   queryConstraints?: QueryConstraint[];
+  /**
+   * Optional constraints used only by the live delta listener. When omitted,
+   * queryConstraints are reused for both the initial fetch and the listener.
+   * An explicit [] lets callers seed a filtered projection once, then listen
+   * to the whole collection so status transitions can evict stale cached rows.
+   */
+  listenerQueryConstraints?: QueryConstraint[];
   /** Initial scan without orderBy, for legacy collections where the sort field may be missing. */
   initialCollectionScan?: boolean;
   /** Field used to select the initial batch. Defaults to lastUpdated for cursor safety. */
@@ -30,6 +37,12 @@ export interface DeltaSyncConfig {
    * Mặc định: (doc) => doc._isDeleted === true
    */
   isDeletedFn?: (doc: any) => boolean;
+}
+
+export function resolveDeltaListenerConstraints(
+  config: Pick<DeltaSyncConfig, 'queryConstraints' | 'listenerQueryConstraints'>
+): QueryConstraint[] {
+  return config.listenerQueryConstraints ?? config.queryConstraints ?? [];
 }
 
 export type DeltaSyncPhase = 'initial-fetch' | 'listener' | 'cache-read' | 'cache-write';
@@ -218,10 +231,61 @@ export function buildScopedDeltaKey(baseKey: string, authScope: string): string 
   return `${baseKey}__ds3__${stableScopeHash(authScope)}`;
 }
 
+export function getDeltaStorageScopeId(key: string): string | null {
+  const marker = '__ds3__';
+  const markerIndex = key.lastIndexOf(marker);
+  if (markerIndex < 0) return null;
+  const scopedPart = key.slice(markerIndex + marker.length);
+  const separatorIndex = scopedPart.indexOf('__');
+  const scopeId = separatorIndex >= 0 ? scopedPart.slice(0, separatorIndex) : scopedPart;
+  return scopeId || null;
+}
+
+export function buildDeltaStorageEvictionPlan(
+  registeredKeys: string[],
+  protectedKeys: Iterable<string>,
+  currentScopeKey: string
+): { foreignScope: string[]; inactiveCurrentScope: string[] } {
+  const protectedSet = new Set(protectedKeys);
+  const currentScopeId = getDeltaStorageScopeId(currentScopeKey);
+  const foreignScope: string[] = [];
+  const inactiveCurrentScope: string[] = [];
+
+  registeredKeys.forEach(key => {
+    if (!key || protectedSet.has(key)) return;
+    const scopeId = getDeltaStorageScopeId(key);
+    if (!currentScopeId || scopeId !== currentScopeId) foreignScope.push(key);
+    else inactiveCurrentScope.push(key);
+  });
+
+  return { foreignScope, inactiveCurrentScope };
+}
+
 export function getDeltaErrorCode(error: unknown): string {
-  const raw = String((error as DeltaErrorLike | null)?.code || (error as DeltaErrorLike | null)?.name || 'unknown');
+  const errorLike = error as DeltaErrorLike | null;
+  const code = errorLike?.code;
+  const name = errorLike?.name;
+  const raw = String(
+    (typeof code === 'string' && code ? code : undefined)
+    || ((code === 22 || code === 1014) && name ? name : undefined)
+    || code
+    || name
+    || 'unknown'
+  );
   const slashIndex = raw.lastIndexOf('/');
   return (slashIndex >= 0 ? raw.slice(slashIndex + 1) : raw).toLowerCase();
+}
+
+export function isDeltaStorageQuotaError(error: unknown): boolean {
+  const errorLike = error as (DeltaErrorLike & { message?: unknown }) | null;
+  const code = Number(errorLike?.code);
+  const name = String(errorLike?.name || '').toLowerCase();
+  const message = String(errorLike?.message || '').toLowerCase();
+  return code === 22
+    || code === 1014
+    || name === 'quotaexceedederror'
+    || name === 'ns_error_dom_quota_reached'
+    || message.includes('quota');
 }
 
 export function isRetryableDeltaError(error: unknown): boolean {
@@ -278,6 +342,8 @@ export class DeltaSyncService {
   private readMonitor = inject(FirestoreReadMonitor);
   private _singletons = new Map<string, SingletonEntry>();
   private _diagnostics: DeltaSyncDiagnostic[] = [];
+  private _persistenceDisabledKeys = new Set<string>();
+  private _volatileCursors = new Map<string, number>();
 
   constructor() {
     this._purgeLegacyUnscopedCachesOnce();
@@ -492,6 +558,8 @@ export class DeltaSyncService {
       localStorage.removeItem(this._syncAtKey(cursorKey));
       this._unregisterStorageKeys(cacheKey, cursorKey, this._syncAtKey(cursorKey));
     } catch {}
+    this._persistenceDisabledKeys.delete(cacheKey);
+    this._volatileCursors.delete(cursorKey);
   }
 
   public clearAllPersistentCaches(): void {
@@ -507,6 +575,8 @@ export class DeltaSyncService {
       localStorage.removeItem(CACHE_REGISTRY_KEY);
       this._purgeLegacyUnscopedCaches();
     } catch {}
+    this._persistenceDisabledKeys.clear();
+    this._volatileCursors.clear();
   }
 
   public getCache<T>(key: string): T[] {
@@ -571,16 +641,11 @@ export class DeltaSyncService {
     }
 
     const published = entry?.memCache ?? items;
-    try {
-      localStorage.setItem(key, JSON.stringify(published));
-    } catch (error) {
-      this._recordDiagnostic(
-        entry?.config ?? { cacheKey: key, cursorKey: '', collectionPath: 'local-cache' },
-        error,
-        'cache-write',
-        0,
-        false
-      );
+    if (!this._persistenceDisabledKeys.has(key)) {
+      const config = entry?.config ?? { cacheKey: key, cursorKey: '', collectionPath: 'local-cache' };
+      this._persistWithQuotaRecovery(config, () => {
+        localStorage.setItem(key, JSON.stringify(published));
+      });
     }
     return [...published];
   }
@@ -713,7 +778,7 @@ export class DeltaSyncService {
     onReady?: () => void
   ): () => void {
     const colRef = collection(this.fb, config.collectionPath);
-    const constraints = config.queryConstraints || [];
+    const constraints = resolveDeltaListenerConstraints(config);
     const snapshotQuery = cursorMillis > 0
       ? query(
           colRef,
@@ -824,16 +889,17 @@ export class DeltaSyncService {
     const storedCursor = this._loadCursor(config.cursorKey, config);
     const cursorMillis = getMaxDeltaCursorMillis(items, observedCursorMillis, storedCursor);
     sortAndTrimDeltaItems(items, sortField, sortDirection, maxCacheSize);
+    if (cursorMillis > 0) this._volatileCursors.set(config.cursorKey, cursorMillis);
 
-    try {
+    if (this._persistenceDisabledKeys.has(config.cacheKey)) return cursorMillis;
+
+    this._persistWithQuotaRecovery(config, () => {
       localStorage.setItem(config.cacheKey, JSON.stringify(items));
       if (cursorMillis > 0) {
         localStorage.setItem(config.cursorKey, cursorMillis.toString());
         localStorage.setItem(this._syncAtKey(config.cursorKey), Date.now().toString());
       }
-    } catch (error) {
-      this._recordDiagnostic(config, error, 'cache-write', 0, false);
-    }
+    });
     return cursorMillis;
   }
 
@@ -852,25 +918,105 @@ export class DeltaSyncService {
   }
 
   private _loadCursor(key: string, config?: DeltaSyncConfig): number {
+    const volatileCursor = this._volatileCursors.get(key);
+    if (volatileCursor && volatileCursor > 0) return volatileCursor;
     try {
       const data = localStorage.getItem(key);
       if (!data) return 0;
       const parsed = sanitizeDeltaCursorMillis(data);
       if (parsed === 0 && Number(data) !== 0) throw new Error('Delta cursor is invalid or too far in the future.');
+      if (parsed > 0) this._volatileCursors.set(key, parsed);
       return parsed;
     } catch (error) {
       try { localStorage.removeItem(key); } catch {}
+      this._volatileCursors.delete(key);
       if (config) this._recordDiagnostic(config, error, 'cache-read', 0, false);
       return 0;
     }
   }
 
-  private _clearPersistentData(config: DeltaSyncConfig): void {
+  private _clearPersistentData(config: DeltaSyncConfig, clearVolatileCursor = true): void {
     try {
       localStorage.removeItem(config.cacheKey);
-      localStorage.removeItem(config.cursorKey);
-      localStorage.removeItem(this._syncAtKey(config.cursorKey));
+      if (config.cursorKey) {
+        localStorage.removeItem(config.cursorKey);
+        localStorage.removeItem(this._syncAtKey(config.cursorKey));
+      }
     } catch {}
+    if (clearVolatileCursor && config.cursorKey) this._volatileCursors.delete(config.cursorKey);
+  }
+
+  private _handlePersistentCacheWriteFailure(config: DeltaSyncConfig, error: unknown): void {
+    if (isDeltaStorageQuotaError(error)) {
+      const firstFailure = !this._persistenceDisabledKeys.has(config.cacheKey);
+      this._persistenceDisabledKeys.add(config.cacheKey);
+      // A cache without its matching cursor can make the next session skip data.
+      // Keep the current cursor in memory for this tab and force a clean fetch next load.
+      this._clearPersistentData(config, false);
+      if (firstFailure) this._recordDiagnostic(config, error, 'cache-write', 0, false);
+      return;
+    }
+    this._recordDiagnostic(config, error, 'cache-write', 0, false);
+  }
+
+  private _persistWithQuotaRecovery(config: DeltaSyncConfig, write: () => void): boolean {
+    try {
+      write();
+      return true;
+    } catch (initialError) {
+      if (!isDeltaStorageQuotaError(initialError)) {
+        this._handlePersistentCacheWriteFailure(config, initialError);
+        return false;
+      }
+
+      const protectedKeys = new Set<string>([
+        config.cacheKey,
+        config.cursorKey,
+        config.cursorKey ? this._syncAtKey(config.cursorKey) : ''
+      ].filter(Boolean));
+      this._singletons.forEach(entry => {
+        protectedKeys.add(entry.config.cacheKey);
+        if (entry.config.cursorKey) {
+          protectedKeys.add(entry.config.cursorKey);
+          protectedKeys.add(this._syncAtKey(entry.config.cursorKey));
+        }
+      });
+
+      const plan = buildDeltaStorageEvictionPlan(
+        this._loadKnownStorageKeys(),
+        protectedKeys,
+        config.cacheKey || config.cursorKey
+      );
+
+      let lastError: unknown = initialError;
+      for (const candidates of [plan.foreignScope, plan.inactiveCurrentScope]) {
+        if (candidates.length === 0) continue;
+        this._evictPersistentKeys(candidates);
+        try {
+          write();
+          this._registerStorageKeys(
+            config.cacheKey,
+            config.cursorKey,
+            config.cursorKey ? this._syncAtKey(config.cursorKey) : ''
+          );
+          return true;
+        } catch (retryError) {
+          lastError = retryError;
+          if (!isDeltaStorageQuotaError(retryError)) break;
+        }
+      }
+
+      this._handlePersistentCacheWriteFailure(config, lastError);
+      return false;
+    }
+  }
+
+  private _evictPersistentKeys(keys: string[]): void {
+    if (keys.length === 0) return;
+    try {
+      keys.forEach(key => localStorage.removeItem(key));
+    } catch {}
+    this._unregisterStorageKeys(...keys);
   }
 
   private _syncAtKey(cursorKey: string): string {
@@ -954,6 +1100,17 @@ export class DeltaSyncService {
     } catch {
       return [];
     }
+  }
+
+  private _loadKnownStorageKeys(): string[] {
+    const keys = new Set(this._loadStorageRegistry());
+    try {
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (key?.includes('__ds3__')) keys.add(key);
+      }
+    } catch {}
+    return [...keys];
   }
 
   private _purgeLegacyUnscopedCachesOnce(): void {

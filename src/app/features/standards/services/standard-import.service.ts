@@ -69,10 +69,8 @@ export class StandardImportService {
     validateStandardImportFile(file);
     const buffer = await this.readFileAsArrayBuffer(file);
     const workbookData = await this.readWorkbookInWorker(buffer, sheetName);
-    let existingStandards = this.cache._memStandards?.length
-      ? this.cache._memStandards
-      : this.cache.getAllStandardsFromCache();
-    if (!existingStandards.length) existingStandards = await this.cache.fetchAllAndCache();
+    let existingStandards = this.cache.getCompleteCatalogueFromMemory();
+    if (!existingStandards) existingStandards = await this.cache.fetchAllAndCache();
     const items = parseStandardImportRows(workbookData.rows, {
       sourceSheet: workbookData.selectedSheet,
       existingStandards,
@@ -145,18 +143,9 @@ export class StandardImportService {
     }
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền nhập danh mục chuẩn.');
 
-    // Preflight every deterministic id and strong internal identity before the first write.
+    // Preflight strong internal identities first so the same fresh Firestore
+    // documents can be reused for deterministic-id validation below.
     const existing = new Map<string, ReferenceStandard>();
-    for (let offset = 0; offset < validItems.length; offset += 20) {
-      const chunk = validItems.slice(offset, offset + 20);
-      const snapshots = await Promise.all(chunk.map(item => getDoc(
-        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}`)
-      )));
-      snapshots.forEach(snapshot => {
-        if (snapshot.exists()) existing.set(snapshot.id, { id: snapshot.id, ...snapshot.data() } as ReferenceStandard);
-      });
-    }
-
     const standardsCollection = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
     const internalIds = [...new Set(
       validItems
@@ -164,6 +153,7 @@ export class StandardImportService {
         .filter((value): value is string => Boolean(value) && !isSpecialInternalId(value))
     )];
     const activeByInternalId = new Map<string, ReferenceStandard[]>();
+    const freshExistingIds = new Set<string>();
     for (let offset = 0; offset < internalIds.length; offset += 10) {
       const snapshot = await getDocs(query(
         standardsCollection,
@@ -171,6 +161,8 @@ export class StandardImportService {
       ));
       snapshot.docs.forEach(document => {
         const standard = { id: document.id, ...document.data() } as ReferenceStandard;
+        freshExistingIds.add(standard.id);
+        existing.set(standard.id, standard);
         if (!isActiveStandardIdentity(standard)) return;
         const key = normalizeInternalId(standard.internal_id);
         activeByInternalId.set(key, [...(activeByInternalId.get(key) || []), standard]);
@@ -180,9 +172,8 @@ export class StandardImportService {
     // Firestore cannot query legacy whitespace/lower-case variants by the
     // canonical code. Merge the materialized catalogue into the preflight so
     // an old malformed value cannot create a second active owner.
-    const knownStandards = this.cache._memStandards?.length
-      ? this.cache._memStandards
-      : await this.cache.fetchAllAndCache();
+    const knownStandards = this.cache.getCompleteCatalogueFromMemory()
+      ?? await this.cache.fetchAllAndCache();
     knownStandards.forEach(standard => {
       if (!isActiveStandardIdentity(standard) || !standard.internal_id || isSpecialInternalId(standard.internal_id)) return;
       const key = normalizeInternalId(standard.internal_id);
@@ -208,11 +199,29 @@ export class StandardImportService {
         item.parsed.id = matched.id;
         item.mode = 'UPDATE_SAFE';
         item.changes = computeImportChanges(matched, item.parsed, item.presentFields || []);
-        existing.set(matched.id, matched);
+        if (freshExistingIds.has(matched.id)) existing.set(matched.id, matched);
       }
     });
     if (identityConflicts.length) {
       throw new Error(`Có ${identityConflicts.length} dòng dùng mã đang được nhiều chuẩn hoạt động cùng sử dụng. Không có dữ liệu nào được ghi.`);
+    }
+
+    // Only fetch deterministic ids that were not already returned by the
+    // fresh internal-id query. This keeps collision / legacy / special-code
+    // checks fresh without paying for a second read of the same document.
+    const unresolvedIds = [...new Set(
+      validItems
+        .map(item => String(item.parsed.id || '').trim())
+        .filter(id => Boolean(id) && !freshExistingIds.has(id))
+    )];
+    for (let offset = 0; offset < unresolvedIds.length; offset += 20) {
+      const chunk = unresolvedIds.slice(offset, offset + 20);
+      const snapshots = await Promise.all(chunk.map(id => getDoc(
+        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`)
+      )));
+      snapshots.forEach(snapshot => {
+        if (snapshot.exists()) existing.set(snapshot.id, { id: snapshot.id, ...snapshot.data() } as ReferenceStandard);
+      });
     }
 
     // Import is not a code-reassignment tool. A valid existing physical
@@ -480,10 +489,11 @@ export class StandardImportService {
             return found ? row[found] : undefined;
           };
 
-          let existingStandards = this.cache._memStandards !== null && this.cache._memStandards.length > 0
-            ? this.cache._memStandards
-            : this.cache.getAllStandardsFromCache();
-          if (existingStandards.length === 0) existingStandards = await this.cache.fetchAllAndCache();
+          let existingStandards = this.cache.getCompleteCatalogueFromMemory();
+          if (!existingStandards) existingStandards = await this.cache.fetchAllAndCache();
+          // Duplicate detection only needs rows from the same standard and date.
+          // Reading the whole nested history here made import preview scale with
+          // the standard's lifetime log count instead of the size of the import.
           const logsCache = new Map<string, UsageLog[]>();
           const results: ImportUsageLogPreviewItem[] = [];
 
@@ -550,15 +560,16 @@ export class StandardImportService {
 
             let isDuplicate = false;
             if (matchedStandard && isValid) {
-              if (!logsCache.has(matchedStandard.id!)) {
+              const logsCacheKey = `${matchedStandard.id}|${log.date}`;
+              if (!logsCache.has(logsCacheKey)) {
                 const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${matchedStandard.id}/logs`);
-                const snap = await getDocs(logsRef);
+                const snap = await getDocs(query(logsRef, where('date', '==', log.date)));
                 logsCache.set(
-                  matchedStandard.id!,
+                  logsCacheKey,
                   snap.docs.map(d => d.data() as UsageLog).filter(existingLog => !existingLog._isDeleted)
                 );
               }
-              const existingLogs = logsCache.get(matchedStandard.id!) || [];
+              const existingLogs = logsCache.get(logsCacheKey) || [];
               const duplicate = existingLogs.find(existingLog => {
                 const existingNormalized = existingLog.normalized_unit === matchedStandard!.unit && Number.isFinite(existingLog.normalized_amount)
                   ? Number(existingLog.normalized_amount)
@@ -569,7 +580,7 @@ export class StandardImportService {
                   Math.abs(existingNormalized - normalizedAmount) < 1e-9;
               });
               if (duplicate) { isDuplicate = true; isValid = false; errorMessage = 'Nhật ký đã tồn tại.'; }
-              else { existingLogs.push(log); logsCache.set(matchedStandard.id!, existingLogs); }
+              else { existingLogs.push(log); logsCache.set(logsCacheKey, existingLogs); }
             }
             results.push({ raw: { 'Tên': name, 'Lô': lot }, standard: matchedStandard, log, isDuplicate, isValid, errorMessage });
           }

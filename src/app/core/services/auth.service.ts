@@ -27,7 +27,7 @@ import {
 } from 'firebase/auth';
 import { 
   doc, getDoc, setDoc, serverTimestamp, onSnapshot, updateDoc, arrayRemove,
-  collection, query, limit, getDocs, writeBatch 
+  collection, writeBatch
 } from 'firebase/firestore';
 import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
@@ -199,6 +199,7 @@ export class AuthService {
   private userUnsub: any = null;
   private rolesUnsub: any = null;
   private rolesInitPromise: Promise<void> | null = null;
+  private rolesBootstrapPromise: Promise<void> | null = null;
   private rolesListenerGeneration = 0;
   private rolesSessionActive = false;
   readonly rolesConfig = signal<Record<string, string[]>>({});
@@ -1000,12 +1001,15 @@ export class AuthService {
 
     const generation = this.rolesListenerGeneration;
     const startPromise = (async () => {
-      // Khởi tạo các vai trò hệ thống mặc định nếu trống.
-      await this.initializeDefaultRolesIfNeeded();
       if (generation !== this.rolesListenerGeneration || !this.rolesSessionActive) return;
 
       const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
       const unsubscribe = onSnapshot(rolesRef, (snap: any) => {
+          // The first server snapshot already tells us whether the collection is
+          // empty. Reusing it avoids a separate getDocs(limit(1)) on every login.
+          if (snap.empty && snap.metadata?.fromCache !== true) {
+              this.initializeDefaultRolesFromEmptySnapshot();
+          }
           const config: Record<string, string[]> = {};
           snap.forEach((doc: any) => {
               const data = doc.data();
@@ -1046,11 +1050,10 @@ export class AuthService {
     }
   }
 
-  private async initializeDefaultRolesIfNeeded() {
-    try {
-        const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
-        const snap = await getDocs(query(rolesRef, limit(1)));
-        if (snap.empty) {
+  private initializeDefaultRolesFromEmptySnapshot(): void {
+    if (this.rolesBootstrapPromise) return;
+    const bootstrapPromise = (async () => {
+      try {
             console.log("[Auth] roles_config is empty. Initializing default system roles...");
             const batch = writeBatch(this.fb.db);
             for (const [roleId, data] of Object.entries(DEFAULT_ROLES)) {
@@ -1059,10 +1062,14 @@ export class AuthService {
             }
             await batch.commit();
             console.log("[Auth] Successfully initialized default system roles.");
-        }
-    } catch (e) {
+      } catch (e) {
         console.warn("[Auth] Failed to initialize default roles:", e);
-    }
+      }
+    })();
+    this.rolesBootstrapPromise = bootstrapPromise;
+    void bootstrapPromise.finally(() => {
+      if (this.rolesBootstrapPromise === bootstrapPromise) this.rolesBootstrapPromise = null;
+    });
   }
 
   canApprove(): boolean { return this.hasPermission(PERMISSIONS.SOP_APPROVE); }

@@ -62,14 +62,32 @@ export class InventoryService {
   }
 
   async getItemsByIds(ids: string[]): Promise<InventoryItem[]> {
-    if (!ids || ids.length === 0) return [];
-    
-    const validIds = [...new Set(ids)].filter(id => {
-        if (!id || typeof id !== 'string') return false;
-        const trimmed = id.trim();
-        return trimmed.length > 0 && !trimmed.includes('/'); 
-    });
+    const validIds = this.normalizeInventoryIds(ids);
+    if (validIds.length === 0) return [];
 
+    const inventoryMap = this.state.inventoryMap();
+    const missingIds = validIds.filter(id => !inventoryMap[id]);
+    if (missingIds.length === 0) {
+      return validIds.map(id => inventoryMap[id]);
+    }
+
+    const fetched = await this.getItemsByIdsFresh(missingIds);
+    const resolved = new Map<string, InventoryItem>();
+    validIds.forEach(id => {
+      const cached = inventoryMap[id];
+      if (cached) resolved.set(id, cached);
+    });
+    fetched.forEach(item => resolved.set(item.id, item));
+    return validIds.map(id => resolved.get(id)).filter((item): item is InventoryItem => !!item);
+  }
+
+  /**
+   * Explicit server-authoritative inventory lookup. Use this only when the
+   * caller must verify Firestore immediately before a correctness-sensitive
+   * action. Normal display/calculation paths should use getItemsByIds().
+   */
+  async getItemsByIdsFresh(ids: string[]): Promise<InventoryItem[]> {
+    const validIds = this.normalizeInventoryIds(ids);
     if (validIds.length === 0) return [];
 
     const requestKey = validIds.slice().sort().join('\u001f');
@@ -87,6 +105,15 @@ export class InventoryService {
       // must not create a second unhandled rejection.
     });
     return request;
+  }
+
+  private normalizeInventoryIds(ids: string[] | null | undefined): string[] {
+    if (!ids || ids.length === 0) return [];
+    return [...new Set(ids
+      .filter((id): id is string => typeof id === 'string')
+      .map(id => id.trim())
+      .filter(id => id.length > 0 && !id.includes('/'))
+    )];
   }
 
   private async fetchItemsByIds(validIds: string[]): Promise<InventoryItem[]> {
@@ -132,11 +159,18 @@ export class InventoryService {
   }
 
   async getItemByGtin(gtin: string): Promise<InventoryItem | null> {
-      if (!gtin) return null;
+      const lookup = gtin?.trim();
+      if (!lookup) return null;
+
+      const cachedMatch = this.state.inventory().find(item =>
+        item.gtin === lookup || item.ref_code === lookup
+      );
+      if (cachedMatch) return cachedMatch;
+
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
       
       // Try querying by GTIN field
-      const qGtin = query(colRef, where('gtin', '==', gtin), limit(1));
+      const qGtin = query(colRef, where('gtin', '==', lookup), limit(1));
       const snapGtin = await getDocs(qGtin);
       this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapGtin.size);
       if (!snapGtin.empty) {
@@ -144,7 +178,7 @@ export class InventoryService {
       }
 
       // Fallback: try querying by ref_code (some systems store GTIN there)
-      const qRef = query(colRef, where('ref_code', '==', gtin), limit(1));
+      const qRef = query(colRef, where('ref_code', '==', lookup), limit(1));
       const snapRef = await getDocs(qRef);
       this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, snapRef.size);
       if (!snapRef.empty) {

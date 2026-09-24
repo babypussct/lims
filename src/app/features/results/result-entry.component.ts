@@ -150,11 +150,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.releaseLockIfNeeded();
   }
 
-  @HostListener('window:unload')
-  onUnload() {
-    this.releaseLockIfNeeded();
-  }
-
   private releaseLockIfNeeded() {
     const r = this.run();
     const user = this.auth.currentUser();
@@ -728,11 +723,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
     
     // Giải phóng khóa khi thoát trang nếu mình là người giữ khóa
-    const r = this.run();
-    const user = this.auth.currentUser();
-    if (r && user && r.lockedBy === user.email) {
-      this.resultService.releaseLock(this.requestId);
-    }
+    this.releaseLockIfNeeded();
   }
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {

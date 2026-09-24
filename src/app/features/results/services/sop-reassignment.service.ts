@@ -40,6 +40,7 @@ import {
   calculatedItemsToRequestItems,
   getMissingTargetIds,
   getSopReassignmentBlockReason,
+  getSopReassignmentSourceSignature,
   transferSopStatsForDay
 } from './sop-reassignment.utils';
 
@@ -96,6 +97,7 @@ export class SopReassignmentService {
     if (sourceRequest.sopId !== expectedSourceSopId) {
       throw new Error('Mẻ đã thay đổi SOP kể từ khi mở hộp thoại. Vui lòng tải lại và thử lại.');
     }
+    const sourceSignature = getSopReassignmentSourceSignature(sourceRequest);
 
     const preview = await this.preparePreview(sourceRequest, targetSopId, true);
     const targetMetadata = buildReassignmentTargetMetadata(sourceRequest, preview.targetSop);
@@ -170,12 +172,7 @@ export class SopReassignmentService {
       // The preview is calculated from the same immutable business inputs
       // that were shown in the confirmation modal. Refuse to continue if a
       // concurrent edit changed the request while the modal was open.
-      if (
-        fresh.analysisDate !== sourceRequest.analysisDate ||
-        JSON.stringify(fresh.sampleList || []) !== JSON.stringify(sourceRequest.sampleList || []) ||
-        JSON.stringify(fresh.sampleTargetMap || {}) !== JSON.stringify(sourceRequest.sampleTargetMap || {}) ||
-        JSON.stringify(fresh.items || []) !== JSON.stringify(sourceRequest.items || [])
-      ) {
+      if (getSopReassignmentSourceSignature(fresh) !== sourceSignature) {
         throw new Error('Mẻ đã thay đổi kể từ khi mở hộp thoại. Không có dữ liệu nào được cập nhật.');
       }
 

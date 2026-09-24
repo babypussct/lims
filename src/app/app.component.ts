@@ -445,7 +445,9 @@ export class AppComponent implements OnDestroy {
 
       // Lắng nghe TẤT CẢ sự kiện version (để log)
       this.swUpdate.versionUpdates.subscribe(event => {
-        console.log(`[LIMS SW] 📡 Event: ${event.type}`, event);
+        if (event.type !== 'NO_NEW_VERSION_DETECTED') {
+          console.log(`[LIMS SW] 📡 Event: ${event.type}`, event);
+        }
       });
 
       // Lắng nghe khi có bản mới sẵn sàng

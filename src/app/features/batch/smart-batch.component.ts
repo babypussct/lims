@@ -1594,7 +1594,7 @@ export class SmartBatchComponent {
           const targetId = item.id || item.name;
 
           // FETCH FRESH DATA directly from Firestore to ensure accuracy
-          const freshItems = await this.invService.getItemsByIds([targetId]);
+          const freshItems = await this.invService.getItemsByIdsFresh([targetId]);
           const freshStock = freshItems.length > 0 ? freshItems[0].stock : 0;
           
           // Update the local cache with this fresh value immediately

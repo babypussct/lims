@@ -9,6 +9,34 @@ export interface SopReassignmentTargetMetadata {
   sampleTargetMap: Record<string, string[]>;
 }
 
+function stableStringify(value: unknown): string {
+  const normalize = (current: unknown): unknown => {
+    if (Array.isArray(current)) return current.map(item => item === undefined ? null : normalize(item));
+    if (!current || typeof current !== 'object') return current;
+
+    return Object.keys(current as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        const child = (current as Record<string, unknown>)[key];
+        if (child !== undefined) result[key] = normalize(child);
+        return result;
+      }, {});
+  };
+
+  return JSON.stringify(normalize(value));
+}
+
+export function getSopReassignmentSourceSignature(
+  request: Pick<Request, 'analysisDate' | 'sampleList' | 'sampleTargetMap' | 'items'>
+): string {
+  return stableStringify({
+    analysisDate: request.analysisDate,
+    sampleList: request.sampleList || [],
+    sampleTargetMap: request.sampleTargetMap || {},
+    items: request.items || []
+  });
+}
+
 export function getRequiredTargetIds(request: Pick<Request, 'sampleTargetMap' | 'targetIds' | 'inputs'>): string[] {
   const inputTargetMap = (request.inputs?.['sampleTargetMap'] || {}) as Record<string, string[]>;
   const fromMap: string[] = Object.values(request.sampleTargetMap || inputTargetMap).flat();

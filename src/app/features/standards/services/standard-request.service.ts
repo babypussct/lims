@@ -3,7 +3,7 @@ import { Injectable, inject, effect } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
-  doc, collection, getDoc, writeBatch,
+  doc, collection, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
   where, limit, Unsubscribe, onSnapshot, getDocs
 } from 'firebase/firestore';
@@ -104,6 +104,23 @@ export class StandardRequestService {
     );
     if (!this.deltaSync.getSingletonStatus(cacheKey)) return;
     this.deltaSync.mergeSingletonCache<UsageLog>(cacheKey, changed, deletedIds);
+  }
+
+  private buildStandardCacheProjection(
+    base: ReferenceStandard,
+    updates: Partial<ReferenceStandard>,
+    removedFields: Array<keyof ReferenceStandard> = []
+  ): ReferenceStandard {
+    const projected: ReferenceStandard = { ...base, ...updates };
+    for (const field of removedFields) {
+      delete (projected as Partial<ReferenceStandard>)[field];
+    }
+    return projected;
+  }
+
+  private publishStandardCacheProjection(projection: ReferenceStandard | null): void {
+    if (!projection) return;
+    this.cache._mergeAndSave([projection], []);
   }
 
   // ─── Singleton Listener via DeltaSync v2 ───────────────────────────────────
@@ -238,6 +255,7 @@ export class StandardRequestService {
     request.createdAt = Date.now();
     request.updatedAt = Date.now();
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}`);
+    let standardCacheProjection: ReferenceStandard | null = null;
     await runTransaction(this.fb.db, async transaction => {
       const stdDoc = await transaction.get(stdRef);
       if (!stdDoc.exists()) throw new Error('Chuẩn không tồn tại!');
@@ -293,6 +311,18 @@ export class StandardRequestService {
         has_pending_request: true,
         lastUpdated: serverTimestamp()
       });
+      if (isAssign) {
+        standardCacheProjection = this.buildStandardCacheProjection(
+          standard,
+          {
+            status: 'IN_USE',
+            current_holder: trustedRequest.requestedByName,
+            current_holder_uid: trustedRequest.requestedBy,
+            current_request_id: reqRef.id,
+          },
+          ['has_pending_request']
+        );
+      }
 
       const activityEvent = this.activityEvents.build({
         eventId: activityRef.id,
@@ -347,15 +377,7 @@ export class StandardRequestService {
         channels: ['inbox', 'push']
       });
 
-      try {
-        const freshSnap = await getDoc(stdRef);
-        if (freshSnap.exists()) {
-          const freshStd = { id: freshSnap.id, ...freshSnap.data() } as ReferenceStandard;
-          this.cache._mergeAndSave([freshStd], []);
-        }
-      } catch (e) {
-        console.warn('[StandardRequestService] post-direct-assignment cache merge failed:', e);
-      }
+      this.publishStandardCacheProjection(standardCacheProjection);
     }
   }
 
@@ -502,6 +524,7 @@ export class StandardRequestService {
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
     const activityRef = this.activityEvents.createRef();
     let reqData: StandardRequest | null = null;
+    let standardCacheProjection: ReferenceStandard | null = null;
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
       const reqDoc = await transaction.get(reqRef);
@@ -538,6 +561,16 @@ export class StandardRequestService {
         has_pending_request: deleteField(),
         lastUpdated: serverTimestamp()
       });
+      standardCacheProjection = this.buildStandardCacheProjection(
+        standard,
+        {
+          status: 'IN_USE',
+          current_holder: reqData.requestedByName,
+          current_holder_uid: reqData.requestedBy,
+          current_request_id: requestId,
+        },
+        ['has_pending_request']
+      );
       transaction.update(reqRef, {
         status: 'IN_PROGRESS', approvedBy: currentUser.uid,
         approvedByName: currentUser.displayName || currentUser.email || approverName || approverId,
@@ -626,14 +659,9 @@ export class StandardRequestService {
       }
     } catch (e) { console.warn('[StandardRequestService] cleanup stale requests failed:', e); }
 
-    // Merge ngay document mới vào cache KHÔNG xóa trước — để giữ nguyên toàn bộ danh sách chuẩn
-    try {
-      const freshSnap = await getDoc(stdRef);
-      if (freshSnap.exists()) {
-        const freshStd = { id: freshSnap.id, ...freshSnap.data() } as ReferenceStandard;
-        this.cache._mergeAndSave([freshStd], []);
-      }
-    } catch (e) { console.warn('[StandardRequestService] post-dispense cache merge failed:', e); }
+    // Transaction đã đọc document chuẩn mới nhất; dùng projection vừa commit để
+    // cập nhật cache ngay, tránh thêm 1 getDoc chỉ để đọc lại chính document đó.
+    this.publishStandardCacheProjection(standardCacheProjection);
   }
 
   // ─── Return Standard ──────────────────────────────────────────────────────────
@@ -660,6 +688,7 @@ export class StandardRequestService {
     const activityRef = this.activityEvents.createRef();
     let reqData: StandardRequest | null = null;
     let returnResult: ReturnStandardResult = { tagMergeStatus: 'NOT_REQUESTED' };
+    let standardCacheProjection: ReferenceStandard | null = null;
 
     await runTransaction(this.fb.db, async (transaction) => {
       const stdDoc = await transaction.get(stdRef);
@@ -726,6 +755,15 @@ export class StandardRequestService {
       };
       if (tagMerge.status === 'MERGED') standardUpdate['sop_tags'] = tagMerge.standardTags;
       transaction.update(stdRef, standardUpdate);
+      standardCacheProjection = this.buildStandardCacheProjection(
+        { ...stdData, id: stdDoc.id } as ReferenceStandard,
+        {
+          status: isDepleted || newAmount <= 0 ? 'DEPLETED' : 'AVAILABLE',
+          current_amount: newAmount,
+          ...(tagMerge.status === 'MERGED' ? { sop_tags: tagMerge.standardTags } : {}),
+        },
+        ['current_holder', 'current_holder_uid', 'current_request_id']
+      );
 
       const reqUpdateData: Record<string, any> = {
         status: 'COMPLETED', returnDate: Date.now(),
@@ -801,14 +839,7 @@ export class StandardRequestService {
       this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
     });
     await this.notificationCenter.dispatchActivityProjectionIfEnabled(activityRef.id);
-    // Merge ngay document mới vào cache KHÔNG xóa trước — để giữ nguyên toàn bộ danh sách chuẩn
-    try {
-      const freshSnap = await getDoc(stdRef);
-      if (freshSnap.exists()) {
-        const freshStd = { id: freshSnap.id, ...freshSnap.data() } as ReferenceStandard;
-        this.cache._mergeAndSave([freshStd], []);
-      }
-    } catch (e) { console.warn('[StandardRequestService] post-return cache merge failed:', e); }
+    this.publishStandardCacheProjection(standardCacheProjection);
     return returnResult;
   }
 

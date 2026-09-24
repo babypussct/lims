@@ -3,21 +3,40 @@ import test from 'node:test';
 import {
   DeltaSyncService,
   buildDeltaAuthScope,
+  buildDeltaStorageEvictionPlan,
   buildScopedDeltaKey,
   computeDeltaRetryDelay,
   deltaValueToMillis,
   getDeltaErrorCode,
+  getDeltaStorageScopeId,
   getMaxDeltaCursorMillis,
   isDeltaAuthorizationError,
   isDeltaGenerationActive,
+  isDeltaStorageQuotaError,
   isRetryableDeltaError,
   mergeDeltaItems,
   replaceDeltaArrayContents,
+  resolveDeltaListenerConstraints,
   shouldResetStaleDeltaCache,
   sanitizeDeltaCursorMillis,
   shouldUseDeltaCache,
   sortAndTrimDeltaItems
 } from './delta-sync.service';
+
+test('allows the live delta listener to drop initial-only query constraints', () => {
+  const initialConstraints = [{ kind: 'pending-only' }] as any[];
+  assert.equal(
+    resolveDeltaListenerConstraints({ queryConstraints: initialConstraints }),
+    initialConstraints
+  );
+  assert.deepEqual(
+    resolveDeltaListenerConstraints({
+      queryConstraints: initialConstraints,
+      listenerQueryConstraints: []
+    }),
+    []
+  );
+});
 
 test('merges optimistic delta changes without duplicating ids', () => {
   const base = [
@@ -75,6 +94,27 @@ test('scopes persistent cache keys by user, role and normalized permissions', ()
     buildScopedDeltaKey('standards', otherUserScope)
   );
   assert.equal(buildDeltaAuthScope(null), 'signed-out');
+});
+
+test('evicts stale auth scopes before inactive caches from the current scope', () => {
+  const currentCache = buildScopedDeltaKey('inventory_cache', 'user-a');
+  const currentCursor = buildScopedDeltaKey('inventory_cursor', 'user-a');
+  const inactiveCurrent = buildScopedDeltaKey('sops_cache', 'user-a');
+  const oldCache = buildScopedDeltaKey('inventory_cache', 'user-b');
+  const oldCursor = buildScopedDeltaKey('inventory_cursor', 'user-b');
+  const oldSyncAt = `${oldCursor}__syncAt`;
+
+  assert.equal(getDeltaStorageScopeId(currentCache), getDeltaStorageScopeId(currentCursor));
+  assert.equal(getDeltaStorageScopeId(oldCursor), getDeltaStorageScopeId(oldSyncAt));
+
+  const plan = buildDeltaStorageEvictionPlan(
+    [oldCache, inactiveCurrent, oldCursor, currentCache, currentCursor, oldSyncAt],
+    [currentCache, currentCursor],
+    currentCache
+  );
+
+  assert.deepEqual(plan.foreignScope, [oldCache, oldCursor, oldSyncAt]);
+  assert.deepEqual(plan.inactiveCurrentScope, [inactiveCurrent]);
 });
 
 test('normalizes all supported timestamp shapes', () => {
@@ -155,6 +195,10 @@ test('updates the canonical array without replacing its identity', () => {
 
 test('classifies retryable errors and caps exponential retry delay', () => {
   assert.equal(getDeltaErrorCode({ code: 'firestore/permission-denied' }), 'permission-denied');
+  assert.equal(getDeltaErrorCode({ code: 22, name: 'QuotaExceededError' }), 'quotaexceedederror');
+  assert.equal(getDeltaErrorCode({ code: 7, name: 'Error' }), '7');
+  assert.equal(isDeltaStorageQuotaError({ code: 22, name: 'QuotaExceededError' }), true);
+  assert.equal(isDeltaStorageQuotaError({ code: 'unavailable' }), false);
   assert.equal(isRetryableDeltaError({ code: 'permission-denied' }), false);
   assert.equal(isRetryableDeltaError({ code: 'unavailable' }), true);
   assert.equal(isDeltaAuthorizationError({ code: 'firestore/permission-denied' }), true);

@@ -10,7 +10,7 @@ import {
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { isFefoCandidate, parseStandardDate } from '../../../shared/utils/standard-fefo';
-import { ACTIVE_STANDARD_STATUSES } from '../../../shared/utils/standard-query';
+import { ACTIVE_STANDARD_STATUSES, isActiveStandardStatus } from '../../../shared/utils/standard-query';
 import { timestampToMillis } from '../../../shared/utils/timestamp';
 
 /**
@@ -57,9 +57,22 @@ export class StandardCacheService {
     );
   }
 
-  // L1: In-memory — giờ quản lý bởi DeltaSync singleton
-  // Giữ _memStandards chỉ cho fetchAllAndCache() (admin bulk operation)
+  // Complete non-deleted catalogue snapshot. This must never be populated from
+  // the bounded/operational DeltaSync cache because import/admin flows rely on
+  // it as proof that the whole catalogue was scanned.
   _memStandards: ReferenceStandard[] | null = null;
+  private completeCatalogueScope: string | null = null;
+  private completeCatalogueLoadedAt = 0;
+  private completeActiveStandards: ReferenceStandard[] | null = null;
+  private completeActiveScope: string | null = null;
+  private completeActiveLoadedAt = 0;
+  private fullCatalogueLoad?: Promise<ReferenceStandard[]>;
+  private fullCatalogueLoadScope: string | null = null;
+
+  // Dedupe concurrent cache misses for the same standard ID. Without this,
+  // two components opening at the same time can issue identical getDoc reads
+  // before either result has a chance to populate the shared cache.
+  private readonly standardByIdInFlight = new Map<string, Promise<ReferenceStandard | null>>();
 
   // Trạng thái view (giữ lại khi Back từ detail)
   listState = {
@@ -105,6 +118,14 @@ export class StandardCacheService {
   private _cleanupOnLogout(): void {
     this.deltaSync.destroySingleton(this._deltaCacheKey);
     this._memStandards = null;
+    this.completeCatalogueScope = null;
+    this.completeCatalogueLoadedAt = 0;
+    this.completeActiveStandards = null;
+    this.completeActiveScope = null;
+    this.completeActiveLoadedAt = 0;
+    this.fullCatalogueLoad = undefined;
+    this.fullCatalogueLoadScope = null;
+    this.standardByIdInFlight.clear();
   }
 
   // ─── Singleton Listener (thay thế cả startRealtimeDeltaListener + listenToStandards) ──
@@ -143,6 +164,13 @@ export class StandardCacheService {
    */
   invalidateLocalStandardsCache(): void {
     this._memStandards = null;
+    this.completeCatalogueScope = null;
+    this.completeCatalogueLoadedAt = 0;
+    this.completeActiveStandards = null;
+    this.completeActiveScope = null;
+    this.completeActiveLoadedAt = 0;
+    this.fullCatalogueLoad = undefined;
+    this.fullCatalogueLoadScope = null;
     this.deltaSync.destroySingleton(this._deltaCacheKey);
     this.deltaSync.clearCache(this._deltaCacheKey, this._deltaCursorKey);
     // Xóa cả key cũ (legacy)
@@ -160,21 +188,74 @@ export class StandardCacheService {
       const found = cached.find(s => s.id === stdId);
       if (found) return found;
     }
-    try {
-      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards', stdId);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) return null;
-      const data = snap.data();
-      if (data['_isDeleted'] === true || data['status'] === 'DELETED') return null;
-      return { id: snap.id, ...data } as ReferenceStandard;
-    } catch (e) {
-      console.error('[StandardCacheService] getStandardById error:', e);
-      return null;
-    }
+
+    const existingRead = this.standardByIdInFlight.get(stdId);
+    if (existingRead) return existingRead;
+
+    const read = (async (): Promise<ReferenceStandard | null> => {
+      try {
+        const path = `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`;
+        const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards', stdId);
+        const snap = await getDoc(ref);
+        this.readMonitor.record('getDoc', path, 1, { fromCache: snap.metadata.fromCache });
+
+        if (!snap.exists()) {
+          // Clear any stale persisted copy so the next lookup does not revive it.
+          this._mergeAndSave([], [stdId]);
+          return null;
+        }
+
+        const data = snap.data();
+        if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
+          this._mergeAndSave([], [stdId]);
+          return null;
+        }
+
+        const standard = { id: snap.id, ...data } as ReferenceStandard;
+        // A successful fallback read becomes part of the canonical shared cache,
+        // so repeated detail/lookups for the same ID are zero-read afterwards.
+        this._mergeAndSave([standard], []);
+        return standard;
+      } catch (e) {
+        console.error('[StandardCacheService] getStandardById error:', e);
+        return null;
+      } finally {
+        this.standardByIdInFlight.delete(stdId);
+      }
+    })();
+
+    this.standardByIdInFlight.set(stdId, read);
+    return read;
   }
 
   getAllStandardsFromCache(): ReferenceStandard[] {
     return this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? [];
+  }
+
+  /**
+   * Return a catalogue only when this service knows a full non-deleted scan was
+   * completed for the current auth scope. A non-empty operational cache is not
+   * sufficient proof of completeness.
+   */
+  getCompleteCatalogueFromMemory(maxAgeMs = Number.POSITIVE_INFINITY): ReferenceStandard[] | null {
+    if (!this._memStandards || this.completeCatalogueScope !== this.auth.getDeltaCacheScope()) return null;
+    if (Date.now() - this.completeCatalogueLoadedAt > maxAgeMs) return null;
+    return [...this._memStandards];
+  }
+
+  /** Complete active-status snapshot shared by report/statistics consumers. */
+  getCompleteActiveCatalogue(maxAgeMs = Number.POSITIVE_INFINITY): ReferenceStandard[] | null {
+    if (!this.completeActiveStandards || this.completeActiveScope !== this.auth.getDeltaCacheScope()) return null;
+    if (Date.now() - this.completeActiveLoadedAt > maxAgeMs) return null;
+    return [...this.completeActiveStandards];
+  }
+
+  publishCompleteActiveCatalogue(items: ReferenceStandard[], loadedAt = Date.now()): void {
+    this.completeActiveStandards = items
+      .filter(standard => this.isOperationalStandard(standard))
+      .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
+    this.completeActiveScope = this.auth.getDeltaCacheScope();
+    this.completeActiveLoadedAt = loadedAt;
   }
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
@@ -250,32 +331,102 @@ export class StandardCacheService {
    * Dùng sau khi write Firestore để UI cập nhật tức thì, không chờ live listener.
    */
   _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
+    const activeChanged = changed.filter(standard => this.isOperationalStandard(standard));
+    const activeRemoved = [
+      ...deletedIds,
+      ...changed
+        .filter(standard => !this.isOperationalStandard(standard))
+        .map(standard => standard.id)
+    ];
     const items = this.deltaSync.mergeSingletonCache<ReferenceStandard>(
       this._deltaCacheKey,
-      changed,
-      deletedIds
+      activeChanged,
+      [...new Set(activeRemoved)]
     );
-    this._memStandards = items;
+
+    const scope = this.auth.getDeltaCacheScope();
+    if (this._memStandards && this.completeCatalogueScope === scope) {
+      this._memStandards = this.mergeCompleteSnapshot(this._memStandards, changed, deletedIds, false);
+    }
+    if (this.completeActiveStandards && this.completeActiveScope === scope) {
+      this.completeActiveStandards = this.mergeCompleteSnapshot(
+        this.completeActiveStandards,
+        changed,
+        deletedIds,
+        true
+      );
+    }
   }
 
   // ─── Admin Bulk Operations ──────────────────────────────────────────────────
   async fetchAllAndCache(): Promise<ReferenceStandard[]> {
-    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-    // Querying with orderBy excludes legacy documents that do not have received_date.
-    const snap = await getDocs(colRef);
-    this.readMonitor.record(
-      'getDocs',
-      `artifacts/${this.fb.APP_ID}/reference_standards`,
-      snap.size,
-      { phase: 'initial', fromCache: snap.metadata.fromCache }
-    );
-    const items: ReferenceStandard[] = snap.docs
-      .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
-      .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+    const scope = this.auth.getDeltaCacheScope();
+    if (this.fullCatalogueLoad && this.fullCatalogueLoadScope === scope) return this.fullCatalogueLoad;
+
+    const load = (async (): Promise<ReferenceStandard[]> => {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+      // Querying with orderBy excludes legacy documents that do not have received_date.
+      const snap = await getDocs(colRef);
+      this.readMonitor.record(
+        'getDocs',
+        `artifacts/${this.fb.APP_ID}/reference_standards`,
+        snap.size,
+        { phase: 'initial', fromCache: snap.metadata.fromCache }
+      );
+      const items: ReferenceStandard[] = snap.docs
+        .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
+        .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+        .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
+
+      // Do not mix legacy/non-operational rows into the DeltaSync projection.
+      // Keep the full catalogue separately and publish its active subset as a
+      // completeness-certified snapshot for report/statistics reuse.
+      if (scope === this.auth.getDeltaCacheScope()) {
+        const loadedAt = Date.now();
+        this._memStandards = items;
+        this.completeCatalogueScope = scope;
+        this.completeCatalogueLoadedAt = loadedAt;
+        this.publishCompleteActiveCatalogue(items, loadedAt);
+        this._saveStdToCache(items.filter(standard => this.isOperationalStandard(standard)));
+      }
+      return items;
+    })();
+
+    this.fullCatalogueLoad = load;
+    this.fullCatalogueLoadScope = scope;
+    try {
+      return await load;
+    } finally {
+      if (this.fullCatalogueLoad === load) {
+        this.fullCatalogueLoad = undefined;
+        this.fullCatalogueLoadScope = null;
+      }
+    }
+  }
+
+  private isOperationalStandard(standard: ReferenceStandard): boolean {
+    return standard._isDeleted !== true
+      && standard.status !== 'DELETED'
+      && isActiveStandardStatus(standard.status);
+  }
+
+  private mergeCompleteSnapshot(
+    base: ReferenceStandard[],
+    changed: ReferenceStandard[],
+    deletedIds: string[],
+    activeOnly: boolean
+  ): ReferenceStandard[] {
+    const byId = new Map(base.map(standard => [standard.id, standard]));
+    deletedIds.forEach(id => byId.delete(id));
+    changed.forEach(standard => {
+      const keep = activeOnly
+        ? this.isOperationalStandard(standard)
+        : standard._isDeleted !== true && standard.status !== 'DELETED';
+      if (keep) byId.set(standard.id, standard);
+      else byId.delete(standard.id);
+    });
+    return [...byId.values()]
       .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
-    this._saveStdToCache(items);
-    this._memStandards = items;
-    return items;
   }
 
   private _saveStdToCache(items: ReferenceStandard[]): void {
