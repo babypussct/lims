@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.24-b01",
-    "title": "Ổn định nhập kết quả SOP 03 và SOP 9.20 Chloroform",
+    "version": "v26.09.24-b02",
+    "title": "Ổn định đồng bộ dữ liệu và cache chất chuẩn",
     "features": [
-      "Cập nhật phần nhập kết quả của SOP 03 theo thay đổi hiện có trên nhánh main.",
-      "Sửa lỗi SOP 9.20 Chloroform có thể lỗi khi mở màn hình nhập kết quả trước khi dữ liệu dòng được khởi tạo đầy đủ.",
-      "SOP 9.20 Chloroform tải dữ liệu master bất đồng bộ mà không chặn quá trình khởi tạo dữ liệu kết quả cần cho giao diện.",
-      "Tự đồng bộ trạng thái QC cuối cho các bản ghi Chloroform cũ đã đánh dấu hoàn tất nhưng chưa có dòng QC_FINAL.",
-      "Ngăn lỗi TypeError khi giao diện SOP 9.20 Chloroform truy cập trạng thái lựa chọn trước khi resultData được khởi tạo."
+      "Tối ưu đồng bộ nền để yêu cầu, cấu hình hệ thống và dữ liệu chất chuẩn cập nhật nhất quán hơn giữa các màn hình.",
+      "Giảm các lượt đọc Firestore dư thừa trong đăng nhập, nhập dữ liệu và quy trình cấp phát/hoàn trả chất chuẩn.",
+      "DeltaSync xử lý an toàn khi bộ nhớ localStorage đầy, giữ con trỏ đồng bộ trong phiên và tự dọn các cache không còn hoạt động trước khi thử ghi lại.",
+      "Danh mục chất chuẩn duy trì snapshot hoàn chỉnh dùng chung cho báo cáo và import, đồng thời cập nhật cache trực tiếp từ dữ liệu transaction đã xác nhận.",
+      "Import nhật ký chất chuẩn chỉ truy vấn lịch sử theo đúng ngày cần kiểm tra và tái sử dụng các document đã đọc trong bước kiểm tra trùng."
     ]
   },
   "assetGroups": [

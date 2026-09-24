@@ -109,7 +109,7 @@ export class StandardRequestService {
   private buildStandardCacheProjection(
     base: ReferenceStandard,
     updates: Partial<ReferenceStandard>,
-    removedFields: Array<keyof ReferenceStandard> = []
+    removedFields: (keyof ReferenceStandard)[] = []
   ): ReferenceStandard {
     const projected: ReferenceStandard = { ...base, ...updates };
     for (const field of removedFields) {

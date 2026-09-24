@@ -1,5 +1,25 @@
 [
   {
+    "version": "v26.09.24-b02",
+    "date": "24/9/2026",
+    "title": "Ổn định đồng bộ dữ liệu và cache chất chuẩn",
+    "highlights": [
+      "Tối ưu đồng bộ nền để yêu cầu, cấu hình hệ thống và dữ liệu chất chuẩn cập nhật nhất quán hơn giữa các màn hình.",
+      "Giảm các lượt đọc Firestore dư thừa trong đăng nhập, nhập dữ liệu và quy trình cấp phát/hoàn trả chất chuẩn."
+    ],
+    "features": [],
+    "improvements": [
+      "DeltaSync xử lý an toàn khi bộ nhớ localStorage đầy, giữ con trỏ đồng bộ trong phiên và tự dọn các cache không còn hoạt động trước khi thử ghi lại.",
+      "Danh mục chất chuẩn duy trì snapshot hoàn chỉnh dùng chung cho báo cáo và import, đồng thời cập nhật cache trực tiếp từ dữ liệu transaction đã xác nhận.",
+      "Import nhật ký chất chuẩn chỉ truy vấn lịch sử theo đúng ngày cần kiểm tra và tái sử dụng các document đã đọc trong bước kiểm tra trùng."
+    ],
+    "fixes": [
+      "Yêu cầu đang chờ được loại khỏi cache ngay khi chuyển sang trạng thái khác, tránh hiển thị dữ liệu pending đã cũ.",
+      "Kiểm tra đổi SOP dùng chữ ký dữ liệu ổn định để phát hiện thay đổi đồng thời chính xác hơn trước khi ghi cập nhật."
+    ],
+    "releaseOrder": 26092400002
+  },
+  {
     "version": "v26.09.24-b01",
     "date": "24/9/2026",
     "title": "Ổn định nhập kết quả SOP 03 và SOP 9.20 Chloroform",

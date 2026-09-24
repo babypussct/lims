@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.24-b01
+## Phiên bản hiện tại: v26.09.24-b02
+
+### v26.09.24-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tối ưu đồng bộ nền để yêu cầu, cấu hình hệ thống và dữ liệu chất chuẩn cập nhật nhất quán hơn giữa các màn hình.
+- Giảm các lượt đọc Firestore dư thừa trong đăng nhập, nhập dữ liệu và quy trình cấp phát/hoàn trả chất chuẩn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- DeltaSync xử lý an toàn khi bộ nhớ localStorage đầy, giữ con trỏ đồng bộ trong phiên và tự dọn các cache không còn hoạt động trước khi thử ghi lại.
+- Danh mục chất chuẩn duy trì snapshot hoàn chỉnh dùng chung cho báo cáo và import, đồng thời cập nhật cache trực tiếp từ dữ liệu transaction đã xác nhận.
+- Import nhật ký chất chuẩn chỉ truy vấn lịch sử theo đúng ngày cần kiểm tra và tái sử dụng các document đã đọc trong bước kiểm tra trùng.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Yêu cầu đang chờ được loại khỏi cache ngay khi chuyển sang trạng thái khác, tránh hiển thị dữ liệu pending đã cũ.
+- Kiểm tra đổi SOP dùng chữ ký dữ liệu ổn định để phát hiện thay đổi đồng thời chính xác hơn trước khi ghi cập nhật.
 
 ### v26.09.24-b01
 
