@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.21-b02
+## Phiên bản hiện tại: v26.09.24-b01
+
+### v26.09.24-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Cập nhật phần nhập kết quả của SOP 03 theo thay đổi hiện có trên nhánh main.
+- Sửa lỗi SOP 9.20 Chloroform có thể lỗi khi mở màn hình nhập kết quả trước khi dữ liệu dòng được khởi tạo đầy đủ.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- SOP 9.20 Chloroform tải dữ liệu master bất đồng bộ mà không chặn quá trình khởi tạo dữ liệu kết quả cần cho giao diện.
+- Tự đồng bộ trạng thái QC cuối cho các bản ghi Chloroform cũ đã đánh dấu hoàn tất nhưng chưa có dòng QC_FINAL.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn lỗi TypeError khi giao diện SOP 9.20 Chloroform truy cập trạng thái lựa chọn trước khi resultData được khởi tạo.
 
 ### v26.09.21-b02
 

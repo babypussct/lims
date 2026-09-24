@@ -35,13 +35,8 @@ export class SopChloroformEntryComponent implements OnInit {
   bulkDefaultKhoiLuong = '5.00';
   bulkDefaultF = '1';
 
-  async ngOnInit() {
-    try {
-      const analytes = await this.masterTargetService.getAll();
-      this.masterTargets.set(analytes);
-    } catch (e) {
-      console.warn('Failed to load master analytes', e);
-    }
+  ngOnInit() {
+    void this.loadMasterTargets();
 
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter((c: string) => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
@@ -165,6 +160,10 @@ export class SopChloroformEntryComponent implements OnInit {
       }
     }
 
+    if (this.draft.page1Data['hasFinal'] && !this.draft.resultData['QC_FINAL']) {
+      this.onFinalToggled();
+    }
+
     if (hasChanges) {
       this.onDataChanged();
     }
@@ -181,6 +180,15 @@ export class SopChloroformEntryComponent implements OnInit {
     this.syncSpreadsheetVialsFromCalibration();
     this.updateChloroformRecovery('QC_SPIKE');
     this.updateChloroformRecovery('QC_FINAL');
+  }
+
+  private async loadMasterTargets() {
+    try {
+      const analytes = await this.masterTargetService.getAll();
+      this.masterTargets.set(analytes);
+    } catch (e) {
+      console.warn('Failed to load master analytes', e);
+    }
   }
 
   onBulkVialStartChange() {

@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.21-b02",
-    "title": "Điều chỉnh thống kê lượt trực theo thời gian hiệu lực nhân sự",
+    "version": "v26.09.24-b01",
+    "title": "Ổn định nhập kết quả SOP 03 và SOP 9.20 Chloroform",
     "features": [
-      "Thống kê lượt trực đêm so sánh từng nhân sự với mức kỳ vọng theo các tháng họ thực sự có hiệu lực.",
-      "Giữ riêng hai hồ sơ Huỳnh và Huynh theo ID, không gộp hai người chỉ vì tên gần giống nhau.",
-      "Hiển thị mức kỳ vọng riêng, phần trăm lệch, số tháng hiệu lực và đường kỳ vọng tương ứng trong thống kê, dashboard và biểu đồ.",
-      "Mỗi tháng phân bổ tổng lượt trực cho đúng nhóm nhân sự có hiệu lực trong tháng đó; nhân sự mới bắt đầu từ đầu tháng xuất hiện đầu tiên.",
-      "Nhân sự ngừng sử dụng kết thúc hiệu lực vào cuối tháng có lượt cuối; cùng một công thức được dùng cho trang thống kê, dashboard và gợi ý xếp ca."
+      "Cập nhật phần nhập kết quả của SOP 03 theo thay đổi hiện có trên nhánh main.",
+      "Sửa lỗi SOP 9.20 Chloroform có thể lỗi khi mở màn hình nhập kết quả trước khi dữ liệu dòng được khởi tạo đầy đủ.",
+      "SOP 9.20 Chloroform tải dữ liệu master bất đồng bộ mà không chặn quá trình khởi tạo dữ liệu kết quả cần cho giao diện.",
+      "Tự đồng bộ trạng thái QC cuối cho các bản ghi Chloroform cũ đã đánh dấu hoàn tất nhưng chưa có dòng QC_FINAL.",
+      "Ngăn lỗi TypeError khi giao diện SOP 9.20 Chloroform truy cập trạng thái lựa chọn trước khi resultData được khởi tạo."
     ]
   },
   "assetGroups": [
