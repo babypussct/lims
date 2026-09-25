@@ -261,7 +261,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
               <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed whitespace-pre-wrap">{{ state.maintenanceMessage() }}</p>
               
               <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed select-none">
-                 &copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
+                 &copy; {{year}} NAFIQPM6 LIMS &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
                  <span>Hệ thống quản lý thông tin phòng thí nghiệm NAFIQPM6 &bull; {{state.systemVersion()}}</span>
               </div>
            </div>
@@ -302,10 +302,7 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 text-orange-500 animate-pulse"><i class="fa-solid fa-hourglass-half text-3xl"></i></div>
                    <h2 class="text-2xl font-black text-slate-800 mb-2">Đang Chờ Phê Duyệt</h2>
                    <p class="text-slate-500 mb-6 text-sm leading-relaxed">Xin chào <b>{{user.displayName}}</b>,<br>Tài khoản của bạn đã được tạo nhưng cần quản trị viên cấp quyền truy cập vào hệ thống.</p>
-                   <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-left">
-                      <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Mã tài khoản (gửi quản trị viên khi cần hỗ trợ):</div>
-                      <div class="flex gap-2 items-center"><span class="text-sm font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 flex-1 truncate select-all">{{user.uid}}</span></div>
-                   </div>
+                   <p class="text-xs text-slate-400 mb-6">Nếu cần hỗ trợ, hãy gửi quản trị viên tên và email của tài khoản này.</p>
                    <button (click)="auth.logout()" class="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition active:scale-95"><i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Đăng Xuất</button>
                 </div>
              </div>

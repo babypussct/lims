@@ -600,7 +600,7 @@ export class SingleSampleDispatchWorkspaceComponent {
     }
 
     if (preview.mappingIssues.length > 0) {
-      return `Còn ${preview.mappingIssues.length} chỉ tiêu chưa được phân phối SOP`;
+      return `Còn ${preview.mappingIssues.length} chỉ tiêu chưa xác định được SOP phù hợp`;
     }
     if (preview.hasResourceIssues) {
       return 'Phát sinh thiếu hóa chất/vật tư hoặc lỗi công thức tính';

@@ -4,13 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { AuthService, PERMISSIONS, PERMISSION_NAMES, getUserRoleLabel } from '../../../core/services/auth.service';
 import { StateService } from '../../../core/services/state.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { getAvatarUrl } from '../../../shared/utils/utils';
 
 @Component({
   selector: 'app-account-profile-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="space-y-6 fade-in">
       <div class="grid gap-6 xl:grid-cols-3">
@@ -82,17 +81,6 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
             </div>
           </dl>
 
-          <div class="mt-auto pt-5">
-            <div class="rounded-xl bg-gray-50 p-3 dark:bg-slate-800/70">
-              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Mã tài khoản</div>
-              <div class="flex items-center gap-2">
-                <span class="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ auth.currentUser()?.uid }}</span>
-                <app-button variant="secondary" size="sm" (click)="copyUid()" title="Sao chép mã tài khoản">
-                  <i class="fa-regular fa-copy" aria-hidden="true"></i>
-                </app-button>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section class="flex h-full flex-col rounded-2xl border-0 bg-white p-4 shadow-soft-xl dark:bg-slate-900">
@@ -159,13 +147,6 @@ export class AccountProfileSettingsComponent {
     return PERMISSION_NAMES[permission] || permission;
   }
 
-  copyUid(): void {
-    const uid = this.auth.currentUser()?.uid || '';
-    navigator.clipboard.writeText(uid)
-      .then(() => this.toast.show('Đã sao chép mã tài khoản.', 'success'))
-      .catch(() => this.toast.show('Không thể sao chép mã tài khoản.', 'error'));
-  }
-
   async saveAvatarStyle(style: string): Promise<void> {
     try {
       await this.state.saveMyAvatarStyle(style);
@@ -176,7 +157,8 @@ export class AccountProfileSettingsComponent {
         'success',
       );
     } catch (error: any) {
-      this.toast.show(`Không thể cập nhật ảnh đại diện: ${error?.message || error}`, 'error');
+      console.error('[AccountProfile] Không thể cập nhật ảnh đại diện:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     }
   }
 }

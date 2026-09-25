@@ -458,16 +458,16 @@ export class SmartPrepComponent {
     const token = String(id ?? '').trim();
     if (!token) return 'Nguồn do người thực hiện khai báo';
     const source = this.seriesSources().find(row => row.id === token);
-    if (source) return source.name.trim() || source.id;
+    if (source) return source.name.trim() || 'Nguồn chưa có tên';
     const point = this.seriesPoints().find(row => row.id === token);
-    return point ? point.label.trim() || point.id : token;
+    return point ? point.label.trim() || 'Điểm chuẩn chưa có tên' : 'Nguồn chưa xác định';
   }
 
   sourceTooltip(id: string | null | undefined): string {
     const token = String(id ?? '').trim();
     if (!token) return 'Nguồn khai báo trực tiếp; chưa gắn mã nguồn.';
     const label = this.sourceDisplayName(token);
-    return label === token ? 'Mã nguồn: ' + token : 'Tên nguồn: ' + label + ' (mã kỹ thuật: ' + token + ')';
+    return 'Nguồn sử dụng: ' + label;
   }
 
   concentrationOptionsFor(context: ConcentrationContext): readonly ConcentrationOption[] {

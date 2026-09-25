@@ -70,7 +70,8 @@ export class DutyShiftSwapRequestComponent {
       this.submitted.emit();
       this.closed.emit();
     } catch (error) {
-      this.toast.show(error instanceof Error ? error.message : 'Không thể gửi yêu cầu đổi ca.', 'error');
+      console.error('[DutyShiftSwap] Không thể gửi yêu cầu đổi ca:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.busy.set(false);
     }

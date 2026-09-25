@@ -76,14 +76,10 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             
                             <!-- Header Info -->
                             <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tên nhóm chỉ tiêu <span class="text-red-500">*</span></label>
                                         <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-teal-500 transition" placeholder="VD: Nhóm Kháng sinh (Sulfonamides)">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mã định danh (tự tạo)</label>
-                                        <input formControlName="id" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-600 dark:text-slate-300 outline-none" readonly>
                                     </div>
                                 </div>
                                 <div class="mt-3">
@@ -143,7 +139,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                                     <input formControlName="name" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-3">
-                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã định danh (đã khóa)</label>
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã chỉ tiêu</label>
                                                     <input formControlName="id" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs font-mono text-slate-400 dark:text-slate-400 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-2">
@@ -406,7 +402,8 @@ export class TargetGroupManagerComponent implements OnInit {
           this.loadGroups();
           if(!this.selectedGroup()) this.selectGroup(group); 
       } catch (e: any) {
-          this.toast.show('Lỗi lưu: ' + e.message, 'error');
+          console.error('[TargetGroupManager] Không thể lưu nhóm chỉ tiêu:', e);
+          this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       } finally {
           this.isProcessing.set(false);
       }

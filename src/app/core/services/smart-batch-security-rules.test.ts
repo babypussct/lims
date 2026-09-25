@@ -220,7 +220,7 @@ test('SmartBatch Step 2 uses a bounded two-step group wizard without adding a di
   assert.match(smartBatchTemplate, /<app-toolbar/);
   assert.match(smartBatchTemplate, /<app-modal-shell/);
   assert.match(smartBatchTemplate, /<app-empty-state/);
-  assert.match(smartBatchTemplate, /Tối ưu kế hoạch SmartBatch/);
+  assert.match(smartBatchTemplate, /Tối ưu kế hoạch phân tích/);
   assert.match(smartBatchTemplate, /smartbatch-action-dock/);
   assert.match(smartBatchTemplate, /<app-button[\s\S]*?\(click\)="sampleGroupWizard\.runOptimizer\(\)"[\s\S]*?\[disabled\]="!sampleGroupWizard\.allGroupsCompleted\(\)"/);
   assert.match(smartBatchTemplate, /<app-button[\s\S]*?\(click\)="executeAll\(\)"[\s\S]*?\[loading\]="isProcessing\(\)"/);

@@ -2,7 +2,31 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.25-b01
+## Phiên bản hiện tại: v26.09.25-b02
+
+### v26.09.25-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Các màn hình chính dùng ngôn ngữ nghiệp vụ nhất quán hơn, tập trung vào việc cần làm và ý nghĩa dữ liệu.
+- Thông báo lỗi được rút gọn theo từng thao tác để người dùng biết cách xử lý mà không phải đọc chi tiết hệ thống.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đồng bộ mã quản lý nội bộ của chất chuẩn nay tập trung vào hồ sơ có vấn đề, mã hiện tại, mã đề xuất, dữ liệu liên quan và kết quả thay đổi.
+- Checklist, lập mẻ phân tích, Kết quả, Kho, Cấu hình và tài khoản được đổi nhãn theo thuật ngữ quen thuộc trong phòng thí nghiệm.
+- Khi chưa có mã nghiệp vụ, hệ thống hiển thị trạng thái chưa có mã thay vì dùng mã nội bộ của hệ thống làm mã thay thế.
+- Các thao tác lưu, tải, xóa và kết nối có thông báo lỗi thống nhất, dễ hiểu và dễ xử lý hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không còn hiển thị mã nội bộ của hệ thống ở các vị trí đã được chuẩn hóa cho chất chuẩn, mẻ phân tích, hàng đợi in và một số biểu mẫu cấu hình.
+- Loại bỏ các nhãn mô tả cách hệ thống vận hành khỏi các màn hình nghiệp vụ như Checklist, lập mẻ, Thùng rác và Kết quả.
+- Giảm trường hợp thông báo lỗi chứa nội dung khó hiểu khi thao tác với chất chuẩn, Kho, Cấu hình, Kết quả, truy xuất và tài khoản.
 
 ### v26.09.25-b01
 

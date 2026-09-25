@@ -633,7 +633,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           this.selectedRecycleItem.set(results[0] || null);
       } catch (e) {
           console.error("Lỗi khi tải dữ liệu thùng rác:", e);
-          this.toast.show('Không thể tải thùng rác do Firebase từ chối truy vấn. Cần index!', 'error');
+          this.toast.show('Không thể tải dữ liệu thùng rác. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
       } finally {
           this.isRecycling.set(false);
       }

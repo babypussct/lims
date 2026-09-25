@@ -128,7 +128,7 @@ function amountForSort(std: ReferenceStandard): number {
 }
 
 function identityForSort(std: ReferenceStandard): string {
-  return std.internal_id || std.lot_number || std.id || '';
+  return std.internal_id || std.lot_number || 'Chưa có mã quản lý';
 }
 
 /**

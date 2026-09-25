@@ -113,7 +113,8 @@ export class ForgotPasswordModalComponent implements OnDestroy {
         this.successMsg.set('Nếu email hợp lệ, liên kết khôi phục đã được gửi. Hãy kiểm tra hộp thư đến hoặc thư mục Spam.');
         this.startCooldown();
       } else {
-        this.errorMsg.set(error.message || 'Không thể gửi email. Vui lòng thử lại sau.');
+        console.error('[ForgotPassword] Không thể gửi email khôi phục:', error);
+        this.errorMsg.set('Không thể gửi email. Vui lòng thử lại sau.');
       }
     } finally {
       this.isLoading.set(false);

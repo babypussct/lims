@@ -61,11 +61,13 @@ test('all equivalent mass concentration families have tooltip groups', () => {
   assert.match(componentSource, /tokens: \['ppt_ng_kg', 'ppt \(ng\/kg\)', 'ng_kg', 'ng\/kg'\]/);
 });
 
-test('source references resolve to KNV labels and keep IDs tooltip-only', () => {
+test('source references resolve to KNV labels without exposing technical IDs', () => {
   assert.match(componentSource, /sourceDisplayName\(id: string \| null \| undefined\): string/);
   assert.match(componentSource, /sourceTooltip\(id: string \| null \| undefined\): string/);
-  assert.match(componentSource, /source\.name\.trim\(\) \|\| source\.id/);
-  assert.match(componentSource, /point\.label\.trim\(\) \|\| point\.id/);
+  assert.match(componentSource, /source\.name\.trim\(\) \|\| 'Nguồn chưa có tên'/);
+  assert.match(componentSource, /point\.label\.trim\(\) \|\| 'Điểm chuẩn chưa có tên'/);
+  assert.match(componentSource, /return 'Nguồn sử dụng: ' \+ label/);
+  assert.doesNotMatch(componentSource, /mã kỹ thuật:/i);
   assert.match(componentSource, /sourceDisplayName\(row\.sourceId\)/);
   assert.match(engineSource, /sourceLabel = sourceById\.get\(point\.sourceId\)/);
   assert.match(templateSource, /\[attr\.title\]="sourceTooltip\(source\.sourceId\)"/);

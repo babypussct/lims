@@ -76,7 +76,8 @@ export class AccountPrivacySettingsComponent {
       this.toast.show('Đã ẩn danh hóa thông tin cá nhân.', 'success');
       await this.auth.logout();
     } catch (error: any) {
-      this.toast.show(`Lỗi: ${error?.message || error}`, 'error');
+      console.error('[AccountPrivacy] Không thể lưu thay đổi:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.anonymizing.set(false);
     }

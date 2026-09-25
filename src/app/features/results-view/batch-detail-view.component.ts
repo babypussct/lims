@@ -79,7 +79,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
             <div class="flex items-center gap-1.5">
               <i class="fa-solid fa-barcode text-slate-400 dark:text-slate-600 text-[11px]"></i>
               <span>Mã mẻ:</span>
-              <span class="font-mono font-bold text-slate-700 dark:text-slate-300 select-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+              <span class="font-mono font-bold text-slate-700 dark:text-slate-300 select-all">{{ run()?.inputs?.['batchCode'] || 'Chưa có mã mẻ' }}</span>
             </div>
             
             <div class="text-slate-300 dark:text-slate-700 select-none">•</div>
@@ -501,7 +501,7 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
           </div>
           <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa Có Kết Quả Phân Tích</h4>
           <p class="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed font-medium">
-            Mẻ chạy <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || run()?.id }}]</span> hiện chưa được nhập số liệu và đánh giá QC. Nhấn nút bên dưới để bắt đầu điền kết quả.
+            Mẻ chạy <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || 'Chưa có mã mẻ' }}]</span> hiện chưa được nhập số liệu và đánh giá QC. Nhấn nút bên dưới để bắt đầu điền kết quả.
           </p>
           <div class="flex items-center gap-3">
             <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">

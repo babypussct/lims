@@ -280,7 +280,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.25-b01');
+  systemVersion = signal<string>('v26.09.25-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -1709,7 +1709,10 @@ export class StateService implements OnDestroy {
 
       await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), sanitizeForFirebase(reqData));
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
-    } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
+    } catch (e: any) {
+      console.error('[StateService] Không thể gửi yêu cầu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
+    }
   }
 
   async directApproveAndQueuePrint(
@@ -1841,8 +1844,8 @@ export class StateService implements OnDestroy {
       return { logId: logRef.id, printJobId: printJobRef.id };
 
     } catch (e: any) {
-      if (e.code === 'resource-exhausted') this.toast.show('Lỗi: Hết hạn mức Quota.', 'error');
-      else this.toast.show(e.message, 'error');
+      console.error('[StateService] Không thể duyệt yêu cầu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return null;
     }
   }
@@ -2059,7 +2062,8 @@ export class StateService implements OnDestroy {
         logId: item.logRef.id
       }));
     } catch (e: any) {
-      this.toast.show(e?.message || 'Không thể duyệt kế hoạch SmartBatch.', 'error');
+      console.error('[StateService] Không thể duyệt kế hoạch phân tích:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return null;
     }
   }
@@ -2218,7 +2222,10 @@ export class StateService implements OnDestroy {
       this.statsService.incrementStats(this.getStatsDateForRequest(req, new Date()), req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
 
       this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
-    } catch (e: any) { this.toast.show(e.message, 'error'); }
+    } catch (e: any) {
+      console.error('[StateService] Không thể duyệt yêu cầu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
+    }
   }
 
   async revokeApproval(req: Request, targetStatus: 'pending' | 'rejected' = 'pending') {
@@ -2276,7 +2283,10 @@ export class StateService implements OnDestroy {
       this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs, true).catch(e => console.error(e));
 
       this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
-    } catch (e: any) { this.toast.show(e.message, 'error'); }
+    } catch (e: any) {
+      console.error('[StateService] Không thể cập nhật trạng thái yêu cầu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
+    }
   }
 
   async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
@@ -2472,10 +2482,11 @@ export class StateService implements OnDestroy {
         }
       }
 
-      this.toast.show(`Cập nhật thành công phiếu #${req.id.substring(0, 8)}`, 'success');
+      this.toast.show('Đã cập nhật phiếu thành công.', 'success');
       return true;
     } catch (e: any) {
-      this.toast.show(e.message, 'error');
+      console.error('[StateService] Không thể cập nhật phiếu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return false;
     }
   }
@@ -2538,7 +2549,8 @@ export class StateService implements OnDestroy {
       await batch.commit();
       this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
     } catch (e: any) {
-      this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
+      console.error('[StateService] Không thể xóa phiếu khỏi hàng đợi:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -2551,7 +2563,8 @@ export class StateService implements OnDestroy {
       await batch.commit();
       this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
     } catch (e: any) {
-      this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
+      console.error('[StateService] Không thể xóa các phiếu khỏi hàng đợi:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 }

@@ -71,7 +71,8 @@ export class AccountNotificationsSettingsComponent {
         token ? 'success' : 'error',
       );
     } catch (error: any) {
-      this.toast.show(`Lỗi: ${error?.message || error}`, 'error');
+      console.error('[AccountNotifications] Không thể lưu cài đặt thông báo:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.enabling.set(false);
     }
@@ -87,7 +88,8 @@ export class AccountNotificationsSettingsComponent {
         'success',
       );
     } catch (error: any) {
-      this.toast.show(`Không thể tắt thông báo: ${error?.message || error}`, 'error');
+      console.error('[AccountNotifications] Không thể tắt thông báo:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.disabling.set(false);
     }

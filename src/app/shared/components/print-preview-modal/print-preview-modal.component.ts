@@ -395,7 +395,8 @@ export class PrintPreviewModalComponent {
           this.toast.show('Tải PDF thành công!', 'success');
       } catch (e: any) {
           console.error(e);
-          this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
+          console.error('[PrintPreview] Không thể tạo PDF:', e);
+          this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
       } finally {
           if (tempContainer && document.body.contains(tempContainer)) {
               document.body.removeChild(tempContainer);

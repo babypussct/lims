@@ -396,7 +396,7 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                         <i class="fa-solid fa-scroll text-blue-500"></i> Nhật ký cập nhật
                     </button>
                 </div>
-                <div class="break-words">&copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ</div>
+                <div class="break-words">&copy; {{year}} NAFIQPM6 LIMS &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ</div>
                 <div class="text-gray-400/80 dark:text-gray-500 break-words">NAFIQPM6 Laboratory Information Management System Cloud &bull; {{state.systemVersion()}}</div>
             </div>
 

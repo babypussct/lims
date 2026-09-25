@@ -461,7 +461,8 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
                 this.loadStandardData(this.standardId());
             }
         } catch (error: any) {
-            this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
+            console.error('[StandardDetail] Không thể xử lý dữ liệu:', error);
+            this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
         } finally {
             this.isProcessing.set(false);
         }
@@ -507,7 +508,8 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             this.toast.show(`Đã trả mã ${std.internal_id} về sổ mã.`, 'success');
             await this.loadStandardData(this.standardId());
         } catch (error: any) {
-            this.toast.show(error?.message || 'Không thể trả Mã quản lý nội bộ.', 'error');
+            console.error('[StandardDetail] Không thể trả Mã quản lý nội bộ:', error);
+            this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
         } finally {
             this.isProcessing.set(false);
         }

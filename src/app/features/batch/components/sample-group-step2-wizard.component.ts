@@ -277,7 +277,7 @@ interface WizardSopSuggestion {
                             <p class="mt-3 text-[11px] text-orange-600 dark:text-orange-400 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Không tìm thấy SOP tương thích nền mẫu và các chỉ tiêu đã chọn.</p>
                           } @else {
                             @if (sopSuggestions(group)[0].isPartial) {
-                              <p class="mt-3 text-[10px] text-orange-600 dark:text-orange-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Chưa có SOP đơn lẻ phủ đủ. Các SOP dưới đây là gợi ý gần nhất; SmartBatch vẫn có thể tự gom hoặc tách thành nhiều mẻ khi để chế độ tự phân phối.</p>
+                              <p class="mt-3 text-[10px] text-orange-600 dark:text-orange-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Chưa có SOP đơn lẻ phủ đủ. Các SOP dưới đây là gợi ý gần nhất; hệ thống có thể tự sắp xếp thành nhiều mẻ phân tích khi để chế độ tự chọn SOP.</p>
                             }
                             <div class="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-2">
                               @for (suggestion of sopSuggestions(group); track suggestion.sop.id) {
@@ -338,12 +338,12 @@ interface WizardSopSuggestion {
                             <span class="sr-only">SOP áp dụng cho nhóm</span>
                             <select [ngModel]="group.forcedSopId || ''" (ngModelChange)="updateForcedSop($event === '' ? undefined : $event)" aria-label="SOP hiện tại"
                                     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500">
-                              <option value="">Tự phân phối bởi SmartBatch</option>
+                              <option value="">Để hệ thống tự chọn SOP</option>
                               @for (sop of assignableSops(group); track sop.id) { <option [value]="sop.id">{{sop.isManualOnly ? 'Thủ công: ' : 'Chỉ định: '}}{{sop.name}}</option> }
                             </select>
                           </label>
                           <p class="text-[9px] text-slate-500 dark:text-slate-400">
-                            {{group.forcedSopId ? 'SOP này áp dụng cho toàn bộ chỉ tiêu của nhóm.' : 'SmartBatch tự tối ưu và có thể gom/tách batch vật lý.'}}
+                            {{group.forcedSopId ? 'SOP này áp dụng cho toàn bộ chỉ tiêu của nhóm.' : 'Hệ thống tự sắp xếp mẫu thành các mẻ phân tích phù hợp.'}}
                           </p>
 
                           @if (sopSelectionError()) {

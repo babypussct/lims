@@ -166,7 +166,8 @@ export class StandardsTagManagerModalComponent {
       this.showMessage(this.editingId() ? 'Đã cập nhật nhãn.' : 'Đã tạo nhãn.', 'success');
       this.resetForm();
     } catch (error: any) {
-      this.showMessage(error?.message || 'Không thể lưu nhãn.', 'error');
+      console.error('[StandardsTagManager] Không thể lưu nhãn:', error);
+      this.showMessage('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.isBusy.set(false);
     }
@@ -195,7 +196,8 @@ export class StandardsTagManagerModalComponent {
       this.preview.set(await this.catalog.previewAccreditationMethodImport({ restoreArchivedFromSameSeed: this.restoreArchivedFromSameSeed() }));
       this.clearMessage();
     } catch (error: any) {
-      this.showMessage(error?.message || 'Không thể xem trước dữ liệu phương pháp.', 'error');
+      console.error('[StandardsTagManager] Không thể xem trước dữ liệu phương pháp:', error);
+      this.showMessage('Không thể tải dữ liệu. Vui lòng thử lại.', 'error');
     } finally {
       this.isBusy.set(false);
     }
@@ -213,7 +215,8 @@ export class StandardsTagManagerModalComponent {
       this.showMessage(`Đã đồng bộ dữ liệu phương pháp: tạo ${result.createIds.length}, cập nhật ${result.updateIds.length}, khôi phục ${result.restoreIds.length}, giữ nguyên ${result.unchangedIds.length}.`, 'success');
       this.preview.set(await this.catalog.previewAccreditationMethodImport({ restoreArchivedFromSameSeed: this.restoreArchivedFromSameSeed() }));
     } catch (error: any) {
-      this.showMessage(error?.message || 'Không thể nhập dữ liệu phương pháp.', 'error');
+      console.error('[StandardsTagManager] Không thể nhập dữ liệu phương pháp:', error);
+      this.showMessage('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.isBusy.set(false);
     }
@@ -225,7 +228,8 @@ export class StandardsTagManagerModalComponent {
       await action();
       this.showMessage(success, 'success');
     } catch (error: any) {
-      this.showMessage(error?.message || 'Thao tác danh mục thất bại.', 'error');
+      console.error('[StandardsTagManager] Thao tác danh mục thất bại:', error);
+      this.showMessage('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
     } finally {
       this.isBusy.set(false);
     }

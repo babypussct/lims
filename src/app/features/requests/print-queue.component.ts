@@ -68,7 +68,7 @@ import { PrintQueueService } from '../../core/services/print-queue.service';
                                         <input type="checkbox"
                                                [checked]="selectedLogIds().has(log.id)"
                                                (change)="toggleSelection(log.id)"
-                                               [attr.aria-label]="'Chọn phiếu in ' + (log.sopBasicInfo?.name || log.printData?.sop?.name || log.id)"
+                                               [attr.aria-label]="'Chọn phiếu in ' + (log.sopBasicInfo?.name || log.printData?.sop?.name || 'chưa có tên SOP')"
                                                class="h-5 w-5 cursor-pointer accent-blue-600 dark:accent-blue-500">
                                     </label>
                                     <div class="min-w-0 flex-1">

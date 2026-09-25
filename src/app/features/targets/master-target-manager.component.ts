@@ -132,8 +132,8 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             </div>
                             
                             <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã định danh (tự tạo)</label>
-                                <input formControlName="id" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-fuchsia-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Auto-generated hoặc tự điền...">
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã chỉ tiêu</label>
+                                <input formControlName="id" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-fuchsia-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Tự tạo từ tên hoặc nhập mã chỉ tiêu...">
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
@@ -191,7 +191,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             <thead class="bg-slate-100 dark:bg-slate-900/70 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
                                 <tr>
                                     <th class="p-3 border-b border-slate-200 dark:border-slate-700">Tên chỉ tiêu</th>
-                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">Mã định danh (tự động)</th>
+                                    <th class="p-3 border-b border-slate-200 dark:border-slate-700">Mã chỉ tiêu</th>
                                     <th class="p-3 border-b border-slate-200 dark:border-slate-700">CAS</th>
                                     <th class="p-3 border-b border-slate-200 dark:border-slate-700">Formula</th>
                                     <th class="p-3 border-b border-slate-200 dark:border-slate-700">Alias</th>
@@ -351,7 +351,8 @@ export class MasterTargetManagerComponent implements OnInit {
           this.closeModal();
           this.loadData();
       } catch (e: any) {
-          this.toast.show('Lỗi: ' + e.message, 'error');
+          console.error('[MasterTargetManager] Thao tác thất bại:', e);
+          this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -364,7 +365,8 @@ export class MasterTargetManagerComponent implements OnInit {
               this.toast.show('Đã xóa');
               this.loadData();
           } catch (e: any) {
-              this.toast.show('Lỗi: ' + e.message, 'error');
+              console.error('[MasterTargetManager] Thao tác thất bại:', e);
+              this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
           }
       }
   }
@@ -390,7 +392,8 @@ export class MasterTargetManagerComponent implements OnInit {
           const rawData: any[] = XLSX.utils.sheet_to_json(firstSheet);
           this.parseImportData(rawData);
       } catch(e: any) {
-          this.toast.show('Lỗi đọc tệp: ' + e.message, 'error');
+          console.error('[MasterTargetManager] Không thể đọc tệp:', e);
+          this.toast.show('Không thể tải dữ liệu. Vui lòng thử lại.', 'error');
       } finally {
           this.isLoading.set(false);
           input.value = '';
@@ -459,7 +462,8 @@ export class MasterTargetManagerComponent implements OnInit {
           this.importPreview.set([]);
           this.loadData();
       } catch (e: any) {
-          this.toast.show('Không thể lưu dữ liệu nhập: ' + e.message, 'error');
+          console.error('[MasterTargetManager] Không thể lưu dữ liệu nhập:', e);
+          this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -470,7 +474,7 @@ export class MasterTargetManagerComponent implements OnInit {
       try {
           const XLSX = await import('xlsx');
           const dataToExport = this.items().map(item => ({
-              'Mã định danh': item.id,
+              'Mã chỉ tiêu': item.id,
               'Tên chỉ tiêu': item.name,
               'Tên khác / Alias': (item.aliases || []).join('; '),
               'Số CAS': item.cas_number || '',
@@ -497,7 +501,8 @@ export class MasterTargetManagerComponent implements OnInit {
           XLSX.writeFile(wb, fileName);
           this.toast.show('Xuất tệp Excel thành công!', 'success');
       } catch (e: any) {
-          this.toast.show('Lỗi xuất tệp: ' + e.message, 'error');
+          console.error('[MasterTargetManager] Không thể xuất tệp:', e);
+          this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
       } finally {
           this.isProcessing.set(false);
       }

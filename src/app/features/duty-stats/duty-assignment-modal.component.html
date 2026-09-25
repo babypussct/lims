@@ -116,7 +116,7 @@
           </div>
         }
         @if (draft.sourceAssignees) {
-          <div class="mt-3 rounded-lg border border-amber-200/70 bg-white/70 px-3 py-2 text-[10px] dark:border-amber-900/50 dark:bg-slate-900/70"><strong>Nguồn Gemini ban đầu:</strong> {{ draft.sourceAssignees }}</div>
+          <div class="mt-3 rounded-lg border border-amber-200/70 bg-white/70 px-3 py-2 text-[10px] dark:border-amber-900/50 dark:bg-slate-900/70"><strong>Kết quả nhận diện ban đầu:</strong> {{ draft.sourceAssignees }}</div>
         }
         @if ((draft.unresolvedAssignees?.length || 0) === 0 && draft.needsVerification) {
           <label class="mt-3 flex items-start gap-2 text-[11px] font-bold text-amber-800 dark:text-amber-200">

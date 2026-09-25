@@ -437,24 +437,24 @@ export class StatisticsComponent {
               
               if (sopId === 'all') {
                   const data = nxtRows.map((row: any, index: number) => ({
-                    'STT': index + 1, 'Mã định danh': row.id, 'Tên hàng': row.name, 'ĐVT': row.unit, 'Phân loại': row.category,
+                    'STT': index + 1, 'Tên hàng': row.name, 'ĐVT': row.unit, 'Phân loại': row.category,
                     'Tồn đầu kỳ': row.startStock, 'Nhập trong kỳ': row.importQty, 'Xuất trong kỳ': row.exportQty, 'Tồn cuối kỳ': row.endStock
                   }));
                   const ws = XLSX.utils.json_to_sheet([]);
                   XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO NHẬP - XUẤT - TỒN (KHO)"]], { origin: "A1" });
                   XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
-                  this.formatSheet(ws, XLSX, 8, data.length, [6, 20, 35, 10, 18, 14, 14, 14, 14]);
+                  this.formatSheet(ws, XLSX, 8, data.length, [6, 35, 10, 18, 14, 14, 14, 14]);
                   XLSX.utils.book_append_sheet(wb, ws, "NXT");
                   sheetsAdded.push("NXT");
               } else {
                   const data = nxtRows.map((row: any, index: number) => ({
-                    'STT': index + 1, 'Mã định danh': row.id, 'Tên hàng': row.name, 'ĐVT': row.unit,
+                    'STT': index + 1, 'Tên hàng': row.name, 'ĐVT': row.unit,
                     'Tổng lượng xuất': row.exportQty
                   }));
                   const ws = XLSX.utils.json_to_sheet([]);
                   XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`CHI TIẾT XUẤT KHO - ${selectedSopName}`]], { origin: "A1" });
                   XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
-                  this.formatSheet(ws, XLSX, 8, data.length, [6, 20, 35, 10, 16]);
+                  this.formatSheet(ws, XLSX, 8, data.length, [6, 35, 10, 16]);
                   XLSX.utils.book_append_sheet(wb, ws, "Xuất SOP");
                   sheetsAdded.push("Xuất SOP");
               }
@@ -1027,7 +1027,7 @@ export class StatisticsComponent {
         setTimeout(() => this.isBackfilling.set(false), 2000);
     } catch (e: any) {
         console.error(e);
-        this.toast.show('Lỗi khi chạy backfill: ' + e.message, 'error');
+        this.toast.show('Không thể cập nhật dữ liệu lịch sử. Vui lòng thử lại.', 'error');
     } finally {
         this.isBackfilling.set(false);
         this.backfillProgressText.set('');
@@ -1307,7 +1307,7 @@ export class StatisticsComponent {
           const unresolvedLegacyApprovals = findUnresolvedLegacyNxtApprovalLogs(recoverableLogs, legacyPrintData);
           if (unresolvedLegacyApprovals.length > 0) {
               throw new Error(
-                  `N-X-T thiếu ${unresolvedLegacyApprovals.length} snapshot phê duyệt lịch sử cần để tái dựng biến động kho.`
+                  `N-X-T thiếu ${unresolvedLegacyApprovals.length} bản lưu phê duyệt lịch sử cần để tái dựng biến động kho.`
               );
           }
           const movements = aggregateNxtMovements(recoverableLogs, legacyPrintData, startTime, endTime, sopId);

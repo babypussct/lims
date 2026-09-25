@@ -45,9 +45,12 @@ export class ToastService {
 
   showEvent(options: ToastOptions): string {
     const type = options.type ?? 'success';
+    const message = type === 'error'
+      ? this.toUserFacingErrorMessage(options.message)
+      : options.message;
     const id = `${Date.now()}-${++this.sequence}`;
 
-    const groupKey = options.dedupeKey || `${type}:${options.message}`;
+    const groupKey = options.dedupeKey || `${type}:${message}`;
     const existing = [...this.toasts(), ...this.queue].find(t => 
       (t.dedupeKey || `${t.type}:${t.message}`) === groupKey
     );
@@ -74,7 +77,7 @@ export class ToastService {
 
     const toast: Toast = {
       id,
-      message: options.message,
+      message,
       type,
       title: options.title,
       persistent: options.persistent,
@@ -160,5 +163,60 @@ export class ToastService {
     if (type === 'warning') return 7000;
     if (type === 'error') return 9000;
     return 5000;
+  }
+
+  /**
+   * Error messages often originate from SDKs/services and may contain database,
+   * network or implementation details. Keep those details out of the user-facing
+   * toast while preserving already-friendly business validation messages.
+   */
+  private toUserFacingErrorMessage(rawMessage: string): string {
+    const message = String(rawMessage || '').trim();
+    if (!message) return 'Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+
+    const normalized = message.toLocaleLowerCase('vi-VN');
+
+    if (/permission[-_ ]denied|missing or insufficient permissions|unauthenticated|không có quyền|không đủ quyền/.test(normalized)) {
+      return 'Bạn không có quyền thực hiện thao tác này.';
+    }
+
+    if (/network[-_ ]request[-_ ]failed|failed to fetch|network error|offline|unavailable|mất kết nối|không thể kết nối/.test(normalized)) {
+      return 'Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.';
+    }
+
+    // A large part of the application historically concatenated SDK/service
+    // errors after a friendly prefix, for example "Lỗi khi xóa: <raw error>".
+    // Treat those prefixes as action context and never surface the appended
+    // implementation detail to laboratory users.
+    const genericPrefixedError = /^(lỗi|không thể)\b[^:]{0,80}:/i.test(message);
+    if (genericPrefixedError) {
+      if (/xóa|delete|remove/.test(normalized)) {
+        return 'Không thể xóa dữ liệu. Vui lòng thử lại.';
+      }
+      if (/tải|đọc|load|fetch|read|download|mở tệp|trang tính/.test(normalized)) {
+        return 'Không thể tải dữ liệu. Vui lòng thử lại.';
+      }
+      if (/lưu|ghi|cập nhật|nhập|gửi|tạo|duyệt|khôi phục|mở khóa|save|write|update|import|submit|create|approve|restore|unlock/.test(normalized)) {
+        return 'Không thể lưu thay đổi. Vui lòng thử lại.';
+      }
+      return 'Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+    }
+
+    const looksTechnical = /firebase|firestore|document id|collection|snapshot|failed-precondition|resource-exhausted|internal error|typeerror|referenceerror|stack trace|\bhttp\s*\d{3}\b|\bindex\b|\bunknown\b|^error\b|^failed\b|^cannot\b|^could not\b|\b[a-z][a-z0-9-]+\/[a-z][a-z0-9-]+\b|https?:\/\//i.test(message);
+
+    if (looksTechnical) {
+      if (/xóa|delete|remove/.test(normalized)) {
+        return 'Không thể xóa dữ liệu. Vui lòng thử lại.';
+      }
+      if (/tải|đọc|load|fetch|read|download/.test(normalized)) {
+        return 'Không thể tải dữ liệu. Vui lòng thử lại.';
+      }
+      if (/lưu|ghi|cập nhật|nhập|gửi|tạo|save|write|update|import|submit|create/.test(normalized)) {
+        return 'Không thể lưu thay đổi. Vui lòng thử lại.';
+      }
+      return 'Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+    }
+
+    return message;
   }
 }

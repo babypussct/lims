@@ -157,7 +157,7 @@
               <span class="text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">SOP</span>
             </div>
 
-            <div class="ml-auto inline-flex items-center gap-0.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-0.5" role="group" aria-label="Chế độ hiển thị card">
+            <div class="ml-auto inline-flex items-center gap-0.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-0.5" role="group" aria-label="Kiểu hiển thị danh sách">
               @for (option of viewModeOptions; track option.value) {
                 <button type="button" (click)="setViewMode(option.value)"
                         [attr.aria-pressed]="viewMode() === option.value"
@@ -342,7 +342,7 @@
                     }
                     <button type="button" (click)="toggleBatchSamples(batch.cardKey)" class="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1.5">
                       <i class="fa-solid" [class.fa-compress]="isBatchExpanded(batch.cardKey)" [class.fa-table-cells]="!isBatchExpanded(batch.cardKey)"></i>
-                      {{isBatchExpanded(batch.cardKey) ? 'Thu gọn card' : 'Mở rộng chi tiết'}}
+                      {{isBatchExpanded(batch.cardKey) ? 'Thu gọn chi tiết' : 'Mở rộng chi tiết'}}
                     </button>
                   </footer>
                 }
@@ -353,7 +353,7 @@
 
           <div class="mt-2.5 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[9px] font-semibold text-slate-400">
             <span><i class="fa-solid fa-shield-halved mr-1.5 text-emerald-500"></i>Dữ liệu truy vấn trực tiếp theo ngày kiểm nghiệm.</span>
-            <span>Mỗi card là một SOP/phiên bản; các mẻ vật lý vẫn độc lập và mẫu chỉ được gom khi có cùng bộ chỉ tiêu.
+            <span>Các mẫu có cùng SOP, phiên bản và bộ chỉ tiêu được hiển thị cùng nhóm để dễ theo dõi.
               @if (lastLoadedAt(); as refreshedAt) { · Cập nhật {{formatTimestamp(refreshedAt)}} }
             </span>
           </div>
@@ -515,7 +515,7 @@
             }
           </div>
           <p class="text-[10px] font-medium text-slate-400">
-            Tự động so sánh lưới mini-card và bảng danh sách để hạn chế số trang, xuống dòng và chia mẻ.
+            Hệ thống tự chọn bố cục in phù hợp để hạn chế số trang và ngắt dòng.
           </p>
         </div>
         

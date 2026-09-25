@@ -59,4 +59,35 @@ describe('ToastService queue', () => {
     assert.equal(actionRan, true);
     assert.equal(service.toasts().length, 0);
   });
+
+  it('replaces technical permission and network errors with user-facing messages', () => {
+    const service = new ToastService();
+    service.show('FirebaseError: Missing or insufficient permissions.', 'error', true);
+    service.show('Network request failed: unavailable', 'error', true);
+
+    assert.deepEqual(service.toasts().map(toast => toast.message), [
+      'Bạn không có quyền thực hiện thao tác này.',
+      'Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.'
+    ]);
+  });
+
+  it('preserves friendly business validation errors', () => {
+    const service = new ToastService();
+    const message = 'Không thể ẩn lô đang mượn hoặc chờ duyệt.';
+    service.show(message, 'error', true);
+    assert.equal(service.toasts()[0].message, message);
+  });
+
+  it('removes raw error details appended to action-oriented prefixes', () => {
+    const service = new ToastService();
+    service.show('Lỗi khi xóa vai trò: unexpected backend detail', 'error', true);
+    service.show('Không thể đọc tệp: parser stack trace', 'error', true);
+    service.show('Lỗi gửi yêu cầu: permission mismatch', 'error', true);
+
+    assert.deepEqual(service.toasts().map(toast => toast.message), [
+      'Không thể xóa dữ liệu. Vui lòng thử lại.',
+      'Không thể tải dữ liệu. Vui lòng thử lại.',
+      'Không thể lưu thay đổi. Vui lòng thử lại.'
+    ]);
+  });
 });

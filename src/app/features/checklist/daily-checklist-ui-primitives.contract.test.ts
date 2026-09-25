@@ -47,7 +47,7 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /moveAvailableDate\('older'\)/);
     assert.match(template, /moveAvailableDate\('newer'\)/);
     assert.match(template, /<app-date-picker\b/);
-    assert.match(template, /role="group" aria-label="Chế độ hiển thị card"/);
+    assert.match(template, /role="group" aria-label="Kiểu hiển thị danh sách"/);
     assert.match(template, /data-daily-checklist-loading/);
     assert.match(template, /data-daily-checklist-error/);
     assert.match(template, /data-daily-checklist-empty/);

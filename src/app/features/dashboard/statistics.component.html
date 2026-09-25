@@ -47,7 +47,7 @@
                                 [loading]="isBackfilling()"
                                 (click)="runStatsBackfill()">
                                 <i class="fa-solid fa-database" aria-hidden="true"></i>
-                                {{ isBackfilling() ? 'Đang chạy...' : 'Cập nhật lại dữ liệu (backfill)' }}
+                                {{ isBackfilling() ? 'Đang chạy...' : 'Cập nhật lại dữ liệu lịch sử' }}
                             </app-button>
 
                             @if (isBackfilling() && backfillProgressText()) {

@@ -36,7 +36,7 @@ import { CommonModule } from '@angular/common';
                            class="text-fuchsia-600 focus:ring-fuchsia-500 cursor-pointer">
                     <div class="flex flex-col">
                       <span class="font-extrabold text-slate-700 dark:text-slate-250">{{ run.sopName }}</span>
-                      <span class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ run.inputs?.['batchCode'] || run.id }} — {{ run.user }}</span>
+                      <span class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ run.inputs?.['batchCode'] || 'Chưa có mã mẻ' }} — {{ run.user }}</span>
                     </div>
                   </label>
                 }

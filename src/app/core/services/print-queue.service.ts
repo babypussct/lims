@@ -132,7 +132,8 @@ export class PrintQueueService {
       await batch.commit();
       this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
     } catch (error: any) {
-      this.toast.show('Lỗi xóa phiếu: ' + error.message, 'error');
+      console.error('[PrintQueueService] Không thể xóa phiếu:', error);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -149,7 +150,8 @@ export class PrintQueueService {
       await batch.commit();
       this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
     } catch (error: any) {
-      this.toast.show('Lỗi xóa phiếu: ' + error.message, 'error');
+      console.error('[PrintQueueService] Không thể xóa các phiếu:', error);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 }

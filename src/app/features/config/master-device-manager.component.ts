@@ -89,10 +89,11 @@ export class MasterDeviceManagerComponent implements OnInit {
   }
 
   async save() {
-    if (!this.formData.id || !this.formData.name) {
-      this.toast.show('Vui lòng nhập mã và tên thiết bị', 'error');
+    if (!this.formData.name) {
+      this.toast.show('Vui lòng nhập tên thiết bị.', 'error');
       return;
     }
+    if (!this.formData.id) this.formData.id = generateSlug(this.formData.name);
 
     this.isSaving.set(true);
     try {
@@ -106,7 +107,8 @@ export class MasterDeviceManagerComponent implements OnInit {
       this.closeModal();
       await this.loadData();
     } catch (e: any) {
-      this.toast.show('Lỗi khi lưu: ' + e.message, 'error');
+      console.error('[DeviceManager] Không thể lưu thiết bị:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.isSaving.set(false);
     }
@@ -124,7 +126,8 @@ export class MasterDeviceManagerComponent implements OnInit {
       this.toast.show('Đã xóa thiết bị', 'success');
       await this.loadData();
     } catch (e: any) {
-      this.toast.show('Lỗi khi xóa: ' + e.message, 'error');
+      console.error('[DeviceManager] Không thể xóa thiết bị:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -135,7 +138,8 @@ export class MasterDeviceManagerComponent implements OnInit {
       this.toast.show(msg, 'success');
       await this.loadData();
     } catch (e: any) {
-      this.toast.show('Lỗi: ' + e.message, 'error');
+      console.error('[DeviceManager] Không thể cập nhật thiết bị:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     }
   }
 }

@@ -134,7 +134,8 @@ export class AccountSecuritySettingsComponent {
     try {
       await this.auth.linkGoogleToCurrentUser();
     } catch (error: any) {
-      this.toast.show(this.auth.googleRedirectError() || error?.message || 'Không thể liên kết Google.', 'error');
+      console.error('[AccountSecurity] Không thể liên kết Google:', error);
+      this.toast.show(this.auth.googleRedirectError() || 'Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -151,7 +152,8 @@ export class AccountSecuritySettingsComponent {
     } catch (error: any) {
       const message = error?.code === 'auth/requires-recent-login'
         ? 'Phiên bảo mật đã cũ. Vui lòng đăng nhập lại rồi thử lại.'
-        : error?.message || 'Không thể thay đổi phương thức đăng nhập.';
+        : 'Không thể lưu thay đổi. Vui lòng thử lại.';
+      console.error('[AccountSecurity] Không thể thay đổi phương thức đăng nhập:', error);
       this.toast.show(message, 'error');
     } finally {
       this.unlinkingProvider.set(null);

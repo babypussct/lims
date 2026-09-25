@@ -1117,7 +1117,8 @@ export class SmartBatchComponent {
               this.goBackToStep0();
           }
       } catch (e: any) {
-          this.toast.show('Lỗi phê duyệt mẻ: ' + (e.message || e), 'error');
+          console.error('[SmartBatch] Không thể phê duyệt mẻ:', e);
+          this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       } finally {
           this.isSingleSampleCommitting.set(false);
       }
@@ -1243,7 +1244,8 @@ export class SmartBatchComponent {
           this.step.set(2);
 
       } catch (e: any) {
-          this.toast.show('Lỗi phân tích: ' + e.message, 'error');
+          console.error('[SmartBatch] Không thể phân tích dữ liệu:', e);
+          this.toast.show('Không thể tải dữ liệu. Vui lòng thử lại.', 'error');
           console.error(e);
       } finally {
           this.isProcessing.set(false);
@@ -1636,7 +1638,8 @@ export class SmartBatchComponent {
           this.quickImportInput = 0;
           this.showQuickImport.set(true);
       } catch (e: any) {
-          this.toast.show('Lỗi tải dữ liệu kho: ' + e.message, 'error');
+          console.error('[SmartBatch] Không thể tải dữ liệu kho:', e);
+          this.toast.show('Không thể tải dữ liệu. Vui lòng thử lại.', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -1675,7 +1678,8 @@ export class SmartBatchComponent {
           this.validateGlobalStock();
 
       } catch (e: any) {
-          this.toast.show('Lỗi nhập kho: ' + e.message, 'error');
+          console.error('[SmartBatch] Không thể cập nhật kho:', e);
+          this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       } finally {
           this.isProcessing.set(false);
       }
@@ -2000,7 +2004,8 @@ export class SmartBatchComponent {
                   this.reset();
               }
           } catch (e: any) {
-              this.toast.show('Lỗi xử lý: ' + e.message, 'error');
+              console.error('[SmartBatch] Không thể xử lý dữ liệu:', e);
+              this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
           } finally {
               this.isProcessing.set(false);
           }

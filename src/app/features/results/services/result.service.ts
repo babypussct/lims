@@ -85,7 +85,8 @@ export class ResultService {
       return true;
     } catch (e: any) {
       console.error(e);
-      this.toast.show('Lỗi khi xóa mẻ gộp: ' + e.message, 'error');
+      console.error('[ResultService] Không thể xóa mẻ gộp:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
       return false;
     }
   }
@@ -334,7 +335,8 @@ export class ResultService {
       } as any;
     } catch (e: any) {
       console.error('Error fetching split draft:', e);
-      this.toast.show('Không thể tải dữ liệu nháp: ' + e.message, 'error');
+      console.error('[ResultService] Không thể tải dữ liệu nháp:', e);
+      this.toast.show('Không thể tải dữ liệu. Vui lòng thử lại.', 'error');
       return null;
     }
   }
@@ -604,7 +606,8 @@ export class ResultService {
       return true;
     } catch (e: any) {
       console.error('Error saving result draft:', e);
-      this.toast.show('Lỗi lưu nháp: ' + e.message, 'error');
+      console.error('[ResultService] Không thể lưu dữ liệu nháp:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return false;
     }
   }
@@ -671,7 +674,8 @@ export class ResultService {
       return null;
     } catch (e: any) {
       console.error('Error restoring backup:', e);
-      this.toast.show('Lỗi khôi phục: ' + e.message, 'error');
+      console.error('[ResultService] Không thể khôi phục dữ liệu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return null;
     }
   }
@@ -786,7 +790,8 @@ export class ResultService {
       return null;
     } catch (e: any) {
       console.error('Error restoring version:', e);
-      this.toast.show('Lỗi khôi phục: ' + e.message, 'error');
+      console.error('[ResultService] Không thể khôi phục dữ liệu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return null;
     }
   }
@@ -1260,7 +1265,8 @@ export class ResultService {
       return await this.getDraft(requestId);
     } catch (e: any) {
       console.error('Error unlocking to edit:', e);
-      this.toast.show('Lỗi mở khóa: ' + e.message, 'error');
+      console.error('[ResultService] Không thể mở khóa kết quả:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return null;
     }
   }
@@ -1419,7 +1425,8 @@ export class ResultService {
       return resetResult;
     } catch (e: any) {
       console.error('Error resetting results:', e);
-      this.toast.show('Lỗi reset kết quả: ' + e.message, 'error');
+      console.error('[ResultService] Không thể đặt lại kết quả:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       return null;
     }
   }

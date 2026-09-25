@@ -1169,7 +1169,8 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       } catch (e: any) {
           if (requestToken !== this.lookupRequest) return;
           console.error(e);
-          this.errorMsg.set('Lỗi kết nối: ' + e.message);
+          console.error('[Traceability] Không thể tải dữ liệu:', e);
+          this.errorMsg.set('Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.');
       } finally {
           if (requestToken === this.lookupRequest) {
               this.isLoading.set(false);

@@ -131,7 +131,8 @@ export class DutyShiftSwapPanelComponent {
       this.directIncomingStaffId.set('');
       this.directReason.set('');
     } catch (error) {
-      this.toast.show(error instanceof Error ? error.message : 'Không thể đổi ca trực tiếp.', 'error');
+      console.error('[DutyShiftSwap] Không thể đổi ca trực tiếp:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.actionBusyId.set('');
     }
@@ -144,7 +145,8 @@ export class DutyShiftSwapPanelComponent {
       await action();
       this.toast.show('Đã cập nhật yêu cầu đổi ca.', 'success');
     } catch (error) {
-      this.toast.show(error instanceof Error ? error.message : 'Không thể cập nhật yêu cầu đổi ca.', 'error');
+      console.error('[DutyShiftSwap] Không thể cập nhật yêu cầu đổi ca:', error);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.actionBusyId.set('');
     }

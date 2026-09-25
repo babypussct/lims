@@ -68,7 +68,7 @@ describe('dashboard shared UI primitive integration', () => {
     assert.match(template, /<app-button\b/);
     assert.match(template, /title="Báo cáo quản trị"/);
     assert.match(template, /Xuất báo cáo/);
-    assert.match(template, /Cập nhật lại dữ liệu \(backfill\)/);
+    assert.match(template, /Cập nhật lại dữ liệu lịch sử/);
     assert.match(template, /1\. Nhật ký hoạt động/);
     assert.match(template, /3\. Tiêu hao & biểu đồ/);
     assert.match(template, /5\. Sức khỏe & truy xuất/);

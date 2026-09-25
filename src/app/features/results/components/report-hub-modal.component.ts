@@ -39,7 +39,7 @@ interface ReportCardVm {
                 <div class="min-w-0">
                   <h3 class="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">Trung Tâm Báo Cáo</h3>
                   <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5 truncate">
-                    {{ run?.sopName }} · {{ run?.inputs?.['batchCode'] || run?.id }}
+                    {{ run?.sopName }} · {{ run?.inputs?.['batchCode'] || 'Chưa có mã mẻ' }}
                   </p>
                   <div class="mt-2 flex flex-wrap items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/40 text-[10px] font-black uppercase">

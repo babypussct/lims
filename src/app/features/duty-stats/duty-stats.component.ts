@@ -851,7 +851,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
 
   exportCsv(): void {
     const rows = [
-      ['Ngày', 'Giờ bắt đầu', 'Trạng thái', 'Nhân sự xác định', 'Vị trí chưa xác định', 'Người chủ trì', 'Nguồn Gemini ban đầu', 'Ghi chú'],
+      ['Ngày', 'Giờ bắt đầu', 'Trạng thái', 'Nhân sự xác định', 'Vị trí chưa xác định', 'Người chủ trì', 'Kết quả nhận diện ban đầu', 'Ghi chú'],
       ...this.duty.schedules().map(schedule => {
         const names = this.namesFor(schedule);
         const unresolved = this.unresolvedFor(schedule);

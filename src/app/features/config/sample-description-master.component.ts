@@ -122,19 +122,19 @@ export class SampleDescriptionMasterComponent implements OnInit {
 
   async save(): Promise<void> {
     const item = this.buildItemFromForm();
-    if (!item.id || !item.name) {
-      this.toast.show('Vui lòng nhập mã và tên mô tả mẫu.', 'error');
+    if (!item.name) {
+      this.toast.show('Vui lòng nhập tên mô tả mẫu.', 'error');
       return;
     }
     if (!/^[a-z0-9_]+$/.test(item.id)) {
-      this.toast.show('Mã định danh phải dùng chữ thường không dấu, số và dấu gạch dưới (_), ví dụ: ca_tra.', 'error');
+      this.toast.show('Tên mô tả mẫu không hợp lệ. Vui lòng kiểm tra lại.', 'error');
       return;
     }
     const duplicateId = this.items().find(existing =>
       existing.id === item.id && existing.id !== this.editingId()
     );
     if (duplicateId) {
-      this.toast.show(`Mã định danh “${item.id}” đã được sử dụng cho “${duplicateId.name}”.`, 'error');
+      this.toast.show(`Mô tả mẫu “${item.name}” trùng với dữ liệu hiện có “${duplicateId.name}”.`, 'error');
       return;
     }
     const duplicate = this.items().find(existing =>
@@ -221,7 +221,6 @@ export class SampleDescriptionMasterComponent implements OnInit {
     try {
       const XLSX = await import('xlsx');
       const rows = this.items().map(item => ({
-        'Mã định danh': item.id,
         'Tên mô tả mẫu': item.name,
         'Bí danh': (item.aliases || []).join('; '),
         'Mô tả / Ghi chú': item.description || '',

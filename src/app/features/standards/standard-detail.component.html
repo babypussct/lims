@@ -402,7 +402,7 @@
                                     <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
                                     <p class="text-xs text-amber-700 dark:text-amber-400 font-medium">
                                         Thứ tự <strong>FEFO</strong>: hạn gần nhất &rarr; ít lượng &rarr; ngày nhận cũ nhất.
-                                        Lô nên cấp tiếp theo: <strong>{{priority.internal_id || priority.lot_number || priority.id}}</strong>
+                                        Lô nên cấp tiếp theo: <strong>{{priority.internal_id || priority.lot_number || 'Chưa có mã quản lý'}}</strong>
                                         ({{priority.expiry_date ? (priority.expiry_date | date:'dd/MM/yyyy') : 'chưa rõ hạn'}}).
                                     </p>
                                 </div>

@@ -276,18 +276,15 @@ export type { CorrectionValidationResult };
                         <div class="px-4 py-3 grid lg:grid-cols-[minmax(0,1fr)_220px] gap-3 items-start">
                           <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                              <span class="font-mono text-xs font-black text-slate-700 dark:text-slate-200">{{issue.documentId}}</span>
+                              <span class="text-xs font-black text-slate-700 dark:text-slate-200">{{collectionLabel(issue.collection)}}</span>
                               @if (issue.internalId) { <span class="font-mono text-[10px] text-red-600 dark:text-red-300">Mã hiện tại: {{issue.internalId}}</span> }
-                              @else { <span class="font-mono text-[10px] text-amber-700 dark:text-amber-300">Mã hiện tại: (trống)</span> }
+                              @else { <span class="font-mono text-[10px] text-amber-700 dark:text-amber-300">Mã hiện tại: Chưa có mã quản lý</span> }
                               <span class="rounded-full px-2 py-0.5 text-[9px] font-black bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">{{issueKindLabel(issue.kind)}}</span>
-                              <button type="button" (click)="copyTechnicalId(issue.documentId)" title="Sao chép mã tham chiếu" aria-label="Sao chép mã tham chiếu" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5">
-                                <i class="fa-regular fa-copy" aria-hidden="true"></i>
-                              </button>
                             </div>
                             <p class="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1">{{issue.message}}</p>
                             @if (issue.detail) { <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1"><strong>Chi tiết:</strong> {{issue.detail}}</p> }
                             @if (issue.suggestion) { <p class="text-[11px] text-amber-800 dark:text-amber-200 mt-1"><strong>Gợi ý sửa:</strong> {{issue.suggestion}}</p> }
-                            <p class="text-[10px] text-slate-400 mt-1">Nguồn dữ liệu: {{collectionLabel(issue.collection)}}</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Dữ liệu liên quan: {{collectionLabel(issue.collection)}}</p>
                           </div>
                           <div class="space-y-1">
                             <label class="block">
@@ -448,15 +445,6 @@ export type { CorrectionValidationResult };
                             <i [class]="expandedBatchId() === batch.id ? 'fa-solid fa-chevron-up text-xs text-slate-400' : 'fa-solid fa-chevron-down text-xs text-slate-400'" aria-hidden="true"></i>
                           </div>
                         </button>
-                        <button
-                          type="button"
-                          (click)="copyTechnicalId(batch.id)"
-                          title="Sao chép mã tham chiếu đợt đồng bộ"
-                          aria-label="Sao chép mã tham chiếu đợt đồng bộ"
-                          class="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 text-xs"
-                        >
-                          <i class="fa-regular fa-copy" aria-hidden="true"></i>
-                        </button>
                       </div>
 
                       @if (expandedBatchId() === batch.id) {
@@ -465,7 +453,7 @@ export type { CorrectionValidationResult };
                           <div class="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                             @for (change of batch.changes; track change.collection + '/' + change.documentId + '/' + change.field + $index) {
                               <div class="px-3.5 py-2.5 grid md:grid-cols-[160px_110px_1fr] gap-2 text-[11px]">
-                                <span class="font-mono text-slate-600 dark:text-slate-400 truncate" [title]="change.collection + '/' + change.documentId">
+                                <span class="text-slate-600 dark:text-slate-400 truncate">
                                   {{documentDisplayLabel(change)}}
                                 </span>
                                 <span class="font-black text-slate-700 dark:text-slate-200">{{fieldLabel(change.field)}}</span>
@@ -490,11 +478,11 @@ export type { CorrectionValidationResult };
         <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
           @if (activeView() === 'scan') {
             <div class="flex flex-col gap-0.5 max-w-2xl">
-              <p class="text-[10px] text-slate-400"><i class="fa-solid fa-lock mr-1"></i>Mỗi đợt được ghi kèm người thực hiện, thời điểm và giá trị trước/sau. Hệ thống kiểm tra lại dữ liệu ngay trước khi ghi.</p>
+              <p class="text-[10px] text-slate-400"><i class="fa-solid fa-lock mr-1"></i>Mỗi lần thay đổi đều lưu người thực hiện, thời điểm và giá trị trước/sau. Hệ thống kiểm tra lại dữ liệu trước khi áp dụng thay đổi.</p>
               @if (applySummary(); as summary) {
                 @if (summary.physicalStandardsCount > 0 || summary.safeCount > 0 || summary.manualCount > 0) {
                   <div aria-live="polite" class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-2 mt-0.5">
-                    <span class="text-amber-700 dark:text-amber-300">Dự kiến ghi ({{summary.estimatedBatches}} đợt):</span>
+                    <span class="text-amber-700 dark:text-amber-300">Dự kiến áp dụng ({{summary.estimatedBatches}} đợt):</span>
                     <span>{{summary.physicalStandardsCount}} chuẩn vật lý</span>
                     <span>• {{summary.registryCount}} mục sổ mã</span>
                     <span>• {{summary.requestsCount}} yêu cầu</span>
@@ -719,12 +707,13 @@ export class StandardsInternalIdSyncModalComponent {
         : await scanPromise;
       this.setReport(report);
     } catch (error: any) {
+      console.error('[StandardsInternalIdSync] Scan failed:', error);
       this.errorMessage.set(
         error?.message === 'POST_APPLY_VERIFICATION_TIMEOUT'
           ? 'Đồng bộ đã ghi xong, nhưng quét xác minh sau đồng bộ mất quá lâu. Có thể bấm “Quét lại” để xác minh khi kết nối ổn định.'
           : error?.message === 'INTERNAL_ID_SCAN_TIMEOUT'
             ? 'Quét mã nội bộ mất quá lâu và đã được dừng chờ để tránh khóa cửa sổ. Có thể bấm “Quét lại” khi kết nối ổn định.'
-          : error?.message || 'Không thể quét dữ liệu mã nội bộ.'
+          : 'Không thể kiểm tra dữ liệu mã quản lý. Vui lòng thử lại.'
       );
     } finally {
       if (timeoutHandle) clearTimeout(timeoutHandle);
@@ -751,7 +740,8 @@ export class StandardsInternalIdSyncModalComponent {
       const batches = await this.stdService.getRecentBatches(20);
       this.historyBatches.set(batches);
     } catch (error: any) {
-      this.errorMessage.set(error?.message || 'Không thể tải lịch sử đồng bộ mã.');
+      console.error('[StandardsInternalIdSync] History load failed:', error);
+      this.errorMessage.set('Không thể tải lịch sử thay đổi mã. Vui lòng thử lại.');
     } finally {
       this.isLoadingHistory.set(false);
     }
@@ -810,13 +800,6 @@ export class StandardsInternalIdSyncModalComponent {
     return this.correctionValidations().get(documentId) || { level: 'empty', message: '', valid: true };
   }
 
-  copyTechnicalId(id: string): void {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(id);
-      this.toast.show('Đã sao chép mã tham chiếu.', 'info');
-    }
-  }
-
   collectionLabel(collection: string): string {
     const labels: Record<string, string> = {
       reference_standards: 'Hồ sơ chất chuẩn',
@@ -860,9 +843,13 @@ export class StandardsInternalIdSyncModalComponent {
     return labels[kind] || 'Cần đối chiếu';
   }
 
-  documentDisplayLabel(change: Pick<StandardInternalIdSyncChange, 'collection' | 'documentId'>): string {
-    const id = String(change.documentId || '').trim();
-    return id ? `${this.collectionLabel(change.collection)} · ${id}` : this.collectionLabel(change.collection);
+  documentDisplayLabel(change: Pick<StandardInternalIdSyncChange, 'collection' | 'field' | 'before' | 'after'>): string {
+    const field = String(change.field || '');
+    const isBusinessCode = field === 'internal_id' || field === 'internalId' || field === 'ownerStandardInternalId';
+    const businessCode = String(change.after || change.before || '').trim();
+    return isBusinessCode && businessCode
+      ? `${this.collectionLabel(change.collection)} · ${businessCode}`
+      : this.collectionLabel(change.collection);
   }
 
   setFilter(filter: SyncFilter): void {
@@ -1051,7 +1038,7 @@ export class StandardsInternalIdSyncModalComponent {
         : `• Không có lỗi nghiêm trọng nào.`,
       `• Các cảnh báo về bản lưu lịch sử sẽ KHÔNG bị ghi đè tự động.`,
       ``,
-      `Hệ thống sẽ tự động quét lại toàn bộ dữ liệu ngay trước khi ghi để bảo đảm an toàn.`,
+      `Hệ thống sẽ kiểm tra lại dữ liệu trước khi áp dụng thay đổi để bảo đảm an toàn.`,
     ].join('\n');
 
     if (!await this.confirmation.confirm({
@@ -1079,12 +1066,13 @@ export class StandardsInternalIdSyncModalComponent {
       this.toast.show(`Đã đồng bộ mã nội bộ qua ${batchIds.length} đợt xử lý.`, 'success');
       this.corrections.set({});
     } catch (error: any) {
+      console.error('[StandardsInternalIdSync] Apply failed:', error);
       if (error instanceof StandardSyncPartialFailureError || error?.name === 'StandardSyncPartialFailureError') {
         this.partialFailure.set(error);
-        this.errorMessage.set(error.message);
+        this.errorMessage.set('Một phần thay đổi đã được áp dụng. Hãy quét lại dữ liệu và tiếp tục phần còn lại.');
         this.toast.show(`Đồng bộ dở dang: đã ghi ${error.completedBatchIds?.length || 0} đợt xử lý.`, 'warning');
       } else {
-        this.errorMessage.set(error?.message || 'Không thể áp dụng đồng bộ mã nội bộ.');
+        this.errorMessage.set('Không thể áp dụng thay đổi mã quản lý. Vui lòng thử lại.');
       }
     } finally {
       this.isApplying.set(false);

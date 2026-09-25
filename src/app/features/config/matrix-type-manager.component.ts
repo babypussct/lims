@@ -91,10 +91,11 @@ export class MatrixTypeManagerComponent implements OnInit {
   }
 
   async save() {
-    if (!this.formData.id || !this.formData.name) {
-      this.toast.show('Vui lòng nhập mã và tên nền mẫu', 'error');
+    if (!this.formData.name) {
+      this.toast.show('Vui lòng nhập tên nền mẫu.', 'error');
       return;
     }
+    if (!this.formData.id) this.formData.id = generateSlug(this.formData.name);
 
     this.isSaving.set(true);
     try {
@@ -109,7 +110,8 @@ export class MatrixTypeManagerComponent implements OnInit {
       this.closeModal();
       await this.loadData();
     } catch (e: any) {
-      this.toast.show('Lỗi khi lưu: ' + e.message, 'error');
+      console.error('[MatrixTypeManager] Không thể lưu loại nền mẫu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.isSaving.set(false);
     }
@@ -127,7 +129,8 @@ export class MatrixTypeManagerComponent implements OnInit {
       this.toast.show('Đã xóa nền mẫu', 'success');
       await this.loadData();
     } catch (e: any) {
-      this.toast.show('Lỗi khi xóa: ' + e.message, 'error');
+      console.error('[MatrixTypeManager] Không thể xóa loại nền mẫu:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -138,7 +141,8 @@ export class MatrixTypeManagerComponent implements OnInit {
       this.toast.show(msg, 'success');
       await this.loadData();
     } catch (e: any) {
-      this.toast.show('Lỗi: ' + e.message, 'error');
+      console.error('[MatrixTypeManager] Không thể cập nhật loại nền mẫu:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     }
   }
 }

@@ -457,7 +457,7 @@
                 } @else if(archiverStatus() === 'ready') {
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-emerald-200 dark:border-emerald-900/50 text-center">
                         <p class="text-xs font-bold text-green-600 dark:text-green-400 mb-2">Đã lưu tệp Excel thành công!</p>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Đã xuất {{archiverData().logs.length + archiverData().requests.length}} bản ghi. Dữ liệu trên Firebase không bị thay đổi.</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Đã xuất {{archiverData().logs.length + archiverData().requests.length}} bản ghi. Dữ liệu hiện có trong hệ thống không bị thay đổi.</p>
                         <button (click)="cancelArchiver()" class="w-full py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition">Hoàn tất</button>
                     </div>
                 }
@@ -557,7 +557,6 @@
                                         <div class="min-w-0">
                                             <div class="text-[10px] font-black uppercase tracking-widest text-slate-400">Chi tiết đầy đủ</div>
                                             <div class="mt-1 break-words text-sm font-black text-slate-800 dark:text-slate-100">{{selected.name || '(Không có tên)'}}</div>
-                                            <div class="mt-1 break-all font-mono text-[10px] text-slate-500 dark:text-slate-400">Document ID: {{selected.id}}</div>
                                         </div>
                                         <span class="rounded-lg px-2.5 py-1 text-[10px] font-black"
                                             [class.bg-blue-100]="selected.type === 'inventory'"
@@ -575,7 +574,7 @@
 
                                 <div class="max-h-[58vh] overflow-auto p-4">
                                     <div class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-                                        Toàn bộ các trường đang lưu trong bản ghi Firestore đã xóa được hiển thị bên dưới, bao gồm dữ liệu lồng nhau và thời gian hệ thống.
+                                        Các thông tin nghiệp vụ của mục đã xóa được hiển thị bên dưới để bạn kiểm tra trước khi khôi phục hoặc xóa vĩnh viễn.
                                     </div>
                                     <div class="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
                                         @for (entry of recycleDetailEntries(selected); track entry.key) {
@@ -604,7 +603,7 @@
                     <div class="flex gap-2 w-full md:w-auto shrink-0">
                         <app-button class="flex-1 md:flex-none md:w-auto" [fullWidth]="true" variant="secondary" (click)="showRecycleBin.set(false)">Đóng</app-button>
                         <app-button class="flex-1 md:flex-none md:w-auto" [fullWidth]="true" variant="danger" [disabled]="recycleItems().length === 0" (click)="emptyRecycleBin()">
-                            <i class="fa-solid fa-fire"></i> Dọn Rác & Ép Lắp Ráp (Force Sync)
+                            <i class="fa-solid fa-fire"></i> Xóa vĩnh viễn
                         </app-button>
                     </div>
                 </div>

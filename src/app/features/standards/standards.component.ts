@@ -981,7 +981,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
           this.showAssignModal.set(false);
       } catch (error: any) {
-          this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
+          console.error('[Standards] Không thể xử lý dữ liệu:', error);
+          this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
       } finally {
           this.isProcessing.set(false);
       }

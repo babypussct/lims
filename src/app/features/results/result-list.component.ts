@@ -476,7 +476,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                               </span>
                             }
                           </div>
-                          <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || run.id }}</div>
+                          <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || 'Chưa có mã mẻ' }}</div>
                           @if (run.isVirtualMaster && run.childRequestIds) {
                             <div class="text-[9px] text-fuchsia-500 font-bold flex items-center gap-0.5 ml-4 mt-0.5">
                               <i class="fa-solid fa-link text-[7px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
@@ -1644,7 +1644,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
       this.router.navigate(['/results', masterId]);
     } catch (e: any) {
       console.error('Error creating virtual master run:', e);
-      this.toast.show('Không thể tạo mẻ gộp: ' + e.message, 'error');
+      console.error('[ResultList] Không thể tạo mẻ gộp:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.isLoading.set(false);
     }

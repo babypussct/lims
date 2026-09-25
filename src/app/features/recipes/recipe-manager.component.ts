@@ -133,17 +133,11 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                     <label class="text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200 uppercase block mb-1.5">Tên hiển thị <span class="text-red-500">*</span></label>
                                     <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-fuchsia-500 placeholder-fuchsia-300" placeholder="VD: Hỗn hợp Muối A">
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Mã định danh</label>
-                                        <input formControlName="id" [readonly]="isEditing()" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs bg-slate-100 dark:bg-slate-700 outline-none font-mono text-slate-600 dark:text-slate-300">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Đơn vị thành phẩm</label>
-                                        <select formControlName="baseUnit" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                                            @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
-                                        </select>
-                                    </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Đơn vị thành phẩm</label>
+                                    <select formControlName="baseUnit" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                                        @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
+                                    </select>
                                 </div>
                             </div>
 
@@ -278,7 +272,8 @@ export class RecipeManagerComponent implements OnInit, OnDestroy {
               this.accessDenied.set(true);
               this.toast.show('Không có quyền truy cập Công thức.', 'error');
           } else {
-              this.toast.show('Lỗi tải công thức: ' + e.message, 'error');
+              console.error('[RecipeManager] Không thể tải công thức:', e);
+              this.toast.show('Không thể tải dữ liệu. Vui lòng thử lại.', 'error');
           }
       }
   }
@@ -374,7 +369,8 @@ export class RecipeManagerComponent implements OnInit, OnDestroy {
           this.closeModal();
           this.loadRecipes();
       } catch (e: any) {
-          this.toast.show('Lỗi: ' + e.message, 'error');
+          console.error('[RecipeManager] Không thể lưu công thức:', e);
+          this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
       }
   }
 

@@ -912,7 +912,8 @@ export class NotificationPanelComponent {
       const count = await this.notificationService.deleteReadNotifications();
       this.toast.show(`Đã xóa ${count} thông báo đã đọc.`, 'info');
     } catch (e: any) {
-      this.toast.show('Lỗi xóa thông báo: ' + (e?.message || e), 'error');
+      console.error('[NotificationPanel] Không thể xóa thông báo:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -929,7 +930,8 @@ export class NotificationPanelComponent {
       const count = await this.notificationService.deleteAllNotifications();
       this.toast.show(`Đã xóa toàn bộ ${count} thông báo.`, 'info');
     } catch (e: any) {
-      this.toast.show('Lỗi xóa thông báo: ' + (e?.message || e), 'error');
+      console.error('[NotificationPanel] Không thể xóa thông báo:', e);
+      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
     }
   }
 

@@ -379,7 +379,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
           if (e.code === 'resource-exhausted') {
              this.toast.show('Lỗi: Hết dung lượng lưu trữ (Quota).', 'error');
           } else {
-             this.toast.show('Lỗi lưu kho: ' + (e.message || 'Unknown'), 'error');
+             console.error('[Inventory] Không thể lưu kho:', e);
+             this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
           }
       } finally { 
           this.isProcessing.set(false); 
@@ -397,7 +398,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
               this.showModal.set(false);
               this.refreshData();
           } catch (e: any) {
-              this.toast.show('Lỗi xóa: ' + e.message, 'error');
+              console.error('[Inventory] Không thể xóa dữ liệu kho:', e);
+              this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
           } finally {
               this.isProcessing.set(false); 
           }
@@ -421,7 +423,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.toast.show(msg, 'success');
       this.refreshData();
     } catch (e: any) {
-      this.toast.show('Lỗi cập nhật kho: ' + e.message, 'error');
+      console.error('[Inventory] Không thể cập nhật kho:', e);
+      this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
     } finally {
       this.isProcessing.set(false); 
     }

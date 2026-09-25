@@ -127,7 +127,8 @@ test('sync modal exposes inline validation, duplicate target detection, apply su
   assert.match(source, /hasInvalidCorrections = computed/);
   assert.match(source, /applySummary = computed/);
   assert.match(source, /getCorrectionValidation\(documentId: string\)/);
-  assert.match(source, /copyTechnicalId\(id: string\)/);
+  assert.doesNotMatch(source, /copyTechnicalId\(id: string\)/);
+  assert.doesNotMatch(source, /Sao chép mã tham chiếu/);
   assert.match(source, /aria-invalid/);
   assert.match(source, /aria-describedby/);
   assert.match(source, /manual-validation-/);
@@ -580,7 +581,8 @@ test('behavioral: modal component handles real-time progress and partial failure
   assert.equal(modal.partialFailure().completedBatchIds.length, 1);
   assert.equal(modal.partialFailure().failedBatchIndex, 2);
   assert.equal(modal.isApplying(), false);
-  assert.match(modal.errorMessage(), /1\/2 đợt xử lý/);
+  assert.equal(modal.errorMessage(), 'Một phần thay đổi đã được áp dụng. Hãy quét lại dữ liệu và tiếp tục phần còn lại.');
+  assert.doesNotMatch(modal.errorMessage(), /Lỗi mạng|Network error/);
 
   // Test 1-click retry action
   await modal.retryRemainingAfterPartialFailure();

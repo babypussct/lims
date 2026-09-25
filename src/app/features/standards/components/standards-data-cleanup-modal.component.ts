@@ -205,7 +205,7 @@ interface CasIssueRecord {
                     </button>
                     <div class="text-center min-w-0">
                       <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{{workspaceLabel()}} · {{currentPageIndex() + 1}} / {{filteredCasIssues().length}}</div>
-                      <div class="text-sm font-black text-fuchsia-600 dark:text-fuchsia-400 truncate">{{issue.standard.internal_id || issue.standard.id}}</div>
+                      <div class="text-sm font-black text-fuchsia-600 dark:text-fuchsia-400 truncate">{{issue.standard.internal_id || 'Chưa có mã quản lý'}}</div>
                     </div>
                     <button (click)="nextPage()" [disabled]="currentPageIndex() >= filteredCasIssues().length - 1 || isProcessing()" class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800">
                       Hồ sơ sau<i class="fa-solid fa-chevron-right ml-1"></i>
@@ -218,7 +218,7 @@ interface CasIssueRecord {
                   <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
                     <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
                       <div class="flex flex-wrap items-center gap-2 mb-2">
-                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{issue.standard.internal_id || issue.standard.id}}</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{issue.standard.internal_id || 'Chưa có mã quản lý'}}</span>
                         @if (issue.standard.product_code) { <span class="text-[10px] text-slate-400 font-mono">Mã sản phẩm {{issue.standard.product_code}}</span> }
                         @if (issue.standard.lot_number) { <span class="text-[10px] text-slate-400 font-mono">Lô {{issue.standard.lot_number}}</span> }
                       </div>
@@ -366,7 +366,7 @@ interface CasIssueRecord {
                             <div class="flex-1 min-w-0 grid lg:grid-cols-[minmax(190px,0.8fr)_minmax(260px,1.2fr)] gap-3">
                               <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
-                                  <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{record.standard.internal_id || record.standard.id}}</span>
+                                  <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300">{{record.standard.internal_id || 'Chưa có mã quản lý'}}</span>
                                   @if (record.standard.product_code) { <span class="text-[10px] text-slate-400 font-mono">{{record.standard.product_code}}</span> }
                                   @if (record.saved) { <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold"><i class="fa-solid fa-check mr-0.5"></i>Đã lưu</span> }
                                 </div>
@@ -615,7 +615,7 @@ export class StandardsDataCleanupModalComponent {
 
     this.groups.set(groups);
     this.casIssues.set(issues.sort((a, b) =>
-      (a.standard.internal_id || a.standard.id).localeCompare(b.standard.internal_id || b.standard.id, 'vi')
+      (a.standard.internal_id || 'Chưa có mã quản lý').localeCompare(b.standard.internal_id || 'Chưa có mã quản lý', 'vi')
     ));
     this.totalStandardsCount.set(active.length);
     this.missingCasCount.set(counts.missing);
@@ -806,7 +806,7 @@ export class StandardsDataCleanupModalComponent {
     if (!issue || assessment.quality !== 'valid' || !assessment.normalizedCas) return;
     const normalizedCas = assessment.normalizedCas;
     if (!await this.confirmation.confirm({ message:
-      `Sửa CAS cho ${issue.standard.internal_id || issue.standard.id}?\n\n`
+      `Sửa CAS cho ${issue.standard.internal_id || 'Chưa có mã quản lý'}?\n\n`
       + `${issue.originalCas || 'Trống'}  →  ${normalizedCas}\n\n`
       + 'Thay đổi được lưu thành một phiên và có thể hoàn tác.'
       , confirmText: 'Sửa CAS', isDangerous: true })) return;
@@ -814,7 +814,7 @@ export class StandardsDataCleanupModalComponent {
     const pageBeforeSave = this.currentPageIndex();
     const workspaceBeforeSave = this.workspace();
     this.isProcessing.set(true);
-    this.progressService.start('Đang sửa CAS', issue.standard.internal_id || issue.standard.id, 1);
+    this.progressService.start('Đang sửa CAS', issue.standard.internal_id || 'Chưa có mã quản lý', 1);
     try {
       const batchId = await this.standardService.updateStandardNames([{
         standardId: issue.standard.id,
@@ -963,7 +963,7 @@ export class StandardsDataCleanupModalComponent {
     this.progressService.start('Đang lưu nhóm CAS', group.cas, selected.length);
     try {
       const batchId = await this.standardService.updateStandardNames(selected.map((record, index) => {
-        this.progressService.update(index + 1, record.standard.internal_id || record.standard.id);
+        this.progressService.update(index + 1, record.standard.internal_id || 'Chưa có mã quản lý');
         const normalizedName = formatStandardProductName(record.suggestedName);
         const aliases = normalizeChemicalNames([
           ...parseChemicalNames(group.suggestedSynonyms),

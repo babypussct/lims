@@ -365,7 +365,7 @@ export class CreateRequestDrawerComponent {
               warnings.push({
                   selectedId: std.id,
                   selectedLabel: std.internal_id || std.lot_number || std.name,
-                  priorityLabel: priority.internal_id || priority.lot_number || priority.id,
+                  priorityLabel: priority.internal_id || priority.lot_number || 'Chưa có mã quản lý',
                   priorityExpiry: priority.expiry_date || 'N/A'
               });
           }

@@ -736,7 +736,7 @@ export class StandardCrudService {
           standard.current_request_id || standard.has_pending_request
         ));
       if (active.length) {
-        throw new Error(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt: ${active.map(item => item.internal_id || item.id).join(', ')}`);
+        throw new Error(`Không thể ẩn ${active.length} lô đang mượn/trả hoặc chờ duyệt: ${active.map(item => item.internal_id || 'Chưa có mã quản lý').join(', ')}`);
       }
       snapshots.forEach((snapshot, index) => {
         if (snapshot.exists()) {
@@ -779,7 +779,7 @@ export class StandardCrudService {
       if (occupied) {
         throw new Error(
           `Không thể khôi phục vì slot ${fresh.internal_id || '(trống)'} đang được cấp cho ` +
-          `"${occupied.name}" (${occupied.internal_id || occupied.id}).`
+          `"${occupied.name}" (${occupied.internal_id || 'Chưa có mã quản lý'}).`
         );
       }
       transaction.update(ref, {
