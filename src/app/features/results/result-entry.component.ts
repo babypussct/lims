@@ -848,7 +848,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   /**
    * Xuất bản kết quả -> Tạo tệp PDF
    */
-  async triggerPublishReport(skipPreflight = false) {
+  async triggerPublishReport(skipPreflight = false, retryFromChunkIndex = 0) {
     if (this.isPublishing()) return;
     
     const currentRun = this.run();
@@ -931,8 +931,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
       let lastResult = null;
 
-      // 3. Process each chunk
-      for (const chunk of chunks) {
+      // 3. Process each chunk. Khi retry sau lỗi, tiếp tục từ đúng chunk lỗi
+      // để không tạo phiên bản mới cho các PDF đã xuất thành công trước đó.
+      for (let chunkIndex = retryFromChunkIndex; chunkIndex < chunks.length; chunkIndex++) {
+        const chunk = chunks[chunkIndex];
         // Clone draft and set selected=false for non-chunk samples
         const chunkDraft = JSON.parse(JSON.stringify(currentDraft));
         (currentRun.sampleList || []).forEach((s: string) => {
@@ -1002,6 +1004,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         };
         const result = await this.resultService.publishReport(this.requestId, draftForSave, reportPayload, prefixForReport, chunk);
         lastResult = result;
+
+        if (!result.success) {
+          const chunkLabel = chunks.length > 1 ? ` (phần ${chunkIndex + 1}/${chunks.length})` : '';
+          this.toast.showEvent({
+            title: 'Không thể xuất báo cáo',
+            message: `Xuất báo cáo${chunkLabel} thất bại: ${result.error || 'Không xác định được nguyên nhân lỗi.'}`,
+            type: 'error',
+            persistent: true,
+            actionLabel: 'Thử lại',
+            dedupeKey: `publish-report-error:${this.requestId}`,
+            action: () => void this.triggerPublishReport(true, chunkIndex)
+          });
+          return;
+        }
       }
 
       if (lastResult && lastResult.success) {
@@ -1410,9 +1426,19 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     await this.pauseAutoSave();
     this.autoSaveStatus.set('saving');
+
+    // Chỉ flush dữ liệu người dùng có thể chỉnh sửa. Metadata xuất bản
+    // (version/reports/pdfUrl/...) có thể vừa được cập nhật bởi một chunk PDF
+    // trước đó và draft trên UI chưa kịp nhận snapshot Firestore mới. Nếu gửi
+    // toàn bộ currentDraft ở đây, lần retry có thể ghi đè metadata mới bằng
+    // snapshot cũ.
+    const editableDraft: Partial<AnalysisResultDraft> = {
+      page1Data: JSON.parse(JSON.stringify(currentDraft.page1Data || {})),
+      resultData: JSON.parse(JSON.stringify(currentDraft.resultData || {}))
+    };
     const success = await this.resultService.saveDraft(
       this.requestId,
-      this.cloneDraft(currentDraft),
+      editableDraft,
       isManualSave,
       false
     );

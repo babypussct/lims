@@ -14,7 +14,6 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { DocumentPreviewKind, DriveItem } from './document-viewer.models';
@@ -198,9 +197,6 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
                 </div>
               }
             }
-          } @else if (!error() && kind() === 'drive' && safeUrl()) {
-            <iframe [src]="safeUrl()" (load)="onViewerReady()" [title]="'Xem trước ' + item.name"
-                    class="w-full h-full border-0 bg-white"></iframe>
           }
         </main>
       </section>
@@ -296,12 +292,10 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
   @ViewChild(ExcelDocumentViewerComponent) excelViewer?: ExcelDocumentViewerComponent;
 
   private readonly driveService = inject(GoogleDriveService);
-  private readonly sanitizer = inject(DomSanitizer);
 
   kind = signal<DocumentPreviewKind>('drive');
   previewBlob = signal<Blob | null>(null);
   objectUrl = signal('');
-  safeUrl = signal<SafeResourceUrl | null>(null);
   previewText = signal('');
   loading = signal(true);
   error = signal<string | null>(null);
@@ -514,7 +508,6 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
     const controller = new AbortController();
     this.abortController = controller;
     this.previewBlob.set(null);
-    this.safeUrl.set(null);
     this.previewText.set('');
     this.loading.set(true);
     this.error.set(null);
@@ -522,20 +515,19 @@ export class DocumentPreviewModalComponent implements OnInit, AfterViewInit, OnD
     try {
       const kind = this.kind();
       if (kind === 'drive') {
-        const previewLink = this.item.mimeType.startsWith('application/vnd.google-apps.')
-          ? (this.item.webViewLink || `https://drive.google.com/open?id=${this.item.id}`).replace(/\/edit.*$/, '/preview')
-          : `https://drive.google.com/file/d/${this.item.id}/preview`;
-        this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(previewLink));
-        return;
+        throw new Error('Định dạng này chưa hỗ trợ xem trước trực tiếp. Hãy mở tài liệu trong Google Drive.');
       }
 
       const blob = this.item.mimeType === 'application/vnd.google-apps.spreadsheet'
-        ? await this.driveService.exportPublicFile(
+        ? await this.driveService.exportFile(
             this.item.id,
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             controller.signal
           )
-        : await this.driveService.downloadPublicFile(this.item.id, controller.signal);
+        : this.item.mimeType === 'application/vnd.google-apps.document'
+          || this.item.mimeType === 'application/vnd.google-apps.presentation'
+          ? await this.driveService.exportFile(this.item.id, 'application/pdf', controller.signal)
+          : await this.driveService.downloadFile(this.item.id, controller.signal);
       if (controller.signal.aborted) return;
       this.previewBlob.set(blob);
 

@@ -73,6 +73,8 @@ export interface RestoreCheckpointListItem {
 
 export interface BackupListResponse {
   backups: BackupListItem[];
+  accessAvailable: boolean;
+  setupRequired: boolean;
 }
 
 export interface BackupCreateResponse {

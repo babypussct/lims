@@ -597,7 +597,7 @@ export class ResultService {
           requestId,
           sopId,
           sopName,
-          { version: draft.version ?? legacyResult['version'] ?? 0 }
+          { version: summaryPayload.version ?? 0 }
         );
       }
 
@@ -802,6 +802,7 @@ export class ResultService {
     includedSamples?: string[]
   ): Promise<{
     success: boolean;
+    error?: string;
     pdfUrl?: string;
     pdfViewUrl?: string;
     docsUrl?: string;
@@ -925,9 +926,11 @@ export class ResultService {
       // 4. Lưu trạng thái completed + phiên bản mới nhất và dữ liệu backup chi tiết
       const publishedAt = new Date().toISOString();
       const publishedBy = this.auth.currentUser()?.displayName || 'Unknown';
+      const inputPage1Data = draftData.page1Data || currentDraft.page1Data;
+      const inputResultData = draftData.resultData || currentDraft.resultData;
       const backup = {
-        page1Data: draftData.page1Data || currentDraft.page1Data,
-        resultData: draftData.resultData || currentDraft.resultData,
+        page1Data: inputPage1Data,
+        resultData: inputResultData,
         publishedAt,
         publishedBy
       };
@@ -965,7 +968,11 @@ export class ResultService {
         newStatus = isBatchReportComplete(coverage, backup.resultData) ? 'completed' : 'draft';
 
         updatePayload = {
-          ...draftData,
+          // Chỉ mang dữ liệu nhập từ snapshot UI vào lần lưu này. Các trường
+          // metadata báo cáo phải lấy từ currentDraft vừa đọc từ Firestore ở
+          // đầu publishReport để retry chunk không ghi đè báo cáo đã thành công.
+          page1Data: inputPage1Data,
+          resultData: inputResultData,
           status: newStatus,
           reports: updatedReports,
           includedSamples: effectiveAllIncludedSamples,
@@ -996,7 +1003,8 @@ export class ResultService {
         newStatus = isBatchReportComplete(coverage, backup.resultData) ? 'completed' : 'draft';
 
         updatePayload = {
-          ...draftData,
+          page1Data: inputPage1Data,
+          resultData: inputResultData,
           status: newStatus,
           version: nextVersion,
           pdfUrl: response.pdfUrl || undefined,
@@ -1069,8 +1077,8 @@ export class ResultService {
       };
     } catch (e: any) {
       console.error('Error publishing report:', e);
-      this.toast.show('Lỗi xuất bản báo cáo: ' + e.message, 'error');
-      return { success: false };
+      const error = e?.message || 'Không xác định được nguyên nhân lỗi.';
+      return { success: false, error };
     }
   }
 

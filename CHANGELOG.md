@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.24-b02
+## Phiên bản hiện tại: v26.09.25-b01
+
+### v26.09.25-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khắc phục lỗi danh sách backup 503, Firestore Listen 400 và cảnh báo CSP frame-ancestors trong luồng Google Drive.
+- Củng cố quy trình xuất PDF kết quả với thông báo lỗi rõ ràng và khả năng thử lại đúng phần bị lỗi.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đồng bộ Firebase lên một phiên bản 12.19.0 duy nhất và loại bỏ AngularFire không còn được sử dụng.
+- Xem trước Google Docs/Slides qua PDF và Google Sheets qua XLSX bằng proxy same-origin thay cho iframe Google Drive.
+- Đưa Thư viện công thức vào khu vực Cài đặt và đồng bộ đường dẫn từ menu, QR và phân quyền.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- API danh sách backup trả trạng thái thiết lập khi Google Drive chưa sẵn sàng thay vì HTTP 503.
+- Ngăn metadata báo cáo đã xuất bị ghi đè khi retry theo từng chunk và giữ đúng phiên bản báo cáo đã thành công.
+- Cải thiện xử lý phản hồi GAS để phân biệt lỗi HTTP, HTML, body rỗng và JSON không hợp lệ khi tạo PDF.
 
 ### v26.09.24-b02
 

@@ -1,17 +1,18 @@
 {
-  "title": "Ổn định đồng bộ dữ liệu và cache chất chuẩn",
+  "title": "Ổn định sao lưu, Google Drive và xuất báo cáo",
   "highlights": [
-    "Tối ưu đồng bộ nền để yêu cầu, cấu hình hệ thống và dữ liệu chất chuẩn cập nhật nhất quán hơn giữa các màn hình.",
-    "Giảm các lượt đọc Firestore dư thừa trong đăng nhập, nhập dữ liệu và quy trình cấp phát/hoàn trả chất chuẩn."
+    "Khắc phục lỗi danh sách backup 503, Firestore Listen 400 và cảnh báo CSP frame-ancestors trong luồng Google Drive.",
+    "Củng cố quy trình xuất PDF kết quả với thông báo lỗi rõ ràng và khả năng thử lại đúng phần bị lỗi."
   ],
   "features": [],
   "improvements": [
-    "DeltaSync xử lý an toàn khi bộ nhớ localStorage đầy, giữ con trỏ đồng bộ trong phiên và tự dọn các cache không còn hoạt động trước khi thử ghi lại.",
-    "Danh mục chất chuẩn duy trì snapshot hoàn chỉnh dùng chung cho báo cáo và import, đồng thời cập nhật cache trực tiếp từ dữ liệu transaction đã xác nhận.",
-    "Import nhật ký chất chuẩn chỉ truy vấn lịch sử theo đúng ngày cần kiểm tra và tái sử dụng các document đã đọc trong bước kiểm tra trùng."
+    "Đồng bộ Firebase lên một phiên bản 12.19.0 duy nhất và loại bỏ AngularFire không còn được sử dụng.",
+    "Xem trước Google Docs/Slides qua PDF và Google Sheets qua XLSX bằng proxy same-origin thay cho iframe Google Drive.",
+    "Đưa Thư viện công thức vào khu vực Cài đặt và đồng bộ đường dẫn từ menu, QR và phân quyền."
   ],
   "fixes": [
-    "Yêu cầu đang chờ được loại khỏi cache ngay khi chuyển sang trạng thái khác, tránh hiển thị dữ liệu pending đã cũ.",
-    "Kiểm tra đổi SOP dùng chữ ký dữ liệu ổn định để phát hiện thay đổi đồng thời chính xác hơn trước khi ghi cập nhật."
+    "API danh sách backup trả trạng thái thiết lập khi Google Drive chưa sẵn sàng thay vì HTTP 503.",
+    "Ngăn metadata báo cáo đã xuất bị ghi đè khi retry theo từng chunk và giữ đúng phiên bản báo cáo đã thành công.",
+    "Cải thiện xử lý phản hồi GAS để phân biệt lỗi HTTP, HTML, body rỗng và JSON không hợp lệ khi tạo PDF."
   ]
 }

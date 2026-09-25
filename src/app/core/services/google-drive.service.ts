@@ -584,10 +584,11 @@ export class GoogleDriveService {
    * Download a file from Google Drive as a Blob.
    * Uses OAuth token for authorized download to bypass CORS restrictions.
    */
-  async downloadFile(fileId: string): Promise<Blob> {
+  async downloadFile(fileId: string, signal?: AbortSignal): Promise<Blob> {
       const res = await fetch(`/api/google/drive/download?fileId=${encodeURIComponent(fileId)}`, {
           credentials: 'same-origin',
-          cache: 'no-store'
+          cache: 'no-store',
+          signal,
       });
       
       if (!res.ok) {
@@ -597,6 +598,28 @@ export class GoogleDriveService {
           throw error;
       }
       return await res.blob();
+  }
+
+  /**
+   * Export a Google Workspace file through the same-origin Drive proxy.
+   * The proxy prefers the signed-in user's OAuth session and falls back to the
+   * configured API key for public files, avoiding third-party iframe CSP rules.
+   */
+  async exportFile(fileId: string, mimeType: string, signal?: AbortSignal): Promise<Blob> {
+    const params = new URLSearchParams({ fileId, exportMimeType: mimeType });
+    const res = await fetch(`/api/google/drive/download?${params.toString()}`, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      signal,
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      const error = new Error(errBody?.error || `HTTP ${res.status}`) as Error & { code?: string };
+      if (res.status === 401) error.code = 'oauth_required';
+      throw error;
+    }
+    return await res.blob();
   }
 
   /**

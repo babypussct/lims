@@ -76,6 +76,7 @@ describe('Settings routing contract', () => {
       'backup_verify',
       'backup_restore',
       'policy_manage',
+      'recipe_view',
     ]);
     assert.equal(manager.data?.['role'], undefined);
 
@@ -99,6 +100,12 @@ describe('Settings routing contract', () => {
     assert.equal(route('matrix-types').redirectTo, 'settings/data/master/matrices');
     assert.equal(route('sample-description-master').redirectTo, 'settings/data/master/sample-descriptions');
     assert.equal(route('master-devices').redirectTo, 'settings/data/master/devices');
+    assert.equal(route('recipes').redirectTo, 'settings/recipes');
+
+    const recipes = settingsChild('recipes');
+    assert.ok(recipes.loadComponent);
+    assert.ok(recipes.canActivate?.length);
+    assert.equal(recipes.data?.['permission'], 'recipe_view');
   });
 
   it('keeps Master Data internal links canonical and preserves searchable list state in the URL', () => {
@@ -181,6 +188,7 @@ describe('Settings routing contract', () => {
     assert.match(settingsShellSource, /label: 'Hệ thống'[\s\S]*path: '\/settings\/system'[\s\S]*PERMISSIONS\.SYSTEM_MANAGE/);
     assert.match(settingsShellSource, /label: 'Người dùng & quyền'[\s\S]*path: '\/settings\/access\/users'[\s\S]*PERMISSIONS\.USER_MANAGE/);
     assert.match(settingsShellSource, /label: 'Chính sách hao hụt'[\s\S]*path: '\/settings\/policies\/consumption'[\s\S]*PERMISSIONS\.POLICY_MANAGE/);
+    assert.match(settingsShellSource, /label: 'Thư viện công thức'[\s\S]*path: '\/settings\/recipes'[\s\S]*PERMISSIONS\.RECIPE_VIEW/);
     assert.match(settingsShellSource, /label: 'Chỉ tiêu'[\s\S]*\/settings\/data\/master\/analytes/);
     assert.match(settingsShellSource, /label: 'Vai trò & quyền'[\s\S]*\/settings\/access\/roles/);
     assert.match(settingsShellSource, /class="flex min-h-10 shrink-0 items-center[^\"]*sm:min-h-9"/);
@@ -216,6 +224,8 @@ describe('Settings routing contract', () => {
     assert.match(managerSource, /\/settings\/system/);
     assert.match(managerSource, /\/settings\/data\/master/);
     assert.match(managerSource, /\/settings\/data\/backups/);
+    assert.match(managerSource, /\/settings\/recipes/);
+    assert.match(managerSource, /canViewRecipes/);
     assert.doesNotMatch(managerSource, /\/settings\/data\/lifecycle/);
     assert.doesNotMatch(managerSource, /\/settings\/diagnostics/);
     assert.doesNotMatch(managerSource, /shortcut/i);

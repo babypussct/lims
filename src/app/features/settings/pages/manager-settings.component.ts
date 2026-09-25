@@ -144,6 +144,14 @@ interface MasterCounts {
             }
           </a>
         }
+
+        @if (canViewRecipes()) {
+          <a routerLink="/settings/recipes" class="rounded-2xl bg-white p-4 shadow-soft-xl transition hover:-translate-y-0.5 dark:bg-slate-900">
+            <div class="flex items-center justify-between"><span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Thư viện công thức</span><i class="fa-solid fa-book-bookmark text-amber-500"></i></div>
+            <div class="mt-2 text-sm font-black text-slate-800 dark:text-slate-100">Công thức pha dùng chung</div>
+            <div class="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">Quản lý công thức, thành phần và định mức phục vụ vận hành.</div>
+          </a>
+        }
       </section>
 
       <section class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70">
@@ -154,6 +162,7 @@ interface MasterCounts {
           @if (canManageUsers()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Người dùng & quyền</span> }
           @if (hasBackupAccess()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Sao lưu</span> }
           @if (canManagePolicy()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Chính sách hao hụt</span> }
+          @if (canViewRecipes()) { <span class="rounded-lg bg-white px-2 py-1 dark:bg-slate-800">Thư viện công thức</span> }
         </div>
       </section>
     </div>
@@ -197,6 +206,7 @@ export class ManagerSettingsComponent implements OnInit {
   canManageSystem(): boolean { return this.auth.hasPermission(PERMISSIONS.SYSTEM_MANAGE); }
   canManageMasterData(): boolean { return this.auth.hasPermission(PERMISSIONS.MASTER_DATA_MANAGE); }
   canManagePolicy(): boolean { return this.auth.hasPermission(PERMISSIONS.POLICY_MANAGE); }
+  canViewRecipes(): boolean { return this.auth.hasPermission(PERMISSIONS.RECIPE_VIEW); }
   hasBackupAccess(): boolean {
     return this.auth.hasPermission(PERMISSIONS.BACKUP_CREATE) || this.auth.hasPermission(PERMISSIONS.BACKUP_VERIFY) || this.auth.hasPermission(PERMISSIONS.BACKUP_RESTORE);
   }
@@ -231,8 +241,16 @@ export class ManagerSettingsComponent implements OnInit {
   }
 
   private async loadBackupSummary(): Promise<void> {
-    const [status, list] = await Promise.all([this.backupService.getStatus(), this.backupService.listBackups()]);
+    const status = await this.backupService.getStatus();
     this.backupStatus.set(status);
+    const canListBackups = status.drive.accessAvailable
+      && status.drive.backupFolderConfigured
+      && status.encryption.configured;
+    if (!canListBackups) {
+      this.latestBackup.set(null);
+      return;
+    }
+    const list = await this.backupService.listBackups();
     this.latestBackup.set(list.backups[0] || null);
   }
 

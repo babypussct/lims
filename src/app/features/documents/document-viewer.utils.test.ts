@@ -77,9 +77,9 @@ describe('TEST-002: detectDocumentKind (table-driven classification)', () => {
     { item: { name: 'config.json', mimeType: 'application/json' }, expected: 'text', description: 'JSON file' },
     { item: { name: 'app.log', mimeType: 'text/plain' }, expected: 'text', description: 'Log file' },
 
-    // Google Workspace Docs / Slides & Fallbacks -> drive
-    { item: { name: 'Document', mimeType: 'application/vnd.google-apps.document' }, expected: 'drive', description: 'Google Docs native fallback' },
-    { item: { name: 'Presentation', mimeType: 'application/vnd.google-apps.presentation' }, expected: 'drive', description: 'Google Slides native fallback' },
+    // Google Workspace Docs / Slides are exported to PDF for the local viewer.
+    { item: { name: 'Document', mimeType: 'application/vnd.google-apps.document' }, expected: 'pdf', description: 'Google Docs native export' },
+    { item: { name: 'Presentation', mimeType: 'application/vnd.google-apps.presentation' }, expected: 'pdf', description: 'Google Slides native export' },
     { item: { name: 'archive.zip', mimeType: 'application/zip' }, expected: 'drive', description: 'ZIP archive fallback' },
     { item: null, expected: 'drive', description: 'Null item fallback' },
     { item: undefined, expected: 'drive', description: 'Undefined item fallback' },
@@ -164,6 +164,18 @@ describe('TEST-005: Preview lifecycle helpers & format utilities', () => {
   it('appends .xlsx to Google Sheets export file name', () => {
     assert.equal(getExportFileName({ name: 'BangTheoDoiMau', mimeType: 'application/vnd.google-apps.spreadsheet' }), 'BangTheoDoiMau.xlsx');
     assert.equal(getExportFileName({ name: 'BangTheoDoiMau.xlsx', mimeType: 'application/vnd.google-apps.spreadsheet' }), 'BangTheoDoiMau.xlsx');
+  });
+
+  it('appends .pdf to native Google Docs and Slides export file names', () => {
+    assert.equal(getExportFileName({ name: 'QuyTrinh', mimeType: 'application/vnd.google-apps.document' }), 'QuyTrinh.pdf');
+    assert.equal(getExportFileName({ name: 'DaoTao', mimeType: 'application/vnd.google-apps.presentation' }), 'DaoTao.pdf');
+  });
+
+  it('uses same-origin exports instead of Google Drive iframes for native previews', () => {
+    const previewSource = readProjectFile('./document-preview-modal.component.ts');
+    assert.doesNotMatch(previewSource, /drive\.google\.com\/.*preview/);
+    assert.doesNotMatch(previewSource, /<iframe/);
+    assert.match(previewSource, /this\.driveService\.exportFile\(this\.item\.id, 'application\/pdf'/);
   });
 
   it('preserves existing filenames for standard documents', () => {

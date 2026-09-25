@@ -92,9 +92,8 @@ export const routes: Routes = [
   },
   {
     path: 'recipes',
-    loadComponent: () => import('./features/recipes/recipe-manager.component').then(m => m.RecipeManagerComponent),
-    canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.RECIPE_VIEW }
+    redirectTo: 'settings/recipes',
+    pathMatch: 'full'
   },
   {
     path: 'target-groups',
@@ -211,7 +210,13 @@ export const routes: Routes = [
         path: 'manager',
         loadComponent: () => import('./features/settings/pages/manager-settings.component').then(m => m.ManagerSettingsComponent),
         canActivate: [permissionGuard],
-        data: { permissionsAny: [PERMISSIONS.SYSTEM_MANAGE, PERMISSIONS.MASTER_DATA_MANAGE, PERMISSIONS.USER_MANAGE, PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE, PERMISSIONS.POLICY_MANAGE] }
+        data: { permissionsAny: [PERMISSIONS.SYSTEM_MANAGE, PERMISSIONS.MASTER_DATA_MANAGE, PERMISSIONS.USER_MANAGE, PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE, PERMISSIONS.POLICY_MANAGE, PERMISSIONS.RECIPE_VIEW] }
+      },
+      {
+        path: 'recipes',
+        loadComponent: () => import('./features/recipes/recipe-manager.component').then(m => m.RecipeManagerComponent),
+        canActivate: [permissionGuard],
+        data: { permission: PERMISSIONS.RECIPE_VIEW }
       },
       {
         path: 'system',

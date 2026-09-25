@@ -140,7 +140,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       { id: 'standards', name: 'Chất Chuẩn Đối Chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], access: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW], lockPermission: [PERMISSIONS.STANDARD_VIEW, PERMISSIONS.STANDARD_AUDIT_VIEW] },
       { id: 'standard-requests', name: 'Yêu Cầu Chất Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], access: [PERMISSIONS.STANDARD_REQUEST, PERMISSIONS.STANDARD_EDIT, PERMISSIONS.STANDARD_APPROVE], lockPermission: [PERMISSIONS.STANDARD_REQUEST, PERMISSIONS.STANDARD_EDIT, PERMISSIONS.STANDARD_APPROVE], denyStandardAuditMode: true },
       { id: 'standard-usage', name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], access: PERMISSIONS.STANDARD_LOG_VIEW, lockPermission: PERMISSIONS.STANDARD_LOG_VIEW, denyStandardAuditMode: true },
-      { id: 'recipes', name: 'Thư Viện Công Thức', icon: 'fa-book-bookmark', path: 'recipes', activeMatch: ['/recipes'], access: PERMISSIONS.RECIPE_VIEW, lockPermission: PERMISSIONS.RECIPE_VIEW }
+      { id: 'recipes', name: 'Thư Viện Công Thức', icon: 'fa-book-bookmark', path: 'settings/recipes', activeMatch: ['/settings/recipes'], access: PERMISSIONS.RECIPE_VIEW, lockPermission: PERMISSIONS.RECIPE_VIEW, menuHidden: true }
     ]
   },
   {

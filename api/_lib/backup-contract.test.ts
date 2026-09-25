@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import {
   FIRESTORE_BACKUP_COLLECTION_CATALOG,
@@ -49,5 +50,15 @@ describe('LIMS backup coverage contract', () => {
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/backup_locks/lock-1', 'lims-cloud-fixed'), false);
     assert.equal(isRestoreablePath('artifacts/lims-cloud-fixed/sops/../users/admin', 'lims-cloud-fixed'), false);
     assert.equal(safeBackupName('LIMS / backup: 2026'), 'LIMS_backup_2026');
+  });
+
+  it('treats missing Drive access as a setup state instead of HTTP 503', () => {
+    const source = readFileSync(new URL('./backup-http.ts', import.meta.url), 'utf8');
+    const listHandler = source.slice(
+      source.indexOf('export async function backupListHandler'),
+      source.indexOf('export async function backupCreateHandler')
+    );
+    assert.match(listHandler, /if \(!access\) \{[\s\S]*res\.status\(200\)[\s\S]*accessAvailable:\s*false[\s\S]*setupRequired:\s*true/);
+    assert.doesNotMatch(listHandler, /res\.status\(503\)/);
   });
 });

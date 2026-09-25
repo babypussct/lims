@@ -151,3 +151,40 @@ test('exports a public Google Sheet as XLSX with the configured API key', async 
     });
   }
 });
+
+test('exports Google Workspace files through the same-origin Drive proxy', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalSessionStorage = globalThis.sessionStorage;
+  let requestedUrl = '';
+  let requestedSignal: AbortSignal | null | undefined;
+  const controller = new AbortController();
+
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    value: createSessionStorageMock(),
+  });
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    requestedUrl = String(input);
+    requestedSignal = init?.signal;
+    return new Response(new Uint8Array([1, 2, 3]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/pdf' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const blob = await new GoogleDriveService().exportFile('doc-id', 'application/pdf', controller.signal);
+    assert.equal(blob.size, 3);
+    assert.match(requestedUrl, /^\/api\/google\/drive\/download\?/);
+    assert.match(decodeURIComponent(requestedUrl), /fileId=doc-id/);
+    assert.match(decodeURIComponent(requestedUrl), /exportMimeType=application\/pdf/);
+    assert.equal(requestedSignal, controller.signal);
+  } finally {
+    globalThis.fetch = originalFetch;
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      value: originalSessionStorage,
+    });
+  }
+});

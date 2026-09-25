@@ -24,6 +24,7 @@ const ADMIN_PERMISSIONS = [
   PERMISSIONS.BACKUP_VERIFY,
   PERMISSIONS.BACKUP_RESTORE,
   PERMISSIONS.POLICY_MANAGE,
+  PERMISSIONS.RECIPE_VIEW,
 ];
 
 @Component({
@@ -187,6 +188,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     { label: 'Người dùng & quyền', description: 'Tài khoản, vai trò và quyền cá nhân', icon: 'fa-users-gear', path: '/settings/access/users', permissionsAny: [PERMISSIONS.USER_MANAGE] },
     { label: 'Sao lưu & phục hồi', description: 'Sao lưu, kiểm tra toàn vẹn, phục hồi, thùng rác và chính sách lưu giữ', icon: 'fa-cloud-arrow-up', path: '/settings/data/backups', permissionsAny: [PERMISSIONS.BACKUP_CREATE, PERMISSIONS.BACKUP_VERIFY, PERMISSIONS.BACKUP_RESTORE] },
     { label: 'Chính sách hao hụt', description: 'Ngưỡng và quy tắc hao hụt nghiệp vụ', icon: 'fa-gauge-high', path: '/settings/policies/consumption', permissionsAny: [PERMISSIONS.POLICY_MANAGE] },
+    { label: 'Thư viện công thức', description: 'Quản lý công thức pha và thành phần dùng chung', icon: 'fa-book-bookmark', path: '/settings/recipes', permissionsAny: [PERMISSIONS.RECIPE_VIEW] },
   ];
 
   readonly accountNavItems = computed(() => this.accountItems.filter(item => this.canAccessItem(item)));
@@ -203,6 +205,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     const url = this.cleanUrl();
     return url === '/settings/manager' ||
       url === '/settings/system' ||
+      url === '/settings/recipes' ||
       url.startsWith('/settings/data/') ||
       url.startsWith('/settings/access/') ||
       url.startsWith('/settings/policies/');
@@ -212,6 +215,7 @@ export class SettingsShellComponent implements AfterViewInit, OnDestroy {
     const url = this.cleanUrl();
     if (url === '/settings/manager') return 'Tổng quan';
     if (url === '/settings/system') return 'Hệ thống';
+    if (url === '/settings/recipes') return 'Thư viện công thức';
     if (url.startsWith('/settings/data/master')) return 'Dữ liệu nền';
     if (url.startsWith('/settings/data/backups')) return 'Sao lưu & phục hồi';
     if (url.startsWith('/settings/access/')) return 'Người dùng & quyền';

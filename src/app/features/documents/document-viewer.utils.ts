@@ -25,6 +25,13 @@ export function detectDocumentKind(item: { name?: string; mimeType?: string } | 
   }
 
   if (
+    mime === 'application/vnd.google-apps.document' ||
+    mime === 'application/vnd.google-apps.presentation'
+  ) {
+    return 'pdf';
+  }
+
+  if (
     /\.(xlsx|xls|xlsm|csv)$/.test(name) ||
     mime === 'application/vnd.google-apps.spreadsheet' ||
     mime.includes('spreadsheet') ||
@@ -106,12 +113,19 @@ export function computeExcelLimits(
 }
 
 /**
- * Generates an export filename for Drive downloads, appending .xlsx for Google Sheets if missing.
+ * Generates an export filename for Drive downloads.
  */
 export function getExportFileName(item: { name?: string; mimeType?: string }): string {
   const name = item.name || 'tai-lieu';
   if (item.mimeType === 'application/vnd.google-apps.spreadsheet' && !/\.xlsx$/i.test(name)) {
     return `${name}.xlsx`;
+  }
+  if (
+    (item.mimeType === 'application/vnd.google-apps.document' ||
+      item.mimeType === 'application/vnd.google-apps.presentation') &&
+    !/\.pdf$/i.test(name)
+  ) {
+    return `${name}.pdf`;
   }
   return name;
 }

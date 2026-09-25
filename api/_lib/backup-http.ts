@@ -180,7 +180,13 @@ export async function backupListHandler(req: VercelRequest, res: VercelResponse)
   if (!authorization) return;
   try {
     const access = await getBackupDriveAccess(req, res);
-    if (!access) return res.status(503).json({ error: 'Chưa kết nối Google Drive backup.' });
+    if (!access) {
+      return res.status(200).json({
+        backups: [],
+        accessAvailable: false,
+        setupRequired: true,
+      });
+    }
     const key = backupEncryptionKey();
     const client = new DriveBackupClient(access.accessToken);
     const children = await client.listChildren(backupDriveFolderId());
@@ -233,7 +239,11 @@ export async function backupListHandler(req: VercelRequest, res: VercelResponse)
         });
       }
     }
-    return res.status(200).json({ backups });
+    return res.status(200).json({
+      backups,
+      accessAvailable: true,
+      setupRequired: false,
+    });
   } catch (error) {
     console.error('[BackupList] Failed:', error instanceof Error ? error.message : error);
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Không thể đọc danh sách backup.' });

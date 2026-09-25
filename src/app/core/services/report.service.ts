@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpEventType, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpEventType, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -89,17 +89,120 @@ export class ReportService {
     // GAS Web App không nhận Content-Type: application/json trực tiếp
     // Cần gửi dưới dạng text/plain để tránh CORS preflight
     const authenticatedPayload = await this.withMutationAuth(payload);
-    const result = await firstValueFrom(
-      this.http.post<ReportResult>(this.GAS_URL, JSON.stringify(authenticatedPayload), {
-        headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
-      })
-    );
+    let rawResponse: string;
+    try {
+      // Đọc response dưới dạng text rồi tự parse. GAS/Google đôi lúc có thể
+      // trả HTML, body rỗng hoặc body lỗi không đúng JSON; để HttpClient tự
+      // parse JSON sẽ biến các trường hợp đó thành lỗi khó hiểu.
+      rawResponse = await firstValueFrom(
+        this.http.post(this.GAS_URL, JSON.stringify(authenticatedPayload), {
+          headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
+          responseType: 'text'
+        })
+      );
+    } catch (error) {
+      throw new Error(this.describeReportTransportError(error));
+    }
+
+    const result = this.parseReportResponse(rawResponse);
 
     if (!result.success) {
-      throw new Error(result.error || 'Lỗi không xác định từ GAS');
+      throw new Error(result.error || 'Máy chủ tạo PDF trả trạng thái thất bại nhưng không kèm chi tiết lỗi.');
     }
 
     return result;
+  }
+
+  private parseReportResponse(rawResponse: string): ReportResult {
+    const text = String(rawResponse ?? '').trim();
+    if (!text) {
+      throw new Error('Máy chủ tạo PDF không trả dữ liệu. Hãy thử lại; nếu lỗi lặp lại, kiểm tra Web App GAS.');
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      if (/^\s*<(?:!doctype\s+html|html)\b/i.test(text)) {
+        throw new Error(
+          'Máy chủ tạo PDF trả về trang HTML thay vì dữ liệu JSON. ' +
+          'Có thể Web App GAS đang lỗi quyền truy cập hoặc URL triển khai không còn hợp lệ.'
+        );
+      }
+      throw new Error('Không đọc được phản hồi từ máy chủ tạo PDF vì dữ liệu trả về không đúng định dạng JSON.');
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Phản hồi từ máy chủ tạo PDF không đúng cấu trúc dữ liệu mong đợi.');
+    }
+
+    const result = parsed as Partial<ReportResult>;
+    if (typeof result.success !== 'boolean') {
+      throw new Error('Phản hồi từ máy chủ tạo PDF thiếu trạng thái success.');
+    }
+
+    return result as ReportResult;
+  }
+
+  private describeReportTransportError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const detail = this.extractServerErrorDetail(error.error);
+      if (error.status === 0) {
+        return detail
+          ? `Không kết nối được máy chủ tạo PDF: ${detail}`
+          : 'Không kết nối được máy chủ tạo PDF. Hãy kiểm tra kết nối mạng rồi thử lại.';
+      }
+
+      const statusLabel = error.statusText && error.statusText !== 'Unknown Error'
+        ? ` ${error.statusText}`
+        : '';
+      return detail
+        ? `Máy chủ tạo PDF phản hồi HTTP ${error.status}${statusLabel}: ${detail}`
+        : `Máy chủ tạo PDF phản hồi HTTP ${error.status}${statusLabel}. Hãy thử lại.`;
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return 'Không thể gửi yêu cầu tạo PDF đến máy chủ.';
+  }
+
+  private extractServerErrorDetail(body: unknown): string {
+    const normalize = (value: unknown): string => {
+      const text = typeof value === 'string' ? value.trim() : '';
+      if (!text) return '';
+      if (/^\s*<(?:!doctype\s+html|html)\b/i.test(text)) {
+        return 'máy chủ trả về trang HTML thay vì dữ liệu lỗi JSON';
+      }
+      return text.length > 300 ? `${text.slice(0, 300)}…` : text;
+    };
+
+    if (typeof body === 'string') {
+      const text = body.trim();
+      if (!text) return '';
+      try {
+        const parsed = JSON.parse(text);
+        return this.extractServerErrorDetail(parsed) || normalize(text);
+      } catch {
+        return normalize(text);
+      }
+    }
+
+    if (body && typeof body === 'object') {
+      const record = body as Record<string, unknown>;
+      const direct = normalize(record['error']) || normalize(record['message']);
+      if (direct) return direct;
+
+      const nestedError = record['error'];
+      if (nestedError && typeof nestedError === 'object') {
+        const nested = nestedError as Record<string, unknown>;
+        return normalize(nested['message']) || normalize(nested['text']);
+      }
+
+      return normalize(record['text']);
+    }
+
+    return '';
   }
 
   /**

@@ -111,7 +111,7 @@ export class QrGlobalService {
 
     // CASE F: Recipe
     if (cleanCode.startsWith('RCP-')) {
-        this.router.navigate(['/recipes'], { queryParams: { search: code } });
+        this.router.navigate(['/settings/recipes'], { queryParams: { search: code } });
         return;
     }
 
