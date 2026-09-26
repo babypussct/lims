@@ -2,14 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.26-b01",
-    "title": "Tăng cường bảo mật và độ tin cậy hệ thống",
+    "version": "v26.09.26-b02",
+    "title": "Chuẩn hóa cấu hình domain triển khai",
     "features": [
-      "Đăng nhập bằng QR được bổ sung mã năng lực riêng cho máy tính, chống đọc trộm trạng thái, phát lại và nhận token nhiều lần.",
-      "Truy xuất công khai theo mã yêu cầu chỉ dùng một bản chiếu tối thiểu, không cho người chưa đăng nhập dò dữ liệu yêu cầu hoặc hàng đợi in.",
-      "Thống kê được chuẩn hóa theo dữ liệu nguồn và có cơ chế đối soát lại an toàn khi cập nhật projection thất bại.",
-      "Bổ sung cơ chế đối soát thống kê có thể chạy lại nhiều lần mà không cộng trừ trùng dữ liệu.",
-      "Bổ sung migration cho dữ liệu truy xuất công khai lịch sử theo request ID."
+      "Chuẩn hóa domain Vercel canonical trong công cụ cấu hình môi trường để các origin được thiết lập đúng theo production hiện tại.",
+      "Công cụ thiết lập biến môi trường Vercel dùng trực tiếp domain production nafiqpm6.vercel.app.",
+      "Loại bỏ domain Vercel cũ không còn tồn tại khỏi cấu hình ALLOWED_ORIGINS."
     ]
   },
   "assetGroups": [

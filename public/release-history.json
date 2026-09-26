@@ -1,5 +1,21 @@
 [
   {
+    "version": "v26.09.26-b02",
+    "date": "26/9/2026",
+    "title": "Chuẩn hóa cấu hình domain triển khai",
+    "highlights": [
+      "Chuẩn hóa domain Vercel canonical trong công cụ cấu hình môi trường để các origin được thiết lập đúng theo production hiện tại."
+    ],
+    "features": [],
+    "improvements": [
+      "Công cụ thiết lập biến môi trường Vercel dùng trực tiếp domain production nafiqpm6.vercel.app."
+    ],
+    "fixes": [
+      "Loại bỏ domain Vercel cũ không còn tồn tại khỏi cấu hình ALLOWED_ORIGINS."
+    ],
+    "releaseOrder": 26092600002
+  },
+  {
     "version": "v26.09.26-b01",
     "date": "26/9/2026",
     "title": "Tăng cường bảo mật và độ tin cậy hệ thống",

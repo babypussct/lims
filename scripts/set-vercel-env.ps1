@@ -63,7 +63,7 @@ try {
 
 # 3. Cau hinh
 $APP_ID = "lims-cloud-fixed"
-$ALLOWED_ORIGINS = "https://lims-cloud-by-otada.vercel.app"
+$ALLOWED_ORIGINS = "https://nafiqpm6.vercel.app"
 
 Write-Host ""
 Write-Host "Chuan bi set cac bien:" -ForegroundColor Cyan

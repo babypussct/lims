@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.26-b01
+## Phiên bản hiện tại: v26.09.26-b02
+
+### v26.09.26-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chuẩn hóa domain Vercel canonical trong công cụ cấu hình môi trường để các origin được thiết lập đúng theo production hiện tại.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Công cụ thiết lập biến môi trường Vercel dùng trực tiếp domain production nafiqpm6.vercel.app.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ domain Vercel cũ không còn tồn tại khỏi cấu hình ALLOWED_ORIGINS.
 
 ### v26.09.26-b01
 
